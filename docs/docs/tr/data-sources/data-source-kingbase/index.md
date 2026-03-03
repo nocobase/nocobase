@@ -1,8 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/data-sources/data-source-kingbase/index) bakın.
 :::
 
 # Veri Kaynağı - KingbaseES Veritabanı
@@ -11,7 +12,7 @@ Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen 
 
 KingbaseES veritabanını bir veri kaynağı olarak kullanabilirsiniz. Hem birincil veritabanı hem de harici bir veritabanı olarak kullanılabilir.
 
-:::uyarı
+:::warning
 Şu anda, yalnızca pg modunda çalışan KingbaseES veritabanları desteklenmektedir.
 :::
 
@@ -44,7 +45,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -75,7 +76,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -101,7 +102,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e DB_DATABASE=kingbase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 ### Harici Veritabanı Olarak Kullanım

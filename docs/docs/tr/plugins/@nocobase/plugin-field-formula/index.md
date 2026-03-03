@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Formula"
+displayName: "Koleksiyon alanı: Formül"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
+  Aynı kayıttaki birden fazla alan değeri arasındaki hesaplama sonuçlarını yapılandırabilir ve saklayabilir; Math.js ve Excel formül fonksiyonları olmak üzere iki motoru destekler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Formula
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-field-formula/index) bakın.
+:::
+
+# Koleksiyon alanı: Formül

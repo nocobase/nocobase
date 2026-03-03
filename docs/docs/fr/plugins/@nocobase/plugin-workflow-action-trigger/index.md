@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Post-action event"
+displayName: "Flux de travail : événement post-action"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
+  Déclenché après l'achèvement d'une requête initiée via un bouton d'action ou une API, par exemple après l'ajout, la mise à jour, la suppression de données ou « Soumettre au flux de travail ». Convient pour le traitement des données, l'envoi de notifications, etc., après la fin des opérations.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Post-action event
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-workflow-action-trigger/index).
+:::
+
+# Flux de travail : événement post-action

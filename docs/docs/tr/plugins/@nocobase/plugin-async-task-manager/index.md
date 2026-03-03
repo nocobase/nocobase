@@ -1,12 +1,16 @@
 ---
-displayName: "Async task manager"
+displayName: "Asenkron görev yöneticisi"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
+  Veri içe/dışa aktarma gibi asenkron görevleri yönetin ve izleyin. Görev ilerleme takibi ve bildirimini destekler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Async task manager
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-async-task-manager/index) bakın.
+:::
+
+# Asenkron görev yöneticisi

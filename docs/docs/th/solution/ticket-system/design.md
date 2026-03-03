@@ -1,690 +1,687 @@
-# Ticketing Solution Detailed Design
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/solution/ticket-system/design)
+:::
 
-> **Version**: v2.0-beta
+# การออกแบบรายละเอียดโซลูชันใบสั่งงาน (Ticket)
 
-> **Updated**: 2026-01-05
+> **เวอร์ชัน**: v2.0-beta
 
-> **Status**: Preview
+> **วันที่อัปเดต**: 2026-01-05
 
+> **สถานะ**: ฉบับร่าง (Preview)
 
-## 1. System Overview and Design Philosophy
+## 1. ภาพรวมระบบและแนวคิดการออกแบบ
 
-### 1.1 System Positioning
+### 1.1 ตำแหน่งของระบบ
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+ระบบนี้เป็น **แพลตฟอร์มการจัดการใบสั่งงานอัจฉริยะที่ขับเคลื่อนด้วย AI** ซึ่งสร้างขึ้นบนแพลตฟอร์ม Low-code ของ NocoBase โดยมีเป้าหมายหลักคือ:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+ช่วยให้ฝ่ายบริการลูกค้ามุ่งเน้นไปที่การแก้ปัญหา แทนที่จะเป็นขั้นตอนการดำเนินงานที่ยุ่งยาก
 ```
 
-### 1.2 Design Philosophy
+### 1.2 แนวคิดการออกแบบ
 
-#### Philosophy One: T-Shaped Data Architecture
+#### แนวคิดที่ 1: สถาปัตยกรรมข้อมูลรูปตัว T (T-Shaped Data Architecture)
 
-**What is T-Shaped Architecture?**
+**สถาปัตยกรรมรูปตัว T คืออะไร?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+อ้างอิงจากแนวคิด "บุคลากรที่มีความรู้รูปตัว T" — ความกว้างในแนวนอน + ความลึกในแนวตั้ง:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **แนวนอน (ตารางหลัก)**: ครอบคลุมความสามารถทั่วไปของทุกประเภทธุรกิจ — เช่น หมายเลขใบสั่งงาน, สถานะ, ผู้รับผิดชอบ, SLA และฟิลด์หลักอื่น ๆ
+- **แนวตั้ง (ตารางส่วนขยาย)**: ฟิลด์เฉพาะทางสำหรับธุรกิจเฉพาะ — เช่น การซ่อมแซมอุปกรณ์จะมีหมายเลขซีเรียล (Serial Number), การร้องเรียนจะมีแผนการชดเชย
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**ทำไมต้องออกแบบเช่นนี้?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| โซลูชันแบบดั้งเดิม | สถาปัตยกรรมรูปตัว T |
+|----------|---------|
+| หนึ่งตารางต่อหนึ่งประเภทธุรกิจ ทำให้มีฟิลด์ซ้ำซ้อน | จัดการฟิลด์ส่วนกลางร่วมกัน และขยายฟิลด์ธุรกิจตามความต้องการ |
+| รายงานสถิติต้องรวมข้อมูลจากหลายตาราง | ใช้ตารางหลักเพียงตารางเดียวในการสรุปสถิติใบสั่งงานทั้งหมด |
+| การเปลี่ยนกระบวนการต้องแก้ไขหลายจุด | แก้ไขกระบวนการหลักเพียงจุดเดียว |
+| การเพิ่มประเภทธุรกิจใหม่ต้องสร้างตารางใหม่ | เพียงแค่เพิ่มตารางส่วนขยาย โดยที่กระบวนการหลักยังคงเดิม |
 
-#### Philosophy Two: AI Employee Team
+#### แนวคิดที่ 2: ทีมพนักงาน AI (AI Employee Team)
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+ไม่ใช่แค่ "ฟีเจอร์ AI" แต่เป็น "พนักงาน AI" โดย AI แต่ละคนจะมีบทบาท บุคลิก และหน้าที่ที่ชัดเจน:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| พนักงาน AI | ตำแหน่ง | หน้าที่หลัก | สถานการณ์ที่เปิดใช้งาน |
+|--------|------|----------|----------|
+| **Sam** | หัวหน้าฝ่ายบริการ (Service Desk Supervisor) | คัดแยกใบสั่งงาน, ประเมินลำดับความสำคัญ, ตัดสินใจยกระดับปัญหา (Escalation) | อัตโนมัติเมื่อสร้างใบสั่งงาน |
+| **Grace** | ผู้เชี่ยวชาญด้านความสำเร็จของลูกค้า (Customer Success Expert) | สร้างคำตอบ, ปรับเปลี่ยนน้ำเสียง, จัดการข้อร้องเรียน | เมื่อเจ้าหน้าที่คลิก "AI Reply" |
+| **Max** | ผู้ช่วยด้านความรู้ (Knowledge Assistant) | ค้นหากรณีที่คล้ายกัน, แนะนำความรู้, สรุปโซลูชัน | อัตโนมัติในหน้ารายละเอียดใบสั่งงาน |
+| **Lexi** | ล่ามแปลภาษา (Translator) | แปลภาษาได้หลากหลาย, แปลความคิดเห็น | อัตโนมัติเมื่อตรวจพบภาษาต่างประเทศ |
 
-**Why the "AI Employee" Model?**
+**ทำไมต้องใช้โมเดล "พนักงาน AI"?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **หน้าที่ชัดเจน**: Sam ดูแลการคัดแยก, Grace ดูแลการตอบกลับ ทำให้ไม่เกิดความสับสน
+- **เข้าใจง่าย**: การบอกผู้ใช้ว่า "ให้ Sam ช่วยวิเคราะห์" ดูเป็นมิตรมากกว่า "เรียกใช้ API การจัดหมวดหมู่"
+- **ขยายขีดความสามารถได้**: การเพิ่มความสามารถ AI ใหม่ = การรับพนักงานใหม่
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### แนวคิดที่ 3: วงจรความรู้ด้วยตนเอง (Knowledge Self-Circulation)
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+สิ่งนี้ทำให้เกิดวงจรปิดของ **การสะสมความรู้ - การประยุกต์ใช้ความรู้** ครับ
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. เอนทิตีหลักและโมเดลข้อมูล
 
-### 2.1 Entity Relationship Overview
+### 2.1 ภาพรวมความสัมพันธ์ของเอนทิตี
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 รายละเอียดตารางหลัก
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 ตารางหลักใบสั่งงาน (nb_tts_tickets)
 
-**Basic Information**
+นี่คือหัวใจของระบบ โดยใช้การออกแบบ "ตารางกว้าง" (Wide Table) ที่รวมฟิลด์ที่ใช้บ่อยทั้งหมดไว้ในตารางเดียว
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**ข้อมูลพื้นฐาน**
 
-**Source Tracking**
+| ฟิลด์ | ประเภท | คำอธิบาย | ตัวอย่าง |
+|------|------|------|------|
+| id | BIGINT | คีย์หลัก (Primary Key) | 1001 |
+| ticket_no | VARCHAR | หมายเลขใบสั่งงาน | TKT-20251229-0001 |
+| title | VARCHAR | หัวข้อ | การเชื่อมต่อเครือข่ายล่าช้า |
+| description | TEXT | รายละเอียดปัญหา | ตั้งแต่เช้านี้ เครือข่ายในสำนักงาน... |
+| biz_type | VARCHAR | ประเภทธุรกิจ | it_support |
+| priority | VARCHAR | ลำดับความสำคัญ | P1 |
+| status | VARCHAR | สถานะ | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**การติดตามแหล่งที่มา**
 
-**Contact Information**
+| ฟิลด์ | ประเภท | คำอธิบาย | ตัวอย่าง |
+|------|------|------|------|
+| source_system | VARCHAR | ระบบต้นทาง | crm / email / iot |
+| source_channel | VARCHAR | ช่องทางต้นทาง | web / phone / wechat |
+| external_ref_id | VARCHAR | ID อ้างอิงภายนอก | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**ข้อมูลผู้ติดต่อ**
 
-**Assignee Information**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| customer_id | BIGINT | ID ลูกค้า |
+| contact_name | VARCHAR | ชื่อผู้ติดต่อ |
+| contact_phone | VARCHAR | เบอร์โทรศัพท์ผู้ติดต่อ |
+| contact_email | VARCHAR | อีเมลผู้ติดต่อ |
+| contact_company | VARCHAR | ชื่อบริษัท |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**ข้อมูลผู้รับผิดชอบ**
 
-**Time Nodes**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| assignee_id | BIGINT | ID ผู้รับผิดชอบ |
+| assignee_department_id | BIGINT | ID แผนกที่รับผิดชอบ |
+| transfer_count | INT | จำนวนครั้งที่ส่งต่องาน |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**บันทึกเวลา**
 
-**SLA Related**
+| ฟิลด์ | ประเภท | คำอธิบาย | จังหวะการเปิดใช้งาน |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | เวลาที่ส่ง | เมื่อสร้างใบสั่งงาน |
+| assigned_at | TIMESTAMP | เวลาที่มอบหมาย | เมื่อระบุผู้รับผิดชอบ |
+| first_response_at | TIMESTAMP | เวลาที่ตอบกลับครั้งแรก | เมื่อตอบกลับลูกค้าครั้งแรก |
+| resolved_at | TIMESTAMP | เวลาที่แก้ไขปัญหาได้ | เมื่อสถานะเปลี่ยนเป็น resolved |
+| closed_at | TIMESTAMP | เวลาที่ปิดงาน | เมื่อสถานะเปลี่ยนเป็น closed |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**ข้อมูลที่เกี่ยวข้องกับ SLA**
 
-**AI Analysis Results**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| sla_config_id | BIGINT | ID การกำหนดค่า SLA |
+| sla_response_due | TIMESTAMP | กำหนดเวลาการตอบกลับ |
+| sla_resolve_due | TIMESTAMP | กำหนดเวลาการแก้ไขปัญหา |
+| sla_paused_at | TIMESTAMP | เวลาที่เริ่มหยุด SLA ชั่วคราว |
+| sla_paused_duration | INT | ระยะเวลาที่หยุดชั่วคราวสะสม (นาที) |
+| is_sla_response_breached | BOOLEAN | การตอบกลับผิดสัญญาหรือไม่ |
+| is_sla_resolve_breached | BOOLEAN | การแก้ไขปัญหาผิดสัญญาหรือไม่ |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**ผลการวิเคราะห์ของ AI**
 
-**Multi-Language Support**
+| ฟิลด์ | ประเภท | คำอธิบาย | ผู้กรอกข้อมูล |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | หมวดหมู่ที่ AI ระบุ | Sam |
+| ai_sentiment | VARCHAR | การวิเคราะห์อารมณ์ | Sam |
+| ai_urgency | VARCHAR | ระดับความเร่งด่วน | Sam |
+| ai_keywords | JSONB | คำสำคัญ (Keywords) | Sam |
+| ai_reasoning | TEXT | กระบวนการให้เหตุผล | Sam |
+| ai_suggested_reply | TEXT | คำแนะนำการตอบกลับ | Sam/Grace |
+| ai_confidence_score | NUMERIC | คะแนนความเชื่อมั่น | Sam |
+| ai_analysis | JSONB | ผลการวิเคราะห์ฉบับเต็ม | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**การรองรับหลายภาษา**
 
-#### 2.2.2 Business Extension Tables
+| ฟิลด์ | ประเภท | คำอธิบาย | ผู้กรอกข้อมูล |
+|------|------|------|----------|
+| source_language_code | VARCHAR | ภาษาต้นฉบับ | Sam/Lexi |
+| target_language_code | VARCHAR | ภาษาเป้าหมาย | ค่าเริ่มต้นของระบบคือ EN |
+| is_translated | BOOLEAN | แปลแล้วหรือไม่ | Lexi |
+| description_translated | TEXT | รายละเอียดที่แปลแล้ว | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 ตารางส่วนขยายธุรกิจ
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**การซ่อมแซมอุปกรณ์ (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| ticket_id | BIGINT | ID ใบสั่งงานที่เกี่ยวข้อง |
+| equipment_model | VARCHAR | รุ่นอุปกรณ์ |
+| serial_number | VARCHAR | หมายเลขซีเรียล |
+| fault_code | VARCHAR | รหัสข้อผิดพลาด |
+| spare_parts | JSONB | รายการอะไหล่ |
+| maintenance_type | VARCHAR | ประเภทการบำรุงรักษา |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**การสนับสนุนด้าน IT (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| ticket_id | BIGINT | ID ใบสั่งงานที่เกี่ยวข้อง |
+| asset_number | VARCHAR | หมายเลขทรัพย์สิน |
+| os_version | VARCHAR | เวอร์ชันระบบปฏิบัติการ |
+| software_name | VARCHAR | ซอฟต์แวร์ที่เกี่ยวข้อง |
+| remote_address | VARCHAR | ที่อยู่รีโมท |
+| error_code | VARCHAR | รหัสข้อผิดพลาด |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**ข้อร้องเรียนของลูกค้า (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| ticket_id | BIGINT | ID ใบสั่งงานที่เกี่ยวข้อง |
+| related_order_no | VARCHAR | หมายเลขคำสั่งซื้อที่เกี่ยวข้อง |
+| complaint_level | VARCHAR | ระดับข้อร้องเรียน |
+| compensation_amount | DECIMAL | จำนวนเงินชดเชย |
+| compensation_type | VARCHAR | วิธีการชดเชย |
+| root_cause | TEXT | สาเหตุที่แท้จริง |
 
-**Core Fields**
+#### 2.2.3 ตารางความคิดเห็น (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**ฟิลด์หลัก**
 
-**AI Review Fields (for outbound)**
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| id | BIGINT | คีย์หลัก |
+| ticket_id | BIGINT | ID ใบสั่งงาน |
+| parent_id | BIGINT | ID ความคิดเห็นหลัก (รองรับโครงสร้างแบบต้นไม้) |
+| content | TEXT | เนื้อหาความคิดเห็น |
+| direction | VARCHAR | ทิศทาง: inbound (ลูกค้า) / outbound (เจ้าหน้าที่) |
+| is_internal | BOOLEAN | เป็นบันทึกภายในหรือไม่ |
+| is_first_response | BOOLEAN | เป็นการตอบกลับครั้งแรกหรือไม่ |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**ฟิลด์การตรวจสอบโดย AI (สำหรับ outbound)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| source_language_code | VARCHAR | ภาษาต้นทาง |
+| content_translated | TEXT | เนื้อหาที่แปลแล้ว |
+| is_translated | BOOLEAN | แปลแล้วหรือไม่ |
+| is_ai_blocked | BOOLEAN | ถูก AI สกัดกั้นหรือไม่ |
+| ai_block_reason | VARCHAR | เหตุผลที่สกัดกั้น |
+| ai_block_detail | TEXT | รายละเอียดเพิ่มเติม |
+| ai_quality_score | NUMERIC | คะแนนคุณภาพ |
+| ai_suggestions | TEXT | คำแนะนำในการปรับปรุง |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 ตารางการประเมิน (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| ticket_id | BIGINT | ID ใบสั่งงาน (ไม่ซ้ำ) |
+| overall_rating | INT | ความพึงพอใจโดยรวม (1-5) |
+| response_rating | INT | ความรวดเร็วในการตอบกลับ (1-5) |
+| professionalism_rating | INT | ความเป็นมืออาชีพ (1-5) |
+| resolution_rating | INT | การแก้ปัญหา (1-5) |
+| nps_score | INT | คะแนน NPS (0-10) |
+| tags | JSONB | แท็กด่วน |
+| comment | TEXT | ความคิดเห็นเพิ่มเติม |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 ตารางบทความความรู้ (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|------|------|------|
+| article_no | VARCHAR | หมายเลขบทความ KB-T0001 |
+| title | VARCHAR | หัวข้อ |
+| content | TEXT | เนื้อหา (Markdown) |
+| summary | TEXT | บทสรุป |
+| category_code | VARCHAR | รหัสหมวดหมู่ |
+| keywords | JSONB | คำสำคัญ |
+| source_type | VARCHAR | แหล่งที่มา: ticket/faq/manual |
+| source_ticket_id | BIGINT | ID ใบสั่งงานต้นทาง |
+| ai_generated | BOOLEAN | สร้างโดย AI หรือไม่ |
+| ai_quality_score | NUMERIC | คะแนนคุณภาพ |
+| status | VARCHAR | สถานะ: draft/published/archived |
+| view_count | INT | จำนวนการเข้าชม |
+| helpful_count | INT | จำนวนที่ระบุว่ามีประโยชน์ |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 รายการตารางข้อมูล
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| ลำดับ | ชื่อตาราง | คำอธิบาย | ประเภทข้อมูล |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | ตารางหลักใบสั่งงาน | ข้อมูลธุรกิจ |
+| 2 | nb_tts_biz_repair | ส่วนขยายการซ่อมแซมอุปกรณ์ | ข้อมูลธุรกิจ |
+| 3 | nb_tts_biz_it_support | ส่วนขยายการสนับสนุน IT | ข้อมูลธุรกิจ |
+| 4 | nb_tts_biz_complaint | ส่วนขยายข้อร้องเรียนลูกค้า | ข้อมูลธุรกิจ |
+| 5 | nb_tts_customers | ตารางหลักลูกค้า | ข้อมูลธุรกิจ |
+| 6 | nb_tts_customer_contacts | ผู้ติดต่อลูกค้า | ข้อมูลธุรกิจ |
+| 7 | nb_tts_ticket_comments | ความคิดเห็นใบสั่งงาน | ข้อมูลธุรกิจ |
+| 8 | nb_tts_ratings | การประเมินความพึงพอใจ | ข้อมูลธุรกิจ |
+| 9 | nb_tts_qa_articles | บทความความรู้ | ข้อมูลความรู้ |
+| 10 | nb_tts_qa_article_relations | ความสัมพันธ์ของบทความ | ข้อมูลความรู้ |
+| 11 | nb_tts_faqs | คำถามที่พบบ่อย | ข้อมูลความรู้ |
+| 12 | nb_tts_tickets_categories | หมวดหมู่ใบสั่งงาน | ข้อมูลการกำหนดค่า |
+| 13 | nb_tts_sla_configs | การกำหนดค่า SLA | ข้อมูลการกำหนดค่า |
+| 14 | nb_tts_skill_configs | การกำหนดค่าทักษะ | ข้อมูลการกำหนดค่า |
+| 15 | nb_tts_business_types | ประเภทธุรกิจ | ข้อมูลการกำหนดค่า |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. วงจรชีวิตของใบสั่งงาน
 
-### 4.1 Priority and SLA Configuration
+### 3.1 นิยามสถานะ
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| สถานะ | ชื่อภาษาไทย | คำอธิบาย | การนับเวลา SLA | สี |
+|------|------|------|---------|------|
+| new | ใหม่ | เพิ่งสร้าง รอการมอบหมาย | เริ่มต้น | 🔵 น้ำเงิน |
+| assigned | มอบหมายแล้ว | ระบุผู้รับผิดชอบแล้ว รอการรับงาน | ดำเนินต่อ | 🔷 ฟ้าอมเขียว |
+| processing | กำลังดำเนินการ | อยู่ระหว่างการจัดการ | ดำเนินต่อ | 🟠 ส้ม |
+| pending | รอดำเนินการ | รอการตอบกลับจากลูกค้า | **หยุดชั่วคราว** | ⚫ เทา |
+| transferred | ส่งต่อแล้ว | ส่งต่อให้ผู้อื่น | ดำเนินต่อ | 🟣 ม่วง |
+| resolved | แก้ไขแล้ว | รอการยืนยันจากลูกค้า | หยุด | 🟢 เขียว |
+| closed | ปิดงาน | ใบสั่งงานสิ้นสุด | หยุด | ⚫ เทา |
+| cancelled | ยกเลิก | ใบสั่งงานถูกยกเลิก | หยุด | ⚫ เทา |
 
-### 4.2 SLA Calculation Logic
+### 3.2 แผนภาพการไหลของสถานะ
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**กระบวนการหลัก (จากซ้ายไปขวา)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**กระบวนการย่อย**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**สถานะของระบบทั้งหมด (State Machine)**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 กฎการเปลี่ยนสถานะที่สำคัญ
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| จาก | ถึง | เงื่อนไขการเปิดใช้งาน | การดำเนินการของระบบ |
+|----|----|---------|---------|
+| new | assigned | ระบุผู้รับผิดชอบ | บันทึก assigned_at |
+| assigned | processing | ผู้รับผิดชอบคลิก "รับงาน" | ไม่มี |
+| processing | pending | คลิก "หยุดชั่วคราว" | บันทึก sla_paused_at |
+| pending | processing | ลูกค้าตอบกลับ / กู้คืนด้วยตนเอง | คำนวณระยะเวลาที่หยุด, ล้างค่า paused_at |
+| processing | resolved | คลิก "แก้ไขแล้ว" | บันทึก resolved_at |
+| resolved | closed | ลูกค้ายืนยัน / หมดเวลา 3 วัน | บันทึก closed_at |
+| * | cancelled | ยกเลิกใบสั่งงาน | ไม่มี |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. การจัดการระดับการให้บริการ (SLA)
 
-### 5.1 AI Employee Team
+### 4.1 ลำดับความสำคัญและการกำหนดค่า SLA
 
-The system configures 8 AI employees in two categories:
+| ลำดับความสำคัญ | ชื่อ | เวลาตอบกลับ | เวลาแก้ไขปัญหา | เกณฑ์การเตือนภัย | สถานการณ์ทั่วไป |
+|--------|------|----------|----------|----------|----------|
+| P0 | เร่งด่วนที่สุด | 15 นาที | 2 ชั่วโมง | 80% | ระบบล่ม, สายการผลิตหยุดทำงาน |
+| P1 | สูง | 1 ชั่วโมง | 8 ชั่วโมง | 80% | ฟังก์ชันสำคัญขัดข้อง |
+| P2 | กลาง | 4 ชั่วโมง | 24 ชั่วโมง | 80% | ปัญหาทั่วไป |
+| P3 | ต่ำ | 8 ชั่วโมง | 72 ชั่วโมง | 80% | การสอบถาม, ข้อเสนอแนะ |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 ตรรกะการคำนวณ SLA
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
 
-**Reused Employees (General Capabilities)**
+#### เมื่อสร้างใบสั่งงาน
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+กำหนดเวลาการตอบกลับ = เวลาที่ส่ง + ระยะเวลาตอบกลับ (นาที)
+กำหนดเวลาการแก้ไขปัญหา = เวลาที่ส่ง + ระยะเวลาแก้ไขปัญหา (นาที)
+```
 
-### 5.2 AI Task List
+#### เมื่อหยุดชั่วคราว (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+เวลาที่เริ่มหยุด SLA ชั่วคราว = เวลาปัจจุบัน
+```
 
-#### Sam's Tasks
+#### เมื่อกู้คืน (จาก pending กลับไปเป็น processing)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- คำนวณระยะเวลาที่หยุดในครั้งนี้
+ระยะเวลาที่หยุดครั้งนี้ = เวลาปัจจุบัน - เวลาที่เริ่มหยุด SLA ชั่วคราว
 
-#### Grace's Tasks
+-- สะสมเข้ากับระยะเวลาที่หยุดทั้งหมด
+ระยะเวลาที่หยุดชั่วคราวสะสม = ระยะเวลาที่หยุดชั่วคราวสะสม + ระยะเวลาที่หยุดครั้งนี้
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- ขยายกำหนดเวลา (ช่วงที่หยุดจะไม่ถูกนับใน SLA)
+กำหนดเวลาการตอบกลับ = กำหนดเวลาการตอบกลับ + ระยะเวลาที่หยุดครั้งนี้
+กำหนดเวลาการแก้ไขปัญหา = กำหนดเวลาการแก้ไขปัญหา + ระยะเวลาที่หยุดครั้งนี้
 
-#### Max's Tasks
+-- ล้างเวลาที่เริ่มหยุดชั่วคราว
+เวลาที่เริ่มหยุด SLA ชั่วคราว = ว่าง
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### การตัดสินการผิดสัญญา SLA
 
-#### Lexi's Tasks
+```
+-- การตัดสินการตอบกลับผิดสัญญา
+การตอบกลับผิดสัญญาหรือไม่ = (เวลาตอบกลับครั้งแรกว่าง และ เวลาปัจจุบัน > กำหนดเวลาการตอบกลับ)
+                        หรือ (เวลาตอบกลับครั้งแรก > กำหนดเวลาการตอบกลับ)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- การตัดสินการแก้ไขปัญหาผิดสัญญา
+การแก้ไขปัญหาผิดสัญญาหรือไม่ = (เวลาที่แก้ไขปัญหาว่าง และ เวลาปัจจุบัน > กำหนดเวลาการแก้ไขปัญหา)
+                        หรือ (เวลาที่แก้ไขปัญหา > กำหนดเวลาการแก้ไขปัญหา)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 กลไกการเตือนภัย SLA
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| ระดับการเตือน | เงื่อนไข | ผู้รับแจ้ง | วิธีการแจ้งเตือน |
+|----------|------|----------|----------|
+| เตือนภัยสีเหลือง | เวลาที่เหลือ < 20% | ผู้รับผิดชอบ | ข้อความภายในระบบ |
+| เตือนภัยสีแดง | หมดเวลาแล้ว | ผู้รับผิดชอบ + หัวหน้า | ข้อความภายในระบบ + อีเมล |
+| การเตือนภัยยกระดับ | หมดเวลาเกิน 1 ชั่วโมง | ผู้จัดการแผนก | อีเมล + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 ตัวชี้วัด SLA บนแดชบอร์ด
 
-#### SAM-01 Ticket Analysis Response
+| ตัวชี้วัด | สูตรคำนวณ | เกณฑ์มาตรฐาน |
+|------|----------|----------|
+| อัตราการตอบกลับตามกำหนด | จำนวนใบสั่งงานที่ไม่ผิดสัญญา / จำนวนใบสั่งงานทั้งหมด | > 95% |
+| อัตราการแก้ไขปัญหาตามกำหนด | จำนวนที่แก้ไขไม่ผิดสัญญา / จำนวนใบสั่งงานที่แก้ไขแล้ว | > 90% |
+| เวลาตอบกลับเฉลี่ย | ผลรวม(เวลาตอบกลับ) / จำนวนใบสั่งงาน | < 50% ของ SLA |
+| เวลาแก้ไขปัญหาเฉลี่ย | ผลรวม(เวลาแก้ไขปัญหา) / จำนวนใบสั่งงาน | < 80% ของ SLA |
+
+---
+
+## 5. ความสามารถของ AI และระบบพนักงาน
+
+### 5.1 ทีมพนักงาน AI
+
+ระบบมีการกำหนดค่าพนักงาน AI ไว้ 8 ตำแหน่ง แบ่งเป็นสองประเภท:
+
+**พนักงานใหม่ (เฉพาะระบบใบสั่งงาน)**
+
+| ID | ชื่อ | ตำแหน่ง | ความสามารถหลัก |
+|----|------|------|----------|
+| sam | Sam | หัวหน้าฝ่ายบริการ | คัดแยกใบสั่งงาน, ประเมินลำดับความสำคัญ, ตัดสินใจยกระดับปัญหา, ระบุความเสี่ยง SLA |
+| grace | Grace | ผู้เชี่ยวชาญด้านความสำเร็จของลูกค้า | สร้างคำตอบแบบมืออาชีพ, ปรับน้ำเสียง, จัดการข้อร้องเรียน, กู้คืนความพึงพอใจ |
+| max | Max | ผู้ช่วยด้านความรู้ | ค้นหากรณีที่คล้ายกัน, แนะนำความรู้, สรุปโซลูชัน |
+
+**พนักงานที่ใช้ร่วมกัน (ความสามารถทั่วไป)**
+
+| ID | ชื่อ | ตำแหน่ง | ความสามารถหลัก |
+|----|------|------|----------|
+| dex | Dex | นักจัดการข้อมูล | ดึงข้อมูลใบสั่งงานจากอีเมล, เปลี่ยนสายโทรศัพท์เป็นใบสั่งงาน, ทำความสะอาดข้อมูลจำนวนมาก |
+| ellis | Ellis | ผู้เชี่ยวชาญด้านอีเมล | วิเคราะห์อารมณ์ในอีเมล, สรุปหัวข้อสนทนา, ร่างคำตอบ |
+| lexi | Lexi | ล่ามแปลภาษา | แปลใบสั่งงาน, แปลคำตอบ, แปลบทสนทนาแบบเรียลไทม์ |
+| cole | Cole | ผู้เชี่ยวชาญ NocoBase | แนะนำการใช้งานระบบ, ช่วยกำหนดค่าเวิร์กโฟลว์ |
+| vera | Vera | นักวิจัยและวิเคราะห์ | วิจัยโซลูชันทางเทคนิค, ตรวจสอบข้อมูลผลิตภัณฑ์ |
+
+### 5.2 รายการภารกิจ AI
+
+พนักงาน AI แต่ละคนจะได้รับการกำหนดค่าภารกิจเฉพาะ 4 อย่าง:
+
+#### ภารกิจของ Sam
+
+| ID ภารกิจ | ชื่อ | วิธีเปิดใช้งาน | คำอธิบาย |
+|--------|------|----------|------|
+| SAM-01 | วิเคราะห์และคัดแยกใบสั่งงาน | เวิร์กโฟลว์อัตโนมัติ | วิเคราะห์อัตโนมัติเมื่อสร้างใบสั่งงานใหม่ |
+| SAM-02 | ประเมินลำดับความสำคัญใหม่ | การโต้ตอบผ่านหน้าบ้าน | ปรับลำดับความสำคัญตามข้อมูลใหม่ |
+| SAM-03 | ตัดสินใจยกระดับปัญหา | หน้าบ้าน/เวิร์กโฟลว์ | ตัดสินว่าจำเป็นต้องยกระดับปัญหาหรือไม่ |
+| SAM-04 | ประเมินความเสี่ยง SLA | เวิร์กโฟลว์อัตโนมัติ | ระบุความเสี่ยงในการทำงานเกินเวลา |
+
+#### ภารกิจของ Grace
+
+| ID ภารกิจ | ชื่อ | วิธีเปิดใช้งาน | คำอธิบาย |
+|--------|------|----------|------|
+| GRACE-01 | สร้างคำตอบแบบมืออาชีพ | การโต้ตอบผ่านหน้าบ้าน | สร้างคำตอบตามบริบทของปัญหา |
+| GRACE-02 | ปรับน้ำเสียงการตอบกลับ | การโต้ตอบผ่านหน้าบ้าน | ปรับปรุงน้ำเสียงของคำตอบที่มีอยู่ |
+| GRACE-03 | จัดการลดระดับข้อร้องเรียน | หน้าบ้าน/เวิร์กโฟลว์ | คลี่คลายข้อร้องเรียนของลูกค้า |
+| GRACE-04 | กู้คืนความพึงพอใจ | หน้าบ้าน/เวิร์กโฟลว์ | ติดตามผลหลังจากประสบการณ์เชิงลบ |
+
+#### ภารกิจของ Max
+
+| ID ภารกิจ | ชื่อ | วิธีเปิดใช้งาน | คำอธิบาย |
+|--------|------|----------|------|
+| MAX-01 | ค้นหากรณีที่คล้ายกัน | หน้าบ้าน/เวิร์กโฟลว์ | ค้นหาใบสั่งงานที่คล้ายกันในอดีต |
+| MAX-02 | แนะนำบทความความรู้ | หน้าบ้าน/เวิร์กโฟลว์ | แนะนำบทความความรู้ที่เกี่ยวข้อง |
+| MAX-03 | สรุปโซลูชัน | การโต้ตอบผ่านหน้าบ้าน | สรุปโซลูชันจากหลายแหล่งข้อมูล |
+| MAX-04 | คู่มือการแก้ไขปัญหา | การโต้ตอบผ่านหน้าบ้าน | สร้างขั้นตอนการตรวจสอบอย่างเป็นระบบ |
+
+#### ภารกิจของ Lexi
+
+| ID ภารกิจ | ชื่อ | วิธีเปิดใช้งาน | คำอธิบาย |
+|--------|------|----------|------|
+| LEXI-01 | แปลใบสั่งงาน | เวิร์กโฟลว์อัตโนมัติ | แปลเนื้อหาใบสั่งงาน |
+| LEXI-02 | แปลคำตอบ | การโต้ตอบผ่านหน้าบ้าน | แปลคำตอบของเจ้าหน้าที่ |
+| LEXI-03 | แปลข้อมูลจำนวนมาก | เวิร์กโฟลว์อัตโนมัติ | จัดการการแปลแบบกลุ่ม |
+| LEXI-04 | แปลบทสนทนาเรียลไทม์ | การโต้ตอบผ่านหน้าบ้าน | แปลบทสนทนาในขณะนั้น |
+
+### 5.3 พนักงาน AI และวงจรชีวิตใบสั่งงาน
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+
+### 5.4 ตัวอย่างการตอบสนองของ AI
+
+#### SAM-01 การวิเคราะห์ใบสั่งงาน
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "เข้าสู่ระบบล้มเหลว", "หมดเวลา", "ปิดงบสิ้นเดือน"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "ใบสั่งงานนี้ระบุถึงปัญหาการเข้าใช้งานระบบ ERP ซึ่งส่งผลกระทบต่อการปิดงบสิ้นเดือนของแผนกบัญชี จึงมีความเร่งด่วนสูง",
+  "suggested_reply": "เรียนลูกค้า ขอบคุณที่แจ้งปัญหานี้เข้ามา...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "สวัสดี ระบบ ERP ของเราไม่สามารถเข้าสู่ระบบได้..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 การสร้างคำตอบ
 
 ```
-Dear Mr. Zhang,
+เรียน คุณสมชาย
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+ขอบคุณที่ติดต่อเราเพื่อแจ้งปัญหาการเข้าใช้งาน ERP ครับ ผมเข้าใจเป็นอย่างยิ่งว่าปัญหานี้
+กำลังส่งผลกระทบต่อการปิดงบสิ้นเดือนของบริษัทท่าน เราจึงได้จัดลำดับความสำคัญของปัญหานี้ไว้ในระดับสูงครับ
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+สถานะปัจจุบัน:
+- ทีมเทคนิคกำลังตรวจสอบปัญหาการเชื่อมต่อเซิร์ฟเวอร์
+- คาดว่าจะแจ้งความคืบหน้าให้ท่านทราบภายใน 30 นาที
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+ในระหว่างนี้ ท่านสามารถลอง:
+1. เข้าใช้งานผ่านที่อยู่สำรอง: https://erp-backup.company.com
+2. หากมีความจำเป็นต้องใช้รายงานเร่งด่วน สามารถติดต่อเราเพื่อช่วยส่งออกข้อมูลให้ได้ครับ
 
-Please feel free to contact me if you have any other questions.
+หากมีคำถามเพิ่มเติม โปรดติดต่อผมได้ทันทีครับ
 
-Best regards,
-Technical Support Team
+ขอแสดงความนับถือ
+ทีมสนับสนุนทางเทคนิค
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 ไฟร์วอลล์ความฉลาดทางอารมณ์ของ AI (AI EQ Firewall)
 
-Grace's reply quality review blocks the following issues:
+Grace จะรับผิดชอบการตรวจสอบคุณภาพคำตอบเพื่อสกัดกั้นปัญหาดังต่อไปนี้:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| ประเภทปัญหา | ตัวอย่างข้อความเดิม | คำแนะนำจาก AI |
+|----------|----------|--------|
+| น้ำเสียงเชิงปฏิเสธ | "ไม่ได้ครับ ไม่อยู่ในเงื่อนไขการรับประกัน" | "ความเสียหายนี้ยังไม่ครอบคลุมในการรับประกันฟรี แต่เรามีโซลูชันการซ่อมแบบมีค่าใช้จ่ายเสนอให้ครับ" |
+| การตำหนิลูกค้า | "คุณทำเสียเอง" | "จากการตรวจสอบ พบว่าความเสียหายนี้เกิดจากอุบัติเหตุครับ" |
+| การปัดความรับผิดชอบ | "ไม่ใช่ปัญหาของเรา" | "ให้ผมช่วยตรวจสอบหาสาเหตุของปัญหาเพิ่มเติมให้นะครับ" |
+| การแสดงออกที่เย็นชา | "ไม่ทราบ" | "เดี๋ยวผมช่วยตรวจสอบข้อมูลที่เกี่ยวข้องให้ครับ" |
+| ข้อมูลที่ละเอียดอ่อน | "รหัสผ่านของคุณคือ abc123" | [สกัดกั้น] มีข้อมูลที่ละเอียดอ่อน ไม่อนุญาตให้ส่ง |
 
 ---
 
-## 6. Knowledge Base System
+## 6. ระบบคลังความรู้
 
-### 6.1 Knowledge Sources
+### 6.1 แหล่งที่มาของความรู้
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 กระบวนการเปลี่ยนใบสั่งงานเป็นความรู้
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**เกณฑ์การประเมิน**:
+- **ความเป็นสากล**: นี่เป็นปัญหาที่พบบ่อยหรือไม่?
+- **ความสมบูรณ์**: โซลูชันชัดเจนและครบถ้วนหรือไม่?
+- **การนำกลับมาใช้ใหม่ได้**: ขั้นตอนต่าง ๆ สามารถนำไปใช้ซ้ำได้หรือไม่?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 กลไกการแนะนำความรู้
+
+เมื่อเจ้าหน้าที่เปิดดูรายละเอียดใบสั่งงาน Max จะแนะนำความรู้ที่เกี่ยวข้องโดยอัตโนมัติ:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 ความรู้ที่แนะนำ                              [ขยาย/ย่อ]  │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 คู่มือวินิจฉัยข้อผิดพลาดระบบ CNC Servo  ความตรงกัน: 94% │
+│ │ ประกอบด้วย: การตีความรหัสเตือน, ขั้นตอนการตรวจสอบไดรฟ์เซอร์โว  │
+│ │ [ดูรายละเอียด] [ใช้ในการตอบกลับ] [ทำเครื่องหมายว่ามีประโยชน์]  │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 คู่มือบำรุงรักษาซีรีส์ XYZ-CNC3000      ความตรงกัน: 87% │
+│ │ ประกอบด้วย: ข้อผิดพลาดทั่วไป, แผนการบำรุงรักษาเชิงป้องกัน      │
+│ │ [ดูรายละเอียด] [ใช้ในการตอบกลับ] [ทำเครื่องหมายว่ามีประโยชน์]  │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. เครื่องมือเวิร์กโฟลว์ (Workflow Engine)
+
+### 7.1 ประเภทของเวิร์กโฟลว์
+
+| รหัส | ประเภท | คำอธิบาย | วิธีเปิดใช้งาน |
+|------|------|------|----------|
+| WF-T | กระบวนการใบสั่งงาน | การจัดการวงจรชีวิตใบสั่งงาน | เหตุการณ์จากแบบฟอร์ม |
+| WF-S | กระบวนการ SLA | การคำนวณและการเตือนภัย SLA | เหตุการณ์จากแบบฟอร์ม/ตามเวลา |
+| WF-C | กระบวนการความคิดเห็น | การจัดการและการแปลความคิดเห็น | เหตุการณ์จากแบบฟอร์ม |
+| WF-R | กระบวนการประเมิน | การเชิญประเมินและสรุปสถิติ | เหตุการณ์จากแบบฟอร์ม/ตามเวลา |
+| WF-N | กระบวนการแจ้งเตือน | การส่งการแจ้งเตือน | ขับเคลื่อนด้วยเหตุการณ์ |
+| WF-AI | กระบวนการ AI | การวิเคราะห์และการสร้างข้อมูลโดย AI | เหตุการณ์จากแบบฟอร์ม |
+
+### 7.2 เวิร์กโฟลว์หลัก
+
+#### WF-T01: กระบวนการสร้างใบสั่งงาน
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+
+#### WF-AI01: การวิเคราะห์ใบสั่งงานด้วย AI
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+
+#### WF-AI04: การแปลและการตรวจสอบความคิดเห็น
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+
+#### WF-AI03: การสร้างความรู้
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+
+### 7.3 งานที่กำหนดเวลาไว้ (Scheduled Tasks)
+
+| งาน | ความถี่ในการดำเนินการ | คำอธิบาย |
+|------|----------|------|
+| ตรวจสอบการเตือนภัย SLA | ทุก 5 นาที | ตรวจสอบใบสั่งงานที่ใกล้จะหมดเวลา |
+| ปิดใบสั่งงานอัตโนมัติ | ทุกวัน | ปิดใบสั่งงานสถานะ resolved อัตโนมัติหลังจาก 3 วัน |
+| ส่งคำเชิญประเมินผล | ทุกวัน | ส่งคำเชิญประเมินผลหลังจากปิดงาน 24 ชั่วโมง |
+| อัปเดตข้อมูลสถิติ | ทุกชั่วโมง | อัปเดตสถิติใบสั่งงานของลูกค้า |
 
 ---
 
-## 7. Workflow Engine
+## 8. การออกแบบเมนูและอินเทอร์เฟซ
 
-### 7.1 Workflow Categories
+### 8.1 ส่วนการจัดการหลังบ้าน (Backend Admin)
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 7.2 Core Workflows
+### 8.2 ส่วนพอร์ทัลลูกค้า (Customer Portal)
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 การออกแบบแดชบอร์ด
 
-#### WF-AI01: Ticket AI Analysis
+#### มุมมองผู้บริหาร (Executive View)
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| ส่วนประกอบ | ประเภท | คำอธิบายข้อมูล |
+|------|------|----------|
+| อัตราการบรรลุ SLA | มาตรวัด (Gauge) | อัตราการตอบกลับ/แก้ไขตามกำหนดในเดือนนี้ |
+| แนวโน้มความพึงพอใจ | กราฟเส้น | การเปลี่ยนแปลงความพึงพอใจในช่วง 30 วันที่ผ่านมา |
+| แนวโน้มปริมาณใบสั่งงาน | กราฟแท่ง | ปริมาณใบสั่งงานในช่วง 30 วันที่ผ่านมา |
+| การกระจายประเภทธุรกิจ | กราฟวงกลม | สัดส่วนของแต่ละประเภทธุรกิจ |
 
-#### WF-AI04: Comment Translation & Review
+#### มุมมองหัวหน้างาน (Supervisor View)
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| ส่วนประกอบ | ประเภท | คำอธิบายข้อมูล |
+|------|------|----------|
+| การเตือนภัยหมดเวลา | รายการ | ใบสั่งงานที่ใกล้หมดเวลา/หมดเวลาแล้ว |
+| ภาระงานของบุคลากร | กราฟแท่ง | จำนวนใบสั่งงานของสมาชิกในทีม |
+| การกระจายงานค้าง | กราฟแท่งซ้อน | จำนวนใบสั่งงานในแต่ละสถานะ |
+| ประสิทธิภาพการจัดการ | แผนภูมิความร้อน (Heatmap) | การกระจายเวลาเฉลี่ยในการจัดการ |
 
-#### WF-AI03: Knowledge Generation
+#### มุมมองเจ้าหน้าที่ (Agent View)
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| ส่วนประกอบ | ประเภท | คำอธิบายข้อมูล |
+|------|------|----------|
+| งานที่ต้องทำของฉัน | การ์ดตัวเลข | จำนวนใบสั่งงานที่รอการจัดการ |
+| การกระจายลำดับความสำคัญ | กราฟวงกลม | สัดส่วน P0/P1/P2/P3 |
+| สถิติวันนี้ | การ์ดตัวชี้วัด | จำนวนงานที่จัดการ/แก้ไขได้ในวันนี้ |
+| นับถอยหลัง SLA | รายการ | ใบสั่งงาน 5 รายการที่เร่งด่วนที่สุด |
 
 ---
 
-## Appendix
+## ภาคผนวก
 
-### A. Business Type Configuration
+### ก. การกำหนดค่าประเภทธุรกิจ
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| รหัสประเภท | ชื่อ | ไอคอน | ตารางส่วนขยายที่เกี่ยวข้อง |
+|----------|------|------|------------|
+| repair | การซ่อมแซมอุปกรณ์ | 🔧 | nb_tts_biz_repair |
+| it_support | การสนับสนุน IT | 💻 | nb_tts_biz_it_support |
+| complaint | ข้อร้องเรียนลูกค้า | 📢 | nb_tts_biz_complaint |
+| consultation | การสอบถามและข้อเสนอแนะ | ❓ | ไม่มี |
+| other | อื่น ๆ | 📝 | ไม่มี |
 
-### B. Category Codes
+### ข. รหัสหมวดหมู่
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| รหัส | ชื่อ | คำอธิบาย |
+|------|------|------|
+| CONVEYOR | ระบบสายพานลำเลียง | ปัญหาระบบสายพานลำเลียง |
+| PACKAGING | เครื่องบรรจุภัณฑ์ | ปัญหาเครื่องบรรจุภัณฑ์ |
+| WELDING | อุปกรณ์เชื่อม | ปัญหาอุปกรณ์เชื่อม |
+| COMPRESSOR | เครื่องอัดอากาศ | ปัญหาเครื่องอัดอากาศ |
+| COLD_STORE | ห้องเย็น | ปัญหาห้องเย็น |
+| CENTRAL_AC | แอร์ส่วนกลาง | ปัญหาแอร์ส่วนกลาง |
+| FORKLIFT | รถยก (Forklift) | ปัญหารถยก |
+| COMPUTER | คอมพิวเตอร์ | ปัญหาฮาร์ดแวร์คอมพิวเตอร์ |
+| PRINTER | เครื่องพิมพ์ | ปัญหาเครื่องพิมพ์ |
+| PROJECTOR | เครื่องโปรเจกเตอร์ | ปัญหาเครื่องโปรเจกเตอร์ |
+| INTERNET | เครือข่าย | ปัญหาการเชื่อมต่อเครือข่าย |
+| EMAIL | อีเมล | ปัญหาระบบอีเมล |
+| ACCESS | สิทธิ์การใช้งาน | ปัญหาสิทธิ์การใช้งานบัญชี |
+| PROD_INQ | สอบถามผลิตภัณฑ์ | การสอบถามข้อมูลผลิตภัณฑ์ |
+| COMPLAINT | ข้อร้องเรียนทั่วไป | ข้อร้องเรียนทั่วไป |
+| DELAY | ความล่าช้าในการขนส่ง | ข้อร้องเรียนเรื่องการขนส่งล่าช้า |
+| DAMAGE | บรรจุภัณฑ์เสียหาย | ข้อร้องเรียนเรื่องบรรจุภัณฑ์เสียหาย |
+| QUANTITY | จำนวนไม่ครบ | ข้อร้องเรียนเรื่องจำนวนสินค้าไม่ครบ |
+| SVC_ATTITUDE | ทัศนคติการบริการ | ข้อร้องเรียนเรื่องทัศนคติการบริการ |
+| PROD_QUALITY | คุณภาพผลิตภัณฑ์ | ข้อร้องเรียนเรื่องคุณภาพผลิตภัณฑ์ |
+| TRAINING | การฝึกอบรม | คำขอการฝึกอบรม |
+| RETURN | การคืนสินค้า | คำขอคืนสินค้า |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*เวอร์ชันเอกสาร: 2.0 | อัปเดตล่าสุด: 2026-01-05*

@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "Workflow: E-posta gönderici Node"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Send email in workflow.
+  İş akışında e-posta göndermek için kullanılabilir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-mailer/index) bakın.
+:::
+
+# Workflow: E-posta gönderici Node

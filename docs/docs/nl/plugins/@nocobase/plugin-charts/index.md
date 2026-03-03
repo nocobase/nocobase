@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Charts (verouderd)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Deze plugin is verouderd, gebruik in plaats daarvan de Data Visualization plugin.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-charts/index) voor nauwkeurige informatie.
+:::
 
-> Note: This plugin is deprecated.
+# Charts (verouderd)
+
+> Let op: Deze plugin is verouderd (deprecated).

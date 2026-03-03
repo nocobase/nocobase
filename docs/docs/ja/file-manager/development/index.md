@@ -1,5 +1,5 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/file-manager/development/index)をご参照ください。
 :::
 
 # 拡張開発
@@ -174,4 +174,3 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 * `file`：現在のファイルオブジェクト（文字列 URL または `url`/`preview` を含むオブジェクト）
 * `index`：一覧内のファイルのインデックス
 * `list`：ファイル一覧
-

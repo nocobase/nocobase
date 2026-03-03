@@ -79,17 +79,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Blok Kutipan",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
           {
             "type": "custom-link",
-            "label": "Blok JS",
+            "label": "JS Block",
             "link": "/interface-builder/blocks/other-blocks/js-block"
           }
         ]
@@ -106,17 +101,22 @@
           },
           {
             "type": "custom-link",
+            "label": "Metode Pemuatan Data",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Tata Letak",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
           {
             "type": "custom-link",
-            "label": "Aturan Interaksi Blok",
+            "label": "Aturan Kaitan Blok",
             "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Aturan Interaksi Kolom",
+            "label": "Aturan Kaitan Bidang",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
@@ -126,13 +126,28 @@
           },
           {
             "type": "custom-link",
-            "label": "Hapus Blok",
+            "label": "Pengurutan Seret-dan-Lepas",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
+            "label": "Penghapusan Blok",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
           {
             "type": "custom-link",
             "label": "Judul Blok",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tinggi Blok",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Draf Formulir",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,7 +155,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Kolom",
+    "label": "Bidang",
     "items": [
       {
         "type": "custom-link",
@@ -154,22 +169,22 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Kolom Tabel",
+            "label": "Bidang Tabel",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
             "type": "custom-link",
-            "label": "Kolom Detail",
+            "label": "Bidang Detail",
             "link": "/interface-builder/fields/generic/detail-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Kolom Formulir Filter",
+            "label": "Bidang Formulir Filter",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Kolom Formulir",
+            "label": "Bidang Formulir",
             "link": "/interface-builder/fields/generic/form-item"
           }
         ]
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Pilihan Dropdown",
+            "label": "Pemilih Dropdown",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -206,13 +221,18 @@
           },
           {
             "type": "custom-link",
-            "label": "Pilihan Bertingkat",
+            "label": "Pemilih Bertingkat",
             "link": "/interface-builder/fields/specific/cascade-select"
           },
           {
             "type": "custom-link",
-            "label": "Sub-tabel",
+            "label": "Sub-tabel (Edit Baris)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sub-tabel (Edit Popup)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -226,24 +246,24 @@
           },
           {
             "type": "custom-link",
-            "label": "Kolom JS",
+            "label": "JS Field",
             "link": "/interface-builder/fields/specific/js-field"
           },
           {
             "type": "custom-link",
-            "label": "Item JS",
+            "label": "JS Item",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
             "type": "custom-link",
-            "label": "Kolom JS",
+            "label": "JS Column",
             "link": "/interface-builder/fields/specific/js-column"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Pengaturan Kolom",
+        "label": "Pengaturan Bidang",
         "collapsed": true,
         "items": [
           {
@@ -253,7 +273,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Label Kolom",
+            "label": "Label Bidang",
             "link": "/interface-builder/fields/field-settings/edit-title"
           },
           {
@@ -263,7 +283,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Petunjuk Kolom",
+            "label": "Informasi Tip Bidang",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -273,7 +293,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Komponen Kolom",
+            "label": "Komponen Bidang",
             "link": "/interface-builder/fields/field-settings/field-component"
           },
           {
@@ -283,7 +303,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Mode",
+            "label": "Pola",
             "link": "/interface-builder/fields/field-settings/pattern"
           },
           {
@@ -293,7 +313,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Kolom Judul",
+            "label": "Bidang Judul",
             "link": "/interface-builder/fields/field-settings/title-field"
           },
           {
@@ -305,7 +325,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Komponen Kolom Relasi",
+        "label": "Komponen Bidang Relasi",
         "link": "/interface-builder/fields/association-field"
       }
     ]
@@ -331,12 +351,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Konfirmasi Ulang",
+            "label": "Konfirmasi Ganda",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Penetapan Nilai Kolom",
+            "label": "Penetapan Nilai Bidang",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
@@ -351,7 +371,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Aturan Interaksi Aksi",
+            "label": "Aturan Kaitan Aksi",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
@@ -363,7 +383,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Tambah",
+            "label": "Tambah Baru",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Edit",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Duplikat",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -448,12 +473,17 @@
           },
           {
             "type": "custom-link",
+            "label": "Edit Massal",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Tambah Sub-catatan",
             "link": "/interface-builder/actions/types/add-child"
           },
           {
             "type": "custom-link",
-            "label": "Aksi JS",
+            "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
           }
         ]
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Aturan Interaksi",
+        "label": "Aturan Kaitan",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Templat UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

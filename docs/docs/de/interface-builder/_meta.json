@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Filter-Block",
+        "label": "Filter-Blöcke",
         "collapsed": true,
         "items": [
           {
@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "Referenz-Block",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -103,6 +98,11 @@
             "type": "custom-link",
             "label": "Datenbereich",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Datenlademethode",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -126,13 +126,28 @@
           },
           {
             "type": "custom-link",
-            "label": "Block löschen",
+            "label": "Drag-and-Drop-Sortierung",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
+            "label": "Block-Löschung",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
           {
             "type": "custom-link",
             "label": "Block-Titel",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Block-Höhe",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formular-Entwürfe",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -154,22 +169,22 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Tabellenfelder",
+            "label": "Tabellenspalte",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
             "type": "custom-link",
-            "label": "Detailfelder",
+            "label": "Detail-Formularelement",
             "link": "/interface-builder/fields/generic/detail-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Filterformular-Felder",
+            "label": "Filter-Formularelement",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Formularfelder",
+            "label": "Formularelement",
             "link": "/interface-builder/fields/generic/form-item"
           }
         ]
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Dropdown-Auswahl",
+            "label": "Auswahl",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Untertabelle",
+            "label": "Untertabelle (Inline-Bearbeitung)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Untertabelle (Popup-Bearbeitung)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -231,7 +251,7 @@
           },
           {
             "type": "custom-link",
-            "label": "JS-Item",
+            "label": "JS-Element",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
@@ -283,7 +303,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Modus",
+            "label": "Muster",
             "link": "/interface-builder/fields/field-settings/pattern"
           },
           {
@@ -326,12 +346,12 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Bearbeiten-Button",
+            "label": "Bearbeiten-Schaltfläche",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
             "type": "custom-link",
-            "label": "Bestätigungsdialog",
+            "label": "Zweite Bestätigung",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
@@ -363,7 +383,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Erstellen",
+            "label": "Hinzufügen",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Bearbeiten",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Duplizieren",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -448,6 +473,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Massenbearbeitung",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Unterdatensatz hinzufügen",
             "link": "/interface-builder/actions/types/add-child"
           },
@@ -476,7 +506,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Event-Flow",
+        "label": "Ereignisfluss",
         "link": "/interface-builder/event-flow"
       },
       {
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI-Vorlagen",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

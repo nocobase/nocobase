@@ -1,8 +1,8 @@
 ---
-displayName: "App backup & restore (deprecated)"
+displayName: "App back-up & herstel (verouderd)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
+  Back-up en herstel applicaties voor scenario's zoals applicatiereplicatie, migratie en upgrades.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# App backup & restore (deprecated)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-backup-restore/index) voor nauwkeurige informatie.
+:::
 
-> Note: This plugin is deprecated.
+# App back-up & herstel (verouderd)
+
+> Let op: Deze plugin is verouderd (deprecated).

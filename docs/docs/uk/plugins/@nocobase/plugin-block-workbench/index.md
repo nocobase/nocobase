@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Action panel"
+displayName: "Блок: Панель дій"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
+  Централізовано керує та відображає різні дії, що дозволяє користувачам швидко виконувати завдання. Підтримує розширення, наразі підтримуються такі типи дій: спливаючі вікна, посилання, сканування та власні запити.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Action panel
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-block-workbench/index).
+:::
+
+# Блок: Панель дій

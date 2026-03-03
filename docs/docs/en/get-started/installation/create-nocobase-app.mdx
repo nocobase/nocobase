@@ -2,8 +2,8 @@
 
 :::tip Prerequisites
 
-- Node.js 20+, Yarn 1.22.x are installed
-- One of the required databases is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
+- Node.js 20+, Yarn 1.22.x installed
+- One of the following databases configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
 
 :::
 
@@ -13,7 +13,7 @@ Select the NocoBase version ([Version Comparison](../quickstart.md)) and databas
 
 <Tabs>
 
-<Tab label="Latest version">
+<Tab label="Latest Version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -25,7 +25,7 @@ yarn create nocobase-app my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -39,7 +39,7 @@ yarn create nocobase-app my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -53,7 +53,7 @@ yarn create nocobase-app my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -61,7 +61,7 @@ yarn create nocobase-app my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="Beta version">
+<Tab label="Beta Version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -73,7 +73,7 @@ npx create-nocobase-app@beta my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -87,7 +87,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -101,7 +101,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -109,7 +109,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="Alpha version">
+<Tab label="Alpha Version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -121,7 +121,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -135,7 +135,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -149,7 +149,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 </Tab>
@@ -159,15 +159,15 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 </Tabs>
 
-:::warning Environment Variables
+:::warning Environment Variable Description
 
-- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone.
-- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. **Please change it to your own secret key and ensure it is not exposed.**
-- `DB_*` are database-related configurations. Please modify them to match your database connection information according to your actual setup.
+- `TZ` is used to set the application's time zone, defaulting to the operating system's time zone.
+- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is modified, old tokens will become invalid). It can be any random string. **Please change it to your own secret key and ensure it is not exposed.**
+- `DB_*` are database-related configurations. Please modify them according to your actual database connection information.
 
 :::
 
-## 2. Change Directory
+## 2. Switch Directory
 
 ```bash
 cd my-nocobase-app
@@ -175,7 +175,7 @@ cd my-nocobase-app
 
 ## 3. Install Dependencies
 
-📢 Depending on your network environment, system configuration, and other factors, this step may take over ten minutes.
+📢 This step may take several minutes depending on your network environment and system configuration.
 
 ```bash
 yarn install
@@ -183,7 +183,7 @@ yarn install
 
 :::tip Production Environment Tip
 
-When deploying in a production environment, you can install only the necessary dependencies to reduce the size:
+When deploying to a production environment, you can install only the necessary dependencies to reduce the size:
 
 ```bash
 yarn install --production

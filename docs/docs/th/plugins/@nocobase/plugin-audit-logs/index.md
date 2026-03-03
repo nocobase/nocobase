@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "บันทึกการตรวจสอบ (ยกเลิกการใช้งาน)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  ปลั๊กอินนี้ถูกยกเลิกการใช้งานแล้ว โปรดอย่าใช้งาน จะมีปลั๊กอินบันทึกการตรวจสอบใหม่ในอนาคตครับ
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-audit-logs/index)
+:::
 
-> Note: This plugin is deprecated.
+# บันทึกการตรวจสอบ (ยกเลิกการใช้งาน)
+
+> หมายเหตุ: ปลั๊กอินนี้ถูกยกเลิกการใช้งานแล้ว (deprecated) ครับ

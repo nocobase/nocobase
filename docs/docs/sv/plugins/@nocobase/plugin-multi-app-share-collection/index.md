@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Multi-app Collection-delning"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Multi-app Collection-delning
+
+> Observera: Detta plugin är föråldrat (deprecated).

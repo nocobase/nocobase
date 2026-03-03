@@ -1,15 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/get-started/installation/git).
 :::
 
-
-# Instalasi dari Sumber Kode Git
+# Instalasi Sumber Kode Git
 
 :::tip Prasyarat
 
-- Git, Node.js 20+, dan Yarn 1.22.x sudah terinstal.
-- Salah satu database yang diperlukan sudah dikonfigurasi dan berjalan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+.
-- Karena kondisi jaringan, Anda disarankan untuk mengganti ke mirror lokal (tidak wajib).
+- Terinstal Git, Node.js 20+, Yarn 1.22.x
+- Mengonfigurasi dan menjalankan salah satu database yang diperlukan: MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- Karena alasan lingkungan jaringan domestik, disarankan bagi Anda untuk mengganti ke mirror domestik (tidak wajib)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -18,9 +17,9 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. Unduh NocoBase ke Mesin Lokal Anda
+## 1. Mengunduh NocoBase ke lokal
 
-Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jalankan perintah yang sesuai.
+Pilih versi NocoBase ([Perbandingan versi](../quickstart.md)), jalankan perintah yang sesuai.
 
 <Tabs>
 <Tab label="Versi Latest">
@@ -46,26 +45,26 @@ git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocob
 </Tab>
 </Tabs>
 
-## 2. Ganti Direktori
+## 2. Berpindah direktori
 
 ```bash
 cd my-nocobase
 ```
 
-## 3. Instal Dependensi
+## 3. Menginstal dependensi
 
-📢 Langkah ini mungkin memerlukan waktu lebih dari sepuluh menit, tergantung pada kondisi jaringan, konfigurasi sistem, dan faktor lainnya.
+📢 Karena pengaruh faktor lingkungan jaringan, konfigurasi sistem, dll., langkah selanjutnya ini mungkin memerlukan waktu belasan menit.
 
 ```bash
 yarn install --frozen-lockfile
 ```
 
-## 4. Atur Variabel Lingkungan
+## 4. Mengatur variabel lingkungan
 
-Variabel lingkungan yang diperlukan oleh NocoBase disimpan dalam berkas `.env` di direktori root. Ubah variabel lingkungan sesuai dengan situasi Anda.
+Variabel lingkungan yang diperlukan NocoBase disimpan dalam berkas `.env` di direktori root, ubah variabel lingkungan sesuai dengan situasi aktual.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=Asia/Jakarta
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432
@@ -74,31 +73,32 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-:::warning Penjelasan Variabel Lingkungan
+:::warning Penjelasan variabel lingkungan
 
-- `TZ` digunakan untuk mengatur zona waktu aplikasi, yang secara default mengikuti zona waktu sistem operasi.
-- `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama akan menjadi tidak valid). Ini bisa berupa string acak apa pun. Harap ubah ke kunci rahasia Anda sendiri dan pastikan tidak bocor ke publik.
-- `DB_*` berkaitan dengan database. Jika Anda tidak menggunakan layanan database default dari contoh, harap ubah sesuai dengan situasi Anda.
+- `TZ` digunakan untuk mengatur zona waktu aplikasi, defaultnya adalah zona waktu sistem operasi;
+- `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama juga akan menjadi tidak valid). Ini bisa berupa string acak apa pun. Harap ubah ke kunci rahasia Anda sendiri, dan pastikan tidak bocor ke luar;
+- `DB_*` adalah hal-hal yang berkaitan dengan database, jika bukan layanan database default dalam contoh, harap ubah sesuai dengan situasi aktual.
 
 :::
 
-## 5. Instal NocoBase
+## 5. Menginstal NocoBase
 
 ```bash
 yarn nocobase install --lang=id-ID
 ```
 
-## 6. Mulai NocoBase
+## 6. Menjalankan NocoBase
 
-**Lingkungan Pengembangan**
+
+**Lingkungan pengembangan**
 
 ```bash
 yarn dev
 ```
 
-**Lingkungan Produksi (tidak disarankan)**
+**Lingkungan produksi (tidak direkomendasikan)**
 
-Tidak disarankan untuk melakukan deployment langsung dari sumber kode di lingkungan produksi. Untuk lingkungan produksi, silakan lihat [Deployment Produksi](../deployment/production.md).
+Tidak disarankan untuk menggunakan penyebaran sumber kode secara langsung di lingkungan produksi, untuk lingkungan produksi silakan merujuk ke [Penyebaran lingkungan produksi](../deployment/production.md).
 
 ```bash
 yarn build
@@ -107,10 +107,10 @@ yarn start
 
 ## 7. Masuk ke NocoBase
 
-Buka [http://localhost:13000](http://localhost:13000) di browser Anda. Akun dan kata sandi awal adalah `admin@nocobase.com` dan `admin123`.
+Gunakan browser untuk membuka [http://localhost:13000](http://localhost:13000), akun dan kata sandi inisialisasi adalah `admin@nocobase.com` dan `admin123`.
 
-:::warning Peringatan Keamanan Akun
+:::warning Petunjuk keamanan akun
 
-Setelah masuk untuk pertama kalinya, harap segera ubah kata sandi default untuk memastikan keamanan sistem.
+Setelah masuk pertama kali, harap segera ubah kata sandi default untuk memastikan keamanan sistem.
 
 :::

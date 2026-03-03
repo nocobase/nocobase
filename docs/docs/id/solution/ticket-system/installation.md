@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/solution/ticket-system/installation).
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Cara Menginstal
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> Versi saat ini menggunakan bentuk **cadangan dan pemulihan** untuk penerapan. Pada versi mendatang, kami mungkin akan menggantinya menjadi bentuk **migrasi inkremental**, untuk memudahkan integrasi solusi ke dalam sistem Anda yang sudah ada.
 
-Before you begin, please ensure:
+Agar Anda dapat menerapkan solusi tiket ke lingkungan NocoBase Anda sendiri dengan cepat dan lancar, kami menyediakan dua metode pemulihan. Silakan pilih yang paling sesuai berdasarkan versi pengguna dan latar belakang teknis Anda.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+Sebelum memulai, pastikan:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- Anda sudah memiliki lingkungan berjalan NocoBase dasar. Mengenai instalasi sistem utama, silakan merujuk ke [dokumen instalasi resmi](https://docs-cn.nocobase.com/welcome/getting-started/installation) yang lebih rinci.
+- Versi NocoBase **2.0.0-beta.5 ke atas**
+- Anda telah mengunduh file yang sesuai untuk sistem tiket:
+  - **File cadangan**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - Berlaku untuk Metode 1
+  - **File SQL**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - Berlaku untuk Metode 2
+
+**Catatan Penting**:
+- Solusi ini dibuat berdasarkan database **PostgreSQL 16**, pastikan lingkungan Anda menggunakan PostgreSQL 16.
+- **DB_UNDERSCORED tidak boleh true**: Silakan periksa file `docker-compose.yml` Anda, pastikan variabel lingkungan `DB_UNDERSCORED` tidak disetel ke `true`, jika tidak, ini akan bertentangan dengan cadangan solusi dan menyebabkan kegagalan pemulihan.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Metode 1: Memulihkan menggunakan Pengelola Cadangan (Direkomendasikan untuk pengguna versi Profesional/Perusahaan)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+Metode ini dilakukan melalui plugin bawaan NocoBase "[Pengelola Cadangan](https://docs-cn.nocobase.com/handbook/backups)" (versi Profesional/Perusahaan) untuk pemulihan satu klik, pengoperasiannya paling sederhana. Namun, metode ini memiliki persyaratan tertentu terhadap lingkungan dan versi pengguna.
 
-### Key Features
+### Fitur Utama
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **Kelebihan**:
+  1. **Pengoperasian mudah**: Dapat diselesaikan di antarmuka UI, dapat memulihkan semua konfigurasi termasuk plugin secara lengkap.
+  2. **Pemulihan lengkap**: **Dapat memulihkan semua file sistem**, termasuk file cetak templat, file yang diunggah di bidang file dalam tabel, dll., untuk memastikan integritas fungsi.
+* **Batasan**:
+  1. **Khusus versi Profesional/Perusahaan**: "Pengelola Cadangan" adalah plugin tingkat perusahaan, hanya tersedia untuk pengguna versi Profesional/Perusahaan.
+  2. **Persyaratan lingkungan yang ketat**: Memerlukan lingkungan database Anda (versi, pengaturan sensitivitas huruf besar-kecil, dll.) sangat kompatibel dengan lingkungan saat kami membuat cadangan.
+  3. **Ketergantungan plugin**: Jika solusi mencakup plugin komersial yang tidak ada di lingkungan lokal Anda, pemulihan akan gagal.
 
-### Steps
+### Langkah-langkah
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**Langkah 1: 【Sangat Disarankan】 Gunakan citra `full` untuk memulai aplikasi**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+Untuk menghindari kegagalan pemulihan karena kurangnya klien database, kami sangat menyarankan Anda menggunakan citra Docker versi `full`. Ini sudah menyertakan semua program pendukung yang diperlukan, sehingga Anda tidak perlu melakukan konfigurasi tambahan.
 
-Example command to pull the image:
+Contoh perintah untuk menarik citra:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+Kemudian gunakan citra ini untuk memulai layanan NocoBase Anda.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **Catatan**: Jika tidak menggunakan citra `full`, Anda mungkin perlu menginstal klien database `pg_dump` secara manual di dalam kontainer, prosesnya rumit dan tidak stabil.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Langkah 2: Aktifkan plugin "Pengelola Cadangan"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Masuk ke sistem NocoBase Anda.
+2. Masuk ke **`Manajemen Plugin`**.
+3. Temukan dan aktifkan plugin **`Pengelola Cadangan`**.
 
-**Step 3: Restore from local backup file**
+**Langkah 3: Pulihkan dari file cadangan lokal**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. Setelah mengaktifkan plugin, segarkan halaman.
+2. Masuk ke menu kiri **`Administrasi Sistem`** -> **`Pengelola Cadangan`**.
+3. Klik tombol **`Pulihkan dari cadangan lokal`** di sudut kanan atas.
+4. Seret file cadangan yang diunduh ke area unggah.
+5. Klik **`Kirim`**, tunggu dengan sabar hingga sistem menyelesaikan pemulihan, proses ini mungkin memakan waktu puluhan detik hingga beberapa menit.
 
-### Notes
+### Catatan
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **Kompatibilitas database**: Ini adalah poin paling krusial dari metode ini. **Versi, set karakter, pengaturan sensitivitas huruf besar-kecil** database PostgreSQL Anda harus cocok dengan file sumber cadangan. Terutama nama `schema` harus konsisten.
+* **Kesesuaian plugin komersial**: Pastikan Anda sudah memiliki dan mengaktifkan semua plugin komersial yang diperlukan oleh solusi, jika tidak, pemulihan akan terhenti.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## Metode 2: Impor langsung file SQL (Universal, lebih cocok untuk versi Komunitas)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+Metode ini memulihkan data dengan mengoperasikan database secara langsung, melewati plugin "Pengelola Cadangan", sehingga tidak ada batasan plugin versi Profesional/Perusahaan.
 
-### Key Features
+### Fitur Utama
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **Kelebihan**:
+  1. **Tidak ada batasan versi**: Berlaku untuk semua pengguna NocoBase, termasuk versi Komunitas.
+  2. **Kompatibilitas tinggi**: Tidak bergantung pada alat `dump` di dalam aplikasi, selama dapat terhubung ke database maka dapat dioperasikan.
+  3. **Toleransi kesalahan tinggi**: Jika solusi berisi plugin komersial yang tidak Anda miliki, fungsi terkait tidak akan diaktifkan, tetapi tidak akan memengaruhi penggunaan normal fungsi lainnya, aplikasi dapat dimulai dengan sukses.
+* **Batasan**:
+  1. **Memerlukan kemampuan operasi database**: Pengguna perlu memiliki kemampuan dasar operasi database, misalnya cara mengeksekusi file `.sql`.
+  2. **Kehilangan file sistem**: **Metode ini akan kehilangan semua file sistem**, termasuk file cetak templat, file yang diunggah di bidang file dalam tabel, dll.
 
-### Steps
+### Langkah-langkah
 
-**Step 1: Prepare a clean database**
+**Langkah 1: Siapkan database yang bersih**
 
-Prepare a brand new, empty database for the data you're about to import.
+Siapkan database baru yang kosong untuk data yang akan Anda impor.
 
-**Step 2: Import the `.sql` file into the database**
+**Langkah 2: Impor file `.sql` ke dalam database**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+Dapatkan file database yang diunduh (biasanya dalam format `.sql`), dan impor isinya ke dalam database yang Anda siapkan pada langkah sebelumnya. Ada berbagai cara eksekusi, tergantung pada lingkungan Anda:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **Opsi A: Melalui baris perintah server (contoh Docker)**
+  Jika Anda menggunakan Docker untuk menginstal NocoBase dan database, Anda dapat mengunggah file `.sql` ke server, lalu menggunakan perintah `docker exec` untuk melakukan impor. Asumsikan nama kontainer PostgreSQL Anda adalah `my-nocobase-db`, dan nama filenya adalah `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Salin file sql ke dalam kontainer
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # Masuk ke kontainer untuk mengeksekusi perintah impor
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **Opsi B: Melalui klien database jarak jauh**
+  Jika database Anda mengekspos port, Anda dapat menggunakan klien database grafis apa pun (seperti DBeaver, Navicat, pgAdmin, dll.) untuk terhubung ke database, buka jendela kueri baru, tempel seluruh isi file `.sql`, lalu eksekusi.
 
-**Step 3: Connect to the database and start the application**
+**Langkah 3: Hubungkan database dan mulai aplikasi**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+Konfigurasikan parameter mulai NocoBase Anda (seperti variabel lingkungan `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, dll.), agar mengarah ke database tempat Anda baru saja mengimpor data. Kemudian, mulai layanan NocoBase secara normal.
 
-### Notes
+### Catatan
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **Izin database**: Metode ini mengharuskan Anda memiliki akun dan kata sandi yang dapat mengoperasikan database secara langsung.
+* **Status plugin**: Setelah impor berhasil, meskipun data plugin komersial yang disertakan dalam sistem ada, jika Anda tidak menginstal dan mengaktifkan plugin terkait secara lokal, fungsi terkait tidak akan ditampilkan dan digunakan, tetapi ini tidak akan menyebabkan aplikasi mogok.
 
 ---
 
-## Summary and Comparison
+## Ringkasan dan Perbandingan
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| Fitur | Metode 1: Pengelola Cadangan | Metode 2: Impor SQL Langsung |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **Pengguna Sasaran** | Pengguna **Profesional/Perusahaan** | **Semua pengguna** (termasuk versi Komunitas) |
+| **Kemudahan Operasi** | ⭐⭐⭐⭐⭐ (Sangat sederhana, operasi UI) | ⭐⭐⭐ (Memerlukan pengetahuan dasar database) |
+| **Persyaratan Lingkungan** | **Ketat**, database, versi sistem, dll. harus sangat kompatibel | **Umum**, memerlukan kompatibilitas database |
+| **Ketergantungan Plugin** | **Ketergantungan kuat**, plugin akan divalidasi saat pemulihan, kekurangan plugin apa pun akan menyebabkan **kegagalan pemulihan**. | **Fungsi sangat bergantung pada plugin**. Data dapat diimpor secara independen, sistem memiliki fungsi dasar. Namun jika plugin terkait tidak ada, fungsi terkait akan **sama sekali tidak dapat digunakan**. |
+| **File Sistem** | **Tersimpan lengkap** (templat cetak, file unggahan, dll.) | **Akan hilang** (templat cetak, file unggahan, dll.) |
+| **Skenario Rekomendasi** | Pengguna perusahaan, dengan lingkungan yang terkendali dan konsisten, memerlukan fungsi lengkap | Kekurangan beberapa plugin, mengejar kompatibilitas dan fleksibilitas tinggi, pengguna non-Profesional/Perusahaan, dapat menerima hilangnya fungsi file |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+Semoga panduan ini dapat membantu Anda menerapkan sistem tiket dengan lancar. Jika Anda menemui masalah selama proses pengoperasian, jangan ragu untuk menghubungi kami kapan saja!

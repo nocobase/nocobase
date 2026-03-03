@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Обзор решения"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Подробное проектирование"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Установка"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "Старая версия CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Дополнительно"
   }
 ]

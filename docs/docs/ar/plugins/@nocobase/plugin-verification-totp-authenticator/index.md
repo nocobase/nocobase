@@ -1,15 +1,19 @@
 ---
-displayName: "Verification: TOTP authenticator"
+displayName: "التحقق: مصادق TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  يدعم المستخدمين في ربط مصادق TOTP والتحقق من هويتهم باستخدام الرموز لمرة واحدة المستندة إلى الوقت (TOTP).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Verification: TOTP authenticator
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-verification-totp-authenticator/index).
+:::
+
+# التحقق: مصادق TOTP

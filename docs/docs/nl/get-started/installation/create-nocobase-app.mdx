@@ -1,7 +1,6 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/get-started/installation/create-nocobase-app) voor nauwkeurige informatie.
 :::
-
 
 # create-nocobase-app Installatie
 
@@ -12,7 +11,7 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 
 ```bash
 $ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
+
 ```
 
 :::
@@ -171,7 +170,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 :::warning Omgevingsvariabelen
 
-- `TZ` wordt gebruikt om de tijdzone van de applicatie in te stellen. Deze is standaard de tijdzone van het besturingssysteem.
+- `TZ` wordt gebruikt om de tijdzone van de applicatie in te stellen. Dit is standaard de tijdzone van het besturingssysteem.
 - `APP_KEY` is de geheime sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, enz. (Als de `APP_KEY` wordt gewijzigd, worden oude tokens ongeldig). Het kan elke willekeurige tekenreeks zijn. **Wijzig deze in uw eigen geheime sleutel en zorg ervoor dat deze niet openbaar wordt gemaakt.**
 - `DB_*` zijn databaserelateerde configuraties. Pas deze aan uw daadwerkelijke databaseverbindingsinformatie aan.
 

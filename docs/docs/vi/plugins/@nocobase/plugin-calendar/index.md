@@ -1,12 +1,16 @@
 ---
-displayName: "Calendar"
+displayName: "Lịch"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  Cung cấp mẫu Collection và block Lịch để quản lý dữ liệu ngày tháng, thường được sử dụng cho các thông tin liên quan đến ngày/giờ như sự kiện, cuộc hẹn, nhiệm vụ, v.v.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Calendar
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-calendar/index).
+:::
+
+# Lịch

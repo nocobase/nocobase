@@ -1,14 +1,18 @@
 ---
-displayName: "Action: Custom request"
+displayName: "Akcja: Niestandardowe żądanie"
 packageName: '@nocobase/plugin-action-custom-request'
 supportedVersions:
   - 1.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  Wysyłaj żądania do dowolnej usługi HTTP, z obsługą przesyłania danych kontekstowych do usługi docelowej.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Custom request
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-action-custom-request/index).
+:::
+
+# Akcja: Niestandardowe żądanie

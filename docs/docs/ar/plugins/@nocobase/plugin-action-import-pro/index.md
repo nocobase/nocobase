@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records Pro"
+displayName: "Action: استيراد السجلات Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
+  تعزيز ميزات استيراد البيانات. استيراد غير متزامن، يدعم كميات كبيرة من البيانات. يدعم ميزات مثل التعرف على معالجة البيانات، وتحديث البيانات، وتشغيل Workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Action: Import records Pro
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-action-import-pro/index).
+:::
+
+# Action: استيراد السجلات Pro

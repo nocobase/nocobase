@@ -1,11 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/workflow/nodes/llm/chat).
 :::
-
-
 
 # Text-Chat
 
@@ -23,7 +22,7 @@ Da Konversationen mit LLM-Diensten oft zeitaufwendig sind, kann der LLM-Knoten n
 
 ## Modell auswählen
 
-Wählen Sie zunächst einen verbundenen LLM-Dienst aus. Falls noch kein LLM-Dienst verbunden ist, müssen Sie zuerst eine LLM-Dienstkonfiguration hinzufügen. Siehe: [LLM-Dienstverwaltung](/ai-employees/quick-start/llm-service)
+Wählen Sie zunächst einen verbundenen LLM-Dienst aus. Falls noch kein LLM-Dienst verbunden ist, müssen Sie zuerst eine LLM-Dienstkonfiguration hinzufügen. Siehe: [LLM-Dienstverwaltung](/ai-employees/features/llm-service)
 
 Nachdem Sie einen Dienst ausgewählt haben, versucht die Anwendung, eine Liste der verfügbaren Modelle vom LLM-Dienst abzurufen, damit Sie diese auswählen können. Einige Online-LLM-Dienste verfügen möglicherweise über APIs zum Abrufen von Modellen, die nicht den Standard-API-Protokollen entsprechen; in solchen Fällen können Benutzer die Modell-ID auch manuell eingeben.
 
@@ -48,7 +47,7 @@ Das Array von Nachrichten, das an das LLM-Modell gesendet wird, kann eine Reihe 
 
 - System – Wird normalerweise verwendet, um die Rolle und das Verhalten des LLM-Modells in der Konversation zu definieren.
 - User – Der vom Benutzer eingegebene Inhalt.
-- Assistant – Der vom Modell beantwortete Inhalt.
+- Assistant – Die Antwort des Modells.
 
 Für Benutzernachrichten können Sie, sofern das Modell dies unterstützt, mehrere Inhalte in einem einzigen Prompt hinzufügen, die dem Parameter `content` entsprechen. Wenn das von Ihnen verwendete Modell den Parameter `content` nur als String unterstützt (was bei den meisten Modellen der Fall ist, die keine multimodalen Konversationen unterstützen), teilen Sie die Nachricht bitte in mehrere Prompts auf, wobei jeder Prompt nur einen Inhalt enthält. Auf diese Weise sendet der Knoten den Inhalt als String.
 

@@ -1,690 +1,686 @@
-# Ticketing Solution Detailed Design
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/solution/ticket-system/design).
+:::
 
-> **Version**: v2.0-beta
+# Conception détaillée de la solution de tickets
 
-> **Updated**: 2026-01-05
+> **Version** : v2.0-beta
 
-> **Status**: Preview
+> **Date de mise à jour** : 05-01-2026
 
+> **Statut** : Aperçu
 
-## 1. System Overview and Design Philosophy
+## 1. Présentation du système et philosophie de conception
 
-### 1.1 System Positioning
+### 1.1 Positionnement du système
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Ce système est une **plateforme de gestion de tickets intelligente pilotée par l'IA**, construite sur la plateforme low-code NocoBase. L'objectif principal est le suivant :
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Permettre au service client de se concentrer sur la résolution des problèmes, plutôt que sur des opérations de processus fastidieuses.
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Philosophie de conception
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Philosophie 1 : Architecture de données en T
 
-**What is T-Shaped Architecture?**
+**Qu'est-ce que l'architecture en T ?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+Inspirée du concept de "profil en T" (compétences en T) — largeur horizontale + profondeur verticale :
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Horizontal (Table principale)** : Couvre les capacités universelles communes à tous les types d'activités — numéro de ticket, statut, responsable, SLA et autres champs de base.
+- **Vertical (Tables d'extension)** : Champs spécialisés pour des activités spécifiques — la réparation d'équipement possède des numéros de série, les réclamations ont des plans de compensation.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**Pourquoi cette conception ?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Approche traditionnelle | Architecture en T |
+|-------------------------|-------------------|
+| Une table par type d'activité, champs dupliqués | Champs communs unifiés, champs métiers étendus à la demande |
+| Les rapports statistiques nécessitent de fusionner plusieurs tables | Une seule table principale pour toutes les statistiques de tickets |
+| Les changements de processus nécessitent des modifications à plusieurs endroits | Les changements de processus de base se font à un seul endroit |
+| Les nouveaux types d'activités nécessitent de nouvelles tables | Il suffit d'ajouter des tables d'extension, le flux principal reste inchangé |
 
-#### Philosophy Two: AI Employee Team
+#### Philosophie 2 : Équipe d'employés IA
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Il ne s'agit pas de "fonctionnalités IA", mais d'"employés IA". Chaque IA a un rôle, une personnalité et des responsabilités clairs :
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| Employé IA | Poste | Responsabilités clés | Scénario de déclenchement |
+|------------|-------|----------------------|---------------------------|
+| **Sam** | Superviseur du centre de services | Routage des tickets, évaluation de la priorité, décisions d'escalade | Automatique à la création du ticket |
+| **Grace** | Experte en succès client | Génération de réponses, ajustement du ton, gestion des réclamations | Lorsque l'agent clique sur "Réponse IA" |
+| **Max** | Assistant de connaissances | Cas similaires, recommandations de connaissances, synthèse de solutions | Automatique sur la page de détails du ticket |
+| **Lexi** | Traductrice | Traduction multilingue, traduction des commentaires | Automatique lorsqu'une langue étrangère est détectée |
 
-**Why the "AI Employee" Model?**
+**Pourquoi le modèle "Employé IA" ?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Responsabilités claires** : Sam gère le routage, Grace gère les réponses, pas de confusion.
+- **Facile à comprendre** : Dire "Laissez Sam analyser cela" est plus convivial que "Appeler l'API de classification".
+- **Extensible** : Ajouter de nouvelles capacités IA revient à recruter de nouveaux employés.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Philosophie 3 : Auto-circulation des connaissances
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Cela forme une boucle fermée **Accumulation de connaissances - Application de connaissances**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Entités de base et modèle de données
 
-### 2.1 Entity Relationship Overview
+### 2.1 Aperçu des relations entre entités
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Détails des tables de base
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Table principale des tickets (nb_tts_tickets)
 
-**Basic Information**
+C'est le cœur du système, utilisant une conception de "table large" incluant tous les champs couramment utilisés.
 
-| Field | Type | Description | Example |
+**Informations de base**
+
+| Champ | Type | Description | Exemple |
 |-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+| id | BIGINT | Clé primaire | 1001 |
+| ticket_no | VARCHAR | Numéro de ticket | TKT-20251229-0001 |
+| title | VARCHAR | Titre | Connexion réseau lente |
+| description | TEXT | Description du problème | Depuis ce matin, le réseau du bureau... |
+| biz_type | VARCHAR | Type d'activité | it_support |
+| priority | VARCHAR | Priorité | P1 |
+| status | VARCHAR | Statut | processing |
 
-**Source Tracking**
+**Suivi de la source**
 
-| Field | Type | Description | Example |
+| Champ | Type | Description | Exemple |
 |-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+| source_system | VARCHAR | Système source | crm / email / iot |
+| source_channel | VARCHAR | Canal source | web / phone / wechat |
+| external_ref_id | VARCHAR | ID de référence externe | CRM-2024-0001 |
 
-**Contact Information**
+**Informations de contact**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+| customer_id | BIGINT | ID Client |
+| contact_name | VARCHAR | Nom du contact |
+| contact_phone | VARCHAR | Téléphone du contact |
+| contact_email | VARCHAR | Email du contact |
+| contact_company | VARCHAR | Nom de l'entreprise |
 
-**Assignee Information**
+**Informations sur le responsable**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+| assignee_id | BIGINT | ID du responsable |
+| assignee_department_id | BIGINT | ID du département responsable |
+| transfer_count | INT | Nombre de transferts |
 
-**Time Nodes**
+**Noeuds temporels**
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+| Champ | Type | Description | Moment du déclenchement |
+|-------|------|-------------|-------------------------|
+| submitted_at | TIMESTAMP | Heure de soumission | À la création du ticket |
+| assigned_at | TIMESTAMP | Heure d'attribution | Quand le responsable est désigné |
+| first_response_at | TIMESTAMP | Heure de première réponse | Lors de la première réponse au client |
+| resolved_at | TIMESTAMP | Heure de résolution | Quand le statut passe à "résolu" |
+| closed_at | TIMESTAMP | Heure de fermeture | Quand le statut passe à "fermé" |
 
-**SLA Related**
+**Relatif au SLA**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+| sla_config_id | BIGINT | ID de configuration SLA |
+| sla_response_due | TIMESTAMP | Échéance de réponse |
+| sla_resolve_due | TIMESTAMP | Échéance de résolution |
+| sla_paused_at | TIMESTAMP | Heure de début de pause SLA |
+| sla_paused_duration | INT | Durée cumulée de pause (minutes) |
+| is_sla_response_breached | BOOLEAN | Non-respect du délai de réponse |
+| is_sla_resolve_breached | BOOLEAN | Non-respect du délai de résolution |
 
-**AI Analysis Results**
+**Résultats d'analyse IA**
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+| Champ | Type | Description | Rempli par |
+|-------|------|-------------|------------|
+| ai_category_code | VARCHAR | Catégorie identifiée par l'IA | Sam |
+| ai_sentiment | VARCHAR | Analyse de sentiment | Sam |
+| ai_urgency | VARCHAR | Niveau d'urgence | Sam |
+| ai_keywords | JSONB | Mots-clés | Sam |
+| ai_reasoning | TEXT | Processus de raisonnement | Sam |
+| ai_suggested_reply | TEXT | Suggestion de réponse | Sam/Grace |
+| ai_confidence_score | NUMERIC | Score de confiance | Sam |
+| ai_analysis | JSONB | Résultat d'analyse complet | Sam |
 
-**Multi-Language Support**
+**Support multilingue**
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+| Champ | Type | Description | Rempli par |
+|-------|------|-------------|------------|
+| source_language_code | VARCHAR | Langue d'origine | Sam/Lexi |
+| target_language_code | VARCHAR | Langue cible | EN par défaut |
+| is_translated | BOOLEAN | Si traduit | Lexi |
+| description_translated | TEXT | Description traduite | Lexi |
 
-#### 2.2.2 Business Extension Tables
+#### 2.2.2 Tables d'extension métier
 
-**Equipment Repair (nb_tts_biz_repair)**
+**Réparation d'équipement (nb_tts_biz_repair)**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+| ticket_id | BIGINT | ID du ticket associé |
+| equipment_model | VARCHAR | Modèle d'équipement |
+| serial_number | VARCHAR | Numéro de série |
+| fault_code | VARCHAR | Code d'erreur |
+| spare_parts | JSONB | Liste des pièces de rechange |
+| maintenance_type | VARCHAR | Type de maintenance |
 
-**IT Support (nb_tts_biz_it_support)**
+**Support informatique (nb_tts_biz_it_support)**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+| ticket_id | BIGINT | ID du ticket associé |
+| asset_number | VARCHAR | Numéro d'actif |
+| os_version | VARCHAR | Version de l'OS |
+| software_name | VARCHAR | Logiciel concerné |
+| remote_address | VARCHAR | Adresse distante |
+| error_code | VARCHAR | Code d'erreur |
 
-**Customer Complaint (nb_tts_biz_complaint)**
+**Réclamation client (nb_tts_biz_complaint)**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+| ticket_id | BIGINT | ID du ticket associé |
+| related_order_no | VARCHAR | Numéro de commande associé |
+| complaint_level | VARCHAR | Niveau de réclamation |
+| compensation_amount | DECIMAL | Montant de la compensation |
+| compensation_type | VARCHAR | Mode de compensation |
+| root_cause | TEXT | Cause racine |
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+#### 2.2.3 Table des commentaires (nb_tts_ticket_comments)
 
-**Core Fields**
+**Champs de base**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+| id | BIGINT | Clé primaire |
+| ticket_id | BIGINT | ID du ticket |
+| parent_id | BIGINT | ID du commentaire parent (structure en arbre) |
+| content | TEXT | Contenu du commentaire |
+| direction | VARCHAR | Direction : inbound (client) / outbound (agent) |
+| is_internal | BOOLEAN | Note interne ou non |
+| is_first_response | BOOLEAN | S'il s'agit de la première réponse |
 
-**AI Review Fields (for outbound)**
+**Champs de révision IA (pour l'outbound)**
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+| source_language_code | VARCHAR | Langue source |
+| content_translated | TEXT | Contenu traduit |
+| is_translated | BOOLEAN | Si traduit |
+| is_ai_blocked | BOOLEAN | Si bloqué par l'IA |
+| ai_block_reason | VARCHAR | Raison du blocage |
+| ai_block_detail | TEXT | Explication détaillée |
+| ai_quality_score | NUMERIC | Score de qualité |
+| ai_suggestions | TEXT | Suggestions d'amélioration |
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+#### 2.2.4 Table des évaluations (nb_tts_ratings)
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+| ticket_id | BIGINT | ID du ticket (unique) |
+| overall_rating | INT | Satisfaction globale (1-5) |
+| response_rating | INT | Vitesse de réponse (1-5) |
+| professionalism_rating | INT | Professionnalisme (1-5) |
+| resolution_rating | INT | Résolution du problème (1-5) |
+| nps_score | INT | Score NPS (0-10) |
+| tags | JSONB | Étiquettes rapides |
+| comment | TEXT | Commentaire écrit |
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+#### 2.2.5 Table des articles de connaissances (nb_tts_qa_articles)
 
-| Field | Type | Description |
+| Champ | Type | Description |
 |-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+| article_no | VARCHAR | Numéro d'article KB-T0001 |
+| title | VARCHAR | Titre |
+| content | TEXT | Contenu (Markdown) |
+| summary | TEXT | Résumé |
+| category_code | VARCHAR | Code de catégorie |
+| keywords | JSONB | Mots-clés |
+| source_type | VARCHAR | Source : ticket/faq/manuel |
+| source_ticket_id | BIGINT | ID du ticket source |
+| ai_generated | BOOLEAN | Si généré par l'IA |
+| ai_quality_score | NUMERIC | Score de qualité |
+| status | VARCHAR | Statut : draft/published/archived |
+| view_count | INT | Nombre de vues |
+| helpful_count | INT | Nombre de votes utiles |
 
-### 2.3 Data Table List
+### 2.3 Liste des tables de données
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+| N° | Nom de la table | Description | Type d'enregistrement |
+|----|-----------------|-------------|-----------------------|
+| 1 | nb_tts_tickets | Table principale des tickets | Données métier |
+| 2 | nb_tts_biz_repair | Extension réparation équipement | Données métier |
+| 3 | nb_tts_biz_it_support | Extension support informatique | Données métier |
+| 4 | nb_tts_biz_complaint | Extension réclamation client | Données métier |
+| 5 | nb_tts_customers | Table principale des clients | Données métier |
+| 6 | nb_tts_customer_contacts | Contacts clients | Données métier |
+| 7 | nb_tts_ticket_comments | Commentaires des tickets | Données métier |
+| 8 | nb_tts_ratings | Évaluations de satisfaction | Données métier |
+| 9 | nb_tts_qa_articles | Articles de connaissances | Données de connaissance |
+| 10 | nb_tts_qa_article_relations | Relations entre articles | Données de connaissance |
+| 11 | nb_tts_faqs | FAQ | Données de connaissance |
+| 12 | nb_tts_tickets_categories | Catégories de tickets | Données de configuration |
+| 13 | nb_tts_sla_configs | Configuration SLA | Données de configuration |
+| 14 | nb_tts_skill_configs | Configuration des compétences | Données de configuration |
+| 15 | nb_tts_business_types | Types d'activités | Données de configuration |
 
 ---
 
-## 3. Ticket Lifecycle
+## 3. Cycle de vie du ticket
 
-### 3.1 Status Definitions
+### 3.1 Définition des statuts
 
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
+| Statut | Nom | Description | Chronométrage SLA | Couleur |
+|--------|-----|-------------|-------------------|---------|
+| new | Nouveau | Vient d'être créé, en attente d'attribution | Démarrer | 🔵 Bleu |
+| assigned | Assigné | Responsable désigné, en attente de prise en charge | Continuer | 🔷 Cyan |
+| processing | En cours | En cours de traitement | Continuer | 🟠 Orange |
+| pending | En attente | En attente d'un retour client | **Pause** | ⚫ Gris |
+| transferred | Transféré | Transféré à une autre personne | Continuer | 🟣 Violet |
+| resolved | Résolu | En attente de confirmation du client | Arrêter | 🟢 Vert |
+| closed | Fermé | Ticket terminé | Arrêter | ⚫ Gris |
+| cancelled | Annulé | Ticket annulé | Arrêter | ⚫ Gris |
 
-### 3.2 Status Flow Diagram
+### 3.2 Diagramme de flux des statuts
 
-**Main Flow (Left to Right)**
+**Flux principal (de gauche à droite)**
 
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-**Branch Flows**
+**Flux secondaires**
 
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-**Complete State Machine**
 
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
+**Machine à états complète**
 
-### 3.3 Key Status Transition Rules
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+### 3.3 Règles clés de transition de statut
 
----
+| De | À | Condition de déclenchement | Action système |
+|----|---|----------------------------|----------------|
+| new | assigned | Désignation du responsable | Enregistrer assigned_at |
+| assigned | processing | Le responsable clique sur "Accepter" | Aucune |
+| processing | pending | Clic sur "Mettre en attente" | Enregistrer sla_paused_at |
+| pending | processing | Réponse client / Reprise manuelle | Calculer la durée de pause, vider paused_at |
+| processing | resolved | Clic sur "Résoudre" | Enregistrer resolved_at |
+| resolved | closed | Confirmation client / Délai de 3 jours | Enregistrer closed_at |
+| * | cancelled | Annuler le ticket | Aucune |
 
-## 4. SLA Service Level Management
-
-### 4.1 Priority and SLA Configuration
-
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
-
-### 4.2 SLA Calculation Logic
-
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
-
-#### On Ticket Creation
-
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
-
-#### On Pause (pending)
-
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
-
-#### On Resume (from pending to processing)
-
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
-
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
-
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
-
--- Clear pause time
-sla_paused_at = NULL
-```
-
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. Gestion des niveaux de service SLA
 
-### 5.1 AI Employee Team
+### 4.1 Configuration des priorités et du SLA
 
-The system configures 8 AI employees in two categories:
+| Priorité | Nom | Temps de réponse | Temps de résolution | Seuil d'alerte | Scénario typique |
+|----------|-----|------------------|---------------------|----------------|------------------|
+| P0 | Critique | 15 minutes | 2 heures | 80% | Système en panne, ligne de production arrêtée |
+| P1 | Élevé | 1 heure | 8 heures | 80% | Dysfonctionnement d'une fonctionnalité importante |
+| P2 | Moyen | 4 heures | 24 heures | 80% | Problèmes généraux |
+| P3 | Faible | 8 heures | 72 heures | 80% | Demandes d'information, suggestions |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 Logique de calcul du SLA
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
 
-**Reused Employees (General Capabilities)**
+#### À la création du ticket
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+Échéance de réponse = Heure de soumission + Délai de réponse (minutes)
+Échéance de résolution = Heure de soumission + Délai de résolution (minutes)
+```
 
-### 5.2 AI Task List
+#### Lors de la mise en attente (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+Heure de début de pause SLA = Heure actuelle
+```
 
-#### Sam's Tasks
+#### Lors de la reprise (de pending à processing)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- Calculer la durée de cette pause
+Durée de cette pause = Heure actuelle - Heure de début de pause SLA
 
-#### Grace's Tasks
+-- Ajouter à la durée totale de pause
+Durée cumulée de pause = Durée cumulée de pause + Durée de cette pause
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- Prolonger les échéances (la période de pause n'est pas comptée dans le SLA)
+Échéance de réponse = Échéance de réponse + Durée de cette pause
+Échéance de résolution = Échéance de résolution + Durée de cette pause
 
-#### Max's Tasks
+-- Vider l'heure de début de pause
+Heure de début de pause SLA = Vide
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### Détermination du non-respect du SLA
 
-#### Lexi's Tasks
+```
+-- Détermination du non-respect de la réponse
+Réponse hors délai = (Heure de première réponse est vide ET Heure actuelle > Échéance de réponse)
+                    OU (Heure de première réponse > Échéance de réponse)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- Détermination du non-respect de la résolution
+Résolution hors délai = (Heure de résolution est vide ET Heure actuelle > Échéance de résolution)
+                       OU (Heure de résolution > Échéance de résolution)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 Mécanisme d'alerte SLA
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| Niveau d'alerte | Condition | Destinataire | Mode de notification |
+|-----------------|-----------|--------------|----------------------|
+| Alerte jaune | Temps restant < 20% | Responsable | Message interne |
+| Alerte rouge | Déjà hors délai | Responsable + Superviseur | Message interne + Email |
+| Alerte d'escalade | Hors délai de 1 heure | Responsable de département | Email + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 Indicateurs du tableau de bord SLA
 
-#### SAM-01 Ticket Analysis Response
+| Indicateur | Formule de calcul | Seuil de santé |
+|------------|-------------------|----------------|
+| Taux de respect de la réponse | Tickets conformes / Nombre total de tickets | > 95% |
+| Taux de respect de la résolution | Résolutions conformes / Tickets résolus | > 90% |
+| Temps de réponse moyen | SOMME(Temps de réponse) / Nombre de tickets | < 50% du SLA |
+| Temps de résolution moyen | SOMME(Temps de résolution) / Nombre de tickets | < 80% du SLA |
+
+---
+
+## 5. Capacités IA et système d'employés
+
+### 5.1 Équipe d'employés IA
+
+Le système configure 8 employés IA, répartis en deux catégories :
+
+**Employés dédiés (Spécifiques au système de tickets)**
+
+| ID | Nom | Poste | Capacités clés |
+|----|-----|-------|----------------|
+| sam | Sam | Superviseur du centre de services | Routage des tickets, évaluation de la priorité, décisions d'escalade, identification des risques SLA |
+| grace | Grace | Experte en succès client | Génération de réponses professionnelles, ajustement du ton, gestion des réclamations, restauration de la satisfaction |
+| max | Max | Assistant de connaissances | Recherche de cas similaires, recommandation de connaissances, synthèse de solutions |
+
+**Employés réutilisés (Capacités générales)**
+
+| ID | Nom | Poste | Capacités clés |
+|----|-----|-------|----------------|
+| dex | Dex | Organisateur de données | Extraction de tickets par email, conversion d'appels en tickets, nettoyage de données par lots |
+| ellis | Ellis | Expert Email | Analyse de sentiment des emails, résumé de fils de discussion, rédaction de réponses |
+| lexi | Lexi | Traductrice | Traduction de tickets, traduction de réponses, traduction de conversations en temps réel |
+| cole | Cole | Expert NocoBase | Guide d'utilisation du système, aide à la configuration des flux de travail |
+| vera | Vera | Analyste de recherche | Recherche de solutions techniques, vérification des informations produit |
+
+### 5.2 Liste des tâches IA
+
+Chaque employé IA est configuré avec 4 tâches spécifiques :
+
+#### Tâches de Sam
+
+| ID de tâche | Nom | Mode de déclenchement | Description |
+|-------------|-----|-----------------------|-------------|
+| SAM-01 | Analyse et routage des tickets | Flux de travail auto | Analyse automatique à la création d'un ticket |
+| SAM-02 | Réévaluation de la priorité | Interaction front-end | Ajustement de la priorité selon les nouvelles infos |
+| SAM-03 | Décision d'escalade | Front-end / Flux de travail | Déterminer si une escalade est nécessaire |
+| SAM-04 | Évaluation des risques SLA | Flux de travail auto | Identifier les risques de dépassement de délai |
+
+#### Tâches de Grace
+
+| ID de tâche | Nom | Mode de déclenchement | Description |
+|-------------|-----|-----------------------|-------------|
+| GRACE-01 | Génération de réponse pro | Interaction front-end | Générer une réponse basée sur le contexte |
+| GRACE-02 | Ajustement du ton | Interaction front-end | Optimiser le ton d'une réponse existante |
+| GRACE-03 | Désamorçage de réclamation | Front-end / Flux de travail | Résoudre les réclamations clients |
+| GRACE-04 | Restauration de satisfaction | Front-end / Flux de travail | Suivi après une expérience négative |
+
+#### Tâches de Max
+
+| ID de tâche | Nom | Mode de déclenchement | Description |
+|-------------|-----|-----------------------|-------------|
+| MAX-01 | Recherche de cas similaires | Front-end / Flux de travail | Trouver des tickets historiques similaires |
+| MAX-02 | Recommandation d'articles | Front-end / Flux de travail | Recommander des articles de connaissances pertinents |
+| MAX-03 | Synthèse de solutions | Interaction front-end | Synthétiser des solutions de sources multiples |
+| MAX-04 | Guide de dépannage | Interaction front-end | Créer un processus de dépannage systématique |
+
+#### Tâches de Lexi
+
+| ID de tâche | Nom | Mode de déclenchement | Description |
+|-------------|-----|-----------------------|-------------|
+| LEXI-01 | Traduction de ticket | Flux de travail auto | Traduire le contenu du ticket |
+| LEXI-02 | Traduction de réponse | Interaction front-end | Traduire les réponses du service client |
+| LEXI-03 | Traduction par lots | Flux de travail auto | Traitement de traductions en masse |
+| LEXI-04 | Traduction de dialogue | Interaction front-end | Traduction de conversation en temps réel |
+
+### 5.3 Employés IA et cycle de vie du ticket
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+
+### 5.4 Exemples de réponses IA
+
+#### SAM-01 Réponse d'analyse de ticket
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "échec de connexion", "temps d'attente", "clôture mensuelle"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "Ce ticket décrit un problème de connexion au système ERP affectant la clôture mensuelle du département financier, urgence élevée",
+  "suggested_reply": "Cher client, merci de nous avoir signalé ce problème...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "Bonjour, notre système ERP ne permet pas de se connecter..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Réponse de génération de message
 
 ```
-Dear Mr. Zhang,
+Cher Monsieur Zhang,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+Merci de nous avoir contactés concernant le problème de connexion à l'ERP. Je comprends parfaitement que ce problème affecte les travaux de clôture mensuelle de votre entreprise, et nous avons classé ce ticket en priorité haute.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+État actuel :
+- L'équipe technique recherche actuellement des problèmes de connexion au serveur
+- Nous prévoyons de vous donner une mise à jour d'ici 30 minutes
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+En attendant, vous pouvez essayer :
+1. Accéder via l'adresse de secours : https://erp-backup.company.com
+2. Si vous avez besoin de rapports urgents, contactez-nous pour une aide à l'exportation
 
-Please feel free to contact me if you have any other questions.
+N'hésitez pas à me contacter pour toute autre question.
 
-Best regards,
-Technical Support Team
+Cordialement,
+L'équipe de support technique
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 Pare-feu d'intelligence émotionnelle IA
 
-Grace's reply quality review blocks the following issues:
+La révision de qualité des réponses gérée par Grace intercepte les problèmes suivants :
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Type de problème | Exemple original | Suggestion IA |
+|------------------|------------------|---------------|
+| Ton négatif | "Non, ce n'est pas couvert par la garantie" | "Cette panne n'est pas couverte par la garantie gratuite, nous pouvons proposer un devis de réparation" |
+| Accuser le client | "C'est vous qui l'avez cassé" | "Après vérification, cette panne correspond à un dommage accidentel" |
+| Rejeter la responsabilité | "Ce n'est pas notre problème" | "Laissez-moi vous aider à identifier davantage la cause du problème" |
+| Expression froide | "Je ne sais pas" | "Je vais me renseigner pour vous fournir les informations nécessaires" |
+| Infos sensibles | "Votre mot de passe est abc123" | [Interception] Contient des informations sensibles, envoi non autorisé |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Système de base de connaissances
 
-### 6.1 Knowledge Sources
+### 6.1 Sources de connaissances
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Flux de conversion Ticket vers Connaissance
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Dimensions d'évaluation** :
+- **Généralité** : Est-ce un problème courant ?
+- **Complétude** : La solution est-elle claire et complète ?
+- **Reproductibilité** : Les étapes sont-elles réutilisables ?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Mécanisme de recommandation de connaissances
+
+Lorsque l'agent ouvre les détails d'un ticket, Max recommande automatiquement les connaissances associées :
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Connaissances recommandées                 [Déplier/Replier] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 Guide diag. pannes système servo CNC  Match: 94% │ │
+│ │ Inclut : Interprétation codes alarme, étapes vérif. drive │ │
+│ │ [Voir] [Appliquer à la réponse] [Marquer comme utile]    │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 Manuel maintenance série XYZ-CNC3000  Match: 87% │ │
+│ │ Inclut : Pannes courantes, plan de maintenance préventive │ │
+│ │ [Voir] [Appliquer à la réponse] [Marquer comme utile]    │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. Moteur de flux de travail
+
+### 7.1 Classification des flux de travail
+
+| Code | Catégorie | Description | Mode de déclenchement |
+|------|-----------|-------------|-----------------------|
+| WF-T | Flux Ticket | Gestion du cycle de vie du ticket | Événements de formulaire |
+| WF-S | Flux SLA | Calcul et alertes SLA | Événements / Planifié |
+| WF-C | Flux Commentaire | Traitement et traduction des commentaires | Événements de formulaire |
+| WF-R | Flux Évaluation | Invitations et statistiques d'évaluation | Événements / Planifié |
+| WF-N | Flux Notification | Envoi de notifications | Piloté par événements |
+| WF-AI | Flux IA | Analyse et génération par IA | Événements de formulaire |
+
+### 7.2 Flux de travail de base
+
+#### WF-T01 : Flux de création de ticket
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+
+#### WF-AI01 : Analyse IA du ticket
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+
+#### WF-AI04 : Traduction et révision des commentaires
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+
+#### WF-AI03 : Génération de connaissances
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+
+### 7.3 Tâches planifiées
+
+| Tâche | Fréquence | Description |
+|-------|-----------|-------------|
+| Vérification alerte SLA | Toutes les 5 min | Vérifier les tickets proches de l'échéance |
+| Fermeture auto des tickets | Quotidien | Fermer auto les tickets résolus après 3 jours |
+| Envoi invitation évaluation | Quotidien | Envoyer l'invitation 24h après la fermeture |
+| Mise à jour statistiques | Horaire | Mettre à jour les stats des tickets clients |
 
 ---
 
-## 7. Workflow Engine
+## 8. Conception des menus et des interfaces
 
-### 7.1 Workflow Categories
+### 8.1 Interface d'administration (Back-end)
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 7.2 Core Workflows
+### 8.2 Portail client (Front-end)
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 Conception des tableaux de bord
 
-#### WF-AI01: Ticket AI Analysis
+#### Vue Exécutive
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| Composant | Type | Description des données |
+|-----------|------|-------------------------|
+| Taux de respect SLA | Jauge | Taux de réponse/résolution du mois |
+| Tendance satisfaction | Graphique linéaire | Évolution sur les 30 derniers jours |
+| Tendance volume tickets | Histogramme | Volume sur les 30 derniers jours |
+| Répartition par métier | Graphique en secteurs | Part de chaque type d'activité |
 
-#### WF-AI04: Comment Translation & Review
+#### Vue Superviseur
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| Composant | Type | Description des données |
+|-----------|------|-------------------------|
+| Alertes de délai | Liste | Tickets proches de l'échéance ou hors délai |
+| Charge de travail équipe | Histogramme | Nombre de tickets par membre de l'équipe |
+| Répartition du backlog | Graphique empilé | Nombre de tickets par statut |
+| Délai de traitement | Carte thermique | Répartition du temps de traitement moyen |
 
-#### WF-AI03: Knowledge Generation
+#### Vue Agent
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Composant | Type | Description des données |
+|-----------|------|-------------------------|
+| Mes tâches à faire | Carte numérique | Nombre de tickets en attente |
+| Répartition priorités | Graphique en secteurs | Répartition P0/P1/P2/P3 |
+| Statistiques du jour | Carte d'indicateurs | Nombre de tickets traités/résolus aujourd'hui |
+| Compte à rebours SLA | Liste | Les 5 tickets les plus urgents |
 
 ---
 
-## Appendix
+## Appendice
 
-### A. Business Type Configuration
+### A. Configuration des types d'activités
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| Code type | Nom | Icône | Table d'extension associée |
+|-----------|-----|-------|----------------------------|
+| repair | Réparation équipement | 🔧 | nb_tts_biz_repair |
+| it_support | Support informatique | 💻 | nb_tts_biz_it_support |
+| complaint | Réclamation client | 📢 | nb_tts_biz_complaint |
+| consultation | Conseil / Suggestion | ❓ | Aucune |
+| other | Autre | 📝 | Aucune |
 
-### B. Category Codes
+### B. Codes de catégories
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| Code | Nom | Description |
+|------|-----|-------------|
+| CONVEYOR | Système de convoyage | Problèmes de convoyeurs |
+| PACKAGING | Machine d'emballage | Problèmes de machines d'emballage |
+| WELDING | Équipement de soudage | Problèmes d'équipement de soudage |
+| COMPRESSOR | Compresseur d'air | Problèmes de compresseurs |
+| COLD_STORE | Chambre froide | Problèmes de chambres froides |
+| CENTRAL_AC | Clim centrale | Problèmes de climatisation centrale |
+| FORKLIFT | Chariot élévateur | Problèmes de chariots élévateurs |
+| COMPUTER | Ordinateur | Problèmes matériels informatiques |
+| PRINTER | Imprimante | Problèmes d'imprimantes |
+| PROJECTOR | Projecteur | Problèmes de projecteurs |
+| INTERNET | Réseau | Problèmes de connexion réseau |
+| EMAIL | Email | Problèmes de système de messagerie |
+| ACCESS | Accès | Problèmes de permissions de compte |
+| PROD_INQ | Demande produit | Demandes d'informations produit |
+| COMPLAINT | Réclamation générale | Réclamations générales |
+| DELAY | Retard logistique | Réclamations sur les retards de livraison |
+| DAMAGE | Emballage endommagé | Réclamations sur les colis endommagés |
+| QUANTITY | Erreur de quantité | Réclamations sur les articles manquants |
+| SVC_ATTITUDE | Attitude de service | Réclamations sur le comportement du personnel |
+| PROD_QUALITY | Qualité produit | Réclamations sur la qualité des produits |
+| TRAINING | Formation | Demandes de formation |
+| RETURN | Retour | Demandes de retour produit |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Version du document : 2.0 | Dernière mise à jour : 05-01-2026*

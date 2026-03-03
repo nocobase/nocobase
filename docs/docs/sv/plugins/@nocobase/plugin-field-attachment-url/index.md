@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Attachment(URL)"
+displayName: "Samlingsfält: Bilaga (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
-  Supports attachments in URL format.
+  Stöder bilagor i URL-format.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Attachment(URL)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-field-attachment-url/index).
+:::
+
+# Samlingsfält: Bilaga (URL)

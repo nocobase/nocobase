@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/solution/ticket-system/installation)をご参照ください。
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# インストール方法
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> 現在のバージョンは**バックアップ・復元**形式でデプロイされます。今後のバージョンでは、既存のシステムにソリューションを統合しやすくするために、**増分移行**形式に変更される可能性があります。
 
-Before you begin, please ensure:
+チケットソリューションを迅速かつスムーズにお客様の NocoBase 環境にデプロイできるよう、2 つの復元方法を提供しています。ユーザーのバージョンや技術的な背景に合わせて、最適なものを選択してください。
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+開始する前に、以下を確認してください：
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- すでに基礎的な NocoBase 実行環境があること。メインシステムのインストールについては、詳細な[公式インストールドキュメント](https://docs-cn.nocobase.com/welcome/getting-started/installation)を参照してください。
+- NocoBase バージョン **2.0.0-beta.5 以上**
+- チケットシステムの対応するファイルをダウンロード済みであること：
+  - **バックアップファイル**：[nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - 方法 1 に適用
+  - **SQL ファイル**：[nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - 方法 2 に適用
+
+**重要事項**：
+- 本ソリューションは **PostgreSQL 16** データベースに基づいて作成されています。環境で PostgreSQL 16 を使用していることを確認してください。
+- **DB_UNDERSCORED は true にできません**：`docker-compose.yml` ファイルを確認し、`DB_UNDERSCORED` 環境変数が `true` に設定されていないことを確認してください。そうでない場合、ソリューションのバックアップと競合し、復元に失敗します。
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## 方法 1：バックアップマネージャーを使用して復元（プロフェッショナル/エンタープライズ版ユーザー推奨）
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+この方法は、NocoBase 内蔵の「[バックアップマネージャー](https://docs-cn.nocobase.com/handbook/backups)」（プロフェッショナル/エンタープライズ版）プラグインを使用してワンクリックで復元する、最も簡単な操作です。ただし、環境とユーザーのバージョンに一定の要件があります。
 
-### Key Features
+### 主な特徴
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **メリット**：
+  1. **操作が簡単**：UI 画面で完了でき、プラグインを含むすべての設定を完全に復元できます。
+  2. **完全な復元**：テンプレート印刷ファイル、テーブル内のファイルフィールドでアップロードされたファイルなど、**すべてのシステムファイルを復元可能**であり、機能の完全性を保証します。
+* **制限事項**：
+  1. **プロフェッショナル/エンタープライズ版限定**：「バックアップマネージャー」はエンタープライズ級のプラグインであり、プロフェッショナル/エンタープライズ版のユーザーのみ利用可能です。
+  2. **環境要件が厳格**：データベース環境（バージョン、大文字小文字の区別設定など）が、バックアップ作成時の環境と高度に互換性がある必要があります。
+  3. **プラグインへの依存**：ソリューションにローカル環境にない商用プラグインが含まれている場合、復元は失敗します。
 
-### Steps
+### 操作手順
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**ステップ 1：【強く推奨】`full` イメージを使用してアプリケーションを起動する**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+データベースクライアントの欠如による復元失敗を避けるため、`full` バージョンの Docker イメージを使用することを強くお勧めします。これには必要なすべての付属プログラムが含まれており、追加設定は不要です。
 
-Example command to pull the image:
+イメージ取得のコマンド例：
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+その後、このイメージを使用して NocoBase サービスを起動します。
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **注**：`full` イメージを使用しない場合、コンテナ内に `pg_dump` データベースクライアントを手動でインストールする必要があり、プロセスが煩雑で不安定になる可能性があります。
 
-**Step 2: Enable the "Backup Manager" plugin**
+**ステップ 2：「バックアップマネージャー」プラグインを有効にする**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. NocoBase システムにログインします。
+2. **`プラグインマネージャー`** に移動します。
+3. **`バックアップマネージャー`** プラグインを見つけて有効にします。
 
-**Step 3: Restore from local backup file**
+**ステップ 3：ローカルのバックアップファイルから復元する**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. プラグインを有効にした後、ページを更新します。
+2. 左側メニューの **`システム管理`** -> **`バックアップマネージャー`** に移動します。
+3. 右上の **`ローカルバックアップから復元`** ボタンをクリックします。
+4. ダウンロードしたバックアップファイルをアップロードエリアにドラッグします。
+5. **`送信`** をクリックし、システムが復元を完了するまでお待ちください。このプロセスには数十秒から数分かかる場合があります。
 
-### Notes
+### 注意事項
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **データベースの互換性**：これがこの方法で最も重要な点です。PostgreSQL データベースの**バージョン、文字セット、大文字小文字の区別設定**がバックアップ元のファイルと一致している必要があります。特に `schema` 名は一致している必要があります。
+* **商用プラグインの一致**：ソリューションに必要なすべての商用プラグインを所有し、有効にしていることを確認してください。そうでない場合、復元は中断されます。
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## 方法 2：SQL ファイルを直接インポート（汎用、コミュニティ版に最適）
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+この方法は、データベースを直接操作してデータを復元し、「バックアップマネージャー」プラグインを介さないため、プロフェッショナル/エンタープライズ版プラグインの制限がありません。
 
-### Key Features
+### 主な特徴
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **メリット**：
+  1. **バージョン制限なし**：コミュニティ版を含むすべての NocoBase ユーザーに適用されます。
+  2. **高い互換性**：アプリケーション内の `dump` ツールに依存せず、データベースに接続できれば操作可能です。
+  3. **高い耐障害性**：ソリューションに所有していない商用プラグインが含まれている場合、関連機能は有効になりませんが、他の機能の正常な使用には影響せず、アプリケーションは正常に起動できます。
+* **制限事項**：
+  1. **データベース操作能力が必要**：`.sql` ファイルの実行方法など、基礎的なデータベース操作能力が必要です。
+  2. **システムファイルの紛失**：**この方法では、すべてのシステムファイルが失われます**。これにはテンプレート印刷ファイル、テーブル内のファイルフィールドでアップロードされたファイルなどが含まれます。
 
-### Steps
+### 操作手順
 
-**Step 1: Prepare a clean database**
+**ステップ 1：クリーンなデータベースを準備する**
 
-Prepare a brand new, empty database for the data you're about to import.
+インポートするデータのために、新しく空のデータベースを準備します。
 
-**Step 2: Import the `.sql` file into the database**
+**ステップ 2：`.sql` ファイルをデータベースにインポートする**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+ダウンロードしたデータベースファイル（通常は `.sql` 形式）を取得し、その内容を前のステップで準備したデータベースにインポートします。環境に応じていくつかの実行方法があります：
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **オプション A：サーバーのコマンドライン経由（Docker の例）**
+  Docker を使用して NocoBase とデータベースをインストールしている場合、`.sql` ファイルをサーバーにアップロードし、`docker exec` コマンドを使用してインポートを実行できます。PostgreSQL コンテナ名が `my-nocobase-db`、ファイル名が `ticket_system.sql` であると仮定します：
 
   ```bash
-  # Copy the sql file into the container
+  # sql ファイルをコンテナ内にコピー
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # コンテナに入りインポートコマンドを実行
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **オプション B：リモートデータベースクライアント経由**
+  データベースのポートが公開されている場合、任意のグラフィカルデータベースクライアント（DBeaver, Navicat, pgAdmin など）を使用してデータベースに接続し、新しいクエリウィンドウを作成して `.sql` ファイルの内容をすべて貼り付けて実行します。
 
-**Step 3: Connect to the database and start the application**
+**ステップ 3：データベースに接続してアプリケーションを起動する**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+NocoBase の起動パラメータ（環境変数 `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` など）を、データをインポートしたばかりのデータベースを指すように設定します。その後、通常通り NocoBase サービスを起動します。
 
-### Notes
+### 注意事項
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **データベース権限**：この方法では、データベースを直接操作できるアカウントとパスワードが必要です。
+* **プラグインの状態**：インポート成功後、システム内に商用プラグインのデータは存在しますが、ローカルに対応するプラグインがインストールおよび有効化されていない場合、関連機能は表示および使用できません。ただし、これによりアプリケーションがクラッシュすることはありません。
 
 ---
 
-## Summary and Comparison
+## まとめと比較
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| 特性            | 方法 1：バックアップマネージャー                                               | 方法 2：SQL を直接インポート                                                                                   |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **対象ユーザー**    | **プロフェッショナル/エンタープライズ版**ユーザー                                              | **すべてのユーザー**（コミュニティ版を含む）                                                                             |
+| **操作の容易さ**  | ⭐⭐⭐⭐⭐ (非常に簡単、UI 操作)                                   | ⭐⭐⭐ (基礎的なデータベース知識が必要)                                                                            |
+| **環境要件**    | **厳格**、データベースやシステムバージョンなどの高度な互換性が必要                           | **一般的**、データベースの互換性が必要                                                                               |
+| **プラグイン依存**    | **強い依存**、復元時にプラグインがチェックされ、欠落していると**復元に失敗**します。 | **機能はプラグインに強く依存**。データは独立してインポート可能で、システムは基礎機能を備えます。ただし、対応するプラグインがない場合、関連機能は**完全に利用不可**となります。 |
+| **システムファイル**    | **完全に保持**（印刷テンプレート、アップロードファイルなど）                          | **紛失します**（印刷テンプレート、アップロードファイルなど）                                                                  |
+| **推奨シーン**   | エンタープライズユーザーで、環境が制御可能かつ一致しており、完全な機能が必要な場合                     | 一部のプラグインが不足しており、高い互換性と柔軟性を求める非プロフェッショナル/エンタープライズ版ユーザーで、ファイル機能の欠落を許容できる場合                                |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+このチュートリアルがチケットシステムの円滑なデプロイに役立つことを願っています。操作中に問題が発生した場合は、いつでもお気軽にお問い合わせください！

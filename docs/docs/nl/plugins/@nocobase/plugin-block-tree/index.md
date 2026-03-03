@@ -1,14 +1,18 @@
 ---
-displayName: "Block: Tree"
+displayName: "Blok: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Provides tree structure filter block
+  Biedt een filterblok met boomstructuur
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Tree
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-block-tree/index) voor nauwkeurige informatie.
+:::
+
+# Blok: Tree

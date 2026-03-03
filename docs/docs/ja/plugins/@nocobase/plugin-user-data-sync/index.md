@@ -1,12 +1,16 @@
 ---
-displayName: "User data synchronization"
+displayName: "ユーザーデータ同期"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
+  拡張可能なユーザーデータ同期ソースを登録・管理します。デフォルトで HTTP API を提供し、ユーザーや部門などのリソースへのデータ同期をサポートします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# User data synchronization
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-user-data-sync/index)をご参照ください。
+:::
+
+# ユーザーデータ同期

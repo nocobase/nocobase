@@ -1,12 +1,16 @@
 ---
-displayName: "Data source manager"
+displayName: "ניהול מקורות נתונים"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
-  Manage data sources, including the built-in Master database, external databases, APIs, etc.
+  ניהול מקורות נתונים, כולל מסד הנתונים Master המובנה, מסדי נתונים חיצוניים, API.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data source manager
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-data-source-manager/index).
+:::
+
+# ניהול מקורות נתונים

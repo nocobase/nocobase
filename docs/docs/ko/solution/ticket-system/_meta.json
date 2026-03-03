@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "솔루션 개요"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "상세 설계"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "설치 방법"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "추가 내용"
   }
 ]

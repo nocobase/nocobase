@@ -1,7 +1,6 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/get-started/installation/docker) bakın.
 :::
-
 
 # Docker Kurulumu
 
@@ -32,7 +31,7 @@ Bir NocoBase sürümü ([Sürüm Karşılaştırması](../quickstart.md)) ve ver
   - Üretim ortamları için, istenmeyen otomatik güncellemeleri önlemek amacıyla belirli bir sürüm numarasını sabitlemeniz önerilir. [Tüm sürümleri görüntüleyin](https://hub.docker.com/r/nocobase/nocobase/tags)
   - Aliyun imajı: `nocobase/nocobase:latest-full`
   - Docker Hub imajı: `nocobase/nocobase:latest-full`
-  - **`full` imajı**, yedekleme yönetimi ve geçiş yönetimi eklentileri için gerekli olan PostgreSQL 16/17 istemcisi, MySQL 8.0 istemcisi, Oracle 19.25 istemcisi ve şablon yazdırma (PDF) için gerekli olan LibreOffice'i içerir.
+  - **`full` imajı**, yedekleme yönetimi ve geçiş yönetimi plugin'leri için gerekli olan PostgreSQL 16/17 istemcisi, MySQL 8.0 istemcisi, Oracle 19.25 istemcisi ve şablon yazdırma (PDF) için gerekli olan LibreOffice'i içerir.
   - Kendi imajınızı oluşturmanız gerekirse, resmi olarak sağlanan [Dockerfile (basit sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) ve [Dockerfile-full (tam sürüm)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) dosyalarına başvurabilirsiniz.
 - **`APP_KEY`'i Değiştirin**: Lütfen `your-secret-key` değerini, kullanıcı token'ları gibi hassas bilgileri şifrelemek için kullanılan rastgele bir dizeyle değiştirin.
 - **Mevcut Bir Veritabanı Kullanın**: Zaten bir veritabanı servisiniz varsa, lütfen `DB_HOST` değerini veritabanı sunucusu adresiyle değiştirin ve veritabanı servis yapılandırmasını (örneğin `postgres`, `mysql`, `mariadb` servisleri) silin veya yorum satırı yapın.

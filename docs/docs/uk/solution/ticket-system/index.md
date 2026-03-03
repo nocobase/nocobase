@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Огляд рішення для роботи з тікетами
 
-## 1. Background (Why)
+> **Примітка**: Це рання версія для попереднього перегляду. Функціонал постійно вдосконалюється, ми працюємо над його розширенням. Будемо вдячні за ваші відгуки!
 
-### Industry/Role/Management Problems Solved
+## 1. Контекст (Why)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Які галузеві / рольові / управлінські проблеми вирішуються
 
-**Typical Business Scenarios:**
+Підприємства стикаються з різними типами сервісних запитів у повсякденній діяльності: ремонт обладнання, IT-підтримка, скарги клієнтів, консультації тощо. Ці запити надходять із розрізнених джерел (CRM-системи, інженери на місцях, електронна пошта, публічні форми тощо), мають різні процеси обробки та позбавлені єдиного механізму відстеження та управління.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Приклади типових бізнес-сценаріїв:**
 
-### Target User Profile
+- **Ремонт обладнання**: Команда післяпродажного обслуговування обробляє запити на ремонт, де необхідно фіксувати специфічну інформацію про пристрій, таку як серійні номери, коди помилок, запасні частини.
+- **IT-підтримка**: IT-відділ обробляє запити внутрішніх співробітників щодо скидання паролів, встановлення програмного забезпечення, проблем із мережею.
+- **Скарги клієнтів**: Команда служби підтримки обробляє багатоканальні скарги, де запити від емоційно налаштованих клієнтів потребують пріоритетного розгляду.
+- **Самообслуговування клієнтів**: Кінцеві клієнти хочуть зручно подавати запити на обслуговування та відстежувати прогрес їх виконання.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### Портрет цільового користувача
 
-### Pain Points of Current Mainstream Solutions
+| Вимір | Опис |
+|------|------|
+| Розмір компанії | Від малого та середнього бізнесу до великих підприємств зі значними потребами у клієнтському сервісі |
+| Структура ролей | Команди служби підтримки, IT-підтримка, сервісні команди, операційні менеджери |
+| Цифрова зрілість | Від початкового до середнього рівня; прагнення перейти від управління через Excel/пошту до систематизованого управління |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### Болючі точки існуючих основних рішень
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Висока вартість / повільна кастомізація**: SaaS-системи для тікетів коштують дорого, а цикли індивідуальної розробки є тривалими.
+- **Фрагментація систем, ізольованість даних**: Бізнес-дані розкидані по різних системах, що ускладнює уніфікований аналіз та прийняття рішень.
+- **Швидкі зміни в бізнесі, складність еволюції системи**: Коли змінюються вимоги бізнесу, системи важко швидко адаптувати.
+- **Повільна реакція сервісу**: Запити, що передаються між різними системами, не можуть бути вчасно розподілені.
+- **Непрозорість процесу**: Клієнти не можуть відстежувати статус тікета, а часті запити збільшують навантаження на службу підтримки.
+- **Складність гарантування якості**: Відсутність моніторингу SLA, неможливість вчасного сповіщення про прострочення та негативні відгуки.
 
 ---
 
-## 3. Design Principles
+## 2. Порівняння з аналогами (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Основні продукти на ринку
+
+- **SaaS**: Salesforce, Zendesk, Odoo тощо.
+- **Кастомні системи / внутрішні системи**
+
+### Виміри для порівняння
+
+- Охоплення функцій
+- Гнучкість
+- Можливість розширення
+- Спосіб використання ШІ
+
+### Відмінності рішення NocoBase
+
+**Переваги на рівні платформи:**
+
+- **Пріоритет конфігурації**: Від базових таблиць даних до типів бізнесу, SLA та маршрутизації за навичками — усе керується через налаштування.
+- **Швидка Low-code розробка**: Швидше за власну розробку та гнучкіше за SaaS.
+
+**Те, що традиційні системи не можуть зробити або що коштує занадто дорого:**
+
+- **Нативна інтеграція ШІ**: Використання ШІ-плагінів NocoBase для інтелектуальної класифікації, допомоги у заповненні форм та рекомендацій бази знань.
+- **Можливість копіювання дизайну користувачами**: Користувачі можуть самостійно розширювати систему на основі шаблонів.
+- **Т-подібна архітектура даних**: Основна таблиця + додаткові бізнес-таблиці; додавання нових типів бізнесу потребує лише створення додаткової таблиці.
 
 ---
 
-## 4. Solution Overview
+## 3. Принципи проєктування (Principles)
 
-### Summary Introduction
+- **Низьке когнітивне навантаження**
+- **Бізнес важливіший за технології**
+- **Здатність до еволюції, а не одноразове впровадження**
+- **Конфігурація насамперед, код як резервний варіант**
+- **Співпраця людини та ШІ, а не заміна людини ШІ**
+- **Усі проєктні рішення мають бути доступні для копіювання користувачами**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Огляд рішення (Solution Overview)
 
-### Ticket Processing Flow
+### Загальний опис
+
+Універсальний центр обробки тікетів, побудований на low-code платформі NocoBase, що забезпечує:
+
+- **Єдиний вхід**: Інтеграція з багатьма джерелами, стандартизована обробка.
+- **Інтелектуальний розподіл**: ШІ-допомога в класифікації, розподіл із балансуванням навантаження.
+- **Поліморфний бізнес**: Основна таблиця + додаткові бізнес-таблиці для гнучкого розширення.
+- **Замкнений цикл зворотного зв'язку**: Моніторинг SLA, оцінки клієнтів, робота з негативними відгуками.
+
+### Процес обробки тікетів
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Багатоканальне надходження → Попередня обробка/ШІ-аналіз → Інтелектуальне призначення → Ручне виконання → Цикл зворотного зв'язку
+          ↓                            ↓                            ↓                     ↓                    ↓
+ Перевірка на дублікати       Розпізнавання намірів        Відповідність навичкам    Потік статусів       Оцінка задоволеності
+                              Аналіз тональності           Балансування навантаження Моніторинг SLA       Робота з негативом
+                              Автоматична відповідь        Управління чергами        Комунікація          Архівування даних
 ```
 
-### Core Module List
+### Список основних модулів
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Модуль | Опис |
+|------|------|
+| Прийом тікетів | Публічні форми, клієнтський портал, створення агентом, API/Webhook, парсинг пошти |
+| Управління тікетами | CRUD тікетів, потік статусів, призначення/передача, комунікація в коментарях, логи операцій |
+| Розширення бізнесу | Додаткові таблиці для ремонту обладнання, IT-підтримки, скарг клієнтів тощо |
+| Управління SLA | Конфігурація SLA, сповіщення про прострочення, ескалація за часом |
+| Управління клієнтами | Основна таблиця клієнтів, управління контактами, клієнтський портал |
+| Система оцінювання | Багатовимірне оцінювання, швидкі теги, NPS, сповіщення про негативні відгуки |
+| ШІ-помічник | Класифікація намірів, аналіз тональності, рекомендації знань, допомога у відповідях, покращення стилю |
 
-### Core Interface Display
+### Відображення основного інтерфейсу
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. ШІ-співробітники (AI Employee)
 
-### AI Employee Types and Scenarios
+### Типи ШІ-співробітників та сценарії
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Асистент служби підтримки**, **Асистент з продажів**, **Аналітик даних**, **Аудитор**
+- Допомога людям, а не їх заміна
 
-### AI Employee Value Quantification
+### Кількісна оцінка цінності ШІ-співробітників
 
-In this solution, AI employees can:
+У цьому рішенні ШІ-співробітники можуть:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Вимір цінності | Конкретний ефект |
+|----------|----------|
+| Підвищення ефективності | Автоматична класифікація скорочує час ручного сортування на 50%+; рекомендації знань прискорюють вирішення проблем |
+| Зниження витрат | Автоматичні відповіді на прості запитання зменшують навантаження на персонал |
+| Розширення можливостей людей | Сповіщення про емоційний стан допомагають підготуватися; покращення стилю відповідей підвищує якість комунікації |
+| Підвищення задоволеності клієнтів | Швидша реакція, точніше призначення, професійніші відповіді |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Ключові особливості (Highlights)
 
-### How to Install and Use
+### 1. Т-подібна архітектура даних
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Усі тікети використовують спільну основну таблицю з єдиною логікою потоків.
+- Додаткові бізнес-таблиці містять специфічні поля, що забезпечує гнучке розширення.
+- Додавання нового типу бізнесу потребує лише створення додаткової таблиці, не впливаючи на основний процес.
+
+### 2. Повний життєвий цикл тікета
+
+- Створення → Призначення → Обробка → Очікування → Вирішено → Закрито.
+- Підтримка складних сценаріїв, таких як передача, повернення, повторне відкриття.
+- Розрахунок SLA з точністю до пауз у стані очікування.
+
+### 3. Уніфікований багатоканальний прийом
+
+- Публічні форми, клієнтський портал, API, електронна пошта, створення оператором.
+- Перевірка ідемпотентності для запобігання дублюванню запитів.
+
+### 4. Нативна інтеграція ШІ
+
+- Це не просто "кнопка ШІ", а інтеграція в кожен етап процесу.
+- Розпізнавання намірів, аналіз тональності, рекомендації бази знань, редагування відповідей.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. План розвитку (Roadmap)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **Вбудовування в системи**: Підтримка вбудовування модуля тікетів у різні бізнес-системи, такі як ERP, CRM тощо.
+- **Взаємодія тікетів**: Інтеграція тікетів та зворотні виклики статусів між висхідними та низхідними системами для крос-системної співпраці.
+- **Автоматизація ШІ**: Вбудовування ШІ-співробітників у робочі процеси для автоматичного фонового виконання без участі людини.
+- **Підтримка мультиорендності**: Горизонтальне розширення через архітектуру багатьох просторів/додатків для незалежної роботи різних сервісних команд.
+- **База знань RAG**: Автоматична векторизація всіх даних (тікети, клієнти, продукти тощо) для інтелектуального пошуку та рекомендацій знань.
+- **Багатомовна підтримка**: Підтримка перемикання мов інтерфейсу та контенту для потреб міжнародних та регіональних команд.

@@ -1,12 +1,16 @@
 ---
-displayName: "Error handler"
+displayName: "त्रुटि हैंडलर"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Handling application errors and exceptions.
+  एप्लिकेशन की त्रुटियों और अपवादों को संभालना।
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Error handler
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-error-handler/index) देखें।
+:::
+
+# त्रुटि हैंडलर

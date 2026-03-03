@@ -1,22 +1,22 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/workflow/nodes/javascript).
+:::
 
 # Skrip JavaScript
 
 ## Pendahuluan
 
-Node Skrip JavaScript memungkinkan pengguna untuk menjalankan skrip JavaScript kustom sisi server dalam sebuah **alur kerja**. Skrip ini dapat menggunakan variabel dari node sebelumnya dalam **alur kerja** sebagai parameter, dan nilai kembaliannya dapat digunakan oleh node berikutnya.
+Node skrip JavaScript memungkinkan pengguna untuk mengeksekusi skrip JavaScript sisi server kustom dalam alur kerja. Skrip dapat menggunakan variabel dari hulu alur kerja sebagai parameter, dan nilai kembalian skrip dapat disediakan untuk digunakan oleh node hilir.
 
-Skrip akan berjalan dalam *worker thread* di server aplikasi NocoBase dan mendukung sebagian besar fitur Node.js. Namun, ada beberapa perbedaan dari lingkungan eksekusi asli. Untuk detailnya, lihat [Daftar Fitur](#daftar-fitur).
+Skrip akan dijalankan dalam sebuah worker thread di sisi server aplikasi NocoBase, dan mendukung sebagian besar fitur Node.js, namun masih terdapat beberapa perbedaan dengan lingkungan eksekusi asli, lihat [Daftar Fitur](#daftar-fitur) untuk detailnya.
 
 ## Membuat Node
 
-Di antarmuka konfigurasi **alur kerja**, klik tombol plus ("+") pada alur untuk menambahkan node "JavaScript":
+Di antarmuka konfigurasi alur kerja, klik tombol plus ("+") dalam alur untuk menambahkan node "JavaScript":
 
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
 
@@ -26,26 +26,26 @@ Di antarmuka konfigurasi **alur kerja**, klik tombol plus ("+") pada alur untuk 
 
 ### Parameter
 
-Digunakan untuk meneruskan variabel atau nilai statis dari konteks **alur kerja** ke dalam skrip untuk digunakan dalam logika kode. `name` adalah nama parameter, yang akan menjadi nama variabel setelah diteruskan ke skrip. `value` adalah nilai parameter, yang dapat berupa variabel atau konstanta.
+Digunakan untuk meneruskan variabel konteks alur kerja atau nilai statis ke dalam skrip untuk digunakan oleh logika kode dalam skrip. Di mana `name` adalah nama parameter, yang akan menjadi nama variabel setelah diteruskan ke skrip. `value` adalah nilai parameter, dapat memilih variabel atau memasukkan konstanta.
 
 ### Konten Skrip
 
-Konten skrip dapat dianggap sebagai sebuah fungsi. Anda dapat menulis kode JavaScript apa pun yang didukung di lingkungan Node.js dan menggunakan pernyataan `return` untuk mengembalikan nilai sebagai hasil eksekusi node, yang dapat digunakan sebagai variabel oleh node berikutnya.
+Konten skrip dapat dianggap sebagai sebuah fungsi, Anda dapat menulis kode JavaScript apa pun yang didukung dalam lingkungan Node.js, dan dapat menggunakan pernyataan `return` untuk mengembalikan sebuah nilai sebagai hasil eksekusi node, untuk digunakan sebagai variabel oleh node berikutnya.
 
-Setelah menulis kode, Anda dapat mengklik tombol uji di bawah editor untuk membuka dialog eksekusi uji. Di sana, Anda dapat mengisi parameter dengan nilai statis untuk menjalankan simulasi. Setelah eksekusi, Anda dapat melihat nilai kembalian dan konten keluaran (log) di dialog tersebut.
+Setelah menulis kode, Anda dapat mengklik tombol pengujian di bawah kotak edit untuk membuka dialog eksekusi pengujian, dan mengisi parameter dengan nilai statis untuk melakukan simulasi eksekusi. Setelah eksekusi, Anda dapat melihat nilai kembalian dan konten keluaran (log) di dalam dialog tersebut.
 
 ![20241202203833](https://static-docs.nocobase.com/20241202203833.png)
 
-### Pengaturan Batas Waktu (Timeout)
+### Pengaturan Batas Waktu
 
-Unitnya adalah milidetik. Nilai `0` berarti tidak ada batas waktu yang diatur.
+Satuan dihitung dalam milidetik, ketika diatur ke `0` berarti tidak ada batas waktu yang ditetapkan.
 
-### Lanjutkan jika Terjadi Kesalahan
+### Lanjutkan alur setelah kesalahan
 
-Jika dicentang, node berikutnya akan tetap dieksekusi meskipun skrip mengalami kesalahan atau batas waktu terlampaui.
+Setelah dicentang, node berikutnya akan tetap dieksekusi meskipun skrip mengalami kesalahan atau kesalahan batas waktu.
 
-:::info{title="Catatan"}
-Jika skrip mengalami kesalahan, ia tidak akan memiliki nilai kembalian, dan hasil node akan diisi dengan pesan kesalahan. Jika node berikutnya menggunakan variabel hasil dari node skrip, penanganannya harus dilakukan dengan hati-hati.
+:::info{title="Tips"}
+Setelah skrip mengalami kesalahan, tidak akan ada nilai kembalian, dan hasil node akan diisi dengan pesan kesalahan. Jika node berikutnya menggunakan variabel hasil dari node skrip, harap menanganinya dengan hati-hati.
 :::
 
 ## Daftar Fitur
@@ -56,19 +56,19 @@ Sama dengan versi Node.js yang menjalankan aplikasi utama.
 
 ### Dukungan Modul
 
-Modul dapat digunakan dalam skrip dengan batasan, konsisten dengan CommonJS, menggunakan direktif `require()` untuk mengimpor modul.
+Modul dapat digunakan secara terbatas dalam skrip, konsisten dengan CommonJS, menggunakan instruksi `require()` dalam kode untuk mengimpor modul.
 
-Mendukung modul asli Node.js dan modul yang terinstal di `node_modules` (termasuk paket dependensi yang sudah digunakan oleh NocoBase). Modul yang akan disediakan untuk kode harus dideklarasikan dalam variabel lingkungan aplikasi `WORKFLOW_SCRIPT_MODULES`, dengan beberapa nama paket dipisahkan oleh koma, contohnya:
+Mendukung modul asli Node.js, dan modul yang telah terinstal di `node_modules` (termasuk paket dependensi yang telah digunakan oleh NocoBase). Modul yang akan disediakan untuk digunakan dalam kode harus dideklarasikan dalam variabel lingkungan aplikasi `WORKFLOW_SCRIPT_MODULES`, dengan beberapa nama paket dipisahkan oleh koma, misalnya:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
-:::info{title="Catatan"}
-Modul yang tidak dideklarasikan dalam variabel lingkungan `WORKFLOW_SCRIPT_MODULES` **tidak dapat** digunakan dalam skrip, meskipun itu adalah modul asli Node.js atau sudah terinstal di `node_modules`. Kebijakan ini dapat digunakan pada tingkat operasional untuk mengontrol daftar modul yang dapat digunakan oleh pengguna, mencegah skrip memiliki izin yang berlebihan dalam beberapa skenario.
+:::info{title="Tips"}
+Modul yang tidak dideklarasikan dalam variabel lingkungan `WORKFLOW_SCRIPT_MODULES`, meskipun merupakan modul asli Node.js atau telah terinstal di `node_modules`, **tidak dapat** digunakan dalam skrip. Strategi ini dapat digunakan untuk mengontrol daftar modul yang dapat digunakan pengguna pada lapisan operasional, guna menghindari izin skrip yang terlalu tinggi dalam beberapa skenario.
 :::
 
-Dalam lingkungan yang tidak di-deploy dari sumber kode, jika suatu modul tidak terinstal di `node_modules`, Anda dapat menginstal paket yang diperlukan secara manual ke direktori `storage`. Misalnya, untuk menggunakan paket `exceljs`, Anda dapat melakukan langkah-langkah berikut:
+Dalam lingkungan penyebaran non-kode sumber, jika modul tertentu tidak terinstal di node_modules, Anda dapat menginstal paket yang diperlukan secara manual ke direktori storage. Misalnya, saat perlu menggunakan paket `exceljs`, Anda dapat melakukan operasi berikut:
 
 ```shell
 cd storage
@@ -81,10 +81,10 @@ Kemudian tambahkan jalur relatif (atau absolut) paket tersebut berdasarkan CWD (
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-Anda kemudian dapat menggunakan paket `exceljs` dalam skrip Anda:
+Maka paket `exceljs` dapat digunakan dalam skrip (nama `require` harus sama persis dengan yang didefinisikan dalam variabel lingkungan):
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 
@@ -98,11 +98,11 @@ console.log(global); // will throw error: "global is not defined"
 
 ### Parameter Masukan
 
-Parameter yang dikonfigurasi dalam node akan menjadi variabel global dalam skrip dan dapat digunakan secara langsung. Parameter yang diteruskan ke skrip hanya mendukung tipe dasar, seperti `boolean`, `number`, `string`, `object`, dan array. Objek `Date` akan dikonversi menjadi string format ISO saat diteruskan. Tipe kompleks lainnya, seperti instans kelas kustom, tidak dapat diteruskan secara langsung.
+Parameter yang dikonfigurasi dalam node akan berfungsi sebagai variabel global dalam skrip dan dapat digunakan secara langsung. Parameter yang diteruskan ke skrip hanya mendukung tipe dasar, seperti `boolean`, `number`, `string`, `object`, dan array. Objek `Date` akan dikonversi menjadi string berbasis format ISO setelah diteruskan. Tipe kompleks lainnya tidak dapat diteruskan secara langsung, seperti instans dari kelas kustom.
 
 ### Nilai Kembalian
 
-Melalui pernyataan `return`, Anda dapat mengembalikan data tipe dasar (sesuai aturan parameter) kembali ke node sebagai hasilnya. Jika pernyataan `return` tidak dipanggil dalam kode, eksekusi node tidak akan memiliki nilai kembalian.
+Melalui pernyataan `return`, data tipe dasar (mengikuti aturan parameter yang sama) dapat dikembalikan ke node sebagai hasil. Jika pernyataan `return` tidak dipanggil dalam kode, maka eksekusi node tidak akan memiliki nilai kembalian.
 
 ```js
 return 123;
@@ -116,11 +116,11 @@ return 123;
 console.log('hello world!');
 ```
 
-Saat **alur kerja** dieksekusi, keluaran dari node skrip juga akan dicatat dalam berkas log **alur kerja** yang bersangkutan.
+Saat alur kerja dijalankan, keluaran dari node skrip juga akan dicatat ke dalam berkas log alur kerja yang sesuai.
 
 ### Asinkron
 
-**Mendukung** penggunaan `async` untuk mendefinisikan fungsi asinkron, dan `await` untuk memanggilnya. **Mendukung** penggunaan objek global `Promise`.
+**Mendukung** penggunaan `async` untuk mendefinisikan fungsi asinkron, serta `await` untuk memanggil fungsi asinkron. **Mendukung** penggunaan objek global `Promise`.
 
 ```js
 async function test() {
@@ -131,9 +131,9 @@ const value = await test();
 return value;
 ```
 
-### Pewaktu (Timers)
+### Timer
 
-Untuk menggunakan metode seperti `setTimeout`, `setInterval`, atau `setImmediate`, Anda perlu mengimpornya dari paket `timers` Node.js.
+Jika perlu menggunakan metode seperti `setTimeout`, `setInterval`, atau `setImmediate`, perlu diimpor melalui paket `timers` Node.js.
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

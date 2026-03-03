@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sequence"
+displayName: "Koleksiyon alanı: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+  Yapılandırılmış kurallara göre otomatik olarak kodlar oluşturur; tarih, sayı ve metin kombinasyonlarını destekler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sequence
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-field-sequence/index) bakın.
+:::
+
+# Koleksiyon alanı: Sequence

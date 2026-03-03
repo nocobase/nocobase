@@ -1,690 +1,686 @@
-# Ticketing Solution Detailed Design
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/solution/ticket-system/design) voor nauwkeurige informatie.
+:::
 
-> **Version**: v2.0-beta
+# Gedetailleerd ontwerp van de ticketing-oplossing
 
-> **Updated**: 2026-01-05
+> **Versie**: v2.0-beta
 
-> **Status**: Preview
+> **Bijgewerkt op**: 2026-01-05
 
+> **Status**: Preview-versie
 
-## 1. System Overview and Design Philosophy
+## 1. Systeemoverzicht en ontwerpfilosofie
 
-### 1.1 System Positioning
+### 1.1 Systeempositionering
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Dit systeem is een **AI-gestuurd intelligent ticketbeheerplatform**, gebouwd op het NocoBase low-code platform. Het kerndoel is:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Laat de klantenservice zich meer concentreren op het oplossen van problemen, in plaats van op tijdrovende proceshandelingen.
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Ontwerpfilosofie
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Filosofie 1: T-vormige gegevensarchitectuur
 
-**What is T-Shaped Architecture?**
+**Wat is een T-vormige architectuur?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+Geïnspireerd door het concept van de "T-shaped professional" — horizontale breedte + verticale diepte:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Horizontaal (Hoofdtabel)**: Omvat universele mogelijkheden voor alle bedrijfstypen — ticketnummer, status, behandelaar, SLA en andere kernvelden.
+- **Verticaal (Extensietabellen)**: Specifieke velden voor gespecialiseerde bedrijfstypen — apparatuurreparatie heeft serienummers, klachten hebben compensatieplannen.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**Waarom dit ontwerp?**
 
-| Traditional Approach | T-Shaped Architecture |
+| Traditionele aanpak | T-vormige architectuur |
 |---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Eén tabel per bedrijfstype, dubbele velden | Gemeenschappelijke velden centraal beheerd, bedrijfsvelden naar behoefte uitgebreid |
+| Statistische rapporten vereisen het samenvoegen van meerdere tabellen | Eén hoofdtabel voor statistieken van alle tickets |
+| Proceswijzigingen vereisen aanpassingen op meerdere plaatsen | Kernprocessen worden op slechts één plek gewijzigd |
+| Nieuwe bedrijfstypen vereisen nieuwe tabellen | Alleen extensietabellen toevoegen, het hoofdproces blijft ongewijzigd |
 
-#### Philosophy Two: AI Employee Team
+#### Filosofie 2: AI-medewerkersteam
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Geen "AI-functies", maar "AI-medewerkers". Elke AI heeft een duidelijke rol, persoonlijkheid en verantwoordelijkheden:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
+| AI-medewerker | Functie | Kernverantwoordelijkheden | Triggerscenario |
 |-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| **Sam** | Service Desk Supervisor | Ticketroutering, prioriteitsbeoordeling, escalatiebeslissingen | Automatisch bij aanmaak ticket |
+| **Grace** | Customer Success Expert | Genereren van antwoorden, toonaanpassing, klachtafhandeling | Wanneer medewerker klikt op "AI-antwoord" |
+| **Max** | Kennisassistent | Vergelijkbare casussen, kennisaanbevelingen, synthese van oplossingen | Automatisch op de ticketdetailpagina |
+| **Lexi** | Vertaler | Meertalige vertaling, vertaling van opmerkingen | Automatisch bij detectie van vreemde taal |
 
-**Why the "AI Employee" Model?**
+**Waarom het "AI-medewerker"-model?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Duidelijke verantwoordelijkheden**: Sam regelt de routering, Grace de antwoorden; geen verwarring.
+- **Gemakkelijk te begrijpen**: Zeggen "Laat Sam dit analyseren" is vriendelijker dan "Roep de classificatie-API aan".
+- **Uitbreidbaar**: Nieuwe AI-mogelijkheden toevoegen staat gelijk aan het aannemen van nieuwe medewerkers.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Filosofie 3: Zelfcirculatie van kennis
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Dit vormt een gesloten cirkel van **kennisopbouw en kennistoepassing**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Kernentiteiten en gegevensmodel
 
-### 2.1 Entity Relationship Overview
+### 2.1 Overzicht entiteitsrelaties
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Details kerntabellen
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Ticket-hoofdtabel (nb_tts_tickets)
 
-**Basic Information**
+Dit is de kern van het systeem, ontworpen als een "brede tabel" waarin alle veelgebruikte velden zijn opgenomen.
 
-| Field | Type | Description | Example |
+**Basisinformatie**
+
+| Veld | Type | Beschrijving | Voorbeeld |
 |-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
+| id | BIGINT | Primaire sleutel | 1001 |
+| ticket_no | VARCHAR | Ticketnummer | TKT-20251229-0001 |
+| title | VARCHAR | Titel | Trage netwerkverbinding |
+| description | TEXT | Probleembeschrijving | Sinds vanochtend is het kantoornetwerk... |
+| biz_type | VARCHAR | Bedrijfstype | it_support |
+| priority | VARCHAR | Prioriteit | P1 |
 | status | VARCHAR | Status | processing |
 
-**Source Tracking**
+**Bronherkomst**
 
-| Field | Type | Description | Example |
+| Veld | Type | Beschrijving | Voorbeeld |
 |-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+| source_system | VARCHAR | Bronsysteem | crm / email / iot |
+| source_channel | VARCHAR | Bronkanaal | web / phone / wechat |
+| external_ref_id | VARCHAR | Extern referentie-ID | CRM-2024-0001 |
 
-**Contact Information**
+**Contactinformatie**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+| customer_id | BIGINT | Klant-ID |
+| contact_name | VARCHAR | Naam contactpersoon |
+| contact_phone | VARCHAR | Telefoonnummer |
+| contact_email | VARCHAR | E-mailadres |
+| contact_company | VARCHAR | Bedrijfsnaam |
 
-**Assignee Information**
+**Informatie over behandelaar**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+| assignee_id | BIGINT | Behandelaar-ID |
+| assignee_department_id | BIGINT | Afdelings-ID behandelaar |
+| transfer_count | INT | Aantal overdrachten |
 
-**Time Nodes**
+**Tijdstippen**
 
-| Field | Type | Description | Trigger Timing |
+| Veld | Type | Beschrijving | Triggermoment |
 |-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+| submitted_at | TIMESTAMP | Tijdstip indiening | Bij aanmaak ticket |
+| assigned_at | TIMESTAMP | Tijdstip toewijzing | Bij aanwijzen behandelaar |
+| first_response_at | TIMESTAMP | Eerste responstijd | Bij eerste antwoord aan klant |
+| resolved_at | TIMESTAMP | Tijdstip oplossing | Wanneer status wijzigt naar resolved |
+| closed_at | TIMESTAMP | Tijdstip sluiting | Wanneer status wijzigt naar closed |
 
-**SLA Related**
+**SLA-gerelateerd**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+| sla_config_id | BIGINT | SLA-configuratie-ID |
+| sla_response_due | TIMESTAMP | Deadline reactie |
+| sla_resolve_due | TIMESTAMP | Deadline oplossing |
+| sla_paused_at | TIMESTAMP | Starttijd SLA-pauze |
+| sla_paused_duration | INT | Totale pauzeduur (minuten) |
+| is_sla_response_breached | BOOLEAN | Reactietermijn overschreden |
+| is_sla_resolve_breached | BOOLEAN | Oplossingstermijn overschreden |
 
-**AI Analysis Results**
+**AI-analyseresultaten**
 
-| Field | Type | Description | Populated By |
+| Veld | Type | Beschrijving | Ingevuld door |
 |-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+| ai_category_code | VARCHAR | Door AI herkende categorie | Sam |
+| ai_sentiment | VARCHAR | Sentimentanalyse | Sam |
+| ai_urgency | VARCHAR | Urgentieniveau | Sam |
+| ai_keywords | JSONB | Trefwoorden | Sam |
+| ai_reasoning | TEXT | Redeneringsproces | Sam |
+| ai_suggested_reply | TEXT | Voorgesteld antwoord | Sam/Grace |
+| ai_confidence_score | NUMERIC | Betrouwbaarheidsscore | Sam |
+| ai_analysis | JSONB | Volledig analyseresultaat | Sam |
 
-**Multi-Language Support**
+**Meertalige ondersteuning**
 
-| Field | Type | Description | Populated By |
+| Veld | Type | Beschrijving | Ingevuld door |
 |-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+| source_language_code | VARCHAR | Oorspronkelijke taal | Sam/Lexi |
+| target_language_code | VARCHAR | Doeltaal | Systeemstandaard (bijv. NL) |
+| is_translated | BOOLEAN | Is vertaald | Lexi |
+| description_translated | TEXT | Vertaalde beschrijving | Lexi |
 
-#### 2.2.2 Business Extension Tables
+#### 2.2.2 Bedrijfsextensietabellen
 
-**Equipment Repair (nb_tts_biz_repair)**
+**Apparatuurreparatie (nb_tts_biz_repair)**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+| ticket_id | BIGINT | Gekoppeld ticket-ID |
+| equipment_model | VARCHAR | Model apparatuur |
+| serial_number | VARCHAR | Serienummer |
+| fault_code | VARCHAR | Foutcode |
+| spare_parts | JSONB | Lijst met reserveonderdelen |
+| maintenance_type | VARCHAR | Type onderhoud |
 
-**IT Support (nb_tts_biz_it_support)**
+**IT-ondersteuning (nb_tts_biz_it_support)**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+| ticket_id | BIGINT | Gekoppeld ticket-ID |
+| asset_number | VARCHAR | Activumnummer |
+| os_version | VARCHAR | Versie besturingssysteem |
+| software_name | VARCHAR | Betrokken software |
+| remote_address | VARCHAR | Extern adres |
+| error_code | VARCHAR | Foutcode |
 
-**Customer Complaint (nb_tts_biz_complaint)**
+**Klantklacht (nb_tts_biz_complaint)**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+| ticket_id | BIGINT | Gekoppeld ticket-ID |
+| related_order_no | VARCHAR | Betrokken ordernummer |
+| complaint_level | VARCHAR | Klachtniveau |
+| compensation_amount | DECIMAL | Compensatiebedrag |
+| compensation_type | VARCHAR | Wijze van compensatie |
+| root_cause | TEXT | Grondoorzaak |
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+#### 2.2.3 Opmerkingentabel (nb_tts_ticket_comments)
 
-**Core Fields**
+**Kernvelden**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+| id | BIGINT | Primaire sleutel |
+| ticket_id | BIGINT | Ticket-ID |
+| parent_id | BIGINT | ID bovenliggende opmerking (ondersteunt boomstructuur) |
+| content | TEXT | Inhoud opmerking |
+| direction | VARCHAR | Richting: inbound (klant) / outbound (medewerker) |
+| is_internal | BOOLEAN | Is interne notitie |
+| is_first_response | BOOLEAN | Is eerste reactie |
 
-**AI Review Fields (for outbound)**
+**AI-beoordelingsvelden (voor outbound)**
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+| source_language_code | VARCHAR | Brontaal |
+| content_translated | TEXT | Vertaalde inhoud |
+| is_translated | BOOLEAN | Is vertaald |
+| is_ai_blocked | BOOLEAN | Geblokkeerd door AI |
+| ai_block_reason | VARCHAR | Reden van blokkade |
+| ai_block_detail | TEXT | Gedetailleerde uitleg |
+| ai_quality_score | NUMERIC | Kwaliteitsscore |
+| ai_suggestions | TEXT | Verbetersuggesties |
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+#### 2.2.4 Waarderingstabel (nb_tts_ratings)
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+| ticket_id | BIGINT | Ticket-ID (uniek) |
+| overall_rating | INT | Algemene tevredenheid (1-5) |
+| response_rating | INT | Reactiesnelheid (1-5) |
+| professionalism_rating | INT | Professionaliteit (1-5) |
+| resolution_rating | INT | Probleemoplossing (1-5) |
+| nps_score | INT | NPS-score (0-10) |
+| tags | JSONB | Snelkoppelingstags |
+| comment | TEXT | Tekstuele toelichting |
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+#### 2.2.5 Kennisartikeltabel (nb_tts_qa_articles)
 
-| Field | Type | Description |
+| Veld | Type | Beschrijving |
 |-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
+| article_no | VARCHAR | Artikelnummer (bijv. KB-T0001) |
+| title | VARCHAR | Titel |
+| content | TEXT | Inhoud (Markdown) |
+| summary | TEXT | Samenvatting |
+| category_code | VARCHAR | Categoriecode |
+| keywords | JSONB | Trefwoorden |
+| source_type | VARCHAR | Bron: ticket/faq/manual |
+| source_ticket_id | BIGINT | Bron ticket-ID |
+| ai_generated | BOOLEAN | Door AI gegenereerd |
+| ai_quality_score | NUMERIC | Kwaliteitsscore |
 | status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+| view_count | INT | Aantal weergaven |
+| helpful_count | INT | Aantal keer nuttig bevonden |
 
-### 2.3 Data Table List
+### 2.3 Lijst met gegevenstabellen
 
-| No. | Table Name | Description | Record Type |
+| Nr. | Tabelnaam | Beschrijving | Type record |
 |-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+| 1 | nb_tts_tickets | Ticket-hoofdtabel | Bedrijfsgegevens |
+| 2 | nb_tts_biz_repair | Extensie apparatuurreparatie | Bedrijfsgegevens |
+| 3 | nb_tts_biz_it_support | Extensie IT-ondersteuning | Bedrijfsgegevens |
+| 4 | nb_tts_biz_complaint | Extensie klantklachten | Bedrijfsgegevens |
+| 5 | nb_tts_customers | Klanten-hoofdtabel | Bedrijfsgegevens |
+| 6 | nb_tts_customer_contacts | Klantcontactpersonen | Bedrijfsgegevens |
+| 7 | nb_tts_ticket_comments | Ticket-opmerkingen | Bedrijfsgegevens |
+| 8 | nb_tts_ratings | Tevredenheidswaarderingen | Bedrijfsgegevens |
+| 9 | nb_tts_qa_articles | Kennisartikelen | Kennisgegevens |
+| 10 | nb_tts_qa_article_relations | Artikelrelaties | Kennisgegevens |
+| 11 | nb_tts_faqs | Veelgestelde vragen | Kennisgegevens |
+| 12 | nb_tts_tickets_categories | Ticketcategorieën | Configuratiegegevens |
+| 13 | nb_tts_sla_configs | SLA-configuratie | Configuratiegegevens |
+| 14 | nb_tts_skill_configs | Vaardigheidsconfiguratie | Configuratiegegevens |
+| 15 | nb_tts_business_types | Bedrijfstypen | Configuratiegegevens |
 
 ---
 
-## 3. Ticket Lifecycle
+## 3. Ticket-levenscyclus
 
-### 3.1 Status Definitions
+### 3.1 Statusdefinities
 
-| Status | Name | Description | SLA Timing | Color |
+| Status | Naam | Beschrijving | SLA-tijd | Kleur |
 |--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
+| new | Nieuw | Net aangemaakt, wacht op toewijzing | Start | 🔵 Blauw |
+| assigned | Toegewezen | Behandelaar aangewezen, wacht op acceptatie | Doorgaan | 🔷 Cyaan |
+| processing | In behandeling | Wordt momenteel verwerkt | Doorgaan | 🟠 Oranje |
+| pending | Geparkeerd | Wacht op feedback van de klant | **Gepauzeerd** | ⚫ Grijs |
+| transferred | Overgedragen | Overgedragen aan iemand anders | Doorgaan | 🟣 Paars |
+| resolved | Opgelost | Wacht op bevestiging van de klant | Stop | 🟢 Groen |
+| closed | Gesloten | Ticket beëindigd | Stop | ⚫ Grijs |
+| cancelled | Geannuleerd | Ticket geannuleerd | Stop | ⚫ Grijs |
 
-### 3.2 Status Flow Diagram
+### 3.2 Statusstroomdiagram
 
-**Main Flow (Left to Right)**
+**Hoofdstroom (van links naar rechts)**
 
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-**Branch Flows**
+**Substromen**
 
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-**Complete State Machine**
 
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
+**Volledige State Machine**
 
-### 3.3 Key Status Transition Rules
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+### 3.3 Belangrijke regels voor statusovergang
+
+| Van | Naar | Trigger | Systeemactie |
+|----|----|---------|---------|
+| new | assigned | Behandelaar toewijzen | Registreer assigned_at |
+| assigned | processing | Behandelaar klikt op "Accepteren" | Geen |
+| processing | pending | Klik op "Parkeren" | Registreer sla_paused_at |
+| pending | processing | Reactie klant / Handmatig hervatten | Bereken pauzeduur, wis paused_at |
+| processing | resolved | Klik op "Oplossen" | Registreer resolved_at |
+| resolved | closed | Bevestiging klant / 3 dagen timeout | Registreer closed_at |
+| * | cancelled | Ticket annuleren | Geen |
+
 
 ---
 
-## 4. SLA Service Level Management
+## 4. SLA-beheer (Service Level Agreement)
 
-### 4.1 Priority and SLA Configuration
+### 4.1 Prioriteit en SLA-configuratie
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
+| Prioriteit | Naam | Reactietijd | Oplostijd | Waarschuwingsdrempel | Typisch scenario |
 |----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| P0 | Kritiek | 15 min | 2 uur | 80% | Systeem plat, productielijn gestopt |
+| P1 | Hoog | 1 uur | 8 uur | 80% | Belangrijke functie defect |
+| P2 | Gemiddeld | 4 uur | 24 uur | 80% | Algemene problemen |
+| P3 | Laag | 8 uur | 72 uur | 80% | Vragen, suggesties |
 
-### 4.2 SLA Calculation Logic
+### 4.2 SLA-berekeningslogica
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
 
-#### On Ticket Creation
-
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
-
-#### On Pause (pending)
+#### Bij aanmaak ticket
 
 ```
--- Record pause start time
-sla_paused_at = NOW()
+sla_response_due = submitted_at + reactietermijn (minuten)
+sla_resolve_due = submitted_at + oplostermijn (minuten)
 ```
 
-#### On Resume (from pending to processing)
+#### Bij parkeren (pending)
 
 ```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
-
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
-
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
-
--- Clear pause time
-sla_paused_at = NULL
+SLA-pauze starttijd = Huidige tijd
 ```
 
-#### SLA Breach Determination
+#### Bij hervatten (van pending naar processing)
 
 ```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
+-- Bereken huidige pauzeduur
+Huidige pauzeduur = Huidige tijd - SLA-pauze starttijd
 
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
+-- Optellen bij totale pauzeduur
+Totale pauzeduur = Totale pauzeduur + Huidige pauzeduur
+
+-- Deadlines verlengen (pauzeperiode telt niet mee voor SLA)
+sla_response_due = sla_response_due + Huidige pauzeduur
+sla_resolve_due = sla_resolve_due + Huidige pauzeduur
+
+-- Pauze-starttijd wissen
+SLA-pauze starttijd = NULL
 ```
 
-### 4.3 SLA Alert Mechanism
+#### Vaststelling SLA-overschrijding
 
-| Alert Level | Condition | Notify | Method |
+```
+-- Reactie-overschrijding
+is_sla_response_breached = (eerste_responstijd IS NULL EN Huidige tijd > sla_response_due)
+                        OF (eerste_responstijd > sla_response_due)
+
+-- Oplossings-overschrijding
+is_sla_resolve_breached = (opgelost_op IS NULL EN Huidige tijd > sla_resolve_due)
+                       OF (opgelost_op > sla_resolve_due)
+```
+
+### 4.3 SLA-waarschuwingsmechanisme
+
+| Waarschuwingsniveau | Voorwaarde | Ontvanger | Methode |
 |-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
+| Gele waarschuwing | Resterende tijd < 20% | Behandelaar | In-app bericht |
+| Rode waarschuwing | Reeds overschreden | Behandelaar + Supervisor | In-app + E-mail |
+| Escalatie | 1 uur overschreden | Afdelingsmanager | E-mail + SMS |
 
-### 4.4 SLA Dashboard Metrics
+### 4.4 SLA-dashboardindicatoren
 
-| Metric | Formula | Health Threshold |
+| Indicator | Formule | Gezondheidsdrempel |
 |--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
+| Reactie-compliance | Tickets binnen termijn / Totaal aantal tickets | > 95% |
+| Oplossings-compliance | Opgelost binnen termijn / Totaal opgelost | > 90% |
+| Gemiddelde reactietijd | SOM(reactietijd) / Aantal tickets | < 50% van SLA |
+| Gemiddelde oplostijd | SOM(oplostijd) / Aantal tickets | < 80% van SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 5. AI-mogelijkheden en medewerkerssysteem
 
-### 5.1 AI Employee Team
+### 5.1 AI-medewerkersteam
 
-The system configures 8 AI employees in two categories:
+Het systeem is geconfigureerd met 8 AI-medewerkers, verdeeld in twee categorieën:
 
-**New Employees (Ticketing System Specific)**
+**Nieuwe medewerkers (specifiek voor ticketing)**
 
-| ID | Name | Position | Core Capabilities |
+| ID | Naam | Functie | Kernvaardigheden |
 |----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+| sam | Sam | Service Desk Supervisor | Ticketroutering, prioriteitsbeoordeling, escalatiebeslissingen, SLA-risico-identificatie |
+| grace | Grace | Customer Success Expert | Professionele antwoordgeneratie, toonaanpassing, klachtafhandeling, herstel van tevredenheid |
+| max | Max | Kennisassistent | Zoeken naar vergelijkbare casussen, kennisaanbevelingen, synthese van oplossingen |
 
-**Reused Employees (General Capabilities)**
+**Hergebruikte medewerkers (algemene vaardigheden)**
 
-| ID | Name | Position | Core Capabilities |
+| ID | Naam | Functie | Kernvaardigheden |
 |----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+| dex | Dex | Gegevensorganisator | E-mail-naar-ticket, telefoon-naar-ticket, batchgewijze gegevensopschoning |
+| ellis | Ellis | E-mailexpert | Sentimentanalyse van e-mail, samenvatting van threads, opstellen van antwoorden |
+| lexi | Lexi | Vertaler | Ticketvertaling, antwoordvertaling, realtime gesprekvertaling |
+| cole | Cole | NocoBase-expert | Begeleiding bij systeemgebruik, hulp bij workflowconfiguratie |
+| vera | Vera | Onderzoeksanalist | Onderzoek naar technische oplossingen, verificatie van productinformatie |
 
-### 5.2 AI Task List
+### 5.2 AI-takenlijst
 
-Each AI employee is configured with 4 specific tasks:
+Elke AI-medewerker heeft 4 specifieke taken:
 
-#### Sam's Tasks
+#### Taken van Sam
 
-| Task ID | Name | Trigger Method | Description |
+| Taak-ID | Naam | Triggermethode | Beschrijving |
 |---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+| SAM-01 | Ticketanalyse & Routering | Workflow automatisch | Automatische analyse bij nieuw ticket |
+| SAM-02 | Prioriteitsherbeoordeling | Frontend interactie | Prioriteit aanpassen op basis van nieuwe info |
+| SAM-03 | Escalatiebesluit | Frontend/Workflow | Bepalen of escalatie nodig is |
+| SAM-04 | SLA-risicobeoordeling | Workflow automatisch | Identificeren van overschrijdingsrisico's |
 
-#### Grace's Tasks
+#### Taken van Grace
 
-| Task ID | Name | Trigger Method | Description |
+| Taak-ID | Naam | Triggermethode | Beschrijving |
 |---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+| GRACE-01 | Professionele antwoordgeneratie | Frontend interactie | Antwoord genereren op basis van context |
+| GRACE-02 | Toonaanpassing antwoord | Frontend interactie | Toon van bestaand antwoord optimaliseren |
+| GRACE-03 | Klacht-de-escalatie | Frontend/Workflow | Klachten van klanten oplossen |
+| GRACE-04 | Tevredenheidsherstel | Frontend/Workflow | Follow-up na negatieve ervaring |
 
-#### Max's Tasks
+#### Taken van Max
 
-| Task ID | Name | Trigger Method | Description |
+| Taak-ID | Naam | Triggermethode | Beschrijving |
 |---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+| MAX-01 | Zoeken vergelijkbare casussen | Frontend/Workflow | Historische vergelijkbare tickets vinden |
+| MAX-02 | Kennisaanbeveling | Frontend/Workflow | Relevante kennisartikelen aanbevelen |
+| MAX-03 | Oplossingssynthese | Frontend interactie | Oplossingen uit meerdere bronnen combineren |
+| MAX-04 | Gids voor probleemoplossing | Frontend interactie | Systematisch stappenplan voor onderzoek maken |
 
-#### Lexi's Tasks
+#### Taken van Lexi
 
-| Task ID | Name | Trigger Method | Description |
+| Taak-ID | Naam | Triggermethode | Beschrijving |
 |---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+| LEXI-01 | Ticketvertaling | Workflow automatisch | Inhoud van ticket vertalen |
+| LEXI-02 | Antwoordvertaling | Frontend interactie | Antwoorden van medewerkers vertalen |
+| LEXI-03 | Batchvertaling | Workflow automatisch | Batchgewijze verwerking van vertalingen |
+| LEXI-04 | Realtime gesprekvertaling | Frontend interactie | Realtime vertaling van dialogen |
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 5.3 AI-medewerkers en ticket-levenscyclus
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
 
-### 5.4 AI Response Examples
+### 5.4 Voorbeelden van AI-reacties
 
-#### SAM-01 Ticket Analysis Response
+#### SAM-01 Ticketanalyserespons
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "inloggen mislukt", "timeout", "maandafsluiting"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "Dit ticket beschrijft een inlogprobleem in het ERP-systeem dat de maandafsluiting van de financiële afdeling beïnvloedt; hoge urgentie.",
+  "suggested_reply": "Geachte klant, bedankt voor het melden van dit probleem...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "Hallo, ons ERP-systeem kan niet inloggen..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Antwoordgeneratierespons
 
 ```
-Dear Mr. Zhang,
+Geachte heer De Vries,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+Bedankt dat u contact met ons heeft opgenomen over het inlogprobleem met het ERP-systeem. Ik begrijp volledig dat dit probleem de maandafsluiting van uw bedrijf beïnvloedt. We hebben dit ticket daarom de hoogste prioriteit gegeven.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+Huidige status:
+- Het technische team onderzoekt momenteel de serververbindingen.
+- We verwachten u binnen 30 minuten een update te kunnen geven.
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+In de tussentijd kunt u het volgende proberen:
+1. Toegang via het reserve-adres: https://erp-backup.company.com
+2. Voor dringende rapportages kunt u contact met ons opnemen voor hulp bij het exporteren.
 
-Please feel free to contact me if you have any other questions.
+Mocht u nog vragen hebben, aarzel dan niet om contact met mij op te nemen.
 
-Best regards,
-Technical Support Team
+Met vriendelijke groet,
+Het Technische Ondersteuningsteam
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 AI EQ-firewall
 
-Grace's reply quality review blocks the following issues:
+De kwaliteitscontrole van Grace blokkeert de volgende problemen in antwoorden:
 
-| Issue Type | Original Example | AI Suggestion |
+| Type probleem | Voorbeeld origineel | AI-suggestie |
 |------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Negatieve toon | "Nee, dit valt niet onder de garantie" | "Dit defect valt momenteel niet onder de gratis garantie; we kunnen u een betaald reparatieplan aanbieden" |
+| Klant beschuldigen | "U heeft het zelf kapot gemaakt" | "Na verificatie blijkt dit defect te zijn ontstaan door onvoorziene schade" |
+| Verantwoordelijkheid afschuiven | "Niet ons probleem" | "Laat mij u helpen de oorzaak verder te onderzoeken" |
+| Onverschilligheid | "Geen idee" | "Ik ga de relevante informatie direct voor u opzoeken" |
+| Gevoelige informatie | "Uw wachtwoord is abc123" | [Geblokkeerd] Bevat gevoelige informatie, verzenden niet toegestaan |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Kennisbanksysteem
 
-### 6.1 Knowledge Sources
+### 6.1 Kennisbronnen
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Proces van ticket naar kennis
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Beoordelingsdimensies**:
+- **Algemeenheid**: Is dit een veelvoorkomend probleem?
+- **Volledigheid**: Is de oplossing helder en compleet?
+- **Herhaalbaarheid**: Zijn de stappen herbruikbaar?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Kennisaanbevelingsmechanisme
+
+Wanneer een medewerker de ticketdetails opent, beveelt Max automatisch relevante kennis aan:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Aanbevolen kennis                         [Uitvouwen/Inklappen] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 CNC-servosysteem foutdiagnosegids   Match: 94%  │ │
+│ │ Bevat: Interpretatie alarmcodes, stappen voor controle  │ │
+│ │ [Bekijken] [Toepassen op antwoord] [Markeren als nuttig] │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 XYZ-CNC3000 Onderhoudshandleiding   Match: 87%  │ │
+│ │ Bevat: Veelvoorkomende fouten, preventief onderhoud      │ │
+│ │ [Bekijken] [Toepassen op antwoord] [Markeren als nuttig] │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
-
 ---
 
-## 7. Workflow Engine
+## 7. Workflow-engine
 
-### 7.1 Workflow Categories
+### 7.1 Workflow-categorieën
 
-| Code | Category | Description | Trigger Method |
+| Code | Categorie | Beschrijving | Triggermethode |
 |------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+| WF-T | Ticketstroom | Beheer van de ticket-levenscyclus | Formulierevents |
+| WF-S | SLA-stroom | SLA-berekening en waarschuwingen | Formulierevents/Gepland |
+| WF-C | Opmerkingstroom | Verwerking en vertaling van opmerkingen | Formulierevents |
+| WF-R | Waarderingstroom | Uitnodigingen en statistieken voor waardering | Formulierevents/Gepland |
+| WF-N | Meldingstroom | Verzenden van notificaties | Event-gestuurd |
+| WF-AI | AI-stroom | AI-analyse en generatie | Formulierevents |
 
-### 7.2 Core Workflows
+### 7.2 Kernworkflows
 
-#### WF-T01: Ticket Creation Flow
+#### WF-T01: Ticket-aanmaakproces
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
 
-#### WF-AI01: Ticket AI Analysis
+#### WF-AI01: AI-analyse van tickets
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
 
-#### WF-AI04: Comment Translation & Review
+#### WF-AI04: Vertaling en beoordeling van opmerkingen
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
 
-#### WF-AI03: Knowledge Generation
+#### WF-AI03: Kennisgeneratie
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
 
-### 7.3 Scheduled Tasks
+### 7.3 Geplande taken
 
-| Task | Frequency | Description |
+| Taak | Frequentie | Beschrijving |
 |------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
+| SLA-waarschuwingscontrole | Elke 5 minuten | Controleer tickets die bijna de termijn overschrijden |
+| Automatische sluiting | Dagelijks | Tickets met status 'resolved' na 3 dagen automatisch sluiten |
+| Uitnodiging waardering | Dagelijks | Verzend uitnodiging 24 uur na sluiting ticket |
+| Update statistieken | Elk uur | Statistieken van klanttickets bijwerken |
 
 ---
 
-## 8. Menu and Interface Design
+## 8. Menu- en interface-ontwerp
 
-### 8.1 Backend Admin
+### 8.1 Beheerdersinterface (Backend)
 
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 8.2 Customer Portal
+### 8.2 Klantportaal
 
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-### 8.3 Dashboard Design
+### 8.3 Dashboard-ontwerp
 
-#### Executive View
+#### Directie-overzicht
 
-| Component | Type | Data Description |
+| Component | Type | Gegevensbeschrijving |
 |-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
+| SLA-compliance | Meter | Reactie/oplossing-compliance van deze maand |
+| Tevredenheidstrend | Lijngrafiek | Verloop van tevredenheid over de laatste 30 dagen |
+| Ticketvolume-trend | Staafgrafiek | Aantal tickets over de laatste 30 dagen |
+| Verdeling bedrijfstypen | Cirkeldiagram | Aandeel per bedrijfstype |
 
-#### Supervisor View
+#### Supervisor-overzicht
 
-| Component | Type | Data Description |
+| Component | Type | Gegevensbeschrijving |
 |-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
+| Overschrijdingswaarschuwingen | Lijst | Tickets die bijna of reeds overschreden zijn |
+| Werkdruk team | Staafgrafiek | Aantal tickets per teamlid |
+| Verdeling achterstand | Gestapelde grafiek | Aantal tickets per status |
+| Verwerkingstijd | Heatmap | Verdeling van de gemiddelde verwerkingstijd |
 
-#### Agent View
+#### Medewerker-overzicht
 
-| Component | Type | Data Description |
+| Component | Type | Gegevensbeschrijving |
 |-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Mijn taken | Getalkaart | Aantal tickets in behandeling |
+| Prioriteitsverdeling | Cirkeldiagram | Verdeling P0/P1/P2/P3 |
+| Statistieken vandaag | Indicator-kaart | Aantal verwerkte/opgeloste tickets vandaag |
+| SLA-afteller | Lijst | Top 5 meest urgente tickets |
 
 ---
 
-## Appendix
+## Bijlagen
 
-### A. Business Type Configuration
+### A. Configuratie bedrijfstypen
 
-| Type Code | Name | Icon | Associated Extension Table |
+| Typecode | Naam | Icoon | Gekoppelde extensietabel |
 |-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| repair | Apparatuurreparatie | 🔧 | nb_tts_biz_repair |
+| it_support | IT-ondersteuning | 💻 | nb_tts_biz_it_support |
+| complaint | Klantklacht | 📢 | nb_tts_biz_complaint |
+| consultation | Advies/Vraag | ❓ | Geen |
+| other | Overig | 📝 | Geen |
 
-### B. Category Codes
+### B. Categoriecodes
 
-| Code | Name | Description |
+| Code | Naam | Beschrijving |
 |------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| CONVEYOR | Transportsysteem | Problemen met transportsystemen |
+| PACKAGING | Verpakkingsmachine | Problemen met verpakkingsmachines |
+| WELDING | Lasapparatuur | Problemen met lasapparatuur |
+| COMPRESSOR | Compressor | Problemen met compressoren |
+| COLD_STORE | Koelcel | Problemen met koelcellen |
+| CENTRAL_AC | Centrale airco | Problemen met centrale airconditioning |
+| FORKLIFT | Heftruck | Problemen met heftrucks |
+| COMPUTER | Computer | Hardwareproblemen computers |
+| PRINTER | Printer | Problemen met printers |
+| PROJECTOR | Projector | Problemen met projectoren |
+| INTERNET | Netwerk | Netwerkverbindingen |
+| EMAIL | E-mail | E-mailsystemen |
+| ACCESS | Toegang | Account- en toegangsrechten |
+| PROD_INQ | Productaanvraag | Vragen over producten |
+| COMPLAINT | Algemene klacht | Algemene klachten |
+| DELAY | Logistieke vertraging | Klachten over vertraagde levering |
+| DAMAGE | Verpakkingsschade | Klachten over beschadigde verpakking |
+| QUANTITY | Tekort in aantal | Klachten over ontbrekende aantallen |
+| SVC_ATTITUDE | Servicehouding | Klachten over bejegening |
+| PROD_QUALITY | Productkwaliteit | Klachten over productkwaliteit |
+| TRAINING | Training | Verzoeken om training |
+| RETURN | Retour | Verzoeken om retournering |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Documentversie: 2.0 | Laatst bijgewerkt: 2026-01-05*

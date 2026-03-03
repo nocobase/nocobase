@@ -1,14 +1,18 @@
 ---
-displayName: "UI templates"
+displayName: "UI-mallar"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Ger möjlighet att återanvända blockmallar och popup-mallar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-ui-templates/index).
+:::
+
+# UI-mallar

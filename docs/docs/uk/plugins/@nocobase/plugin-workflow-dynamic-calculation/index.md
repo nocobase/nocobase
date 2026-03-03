@@ -1,8 +1,8 @@
 ---
-displayName: "Workflow: Dynamic calculation node"
+displayName: "Workflow: Node динамічного обчислення виразів"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
+  Використовується для динамічного обчислення виразів на основі рядків даних у Workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Workflow: Dynamic calculation node
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-workflow-dynamic-calculation/index).
+:::
 
-> Note: This plugin is deprecated.
+# Workflow: Node динамічного обчислення виразів
+
+> Примітка: Цей плагін застарілий (deprecated).

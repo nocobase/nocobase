@@ -1,108 +1,166 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/workflow/triggers/approval).
+:::
 
 # Aprobación
 
 ## Introducción
 
-La aprobación es un tipo de proceso diseñado específicamente para tareas iniciadas y procesadas manualmente, con el fin de decidir el estado de los datos relevantes. Se utiliza comúnmente para la automatización de oficinas u otros procesos de toma de decisiones manuales. Por ejemplo, permite crear y gestionar **flujos de trabajo** manuales para escenarios como "solicitudes de vacaciones", "aprobaciones de gastos" y "aprobaciones de compra de materias primas".
+La aprobación es una forma de proceso dedicada a ser iniciada y procesada por personas para decidir el estado de los datos relacionados. Generalmente se utiliza para la automatización de oficinas u otros asuntos de toma de decisiones manuales; por ejemplo, se pueden crear y gestionar procesos manuales para escenarios como "solicitudes de vacaciones", "aprobación de reembolsos de gastos" y "aprobación de compra de materias primas".
 
-El **plugin** de Aprobación ofrece un tipo de **flujo de trabajo** (disparador) dedicado, "Aprobación (evento)", y un nodo de "Aprobación" exclusivo para este proceso. Al combinarlo con las **colecciones** y bloques personalizados únicos de NocoBase, usted puede crear y gestionar de forma rápida y flexible diversos escenarios de aprobación.
+El plugin de Aprobación proporciona un tipo de flujo de trabajo (disparador) dedicado "Aprobación (evento)" y un nodo de "Aprobación" exclusivo para este proceso. Combinado con las colecciones y bloques personalizados característicos de NocoBase, permite crear y gestionar diversos escenarios de aprobación de forma rápida y flexible.
 
-## Crear un flujo de trabajo
+## Crear flujo de trabajo
 
-Al crear un **flujo de trabajo**, seleccione el tipo "Aprobación" para crear un **flujo de trabajo** de aprobación:
+Al crear un flujo de trabajo, seleccione el tipo "Aprobación" para crear un flujo de trabajo de aprobación:
 
-![Disparador de Aprobación_Crear Flujo de Trabajo de Aprobación](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Disparador de aprobación_Crear flujo de trabajo de aprobación](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
-Luego, en la interfaz de configuración del **flujo de trabajo**, haga clic en el disparador para abrir una ventana emergente y realizar más configuraciones.
+Después, en la interfaz de configuración del flujo de trabajo, haga clic en el disparador para abrir la ventana emergente y realizar más configuraciones.
 
-## Configuración del Disparador
+## Configuración del disparador
 
-### Vincular una colección
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
 
-El **plugin** de Aprobación de NocoBase está diseñado para ser flexible y puede utilizarse con cualquier **colección** personalizada. Esto significa que la configuración de aprobación no requiere reconfigurar el modelo de datos, sino que reutiliza directamente una **colección** existente. Por lo tanto, después de acceder a la configuración del disparador, primero debe seleccionar una **colección** para determinar qué datos de esta **colección** activarán este proceso al crearse o actualizarse:
+### Vincular colección
 
-![Disparador de Aprobación_Configuración del Disparador_Seleccionar Colección](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
+El plugin de Aprobación de NocoBase está diseñado basándose en la flexibilidad y puede utilizarse con cualquier colección personalizada; es decir, la configuración de aprobación no necesita configurar repetidamente el modelo de datos, sino que reutiliza directamente las colecciones ya creadas. Por lo tanto, al entrar en la configuración del disparador, primero debe seleccionar una colección para decidir sobre qué datos de la colección actuará el proceso:
 
-Luego, en el formulario para crear (o editar) datos de la **colección** correspondiente, vincule este **flujo de trabajo** al botón de envío:
+![Disparador de aprobación_Configuración del disparador_Seleccionar colección](https://static-docs.nocobase.com/20251226103223.png)
 
-![Iniciar Aprobación_Vincular Flujo de Trabajo](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+### Modo de activación
 
-Después de esto, cuando un usuario envíe este formulario, se activará el **flujo de trabajo** de aprobación correspondiente. Los datos enviados no solo se guardarán en la **colección** respectiva, sino que también se capturarán como una instantánea en el **flujo de trabajo** de aprobación para que los revisores posteriores puedan consultarlos.
+Al iniciar una aprobación para datos de negocio, puede elegir entre los siguientes dos modos de activación:
 
-### Retirar
+*   **Antes de guardar los datos**
 
-Si un **flujo de trabajo** de aprobación permite que el iniciador lo retire, debe habilitar el botón "Retirar" en la configuración de la interfaz del iniciador:
+    Inicia la aprobación antes de que se guarden los datos enviados. Es adecuado para escenarios donde los datos solo deben guardarse después de que la aprobación sea concedida. En este modo, los datos al momento de iniciar la aprobación son solo datos temporales y solo se guardarán formalmente en la colección correspondiente después de que se aprueben.
 
-![Disparador de Aprobación_Configuración del Disparador_Permitir Retiro](https://static-docs.nocobase.com/20251029232544.png)
+*   **Después de guardar los datos**
 
-Una vez habilitado, una aprobación iniciada por este **flujo de trabajo** puede ser retirada por el iniciador antes de que cualquier aprobador la procese. Sin embargo, después de que cualquier aprobador en un nodo de aprobación posterior la haya procesado, ya no podrá ser retirada.
+    Inicia la aprobación después de que se guarden los datos enviados. Es adecuado para escenarios donde los datos pueden guardarse primero y luego aprobarse. En este modo, los datos ya se han guardado en la colección correspondiente al iniciar la aprobación, y las modificaciones realizadas durante el proceso de aprobación también se guardarán.
 
-:::info{title=Nota}
+### Ubicación para iniciar la aprobación
+
+Puede elegir la ubicación en el sistema desde donde se inicia la aprobación:
+
+*   **Solo iniciar en bloques de datos**
+
+    Puede vincular la acción de cualquier bloque de formulario de esta tabla a este flujo de trabajo para iniciar la aprobación, y procesar y rastrear el proceso de aprobación en el bloque de aprobación de un solo registro. Generalmente es adecuado para datos de negocio.
+
+*   **Iniciar tanto en bloques de datos como en el centro de tareas pendientes**
+
+    Además de los bloques de datos, también puede iniciar y procesar aprobaciones en el centro de tareas pendientes global. Esto generalmente es adecuado para datos administrativos.
+
+### Quién puede iniciar la aprobación
+
+Puede configurar permisos basados en el alcance del usuario para decidir qué usuarios pueden iniciar esta aprobación:
+
+*   **Todos los usuarios**
+
+    Todos los usuarios del sistema pueden iniciar esta aprobación.
+
+*   **Solo los usuarios seleccionados**
+
+    Solo se permite a los usuarios dentro del alcance especificado iniciar esta aprobación. Se permite la selección múltiple.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Configuración de la interfaz del formulario del iniciador
+
+Finalmente, debe configurar la interfaz del formulario del iniciador. Esta interfaz se utilizará para las operaciones de envío cuando se inicie desde el bloque del centro de aprobación y cuando el usuario vuelva a iniciar tras un retiro. Haga clic en el botón de configuración para abrir la ventana emergente:
+
+![Disparador de aprobación_Configuración del disparador_Formulario del iniciador](https://static-docs.nocobase.com/20251226130239.png)
+
+Puede añadir un formulario de llenado basado en la colección vinculada para la interfaz del iniciador, o un texto explicativo (Markdown) para indicaciones y guía. El formulario es obligatorio; de lo contrario, el iniciador no podrá operar al entrar en esta interfaz.
+
+Después de añadir el bloque de formulario, al igual que en una interfaz de configuración de formulario normal, puede añadir componentes de campo de la colección correspondiente y organizarlos libremente para estructurar el contenido que debe completarse en el formulario:
+
+![Disparador de aprobación_Configuración del disparador_Formulario del iniciador_Configuración de campos](https://static-docs.nocobase.com/20251226130339.png)
+
+A diferencia del botón de envío directo, también puede añadir un botón de operación "Guardar borrador" para admitir procesos de almacenamiento temporal:
+
+![Disparador de aprobación_Configuración del disparador_Formulario del iniciador_Configuración de operaciones_Guardar](https://static-docs.nocobase.com/20251226130512.png)
+
+Si un flujo de trabajo de aprobación permite que el iniciador retire la solicitud, debe habilitar el botón "Retirar" en la configuración de la interfaz del iniciador:
+
+![Disparador de aprobación_Configuración del disparador_Permitir retiro](https://static-docs.nocobase.com/20251226130637.png)
+
+Una vez habilitado, la aprobación iniciada por este flujo puede ser retirada por el iniciador antes de que cualquier aprobador la procese. Sin embargo, después de que cualquier aprobador configurado en cualquier nodo de aprobación posterior la haya procesado, ya no podrá ser retirada.
+
+:::info{title=Sugerencia}
 Después de habilitar o eliminar el botón de retiro, debe hacer clic en guardar y enviar en la ventana emergente de configuración del disparador para que los cambios surtan efecto.
 :::
 
-### Configuración de la Interfaz del Formulario del Iniciador
+### Tarjeta de "Mis solicitudes" <Badge>2.0+</Badge>
 
-Finalmente, debe configurar la interfaz del formulario del iniciador. Esta interfaz se utilizará para las acciones de envío al iniciar desde el bloque del centro de aprobación y al reiniciar después de un retiro. Haga clic en el botón de configuración para abrir la ventana emergente:
+Se utiliza para configurar las tarjetas de tareas en la lista "Mis solicitudes" del centro de tareas pendientes.
 
-![Disparador de Aprobación_Configuración del Disparador_Formulario del Iniciador](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Puede añadir un formulario para la interfaz del iniciador basado en la **colección** vinculada, o añadir texto descriptivo (Markdown) para indicaciones y guía. El formulario es obligatorio; de lo contrario, el iniciador no podrá realizar ninguna acción al acceder a esta interfaz.
+En la tarjeta, puede configurar libremente los campos de negocio que desea mostrar (excepto campos de relación) o información relacionada con la aprobación.
 
-Después de añadir un bloque de formulario, al igual que en una interfaz de configuración de formulario normal, puede añadir componentes de campo de la **colección** correspondiente y organizarlos como necesite para estructurar el contenido a rellenar en el formulario:
+Después de que se cree la solicitud de aprobación, podrá ver la tarjeta de tarea personalizada en la lista del centro de tareas pendientes:
 
-![Disparador de Aprobación_Configuración del Disparador_Formulario del Iniciador_Configuración de Campos](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-Además del botón de envío directo, también puede añadir un botón de acción "Guardar como borrador" para permitir un proceso de almacenamiento temporal:
+### Modo de visualización de registros en el flujo
 
-![Disparador de Aprobación_Configuración del Disparador_Formulario del Iniciador_Configuración de Acciones](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+*   **Instantánea**
 
-## Nodo de Aprobación
+    En el flujo de trabajo de aprobación, es el estado del registro que el solicitante y los aprobadores ven al entrar, y después de enviar, solo verán los registros que ellos mismos modificaron; no verán las actualizaciones realizadas por otros posteriormente.
 
-En un **flujo de trabajo** de aprobación, debe utilizar el nodo "Aprobación" dedicado para configurar la lógica operativa que permitirá a los aprobadores procesar (aprobar, rechazar o devolver) la aprobación iniciada. El nodo "Aprobación" solo puede utilizarse en **flujos de trabajo** de aprobación. Consulte [Nodo de Aprobación](../nodes/approval.md) para obtener más detalles.
+*   **Último**
 
-## Configuración de Inicio de Aprobación
+    En el flujo de trabajo de aprobación, el solicitante y los aprobadores siempre ven la versión más reciente del registro durante todo el proceso, independientemente del estado del registro antes de su operación. Al finalizar el proceso, verán la versión final del registro.
 
-Después de configurar y habilitar un **flujo de trabajo** de aprobación, puede vincularlo al botón de envío del formulario de la **colección** correspondiente, permitiendo a los usuarios iniciar una aprobación al enviar:
+## Nodo de aprobación
 
-![Iniciar Aprobación_Vincular Flujo de Trabajo](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+En un flujo de trabajo de aprobación, debe utilizar el nodo dedicado "Aprobación" para configurar la lógica de operación para que los aprobadores procesen (aprobar, rechazar o devolver) la aprobación iniciada. El nodo de "Aprobación" solo puede utilizarse en flujos de trabajo de aprobación. Consulte [Nodo de aprobación](../nodes/approval.md) para más detalles.
 
-Una vez vinculado el **flujo de trabajo**, cuando un usuario envía el formulario actual, se inicia una aprobación.
-
-:::info{title=Nota}
-Actualmente, el botón para iniciar una aprobación solo admite el botón 'Enviar' (o 'Guardar') en un formulario de creación o actualización. No es compatible con el botón 'Enviar al flujo de trabajo' (el cual solo puede vincularse a un 'Evento posterior a la acción').
+:::info{title=Sugerencia}
+Si un flujo de trabajo de aprobación no contiene ningún nodo de "Aprobación", el flujo se aprobará automáticamente.
 :::
 
-## Centro de Tareas Pendientes
+## Configuración de inicio de aprobación
 
-El Centro de Tareas Pendientes ofrece un punto de entrada unificado para que los usuarios puedan ver y procesar sus tareas pendientes. Las aprobaciones iniciadas por el usuario actual y sus tareas pendientes pueden accederse a través del Centro de Tareas Pendientes en la barra de herramientas superior, y los diferentes tipos de tareas pendientes pueden visualizarse mediante la navegación izquierda.
+Después de configurar y habilitar un flujo de trabajo de aprobación, puede vincular dicho flujo al botón de envío del formulario de la colección correspondiente para que los usuarios inicien la aprobación al momento del envío:
+
+![Iniciar aprobación_Vincular flujo de trabajo](https://static-docs.nocobase.com/20251226110710.png)
+
+Posteriormente, el envío de dicho formulario por parte del usuario activará el flujo de trabajo de aprobación correspondiente. Los datos enviados, además de guardarse en la colección correspondiente, también se capturarán como una instantánea en el flujo de aprobación para la consulta de los aprobadores posteriores.
+
+:::info{title=Sugerencia}
+Actualmente, el botón para iniciar la aprobación solo admite el uso de los botones "Enviar" (o "Guardar") en formularios de creación o actualización; no admite el uso del botón "Activar flujo de trabajo" (este botón solo puede vincularse a "Eventos de acción personalizados").
+:::
+
+## Centro de tareas pendientes
+
+El centro de tareas pendientes proporciona una entrada unificada para que los usuarios vean y procesen sus tareas pendientes. Tanto las aprobaciones iniciadas por el usuario actual como las tareas pendientes pueden accederse a través del centro de tareas pendientes en la barra de herramientas superior, y los diferentes tipos de tareas pueden visualizarse mediante la navegación izquierda.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
-### Mis Solicitudes
+### Iniciadas por mí
 
-#### Ver Aprobaciones Solicitadas
+#### Ver aprobaciones ya iniciadas
 
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
-#### Iniciar una Nueva Aprobación Directamente
+#### Iniciar directamente una nueva aprobación
 
 ![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
 
-### Mis Tareas Pendientes
+### Mis tareas pendientes
 
-#### Lista de Tareas Pendientes
+#### Lista de tareas pendientes
 
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
-#### Detalles de Tarea Pendiente
+#### Detalles de tarea pendiente
 
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
@@ -110,9 +168,9 @@ El Centro de Tareas Pendientes ofrece un punto de entrada unificado para que los
 
 ### Iniciador
 
-#### Iniciar desde una Colección
+#### Inicio desde colección
 
-Para iniciar desde un bloque de datos, puede realizar una llamada como esta (utilizando el botón de creación de la **colección** `posts` como ejemplo):
+Para iniciar desde un bloque de datos, puede realizar una llamada como esta (usando el botón de creación de la tabla `posts` como ejemplo):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -123,17 +181,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Aquí, el parámetro URL `triggerWorkflows` es la clave del **flujo de trabajo**; múltiples claves de **flujo de trabajo** se separan por comas. Esta clave puede obtenerse al pasar el ratón sobre el nombre del **flujo de trabajo** en la parte superior del lienzo del **flujo de trabajo**:
+Donde el parámetro URL `triggerWorkflows` es la clave (key) del flujo de trabajo; múltiples flujos de trabajo se separan por comas. Esta clave puede obtenerse al pasar el ratón sobre el nombre del flujo de trabajo en la parte superior del lienzo del flujo de trabajo:
 
-![Flujo de Trabajo_Clave_Método de Visualización](https://static-docs.nocobase.com/20240426135108.png)
+![Flujo de trabajo_key_método de visualización](https://static-docs.nocobase.com/20240426135108.png)
 
-Tras una llamada exitosa, se activará el **flujo de trabajo** de aprobación para la **colección** `posts` correspondiente.
+Tras una llamada exitosa, se activará el flujo de trabajo de aprobación para la tabla `posts` correspondiente.
 
-:::info{title="Nota"}
-Dado que las llamadas externas también requieren basarse en la identidad del usuario, al realizar llamadas a través de la API HTTP, al igual que las solicitudes enviadas desde la interfaz regular, debe proporcionar información de autenticación, incluyendo el encabezado `Authorization` o el parámetro `token` (el token obtenido al iniciar sesión), y el encabezado `X-Role` (el nombre del rol actual del usuario).
+:::info{title="Sugerencia"}
+Dado que las llamadas externas también requieren basarse en la identidad del usuario, al realizar llamadas a través de la API HTTP, al igual que las solicitudes enviadas desde la interfaz normal, debe proporcionar información de autenticación, incluyendo el encabezado `Authorization` o el parámetro `token` (el token obtenido al iniciar sesión), y el encabezado `X-Role` (el nombre del rol actual del usuario).
 :::
 
-Si necesita activar un evento para datos relacionados uno a uno en esta acción (uno a muchos aún no es compatible), puede usar `!` en el parámetro para especificar los datos de activación para el campo de asociación:
+Si necesita activar eventos para datos de relación uno a uno en esta operación (uno a muchos aún no es compatible), puede usar `!` en los parámetros para especificar los datos de activación del campo de relación:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -147,48 +205,48 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Tras una llamada exitosa, se activará el evento de aprobación para la **colección** `categories` correspondiente.
+Tras la llamada exitosa anterior, se activará el evento de aprobación para la tabla `categories` correspondiente.
 
-:::info{title="Nota"}
-Al activar un evento posterior a la acción mediante la API HTTP, también debe prestar atención al estado de habilitación del **flujo de trabajo** y a si la configuración de la **colección** coincide; de lo contrario, la llamada podría no tener éxito o podría generar un error.
+:::info{title="Sugerencia"}
+Al activar eventos posteriores a la operación mediante la API HTTP, también debe prestar atención al estado de habilitación del flujo de trabajo y a si la configuración de la colección coincide; de lo contrario, la llamada podría no tener éxito o generar un error.
 :::
 
-#### Iniciar desde el Centro de Aprobaciones
+#### Inicio desde el centro de aprobaciones
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
-    "collectionName": "<collection name>",
-    "workflowId": <workflow id>,
-    "data": { "<field>": "<value>" },
-    "status": <initial approval status>,
+    "collectionName": "<nombre de la colección>",
+    "workflowId": <id del flujo de trabajo>,
+    "data": { "<campo>": "<valor>" },
+    "status": <estado inicial de aprobación>,
   }'
   "http://localhost:3000/api/approvals:create"
 ```
 
 **Parámetros**
 
-*   `collectionName`: El nombre de la **colección** de destino para iniciar la aprobación. Obligatorio.
-*   `workflowId`: El ID del **flujo de trabajo** utilizado para iniciar la aprobación. Obligatorio.
-*   `data`: Los campos del registro de la **colección** creados al iniciar la aprobación. Obligatorio.
-*   `status`: El estado del registro creado al iniciar la aprobación. Obligatorio. Los valores posibles incluyen:
-    *   `0`: Borrador, indica que se guarda sin enviar para aprobación.
-    *   `1`: Enviar para aprobación, indica que el iniciador envía la solicitud de aprobación, entrando en el proceso de aprobación.
+* `collectionName`: Nombre de la colección de destino para iniciar la aprobación, obligatorio.
+* `workflowId`: ID del flujo de trabajo utilizado para iniciar la aprobación, obligatorio.
+* `data`: Campos del registro de la colección creados al iniciar la aprobación, obligatorio.
+* `status`: Estado del registro creado al iniciar la aprobación, obligatorio. Los valores posibles incluyen:
+  * `0`: Borrador, indica que se guarda pero no se envía a aprobación.
+  * `2`: Enviar aprobación, indica que el iniciador envía la solicitud de aprobación y entra en el proceso de aprobación.
 
-#### Guardar y Enviar
+#### Guardar y enviar
 
-Cuando una aprobación iniciada (o retirada) se encuentra en estado de borrador, puede guardarla o enviarla de nuevo a través de la siguiente API:
+Cuando una aprobación iniciada (o retirada) está en estado de borrador, puede guardarla o enviarla de nuevo a través de la siguiente interfaz:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
-    "data": { "<field>": "<value>" },
+    "data": { "<campo>": "<valor>" },
     "status": 2
   }'
-  "http://localhost:3000/api/approvals:update/<approval id>"
+  "http://localhost:3000/api/approvals:update/<id de aprobación>"
 ```
 
-#### Obtener Lista de Aprobaciones Solicitadas
+#### Obtener lista de aprobaciones iniciadas
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
@@ -197,105 +255,105 @@ curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 
 #### Retirar
 
-El iniciador puede retirar un registro que se encuentra actualmente en aprobación a través de la siguiente API:
+El iniciador puede retirar un registro que se encuentra actualmente en aprobación a través de la siguiente interfaz:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
-  "http://localhost:3000/api/approvals:withdraw/<approval id>"
+  "http://localhost:3000/api/approvals:withdraw/<id de aprobación>"
 ```
 
 **Parámetros**
 
-*   `<approval id>`: El ID del registro de aprobación a retirar. Obligatorio.
+* `<id de aprobación>`: ID del registro de aprobación a retirar, obligatorio.
 
 ### Aprobador
 
-Una vez que el **flujo de trabajo** de aprobación entra en un nodo de aprobación, se crea una tarea pendiente para el aprobador actual. El aprobador puede completar la tarea de aprobación a través de la interfaz o mediante una llamada a la API HTTP.
+Una vez que el flujo de trabajo de aprobación entra en un nodo de aprobación, se crea una tarea pendiente para el aprobador actual. El aprobador puede completar la tarea de aprobación a través de la interfaz o mediante una llamada a la API HTTP.
 
-#### Obtener Registros de Procesamiento de Aprobación
+#### Obtener registros de procesamiento de aprobación
 
-Las tareas pendientes son registros de procesamiento de aprobación. Puede obtener todos los registros de procesamiento de aprobación del usuario actual a través de la siguiente API:
+Las tareas pendientes son registros de procesamiento de aprobación. Puede obtener todos los registros de procesamiento de aprobación del usuario actual a través de la siguiente interfaz:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Aquí, `approvalRecords` es un recurso de **colección**, por lo que puede utilizar condiciones de consulta comunes como `filter`, `sort`, `pageSize` y `page`.
+Donde `approvalRecords`, como recurso de colección, también puede utilizar condiciones de consulta comunes como `filter`, `sort`, `pageSize` y `page`.
 
-#### Obtener un Único Registro de Procesamiento de Aprobación
+#### Obtener un único registro de procesamiento de aprobación
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
-  "http://localhost:3000/api/approvalRecords:get/<record id>"
+  "http://localhost:3000/api/approvalRecords:get/<id del registro>"
 ```
 
-#### Aprobar y Rechazar
+#### Aprobar y rechazar
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
   '{
     "status": 2,
-    "comment": "Looks good to me.",
-    "data": { "<field to modify>": "<value>" }
+    "comment": "Me parece bien.",
+    "data": { "<campo a modificar>": "<valor>" }
   }'
-  "http://localhost:3000/api/approvalRecords:submit/<record id>"
+  "http://localhost:3000/api/approvalRecords:submit/<id del registro>"
 ```
 
 **Parámetros**
 
-*   `<record id>`: El ID del registro a procesar para aprobación. Obligatorio.
-*   `status`: El campo de estado del procesamiento de aprobación. `2` significa "Aprobar", `-1` significa "Rechazar". Obligatorio.
-*   `comment`: Información de comentarios para el procesamiento de aprobación. Opcional.
-*   `data`: Representa las modificaciones realizadas en el registro de la **colección** del nodo de aprobación actual después de la aprobación. Opcional (solo efectivo al aprobar).
+* `<id del registro>`: ID del registro de procesamiento de aprobación pendiente, obligatorio.
+* `status`: El campo es el estado del procesamiento de aprobación, `2` significa "Aprobar", `-1` significa "Rechazar", obligatorio.
+* `comment`: Información de comentarios del procesamiento de aprobación, opcional.
+* `data`: Representa las modificaciones realizadas en el registro de la colección del nodo de aprobación actual después de la aprobación, opcional (solo efectivo al aprobar).
 
 #### Devolver <Badge>v1.9.0+</Badge>
 
-Antes de la versión v1.9.0, la devolución utilizaba la misma API que 'Aprobar' y 'Rechazar', usando `"status": 1` para representar una devolución.
+Antes de la versión v1.9.0, la devolución utilizaba la misma interfaz que "Aprobar" y "Rechazar", usando `"status": 1` para representar la devolución.
 
-A partir de la versión v1.9.0, la devolución tiene una API separada:
+A partir de la versión v1.9.0, la devolución tiene una interfaz separada:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
   '{
-    "returnToNodeKey": "<node key>",
+    "returnToNodeKey": "<clave del nodo>",
   }'
-  "http://localhost:3000/api/approvalRecords:return/<record id>"
+  "http://localhost:3000/api/approvalRecords:return/<id del registro>"
 ```
 
 **Parámetros**
 
-*   `<record id>`: El ID del registro a procesar para aprobación. Obligatorio.
-*   `returnToNodeKey`: La clave del nodo de destino al que se debe devolver. Opcional. Cuando se configura un rango de nodos a los que se puede devolver en el nodo, este parámetro puede utilizarse para especificar a qué nodo se debe regresar. Si no se configura, no es necesario pasar este parámetro, y por defecto se devolverá al punto de inicio para que el iniciador lo vuelva a enviar.
+* `<id del registro>`: ID del registro de procesamiento de aprobación pendiente, obligatorio.
+* `returnToNodeKey`: Clave del nodo de destino para la devolución, opcional. Cuando se configura un rango de nodos a los que se puede devolver en el nodo, se puede usar este parámetro para especificar a qué nodo devolver. Si no se configura, no es necesario pasar este parámetro y, por defecto, se devolverá al punto de inicio para que el iniciador lo vuelva a enviar.
 
 #### Delegar
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
   '{
-    "assignee": <user id>,
+    "assignee": <id de usuario>,
   }'
-  "http://localhost:3000/api/approvalRecords:delegate/<record id>"
+  "http://localhost:3000/api/approvalRecords:delegate/<id del registro>"
 ```
 
 **Parámetros**
 
-*   `<record id>`: El ID del registro a procesar para aprobación. Obligatorio.
-*   `assignee`: El ID del usuario al que se delega. Obligatorio.
+* `<id del registro>`: ID del registro de procesamiento de aprobación pendiente, obligatorio.
+* `assignee`: ID del usuario al que se delega, obligatorio.
 
-#### Añadir Firmante
+#### Añadir firmante
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
   '{
-    "assignees": [<user id>],
-    "order": <order>,
+    "assignees": [<id de usuario>],
+    "order": <orden>,
   }'
-  "http://localhost:3000/api/approvalRecords:add/<record id>"
+  "http://localhost:3000/api/approvalRecords:add/<id del registro>"
 ```
 
 **Parámetros**
 
-*   `<record id>`: El ID del registro a procesar para aprobación. Obligatorio.
-*   `assignees`: Una lista de IDs de usuario para añadir como firmantes. Obligatorio.
-*   `order`: El orden del firmante añadido. `-1` indica antes de "mí", `1` indica después de "mí".
+* `<id del registro>`: ID del registro de procesamiento de aprobación pendiente, obligatorio.
+* `assignees`: Lista de IDs de usuario para añadir como firmantes, obligatorio.
+* `order`: Orden del firmante añadido, `-1` indica antes de "mí", `1` indica después de "mí".

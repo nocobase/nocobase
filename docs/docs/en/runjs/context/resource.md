@@ -1,39 +1,39 @@
 # ctx.resource
 
-The **FlowResource** instance in the current context; used to access and operate on data. In most blocks (form, table, detail, etc.) and popups, the runtime binds `ctx.resource`; in JSBlock and similar contexts that have no resource by default, call [ctx.initResource()](./init-resource.md) first, then use `ctx.resource`.
+The **FlowResource** instance in the current context, used to access and operate on data. In most blocks (Forms, Tables, Details, etc.) and pop-up scenarios, the runtime environment pre-binds `ctx.resource`. In scenarios like JSBlock where there is no resource by default, you must first call [ctx.initResource()](./init-resource.md) to initialize it before using it via `ctx.resource`.
 
-## Use Cases
+## Applicable Scenarios
 
-Use whenever RunJS needs structured data (list, single record, custom API, SQL). Form, table, detail blocks and popups usually have it bound; in JSBlock, JSField, JSItem, JSColumn, etc., call `ctx.initResource(type)` first if you need to load data.
+`ctx.resource` can be used in any RunJS scenario that requires access to structured data (lists, single records, custom APIs, SQL). Forms, Tables, Detail blocks, and pop-ups are typically pre-bound. For JSBlock, JSField, JSItem, JSColumn, etc., if data loading is required, you can call `ctx.initResource(type)` first and then access `ctx.resource`.
 
-## Type
+## Type Definition
 
 ```ts
 resource: FlowResource | undefined;
 ```
 
-- When the context has a bound resource, `ctx.resource` is that instance.
-- In JSBlock etc. it is `undefined` by default; after `ctx.initResource(type)` it is set.
+- In contexts with pre-binding, `ctx.resource` is the corresponding resource instance.
+- In scenarios like JSBlock where there is no resource by default, it is `undefined` until `ctx.initResource(type)` is called.
 
-## Common methods
+## Common Methods
 
-Different resource types (MultiRecordResource, SingleRecordResource, APIResource, SQLResource) expose slightly different APIs; common ones:
+Methods exposed by different resource types (MultiRecordResource, SingleRecordResource, APIResource, SQLResource) vary slightly. Below are the universal or commonly used methods:
 
 | Method | Description |
-|--------|-------------|
-| `getData()` | Current data (list or single record) |
+|------|------|
+| `getData()` | Get current data (list or single record) |
 | `setData(value)` | Set local data |
-| `refresh()` | Refetch with current params |
-| `setResourceName(name)` | Set resource name (e.g. `'users'`, `'users.tags'`) |
-| `setFilterByTk(tk)` | Set primary key filter (single get, etc.) |
-| `runAction(actionName, options)` | Call any resource action (e.g. `create`, `update`) |
-| `on(event, callback)` / `off(event, callback)` | Subscribe/unsubscribe (e.g. `refresh`, `saved`) |
+| `refresh()` | Initiate a request with current parameters to refresh data |
+| `setResourceName(name)` | Set resource name (e.g., `'users'`, `'users.tags'`) |
+| `setFilterByTk(tk)` | Set primary key filter (for single record `get`, etc.) |
+| `runAction(actionName, options)` | Call any resource action (e.g., `create`, `update`) |
+| `on(event, callback)` / `off(event, callback)` | Subscribe/unsubscribe to events (e.g., `refresh`, `saved`) |
 
-**MultiRecordResource**: `getSelectedRows()`, `destroySelectedRows()`, `setPage()`, `next()`, `previous()`, etc.
+**MultiRecordResource Specific**: `getSelectedRows()`, `destroySelectedRows()`, `setPage()`, `next()`, `previous()`, etc.
 
 ## Examples
 
-### List (after initResource)
+### List Data (Requires initResource first)
 
 ```js
 ctx.initResource('MultiRecordResource');
@@ -42,7 +42,7 @@ await ctx.resource.refresh();
 const rows = ctx.resource.getData();
 ```
 
-### Table (pre-bound)
+### Table Scenario (Pre-bound)
 
 ```js
 const rows = ctx.resource?.getSelectedRows?.() || [];
@@ -54,7 +54,7 @@ await ctx.resource.destroySelectedRows();
 ctx.message.success(ctx.t('Deleted'));
 ```
 
-### Single record
+### Single Record
 
 ```js
 ctx.initResource('SingleRecordResource');
@@ -64,29 +64,29 @@ await ctx.resource.refresh();
 const record = ctx.resource.getData();
 ```
 
-### Custom action
+### Calling a Custom Action
 
 ```js
-await ctx.resource.runAction('create', { data: { name: 'John' } });
+await ctx.resource.runAction('create', { data: { name: 'John Doe' } });
 ```
 
-## Relation to ctx.initResource / ctx.makeResource
+## Relationship with ctx.initResource / ctx.makeResource
 
-- **ctx.initResource(type)**: Creates and binds if missing; otherwise returns existing. Ensures `ctx.resource` is set.
-- **ctx.makeResource(type)**: Creates a new instance and returns it; **does not** set `ctx.resource`. Use when you need multiple resources or a temporary one.
-- **ctx.resource**: The bound resource in the current context. Most blocks/popups have it; when not bound it is `undefined` and you must call `ctx.initResource` first.
+- **ctx.initResource(type)**: If `ctx.resource` does not exist, it creates and binds one; if it already exists, it returns the existing instance. This ensures `ctx.resource` is available.
+- **ctx.makeResource(type)**: Creates a new resource instance and returns it, but does **not** write it to `ctx.resource`. This is suitable for scenarios requiring multiple independent resources or temporary usage.
+- **ctx.resource**: Accesses the resource already bound to the current context. Most blocks/pop-ups are pre-bound; otherwise, it is `undefined` and requires `ctx.initResource`.
 
 ## Notes
 
-- Prefer null checks: `ctx.resource?.refresh()`, especially in JSBlock and similar contexts.
-- After init, call `setResourceName(name)` then `refresh()` to load data.
-- See the resource type docs for full API.
+- It is recommended to perform a null check before use: `ctx.resource?.refresh()`, especially in scenarios like JSBlock where pre-binding might not exist.
+- After initialization, you must call `setResourceName(name)` to specify the collection before loading data via `refresh()`.
+- For the full API of each Resource type, see the links below.
 
 ## Related
 
-- [ctx.initResource()](./init-resource.md): init and bind resource
-- [ctx.makeResource()](./make-resource.md): create resource without binding
-- [MultiRecordResource](../resource/multi-record-resource.md)
-- [SingleRecordResource](../resource/single-record-resource.md)
-- [APIResource](../resource/api-resource.md)
-- [SQLResource](../resource/sql-resource.md)
+- [ctx.initResource()](./init-resource.md) - Initialize and bind a resource to the current context
+- [ctx.makeResource()](./make-resource.md) - Create a new resource instance without binding it to `ctx.resource`
+- [MultiRecordResource](../resource/multi-record-resource.md) - Multiple records/Lists
+- [SingleRecordResource](../resource/single-record-resource.md) - Single record
+- [APIResource](../resource/api-resource.md) - General API resource
+- [SQLResource](../resource/sql-resource.md) - SQL query resource

@@ -1,5 +1,5 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/template-print/syntax/formatters/number-formatting).
 :::
 
 ### Formattazione Numerica
@@ -14,7 +14,7 @@ Parametro:
 
 ##### Esempio
 ```
-// Esempio ambiente: opzioni API { "lang": "en-us" }
+
 '10':formatN()         // Output "10.000"
 '1000.456':formatN()   // Output "1,000.456"
 ```
@@ -193,7 +193,7 @@ Dipende dal caso di conversione specifico.
 #### 13. :toFixed
 
 ##### Spiegazione della Sintassi
-Converte il numero in una stringa mantenendo solo il numero specificato di cifre decimali. Sconsigliato.
+Converte il numero in una stringa mantenendo solo il numero specificato di cifre decimali, (sconsigliato).
 
 ##### Esempio e Risultato
 Dipende dal caso di conversione specifico.

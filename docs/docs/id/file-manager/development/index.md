@@ -1,5 +1,5 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/file-manager/development/index).
 :::
 
 # Pengembangan Ekstensi
@@ -65,7 +65,7 @@ export default class MyStoragePluginServer extends Plugin {
 }
 ```
 
-Setelah didaftarkan, konfigurasi penyimpanan akan muncul di resource `storages`, sama seperti tipe bawaan. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi formulir secara otomatis atau menginisialisasi record default.
+Setelah didaftarkan, konfigurasi penyimpanan akan muncul di resource `storages`, sama seperti tipe Built-in. Konfigurasi yang disediakan oleh `StorageType.defaults()` dapat digunakan untuk mengisi formulir secara otomatis atau menginisialisasi record default.
 
 <!--
 ### Konfigurasi sisi klien dan antarmuka manajemen
@@ -74,7 +74,7 @@ Di sisi klien, Anda perlu memberi tahu pengelola file bagaimana merender formuli
 
 ## Memperluas Tipe File di Frontend
 
-Untuk file yang sudah diunggah, Anda dapat menampilkan konten pratinjau yang berbeda di antarmuka frontend berdasarkan tipe file. Field lampiran pada pengelola file memiliki pratinjau file berbasis browser (disematkan dalam iframe), yang mendukung pratinjau sebagian besar format (seperti gambar, video, audio, dan PDF) langsung di browser. Ketika format file tidak didukung oleh browser atau memerlukan interaksi pratinjau khusus, Anda dapat memperluas komponen pratinjau berdasarkan tipe file.
+Untuk file yang sudah diunggah, Anda dapat menampilkan konten pratinjau yang berbeda di antarmuka frontend berdasarkan tipe file. Field Attachment pada pengelola file memiliki pratinjau file berbasis browser (disematkan dalam iframe), yang mendukung pratinjau sebagian besar format (seperti gambar, video, audio, dan PDF) langsung di browser. Ketika format file tidak didukung oleh browser atau memerlukan interaksi pratinjau khusus, Anda dapat memperluas komponen pratinjau berdasarkan tipe file.
 
 ### Contoh
 
@@ -110,9 +110,9 @@ class MyPlugin extends Plugin {
 
 Di sini, `filePreviewTypes` adalah objek entry yang disediakan oleh `@nocobase/plugin-file-manager/client` untuk memperluas pratinjau file. Gunakan metode `add` untuk menambahkan objek deskripsi tipe file.
 
-Setiap tipe file harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh, `matchMimetype` digunakan untuk memeriksa atribut `mimetype` file. Jika cocok dengan tipe `docx`, maka dianggap tipe file yang harus ditangani. Jika tidak cocok, akan digunakan penanganan tipe bawaan.
+Setiap tipe file harus mengimplementasikan metode `match()` untuk memeriksa apakah tipe file memenuhi persyaratan. Dalam contoh, `matchMimetype` digunakan untuk memeriksa atribut `mimetype` file. Jika cocok dengan tipe `docx`, maka dianggap tipe file yang harus ditangani. Jika tidak cocok, akan digunakan penanganan tipe Built-in.
 
-Properti `Previewer` pada objek deskripsi tipe adalah komponen untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender dalam dialog pratinjau. Anda dapat mengembalikan tampilan React apa pun (misalnya iframe, pemutar, atau grafik).
+Properti `Previewer` pada objek deskripsi tipe adalah komponen untuk pratinjau. Ketika tipe file cocok, komponen ini akan dirender dalam dialog pratinjau. Anda dapat mengembalikan tampilan React apa pun (misalnya iframe, pemutar, atau Chart).
 
 ### API
 
@@ -163,7 +163,7 @@ Mengembalikan nilai `boolean` yang menunjukkan apakah cocok.
 
 ##### `getThumbnailURL`
 
-Mengembalikan URL thumbnail yang digunakan pada daftar file. Jika nilai yang dikembalikan kosong, gambar placeholder bawaan akan digunakan.
+Mengembalikan URL thumbnail yang digunakan pada daftar file. Jika nilai yang dikembalikan kosong, gambar placeholder Built-in akan digunakan.
 
 ##### `Previewer`
 
@@ -174,4 +174,3 @@ Props yang diterima adalah:
 * `file`: objek file saat ini (bisa berupa URL string atau objek yang berisi `url`/`preview`)
 * `index`: indeks file dalam daftar
 * `list`: daftar file
-

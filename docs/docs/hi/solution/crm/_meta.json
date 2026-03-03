@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "समाधान अवलोकन"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "विस्तृत डिज़ाइन"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "स्थापना"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "पुराना CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "अधिक सामग्री"
   }
 ]

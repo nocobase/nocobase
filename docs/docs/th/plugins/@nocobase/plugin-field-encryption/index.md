@@ -1,14 +1,18 @@
 ---
-displayName: "Collection field: Encryption"
+displayName: "ฟิลด์คอลเลกชัน: การเข้ารหัส"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Encrypts and decrypts specified fields automatically for secure data storage.
+  เข้ารหัสและถอดรหัสฟิลด์ที่กำหนดโดยอัตโนมัติ เพื่อความปลอดภัยของข้อมูล
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Collection field: Encryption
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-field-encryption/index)
+:::
+
+# ฟิลด์คอลเลกชัน: การเข้ารหัส

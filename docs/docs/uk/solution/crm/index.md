@@ -1,3 +1,7 @@
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/solution/crm/index).
+:::
+
 # NocoBase CRM 2.0 Solution
 
 > A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
@@ -26,7 +30,7 @@ B2B sales, project-based sales, and cross-border trade teams at small-to-mid and
 
 ## 2. Differentiated Advantages
 
-**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
+**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fenxiang Xiao Ke, Odoo CRM, SuiteCRM, etc.
 
 **Platform-level advantages:**
 
@@ -123,9 +127,9 @@ The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages.
 
 ## 7. Getting Started
 
-Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
+Deploy the CRM package to your target environment using NocoBase's migration management for one-click import.
 
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
+**Ready out of the box:** Pre-built collections, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
 
 ---
 

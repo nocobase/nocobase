@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Giới thiệu giải pháp"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Thiết kế chi tiết"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Hướng dẫn cài đặt"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "CRM phiên bản cũ (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Nội dung khác"
   }
 ]

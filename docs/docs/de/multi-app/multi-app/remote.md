@@ -2,89 +2,93 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/multi-app/multi-app/remote).
+:::
+
 # Multi-Umgebungsmodus
 
 ## Einführung
 
-Der Shared-Memory-Multi-App-Modus bietet klare Vorteile bei Deployment und Betrieb. Mit steigender App-Anzahl und wachsender Business-Komplexität kann jedoch eine einzelne Instanz an Grenzen stoßen. Für diese Szenarien eignet sich ein hybrides Multi-Umgebungs-Deployment.
+Der Multi-Anwendungsmodus mit gemeinsam genutztem Speicher bietet deutliche Vorteile bei der Bereitstellung und Wartung. Mit zunehmender Anzahl von Anwendungen und steigender Geschäftskomplexität kann eine einzelne Instanz jedoch allmählich mit Problemen wie Ressourcenkonflikten und sinkender Stabilität konfrontiert werden. Für solche Szenarien können Benutzer eine hybride Multi-Umgebungs-Bereitstellungslösung verwenden, um komplexere Geschäftsanforderungen zu unterstützen.
 
-In diesem Modus wird eine **Einstiegsanwendung** als zentrale Verwaltung und Steuerung bereitgestellt sowie mehrere **NocoBase-Instanzen** als unabhängige Laufzeitumgebungen für die Business-Apps. Die Umgebungen sind isoliert und arbeiten koordiniert zusammen.
+In diesem Modus stellt das System eine Einstiegsanwendung als einheitliches Verwaltungs- und Planungszentrum bereit und setzt gleichzeitig mehrere NocoBase-Instanzen als unabhängige Anwendungslaufzeitumgebungen ein, die für die tatsächliche Ausführung der Geschäftsanwendungen verantwortlich sind. Die einzelnen Umgebungen sind voneinander isoliert und arbeiten koordiniert zusammen, wodurch der Druck auf eine einzelne Instanz effektiv verteilt und die Stabilität, Erweiterbarkeit sowie die Fehlerisolationsfähigkeit des Systems erheblich verbessert werden.
 
-Auf Deployment-Ebene können Umgebungen als separate Prozesse, Docker-Container oder mehrere Kubernetes-Deployments betrieben werden.
+Auf der Bereitstellungsebene können verschiedene Umgebungen entweder in unabhängigen Prozessen ausgeführt, als verschiedene Docker-Container bereitgestellt oder in Form von mehreren Kubernetes-Deployments existieren. Dies ermöglicht eine flexible Anpassung an Infrastrukturumgebungen unterschiedlicher Größe und Architektur.
 
-## Deployment
+## Bereitstellung
 
-Im Multi-Umgebungsmodus gilt:
+Im hybriden Multi-Umgebungs-Bereitstellungsmodus:
 
-- Die **Einstiegsanwendung (Supervisor)** verwaltet Apps und Umgebungen zentral
-- **Worker-Anwendungen (Worker)** fungieren als tatsächliche Laufzeitumgebungen
-- App- und Umgebungskonfigurationen werden in Redis zwischengespeichert
-- Befehle und Statussynchronisation zwischen Supervisor und Workern laufen über Redis
+- Die Einstiegsanwendung (Supervisor) ist für die einheitliche Verwaltung von Anwendungs- und Umgebungsinformationen verantwortlich.
+- Die Arbeitsanwendungen (Worker) dienen als tatsächliche Geschäftslaufzeitumgebungen.
+- Anwendungs- und Umgebungskonfigurationen werden über einen Redis-Cache zwischengespeichert.
+- Die Synchronisation von Befehlen und Status zwischen der Einstiegsanwendung und den Arbeitsanwendungen erfolgt über Redis-Kommunikation.
 
-Die Erstellung von Umgebungen ist aktuell noch nicht integriert. Worker müssen manuell bereitgestellt und konfiguriert werden.
+Derzeit wird noch keine Funktion zur Erstellung von Umgebungen bereitgestellt. Jede Arbeitsanwendung muss manuell bereitgestellt und mit den entsprechenden Umgebungsinformationen konfiguriert werden, bevor sie von der Einstiegsanwendung erkannt werden kann.
 
 ### Architekturabhängigkeiten
 
-Vor dem Deployment:
+Bitte bereiten Sie vor der Bereitstellung die folgenden Dienste vor:
 
-- **Redis**
-  - Cache für App- und Umgebungskonfigurationen
-  - Kommunikationskanal für Befehle zwischen Supervisor und Workern
+- Redis
+  - Zwischenspeichern von Anwendungs- und Umgebungskonfigurationen.
+  - Dient als Kanal für die Befehlskommunikation zwischen der Einstiegsanwendung und den Arbeitsanwendungen.
 
-- **Datenbank**
-  - Datenbankdienste für Supervisor und Worker
+- Datenbank
+  - Datenbankdienste, mit denen sich die Einstiegsanwendung und die Arbeitsanwendungen verbinden müssen.
 
 ### Einstiegsanwendung (Supervisor)
 
-Die Einstiegsanwendung ist die zentrale Steuerungsebene für App-Erstellung, Start/Stopp, Umgebungsscheduling und Zugriffsproxy.
+Die Einstiegsanwendung fungiert als einheitliches Verwaltungszentrum und ist für die Erstellung, den Start, den Stopp und die Planung von Umgebungen sowie für den Anwendungszugriffsproxy verantwortlich.
 
-Umgebungsvariablen des Supervisors:
+Erläuterung der Umgebungsvariablen für die Einstiegsanwendung:
 
 ```bash
-# Application mode
+# Anwendungsmodus
 APP_MODE=supervisor
-# Application discovery adapter
+# Methode zur Anwendungserkennung
 APP_DISCOVERY_ADAPTER=remote
-# Application process adapter
+# Methode zur Verwaltung von Anwendungsprozessen
 APP_PROCESS_ADAPTER=remote
-# Redis for application and environment configuration cache
+# Redis für den Cache von Anwendungs- und Umgebungskonfigurationen
 APP_SUPERVISOR_REDIS_URL=
-# Command communication adapter
-APP_COMMAND_ADPATER=redis
-# Redis for command communication
+# Methode für die Befehlskommunikation der Anwendung
+APP_COMMAND_ADAPTER=redis
+# Redis für die Befehlskommunikation der Anwendung
 APP_COMMAND_REDIS_URL=
 ```
 
-### Worker-Anwendung (Worker)
+### Arbeitsanwendung (Worker)
 
-Worker hosten und betreiben die konkreten NocoBase-App-Instanzen.
+Die Arbeitsanwendung dient als tatsächliche Geschäftslaufzeitumgebung und ist für das Hosten und Ausführen spezifischer NocoBase-Anwendungsinstanzen verantwortlich.
 
-Umgebungsvariablen des Workers:
+Erläuterung der Umgebungsvariablen für die Arbeitsanwendung:
 
 ```bash
-# Application mode
+# Anwendungsmodus
 APP_MODE=worker
-# Application discovery adapter
+# Methode zur Anwendungserkennung
 APP_DISCOVERY_ADAPTER=remote
-# Application process adapter
+# Methode zur Verwaltung von Anwendungsprozessen
 APP_PROCESS_ADAPTER=local
-# Redis for application and environment configuration cache
+# Redis für den Cache von Anwendungs- und Umgebungskonfigurationen
 APP_SUPERVISOR_REDIS_URL=
-# Command communication adapter
-APP_COMMAND_ADPATER=redis
-# Redis for command communication
+# Methode für die Befehlskommunikation der Anwendung
+APP_COMMAND_ADAPTER=redis
+# Redis für die Befehlskommunikation der Anwendung
 APP_COMMAND_REDIS_URL=
-# Environment identifier
+# Umgebungsidentifikator
 ENVIRONMENT_NAME=
-# Environment access URL
+# URL für den Umgebungszugriff
 ENVIRONMENT_URL=
-# Environment proxy access URL
+# URL für den Proxy-Zugriff auf die Umgebung
 ENVIRONMENT_PROXY_URL=
 ```
 
-### Docker-Compose-Beispiel
+### Docker Compose Beispiel
 
-Das folgende Beispiel zeigt ein hybrides Multi-Umgebungs-Deployment mit einem Supervisor und zwei Workern.
+Das folgende Beispiel zeigt eine hybride Multi-Umgebungs-Bereitstellungslösung mit Docker-Containern als Laufzeiteinheit, bei der eine Einstiegsanwendung und zwei Arbeitsanwendungen gleichzeitig über Docker Compose bereitgestellt werden.
 
 ```yaml
 networks:
@@ -190,40 +194,40 @@ services:
 
 ## Benutzerhandbuch
 
-Die grundlegende App-Verwaltung entspricht dem Shared-Memory-Modus, siehe [Shared-Memory-Modus](./local.md). Hier werden die Multi-Umgebungsaspekte beschrieben.
+Die grundlegenden Verwaltungsvorgänge für Anwendungen unterscheiden sich nicht vom Modus mit gemeinsam genutztem Speicher, bitte beziehen Sie sich auf den [Modus mit gemeinsam genutztem Speicher](./local.md). In diesem Abschnitt werden hauptsächlich die Inhalte im Zusammenhang mit der Multi-Umgebungs-Konfiguration vorgestellt.
 
 ### Umgebungsliste
 
-Nach dem Deployment können Sie auf der Seite **App supervisor** im Tab **Environment** die registrierten Worker-Umgebungen einsehen: Kennung, Version, URL und Status. Worker senden alle 2 Minuten einen Heartbeat.
+Rufen Sie nach Abschluss der Bereitstellung die Seite „Anwendungs-Supervisor“ der Einstiegsanwendung auf. Auf der Registerkarte „Umgebungen“ können Sie die Liste der registrierten Arbeitsumgebungen einsehen. Diese enthält Informationen wie den Umgebungsidentifikator, die Version der Arbeitsanwendung, die Zugriffs-URL und den Status. Arbeitsanwendungen melden alle 2 Minuten einen Herzschlag, um die Verfügbarkeit der Umgebung sicherzustellen.
 
 ![](https://static-docs.nocobase.com/202512291830371.png)
 
-### App erstellen
+### Anwendungserstellung
 
-Beim Erstellen einer App können Sie eine oder mehrere Laufzeitumgebungen auswählen. In den meisten Fällen reicht eine Umgebung. Mehrere Umgebungen sind sinnvoll bei [Service Splitting](/cluster-mode/services-splitting).
+Beim Erstellen einer Anwendung können Sie eine oder mehrere Laufzeitumgebungen auswählen, um festzulegen, in welchen Arbeitsanwendungen diese Anwendung bereitgestellt werden soll. Im Normalfall wird empfohlen, nur eine Umgebung auszuwählen. Wählen Sie nur dann mehrere Umgebungen aus, wenn eine Arbeitsanwendung eine [Dienstetrennung](/cluster-mode/services-splitting) durchgeführt hat und dieselbe Anwendung in mehreren Laufzeitumgebungen bereitgestellt werden muss, um eine Lastverteilung oder Funktionsisolierung zu erreichen.
 
 ![](https://static-docs.nocobase.com/202512291835086.png)
 
-### App-Liste
+### Anwendungsliste
 
-Die App-Liste zeigt die aktuelle Laufzeitumgebung und den Status je App. Bei mehreren Umgebungen werden mehrere Status angezeigt. Start/Stop sollte dann zentral gesteuert werden.
+Die Anwendungslistenseite zeigt die aktuelle Laufzeitumgebung und Statusinformationen für jede Anwendung an. Wenn eine Anwendung in mehreren Umgebungen bereitgestellt ist, werden mehrere Laufzeitstati angezeigt. Dieselbe Anwendung in mehreren Umgebungen behält im Normalfall einen einheitlichen Status bei und erfordert eine einheitliche Steuerung von Start und Stopp.
 
 ![](https://static-docs.nocobase.com/202512291842216.png)
 
-### App-Start
+### Anwendungsstart
 
-Da beim Start Initialdaten in die Datenbank geschrieben werden können, werden Starts bei Multi-Umgebungs-Deployments zur Vermeidung von Race Conditions in eine Warteschlange gestellt.
+Da beim Starten einer Anwendung möglicherweise Initialisierungsdaten in die Datenbank geschrieben werden, erfolgt der Start von Anwendungen, die in mehreren Umgebungen bereitgestellt sind, nacheinander in einer Warteschlange, um Race Conditions in Multi-Umgebungs-Szenarien zu vermeiden.
 
 ![](https://static-docs.nocobase.com/202512291841727.png)
 
-### Zugriffsproxy
+### Anwendungszugriffsproxy
 
-Worker-Apps können über den Subpfad `/apps/:appName/admin` der Einstiegsanwendung aufgerufen werden.
+Arbeitsanwendungen können über den Unterpfad `/apps/:appName/admin` der Einstiegsanwendung per Proxy aufgerufen werden.
 
 ![](https://static-docs.nocobase.com/202601082154230.png)
 
-Wenn eine App in mehreren Umgebungen bereitgestellt ist, muss ein Ziel für den Proxyzugriff gewählt werden.
+Wenn eine Anwendung in mehreren Umgebungen bereitgestellt ist, muss eine Zielumgebung für den Proxy-Zugriff angegeben werden.
 
 ![](https://static-docs.nocobase.com/202601082155146.png)
 
-Standardmäßig verwendet der Proxy `ENVIRONMENT_URL`. Dieser muss aus dem Netzwerk der Einstiegsanwendung erreichbar sein. Alternativ kann `ENVIRONMENT_PROXY_URL` gesetzt werden.
+Standardmäßig verwendet die Proxy-Zugriffsadresse die Zugriffsadresse der Arbeitsanwendung, was der Umgebungsvariablen `ENVIRONMENT_URL` entspricht. Es muss sichergestellt werden, dass diese Adresse in der Netzwerkumgebung, in der sich die Einstiegsanwendung befindet, erreichbar ist. Falls eine andere Proxy-Zugriffsadresse verwendet werden soll, kann diese über die Umgebungsvariable `ENVIRONMENT_PROXY_URL` überschrieben werden.

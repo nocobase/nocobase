@@ -1,690 +1,687 @@
-# Ticketing Solution Detailed Design
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/solution/ticket-system/design).
+:::
 
-> **Version**: v2.0-beta
+# Thiết kế chi tiết giải pháp công đơn (Ticket)
 
-> **Updated**: 2026-01-05
+> **Phiên bản**: v2.0-beta
 
-> **Status**: Preview
+> **Ngày cập nhật**: 05-01-2026
 
+> **Trạng thái**: Bản xem trước
 
-## 1. System Overview and Design Philosophy
+## 1. Tổng quan hệ thống và Triết lý thiết kế
 
-### 1.1 System Positioning
+### 1.1 Định vị hệ thống
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Hệ thống này là một **nền tảng quản lý công đơn thông minh được hỗ trợ bởi AI**, được xây dựng trên nền tảng mã thấp (low-code) NocoBase. Mục tiêu cốt lõi là:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Giúp nhân viên hỗ trợ tập trung vào việc giải quyết vấn đề, thay vì các thao tác quy trình rườm rà
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Triết lý thiết kế
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Triết lý 1: Kiến trúc dữ liệu hình chữ T
 
-**What is T-Shaped Architecture?**
+**Kiến trúc hình chữ T là gì?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+Mô hình này mượn ý tưởng từ khái niệm "nhân tài hình chữ T" — Chiều ngang rộng + Chiều dọc sâu:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Chiều ngang (Bảng chính)**: Bao quát các năng lực chung cho tất cả các loại nghiệp vụ — các trường cốt lõi như mã số, trạng thái, người xử lý, SLA, v.v.
+- **Chiều dọc (Bảng mở rộng)**: Các trường chuyên biệt đi sâu vào từng nghiệp vụ cụ thể — sửa chữa thiết bị có số sê-ri, khiếu nại có phương án bồi thường.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**Tại sao lại thiết kế như vậy?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Phương án truyền thống | Kiến trúc hình chữ T |
+|----------|---------|
+| Mỗi loại nghiệp vụ một bảng, các trường bị lặp lại | Quản lý thống nhất các trường chung, mở rộng trường nghiệp vụ theo nhu cầu |
+| Báo cáo thống kê cần hợp nhất nhiều bảng | Một bảng chính có thể thống kê trực tiếp tất cả công đơn |
+| Thay đổi quy trình phải sửa nhiều nơi | Quy trình cốt lõi chỉ cần sửa một nơi |
+| Thêm loại nghiệp vụ mới phải tạo bảng mới | Chỉ cần thêm bảng mở rộng, quy trình chính không đổi |
 
-#### Philosophy Two: AI Employee Team
+#### Triết lý 2: Đội ngũ nhân viên AI
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Không chỉ là "tính năng AI", mà là "nhân viên AI". Mỗi AI có vai trò, tính cách và trách nhiệm rõ ràng:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| Nhân viên AI | Vị trí | Trách nhiệm cốt lõi | Kịch bản kích hoạt |
+|--------|------|----------|----------|
+| **Sam** | Trưởng bộ phận hỗ trợ | Phân luồng công đơn, đánh giá mức độ ưu tiên, quyết định nâng cấp | Tự động khi tạo công đơn |
+| **Grace** | Chuyên gia thành công khách hàng | Tạo câu trả lời, điều chỉnh giọng điệu, xử lý khiếu nại | Khi nhân viên nhấn "AI phản hồi" |
+| **Max** | Trợ lý kiến thức | Tìm kiếm trường hợp tương tự, đề xuất kiến thức, tổng hợp giải pháp | Tự động tại trang chi tiết công đơn |
+| **Lexi** | Thông dịch viên | Dịch đa ngôn ngữ, dịch bình luận | Tự động khi phát hiện ngôn ngữ nước ngoài |
 
-**Why the "AI Employee" Model?**
+**Tại sao sử dụng mô hình "Nhân viên AI"?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Trách nhiệm rõ ràng**: Sam quản lý phân luồng, Grace quản lý phản hồi, không bị chồng chéo.
+- **Dễ hiểu**: Nói với người dùng "Để Sam phân tích một chút" sẽ thân thiện hơn là "Gọi API phân loại".
+- **Có khả năng mở rộng**: Thêm năng lực AI mới tương đương với việc tuyển dụng nhân viên mới.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Triết lý 3: Tự tuần hoàn kiến thức
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Điều này tạo thành một vòng lặp khép kín giữa **Tích lũy kiến thức - Ứng dụng kiến thức**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Thực thể cốt lõi và Mô hình dữ liệu
 
-### 2.1 Entity Relationship Overview
+### 2.1 Tổng quan quan hệ thực thể
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Chi tiết các bảng cốt lõi
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Bảng chính công đơn (nb_tts_tickets)
 
-**Basic Information**
+Đây là hạt nhân của hệ thống, sử dụng thiết kế "bảng rộng", đưa tất cả các trường thường dùng vào bảng chính.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**Thông tin cơ bản**
 
-**Source Tracking**
+| Trường | Kiểu dữ liệu | Mô tả | Ví dụ |
+|------|------|------|------|
+| id | BIGINT | Khóa chính | 1001 |
+| ticket_no | VARCHAR | Mã công đơn | TKT-20251229-0001 |
+| title | VARCHAR | Tiêu đề | Kết nối mạng chậm |
+| description | TEXT | Mô tả vấn đề | Từ sáng nay mạng văn phòng... |
+| biz_type | VARCHAR | Loại nghiệp vụ | it_support |
+| priority | VARCHAR | Mức độ ưu tiên | P1 |
+| status | VARCHAR | Trạng thái | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**Truy xuất nguồn gốc**
 
-**Contact Information**
+| Trường | Kiểu dữ liệu | Mô tả | Ví dụ |
+|------|------|------|------|
+| source_system | VARCHAR | Hệ thống nguồn | crm / email / iot |
+| source_channel | VARCHAR | Kênh nguồn | web / phone / wechat |
+| external_ref_id | VARCHAR | ID tham chiếu bên ngoài | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**Thông tin liên hệ**
 
-**Assignee Information**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| customer_id | BIGINT | ID khách hàng |
+| contact_name | VARCHAR | Tên người liên hệ |
+| contact_phone | VARCHAR | Số điện thoại liên hệ |
+| contact_email | VARCHAR | Email liên hệ |
+| contact_company | VARCHAR | Tên công ty |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**Thông tin người xử lý**
 
-**Time Nodes**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| assignee_id | BIGINT | ID người xử lý |
+| assignee_department_id | BIGINT | ID bộ phận xử lý |
+| transfer_count | INT | Số lần chuyển giao |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**Các mốc thời gian**
 
-**SLA Related**
+| Trường | Kiểu dữ liệu | Mô tả | Thời điểm kích hoạt |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | Thời gian gửi | Khi tạo công đơn |
+| assigned_at | TIMESTAMP | Thời gian phân bổ | Khi chỉ định người xử lý |
+| first_response_at | TIMESTAMP | Thời gian phản hồi đầu tiên | Khi phản hồi khách hàng lần đầu |
+| resolved_at | TIMESTAMP | Thời gian giải quyết | Khi trạng thái chuyển sang resolved |
+| closed_at | TIMESTAMP | Thời gian đóng | Khi trạng thái chuyển sang closed |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**Liên quan đến SLA**
 
-**AI Analysis Results**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| sla_config_id | BIGINT | ID cấu hình SLA |
+| sla_response_due | TIMESTAMP | Hạn chót phản hồi |
+| sla_resolve_due | TIMESTAMP | Hạn chót giải quyết |
+| sla_paused_at | TIMESTAMP | Thời gian bắt đầu tạm dừng SLA |
+| sla_paused_duration | INT | Tổng thời gian tạm dừng (phút) |
+| is_sla_response_breached | BOOLEAN | Phản hồi có vi phạm không |
+| is_sla_resolve_breached | BOOLEAN | Giải quyết có vi phạm không |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**Kết quả phân tích AI**
 
-**Multi-Language Support**
+| Trường | Kiểu dữ liệu | Mô tả | Do ai điền |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | Phân loại do AI nhận diện | Sam |
+| ai_sentiment | VARCHAR | Phân tích cảm xúc | Sam |
+| ai_urgency | VARCHAR | Mức độ khẩn cấp | Sam |
+| ai_keywords | JSONB | Từ khóa | Sam |
+| ai_reasoning | TEXT | Quá trình suy luận | Sam |
+| ai_suggested_reply | TEXT | Gợi ý phản hồi | Sam/Grace |
+| ai_confidence_score | NUMERIC | Điểm tin cậy | Sam |
+| ai_analysis | JSONB | Kết quả phân tích đầy đủ | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**Hỗ trợ đa ngôn ngữ**
 
-#### 2.2.2 Business Extension Tables
+| Trường | Kiểu dữ liệu | Mô tả | Do ai điền |
+|------|------|------|----------|
+| source_language_code | VARCHAR | Ngôn ngữ gốc | Sam/Lexi |
+| target_language_code | VARCHAR | Ngôn ngữ đích | Mặc định hệ thống EN |
+| is_translated | BOOLEAN | Đã dịch chưa | Lexi |
+| description_translated | TEXT | Mô tả sau khi dịch | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 Bảng mở rộng nghiệp vụ
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**Sửa chữa thiết bị (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| ticket_id | BIGINT | ID công đơn liên kết |
+| equipment_model | VARCHAR | Model thiết bị |
+| serial_number | VARCHAR | Số sê-ri |
+| fault_code | VARCHAR | Mã lỗi |
+| spare_parts | JSONB | Danh sách linh kiện thay thế |
+| maintenance_type | VARCHAR | Loại bảo trì |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**Hỗ trợ IT (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| ticket_id | BIGINT | ID công đơn liên kết |
+| asset_number | VARCHAR | Mã tài sản |
+| os_version | VARCHAR | Phiên bản hệ điều hành |
+| software_name | VARCHAR | Phần mềm liên quan |
+| remote_address | VARCHAR | Địa chỉ từ xa |
+| error_code | VARCHAR | Mã lỗi |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**Khiếu nại khách hàng (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| ticket_id | BIGINT | ID công đơn liên kết |
+| related_order_no | VARCHAR | Mã đơn hàng liên quan |
+| complaint_level | VARCHAR | Cấp độ khiếu nại |
+| compensation_amount | DECIMAL | Số tiền bồi thường |
+| compensation_type | VARCHAR | Hình thức bồi thường |
+| root_cause | TEXT | Nguyên nhân gốc rễ |
 
-**Core Fields**
+#### 2.2.3 Bảng bình luận (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**Các trường cốt lõi**
 
-**AI Review Fields (for outbound)**
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| id | BIGINT | Khóa chính |
+| ticket_id | BIGINT | ID công đơn |
+| parent_id | BIGINT | ID bình luận cha (hỗ trợ dạng cây) |
+| content | TEXT | Nội dung bình luận |
+| direction | VARCHAR | Hướng: inbound (khách hàng)/outbound (nhân viên) |
+| is_internal | BOOLEAN | Có phải ghi chú nội bộ không |
+| is_first_response | BOOLEAN | Có phải phản hồi đầu tiên không |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**Các trường kiểm duyệt AI (dùng cho outbound)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| source_language_code | VARCHAR | Ngôn ngữ nguồn |
+| content_translated | TEXT | Nội dung dịch |
+| is_translated | BOOLEAN | Đã dịch chưa |
+| is_ai_blocked | BOOLEAN | Có bị AI chặn không |
+| ai_block_reason | VARCHAR | Lý do chặn |
+| ai_block_detail | TEXT | Giải thích chi tiết |
+| ai_quality_score | NUMERIC | Điểm chất lượng |
+| ai_suggestions | TEXT | Gợi ý cải thiện |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 Bảng đánh giá (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| ticket_id | BIGINT | ID công đơn (duy nhất) |
+| overall_rating | INT | Mức độ hài lòng tổng thể (1-5) |
+| response_rating | INT | Tốc độ phản hồi (1-5) |
+| professionalism_rating | INT | Mức độ chuyên nghiệp (1-5) |
+| resolution_rating | INT | Giải quyết vấn đề (1-5) |
+| nps_score | INT | Điểm NPS (0-10) |
+| tags | JSONB | Nhãn nhanh |
+| comment | TEXT | Đánh giá bằng văn bản |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 Bảng bài viết kiến thức (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| Trường | Kiểu dữ liệu | Mô tả |
+|------|------|------|
+| article_no | VARCHAR | Mã bài viết KB-T0001 |
+| title | VARCHAR | Tiêu đề |
+| content | TEXT | Nội dung (Markdown) |
+| summary | TEXT | Tóm tắt |
+| category_code | VARCHAR | Mã danh mục |
+| keywords | JSONB | Từ khóa |
+| source_type | VARCHAR | Nguồn: ticket/faq/manual |
+| source_ticket_id | BIGINT | ID công đơn nguồn |
+| ai_generated | BOOLEAN | Có phải do AI tạo không |
+| ai_quality_score | NUMERIC | Điểm chất lượng |
+| status | VARCHAR | Trạng thái: draft/published/archived |
+| view_count | INT | Số lượt xem |
+| helpful_count | INT | Số lượt đánh giá hữu ích |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 Danh sách các bảng dữ liệu
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| STT | Tên bảng | Mô tả | Loại bản ghi |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | Bảng chính công đơn | Dữ liệu nghiệp vụ |
+| 2 | nb_tts_biz_repair | Mở rộng sửa chữa thiết bị | Dữ liệu nghiệp vụ |
+| 3 | nb_tts_biz_it_support | Mở rộng hỗ trợ IT | Dữ liệu nghiệp vụ |
+| 4 | nb_tts_biz_complaint | Mở rộng khiếu nại khách hàng | Dữ liệu nghiệp vụ |
+| 5 | nb_tts_customers | Bảng chính khách hàng | Dữ liệu nghiệp vụ |
+| 6 | nb_tts_customer_contacts | Người liên hệ khách hàng | Dữ liệu nghiệp vụ |
+| 7 | nb_tts_ticket_comments | Bình luận công đơn | Dữ liệu nghiệp vụ |
+| 8 | nb_tts_ratings | Đánh giá mức độ hài lòng | Dữ liệu nghiệp vụ |
+| 9 | nb_tts_qa_articles | Bài viết kiến thức | Dữ liệu kiến thức |
+| 10 | nb_tts_qa_article_relations | Liên kết bài viết | Dữ liệu kiến thức |
+| 11 | nb_tts_faqs | Câu hỏi thường gặp | Dữ liệu kiến thức |
+| 12 | nb_tts_tickets_categories | Phân loại công đơn | Dữ liệu cấu hình |
+| 13 | nb_tts_sla_configs | Cấu hình SLA | Dữ liệu cấu hình |
+| 14 | nb_tts_skill_configs | Cấu hình kỹ năng | Dữ liệu cấu hình |
+| 15 | nb_tts_business_types | Loại nghiệp vụ | Dữ liệu cấu hình |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. Vòng đời công đơn
 
-### 4.1 Priority and SLA Configuration
+### 3.1 Định nghĩa trạng thái
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| Trạng thái | Tên tiếng Việt | Mô tả | Tính giờ SLA | Màu sắc |
+|------|------|------|---------|------|
+| new | Mới | Vừa tạo, chờ phân bổ | Bắt đầu | 🔵 Xanh dương |
+| assigned | Đã phân bổ | Đã chỉ định người xử lý, chờ tiếp nhận | Tiếp tục | 🔷 Xanh lơ |
+| processing | Đang xử lý | Đang trong quá trình giải quyết | Tiếp tục | 🟠 Cam |
+| pending | Tạm dừng | Chờ phản hồi từ khách hàng | **Tạm dừng** | ⚫ Xám |
+| transferred | Đã chuyển giao | Chuyển cho người khác xử lý | Tiếp tục | 🟣 Tím |
+| resolved | Đã giải quyết | Chờ khách hàng xác nhận | Dừng | 🟢 Xanh lá |
+| closed | Đã đóng | Công đơn kết thúc | Dừng | ⚫ Xám |
+| cancelled | Đã hủy | Công đơn bị hủy | Dừng | ⚫ Xám |
 
-### 4.2 SLA Calculation Logic
+### 3.2 Sơ đồ chuyển đổi trạng thái
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**Quy trình chính (Từ trái sang phải)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**Quy trình nhánh**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**Máy trạng thái đầy đủ**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 Quy tắc chuyển đổi trạng thái quan trọng
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| Từ | Đến | Điều kiện kích hoạt | Hành động hệ thống |
+|----|----|---------|---------|
+| new | assigned | Chỉ định người xử lý | Ghi lại assigned_at |
+| assigned | processing | Người xử lý nhấn "Tiếp nhận" | Không |
+| processing | pending | Nhấn "Tạm dừng" | Ghi lại sla_paused_at |
+| pending | processing | Khách hàng phản hồi / Khôi phục thủ công | Tính toán thời gian tạm dừng, xóa paused_at |
+| processing | resolved | Nhấn "Giải quyết" | Ghi lại resolved_at |
+| resolved | closed | Khách hàng xác nhận / Quá hạn 3 ngày | Ghi lại closed_at |
+| * | cancelled | Hủy công đơn | Không |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. Quản lý cấp độ dịch vụ SLA
 
-### 5.1 AI Employee Team
+### 4.1 Cấu hình Mức độ ưu tiên và SLA
 
-The system configures 8 AI employees in two categories:
+| Mức độ ưu tiên | Tên | Thời gian phản hồi | Thời gian giải quyết | Ngưỡng cảnh báo | Kịch bản điển hình |
+|--------|------|----------|----------|----------|----------|
+| P0 | Khẩn cấp | 15 phút | 2 giờ | 80% | Hệ thống sập, dây chuyền sản xuất dừng |
+| P1 | Cao | 1 giờ | 8 giờ | 80% | Lỗi tính năng quan trọng |
+| P2 | Trung bình | 4 giờ | 24 giờ | 80% | Vấn đề thông thường |
+| P3 | Thấp | 8 giờ | 72 giờ | 80% | Tư vấn, góp ý |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 Logic tính toán SLA
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
 
-**Reused Employees (General Capabilities)**
+#### Khi tạo công đơn
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+Hạn chót phản hồi = Thời gian gửi + Thời hạn phản hồi (phút)
+Hạn chót giải quyết = Thời gian gửi + Thời hạn giải quyết (phút)
+```
 
-### 5.2 AI Task List
+#### Khi tạm dừng (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+Thời gian bắt đầu tạm dừng SLA = Thời gian hiện tại
+```
 
-#### Sam's Tasks
+#### Khi khôi phục (từ pending quay lại processing)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- Tính toán thời gian tạm dừng lần này
+Thời gian tạm dừng lần này = Thời gian hiện tại - Thời gian bắt đầu tạm dừng SLA
 
-#### Grace's Tasks
+-- Cộng dồn vào tổng thời gian tạm dừng
+Tổng thời gian tạm dừng = Tổng thời gian tạm dừng + Thời gian tạm dừng lần này
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- Gia hạn thời gian hạn chót (thời gian tạm dừng không tính vào SLA)
+Hạn chót phản hồi = Hạn chót phản hồi + Thời gian tạm dừng lần này
+Hạn chót giải quyết = Hạn chót giải quyết + Thời gian tạm dừng lần này
 
-#### Max's Tasks
+-- Xóa thời gian bắt đầu tạm dừng
+Thời gian bắt đầu tạm dừng SLA = Trống
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### Xác định vi phạm SLA
 
-#### Lexi's Tasks
+```
+-- Xác định vi phạm phản hồi
+Phản hồi có vi phạm = (Thời gian phản hồi đầu tiên trống VÀ Thời gian hiện tại > Hạn chót phản hồi)
+                    HOẶC (Thời gian phản hồi đầu tiên > Hạn chót phản hồi)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- Xác định vi phạm giải quyết
+Giải quyết có vi phạm = (Thời gian giải quyết trống VÀ Thời gian hiện tại > Hạn chót giải quyết)
+                    HOẶC (Thời gian giải quyết > Hạn chót giải quyết)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 Cơ chế cảnh báo SLA
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| Cấp độ cảnh báo | Điều kiện | Đối tượng thông báo | Phương thức |
+|----------|------|----------|----------|
+| Cảnh báo vàng | Thời gian còn lại < 20% | Người xử lý | Thông báo nội bộ |
+| Cảnh báo đỏ | Đã quá hạn | Người xử lý + Quản lý | Thông báo nội bộ + Email |
+| Cảnh báo nâng cấp | Quá hạn 1 giờ | Trưởng bộ phận | Email + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 Chỉ số bảng điều khiển SLA
 
-#### SAM-01 Ticket Analysis Response
+| Chỉ số | Công thức tính | Ngưỡng an toàn |
+|------|----------|----------|
+| Tỷ lệ đạt chuẩn phản hồi | Số công đơn không vi phạm / Tổng số công đơn | > 95% |
+| Tỷ lệ đạt chuẩn giải quyết | Số công đơn giải quyết không vi phạm / Số công đơn đã giải quyết | > 90% |
+| Thời gian phản hồi trung bình | TỔNG(Thời gian phản hồi) / Số công đơn | < 50% mức SLA |
+| Thời gian giải quyết trung bình | TỔNG(Thời gian giải quyết) / Số công đơn | < 80% mức SLA |
+
+---
+
+## 5. Năng lực AI và Hệ thống nhân viên
+
+### 5.1 Đội ngũ nhân viên AI
+
+Hệ thống cấu hình 8 nhân viên AI, chia thành hai loại:
+
+**Nhân viên mới (Chuyên dụng cho hệ thống công đơn)**
+
+| ID | Tên | Vị trí | Năng lực cốt lõi |
+|----|------|------|----------|
+| sam | Sam | Trưởng bộ phận hỗ trợ | Phân luồng công đơn, đánh giá mức độ ưu tiên, quyết định nâng cấp, nhận diện rủi ro SLA |
+| grace | Grace | Chuyên gia thành công khách hàng | Tạo phản hồi chuyên nghiệp, điều chỉnh giọng điệu, xử lý khiếu nại, khôi phục sự hài lòng |
+| max | Max | Trợ lý kiến thức | Tìm kiếm trường hợp tương tự, đề xuất kiến thức, tổng hợp giải pháp |
+
+**Nhân viên dùng chung (Năng lực tổng quát)**
+
+| ID | Tên | Vị trí | Năng lực cốt lõi |
+|----|------|------|----------|
+| dex | Dex | Chuyên viên xử lý dữ liệu | Trích xuất công đơn từ email, chuyển cuộc gọi thành công đơn, làm sạch dữ liệu hàng loạt |
+| ellis | Ellis | Chuyên gia Email | Phân tích cảm xúc email, tóm tắt luồng trao đổi, dự thảo phản hồi |
+| lexi | Lexi | Thông dịch viên | Dịch công đơn, dịch phản hồi, dịch hội thoại thời gian thực |
+| cole | Cole | Chuyên gia NocoBase | Hướng dẫn sử dụng hệ thống, hỗ trợ cấu hình luồng công việc |
+| vera | Vera | Chuyên viên phân tích nghiên cứu | Nghiên cứu giải pháp kỹ thuật, kiểm chứng thông tin sản phẩm |
+
+### 5.2 Danh sách nhiệm vụ AI
+
+Mỗi nhân viên AI được cấu hình 4 nhiệm vụ cụ thể:
+
+#### Nhiệm vụ của Sam
+
+| ID nhiệm vụ | Tên | Cách thức kích hoạt | Mô tả |
+|--------|------|----------|------|
+| SAM-01 | Phân tích và phân luồng công đơn | Luồng công việc tự động | Tự động phân tích khi có công đơn mới |
+| SAM-02 | Đánh giá lại mức độ ưu tiên | Tương tác giao diện | Điều chỉnh mức độ ưu tiên dựa trên thông tin mới |
+| SAM-03 | Quyết định nâng cấp | Giao diện/Luồng công việc | Phán đoán xem có cần nâng cấp xử lý không |
+| SAM-04 | Đánh giá rủi ro SLA | Luồng công việc tự động | Nhận diện rủi ro quá hạn |
+
+#### Nhiệm vụ của Grace
+
+| ID nhiệm vụ | Tên | Cách thức kích hoạt | Mô tả |
+|--------|------|----------|------|
+| GRACE-01 | Tạo phản hồi chuyên nghiệp | Tương tác giao diện | Tạo phản hồi dựa trên ngữ cảnh |
+| GRACE-02 | Điều chỉnh giọng điệu phản hồi | Tương tác giao diện | Tối ưu hóa giọng điệu của phản hồi có sẵn |
+| GRACE-03 | Xử lý giảm cấp khiếu nại | Giao diện/Luồng công việc | Xoa dịu khiếu nại của khách hàng |
+| GRACE-04 | Khôi phục sự hài lòng | Giao diện/Luồng công việc | Theo dõi sau những trải nghiệm tiêu cực |
+
+#### Nhiệm vụ của Max
+
+| ID nhiệm vụ | Tên | Cách thức kích hoạt | Mô tả |
+|--------|------|----------|------|
+| MAX-01 | Tìm kiếm trường hợp tương tự | Giao diện/Luồng công việc | Tìm kiếm các công đơn tương tự trong lịch sử |
+| MAX-02 | Đề xuất bài viết kiến thức | Giao diện/Luồng công việc | Đề xuất các bài viết kiến thức liên quan |
+| MAX-03 | Tổng hợp giải pháp | Tương tác giao diện | Tổng hợp giải pháp từ nhiều nguồn |
+| MAX-04 | Hướng dẫn khắc phục sự cố | Tương tác giao diện | Tạo quy trình kiểm tra hệ thống |
+
+#### Nhiệm vụ của Lexi
+
+| ID nhiệm vụ | Tên | Cách thức kích hoạt | Mô tả |
+|--------|------|----------|------|
+| LEXI-01 | Dịch công đơn | Luồng công việc tự động | Dịch nội dung công đơn |
+| LEXI-02 | Dịch phản hồi | Tương tác giao diện | Dịch phản hồi của nhân viên hỗ trợ |
+| LEXI-03 | Dịch hàng loạt | Luồng công việc tự động | Xử lý dịch thuật hàng loạt |
+| LEXI-04 | Dịch hội thoại thời gian thực | Tương tác giao diện | Dịch hội thoại trực tiếp |
+
+### 5.3 Nhân viên AI và Vòng đời công đơn
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+
+### 5.4 Ví dụ phản hồi của AI
+
+#### SAM-01 Phản hồi phân tích công đơn
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "đăng nhập thất bại", "quá hạn", "quyết toán cuối tháng"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
-  "source_language_code": "zh",
+  "reasoning": "Công đơn này mô tả vấn đề đăng nhập hệ thống ERP, ảnh hưởng đến việc quyết toán cuối tháng của bộ phận tài chính, mức độ khẩn cấp cao",
+  "suggested_reply": "Kính thưa quý khách, cảm ơn quý khách đã phản hồi vấn đề này...",
+  "source_language_code": "vi",
   "is_translated": true,
   "description_translated": "Hello, our ERP system cannot login..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Phản hồi tạo câu trả lời
 
 ```
-Dear Mr. Zhang,
+Kính gửi ông Trương,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+Cảm ơn ông đã liên hệ với chúng tôi để phản hồi về vấn đề đăng nhập ERP. Tôi hoàn toàn hiểu rằng vấn đề này đang ảnh hưởng đến công tác quyết toán cuối tháng của quý công ty,
+chúng tôi đã đưa vấn đề này vào danh sách ưu tiên xử lý cao nhất.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+Tình hình hiện tại:
+- Đội ngũ kỹ thuật đang kiểm tra kết nối máy chủ
+- Dự kiến sẽ cập nhật tiến độ cho ông trong vòng 30 phút tới
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+Trong thời gian này, ông có thể thử:
+1. Truy cập qua địa chỉ dự phòng: https://erp-backup.company.com
+2. Nếu có nhu cầu xuất báo cáo khẩn cấp, vui lòng liên hệ để chúng tôi hỗ trợ xuất dữ liệu
 
-Please feel free to contact me if you have any other questions.
+Nếu có bất kỳ câu hỏi nào khác, xin vui lòng liên hệ với tôi.
 
-Best regards,
-Technical Support Team
+Trân trọng,
+Đội ngũ hỗ trợ kỹ thuật
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 Tường lửa EQ của AI
 
-Grace's reply quality review blocks the following issues:
+Việc kiểm duyệt chất lượng phản hồi do Grace phụ trách sẽ ngăn chặn các vấn đề sau:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Loại vấn đề | Ví dụ nội dung gốc | Gợi ý của AI |
+|----------|----------|--------|
+| Giọng điệu phủ định | "Không được, cái này không nằm trong phạm vi bảo hành" | "Lỗi này tạm thời không được bảo hành miễn phí, chúng tôi có thể cung cấp phương án sửa chữa có tính phí" |
+| Đổ lỗi cho khách hàng | "Do anh tự làm hỏng đấy chứ" | "Qua kiểm tra, lỗi này thuộc về hư hỏng ngoài ý muốn" |
+| Đùn đẩy trách nhiệm | "Đây không phải lỗi của chúng tôi" | "Để tôi giúp anh kiểm tra thêm nguyên nhân gây ra vấn đề" |
+| Diễn đạt thờ ơ | "Không biết" | "Để tôi giúp anh tra cứu thêm thông tin liên quan" |
+| Thông tin nhạy cảm | "Mật khẩu của anh là abc123" | [Chặn] Chứa thông tin nhạy cảm, không cho phép gửi |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Hệ thống kho kiến thức
 
-### 6.1 Knowledge Sources
+### 6.1 Nguồn kiến thức
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Quy trình chuyển đổi công đơn thành kiến thức
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Các tiêu chí đánh giá**:
+- **Tính phổ biến**: Đây có phải là vấn đề thường gặp không?
+- **Tính đầy đủ**: Giải pháp có rõ ràng và hoàn chỉnh không?
+- **Tính tái sử dụng**: Các bước thực hiện có thể áp dụng lại được không?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Cơ chế đề xuất kiến thức
+
+Khi nhân viên hỗ trợ mở chi tiết công đơn, Max sẽ tự động đề xuất các kiến thức liên quan:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Kiến thức đề xuất                           [Mở rộng/Thu gọn] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 Hướng dẫn chẩn đoán lỗi hệ thống servo CNC     Độ khớp: 94% │
+│ │ Bao gồm: Giải mã mã báo động, các bước kiểm tra bộ điều khiển servo │
+│ │ [Xem] [Áp dụng vào phản hồi] [Đánh dấu hữu ích]           │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 Sổ tay bảo trì dòng XYZ-CNC3000                Độ khớp: 87% │
+│ │ Bao gồm: Các lỗi thường gặp, kế hoạch bảo trì phòng ngừa    │
+│ │ [Xem] [Áp dụng vào phản hồi] [Đánh dấu hữu ích]           │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. Công cụ luồng công việc (Workflow Engine)
+
+### 7.1 Phân loại luồng công việc
+
+| Mã số | Phân loại | Mô tả | Cách thức kích hoạt |
+|------|------|------|----------|
+| WF-T | Luồng công đơn | Quản lý vòng đời công đơn | Sự kiện biểu mẫu |
+| WF-S | Luồng SLA | Tính toán và cảnh báo SLA | Sự kiện biểu mẫu/Định kỳ |
+| WF-C | Luồng bình luận | Xử lý và dịch bình luận | Sự kiện biểu mẫu |
+| WF-R | Luồng đánh giá | Mời đánh giá và thống kê | Sự kiện biểu mẫu/Định kỳ |
+| WF-N | Luồng thông báo | Gửi thông báo | Dựa trên sự kiện |
+| WF-AI | Luồng AI | Phân tích và tạo nội dung AI | Sự kiện biểu mẫu |
+
+### 7.2 Các luồng công việc cốt lõi
+
+#### WF-T01: Quy trình tạo công đơn
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+
+#### WF-AI01: Phân tích công đơn bằng AI
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+
+#### WF-AI04: Dịch và kiểm duyệt bình luận
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+
+#### WF-AI03: Tạo kiến thức
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+
+### 7.3 Nhiệm vụ định kỳ
+
+| Nhiệm vụ | Tần suất thực hiện | Mô tả |
+|------|----------|------|
+| Kiểm tra cảnh báo SLA | Mỗi 5 phút | Kiểm tra các công đơn sắp quá hạn |
+| Tự động đóng công đơn | Hàng ngày | Tự động đóng các công đơn ở trạng thái resolved sau 3 ngày |
+| Gửi lời mời đánh giá | Hàng ngày | Gửi lời mời đánh giá sau 24 giờ kể từ khi đóng công đơn |
+| Cập nhật dữ liệu thống kê | Mỗi giờ | Cập nhật thống kê công đơn của khách hàng |
 
 ---
 
-## 7. Workflow Engine
+## 8. Thiết kế Menu và Giao diện
 
-### 7.1 Workflow Categories
+### 8.1 Trang quản trị (Backend)
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 7.2 Core Workflows
+### 8.2 Cổng thông tin khách hàng (Customer Portal)
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 Thiết kế bảng điều khiển (Dashboard)
 
-#### WF-AI01: Ticket AI Analysis
+#### Chế độ xem cho lãnh đạo
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| Thành phần | Loại | Mô tả dữ liệu |
+|------|------|----------|
+| Tỷ lệ đạt chuẩn SLA | Đồng hồ đo | Tỷ lệ đạt chuẩn phản hồi/giải quyết trong tháng |
+| Xu hướng hài lòng | Biểu đồ đường | Thay đổi mức độ hài lòng trong 30 ngày qua |
+| Xu hướng lượng công đơn | Biểu đồ cột | Lượng công đơn trong 30 ngày qua |
+| Phân bổ loại nghiệp vụ | Biểu đồ tròn | Tỷ trọng của từng loại nghiệp vụ |
 
-#### WF-AI04: Comment Translation & Review
+#### Chế độ xem cho quản lý
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| Thành phần | Loại | Mô tả dữ liệu |
+|------|------|----------|
+| Cảnh báo quá hạn | Danh sách | Các công đơn sắp quá hạn hoặc đã quá hạn |
+| Khối lượng công việc nhân viên | Biểu đồ cột | Số lượng công đơn của từng thành viên trong đội |
+| Phân bổ tồn đọng | Biểu đồ chồng | Số lượng công đơn theo từng trạng thái |
+| Hiệu suất xử lý | Biểu đồ nhiệt | Phân bổ thời gian xử lý trung bình |
 
-#### WF-AI03: Knowledge Generation
+#### Chế độ xem cho nhân viên hỗ trợ
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Thành phần | Loại | Mô tả dữ liệu |
+|------|------|----------|
+| Việc cần làm của tôi | Thẻ số | Số lượng công đơn đang chờ xử lý |
+| Phân bổ mức độ ưu tiên | Biểu đồ tròn | Phân bổ P0/P1/P2/P3 |
+| Thống kê hôm nay | Thẻ chỉ số | Số lượng đã xử lý/giải quyết trong ngày |
+| Đếm ngược SLA | Danh sách | 5 công đơn khẩn cấp nhất |
 
 ---
 
-## Appendix
+## Phụ lục
 
-### A. Business Type Configuration
+### A. Cấu hình loại nghiệp vụ
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| Mã loại | Tên | Biểu tượng | Bảng mở rộng liên kết |
+|----------|------|------|------------|
+| repair | Sửa chữa thiết bị | 🔧 | nb_tts_biz_repair |
+| it_support | Hỗ trợ IT | 💻 | nb_tts_biz_it_support |
+| complaint | Khiếu nại khách hàng | 📢 | nb_tts_biz_complaint |
+| consultation | Tư vấn góp ý | ❓ | Không |
+| other | Khác | 📝 | Không |
 
-### B. Category Codes
+### B. Mã phân loại
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| Mã | Tên | Mô tả |
+|------|------|------|
+| CONVEYOR | Hệ thống băng tải | Vấn đề hệ thống băng tải |
+| PACKAGING | Máy đóng gói | Vấn đề máy đóng gói |
+| WELDING | Thiết bị hàn | Vấn đề thiết bị hàn |
+| COMPRESSOR | Máy nén khí | Vấn đề máy nén khí |
+| COLD_STORE | Kho lạnh | Vấn đề kho lạnh |
+| CENTRAL_AC | Điều hòa trung tâm | Vấn đề điều hòa trung tâm |
+| FORKLIFT | Xe nâng | Vấn đề xe nâng |
+| COMPUTER | Máy tính | Vấn đề phần cứng máy tính |
+| PRINTER | Máy in | Vấn đề máy in |
+| PROJECTOR | Máy chiếu | Vấn đề máy chiếu |
+| INTERNET | Mạng | Vấn đề kết nối mạng |
+| EMAIL | Email | Vấn đề hệ thống email |
+| ACCESS | Quyền truy cập | Vấn đề quyền tài khoản |
+| PROD_INQ | Tư vấn sản phẩm | Tư vấn về sản phẩm |
+| COMPLAINT | Khiếu nại chung | Khiếu nại thông thường |
+| DELAY | Chậm trễ logistics | Khiếu nại về chậm trễ giao hàng |
+| DAMAGE | Hư hỏng bao bì | Khiếu nại về hư hỏng bao bì |
+| QUANTITY | Thiếu hụt số lượng | Khiếu nại về thiếu hụt số lượng |
+| SVC_ATTITUDE | Thái độ phục vụ | Khiếu nại về thái độ phục vụ |
+| PROD_QUALITY | Chất lượng sản phẩm | Khiếu nại về chất lượng sản phẩm |
+| TRAINING | Đào tạo | Yêu cầu đào tạo |
+| RETURN | Trả hàng | Yêu cầu trả hàng |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Phiên bản tài liệu: 2.0 | Cập nhật lần cuối: 05-01-2026*

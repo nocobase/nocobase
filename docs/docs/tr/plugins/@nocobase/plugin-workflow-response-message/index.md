@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Response message"
+displayName: "Workflow: Yanıt mesajı"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Used for assemble response message and showing to client in form event and request interception workflows.
+  Form olayı ve istek durdurma workflowlarında yanıt mesajı oluşturmak ve istemciye göstermek için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Response message
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-response-message/index) bakın.
+:::
+
+# Workflow: Yanıt mesajı

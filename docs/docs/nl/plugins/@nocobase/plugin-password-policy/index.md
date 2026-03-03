@@ -1,15 +1,19 @@
 ---
-displayName: "Password policy"
+displayName: "Wachtwoordbeleid"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Set the password rules and sign in lockout policy for all users
+  Stel de wachtwoordregels en het vergrendelingsbeleid bij inloggen in voor alle gebruikers.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Password policy
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-password-policy/index) voor nauwkeurige informatie.
+:::
+
+# Wachtwoordbeleid

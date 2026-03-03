@@ -1,714 +1,708 @@
-# CRM 2.0 System Design
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/crm/design) bakın.
+:::
 
-## 1. System Overview & Design Philosophy
+# CRM 2.0 Sistemi Detaylı Tasarımı
 
-### 1.1 System Positioning
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+## 1. Sisteme Genel Bakış ve Tasarım Felsefesi
+
+### 1.1 Sistem Konumlandırması
+
+Bu sistem, NocoBase kodsuz (no-code) platformu üzerine inşa edilmiş bir **CRM 2.0 Satış Yönetim Platformudur**. Temel hedef şudur:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+Satış ekibinin veri girişi ve tekrarlayan analizler yerine müşteri ilişkileri kurmaya odaklanmasını sağlayın.
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+Sistem, rutin görevleri iş akışları aracılığıyla otomatikleştirir ve aday müşteri puanlama, fırsat analizi gibi görevlerde yardımcı olması için AI desteğinden yararlanarak satış ekiplerinin verimliliğini artırmasına yardımcı olur.
 
-### 1.2 Design Philosophy
+### 1.2 Tasarım Felsefesi
 
-#### Principle 1: Complete Sales Funnel
+#### İlke 1: Tam Satış Hunisi
 
-**End-to-end sales flow:**
+**Uçtan Uca Satış Süreci:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**Neden bu şekilde tasarlandı?**
 
-**Why design it this way?**
+| Geleneksel Yöntem | Entegre CRM |
+|---------|-----------|
+| Farklı aşamalar için birden fazla sistem kullanılır | Tüm yaşam döngüsünü kapsayan tek bir sistem |
+| Sistemler arası manuel veri aktarımı | Otomatik veri akışı ve dönüşümü |
+| Tutarsız müşteri görünümleri | Birleşik 360 derece müşteri görünümü |
+| Parçalı veri analizi | Uçtan uca satış hattı analizi |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### İlke 2: Yapılandırılabilir Satış Hattı
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+Farklı sektörler, kod değiştirmeye gerek kalmadan satış hattı aşamalarını özelleştirebilir.
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### İlke 3: Modüler Tasarım
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- Çekirdek modüller (Müşteriler + Fırsatlar) zorunludur; diğer modüller ihtiyaca göre etkinleştirilebilir.
+- Modülleri devre dışı bırakmak kod değişikliği gerektirmez; NocoBase arayüz yapılandırması üzerinden yapılır.
+- Her modül, bağımlılığı azaltmak için bağımsız olarak tasarlanmıştır.
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. Modül Mimarisi ve Özelleştirme
 
-### 2.1 Module Overview
+### 2.1 Modüllere Genel Bakış
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+CRM sistemi **modüler bir mimari** tasarımı benimser; her modül iş gereksinimlerine göre bağımsız olarak etkinleştirilebilir veya devre dışı bırakılabilir.
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 Modül Bağımlılıkları
 
-### 2.2 Module Dependencies
+| Modül | Zorunlu mu? | Bağımlılıklar | Devre Dışı Bırakma Koşulu |
+|-----|---------|--------|---------|
+| **Müşteri Yönetimi** | ✅ Evet | - | Devre dışı bırakılamaz (Çekirdek) |
+| **Fırsat Yönetimi** | ✅ Evet | Müşteri Yönetimi | Devre dışı bırakılamaz (Çekirdek) |
+| **Aday Müşteri Yönetimi** | İsteğe bağlı | - | Aday müşteri edinimi gerekmediğinde |
+| **Teklif Yönetimi** | İsteğe bağlı | Fırsatlar, Ürünler | Resmi teklif gerektirmeyen basit işlemler |
+| **Sipariş Yönetimi** | İsteğe bağlı | Fırsatlar (veya Teklifler) | Sipariş/ödeme takibi gerekmediğinde |
+| **Ürün Yönetimi** | İsteğe bağlı | - | Ürün kataloğu gerekmediğinde |
+| **E-posta Entegrasyonu** | İsteğe bağlı | Müşteriler, Kişiler | Harici bir e-posta sistemi kullanıldığında |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 Önceden Yapılandırılmış Sürümler
 
-### 2.3 Pre-configured Editions
+| Sürüm | İçerdiği Modüller | Kullanım Durumu | Koleksiyon Sayısı |
+|-----|---------|---------|-----------|
+| **Lite (Hafif)** | Müşteriler + Fırsatlar | Basit işlem takibi | 6 |
+| **Standart** | Lite + Aday Müşteriler + Teklifler + Siparişler + Ürünler | Tam satış döngüsü | 15 |
+| **Kurumsal** | Standart + E-posta Entegrasyonu | E-posta dahil tam işlevsellik | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 Modül-Koleksiyon Eşleştirmesi
 
-### 2.4 Module–Table Mapping
+#### Çekirdek Modül Koleksiyonları (Her Zaman Gerekli)
 
-#### Core Module Tables (Always Required)
+| Koleksiyon | Modül | Açıklama |
+|-------|------|------|
+| nb_crm_customers | Müşteri Yönetimi | Müşteri/Şirket kayıtları |
+| nb_crm_contacts | Müşteri Yönetimi | İletişim Kişileri |
+| nb_crm_customer_shares | Müşteri Yönetimi | Müşteri paylaşım izinleri |
+| nb_crm_opportunities | Fırsat Yönetimi | Satış fırsatları |
+| nb_crm_opportunity_stages | Fırsat Yönetimi | Aşama yapılandırmaları |
+| nb_crm_opportunity_users | Fırsat Yönetimi | Fırsat iş ortakları |
+| nb_crm_activities | Etkinlik Yönetimi | Etkinlik kayıtları |
+| nb_crm_comments | Etkinlik Yönetimi | Yorumlar/Notlar |
+| nb_crm_tags | Çekirdek | Paylaşılan etiketler |
+| nb_cbo_currencies | Temel Veri | Para birimi sözlüğü |
+| nb_cbo_regions | Temel Veri | Ülke/Bölge sözlüğü |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 Modüller Nasıl Devre Dışı Bırakılır?
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+NocoBase yönetim arayüzünde ilgili modülün menü girişini gizlemeniz yeterlidir; kodu değiştirmenize veya koleksiyonları silmenize gerek yoktur.
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. Temel Varlıklar ve Veri Modeli
 
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
+### 3.1 Varlık İlişkilerine Genel Bakış
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 Temel Koleksiyon Detayları
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 Aday Müşteriler (nb_crm_leads)
 
-**Stage flow:**
+Basitleştirilmiş 4 aşamalı bir iş akışı kullanan aday müşteri yönetimi.
+
+**Aşama Süreci:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
+Yeni → Takipte → Doğrulanmış → Müşteriye/Fırsata Dönüştürüldü
+         ↓          ↓
+    Uygun Değil  Uygun Değil
 ```
 
-**Key fields:**
+**Kritik Alanlar:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
-| status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| lead_no | VARCHAR | Aday No (Otomatik oluşturulur) |
+| name | VARCHAR | Kişi Adı |
+| company | VARCHAR | Şirket Adı |
+| title | VARCHAR | Ünvan |
+| email | VARCHAR | E-posta |
+| phone | VARCHAR | Telefon |
+| mobile_phone | VARCHAR | Cep Telefonu |
+| website | TEXT | Web Sitesi |
+| address | TEXT | Adres |
+| source | VARCHAR | Kaynak: website/ads/referral/exhibition/telemarketing/email/social |
+| industry | VARCHAR | Sektör |
+| annual_revenue | VARCHAR | Yıllık Gelir Ölçeği |
+| number_of_employees | VARCHAR | Çalışan Sayısı Ölçeği |
+| status | VARCHAR | Durum: new/working/qualified/unqualified |
+| rating | VARCHAR | Derecelendirme: hot/warm/cold |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| ai_score | INTEGER | AI Kalite Puanı 0-100 |
+| ai_convert_prob | DECIMAL | AI Dönüşüm Olasılığı |
+| ai_best_contact_time | VARCHAR | AI Önerilen İletişim Zamanı |
+| ai_tags | JSONB | AI Tarafından Oluşturulan Etiketler |
+| ai_scored_at | TIMESTAMP | AI Puanlama Zamanı |
+| ai_next_best_action | TEXT | AI Bir Sonraki En İyi Aksiyon Önerisi |
+| ai_nba_generated_at | TIMESTAMP | AI Öneri Oluşturma Zamanı |
+| is_converted | BOOLEAN | Dönüştürüldü İşareti |
+| converted_at | TIMESTAMP | Dönüşüm Zamanı |
+| converted_customer_id | BIGINT | Dönüştürülen Müşteri ID |
+| converted_contact_id | BIGINT | Dönüştürülen Kişi ID |
+| converted_opportunity_id | BIGINT | Dönüştürülen Fırsat ID |
+| lost_reason | TEXT | Kaybetme Nedeni |
+| disqualification_reason | TEXT | Uygunsuzluk Nedeni |
+| description | TEXT | Açıklama |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 Müşteriler (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+Uluslararası ticareti destekleyen müşteri/şirket yönetimi.
 
-**Key fields:**
+**Kritik Alanlar:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
-| status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
-| region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| name | VARCHAR | Müşteri Adı (Zorunlu) |
+| account_number | VARCHAR | Müşteri Numarası (Otomatik oluşturulur, Benzersiz) |
+| phone | VARCHAR | Telefon |
+| website | TEXT | Web Sitesi |
+| address | TEXT | Adres |
+| industry | VARCHAR | Sektör |
+| type | VARCHAR | Tür: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | Çalışan Sayısı Ölçeği |
+| annual_revenue | VARCHAR | Yıllık Gelir Ölçeği |
+| level | VARCHAR | Seviye: normal/important/vip |
+| status | VARCHAR | Durum: potential/active/dormant/churned |
+| country | VARCHAR | Ülke |
+| region_id | BIGINT | Bölge (FK → nb_cbo_regions) |
+| preferred_currency | VARCHAR | Tercih Edilen Para Birimi: CNY/USD/EUR |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| parent_id | BIGINT | Ana Şirket (FK → self) |
+| source_lead_id | BIGINT | Kaynak Aday ID |
+| ai_health_score | INTEGER | AI Sağlık Puanı 0-100 |
+| ai_health_grade | VARCHAR | AI Sağlık Derecesi: A/B/C/D |
+| ai_churn_risk | DECIMAL | AI Kaybetme Riski 0-100% |
+| ai_churn_risk_level | VARCHAR | AI Kaybetme Riski Seviyesi: low/medium/high |
+| ai_health_dimensions | JSONB | AI Sağlık Boyutu Puanları |
+| ai_recommendations | JSONB | AI Öneri Listesi |
+| ai_health_assessed_at | TIMESTAMP | AI Sağlık Değerlendirme Zamanı |
+| ai_tags | JSONB | AI Tarafından Oluşturulan Etiketler |
+| ai_best_contact_time | VARCHAR | AI Önerilen İletişim Zamanı |
+| ai_next_best_action | TEXT | AI Bir Sonraki En İyi Aksiyon Önerisi |
+| ai_nba_generated_at | TIMESTAMP | AI Öneri Oluşturma Zamanı |
+| description | TEXT | Açıklama |
+| is_deleted | BOOLEAN | Yazılımsal Silme İşareti |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 Fırsatlar (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+Yapılandırılabilir satış hattı aşamalarına sahip satış fırsatı yönetimi.
 
-**Key fields:**
+**Kritik Alanlar:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| opportunity_no | VARCHAR | Fırsat No (Otomatik oluşturulur, Benzersiz) |
+| name | VARCHAR | Fırsat Adı (Zorunlu) |
+| amount | DECIMAL | Beklenen Tutar |
+| currency | VARCHAR | Para Birimi |
+| exchange_rate | DECIMAL | Döviz Kuru |
+| amount_usd | DECIMAL | USD Karşılığı Tutar |
+| customer_id | BIGINT | Müşteri (FK) |
+| contact_id | BIGINT | Birincil Kişi (FK) |
+| stage | VARCHAR | Aşama Kodu (FK → stages.code) |
+| stage_sort | INTEGER | Aşama Sıralaması (Kolay sıralama için yedekli) |
+| stage_entered_at | TIMESTAMP | Mevcut Aşamaya Giriş Zamanı |
+| days_in_stage | INTEGER | Mevcut Aşamada Geçen Gün |
+| win_probability | DECIMAL | Manuel Kazanma Olasılığı |
+| ai_win_probability | DECIMAL | AI Tahmini Kazanma Olasılığı |
+| ai_analyzed_at | TIMESTAMP | AI Analiz Zamanı |
+| ai_confidence | DECIMAL | AI Tahmin Güveni |
+| ai_trend | VARCHAR | AI Tahmin Trendi: up/stable/down |
+| ai_risk_factors | JSONB | AI Tarafından Belirlenen Risk Faktörleri |
+| ai_recommendations | JSONB | AI Öneri Listesi |
+| ai_predicted_close | DATE | AI Tahmini Kapanış Tarihi |
+| ai_next_best_action | TEXT | AI Bir Sonraki En İyi Aksiyon Önerisi |
+| ai_nba_generated_at | TIMESTAMP | AI Öneri Oluşturma Zamanı |
+| expected_close_date | DATE | Beklenen Kapanış Tarihi |
+| actual_close_date | DATE | Gerçek Kapanış Tarihi |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| last_activity_at | TIMESTAMP | Son Etkinlik Zamanı |
+| stagnant_days | INTEGER | Etkinlik Olmadan Geçen Gün Sayısı |
+| loss_reason | TEXT | Kaybetme Nedeni |
+| competitor_id | BIGINT | Rakip (FK) |
+| lead_source | VARCHAR | Aday Kaynağı |
+| campaign_id | BIGINT | Pazarlama Kampanyası ID |
+| expected_revenue | DECIMAL | Beklenen Gelir = tutar × olasılık |
+| description | TEXT | Açıklama |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 Teklifler (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+Çoklu para birimi ve onay iş akışlarını destekleyen teklif yönetimi.
 
-**Status flow:**
+**Durum Akışı:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
+Taslak → Onay Bekliyor → Onaylandı → Gönderildi → Kabul Edildi/Reddedildi/Süresi Doldu
               ↓
-          Rejected → Revise → Draft
+           Reddedildi → Düzenle → Taslak
 ```
 
-**Key fields:**
+**Kritik Alanlar:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
-| status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| quotation_no | VARCHAR | Teklif No (Otomatik oluşturulur, Benzersiz) |
+| name | VARCHAR | Teklif Adı |
+| version | INTEGER | Versiyon Numarası |
+| opportunity_id | BIGINT | Fırsat (FK, Zorunlu) |
+| customer_id | BIGINT | Müşteri (FK) |
+| contact_id | BIGINT | Kişi (FK) |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| currency_id | BIGINT | Para Birimi (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | Döviz Kuru |
+| subtotal | DECIMAL | Ara Toplam |
+| discount_rate | DECIMAL | İndirim Oranı |
+| discount_amount | DECIMAL | İndirim Tutarı |
+| shipping_handling | DECIMAL | Nakliye/İşlem Ücreti |
+| tax_rate | DECIMAL | Vergi Oranı |
+| tax_amount | DECIMAL | Vergi Tutarı |
+| total_amount | DECIMAL | Toplam Tutar |
+| total_amount_usd | DECIMAL | USD Karşılığı Toplam Tutar |
+| status | VARCHAR | Durum: draft/pending_approval/approved/sent/accepted/rejected/expired |
+| submitted_at | TIMESTAMP | Sunulma Zamanı |
+| approved_by | BIGINT | Onaylayan (FK → users) |
+| approved_at | TIMESTAMP | Onay Zamanı |
+| rejected_at | TIMESTAMP | Red Zamanı |
+| sent_at | TIMESTAMP | Gönderilme Zamanı |
+| customer_response_at | TIMESTAMP | Müşteri Yanıt Zamanı |
+| expired_at | TIMESTAMP | Süre Dolum Zamanı |
+| valid_until | DATE | Geçerlilik Tarihi |
+| payment_terms | TEXT | Ödeme Koşulları |
+| terms_condition | TEXT | Şartlar ve Koşullar |
+| address | TEXT | Teslimat Adresi |
+| description | TEXT | Açıklama |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 Siparişler (nb_crm_orders)
 
-Order management with payment tracking.
+Ödeme takibini içeren sipariş yönetimi.
 
-**Key fields:**
+**Kritik Alanlar:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| order_no | VARCHAR | Sipariş No (Otomatik oluşturulur, Benzersiz) |
+| customer_id | BIGINT | Müşteri (FK) |
+| contact_id | BIGINT | Kişi (FK) |
+| opportunity_id | BIGINT | Fırsat (FK) |
+| quotation_id | BIGINT | Teklif (FK) |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| currency | VARCHAR | Para Birimi |
+| exchange_rate | DECIMAL | Döviz Kuru |
+| order_amount | DECIMAL | Sipariş Tutarı |
+| paid_amount | DECIMAL | Ödenen Tutar |
+| unpaid_amount | DECIMAL | Ödenmeyen Tutar |
+| status | VARCHAR | Durum: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
+| payment_status | VARCHAR | Ödeme Durumu: unpaid/partial/paid |
+| order_date | DATE | Sipariş Tarihi |
+| delivery_date | DATE | Beklenen Teslimat Tarihi |
+| actual_delivery_date | DATE | Gerçek Teslimat Tarihi |
+| shipping_address | TEXT | Teslimat Adresi |
+| logistics_company | VARCHAR | Lojistik Şirketi |
+| tracking_no | VARCHAR | Takip Numarası |
+| terms_condition | TEXT | Şartlar ve Koşullar |
+| description | TEXT | Açıklama |
 
-### 3.3 Table Summary
+### 3.3 Koleksiyon Özeti
 
-#### CRM Business Tables
+#### CRM İş Koleksiyonları
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| No. | Koleksiyon Adı | Açıklama | Tür |
+|-----|------|------|------|
+| 1 | nb_crm_leads | Aday Müşteri Yönetimi | İş |
+| 2 | nb_crm_customers | Müşteriler/Şirketler | İş |
+| 3 | nb_crm_contacts | Kişiler | İş |
+| 4 | nb_crm_opportunities | Satış Fırsatları | İş |
+| 5 | nb_crm_opportunity_stages | Aşama Yapılandırması | Yapılandırma |
+| 6 | nb_crm_opportunity_users | Fırsat İş Ortakları (Satış Ekibi) | İlişki |
+| 7 | nb_crm_quotations | Teklifler | İş |
+| 8 | nb_crm_quotation_items | Teklif Kalemleri | İş |
+| 9 | nb_crm_quotation_approvals | Onay Kayıtları | İş |
+| 10 | nb_crm_orders | Siparişler | İş |
+| 11 | nb_crm_order_items | Sipariş Kalemleri | İş |
+| 12 | nb_crm_payments | Ödeme Kayıtları | İş |
+| 13 | nb_crm_products | Ürün Kataloğu | İş |
+| 14 | nb_crm_product_categories | Ürün Kategorileri | Yapılandırma |
+| 15 | nb_crm_price_tiers | Kademeli Fiyatlandırma | Yapılandırma |
+| 16 | nb_crm_activities | Etkinlik Kayıtları | İş |
+| 17 | nb_crm_comments | Yorumlar/Notlar | İş |
+| 18 | nb_crm_competitors | Rakipler | İş |
+| 19 | nb_crm_tags | Etiketler | Yapılandırma |
+| 20 | nb_crm_lead_tags | Aday-Etiket İlişkisi | İlişki |
+| 21 | nb_crm_contact_tags | Kişi-Etiket İlişkisi | İlişki |
+| 22 | nb_crm_customer_shares | Müşteri Paylaşım İzinleri | İlişki |
+| 23 | nb_crm_exchange_rates | Döviz Kuru Geçmişi | Yapılandırma |
 
-#### Base Data Tables (Shared Module)
+#### Temel Veri Koleksiyonları (Ortak Modüller)
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| No. | Koleksiyon Adı | Açıklama | Tür |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | Para Birimi Sözlüğü | Yapılandırma |
+| 2 | nb_cbo_regions | Ülke/Bölge Sözlüğü | Yapılandırma |
 
-### 3.4 Supporting Tables
+### 3.4 Yardımcı Koleksiyonlar
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 Yorumlar (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+Çeşitli iş nesneleriyle ilişkilendirilebilen genel yorum/not koleksiyonu.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| content | TEXT | Yorum İçeriği |
+| lead_id | BIGINT | İlişkili Aday (FK) |
+| customer_id | BIGINT | İlişkili Müşteri (FK) |
+| opportunity_id | BIGINT | İlişkili Fırsat (FK) |
+| order_id | BIGINT | İlişkili Sipariş (FK) |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 Müşteri Paylaşımları (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+Müşteriler için çok kişili iş birliğini ve izin paylaşımını sağlar.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| customer_id | BIGINT | Müşteri (FK, Zorunlu) |
+| shared_with_user_id | BIGINT | Paylaşılan Kullanıcı (FK, Zorunlu) |
+| shared_by_user_id | BIGINT | Paylaşan Kullanıcı (FK) |
+| permission_level | VARCHAR | İzin Seviyesi: read/write/full |
+| shared_at | TIMESTAMP | Paylaşım Zamanı |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 Fırsat İş Ortakları (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+Fırsatlar üzerinde satış ekibi iş birliğini destekler.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| opportunity_id | BIGINT | Fırsat (FK, Bileşik PK) |
+| user_id | BIGINT | Kullanıcı (FK, Bileşik PK) |
+| role | VARCHAR | Rol: owner/collaborator/viewer |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 Bölgeler (nb_cbo_regions)
 
-Country/region base data dictionary.
+Ülke/Bölge temel veri sözlüğü.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
-
----
-
-## 4. Lead Lifecycle
-
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
-
-### 4.1 Status Definitions
-
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
-
-### 4.2 Status Flow
-
-
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
-
-### 4.3 Lead Conversion Flow
-
-The conversion UI presents three options simultaneously; users can create or link:
-
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
-
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| code_alpha2 | VARCHAR | ISO 3166-1 Alpha-2 Kodu (Benzersiz) |
+| code_alpha3 | VARCHAR | ISO 3166-1 Alpha-3 Kodu (Benzersiz) |
+| code_numeric | VARCHAR | ISO 3166-1 Sayısal Kodu |
+| name | VARCHAR | Ülke/Bölge Adı |
+| is_active | BOOLEAN | Etkin mi? |
+| sort_order | INTEGER | Sıralama |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. Aday Müşteri Yaşam Döngüsü
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+Aday müşteri yönetimi basitleştirilmiş 4 aşamalı bir iş akışı kullanır. Yeni bir aday müşteri oluşturulduğunda, bir iş akışı otomatik olarak AI puanlamasını tetikleyerek satış ekibinin yüksek kaliteli adayları hızlıca belirlemesine yardımcı olabilir.
 
-### 5.1 Configurable Stages
+### 4.1 Durum Tanımları
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| Durum | Ad | Açıklama |
+|-----|------|------|
+| new | Yeni | Yeni oluşturuldu, iletişim bekleniyor |
+| working | Takipte | Aktif olarak takip ediliyor |
+| qualified | Doğrulanmış | Dönüşüme hazır |
+| unqualified | Uygun Değil | Uygun bir aday değil |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 Durum Akış Şeması
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 Aday Müşteri Dönüşüm Süreci
 
-### 5.3 Stagnation Detection
+Dönüşüm arayüzü aynı anda üç seçenek sunar; kullanıcılar şunları oluşturmayı veya ilişkilendirmeyi seçebilir:
 
-Opportunities with no activity will be flagged:
+- **Müşteri**: Yeni bir müşteri oluşturun VEYA mevcut bir müşteriyle ilişkilendirin.
+- **Kişi**: Yeni bir kişi oluşturun (müşteriyle ilişkili).
+- **Fırsat**: Bir fırsat oluşturulması zorunludur.
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**Dönüşüm Sonrası Kayıtlar:**
+- `converted_customer_id`: İlişkili Müşteri ID
+- `converted_contact_id`: İlişkili Kişi ID
+- `converted_opportunity_id`: Oluşturulan Fırsat ID
+
+---
+
+## 5. Fırsat Yaşam Döngüsü
+
+Fırsat yönetimi yapılandırılabilir satış hattı aşamalarını kullanır. Bir fırsat aşaması değiştiğinde, satış ekibinin riskleri ve fırsatları belirlemesine yardımcı olmak için otomatik olarak AI kazanma olasılığı tahminini tetikleyebilir.
+
+### 5.1 Yapılandırılabilir Aşamalar
+
+Aşamalar `nb_crm_opportunity_stages` koleksiyonunda saklanır ve özelleştirilebilir:
+
+| Kod | Ad | Sıra | Varsayılan Kazanma Olasılığı |
+|-----|------|------|---------|
+| prospecting | Ön Görüşme | 1 | 10% |
+| analysis | İhtiyaç Analizi | 2 | 30% |
+| proposal | Teklif Sunumu | 3 | 60% |
+| negotiation | Pazarlık/İnceleme | 4 | 80% |
+| won | Kazanıldı | 5 | 100% |
+| lost | Kaybedildi | 6 | 0% |
+
+### 5.2 Satış Hattı Akışı
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 Hareketsizlik Tespiti
+
+Etkinlik olmayan fırsatlar işaretlenecektir:
+
+| Etkinlik Olmadan Geçen Gün | Aksiyon |
+|-----------|------|
+| 7 Gün | Sarı Uyarı |
+| 14 Gün | Sorumluya Turuncu Hatırlatma |
+| 30 Gün | Yöneticiye Kırmızı Hatırlatma |
 
 ```sql
--- Calculate stagnation days
+-- Hareketsizlik günlerini hesapla
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 Kazanma/Kaybetme İşlemleri
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**Kazanıldığında:**
+1. Aşamayı 'won' olarak güncelleyin.
+2. Gerçek kapanış tarihini kaydedin.
+3. Müşteri durumunu 'active' olarak güncelleyin.
+4. Sipariş oluşturmayı tetikleyin (eğer bir teklif kabul edildiyse).
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**Kaybedildiğinde:**
+1. Aşamayı 'lost' olarak güncelleyin.
+2. Kaybetme nedenini kaydedin.
+3. Rakip ID'sini kaydedin (eğer bir rakibe kaybedildiyse).
+4. Yöneticiyi bilgilendirin.
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. Teklif Yaşam Döngüsü
 
-### 6.1 Status Definitions
+### 6.1 Durum Tanımları
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| Durum | Ad | Açıklama |
+|-----|------|------|
+| draft | Taslak | Hazırlık aşamasında |
+| pending_approval | Onay Bekliyor | Onay bekliyor |
+| approved | Onaylandı | Gönderilmeye hazır |
+| sent | Gönderildi | Müşteriye gönderildi |
+| accepted | Kabul Edildi | Müşteri tarafından kabul edildi |
+| rejected | Reddedildi | Müşteri tarafından reddedildi |
+| expired | Süresi Doldu | Geçerlilik tarihi geçti |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 Onay Kuralları (Kesinleşecek)
 
-Approval flow is triggered based on the following conditions:
+Onay iş akışları aşağıdaki koşullara göre tetiklenir:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| Koşul | Onay Seviyesi |
+|------|---------|
+| İndirim > 10% | Satış Müdürü |
+| İndirim > 20% | Satış Direktörü |
+| Tutar > $100K | Finans + Genel Müdür |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 Çoklu Para Birimi Desteği
 
-### 6.3 Multi-Currency Support
+#### Tasarım Felsefesi
 
-#### Design Rationale
+Tüm raporlar ve analizler için **temel para birimi olarak USD** kullanın. Her tutar kaydı şunları saklar:
+- Orijinal para birimi ve tutar (müşterinin gördüğü)
+- İşlem anındaki döviz kuru
+- USD karşılığı tutar (dahili karşılaştırma için)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### Para Birimi Sözlüğü (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+Para birimi yapılandırması, dinamik yönetimi destekleyen ortak bir temel veri koleksiyonu kullanır. `current_rate` alanı, `nb_crm_exchange_rates` tablosundaki en güncel kayıttan bir zamanlanmış görev tarafından güncellenen mevcut döviz kurunu saklar.
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| code | VARCHAR | Para Birimi Kodu (Benzersiz): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | Para Birimi Adı |
+| symbol | VARCHAR | Para Birimi Sembolü |
+| decimal_places | INTEGER | Ondalık Basamak Sayısı |
+| current_rate | DECIMAL | USD Karşılığı Mevcut Kur (Geçmişten senkronize edilir) |
+| is_active | BOOLEAN | Etkin mi? |
+| sort_order | INTEGER | Sıralama |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### Döviz Kuru Geçmişi (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+Geçmiş döviz kuru verilerini kaydeder. Zamanlanmış bir görev, en son kurları `nb_cbo_currencies.current_rate` alanına senkronize eder.
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| currency_code | VARCHAR | Para Birimi Kodu (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | USD Karşılığı Kur |
+| effective_date | DATE | Yürürlük Tarihi |
+| source | VARCHAR | Kaynak: manual/api |
+| createdAt | TIMESTAMP | Oluşturulma Zamanı |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **Not**: Teklifler, `currency_id` yabancı anahtarı aracılığıyla `nb_cbo_currencies` koleksiyonuyla ilişkilendirilir ve döviz kuru doğrudan `current_rate` alanından alınır. Fırsatlar ve siparişler, para birimi kodunu saklamak için bir `currency` VARCHAR alanı kullanır.
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### Tutar Alanı Deseni
 
-#### Monetary Field Pattern
+Tutar içeren koleksiyonlar şu deseni izler:
 
-Tables with monetary amounts follow this pattern:
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| currency | VARCHAR | İşlem Para Birimi |
+| amount | DECIMAL | Orijinal Tutar |
+| exchange_rate | DECIMAL | İşlem anındaki USD kuru |
+| amount_usd | DECIMAL | USD Karşılığı (Hesaplanan) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**Uygulandığı yerler:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### İş Akışı Entegrasyonu
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**Döviz Kuru Alma Mantığı:**
+1. İşlemler sırasında döviz kurunu doğrudan `nb_cbo_currencies.current_rate` alanından alın.
+2. USD İşlemleri: Kur = 1.0, sorgulama gerekmez.
+3. `current_rate`, en son `nb_crm_exchange_rates` kaydından zamanlanmış bir görevle senkronize edilir.
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 Versiyon Yönetimi
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+Bir teklif reddedildiğinde veya süresi dolduğunda, yeni bir versiyon olarak çoğaltılabilir:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → Reddedildi
+QT-20260119-001 v2 → Gönderildi
+QT-20260119-001 v3 → Kabul Edildi
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. Sipariş Yaşam Döngüsü
 
-### 7.1 Order Overview
+### 7.1 Siparişe Genel Bakış
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+Siparişler, bir teklif kabul edildiğinde oluşturulur ve onaylanmış bir iş taahhüdünü temsil eder.
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 Sipariş Durum Tanımları
 
-### 7.2 Order Status Definitions
+| Durum | Kod | Açıklama | İzin Verilen Aksiyonlar |
+|-----|------|------|---------|
+| Taslak | `draft` | Sipariş oluşturuldu, henüz onaylanmadı | Düzenle, Onayla, İptal Et |
+| Onaylandı | `confirmed` | Sipariş onaylandı, yerine getirilmesi bekleniyor | İşlemi Başlat, İptal Et |
+| İşleniyor | `in_progress` | Sipariş işleniyor/üretiliyor | İlerlemeyi Güncelle, Sevket, İptal Et (onay gerektirir) |
+| Sevk Edildi | `shipped` | Ürünler müşteriye sevk edildi | Teslim Edildi Olarak İşaretle |
+| Teslim Edildi | `delivered` | Müşteri malları teslim aldı | Siparişi Tamamla |
+| Tamamlandı | `completed` | Sipariş tamamen tamamlandı | Yok |
+| İptal Edildi | `cancelled` | Sipariş iptal edildi | Yok |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 Sipariş Veri Modeli
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| order_no | VARCHAR | Sipariş No (Otomatik oluşturulur, Benzersiz) |
+| customer_id | BIGINT | Müşteri (FK) |
+| contact_id | BIGINT | Kişi (FK) |
+| opportunity_id | BIGINT | Fırsat (FK) |
+| quotation_id | BIGINT | Teklif (FK) |
+| owner_id | BIGINT | Sorumlu (FK → users) |
+| status | VARCHAR | Sipariş Durumu |
+| payment_status | VARCHAR | Ödeme Durumu: unpaid/partial/paid |
+| order_date | DATE | Sipariş Tarihi |
+| delivery_date | DATE | Beklenen Teslimat Tarihi |
+| actual_delivery_date | DATE | Gerçek Teslimat Tarihi |
+| currency | VARCHAR | Sipariş Para Birimi |
+| exchange_rate | DECIMAL | USD Karşılığı Kur |
+| order_amount | DECIMAL | Toplam Sipariş Tutarı |
+| paid_amount | DECIMAL | Ödenen Tutar |
+| unpaid_amount | DECIMAL | Ödenmeyen Tutar |
+| shipping_address | TEXT | Teslimat Adresi |
+| logistics_company | VARCHAR | Lojistik Şirketi |
+| tracking_no | VARCHAR | Takip Numarası |
+| terms_condition | TEXT | Şartlar ve Koşullar |
+| description | TEXT | Açıklama |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| order_id | FK | Üst Sipariş |
+| product_id | FK | Ürün Referansı |
+| product_name | VARCHAR | Ürün Adı Anlık Görüntüsü |
+| quantity | INT | Sipariş Edilen Miktar |
+| unit_price | DECIMAL | Birim Fiyat |
+| discount_percent | DECIMAL | İndirim Yüzdesi |
+| line_total | DECIMAL | Satır Toplamı |
+| notes | TEXT | Satır Notları |
 
-### 7.4 Payment Tracking
+### 7.4 Ödeme Takibi
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| Alan | Tür | Açıklama |
+|-----|------|------|
+| id | BIGINT | Birincil Anahtar |
+| order_id | BIGINT | İlişkili Sipariş (FK, Zorunlu) |
+| customer_id | BIGINT | Müşteri (FK) |
+| payment_no | VARCHAR | Ödeme No (Otomatik oluşturulur, Benzersiz) |
+| amount | DECIMAL | Ödeme Tutarı (Zorunlu) |
+| currency | VARCHAR | Ödeme Para Birimi |
+| payment_method | VARCHAR | Yöntem: transfer/check/cash/credit_card/lc |
+| payment_date | DATE | Ödeme Tarihi |
+| bank_account | VARCHAR | Banka Hesap Numarası |
+| bank_name | VARCHAR | Banka Adı |
+| notes | TEXT | Ödeme Notları |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. Müşteri Yaşam Döngüsü
 
-### 8.1 Customer Overview
+### 8.1 Müşteriye Genel Bakış
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+Müşteriler, aday müşteri dönüşümü sırasında veya bir fırsat kazanıldığında oluşturulur. Sistem, edinmeden marka elçiliğine kadar tüm yaşam döngüsünü takip eder.
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 Müşteri Durum Tanımları
 
-### 8.2 Customer Status Definitions
+| Durum | Kod | Sağlık | Açıklama |
+|-----|------|--------|------|
+| Potansiyel | `prospect` | Yok | Dönüştürülmüş aday, henüz sipariş yok |
+| Aktif | `active` | ≥70 | Ödeme yapan müşteri, iyi etkileşim |
+| Büyüyen | `growing` | ≥80 | Genişleme fırsatları olan müşteri |
+| Risk Altında | `at_risk` | <50 | Kaybedilme belirtileri gösteren müşteri |
+| Kaybedilen | `churned` | Yok | Artık aktif değil |
+| Geri Kazanılan | `win_back` | Yok | Yeniden etkinleştirilen eski müşteri |
+| Destekçi | `advocate` | ≥90 | Yüksek memnuniyet, referans sağlar |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 Müşteri Sağlık Puanlaması
 
-### 8.3 Customer Health Score
+Müşteri sağlığı birden fazla faktöre göre hesaplanır:
 
-Health score is calculated from multiple factors:
+| Faktör | Ağırlık | Metrik |
+|-----|------|---------|
+| Satın Alma Güncelliği | 25% | Son siparişten bu yana geçen gün |
+| Satın Alma Sıklığı | 20% | Dönem başına sipariş sayısı |
+| Parasal Değer | 20% | Toplam ve ortalama sipariş değeri |
+| Etkileşim | 15% | E-posta açılma oranları, toplantı katılımı |
+| Destek Sağlığı | 10% | Destek talebi hacmi ve çözüm oranı |
+| Ürün Kullanımı | 10% | Aktif kullanım metrikleri (varsa) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**Sağlık Eşikleri:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +711,217 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 Müşteri Segmentasyonu
 
-#### Automatic Segmentation
+#### Otomatik Segmentasyon
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
-
----
-
-## 9. Email Integration
-
-### 9.1 Overview
-
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
-
-### 9.2 Email Sync
-
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
-
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
-
-### 9.3 Email–CRM Association (To Be Refined)
-
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
-
-### 9.4 Email Templates
-
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| Segment | Koşul | Önerilen Aksiyon |
+|-----|------|---------|
+| VIP | LTV > $100K | Özel hizmet, üst düzey yönetici desteği |
+| Kurumsal | Şirket Ölçeği > 500 | Özel Müşteri Yöneticisi |
+| Orta Ölçekli | Şirket Ölçeği 50-500 | Düzenli kontroller, ölçekli destek |
+| Girişim | Şirket Ölçeği < 50 | Kendi kendine hizmet kaynakları, topluluk |
+| Atıl | 90+ Gün Etkinlik Yok | Yeniden etkinleştirme pazarlaması |
 
 ---
 
-## 10. AI Capabilities
+## 9. E-posta Entegrasyonu
 
-### 10.1 AI Employee Team
+### 9.1 Genel Bakış
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+NocoBase, Gmail ve Outlook'u destekleyen yerleşik bir e-posta entegrasyon eklentisi sunar. E-postalar senkronize edildikten sonra, iş akışları e-posta duyarlılığını ve niyetini analiz etmek için otomatik olarak AI analizini tetikleyebilir ve satış ekibinin müşteri tutumlarını hızlıca anlamasına yardımcı olabilir.
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+### 9.2 E-posta Senkronizasyonu
 
-### 10.2 AI Task List
+**Desteklenen Sağlayıcılar:**
+- Gmail (OAuth 2.0 üzerinden)
+- Outlook/Microsoft 365 (OAuth 2.0 üzerinden)
 
-AI capabilities are divided into two independent categories:
+**Senkronizasyon Davranışı:**
+- Gönderilen ve alınan e-postaların çift yönlü senkronizasyonu.
+- E-postaların CRM kayıtlarıyla (Adaylar, Kişiler, Fırsatlar) otomatik ilişkilendirilmesi.
+- Eklerin NocoBase dosya sisteminde saklanması.
 
-#### 1. AI Employees (Frontend — User-Triggered)
+### 9.3 E-posta-CRM İlişkilendirmesi (Kesinleşecek)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+### 9.4 E-posta Şablonları
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+Satış ekibi önceden ayarlanmış şablonları kullanabilir:
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
+| Şablon Kategorisi | Örnekler |
+|---------|------|
+| İlk İletişim | Soğuk e-posta, Sıcak giriş, Etkinlik takibi |
+| Takip | Toplantı takibi, Teklif takibi, Yanıtsızlık hatırlatması |
+| Teklif | Teklif ektedir, Teklif revizyonu, Teklif süresi doluyor |
+| Sipariş | Sipariş onayı, Sevkiyat bildirimi, Teslimat onayı |
+| Müşteri Başarısı | Hoş geldiniz, Kontrol, Değerlendirme isteği |
 
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
+---
 
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
+## 10. AI Destekli Yetenekler
 
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
+### 10.1 AI Çalışan Ekibi
 
-### 10.3 AI Fields in the Database
+CRM sistemi, CRM'e özgü görevlerle yapılandırılmış aşağıdaki yerleşik AI çalışanlarını kullanarak NocoBase AI eklentisini entegre eder:
 
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
+| ID | Ad | Yerleşik Rol | CRM Genişletme Yetenekleri |
+|----|------|---------|-------------|
+| viz | Viz | Veri Analisti | Satış verileri analizi, satış hattı tahmini |
+| dara | Dara | Grafik Uzmanı | Veri görselleştirme, rapor geliştirme, gösterge paneli tasarımı |
+| ellis | Ellis | Editör | E-posta yanıt taslağı hazırlama, iletişim özetleri, iş e-postası taslakları |
+| lexi | Lexi | Çevirmen | Çok dilli müşteri iletişimi, içerik çevirisi |
+| orin | Orin | Organizatör | Günlük öncelikler, sonraki adım önerileri, takip planlaması |
+
+### 10.2 AI Görev Listesi
+
+AI yetenekleri iki bağımsız kategoriye ayrılır:
+
+#### I. AI Çalışanları (Ön Yüz Bloğu Tetiklemeli)
+
+Kullanıcılar, analiz ve öneriler almak için ön yüzdeki AI Çalışanı blokları aracılığıyla AI ile doğrudan etkileşime girer.
+
+| Çalışan | Görev | Açıklama |
+|------|------|------|
+| Viz | Satış Verileri Analizi | Satış hattı trendlerini ve dönüşüm oranlarını analiz eder |
+| Viz | Satış Hattı Tahmini | Ağırlıklı satış hattına göre geliri tahmin eder |
+| Dara | Grafik Oluşturma | Satış raporu grafikleri oluşturur |
+| Dara | Gösterge Paneli Tasarımı | Veri gösterge paneli düzenlerini tasarlar |
+| Ellis | Yanıt Taslağı Hazırlama | Profesyonel e-posta yanıtları oluşturur |
+| Ellis | İletişim Özeti | E-posta dizilerini özetler |
+| Ellis | İş E-postası Taslağı | Toplantı davetleri, takipler, teşekkür e-postaları vb. |
+| Orin | Günlük Öncelikler | Gün için önceliklendirilmiş bir görev listesi oluşturur |
+| Orin | Sonraki En İyi Aksiyon | Her fırsat için sonraki adımları önerir |
+| Lexi | İçerik Çevirisi | Pazarlama materyallerini, teklifleri ve e-postaları çevirir |
+
+#### II. İş Akışı LLM Düğümleri (Arka Plan Otomatik Yürütme)
+
+İş akışları içine yerleştirilmiş, koleksiyon olayları, aksiyon olayları veya zamanlanmış görevler tarafından AI Çalışanlarından bağımsız olarak otomatik olarak tetiklenen LLM düğümleri.
+
+| Görev | Tetikleme Yöntemi | Açıklama | Hedef Alan |
+|------|---------|------|---------|
+| Aday Puanlama | Koleksiyon Olayı (Oluşturma/Güncelleme) | Aday kalitesini değerlendirir | ai_score, ai_convert_prob |
+| Kazanma Olasılığı Tahmini | Koleksiyon Olayı (Aşama Değişimi) | Fırsat başarı olasılığını tahmin eder | ai_win_probability, ai_risk_factors |
+
+> **Not**: İş akışı LLM düğümleri, yapılandırılmış JSON için istemler (prompts) ve Şema çıktısı kullanır; bu veriler kullanıcı müdahalesi olmadan ayrıştırılır ve iş verisi alanlarına yazılır.
+
+### 10.3 Veritabanındaki AI Alanları
+
+| Tablo | AI Alanı | Açıklama |
+|----|--------|------|
+| nb_crm_leads | ai_score | AI Puanı 0-100 |
+| | ai_convert_prob | Dönüşüm Olasılığı |
+| | ai_best_contact_time | En İyi İletişim Zamanı |
+| | ai_tags | AI Tarafından Oluşturulan Etiketler (JSONB) |
+| | ai_scored_at | Puanlama Zamanı |
+| | ai_next_best_action | Sonraki En İyi Aksiyon Önerisi |
+| | ai_nba_generated_at | Öneri Oluşturma Zamanı |
+| nb_crm_opportunities | ai_win_probability | AI Tahmini Kazanma Olasılığı |
+| | ai_analyzed_at | Analiz Zamanı |
+| | ai_confidence | Tahmin Güveni |
 | | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| | ai_risk_factors | Risk Faktörleri (JSONB) |
+| | ai_recommendations | Öneri Listesi (JSONB) |
+| | ai_predicted_close | Tahmini Kapanış Tarihi |
+| | ai_next_best_action | Sonraki En İyi Aksiyon Önerisi |
+| | ai_nba_generated_at | Öneri Oluşturma Zamanı |
+| nb_crm_customers | ai_health_score | Sağlık Puanı 0-100 |
+| | ai_health_grade | Sağlık Derecesi: A/B/C/D |
+| | ai_churn_risk | Kaybetme Riski 0-100% |
+| | ai_churn_risk_level | Kaybetme Riski Seviyesi: low/medium/high |
+| | ai_health_dimensions | Boyut Puanları (JSONB) |
+| | ai_recommendations | Öneri Listesi (JSONB) |
+| | ai_health_assessed_at | Sağlık Değerlendirme Zamanı |
+| | ai_tags | AI Tarafından Oluşturulan Etiketler (JSONB) |
+| | ai_best_contact_time | En İyi İletişim Zamanı |
+| | ai_next_best_action | Sonraki En İyi Aksiyon Önerisi |
+| | ai_nba_generated_at | Öneri Oluşturma Zamanı |
 
 ---
 
-## 11. Workflow Engine
+## 11. İş Akışı Motoru
 
-### 11.1 Implemented Workflows
+### 11.1 Uygulanan İş Akışları
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+| İş Akışı Adı | Tetikleme Türü | Durum | Açıklama |
+|-----------|---------|------|------|
+| Leads Created | Koleksiyon Olayı | Etkin | Bir aday oluşturulduğunda tetiklenir |
+| CRM Overall Analytics | AI Çalışanı Olayı | Etkin | Genel CRM veri analizi |
+| Lead Conversion | Aksiyon Sonrası Olay | Etkin | Aday dönüştürme süreci |
+| Lead Assignment | Koleksiyon Olayı | Etkin | Otomatik aday atama |
+| Lead Scoring | Koleksiyon Olayı | Devre Dışı | Aday puanlama (Kesinleşecek) |
+| Follow-up Reminder | Zamanlanmış Görev | Devre Dışı | Takip hatırlatıcıları (Kesinleşecek) |
 
-### 11.2 Planned Workflows
+### 11.2 Uygulanacak İş Akışları
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
-
----
-
-## 12. Menu & Interface Design
-
-### 12.1 Admin Menu Structure
-
-
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
-
-### 12.2 Dashboard Views
-
-#### Sales Manager View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
-
-#### Sales Rep View
-
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| İş Akışı | Tetikleme Türü | Açıklama |
+|-------|---------|------|
+| Fırsat Aşaması İlerlemesi | Koleksiyon Olayı | Aşama değişiminde kazanma olasılığını güncelle ve zamanı kaydet |
+| Fırsat Hareketsizlik Tespiti | Zamanlanmış Görev | Atıl fırsatları tespit et ve hatırlatıcı gönder |
+| Teklif Onayı | Aksiyon Sonrası Olay | Çok seviyeli onay süreci |
+| Sipariş Oluşturma | Aksiyon Sonrası Olay | Teklif kabulünden sonra otomatik sipariş oluştur |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 12. Menü ve Arayüz Tasarımı
+
+### 12.1 Yönetim Yapısı
+
+| Menü | Tür | Açıklama |
+|------|------|------|
+| **Dashboards** | Grup | Gösterge Panelleri |
+| - Dashboard | Sayfa | Varsayılan Gösterge Paneli |
+| - SalesManager | Sayfa | Satış Müdürü Görünümü |
+| - SalesRep | Sayfa | Satış Temsilcisi Görünümü |
+| - Executive | Sayfa | Yönetici Görünümü |
+| **Leads** | Sayfa | Aday Müşteri Yönetimi |
+| **Customers** | Sayfa | Müşteri Yönetimi |
+| **Opportunities** | Sayfa | Fırsat Yönetimi |
+| - Table | Sekme | Fırsat Listesi |
+| **Products** | Sayfa | Ürün Yönetimi |
+| - Categories | Sekme | Ürün Kategorileri |
+| **Orders** | Sayfa | Sipariş Yönetimi |
+| **Settings** | Grup | Ayarlar |
+| - Stage Settings | Sayfa | Fırsat Aşaması Yapılandırması |
+| - Exchange Rate | Sayfa | Döviz Kuru Ayarları |
+| - Activity | Sayfa | Etkinlik Kayıtları |
+| - Emails | Sayfa | E-posta Yönetimi |
+| - Contacts | Sayfa | Kişi Yönetimi |
+| - Data Analysis | Sayfa | Veri Analizi |
+
+### 12.2 Gösterge Paneli Görünümleri
+
+#### Satış Müdürü Görünümü
+
+| Bileşen | Tür | Veri |
+|-----|------|------|
+| Satış Hattı Değeri | KPI Kartı | Aşamaya göre toplam satış hattı tutarı |
+| Ekip Liderlik Tablosu | Tablo | Temsilci performans sıralaması |
+| Risk Uyarıları | Uyarı Listesi | Yüksek riskli fırsatlar |
+| Kazanma Oranı Trendi | Çizgi Grafik | Aylık kazanma oranı |
+| Hareketsiz İşlemler | Liste | İlgi gerektiren işlemler |
+
+#### Satış Temsilcisi Görünümü
+
+| Bileşen | Tür | Veri |
+|-----|------|------|
+| Kota İlerlemem | İlerleme Çubuğu | Aylık Gerçekleşen vs. Kota |
+| Bekleyen Fırsatlar | KPI Kartı | Bekleyen fırsatlarımın sayısı |
+| Bu Hafta Kapanacaklar | Liste | Yakında kapanması beklenen işlemler |
+| Gecikmiş Etkinlikler | Uyarı | Süresi geçmiş görevler |
+| Hızlı Aksiyonlar | Butonlar | Etkinlik kaydet, Fırsat oluştur |
+
+#### Yönetici Görünümü
+
+| Bileşen | Tür | Veri |
+|-----|------|------|
+| Yıllık Gelir | KPI Kartı | Yılbaşından bugüne gelir |
+| Satış Hattı Değeri | KPI Kartı | Toplam satış hattı tutarı |
+| Kazanma Oranı | KPI Kartı | Genel kazanma oranı |
+| Müşteri Sağlığı | Dağılım | Sağlık puanı dağılımı |
+| Tahmin | Grafik | Aylık gelir tahmini |
+
+
+---
+
+*Belge Sürümü: v2.0 | Güncelleme Tarihi: 2026-02-06*

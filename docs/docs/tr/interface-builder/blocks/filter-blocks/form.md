@@ -1,71 +1,93 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/interface-builder/blocks/filter-blocks/form) bakın.
 :::
-
 
 # Filtre Formu
 
 ## Giriş
 
-Filtre formu, kullanıcıların form alanlarını doldurarak verileri filtrelemesine olanak tanır. Tablo blokları, grafik blokları, liste blokları ve daha fazlasını filtrelemek için kullanılabilir.
+Filtre formu, kullanıcıların form alanlarını doldurarak verileri filtrelemesine olanak tanır. Tablo blokları, grafik blokları, liste blokları vb. filtrelemek için kullanılabilir.
 
 ## Nasıl Kullanılır
 
-Filtre formunun nasıl kullanılacağını hızlıca anlamak için basit bir örnekle başlayalım. Kullanıcı bilgilerini içeren bir tablo bloğumuz olduğunu ve verileri bir filtre formu kullanarak aşağıdaki gibi filtrelemek istediğimizi varsayalım:
+Filtre formunun kullanımını hızlıca anlamak için basit bir örnekle başlayalım. Kullanıcı bilgilerini içeren bir tablo bloğumuz olduğunu ve verileri bir filtre formu aracılığıyla filtrelemek istediğimizi varsayalım. Şunun gibi:
 
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
 Yapılandırma adımları şunlardır:
 
-1. Düzenleme modunu etkinleştirin ve sayfaya bir "Filtre Formu" bloğu ile bir "Tablo" bloğu ekleyin.
+1. Yapılandırma modunu açın, sayfaya bir "Filtre formu" bloğu ve bir "Tablo bloğu" ekleyin.
 ![20251031163525_rec_](https://static-docs.nocobase.com/20251031163525_rec_.gif)
-2. Hem tablo bloğuna hem de filtre formu bloğuna "Takma Ad" alanını ekleyin.
+2. Tablo bloğuna ve filtre formu bloğuna "Takma ad" alanını ekleyin.
 ![20251031163932_rec_](https://static-docs.nocobase.com/20251031163932_rec_.gif)
-3. Artık kullanmaya başlayabilirsiniz.
+3. Artık kullanıma hazırdır.
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
 ## Gelişmiş Kullanım
 
-Filtre formu bloğu daha gelişmiş yapılandırmaları destekler. İşte bazı yaygın kullanım senaryoları.
+Filtre formu bloğu daha fazla gelişmiş yapılandırmayı destekler, aşağıda bazı yaygın kullanımlar yer almaktadır.
 
 ### Birden Fazla Bloğu Bağlama
 
-Tek bir form alanı, aynı anda birden fazla bloğun verilerini filtreleyebilir. İşte nasıl yapacağınız:
+Tek bir form alanı aynı anda birden fazla bloğun verilerini filtreleyebilir. İşlem adımları şunlardır:
 
-1. Alanın "Alanları Bağla" yapılandırma seçeneğine tıklayın.
+1. Alanın "Connect fields" yapılandırma seçeneğine tıklayın.
 ![20251031170300](https://static-docs.nocobase.com/20251031170300.png)
-2. Bağlamak istediğiniz hedef blokları ekleyin. Bu örnekte, sayfadaki liste bloğunu seçeceğiz.
+2. İlişkilendirilmesi gereken hedef blokları ekleyin, burada sayfadaki liste bloğunu seçiyoruz.
 ![20251031170718](https://static-docs.nocobase.com/20251031170718.png)
-3. Liste bloğundan bağlanacak bir veya daha fazla alan seçin. Burada "Takma Ad" alanını seçiyoruz.
+3. Liste bloğunda ilişkilendirilecek bir veya daha fazla alan seçin. Burada "Takma ad" alanını seçiyoruz.
 ![20251031171039](https://static-docs.nocobase.com/20251031171039.png)
-4. Yapılandırmayı tamamlamak için kaydet düğmesine tıklayın. Sonuç aşağıdaki gibi görünecektir:
+4. Kaydet düğmesine tıklayarak yapılandırmayı tamamlayın, sonuç aşağıda gösterildiği gibidir:
 ![20251031171209_rec_](https://static-docs.nocobase.com/20251031171209_rec_.gif)
 
 ### Grafik Bloklarını Bağlama
 
-Referans: [Sayfa filtreleri ve bağlantı](../../../data-visualization/guide/filters-and-linkage.md)
+Referans: [Sayfa Filtreleri ve Bağlantı](../../../data-visualization/guide/filters-and-linkage.md)
 
 ### Özel Alanlar
 
-Veri tablolarından alan seçmenin yanı sıra, "Özel Alanlar" kullanarak da form alanları oluşturabilirsiniz. Örneğin, özel seçeneklere sahip bir açılır tek seçim alanı oluşturabilirsiniz. İşte nasıl yapacağınız:
+Koleksiyondan alan seçmenin yanı sıra, "Özel alanlar" aracılığıyla da form alanları oluşturabilirsiniz. Örneğin, bir açılır tekli seçim alanı oluşturabilir ve seçenekleri özelleştirebilirsiniz. İşlem adımları şunlardır:
 
-1. Yapılandırma panelini açmak için "Özel Alanlar" seçeneğine tıklayın.
+1. "Özel alanlar" seçeneğine tıklayın, yapılandırma arayüzü açılacaktır.
 ![20251031173833](https://static-docs.nocobase.com/20251031173833.png)
-2. Alan başlığını doldurun, alan modeli olarak "Seç"i seçin ve seçenekleri yapılandırın.
+2. Alan başlığını doldurun, "Alan türü" kısmından "Seçim"i seçin ve seçenekleri yapılandırın.
 ![20251031174857_rec_](https://static-docs.nocobase.com/20251031174857_rec_.gif)
-3. Yeni eklenen özel alanların hedef bloklardaki alanlarla manuel olarak ilişkilendirilmesi gerekir. İşte nasıl yapacağınız:
+3. Yeni eklenen özel alanların hedef bloktaki alanlarla manuel olarak ilişkilendirilmesi gerekir, işlem yöntemi şöyledir:
 ![20251031181957_rec_](https://static-docs.nocobase.com/20251031181957_rec_.gif)
-4. Yapılandırma tamamlandı. Sonuç aşağıdaki gibi görünüyor:
+4. Yapılandırma tamamlandı, sonuç aşağıda gösterildiği gibidir:
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
-Şu anda desteklenen alan modelleri şunlardır:
+Şu anda desteklenen alan türleri şunlardır:
 
-- Input: Tek satırlık metin girişi
-- Number: Sayısal giriş
-- Date: Tarih seçici
-- Select: Açılır liste (tekli veya çoklu seçim için yapılandırılabilir)
-- Radio group: Radyo düğmeleri
-- Checkbox group: Onay kutuları
+- Metin kutusu
+- Sayı
+- Tarih
+- Seçim
+- Radyo düğmesi
+- Onay kutusu
+- İlişkili kayıtlar
+
+#### İlişkili Kayıtlar (Özel İlişki Alanı)
+
+"İlişkili kayıtlar", "ilişkili tablo kayıtlarına göre filtreleme" senaryoları için uygundur. Örneğin, bir sipariş listesinde siparişleri "Müşteri"ye göre filtrelemek veya bir görev listesinde görevleri "Sorumlu"ya göre filtrelemek gibi.
+
+Yapılandırma öğesi açıklamaları:
+
+- **Hedef koleksiyon**: Seçilebilir kayıtların hangi koleksiyondan yükleneceğini belirtir.
+- **Başlık alanı**: Açılır seçenekler ve seçilen etiketler için görüntülenecek metin (ad, başlık gibi).
+- **Değer alanı**: Gerçek filtreleme sırasında gönderilen değer, genellikle birincil anahtar alanı (id gibi) seçilir.
+- **Çoklu seçime izin ver**: Etkinleştirildiğinde aynı anda birden fazla kayıt seçilebilir.
+- **Operatör**: Filtreleme koşullarının nasıl eşleşeceğini tanımlar (aşağıdaki "Operatör" açıklamasına bakın).
+
+Önerilen yapılandırma:
+
+1. `Başlık alanı` için okunabilirliği yüksek bir alan (örneğin "Ad") seçin; ham ID kullanarak kullanılabilirliği olumsuz etkilemekten kaçının.
+2. `Değer alanı` için filtrelemenin kararlı ve benzersiz olmasını sağlamak amacıyla birincil anahtar alanına öncelik verin.
+3. Tekli seçim senaryolarında genellikle `Çoklu seçime izin ver` seçeneğini kapatın; çoklu seçim senaryolarında ise bu seçeneği açın ve uygun bir `Operatör` ile birlikte kullanın.
+
+#### Operatör
+
+`Operatör`, "filtre formu alan değeri" ile "hedef blok alan değeri" arasındaki eşleşme ilişkisini tanımlamak için kullanılır.
 
 ### Daraltma
 
@@ -73,9 +95,9 @@ Filtre formu içeriğini daraltmak ve genişletmek için bir daraltma düğmesi 
 
 ![20251031182743](https://static-docs.nocobase.com/20251031182743.png)
 
-Desteklenen yapılandırmalar:
+Aşağıdaki yapılandırmaları destekler:
 
 ![20251031182849](https://static-docs.nocobase.com/20251031182849.png)
 
-- **Daraltılmış satırlar**: Daraltılmış durumda kaç satır form alanının görüntüleneceğini ayarlar.
+- **Daraltıldığında gösterilecek satır sayısı**: Daraltılmış durumda görüntülenen form alanı satır sayısını ayarlar.
 - **Varsayılan olarak daraltılmış**: Etkinleştirildiğinde, filtre formu varsayılan olarak daraltılmış durumda görüntülenir.

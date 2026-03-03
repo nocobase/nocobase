@@ -1,14 +1,18 @@
 ---
-displayName: "Record history"
+displayName: "היסטוריית רשומות"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Tracks and stores the change history of collection records.
+  עוקב ושומר על היסטוריית השינויים של רשומות באוספים.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Record history
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-record-history/index).
+:::
+
+# היסטוריית רשומות

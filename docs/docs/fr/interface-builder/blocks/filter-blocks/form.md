@@ -1,5 +1,5 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/blocks/filter-blocks/form).
 :::
 
 # Formulaire de filtrage
@@ -50,21 +50,44 @@ En plus de sélectionner des champs à partir des collections, vous pouvez égal
 
 1. Cliquez sur l'option « Champs personnalisés » pour ouvrir le panneau de configuration.
 ![20251031173833](https://static-docs.nocobase.com/20251031173833.png)
-2. Remplissez le titre du champ, sélectionnez « Select » comme modèle de champ et configurez les options.
+2. Remplissez le titre du champ, sélectionnez « Sélection » dans « Type de champ » et configurez les options.
 ![20251031174857_rec_](https://static-docs.nocobase.com/20251031174857_rec_.gif)
 3. Les champs personnalisés nouvellement ajoutés doivent être connectés manuellement aux champs des blocs cibles. Voici comment procéder :
 ![20251031181957_rec_](https://static-docs.nocobase.com/20251031181957_rec_.gif)
 4. La configuration est terminée. Le résultat se présente comme suit :
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
-Les modèles de champ actuellement pris en charge sont :
+Les types de champs actuellement pris en charge sont :
 
-- Input : Champ de saisie de texte sur une seule ligne
-- Number : Champ de saisie numérique
-- Date : Sélecteur de date
-- Select : Liste déroulante (peut être configurée pour une sélection unique ou multiple)
-- Radio group : Boutons radio
-- Checkbox group : Cases à cocher
+- Texte court
+- Nombre
+- Date
+- Sélection
+- Radio Group
+- Checkbox group
+- Association
+
+#### Association (Champs de relation personnalisés)
+
+« Association » est adapté au filtrage par enregistrements de table associée. Par exemple, filtrer les commandes par « Client » ou les tâches par « Responsable ».
+
+Description des options :
+
+- **Collection cible** : Indique de quelle collection charger les enregistrements.
+- **Champ de titre** : Texte affiché pour les options et les étiquettes (ex: nom, titre).
+- **Champ de valeur** : Valeur soumise lors du filtrage, généralement l'ID.
+- **Autoriser la sélection multiple** : Permet de sélectionner plusieurs enregistrements.
+- **Opérateur** : Définit comment la condition de filtrage correspond (voir ci-dessous).
+
+Recommandations de configuration :
+
+1. Choisissez un champ lisible pour le `Champ de titre` (ex: « Nom »).
+2. Privilégiez la clé primaire pour le `Champ de valeur` pour garantir la stabilité.
+3. Désactivez `Autoriser la sélection multiple` pour les scénarios à choix unique.
+
+#### Opérateur
+
+L'« Opérateur » définit la relation de correspondance entre la valeur du champ du formulaire de filtrage et la valeur du champ du bloc cible.
 
 ### Réduction
 

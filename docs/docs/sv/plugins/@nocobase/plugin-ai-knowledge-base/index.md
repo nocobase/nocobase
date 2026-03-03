@@ -1,14 +1,18 @@
 ---
-displayName: "AI: Knowledge base"
+displayName: "AI: Kunskapsbas"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
+  Stöder integration med vektordatabaser för att vektorisera dokument, vilket ger era AI-medarbetare intelligent sökning och kunskapsstöd.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Knowledge base
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-ai-knowledge-base/index).
+:::
+
+# AI: Kunskapsbas

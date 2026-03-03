@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "監査ログ（廃止）"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  このプラグインは廃止されました。使用しないでください。将来、新しい監査ログプラグインが提供される予定です。
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-audit-logs/index)をご参照ください。
+:::
 
-> Note: This plugin is deprecated.
+# 監査ログ（廃止）
+
+> 注意：このプラグインは廃止されました（deprecated）。

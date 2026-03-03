@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "Aktion: Datensatz duplizieren"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  Duplizieren Sie einen Datensatz. Sie können ihn in ein Formular duplizieren und vor dem Absenden bearbeiten oder direkt duplizieren, um einen neuen Datensatz zu erstellen.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/plugins/@nocobase/plugin-action-duplicate/index).
+:::
+
+# Aktion: Datensatz duplizieren

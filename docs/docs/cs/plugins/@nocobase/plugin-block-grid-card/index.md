@@ -1,12 +1,16 @@
 ---
-displayName: "Block: GridCard"
+displayName: "Blok: Mřížková karta"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
-  Display data in a grid list with pagination support.
+  Zobrazuje data ve formě mřížkového seznamu, podporuje nastavení stránkování.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: GridCard
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-block-grid-card/index).
+:::
+
+# Blok: Mřížková karta

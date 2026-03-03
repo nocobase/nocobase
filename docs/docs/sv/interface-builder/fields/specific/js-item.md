@@ -1,42 +1,42 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/interface-builder/fields/specific/js-item).
 :::
 
 # JS Item
 
 ## Introduktion
 
-JS Item används för "anpassade objekt" (som inte är kopplade till ett fält) i ett formulär. Ni kan använda JavaScript/JSX för att rendera valfritt innehåll (som tips, statistik, förhandsvisningar, knappar, etc.) och interagera med formuläret och postens kontext. Det passar bra för scenarier som realtidsförhandsvisningar, instruktionsmeddelanden och små interaktiva komponenter.
+JS Item används för "anpassade objekt" i formulär (ej fältbundna). Ni kan använda JavaScript/JSX för att rendera valfritt innehåll (tips, statistik, förhandsvisning, knappar etc.) och interagera med formulär- och postkontext, vilket lämpar sig för scenarier som realtidsförhandsvisning, instruktioner, små interaktiva komponenter etc.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
-## Körtidskontext-API (vanligt förekommande)
+## Körtidskontext-API (vanliga)
 
-- `ctx.element`: DOM-behållaren (ElementProxy) för det aktuella objektet, med stöd för `innerHTML`, `querySelector`, `addEventListener`, med mera.
-- `ctx.form`: AntD Form-instansen, som tillåter operationer som `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, med mera.
-- `ctx.blockModel`: Modellen för det formulärblock den tillhör, som kan lyssna på `formValuesChange` för att implementera länkning.
-- `ctx.record` / `ctx.collection`: Den aktuella posten och samlingsmetadata (tillgängligt i vissa scenarier).
-- `ctx.requireAsync(url)`: Laddar asynkront ett AMD/UMD-bibliotek via URL.
-- `ctx.importAsync(url)`: Importerar dynamiskt en ESM-modul via URL.
-- `ctx.openView(viewUid, options)`: Öppnar en konfigurerad vy (låda/dialog/sida).
-- `ctx.message` / `ctx.notification`: Globala meddelanden och notifikationer.
-- `ctx.t()` / `ctx.i18n.t()`: Internationalisering.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderar när behållaren är redo.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Inbyggda bibliotek som React, ReactDOM, Ant Design, Ant Design-ikoner och dayjs, för JSX-rendering och datum/tid-hantering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls för kompatibilitet.)
-- `ctx.render(vnode)`: Renderar ett React-element/HTML/DOM till standardbehållaren `ctx.element`. Flera renderingar återanvänder Root och skriver över behållarens befintliga innehåll.
+- `ctx.element`: DOM-behållare (ElementProxy) för det aktuella objektet, stöder `innerHTML`, `querySelector`, `addEventListener` etc.;
+- `ctx.form`: AntD Form-instans, kan använda `getFieldValue / getFieldsValue / setFieldsValue / validateFields` etc.;
+- `ctx.blockModel`: Modell för det formulärblock den tillhör, kan lyssna på `formValuesChange` för att implementera länkning;
+- `ctx.record` / `ctx.collection`: Aktuell post och samlingsmetadata (tillgängligt i vissa scenarier);
+- `ctx.requireAsync(url)`: Ladda AMD/UMD-bibliotek asynkront via URL;
+- `ctx.importAsync(url)`: Importera ESM-moduler dynamiskt via URL;
+- `ctx.openView(viewUid, options)`: Öppna en konfigurerad vy (låda/dialog/sida);
+- `ctx.message` / `ctx.notification`: Globala tips och aviseringar;
+- `ctx.t()` / `ctx.i18n.t()`: Internationalisering;
+- `ctx.onRefReady(ctx.ref, cb)`: Rendera efter att behållaren är redo;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Inbyggda bibliotek som React / ReactDOM / Ant Design / Ant Design-ikoner / dayjs / lodash / math.js / formula.js för JSX-rendering, tidshantering, datamanipulering och matematiska beräkningar. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls för kompatibilitet.)
+- `ctx.render(vnode)`: Renderar React-element/HTML/DOM till standardbehållaren `ctx.element`; upprepade renderingar återanvänder Root och skriver över behållarens befintliga innehåll.
 
 ## Redigerare och kodsnuttar
 
-- `Snippets`: Öppnar en lista med inbyggda kodsnuttar, så att ni kan söka och infoga dem vid den aktuella markörpositionen med ett klick.
-- `Run`: Kör den aktuella koden direkt och matar ut körningsloggarna till `Logs`-panelen längst ner. Den stöder `console.log/info/warn/error` och felmarkering.
+- `Snippets`: Öppnar en lista med inbyggda kodsnuttar som kan sökas och infogas vid markören med ett klick.
+- `Run`: Kör den aktuella koden direkt och visar körningsloggar i `Logs`-panelen längst ner; stöder `console.log/info/warn/error` och felmarkering.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Kan användas med AI-medarbetare för att generera/modifiera skript: [AI-medarbetare · Nathan: Frontendutvecklare](/ai-employees/built-in/ai-coding)
+- Kan kombineras med AI-medarbetare för att generera/modifiera skript: [AI-medarbetare · Nathan: Frontend-ingenjör](/ai-employees/features/built-in-employee)
 
-## Vanliga användningsområden (förenklade exempel)
+## Vanlig användning (förenklade exempel)
 
-### 1) Förhandsvisning i realtid (läsa formulärvärden)
+### 1) Realtidsförhandsvisning (läsa formulärvärden)
 
 ```js
 const render = () => {
@@ -53,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) Öppna en vy (låda)
+### 2) Öppna vy (låda)
 
 ```js
 ctx.render(
@@ -66,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) Ladda och rendera externa bibliotek
+### 3) Ladda externa bibliotek och rendera
 
 ```js
 // AMD/UMD
@@ -78,14 +78,14 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</span>);
 ```
 
-## Att tänka på
+## 注意事项 (Observera)
 
-- Vi rekommenderar att ni använder en betrodd CDN för att ladda externa bibliotek, och att ni har en reservlösning för misslyckade scenarier (t.ex. `if (!lib) return;`).
-- Vi rekommenderar att ni prioriterar att använda `class` eller `[name=...]` för väljare och undviker att använda fasta `id`:n för att förhindra dubbla `id`:n i flera block/popup-fönster.
-- Händelserengöring: Frekventa ändringar i formulärvärden kommer att trigga flera renderingar. Innan en händelse binds bör den rensas eller dedupliceras (t.ex. `remove` före `add`, använd `{ once: true }`, eller använd ett `dataset`-attribut för att förhindra dubbletter).
+- För laddning av externa bibliotek rekommenderas användning av betrodda CDN, och felhantering bör förberedas (t.ex. `if (!lib) return;`).
+- För selektorer rekommenderas i första hand `class` eller `[name=...]`. Undvik fasta `id` för att förhindra dubbletter i flera block eller popup-fönster.
+- Rensa händelser: Frekventa ändringar i formulärvärden triggar flera renderingar. Innan händelser binds bör de rensas eller dedupliceras (t.ex. `remove` före `add`, använda `{ once: true }` eller markera med `dataset`).
 
 ## Relaterad dokumentation
 
 - [Variabler och kontext](/interface-builder/variables)
-- [Kopplingsregler](/interface-builder/linkage-rule)
+- [Länkningsregler](/interface-builder/linkage-rule)
 - [Vyer och popup-fönster](/interface-builder/actions/types/view)

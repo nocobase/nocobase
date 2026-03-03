@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Introduktion till ärendehanteringslösning
 
-## 1. Background (Why)
+> **Observera**: Detta är en tidig förhandsversion. Funktionerna är ännu inte fullständiga och vi arbetar kontinuerligt med förbättringar. Feedback är välkommen!
 
-### Industry/Role/Management Problems Solved
+## 1. Bakgrund (Varför)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Vilka bransch- / roll- / hanteringsproblem som löses
 
-**Typical Business Scenarios:**
+Företag möter olika typer av tjänstebegäranden i den dagliga verksamheten: utrustningsreparationer, IT-support, kundklagomål, konsultationer etc. Dessa förfrågningar kommer från spridda källor (CRM-system, fälttjänstingenjörer, e-post, offentliga formulär etc.), har olika bearbetningsflöden och saknar enhetliga spårnings- och hanteringsmekanismer.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Exempel på typiska affärsscenarier:**
 
-### Target User Profile
+- **Utrustningsreparation**: Eftermarknadsteam hanterar reparationsbegäranden och behöver registrera enhetsspecifik information som serienummer, felkoder och reservdelar.
+- **IT-support**: IT-avdelningen hanterar interna anställdas förfrågningar om lösenordsåterställning, programvaruinstallation och nätverksproblem.
+- **Kundklagomål**: Kundtjänstteam hanterar klagomål från flera kanaler; vissa emotionellt laddade ärenden behöver prioriteras.
+- **Kundsjälvbetjäning**: Slutkunder vill enkelt kunna skicka in tjänstebegäranden och följa handläggningsprocessen.
 
-| Dimension | Description |
+### Målgruppsprofil
+
+| Dimension | Beskrivning |
 |-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+| Företagsstorlek | Små till medelstora företag samt stora företag med betydande kundtjänstbehov |
+| Rollstruktur | Kundtjänstteam, IT-support, eftermarknadsteam, verksamhetschefer |
+| Digital mognad | Nybörjare till medelnivå, som söker att uppgradera från Excel/e-posthantering till systematisk hantering |
 
-### Pain Points of Current Mainstream Solutions
+### Problem med nuvarande dominerande lösningar
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
-
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Hög kostnad / Långsam anpassning**: SaaS-ärendesystem är dyra och anpassade utvecklingscykler är långa.
+- **Systemfragmentering, datasilor**: Verksamhetsdata är spridd över olika system, vilket gör det svårt att förena analys och beslutsfattande.
+- **Snabba affärsförändringar, svårt att utveckla**: När affärskraven ändras är systemen svåra att justera snabbt.
+- **Långsam responstid**: Förfrågningar som flödar mellan olika system kan inte tilldelas omedelbart.
+- **Otydlig process**: Kunder kan inte spåra ärendets framsteg; frekventa förfrågningar ökar trycket på kundtjänst.
+- **Svårt att garantera kvalitet**: Brist på SLA-övervakning; tidsöverskridanden och negativ feedback kan inte larmas i tid.
 
 ---
 
-## 3. Design Principles
+## 2. Referensprodukter och jämförelse (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Dominerande produkter på marknaden
+
+- **SaaS**: Till exempel Salesforce, Zendesk, Odoo etc.
+- **Anpassade system / Interna system**
+
+### Jämförelsedimensioner
+
+- Funktionsomfång
+- Flexibilitet
+- Utbyggbarhet
+- AI-användning
+
+### Skillnader med NocoBase-lösningen
+
+**Fördelar på plattformsnivå:**
+
+- **Konfigurationsprioritet**: Från underliggande datatabeller till affärstyper, SLA och kompetensbaserad dirigering – allt hanteras via konfiguration.
+- **Snabb utveckling med lågkod**: Snabbare än egenutveckling och mer flexibelt än SaaS.
+
+**Vad traditionella system inte kan göra eller där kostnaden är extremt hög:**
+
+- **AI-nativ integration**: Med hjälp av NocoBase AI-plugins möjliggörs intelligent klassificering, hjälp vid ifyllnad och kunskapsrekommendationer.
+- **All design kan kopieras av användare**: Användare kan själva bygga vidare på mallar.
+- **T-formad dataarkitektur**: Huvudtabell + affärsspecifika undertabeller; att lägga till nya affärstyper kräver endast tillägg av en undertabell.
 
 ---
 
-## 4. Solution Overview
+## 3. Designprinciper (Principles)
 
-### Summary Introduction
+- **Låg kognitiv kostnad**
+- **Verksamhet före teknik**
+- **Utvecklingsbar snarare än engångsprojekt**
+- **Konfiguration först, kod som reserv**
+- **Samarbete mellan människa och AI, inte AI som ersätter människan**
+- **All design ska kunna kopieras av användaren**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Lösningsöversikt (Solution Overview)
 
-### Ticket Processing Flow
+### Sammanfattning
+
+En universell plattform för ärendehantering byggd på NocoBase lågkodsplattform, som uppnår:
+
+- **Enhetlig ingång**: Integration av flera källor, standardiserad bearbetning.
+- **Intelligent distribution**: AI-assisterad klassificering, belastningsutjämnad tilldelning.
+- **Polymorf verksamhet**: Kärntabell + affärsspecifika undertabeller, flexibel utbyggnad.
+- **Sluten feedbackloop**: SLA-övervakning, kundutvärdering, hantering av negativ feedback.
+
+### Bearbetningsflöde för ärenden
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Inmatning från flera källor → Förbearbetning/AI-analys → Intelligent tilldelning → Manuellt utförande → Feedbackloop
+          ↓                          ↓                          ↓                    ↓                ↓
+   Dubblettkontroll           Avsiktsigenkänning          Kompetensmatchning      Statusflöde      Nöjdhetsbetyg
+                              Sentimentanalys             Belastningsutjämning    SLA-övervakning  Uppföljning negativ feedback
+                              Autosvar                    Köhantering             Kommunikation    Dataarkivering
 ```
 
-### Core Module List
+### Lista över kärnmoduler
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Modul | Beskrivning |
+|-------|-------------|
+| Ärendeintag | Offentliga formulär, kundportal, registrering via agent, API/Webhook, e-postanalys |
+| Ärendehantering | CRUD för ärenden, statusflöde, tilldelning/överlämning, kommunikation via kommentarer, loggar |
+| Verksamhetsutbyggnad | Undertabeller för utrustningsreparation, IT-support, kundklagomål etc. |
+| SLA-hantering | SLA-konfiguration, varningar vid tidsöverskridande, eskalering |
+| Kundhantering | Huvudtabell för kunder, kontakthantering, kundportal |
+| Utvärderingssystem | Multidimensionell poängsättning, snabbetiketter, NPS, varningar för negativ feedback |
+| AI-stöd | Avsiktsklassificering, sentimentanalys, kunskapsrekommendationer, svarshjälp, språkputsning |
 
-### Core Interface Display
+### Visning av kärngränssnitt
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. AI-anställda (AI Employee)
 
-### AI Employee Types and Scenarios
+### Typer av AI-anställda och scenarier
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Kundtjänstassistent**, **Säljassistent**, **Dataanalytiker**, **Granskare**
+- Assisterar människor, ersätter dem inte
 
-### AI Employee Value Quantification
+### Kvantifiering av AI-anställdas värde
 
-In this solution, AI employees can:
+I denna lösning kan AI-anställda:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Värdedimension | Specifik effekt |
+|----------------|-----------------|
+| Ökad effektivitet | Automatisk klassificering minskar manuell sorteringstid med 50%+; kunskapsrekommendationer påskyndar problemlösning |
+| Minskade kostnader | Enkla frågor besvaras automatiskt, vilket minskar arbetsbelastningen för mänsklig kundtjänst |
+| Stärka mänskliga anställda | Sentimentvarningar hjälper kundtjänst att förbereda sig; språkputsning av svar förbättrar kommunikationskvaliteten |
+| Ökad kundnöjdhet | Snabbare respons, mer exakt tilldelning, mer professionella svar |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Höjdpunkter (Highlights)
 
-### How to Install and Use
+### 1. T-formad dataarkitektur
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Alla ärenden delar huvudtabell med enhetlig flödeslogik.
+- Affärsspecifika undertabeller innehåller unika fält för flexibel utbyggnad.
+- Att lägga till nya affärstyper kräver endast tillägg av en undertabell, utan att påverka huvudflödet.
+
+### 2. Komplett livscykel för ärenden
+
+- Nytt → Tilldelat → Bearbetas → Vilande → Löst → Stängt.
+- Stöd för komplexa scenarier som överlämning, retur och återöppning.
+- SLA-tidtagning är exakt ner till paus i viloläge.
+
+### 3. Enhetlig integration av flera kanaler
+
+- Offentliga formulär, kundportal, API, e-post, registrering via agent.
+- Idempotenskontroll förhindrar att dubbletter skapas.
+
+### 4. AI-nativ integration
+
+- Inte bara "en AI-knapp", utan integrerat i varje steg.
+- Avsiktsigenkänning, sentimentanalys, kunskapsrekommendationer och språkputsning av svar.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Roadmap (Uppdateras löpande)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **Systeminbäddning**: Stöd för att bädda in ärendemodulen i olika affärssystem som ERP, CRM etc.
+- **Ärendesammankoppling**: Integration av ärenden och statusåterkoppling mellan uppströms- och nedströmssystem för samarbete över systemgränser.
+- **AI-automatisering**: AI-anställda inbäddade i arbetsflöden med stöd för automatisk körning i bakgrunden för obemannad hantering.
+- **Stöd för flera klienter (Multi-tenancy)**: Horisontell skalning via flera utrymmen/appar, vilket möjliggör oberoende drift för olika kundtjänstteam.
+- **Kunskapsbas RAG**: Automatisk vektorisering av all data (ärenden, kunder, produkter etc.) för intelligent sökning och kunskapsrekommendationer.
+- **Flerspråkigt stöd**: Gränssnitt och innehåll stöder flera språk för att möta behoven hos internationella team.

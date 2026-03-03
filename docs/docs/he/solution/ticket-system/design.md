@@ -1,690 +1,687 @@
-# Ticketing Solution Detailed Design
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/ticket-system/design).
+:::
 
-> **Version**: v2.0-beta
+# תכנון מפורט של פתרון מערכת קריאות שירות (Ticketing)
 
-> **Updated**: 2026-01-05
+> **גרסה**: v2.0-beta
 
-> **Status**: Preview
+> **תאריך עדכון**: 2026-01-05
 
+> **סטטוס**: תצוגה מקדימה
 
-## 1. System Overview and Design Philosophy
+## 1. סקירת מערכת ותפיסת עיצוב
 
-### 1.1 System Positioning
+### 1.1 מיצוב המערכת
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+מערכת זו היא **פלטפורמה חכמה לניהול קריאות שירות מבוססת AI**, הבנויה על גבי פלטפורמת הקוד הנמוך (low-code) של NocoBase. המטרה המרכזית היא:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+לאפשר לנציגי השירות להתמקד בפתרון בעיות, במקום בפעולות תהליכיות מייגעות
 ```
 
-### 1.2 Design Philosophy
+### 1.2 תפיסת העיצוב
 
-#### Philosophy One: T-Shaped Data Architecture
+#### תפיסה 1: ארכיטקטורת נתונים בצורת T
 
-**What is T-Shaped Architecture?**
+**מהי ארכיטקטורת T?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+בהשראת הקונספט של "אנשי T" — רוחב אופקי + עומק אנכי:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **אופקי (טבלה ראשית)**: כיסוי יכולות גנריות לכל סוגי העסקים — מספר קריאה, סטטוס, מטפל, SLA ושדות ליבה נוספים.
+- **אנכי (טבלאות הרחבה)**: שדות מקצועיים המעמיקים בעסק ספציפי — לתיקון ציוד יש מספרי סדרה, לתלונות יש תוכניות פיצוי.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**למה לעצב כך?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| פתרון מסורתי | ארכיטקטורת T |
+|----------|---------|
+| טבלה נפרדת לכל סוג עסק, שדות כפולים | ניהול מאוחד של שדות משותפים, הרחבת שדות עסקיים לפי צורך |
+| דוחות סטטיסטיים דורשים מיזוג טבלאות רבות | טבלה ראשית אחת לסטטיסטיקה של כל הקריאות |
+| שינוי בתהליך דורש עדכון במקומות רבים | שינוי בתהליך הליבה מתבצע במקום אחד בלבד |
+| הוספת סוג עסק חדש דורשת טבלה חדשה | רק מוסיפים טבלת הרחבה, תהליך הליבה נשאר ללא שינוי |
 
-#### Philosophy Two: AI Employee Team
+#### תפיסה 2: צוות עובדי AI
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+לא רק "תכונות AI", אלא "עובדי AI". לכל AI יש תפקיד, אישיות ואחריות מוגדרים:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| עובד AI | תפקיד | אחריות ליבה | תרחיש הפעלה |
+|--------|------|----------|----------|
+| **Sam** | מנהל מוקד שירות | ניתוב קריאות, הערכת עדיפות, החלטות הסלמה | אוטומטי בעת יצירת קריאה |
+| **Grace** | מומחית הצלחת לקוחות | יצירת תגובות, התאמת טון, טיפול בתלונות | כאשר הנציג לוחץ על "תגובת AI" |
+| **Max** | עוזר ידע | מציאת מקרים דומים, המלצות ידע, סינתזת פתרונות | אוטומטי בדף פרטי הקריאה |
+| **Lexi** | מתרגמת | תרגום רב-לשוני, תרגום תגובות | אוטומטי כשמזוהה שפה זרה |
 
-**Why the "AI Employee" Model?**
+**למה מודל "עובד AI"?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **אחריות ברורה**: Sam מנהל את הניתוב, Grace מנהלת את התגובות, אין בלבול.
+- **קל להבנה**: לומר למשתמש "תנו ל-Sam לנתח את זה" ידידותי יותר מ"קריאה ל-API של סיווג".
+- **ניתן להרחבה**: הוספת יכולת AI חדשה = גיוס עובד חדש.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### תפיסה 3: מחזוריות ידע עצמית
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+זה יוצר מעגל סגור של **צבירת ידע - יישום ידע**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. ישויות ליבה ומודל נתונים
 
-### 2.1 Entity Relationship Overview
+### 2.1 סקירת קשרי ישויות
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 פירוט טבלאות ליבה
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 טבלת קריאות ראשית (nb_tts_tickets)
 
-**Basic Information**
+זהו לב המערכת, המשתמש בעיצוב "טבלה רחבה" הכוללת את כל השדות הנפוצים.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**מידע בסיסי**
 
-**Source Tracking**
+| שדה | סוג | הסבר | דוגמה |
+|------|------|------|------|
+| id | BIGINT | מפתח ראשי | 1001 |
+| ticket_no | VARCHAR | מספר קריאה | TKT-20251229-0001 |
+| title | VARCHAR | כותרת | חיבור אינטרנט איטי |
+| description | TEXT | תיאור הבעיה | מהבוקר הרשת במשרד... |
+| biz_type | VARCHAR | סוג עסקי | it_support |
+| priority | VARCHAR | עדיפות | P1 |
+| status | VARCHAR | סטטוס | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**מעקב מקורות**
 
-**Contact Information**
+| שדה | סוג | הסבר | דוגמה |
+|------|------|------|------|
+| source_system | VARCHAR | מערכת מקור | crm / email / iot |
+| source_channel | VARCHAR | ערוץ מקור | web / phone / wechat |
+| external_ref_id | VARCHAR | מזהה חיצוני | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**פרטי איש קשר**
 
-**Assignee Information**
+| שדה | סוג | הסבר |
+|------|------|------|
+| customer_id | BIGINT | מזהה לקוח |
+| contact_name | VARCHAR | שם איש קשר |
+| contact_phone | VARCHAR | טלפון ליצירת קשר |
+| contact_email | VARCHAR | אימייל ליצירת קשר |
+| contact_company | VARCHAR | שם החברה |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**פרטי מטפל**
 
-**Time Nodes**
+| שדה | סוג | הסבר |
+|------|------|------|
+| assignee_id | BIGINT | מזהה מטפל |
+| assignee_department_id | BIGINT | מזהה מחלקה מטפלת |
+| transfer_count | INT | מספר העברות |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**ציוני זמן**
 
-**SLA Related**
+| שדה | סוג | הסבר | עיתוי הפעלה |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | זמן הגשה | בעת יצירת הקריאה |
+| assigned_at | TIMESTAMP | זמן הקצאה | בעת קביעת מטפל |
+| first_response_at | TIMESTAMP | זמן תגובה ראשונה | בתגובה הראשונה ללקוח |
+| resolved_at | TIMESTAMP | זמן פתרון | כשהסטטוס משתנה ל-resolved |
+| closed_at | TIMESTAMP | זמן סגירה | כשהסטטוס משתנה ל-closed |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**ניהול SLA**
 
-**AI Analysis Results**
+| שדה | סוג | הסבר |
+|------|------|------|
+| sla_config_id | BIGINT | מזהה הגדרת SLA |
+| sla_response_due | TIMESTAMP | מועד אחרון לתגובה |
+| sla_resolve_due | TIMESTAMP | מועד אחרון לפתרון |
+| sla_paused_at | TIMESTAMP | זמן תחילת השהיית SLA |
+| sla_paused_duration | INT | משך השהייה מצטבר (דקות) |
+| is_sla_response_breached | BOOLEAN | האם הייתה חריגה בתגובה |
+| is_sla_resolve_breached | BOOLEAN | האם הייתה חריגה בפתרון |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**תוצאות ניתוח AI**
 
-**Multi-Language Support**
+| שדה | סוג | הסבר | מולא על ידי |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | סיווג שזוהה על ידי AI | Sam |
+| ai_sentiment | VARCHAR | ניתוח סנטימנט | Sam |
+| ai_urgency | VARCHAR | רמת דחיפות | Sam |
+| ai_keywords | JSONB | מילות מפתח | Sam |
+| ai_reasoning | TEXT | תהליך הסקה | Sam |
+| ai_suggested_reply | TEXT | תגובה מוצעת | Sam/Grace |
+| ai_confidence_score | NUMERIC | ציון ביטחון | Sam |
+| ai_analysis | JSONB | תוצאת ניתוח מלאה | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**תמיכה ברב-לשוניות**
 
-#### 2.2.2 Business Extension Tables
+| שדה | סוג | הסבר | מולא על ידי |
+|------|------|------|----------|
+| source_language_code | VARCHAR | שפת מקור | Sam/Lexi |
+| target_language_code | VARCHAR | שפת יעד | ברירת מחדל EN |
+| is_translated | BOOLEAN | האם תורגם | Lexi |
+| description_translated | TEXT | תיאור מתורגם | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 טבלאות הרחבה עסקיות
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**תיקון ציוד (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| שדה | סוג | הסבר |
+|------|------|------|
+| ticket_id | BIGINT | מזהה קריאה מקושרת |
+| equipment_model | VARCHAR | דגם ציוד |
+| serial_number | VARCHAR | מספר סידורי |
+| fault_code | VARCHAR | קוד תקלה |
+| spare_parts | JSONB | רשימת חלקי חילוף |
+| maintenance_type | VARCHAR | סוג תחזוקה |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**תמיכת IT‏ (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| שדה | סוג | הסבר |
+|------|------|------|
+| ticket_id | BIGINT | מזהה קריאה מקושרת |
+| asset_number | VARCHAR | מספר נכס |
+| os_version | VARCHAR | גרסת מערכת הפעלה |
+| software_name | VARCHAR | תוכנה רלוונטית |
+| remote_address | VARCHAR | כתובת מרחוק |
+| error_code | VARCHAR | קוד שגיאה |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**תלונות לקוחות (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| שדה | סוג | הסבר |
+|------|------|------|
+| ticket_id | BIGINT | מזהה קריאה מקושרת |
+| related_order_no | VARCHAR | מספר הזמנה רלוונטי |
+| complaint_level | VARCHAR | רמת תלונה |
+| compensation_amount | DECIMAL | סכום פיצוי |
+| compensation_type | VARCHAR | סוג פיצוי |
+| root_cause | TEXT | סיבת שורש |
 
-**Core Fields**
+#### 2.2.3 טבלת תגובות (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**שדות ליבה**
 
-**AI Review Fields (for outbound)**
+| שדה | סוג | הסבר |
+|------|------|------|
+| id | BIGINT | מפתח ראשי |
+| ticket_id | BIGINT | מזהה קריאה |
+| parent_id | BIGINT | מזהה תגובת אב (תמיכה במבנה עץ) |
+| content | TEXT | תוכן התגובה |
+| direction | VARCHAR | כיוון: inbound (לקוח) / outbound (נציג) |
+| is_internal | BOOLEAN | האם הערה פנימית |
+| is_first_response | BOOLEAN | האם תגובה ראשונה |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**שדות ביקורת AI (עבור outbound)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| שדה | סוג | הסבר |
+|------|------|------|
+| source_language_code | VARCHAR | שפת מקור |
+| content_translated | TEXT | תוכן מתורגם |
+| is_translated | BOOLEAN | האם תורגם |
+| is_ai_blocked | BOOLEAN | האם נחסם על ידי AI |
+| ai_block_reason | VARCHAR | סיבת חסימה |
+| ai_block_detail | TEXT | פירוט חסימה |
+| ai_quality_score | NUMERIC | ציון איכות |
+| ai_suggestions | TEXT | הצעות לשיפור |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 טבלת דירוגים (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| שדה | סוג | הסבר |
+|------|------|------|
+| ticket_id | BIGINT | מזהה קריאה (ייחודי) |
+| overall_rating | INT | שביעות רצון כללית (1-5) |
+| response_rating | INT | מהירות תגובה (1-5) |
+| professionalism_rating | INT | רמת מקצועיות (1-5) |
+| resolution_rating | INT | פתרון הבעיה (1-5) |
+| nps_score | INT | מדד NPS‏ (0-10) |
+| tags | JSONB | תגיות מהירות |
+| comment | TEXT | הערה מילולית |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 טבלת מאמרי ידע (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| שדה | סוג | הסבר |
+|------|------|------|
+| article_no | VARCHAR | מספר מאמר KB-T0001 |
+| title | VARCHAR | כותרת |
+| content | TEXT | תוכן (Markdown) |
+| summary | TEXT | תקציר |
+| category_code | VARCHAR | קוד קטגוריה |
+| keywords | JSONB | מילות מפתח |
+| source_type | VARCHAR | מקור: ticket/faq/manual |
+| source_ticket_id | BIGINT | מזהה קריאת מקור |
+| ai_generated | BOOLEAN | האם נוצר על ידי AI |
+| ai_quality_score | NUMERIC | ציון איכות |
+| status | VARCHAR | סטטוס: draft/published/archived |
+| view_count | INT | מספר צפיות |
+| helpful_count | INT | מספר סימוני "עזר לי" |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 רשימת טבלאות נתונים
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| מספר | שם טבלה | הסבר | סוג רשומה |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | טבלת קריאות ראשית | נתוני עסק |
+| 2 | nb_tts_biz_repair | הרחבת תיקון ציוד | נתוני עסק |
+| 3 | nb_tts_biz_it_support | הרחבת תמיכת IT | נתוני עסק |
+| 4 | nb_tts_biz_complaint | הרחבת תלונות לקוחות | נתוני עסק |
+| 5 | nb_tts_customers | טבלת לקוחות ראשית | נתוני עסק |
+| 6 | nb_tts_customer_contacts | אנשי קשר של לקוחות | נתוני עסק |
+| 7 | nb_tts_ticket_comments | תגובות לקריאה | נתוני עסק |
+| 8 | nb_tts_ratings | הערכות שביעות רצון | נתוני עסק |
+| 9 | nb_tts_qa_articles | מאמרי ידע | נתוני ידע |
+| 10 | nb_tts_qa_article_relations | קשרי מאמרים | נתוני ידע |
+| 11 | nb_tts_faqs | שאלות נפוצות | נתוני ידע |
+| 12 | nb_tts_tickets_categories | קטגוריות קריאות | נתוני הגדרה |
+| 13 | nb_tts_sla_configs | הגדרות SLA | נתוני הגדרה |
+| 14 | nb_tts_skill_configs | הגדרות מיומנות | נתוני הגדרה |
+| 15 | nb_tts_business_types | סוגי עסקים | נתוני הגדרה |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. מחזור חיי קריאה
 
-### 4.1 Priority and SLA Configuration
+### 3.1 הגדרת סטטוסים
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| סטטוס | שם | הסבר | תזמון SLA | צבע |
+|------|------|------|---------|------|
+| new | חדש | נוצר זה עתה, ממתין להקצאה | התחלה | 🔵 כחול |
+| assigned | הוקצה | נקבע מטפל, ממתין לקבלת הקריאה | המשך | 🔷 טורקיז |
+| processing | בטיפול | בטיפול פעיל | המשך | 🟠 כתום |
+| pending | בהמתנה | ממתין למשוב מהלקוח | **השהיה** | ⚫ אפור |
+| transferred | הועבר | הועבר לאדם אחר | המשך | 🟣 סגול |
+| resolved | נפתר | ממתין לאישור הלקוח | עצירה | 🟢 ירוק |
+| closed | סגור | הקריאה הסתיימה | עצירה | ⚫ אפור |
+| cancelled | בוטל | הקריאה בוטלה | עצירה | ⚫ אפור |
 
-### 4.2 SLA Calculation Logic
+### 3.2 תרשים זרימת סטטוסים
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**תהליך ראשי (משמאל לימין)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**תהליכי משנה**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**מכונת מצבים מלאה**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 כללי מעבר סטטוסים מרכזיים
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| מ- | ל- | תנאי הפעלה | פעולת מערכת |
+|----|----|---------|---------|
+| new | assigned | קביעת מטפל | רישום assigned_at |
+| assigned | processing | המטפל לוחץ על "קבל קריאה" | ללא |
+| processing | pending | לחיצה על "השהיה" | רישום sla_paused_at |
+| pending | processing | תגובת לקוח / חידוש ידני | חישוב משך השהיה, איפוס paused_at |
+| processing | resolved | לחיצה על "פתרון" | רישום resolved_at |
+| resolved | closed | אישור לקוח / פקיעת זמן של 3 ימים | רישום closed_at |
+| * | cancelled | ביטול קריאה | ללא |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. ניהול רמת שירות (SLA)
 
-### 5.1 AI Employee Team
+### 4.1 הגדרות עדיפות ו-SLA
 
-The system configures 8 AI employees in two categories:
+| עדיפות | שם | זמן תגובה | זמן פתרון | סף התראה | תרחיש טיפוסי |
+|--------|------|----------|----------|----------|----------|
+| P0 | קריטי | 15 דקות | שעתיים | 80% | קריסת מערכת, השבתת קו ייצור |
+| P1 | גבוה | שעה | 8 שעות | 80% | תקלה בתכונה חשובה |
+| P2 | בינוני | 4 שעות | 24 שעות | 80% | בעיה כללית |
+| P3 | נמוך | 8 שעות | 72 שעות | 80% | בירור, הצעה |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 לוגיקת חישוב SLA
 
-| ID | Name | Position | Core Capabilities |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+
+#### בעת יצירת קריאה
+
+```
+מועד אחרון לתגובה = זמן הגשה + מגבלת זמן תגובה (דקות)
+מועד אחרון לפתרון = זמן הגשה + מגבלת זמן פתרון (דקות)
+```
+
+#### בעת השהיה (pending)
+
+```
+זמן תחילת השהיית SLA = זמן נוכחי
+```
+
+#### בעת חידוש (חזרה מ-pending ל-processing)
+
+```
+-- חישוב משך ההשהיה הנוכחי
+משך השהיה נוכחי = זמן נוכחי - זמן תחילת השהיית SLA
+
+-- הוספה למשך ההשהיה המצטבר
+משך השהיה מצטבר = משך השהיה מצטבר + משך השהיה נוכחי
+
+-- הארכת המועדים האחרונים (זמן ההשהיה אינו נספר ב-SLA)
+מועד אחרון לתגובה = מועד אחרון לתגובה + משך השהיה נוכחי
+מועד אחרון לפתרון = מועד אחרון לפתרון + משך השהיה נוכחי
+
+-- איפוס זמן תחילת השהיה
+זמן תחילת השהיית SLA = ריק
+```
+
+#### קביעת חריגת SLA
+
+```
+-- קביעת חריגת תגובה
+האם חריגת תגובה = (זמן תגובה ראשונה ריק וגם זמן נוכחי > מועד אחרון לתגובה)
+                 או (זמן תגובה ראשונה > מועד אחרון לתגובה)
+
+-- קביעת חריגת פתרון
+האם חריגת פתרון = (זמן פתרון ריק וגם זמן נוכחי > מועד אחרון לפתרון)
+                 או (זמן פתרון > מועד אחרון לפתרון)
+```
+
+### 4.3 מנגנון התראות SLA
+
+| רמת התראה | תנאי | יעד להודעה | ערוץ הודעה |
+|----------|------|----------|----------|
+| התראה צהובה | זמן נותר < 20% | מטפל | הודעה במערכת |
+| התראה אדומה | חריגה בזמן | מטפל + מנהל | הודעה במערכת + אימייל |
+| התראת הסלמה | חריגה של שעה | מנהל מחלקה | אימייל + SMS |
+
+### 4.4 מדדי לוח בקרה ל-SLA
+
+| מדד | נוסחת חישוב | סף תקינות |
+|------|----------|----------|
+| שיעור עמידה בתגובה | קריאות ללא חריגה / סך קריאות | > 95% |
+| שיעור עמידה בפתרון | קריאות שנפתרו ללא חריגה / סך קריאות שנפתרו | > 90% |
+| זמן תגובה ממוצע | SUM(זמן תגובה) / מספר קריאות | < 50% מה-SLA |
+| זמן פתרון ממוצע | SUM(זמן פתרון) / מספר קריאות | < 80% מה-SLA |
+
+---
+
+## 5. יכולות AI ומערכת עובדים
+
+### 5.1 צוות עובדי AI
+
+המערכת כוללת 8 עובדי AI, המחולקים לשתי קטגוריות:
+
+**עובדים ייעודיים (למערכת הקריאות)**
+
+| מזהה | שם | תפקיד | יכולות ליבה |
 |----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+| sam | Sam | מנהל מוקד שירות | ניתוב קריאות, הערכת עדיפות, החלטות הסלמה, זיהוי סיכוני SLA |
+| grace | Grace | מומחית הצלחת לקוחות | יצירת תגובות מקצועיות, התאמת טון, טיפול בתלונות, שיקום שביעות רצון |
+| max | Max | עוזר ידע | חיפוש מקרים דומים, המלצות ידע, סינתזת פתרונות |
 
-**Reused Employees (General Capabilities)**
+**עובדים רב-תכליתיים (יכולות כלליות)**
 
-| ID | Name | Position | Core Capabilities |
+| מזהה | שם | תפקיד | יכולות ליבה |
 |----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+| dex | Dex | מארגן נתונים | חילוץ קריאות מאימייל, הפיכת שיחות לקריאות, ניקוי נתונים במקבץ |
+| ellis | Ellis | מומחה אימייל | ניתוח סנטימנט באימייל, סיכום שרשורים, טיוטת תגובות |
+| lexi | Lexi | מתרגמת | תרגום קריאות, תרגום תגובות, תרגום שיחות בזמן אמת |
+| cole | Cole | מומחה NocoBase | הדרכה בשימוש במערכת, עזרה בהגדרת תהליכי עבודה |
+| vera | Vera | אנליסטית מחקר | מחקר פתרונות טכניים, אימות מידע על מוצרים |
 
-### 5.2 AI Task List
+### 5.2 רשימת משימות AI
 
-Each AI employee is configured with 4 specific tasks:
+לכל עובד AI מוגדרות 4 משימות ספציפיות:
 
-#### Sam's Tasks
+#### המשימות של Sam
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+| מזהה משימה | שם | שיטת הפעלה | הסבר |
+|--------|------|----------|------|
+| SAM-01 | ניתוח וניתוב קריאות | תהליך עבודה אוטומטי | ניתוח אוטומטי בעת יצירת קריאה חדשה |
+| SAM-02 | הערכה מחדש של עדיפות | אינטראקציה בממשק | התאמת עדיפות על סמך מידע חדש |
+| SAM-03 | החלטת הסלמה | ממשק / תהליך עבודה | קביעה האם נדרשת הסלמה |
+| SAM-04 | הערכת סיכוני SLA | תהליך עבודה אוטומטי | זיהוי סיכונים לחריגה בזמן |
 
-#### Grace's Tasks
+#### המשימות של Grace
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+| מזהה משימה | שם | שיטת הפעלה | הסבר |
+|--------|------|----------|------|
+| GRACE-01 | יצירת תגובה מקצועית | אינטראקציה בממשק | יצירת תגובה על סמך ההקשר |
+| GRACE-02 | התאמת טון תגובה | אינטראקציה בממשק | אופטימיזציה של טון התגובה הקיימת |
+| GRACE-03 | טיפול בהרגעת תלונות | ממשק / תהליך עבודה | נטרול תלונות לקוחות |
+| GRACE-04 | שיקום שביעות רצון | ממשק / תהליך עבודה | מעקב לאחר חוויה שלילית |
 
-#### Max's Tasks
+#### המשימות של Max
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+| מזהה משימה | שם | שיטת הפעלה | הסבר |
+|--------|------|----------|------|
+| MAX-01 | חיפוש מקרים דומים | ממשק / תהליך עבודה | מציאת קריאות דומות מהעבר |
+| MAX-02 | המלצת מאמרי ידע | ממשק / תהליך עבודה | המלצה על מאמרי ידע רלוונטיים |
+| MAX-03 | סינתזת פתרונות | אינטראקציה בממשק | שילוב פתרונות ממקורות מרובים |
+| MAX-04 | מדריך לפתרון תקלות | אינטראקציה בממשק | יצירת תהליך בדיקה מערכתי |
 
-#### Lexi's Tasks
+#### המשימות של Lexi
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+| מזהה משימה | שם | שיטת הפעלה | הסבר |
+|--------|------|----------|------|
+| LEXI-01 | תרגום קריאות | תהליך עבודה אוטומטי | תרגום תוכן הקריאה |
+| LEXI-02 | תרגום תגובות | אינטראקציה בממשק | תרגום תגובות הנציג |
+| LEXI-03 | תרגום במקבץ | תהליך עבודה אוטומטי | עיבוד תרגום בכמויות גדולות |
+| LEXI-04 | תרגום שיחה בזמן אמת | אינטראקציה בממשק | תרגום שיח בזמן אמת |
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 5.3 עובדי AI ומחזור חיי הקריאה
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
 
-### 5.4 AI Response Examples
+### 5.4 דוגמאות לתגובות AI
 
-#### SAM-01 Ticket Analysis Response
+#### SAM-01 תגובת ניתוח קריאה
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "כשל בהתחברות", "פסק זמן", "סגירת סוף חודש"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "הקריאה מתארת בעיית התחברות למערכת ה-ERP המשפיעה על סגירת סוף חודש במחלקת הכספים, דחיפות גבוהה",
+  "suggested_reply": "לקוח יקר, תודה על הדיווח על בעיה זו...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "שלום, מערכת ה-ERP שלנו לא מאפשרת התחברות..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 תגובת יצירת מענה
 
 ```
-Dear Mr. Zhang,
+מר כהן הנכבד,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+תודה שפנית אלינו בנוגע לבעיית ההתחברות ל-ERP. אני מבינה לחלוטין שבעיה זו
+משפיעה על עבודת סגירת סוף החודש בחברתכם, והגדרנו את הטיפול בה בעדיפות גבוהה.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+סטטוס נוכחי:
+- הצוות הטכני בודק כעת בעיות בחיבור לשרת
+- צפי לעדכון נוסף תוך 30 דקות
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+בינתיים, ניתן לנסות:
+1. גישה דרך כתובת הגיבוי: https://erp-backup.company.com
+2. במידה ויש צורך בדוחות דחופים, ניתן ליצור איתנו קשר לסיוע בייצוא
 
-Please feel free to contact me if you have any other questions.
+לכל שאלה נוספת, אני זמינה עבורך.
 
-Best regards,
-Technical Support Team
+בברכה,
+צוות התמיכה הטכנית
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 חומת אש של אינטליגנציה רגשית (AI)
 
-Grace's reply quality review blocks the following issues:
+ביקורת איכות התגובות של Grace תחסום את הבעיות הבאות:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| סוג בעיה | דוגמה למקור | הצעת AI |
+|----------|----------|--------|
+| טון שלילי | "לא, זה לא במסגרת האחריות" | "תקלה זו אינה מכוסה כרגע במסגרת האחריות ללא עלות, נוכל להציע תוכנית תיקון בתשלום" |
+| האשמת הלקוח | "אתה שברת את זה בעצמך" | "לאחר בדיקה, נראה כי התקלה נגרמה כתוצאה מנזק מקרי" |
+| התנערות מאחריות | "זו לא בעיה שלנו" | "אשמח לעזור לך לבדוק לעומק את סיבת הבעיה" |
+| ביטוי אדיש | "לא יודע" | "אבדוק עבורך את המידע הרלוונטי" |
+| מידע רגיש | "הסיסמה שלך היא abc123" | [נחסם] מכיל מידע רגיש, אסור לשליחה |
 
 ---
 
-## 6. Knowledge Base System
+## 6. מערכת מאגר הידע
 
-### 6.1 Knowledge Sources
+### 6.1 מקורות ידע
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 תהליך הפיכת קריאה לידע
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**ממדי הערכה**:
+- **כלליות**: האם זו בעיה נפוצה?
+- **שלמות**: האם הפתרון ברור ומלא?
+- **חזרתיות**: האם השלבים ניתנים לשימוש חוזר?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 מנגנון המלצת ידע
+
+כאשר נציג פותח פרטי קריאה, Max ממליץ אוטומטית על ידע רלוונטי:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 ידע מומלץ                                    [הרחב/צמצם]  │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 מדריך לאבחון תקלות במערכת סרוו CNC   התאמה: 94%  │ │
+│ │ כולל: פירוש קודי התראה, שלבי בדיקת מנוע סרוו             │ │
+│ │ [צפה] [החל בתגובה] [סמן כעוזר]                          │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 מדריך תחזוקה לסדרת XYZ-CNC3000       התאמה: 87%  │ │
+│ │ כולל: תקלות נפוצות, תוכנית תחזוקה מונעת                 │ │
+│ │ [צפה] [החל בתגובה] [סמן כעוזר]                          │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. מנוע תהליכי עבודה (Workflow)
+
+### 7.1 סיווג תהליכי עבודה
+
+| קוד | קטגוריה | הסבר | שיטת הפעלה |
+|------|------|------|----------|
+| WF-T | תהליך קריאה | ניהול מחזור חיי קריאה | אירועי טופס |
+| WF-S | תהליך SLA | חישוב והתראות SLA | אירועי טופס / מתוזמן |
+| WF-C | תהליך תגובות | עיבוד ותרגום תגובות | אירועי טופס |
+| WF-R | תהליך הערכה | הזמנות וסטטיסטיקת דירוג | אירועי טופס / מתוזמן |
+| WF-N | תהליך הודעות | שליחת הודעות | מונחה אירועים |
+| WF-AI | תהליך AI | ניתוח ויצירת AI | אירועי טופס |
+
+### 7.2 תהליכי עבודה מרכזיים
+
+#### WF-T01: תהליך יצירת קריאה
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+
+#### WF-AI01: ניתוח AI לקריאה
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+
+#### WF-AI04: תרגום וביקורת תגובות
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+
+#### WF-AI03: יצירת ידע
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+
+### 7.3 משימות מתוזמנות
+
+| משימה | תדירות | הסבר |
+|------|----------|------|
+| בדיקת התראות SLA | כל 5 דקות | בדיקת קריאות העומדות לחרוג מהזמן |
+| סגירה אוטומטית | יומית | סגירת קריאות בסטטוס resolved לאחר 3 ימים |
+| שליחת הזמנת דירוג | יומית | שליחת הזמנה להערכה 24 שעות לאחר הסגירה |
+| עדכון נתונים סטטיסטיים | שעתית | עדכון סטטיסטיקת קריאות לקוח |
 
 ---
 
-## 7. Workflow Engine
+## 8. עיצוב תפריטים וממשק
 
-### 7.1 Workflow Categories
+### 8.1 ממשק ניהול (Backend)
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 7.2 Core Workflows
+### 8.2 פורטל לקוחות
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 עיצוב לוחות בקרה (Dashboards)
 
-#### WF-AI01: Ticket AI Analysis
+#### מבט מנהלים בכירים
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| רכיב | סוג | תיאור נתונים |
+|------|------|----------|
+| שיעור עמידה ב-SLA | שעון (Gauge) | שיעור עמידה בתגובה/פתרון החודש |
+| מגמת שביעות רצון | תרשים קו | שינוי בשביעות הרצון ב-30 הימים האחרונים |
+| מגמת נפח קריאות | תרשים עמודות | נפח קריאות ב-30 הימים האחרונים |
+| התפלגות סוגי עסקים | תרשים עוגה | חלקו של כל סוג עסק |
 
-#### WF-AI04: Comment Translation & Review
+#### מבט מנהלי צוותים
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| רכיב | סוג | תיאור נתונים |
+|------|------|----------|
+| התראות חריגה | רשימה | קריאות שעומדות לחרוג / כבר חרגו |
+| עומס עבודה בצוות | תרשים עמודות | מספר קריאות לכל חבר צוות |
+| התפלגות צבר עבודה | תרשים נערם | מספר קריאות לפי סטטוס |
+| יעילות טיפול | מפת חום | התפלגות זמן טיפול ממוצע |
 
-#### WF-AI03: Knowledge Generation
+#### מבט נציג שירות
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| רכיב | סוג | תיאור נתונים |
+|------|------|----------|
+| המשימות שלי | כרטיס מספר | מספר קריאות הממתינות לטיפול |
+| התפלגות עדיפויות | תרשים עוגה | התפלגות P0/P1/P2/P3 |
+| סטטיסטיקה להיום | כרטיס מדד | מספר קריאות שטופלו/נפתרו היום |
+| ספירה לאחור ל-SLA | רשימה | 5 הקריאות הדחופות ביותר |
 
 ---
 
-## Appendix
+## נספחים
 
-### A. Business Type Configuration
+### א. הגדרת סוגי עסקים
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| קוד סוג | שם | אייקון | טבלת הרחבה מקושרת |
+|----------|------|------|------------|
+| repair | תיקון ציוד | 🔧 | nb_tts_biz_repair |
+| it_support | תמיכת IT | 💻 | nb_tts_biz_it_support |
+| complaint | תלונת לקוח | 📢 | nb_tts_biz_complaint |
+| consultation | ייעוץ והצעות | ❓ | ללא |
+| other | אחר | 📝 | ללא |
 
-### B. Category Codes
+### ב. קודי קטגוריות
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| קוד | שם | הסבר |
+|------|------|------|
+| CONVEYOR | מערכת מסועים | בעיות במערכת מסועים |
+| PACKAGING | מכונת אריזה | בעיות במכונת אריזה |
+| WELDING | ציוד ריתוך | בעיות בציוד ריתוך |
+| COMPRESSOR | מדחס אוויר | בעיות במדחס אוויר |
+| COLD_STORE | מחסן קירור | בעיות במחסן קירור |
+| CENTRAL_AC | מיזוג מרכזי | בעיות במיזוג מרכזי |
+| FORKLIFT | מלגזה | בעיות במלגזה |
+| COMPUTER | מחשב | בעיות חומרת מחשב |
+| PRINTER | מדפסת | בעיות במדפסת |
+| PROJECTOR | מקרן | בעיות במקרן |
+| INTERNET | רשת | בעיות חיבור לרשת |
+| EMAIL | אימייל | בעיות במערכת האימייל |
+| ACCESS | הרשאות | בעיות הרשאת חשבון |
+| PROD_INQ | בירור מוצר | בירור לגבי מוצר |
+| COMPLAINT | תלונה כללית | תלונה כללית |
+| DELAY | עיכוב לוגיסטי | תלונה על עיכוב במשלוח |
+| DAMAGE | נזק לאריזה | תלונה על נזק לאריזה |
+| QUANTITY | חוסר בכמות | תלונה על חוסר בכמות |
+| SVC_ATTITUDE | יחס שירות | תלונה על יחס השירות |
+| PROD_QUALITY | איכות מוצר | תלונה על איכות המוצר |
+| TRAINING | הדרכה | בקשה להדרכה |
+| RETURN | החזרה | בקשת החזרת סחורה |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*גרסת מסמך: 2.0 | עדכון אחרון: 2026-01-05*

@@ -1,14 +1,18 @@
 ---
-displayName: "AI: Knowledge base"
+displayName: "AI: База знаний"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
+  Поддерживает интеграцию с векторными базами данных для векторизации документов, обеспечивая ИИ-сотрудников интеллектуальным поиском и информационной поддержкой.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Knowledge base
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-ai-knowledge-base/index).
+:::
+
+# AI: База знаний

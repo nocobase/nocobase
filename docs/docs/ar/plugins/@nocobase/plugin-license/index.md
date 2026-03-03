@@ -1,12 +1,16 @@
 ---
-displayName: "License settings"
+displayName: "إعدادات الترخيص"
 packageName: '@nocobase/plugin-license'
 description: |
-  Instance ID and license key settings
+  إعدادات معرف المثيل ومفتاح الترخيص
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-license/index).
+:::
+
+# إعدادات الترخيص

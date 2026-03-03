@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records Pro"
+displayName: "Action: Importera poster Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
+  Förbättra dataimportfunktioner med asynkron import för hantering av stora datamängder. Inkluderar funktioner för identifiering av databehandling, datauppdateringar och workflow-triggning.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Action: Import records Pro
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-action-import-pro/index).
+:::
+
+# Action: Importera poster Pro

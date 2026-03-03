@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/solution/crm/more) देखें।
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# अधिक सामग्री
 
-Content coming soon...
+> वर्तमान CRM समाधान केवल पूर्वावलोकन के लिए है। भविष्य के संस्करण NocoBase 2.0 के आधार पर पूरी तरह से पुनर्गठित किए जाएंगे। उस समय अधिक विस्तृत दस्तावेज़ प्रदान किए जाएंगे।
+
+सामग्री जोड़ी जा रही है...

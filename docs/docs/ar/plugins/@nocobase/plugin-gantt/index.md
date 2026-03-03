@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "مكون: مخطط غانت"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  يوفر مكون مخطط غانت.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-gantt/index).
+:::
+
+# مكون: مخطط غانت

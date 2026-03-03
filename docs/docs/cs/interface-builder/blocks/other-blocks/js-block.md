@@ -1,53 +1,52 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/interface-builder/blocks/other-blocks/js-block).
 :::
-
 
 # JS Block
 
-## Úvod
+## Představení
 
-JS Block je vysoce flexibilní „blok pro vlastní vykreslování“, který Vám umožňuje přímo psát JavaScript skripty pro generování rozhraní, vázání událostí, volání datových API nebo integraci knihoven třetích stran. Je vhodný pro personalizované vizualizace, dočasné experimenty a lehká rozšíření, které je obtížné pokrýt vestavěnými bloky.
+JS Block je vysoce flexibilní „blok pro vlastní vykreslování“, který podporuje přímé psaní JavaScriptových skriptů pro generování rozhraní, vázání událostí, volání datových rozhraní nebo integraci knihoven třetích stran. Je vhodný pro personalizovanou vizualizaci, dočasné experimenty a scénáře lehkých rozšíření, které jsou obtížně pokryty vestavěnými bloky.
 
 ## API kontextu běhového prostředí
 
-Kontext běhového prostředí JS Bloku má injektovány běžné funkce, které můžete přímo používat:
+Kontext běhového prostředí JS Bloku má injektovány běžné funkce, které lze přímo používat:
 
-- `ctx.element`: DOM kontejner bloku (bezpečně zapouzdřený jako ElementProxy), podporující `innerHTML`, `querySelector`, `addEventListener` atd.
-- `ctx.requireAsync(url)`: Asynchronně načítá knihovnu AMD/UMD pomocí URL.
-- `ctx.importAsync(url)`: Dynamicky importuje modul ESM pomocí URL.
-- `ctx.openView`: Otevírá nakonfigurované zobrazení (vyskakovací okno/zásuvka/stránka).
-- `ctx.useResource(...)` + `ctx.resource`: Přistupuje k datům jako k zdroji.
-- `ctx.i18n.t()` / `ctx.t()`: Vestavěná funkce internacionalizace.
-- `ctx.onRefReady(ctx.ref, cb)`: Vykresluje po připravenosti kontejneru, aby se předešlo problémům s časováním.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Vestavěné obecné knihovny jako React, ReactDOM, Ant Design, ikony Ant Design a dayjs pro vykreslování JSX a práci s časem. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou stále zachovány pro kompatibilitu.)
-- `ctx.render(vnode)`: Vykresluje React element, HTML řetězec nebo DOM uzel do výchozího kontejneru `ctx.element`. Vícenásobné volání znovu použije stejný React Root a přepíše stávající obsah kontejneru.
+- `ctx.element`: DOM kontejner bloku (bezpečně zapouzdřený jako ElementProxy), podporuje `innerHTML`, `querySelector`, `addEventListener` atd.;
+- `ctx.requireAsync(url)`: Asynchronně načítá knihovnu AMD/UMD podle URL;
+- `ctx.importAsync(url)`: Dynamicky importuje modul ESM podle URL;
+- `ctx.openView`: Otevírá nakonfigurované zobrazení (vyskakovací okno/zásuvka/stránka);
+- `ctx.useResource(...)` + `ctx.resource`: Přistupuje k datům jako k zdroji;
+- `ctx.i18n.t()` / `ctx.t()`: Vestavěná funkce internacionalizace;
+- `ctx.onRefReady(ctx.ref, cb)`: Vykresluje až po připravenosti kontejneru, aby se předešlo problémům s časováním;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Vestavěné obecné knihovny React / ReactDOM / Ant Design / Ant Design ikony / dayjs / lodash / math.js / formula.js atd. pro vykreslování JSX, zpracování času, manipulaci s daty a matematické výpočty. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou stále zachovány pro kompatibilitu.)
+- `ctx.render(vnode)`: Vykresluje React element, HTML řetězec nebo DOM uzel do výchozího kontejneru `ctx.element`; vícenásobná volání znovu použijí stejný React Root a přepíší stávající obsah kontejneru.
 
 ## Přidání bloku
 
-JS Block můžete přidat na stránku nebo do vyskakovacího okna.
+- JS Block můžete přidat na stránku nebo do vyskakovacího okna.
 ![jsblock-add-20251029](https://static-docs.nocobase.com/jsblock-add-20251029.png)
 
 ## Editor a fragmenty kódu
 
-Editor skriptů JS Bloku podporuje zvýraznění syntaxe, nápovědy k chybám a vestavěné fragmenty kódu (Snippets), které Vám umožňují rychle vkládat běžné příklady, jako je vykreslování grafů, vázání událostí tlačítek, načítání externích knihoven, vykreslování komponent React/Vue, časové osy, informační karty atd.
+Editor skriptů JS Bloku podporuje zvýraznění syntaxe, nápovědy k chybám a vestavěné fragmenty kódu (Snippets), které umožňují rychle vkládat běžné příklady, jako jsou: vykreslování grafů, vázání událostí tlačítek, načítání externích knihoven, vykreslování komponent React/Vue, časové osy, informační karty atd.
 
-- `Snippets`: Otevře seznam vestavěných fragmentů kódu. Můžete vyhledávat a jedním kliknutím vložit vybraný fragment do aktuální pozice kurzoru v editoru kódu.
-- `Run`: Přímo spustí kód v aktuálním editoru a výstupy běhových logů do panelu `Logs` dole. Podporuje zobrazení `console.log/info/warn/error` a chyby budou zvýrazněny s možností navigace na konkrétní řádek a sloupec.
+- `Snippets`: Otevře seznam vestavěných fragmentů kódu, kde můžete vyhledávat a jedním kliknutím vložit vybraný fragment na aktuální pozici kurzoru v editoru.
+- `Run`: Přímo spustí kód v aktuálním editoru a vypíše logy běhu do panelu `Logs` dole. Podporuje zobrazení `console.log/info/warn/error`, chyby jsou zvýrazněny a lze se navigovat na konkrétní řádek a sloupec.
 
 ![jsblock-toolbars-20251029](https://static-docs.nocobase.com/jsblock-toolbars-20251029.png)
 
-Navíc můžete přímo z pravého horního rohu editoru vyvolat AI asistenta „Frontend Engineer · Nathan“, který Vám pomůže napsat nebo upravit skripty na základě aktuálního kontextu. Poté můžete jedním kliknutím „Apply to editor“ (Použít do editoru) aplikovat změny a spustit kód, abyste viděli výsledek. Podrobnosti naleznete zde:
+Navíc můžete v pravém horním rohu editoru přímo vyvolat AI zaměstnance „Frontend Engineer · Nathan“, aby vám na základě aktuálního kontextu pomohl napsat nebo upravit skript. Poté můžete jedním kliknutím „Apply to editor“ aplikovat změny do editoru a spustit kód pro zobrazení výsledku. Podrobnosti viz:
 
-- [AI asistent · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI zaměstnanec · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Běhové prostředí a zabezpečení
 
-- **Kontejner**: Systém poskytuje skriptu bezpečný DOM kontejner `ctx.element` (ElementProxy), který ovlivňuje pouze aktuální blok a nezasahuje do jiných oblastí stránky.
-- **Sandbox**: Skript běží v kontrolovaném prostředí. `window`/`document`/`navigator` používají bezpečné proxy objekty, což umožňuje běžné API, zatímco rizikové chování je omezeno.
-- **Opětovné vykreslení**: Blok se automaticky znovu vykreslí, když je skryt a poté znovu zobrazen (aby se zabránilo opakovanému spuštění počátečního skriptu při prvním připojení).
+- Kontejner: Systém poskytuje skriptu bezpečný DOM kontejner `ctx.element` (ElementProxy), který ovlivňuje pouze aktuální blok a nezasahuje do jiných oblastí stránky.
+- Sandbox: Skript běží v kontrolovaném prostředí, `window`/`document`/`navigator` používají bezpečné proxy objekty, běžná API jsou dostupná, rizikové chování je omezeno.
+- Opětovné vykreslení: Blok se automaticky znovu vykreslí, pokud je skryt a poté znovu zobrazen (aby se zabránilo opakovanému spuštění při prvním připojení).
 
-## Běžné použití (zjednodušené příklady)
+## Časté použití (zjednodušené příklady)
 
 ### 1) Vykreslení React (JSX)
 
@@ -70,7 +69,7 @@ ctx.message.success(ctx.t('Request finished'));
 console.log(ctx.t('Response data:'), resp?.data);
 ```
 
-### 3) Načtení a vykreslení ECharts
+### 3) Načtení ECharts a vykreslení
 
 ```js
 const container = document.createElement('div');
@@ -84,7 +83,7 @@ chart.setOption({ title: { text: ctx.t('ECharts') }, xAxis: {}, yAxis: {}, serie
 chart.resize();
 ```
 
-### 4) Otevření zobrazení (zásuvky)
+### 4) Otevření zobrazení (zásuvka)
 
 ```js
 const popupUid = ctx.model.uid + '-1';
@@ -101,11 +100,11 @@ await resource.refresh();
 ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JSON.stringify(resource.getData(), null, 2)}</pre>`);
 ```
 
-## Důležité poznámky
+## Upozornění
 
 - Pro načítání externích knihoven se doporučuje používat důvěryhodné CDN.
-- **Doporučení pro použití selektorů**: Upřednostňujte použití selektorů `class` nebo atributů `[name=...]`. Vyhněte se používání pevných `id`, abyste předešli konfliktům stylů nebo událostí způsobeným duplicitními `id` v několika blocích nebo vyskakovacích oknech.
-- **Čištění událostí**: Jelikož se blok může vykreslit vícekrát, měly by být posluchače událostí před navázáním vyčištěny nebo deduplikovány, aby se zabránilo opakovanému spouštění. Můžete použít přístup „nejprve odebrat, poté přidat“, jednorázové posluchače nebo příznaky pro zabránění duplikátům.
+- Doporučení pro použití selektorů: Upřednostňujte použití selektorů `class` nebo atributů `[name=...]`; vyhněte se používání pevných `id`, aby se předešlo konfliktům stylů nebo událostí v důsledku duplicitních `id` ve více blocích nebo vyskakovacích oknech.
+- Čištění událostí: Blok se může vykreslit vícekrát, před vázáním událostí by měly být vyčištěny nebo deduplikovány, aby se zabránilo opakovanému spouštění. Lze použít přístup „nejprve remove, poté add“, jednorázové posluchače nebo příznaky proti opakování.
 
 ## Související dokumenty
 

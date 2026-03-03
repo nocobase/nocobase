@@ -1,14 +1,18 @@
 ---
-displayName: "Multi-space"
+displayName: "मल्टी-स्पेस"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Implements multiple independent data spaces within a single application instance through logical isolation.
+  एक ही एप्लिकेशन इंस्टेंस के भीतर, लॉजिकल आइसोलेशन के माध्यम से कई स्वतंत्र डेटा स्पेस लागू करता है।
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Multi-space
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-multi-space/index) देखें।
+:::
+
+# मल्टी-स्पेस

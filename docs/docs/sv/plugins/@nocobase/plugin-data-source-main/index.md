@@ -1,12 +1,16 @@
 ---
-displayName: "Data source: Main"
+displayName: "Datakälla: Huvuddatabas"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
+  NocoBase huvuddatabas, stöder relationella databaser som PostgreSQL, MySQL, MariaDB etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data source: Main
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-data-source-main/index).
+:::
+
+# Datakälla: Huvuddatabas

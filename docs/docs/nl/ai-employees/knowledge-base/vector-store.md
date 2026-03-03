@@ -1,5 +1,5 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/ai-employees/knowledge-base/vector-store) voor nauwkeurige informatie.
 :::
 
 # Vectoropslag
@@ -20,7 +20,7 @@ Klik op de knop `Add new` rechtsboven om een nieuwe vectoropslag toe te voegen:
 
 - Voer in het invoerveld `Name` de naam van de vectoropslag in;
 - Selecteer onder `Vector store` een reeds geconfigureerde vectordatabase. Raadpleeg: [Vectordatabase](/ai-employees/knowledge-base/vector-database);
-- Selecteer onder `LLM service` een reeds geconfigureerde LLM-service. Raadpleeg: [LLM Service Beheer](/ai-employees/quick-start/llm-service);
+- Selecteer onder `LLM service` een reeds geconfigureerde LLM-service. Raadpleeg: [LLM Service Beheer](/ai-employees/features/llm-service);
 - Voer in het invoerveld `Embedding model` de naam in van het `Embedding` model dat u wilt gebruiken;
 
 Klik op de knop `Submit` om de informatie van de vectoropslag op te slaan.

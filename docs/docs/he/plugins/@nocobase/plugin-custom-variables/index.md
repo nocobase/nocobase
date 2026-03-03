@@ -1,14 +1,18 @@
 ---
-displayName: "Custom variables"
+displayName: "משתנים מותאמים אישית"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Support for adding and using custom variables
+  תמיכה בהוספה ושימוש במשתנים מותאמים אישית
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Custom variables
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-custom-variables/index).
+:::
+
+# משתנים מותאמים אישית

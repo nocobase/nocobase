@@ -1,3 +1,7 @@
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/solution/crm/installation)
+:::
+
 # Installation Guide
 
 > The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
@@ -26,7 +30,7 @@ This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.
 
 * **Advantages**:
   1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
+  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in collections.
 * **Limitations**:
   1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
   2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
@@ -58,7 +62,7 @@ Then start your NocoBase service using this image.
 2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
 3. Click the **`Restore from Local Backup`** button in the upper right corner.
 4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from tens of seconds to a few minutes.
 
 ### Notes
 
@@ -123,8 +127,8 @@ Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATA
 | **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
 | **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
 | **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
+| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins will make related features completely unusable but won't crash the app |
 | **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
+| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing system file features |
 
 We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!

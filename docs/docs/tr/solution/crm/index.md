@@ -1,3 +1,7 @@
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/crm/index) bakın.
+:::
+
 # NocoBase CRM 2.0 Solution
 
 > A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
@@ -121,11 +125,11 @@ The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages.
 
 ---
 
-## 7. Getting Started
+## 7. Installation
 
 Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
 
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
+**Ready out of the box:** Pre-built collections, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
 
 ---
 

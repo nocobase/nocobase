@@ -1,5 +1,5 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/file-manager/development/index).
 :::
 
 # Rozwój rozszerzeń
@@ -72,7 +72,7 @@ Po rejestracji konfiguracja magazynu pojawi się w zasobie `storages`, tak jak t
 Po stronie klienta należy poinformować menedżera plików, jak renderować formularz konfiguracji i czy istnieje niestandardowa logika przesyłania. Każdy obiekt typu magazynu zawiera następujące właściwości:
 -->
 
-## Rozszerzanie typów plików w frontendzie
+## Rozszerzanie typów plików we frontendzie
 
 Dla już przesłanych plików możesz wyświetlać różne treści podglądu w interfejsie frontendowym w zależności od typu pliku. Pole załączników menedżera plików ma wbudowany podgląd oparty na przeglądarce (osadzony w iframe), który pozwala podglądać większość formatów (np. obrazy, wideo, audio i PDF) bezpośrednio w przeglądarce. Gdy format pliku nie jest obsługiwany przez przeglądarkę lub wymagane są specjalne interakcje podglądu, możesz rozszerzyć komponent podglądu oparty na typie pliku.
 
@@ -163,7 +163,7 @@ Zwraca wartość `boolean`, która wskazuje, czy nastąpiło dopasowanie.
 
 ##### `getThumbnailURL`
 
-Zwraca URL miniatury używanej w liście plików. Jeśli wartość jest pusta, zostanie użyty wbudowany obraz zastępczy.
+Zwraca URL miniatury używanej na liście plików. Jeśli wartość jest pusta, zostanie użyty wbudowany obraz zastępczy.
 
 ##### `Previewer`
 
@@ -171,7 +171,6 @@ Komponent React do podglądu plików.
 
 Przekazywane propsy:
 
-* `file`: aktualny obiekt pliku (może być string URL lub obiekt zawierający `url`/`preview`)
+* `file`: aktualny obiekt pliku (może być stringiem URL lub obiekt zawierający `url`/`preview`)
 * `index`: indeks pliku na liście
 * `list`: lista plików
-

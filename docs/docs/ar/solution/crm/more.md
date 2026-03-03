@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# المزيد من المحتوى
 
-Content coming soon...
+> حل CRM الحالي مخصص للمعاينة فقط. سيتم إعادة بناء الإصدارات المستقبلية بالكامل بناءً على NocoBase 2.0. سيتم توفير وثائق أكثر اكتمالاً في ذلك الوقت.
+
+المحتوى قيد الإضافة حالياً...

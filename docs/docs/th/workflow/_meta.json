@@ -10,7 +10,7 @@
   },
   {
     "type": "custom-link",
-    "label": "เริ่มต้นใช้งาน",
+    "label": "เริ่มต้นใช้งานอย่างรวดเร็ว",
     "link": "/workflow/getting-started"
   },
   {
@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "เหตุการณ์ตารางข้อมูล",
+        "label": "เหตุการณ์คอลเลกชัน",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -76,14 +76,14 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "โมเดลภาษาขนาดใหญ่ (LLM)",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
       },
       {
         "type": "section-header",
-        "label": "การควบคุมโฟลว์",
+        "label": "การควบคุมกระบวนการ",
         "items": [
           {
             "type": "custom-link",
@@ -92,12 +92,12 @@
           },
           {
             "type": "custom-link",
-            "label": "แยกสาขาหลายเงื่อนไข",
+            "label": "สาขาหลายเงื่อนไข",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
             "type": "custom-link",
-            "label": "วนซ้ำ",
+            "label": "การวนซ้ำ",
             "link": "/workflow/nodes/loop"
           },
           {
@@ -107,7 +107,7 @@
           },
           {
             "type": "custom-link",
-            "label": "แยกสาขาแบบขนาน",
+            "label": "สาขาแบบขนาน",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ผลลัพธ์ของโฟลว์",
+            "label": "ผลลัพธ์กระบวนการ",
             "link": "/workflow/nodes/output"
           },
           {
@@ -160,7 +160,7 @@
       },
       {
         "type": "section-header",
-        "label": "การดำเนินการข้อมูล",
+        "label": "การจัดการข้อมูล",
         "items": [
           {
             "type": "custom-link",
@@ -174,7 +174,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ค้นหาข้อมูล",
+            "label": "สอบถามข้อมูล",
             "link": "/workflow/nodes/query"
           },
           {
@@ -191,11 +191,11 @@
       },
       {
         "type": "custom-link",
-        "label": "การดำเนินการด้วยตนเอง",
+        "label": "การประมวลผลโดยบุคคล",
         "items": [
           {
             "type": "custom-link",
-            "label": "การดำเนินการด้วยตนเอง",
+            "label": "การประมวลผลโดยบุคคล",
             "link": "/workflow/nodes/manual"
           },
           {
@@ -205,14 +205,14 @@
           },
           {
             "type": "custom-link",
-            "label": "ส่งสำเนา (CC)",
+            "label": "สำเนา (CC)",
             "link": "/workflow/nodes/cc"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "ขยายประเภท",
+        "label": "ประเภทส่วนขยาย",
         "items": [
           {
             "type": "custom-link",
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "บันทึกการดำเนินการ",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

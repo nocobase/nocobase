@@ -1,14 +1,18 @@
 ---
-displayName: "Collection field: Encryption"
+displayName: "Campo de coleção: Criptografia"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Encrypts and decrypts specified fields automatically for secure data storage.
+  Criptografa e descriptografa campos especificados automaticamente para garantir a segurança dos dados.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Collection field: Encryption
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-field-encryption/index).
+:::
+
+# Campo de coleção: Criptografia

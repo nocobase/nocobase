@@ -1,8 +1,8 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/interface-builder/fields/specific/sub-table).
 :::
 
-# Sub-tabel
+# Sub-tabel (Edit Baris)
 
 ## Pendahuluan
 
@@ -28,7 +28,7 @@ Komponen default untuk kolom relasi adalah Dropdown (mendukung Dropdown/Pemilih 
 
 ## Opsi Konfigurasi Kolom
 
-### Izinkan memilih data yang sudah ada (dinonaktifkan secara default)
+### Izinkan memilih data yang sudah ada (diaktifkan secara default)
 
 Mendukung pemilihan dan pengaitan data yang sudah ada.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)

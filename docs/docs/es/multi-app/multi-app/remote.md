@@ -2,15 +2,19 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/multi-app/multi-app/remote).
+:::
+
 # Modo multi-entorno
 
 ## Introducción
 
-El modo multiaplicación en memoria compartida ofrece ventajas claras en despliegue y operación, pero cuando crece la cantidad de aplicaciones y la complejidad de negocio, una sola instancia puede quedar limitada. Para esos escenarios se recomienda el despliegue híbrido multi-entorno.
+El modo multiaplicación en memoria compartida ofrece ventajas claras en despliegue y operación, pero cuando crece la cantidad de aplicaciones y la complejidad de negocio, una sola instancia puede enfrentar problemas de competencia de recursos y disminución de la estabilidad. Para esos escenarios, los usuarios pueden adoptar una solución de despliegue híbrido multi-entorno para soportar necesidades de negocio más complejas.
 
-En este modo, el sistema despliega una **aplicación de entrada** como centro unificado de gestión y planificación, y varias instancias NocoBase como entornos de ejecución independientes que alojan las aplicaciones de negocio.
+En este modo, el sistema despliega una **aplicación de entrada** como centro unificado de gestión y planificación, y varias instancias NocoBase como entornos de ejecución independientes que alojan las aplicaciones de negocio. Los entornos están aislados entre sí y trabajan de forma coordinada, dispersando eficazmente la presión de una sola instancia y mejorando significativamente la estabilidad, escalabilidad y capacidad de aislamiento de fallos del sistema.
 
-A nivel de infraestructura, los entornos pueden ejecutarse como procesos separados, contenedores Docker o múltiples Deployments de Kubernetes.
+A nivel de infraestructura, los entornos pueden ejecutarse como procesos separados, contenedores Docker o múltiples Deployments de Kubernetes, adaptándose de manera flexible a infraestructuras de diferentes escalas y arquitecturas.
 
 ## Despliegue
 
@@ -83,6 +87,8 @@ ENVIRONMENT_PROXY_URL=
 ```
 
 ### Ejemplo Docker Compose
+
+El siguiente ejemplo muestra un esquema de despliegue híbrido multi-entorno utilizando contenedores Docker como unidad de ejecución, desplegando simultáneamente una aplicación de entrada y dos aplicaciones worker mediante Docker Compose.
 
 ```yaml
 networks:
@@ -192,19 +198,19 @@ Las operaciones básicas son iguales que en [modo de memoria compartida](./local
 
 ### Lista de entornos
 
-Tras desplegar, entra en **App supervisor** y en la pestaña **Environment** verás los entornos Worker registrados: identificador, versión, URL y estado. Los Workers reportan heartbeat cada 2 minutos.
+Tras desplegar, entra en **App supervisor** y en la pestaña **Environment** verás los entornos Worker registrados: identificador, versión, URL y estado. Los Workers reportan un latido (heartbeat) cada 2 minutos para asegurar la disponibilidad del entorno.
 
 ![](https://static-docs.nocobase.com/202512291830371.png)
 
 ### Crear aplicación
 
-Al crear una aplicación puedes elegir uno o más entornos de ejecución. Normalmente basta con uno. Solo usa varios cuando exista [services splitting](/cluster-mode/services-splitting).
+Al crear una aplicación puedes elegir uno o más entornos de ejecución. Normalmente basta con uno. Solo usa varios cuando se haya realizado una [división de servicios (services splitting)](/cluster-mode/services-splitting) y sea necesario desplegar la misma aplicación en múltiples entornos para lograr el equilibrio de carga o el aislamiento de capacidades.
 
 ![](https://static-docs.nocobase.com/202512291835086.png)
 
 ### Lista de aplicaciones
 
-La lista muestra entorno de ejecución y estado actual por aplicación. Si está desplegada en varios entornos, verás múltiples estados.
+La lista muestra entorno de ejecución y estado actual por aplicación. Si está desplegada en varios entornos, verás múltiples estados. En condiciones normales, la misma aplicación en múltiples entornos mantendrá un estado unificado y requiere un control conjunto para iniciar y detener.
 
 ![](https://static-docs.nocobase.com/202512291842216.png)
 

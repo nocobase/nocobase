@@ -1,690 +1,687 @@
-# Ticketing Solution Detailed Design
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/solution/ticket-system/design) देखें।
+:::
 
-> **Version**: v2.0-beta
+# टिकटिंग समाधान विस्तृत डिज़ाइन
 
-> **Updated**: 2026-01-05
+> **संस्करण**: v2.0-beta
 
-> **Status**: Preview
+> **अपडेट की तारीख**: 2026-01-05
 
+> **स्थिति**: पूर्वावलोकन (Preview)
 
-## 1. System Overview and Design Philosophy
+## 1. सिस्टम अवलोकन और डिज़ाइन दर्शन
 
-### 1.1 System Positioning
+### 1.1 सिस्टम स्थिति
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+यह सिस्टम NocoBase लो-कोड प्लेटफ़ॉर्म पर निर्मित एक **AI-संचालित इंटेलिजेंट टिकट प्रबंधन प्लेटफ़ॉर्म** है। इसका मुख्य लक्ष्य है:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+ग्राहक सेवा को थकाऊ प्रक्रियात्मक कार्यों के बजाय समस्याओं को सुलझाने पर ध्यान केंद्रित करने दें
 ```
 
-### 1.2 Design Philosophy
+### 1.2 डिज़ाइन दर्शन
 
-#### Philosophy One: T-Shaped Data Architecture
+#### दर्शन एक: T-आकार का डेटा आर्किटेक्चर (T-Shaped Data Architecture)
 
-**What is T-Shaped Architecture?**
+**T-आकार का आर्किटेक्चर क्या है?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+यह "T-आकार की प्रतिभा" की अवधारणा से प्रेरित है — क्षैतिज चौड़ाई + लंबवत गहराई:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **क्षैतिज (मुख्य तालिका)**: सभी प्रकार के व्यवसायों के लिए सामान्य क्षमताएं — जैसे नंबर, स्थिति, असाइनी, SLA और अन्य मुख्य फ़ील्ड।
+- **लंबवत (विस्तार तालिकाएं)**: विशिष्ट व्यवसाय के लिए गहराई वाले फ़ील्ड — जैसे उपकरण मरम्मत के लिए सीरियल नंबर, शिकायतों के लिए मुआवज़ा योजना।
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
 
-**Why This Design?**
+**ऐसा डिज़ाइन क्यों?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| पारंपरिक समाधान | T-आकार का आर्किटेक्चर |
+|----------|---------|
+| प्रत्येक व्यवसाय के लिए एक तालिका, फ़ील्ड की पुनरावृत्ति | सामान्य फ़ील्ड का एकीकृत प्रबंधन, आवश्यकतानुसार व्यावसायिक फ़ील्ड का विस्तार |
+| सांख्यिकीय रिपोर्ट के लिए कई तालिकाओं को मिलाना पड़ता है | एक ही मुख्य तालिका से सभी टिकटों के आंकड़े प्राप्त होते हैं |
+| प्रक्रिया परिवर्तन के लिए कई जगहों पर बदलाव की आवश्यकता | मुख्य प्रक्रिया में केवल एक जगह बदलाव |
+| नए व्यवसाय प्रकार के लिए नई तालिका बनानी पड़ती है | केवल विस्तार तालिका जोड़नी होती है, मुख्य वर्कफ़्लो वही रहता है |
 
-#### Philosophy Two: AI Employee Team
+#### दर्शन दो: AI कर्मचारी टीम
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+यह केवल "AI सुविधा" नहीं है, बल्कि "AI कर्मचारी" हैं। प्रत्येक AI की एक स्पष्ट भूमिका, व्यक्तित्व और ज़िम्मेदारी है:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| AI कर्मचारी | पद | मुख्य ज़िम्मेदारी | ट्रिगर परिदृश्य |
+|--------|------|----------|----------|
+| **Sam** | सर्विस डेस्क सुपरवाइज़र | टिकट वितरण, प्राथमिकता मूल्यांकन, एस्केलेशन निर्णय | टिकट निर्माण के समय स्वचालित |
+| **Grace** | कस्टमर सक्सेस विशेषज्ञ | उत्तर तैयार करना, लहज़ा सुधारना, शिकायत प्रबंधन | जब एजेंट "AI उत्तर" पर क्लिक करे |
+| **Max** | ज्ञान सहायक | समान मामले, ज्ञान अनुशंसा, समाधान संश्लेषण | टिकट विवरण पृष्ठ पर स्वचालित |
+| **Lexi** | अनुवादक | बहुभाषी अनुवाद, टिप्पणियों का अनुवाद | विदेशी भाषा का पता चलने पर स्वचालित |
 
-**Why the "AI Employee" Model?**
+**"AI कर्मचारी" मॉडल का उपयोग क्यों करें?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **स्पष्ट ज़िम्मेदारियाँ**: Sam वितरण संभालता है, Grace उत्तर संभालती है, कोई भ्रम नहीं होता।
+- **समझने में आसान**: उपयोगकर्ता से यह कहना कि "Sam को इसका विश्लेषण करने दें", "वर्गीकरण API कॉल करें" कहने से अधिक अनुकूल है।
+- **विस्तार योग्य**: नई AI क्षमता जोड़ना = नए कर्मचारी को काम पर रखना।
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### दर्शन तीन: ज्ञान स्व-चक्र (Knowledge Self-Circulation)
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+यह **ज्ञान संचय - ज्ञान अनुप्रयोग** का एक बंद लूप (closed loop) बनाता है।
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. मुख्य इकाइयाँ और डेटा मॉडल
 
-### 2.1 Entity Relationship Overview
+### 2.1 इकाई संबंध अवलोकन (Entity Relationship Overview)
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 मुख्य तालिकाओं का विवरण
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 टिकट मुख्य तालिका (nb_tts_tickets)
 
-**Basic Information**
+यह सिस्टम का केंद्र है, जिसे "वाइड टेबल" डिज़ाइन के साथ बनाया गया है, जिसमें सभी सामान्य फ़ील्ड मुख्य तालिका में रखे गए हैं।
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**बुनियादी जानकारी**
 
-**Source Tracking**
+| फ़ील्ड | प्रकार | विवरण | उदाहरण |
+|------|------|------|------|
+| id | BIGINT | प्राइमरी की | 1001 |
+| ticket_no | VARCHAR | टिकट नंबर | TKT-20251229-0001 |
+| title | VARCHAR | शीर्षक | नेटवर्क कनेक्शन धीमा है |
+| description | TEXT | समस्या का विवरण | आज सुबह से कार्यालय का नेटवर्क... |
+| biz_type | VARCHAR | व्यवसाय का प्रकार | it_support |
+| priority | VARCHAR | प्राथमिकता | P1 |
+| status | VARCHAR | स्थिति | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**स्रोत ट्रैकिंग**
 
-**Contact Information**
+| फ़ील्ड | प्रकार | विवरण | उदाहरण |
+|------|------|------|------|
+| source_system | VARCHAR | स्रोत सिस्टम | crm / email / iot |
+| source_channel | VARCHAR | स्रोत चैनल | web / phone / wechat |
+| external_ref_id | VARCHAR | बाहरी संदर्भ ID | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**संपर्क जानकारी**
 
-**Assignee Information**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| customer_id | BIGINT | ग्राहक ID |
+| contact_name | VARCHAR | संपर्क व्यक्ति का नाम |
+| contact_phone | VARCHAR | संपर्क फ़ोन |
+| contact_email | VARCHAR | संपर्क ईमेल |
+| contact_company | VARCHAR | कंपनी का नाम |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**असाइनी (Assignee) जानकारी**
 
-**Time Nodes**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| assignee_id | BIGINT | असाइनी ID |
+| assignee_department_id | BIGINT | असाइनी विभाग ID |
+| transfer_count | INT | स्थानांतरण संख्या |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**समय बिंदु (Time Nodes)**
 
-**SLA Related**
+| फ़ील्ड | प्रकार | विवरण | ट्रिगर समय |
+|------|------|------|----------|
+| submitted_at | TIMESTAMP | सबमिशन समय | टिकट निर्माण पर |
+| assigned_at | TIMESTAMP | असाइनमेंट समय | असाइनी निर्दिष्ट होने पर |
+| first_response_at | TIMESTAMP | पहली प्रतिक्रिया का समय | ग्राहक को पहले उत्तर पर |
+| resolved_at | TIMESTAMP | समाधान का समय | स्थिति resolved होने पर |
+| closed_at | TIMESTAMP | बंद होने का समय | स्थिति closed होने पर |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**SLA संबंधित**
 
-**AI Analysis Results**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| sla_config_id | BIGINT | SLA कॉन्फ़िगरेशन ID |
+| sla_response_due | TIMESTAMP | प्रतिक्रिया की समय सीमा |
+| sla_resolve_due | TIMESTAMP | समाधान की समय सीमा |
+| sla_paused_at | TIMESTAMP | SLA रुकने का समय |
+| sla_paused_duration | INT | कुल रुकी हुई अवधि (मिनट) |
+| is_sla_response_breached | BOOLEAN | क्या प्रतिक्रिया समय सीमा का उल्लंघन हुआ |
+| is_sla_resolve_breached | BOOLEAN | क्या समाधान समय सीमा का उल्लंघन हुआ |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**AI विश्लेषण परिणाम**
 
-**Multi-Language Support**
+| फ़ील्ड | प्रकार | विवरण | किसके द्वारा भरा गया |
+|------|------|------|----------|
+| ai_category_code | VARCHAR | AI द्वारा पहचानी गई श्रेणी | Sam |
+| ai_sentiment | VARCHAR | भावना विश्लेषण | Sam |
+| ai_urgency | VARCHAR | तात्कालिकता | Sam |
+| ai_keywords | JSONB | कीवर्ड | Sam |
+| ai_reasoning | TEXT | तर्क प्रक्रिया | Sam |
+| ai_suggested_reply | TEXT | सुझाया गया उत्तर | Sam/Grace |
+| ai_confidence_score | NUMERIC | विश्वास स्कोर | Sam |
+| ai_analysis | JSONB | पूर्ण विश्लेषण परिणाम | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**बहुभाषी समर्थन**
 
-#### 2.2.2 Business Extension Tables
+| फ़ील्ड | प्रकार | विवरण | किसके द्वारा भरा गया |
+|------|------|------|----------|
+| source_language_code | VARCHAR | मूल भाषा | Sam/Lexi |
+| target_language_code | VARCHAR | लक्ष्य भाषा | सिस्टम डिफ़ॉल्ट EN |
+| is_translated | BOOLEAN | क्या अनुवादित है | Lexi |
+| description_translated | TEXT | अनुवादित विवरण | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 व्यवसाय विस्तार तालिकाएं
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**उपकरण मरम्मत (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| ticket_id | BIGINT | संबंधित टिकट ID |
+| equipment_model | VARCHAR | उपकरण मॉडल |
+| serial_number | VARCHAR | सीरियल नंबर |
+| fault_code | VARCHAR | दोष कोड (Fault Code) |
+| spare_parts | JSONB | स्पेयर पार्ट्स की सूची |
+| maintenance_type | VARCHAR | रखरखाव का प्रकार |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**IT समर्थन (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| ticket_id | BIGINT | संबंधित टिकट ID |
+| asset_number | VARCHAR | संपत्ति संख्या |
+| os_version | VARCHAR | OS संस्करण |
+| software_name | VARCHAR | संबंधित सॉफ़्टवेयर |
+| remote_address | VARCHAR | रिमोट एड्रेस |
+| error_code | VARCHAR | त्रुटि कोड |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**ग्राहक शिकायत (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| ticket_id | BIGINT | संबंधित टिकट ID |
+| related_order_no | VARCHAR | संबंधित ऑर्डर नंबर |
+| complaint_level | VARCHAR | शिकायत का स्तर |
+| compensation_amount | DECIMAL | मुआवज़ा राशि |
+| compensation_type | VARCHAR | मुआवज़े का प्रकार |
+| root_cause | TEXT | मूल कारण |
 
-**Core Fields**
+#### 2.2.3 टिप्पणी तालिका (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**मुख्य फ़ील्ड**
 
-**AI Review Fields (for outbound)**
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| id | BIGINT | प्राइमरी की |
+| ticket_id | BIGINT | टिकट ID |
+| parent_id | BIGINT | पैरेंट टिप्पणी ID (ट्री संरचना का समर्थन) |
+| content | TEXT | टिप्पणी की सामग्री |
+| direction | VARCHAR | दिशा: inbound (ग्राहक)/outbound (एजेंट) |
+| is_internal | BOOLEAN | क्या यह आंतरिक नोट है |
+| is_first_response | BOOLEAN | क्या यह पहली प्रतिक्रिया है |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**AI समीक्षा फ़ील्ड (outbound के लिए)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| source_language_code | VARCHAR | स्रोत भाषा |
+| content_translated | TEXT | अनुवादित सामग्री |
+| is_translated | BOOLEAN | क्या अनुवादित है |
+| is_ai_blocked | BOOLEAN | क्या AI द्वारा रोका गया है |
+| ai_block_reason | VARCHAR | रोकने का कारण |
+| ai_block_detail | TEXT | विस्तृत विवरण |
+| ai_quality_score | NUMERIC | गुणवत्ता स्कोर |
+| ai_suggestions | TEXT | सुधार के सुझाव |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 रेटिंग तालिका (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| ticket_id | BIGINT | टिकट ID (यूनिक) |
+| overall_rating | INT | समग्र संतुष्टि (1-5) |
+| response_rating | INT | प्रतिक्रिया गति (1-5) |
+| professionalism_rating | INT | व्यावसायिकता (1-5) |
+| resolution_rating | INT | समस्या समाधान (1-5) |
+| nps_score | INT | NPS स्कोर (0-10) |
+| tags | JSONB | त्वरित टैग |
+| comment | TEXT | लिखित प्रतिक्रिया |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 ज्ञान लेख तालिका (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| फ़ील्ड | प्रकार | विवरण |
+|------|------|------|
+| article_no | VARCHAR | लेख संख्या KB-T0001 |
+| title | VARCHAR | शीर्षक |
+| content | TEXT | सामग्री (Markdown) |
+| summary | TEXT | सारांश |
+| category_code | VARCHAR | श्रेणी कोड |
+| keywords | JSONB | कीवर्ड |
+| source_type | VARCHAR | स्रोत: ticket/faq/manual |
+| source_ticket_id | BIGINT | स्रोत टिकट ID |
+| ai_generated | BOOLEAN | क्या AI द्वारा निर्मित है |
+| ai_quality_score | NUMERIC | गुणवत्ता स्कोर |
+| status | VARCHAR | स्थिति: draft/published/archived |
+| view_count | INT | देखे जाने की संख्या |
+| helpful_count | INT | मददगार पाए जाने की संख्या |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 डेटा तालिका सूची
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| क्रम संख्या | तालिका का नाम | विवरण | रिकॉर्ड प्रकार |
+|------|------|------|----------|
+| 1 | nb_tts_tickets | टिकट मुख्य तालिका | व्यावसायिक डेटा |
+| 2 | nb_tts_biz_repair | उपकरण मरम्मत विस्तार | व्यावसायिक डेटा |
+| 3 | nb_tts_biz_it_support | IT समर्थन विस्तार | व्यावसायिक डेटा |
+| 4 | nb_tts_biz_complaint | ग्राहक शिकायत विस्तार | व्यावसायिक डेटा |
+| 5 | nb_tts_customers | ग्राहक मुख्य तालिका | व्यावसायिक डेटा |
+| 6 | nb_tts_customer_contacts | ग्राहक संपर्क | व्यावसायिक डेटा |
+| 7 | nb_tts_ticket_comments | टिकट टिप्पणियाँ | व्यावसायिक डेटा |
+| 8 | nb_tts_ratings | संतुष्टि रेटिंग | व्यावसायिक डेटा |
+| 9 | nb_tts_qa_articles | ज्ञान लेख | ज्ञान डेटा |
+| 10 | nb_tts_qa_article_relations | लेख संबंध | ज्ञान डेटा |
+| 11 | nb_tts_faqs | अक्सर पूछे जाने वाले प्रश्न (FAQs) | ज्ञान डेटा |
+| 12 | nb_tts_tickets_categories | टिकट श्रेणियाँ | कॉन्फ़िगरेशन डेटा |
+| 13 | nb_tts_sla_configs | SLA कॉन्फ़िगरेशन | कॉन्फ़िगरेशन डेटा |
+| 14 | nb_tts_skill_configs | कौशल कॉन्फ़िगरेशन | कॉन्फ़िगरेशन डेटा |
+| 15 | nb_tts_business_types | व्यवसाय के प्रकार | कॉन्फ़िगरेशन डेटा |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. टिकट जीवनचक्र (Lifecycle)
 
-### 4.1 Priority and SLA Configuration
+### 3.1 स्थिति परिभाषाएँ
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| स्थिति | नाम | विवरण | SLA समय | रंग |
+|------|------|------|---------|------|
+| new | नया | अभी बनाया गया, असाइनमेंट की प्रतीक्षा | शुरू | 🔵 नीला |
+| assigned | सौंपा गया | असाइनी निर्दिष्ट, स्वीकार करने की प्रतीक्षा | जारी | 🔷 सियान |
+| processing | प्रक्रिया में | संसाधित किया जा रहा है | जारी | 🟠 नारंगी |
+| pending | लंबित | ग्राहक की प्रतिक्रिया की प्रतीक्षा | **रुका हुआ** | ⚫ ग्रे |
+| transferred | स्थानांतरित | किसी अन्य व्यक्ति को सौंपा गया | जारी | 🟣 बैंगनी |
+| resolved | सुलझाया गया | ग्राहक की पुष्टि की प्रतीक्षा | बंद | 🟢 हरा |
+| closed | बंद | टिकट समाप्त | बंद | ⚫ ग्रे |
+| cancelled | रद्द | टिकट रद्द किया गया | बंद | ⚫ ग्रे |
 
-### 4.2 SLA Calculation Logic
+### 3.2 स्थिति प्रवाह आरेख (Status Flow Diagram)
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**मुख्य प्रवाह (बाएं से दाएं)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**शाखा प्रवाह**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**पूर्ण स्टेट मशीन**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 प्रमुख स्थिति परिवर्तन नियम
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| कहाँ से | कहाँ तक | ट्रिगर स्थिति | सिस्टम क्रिया |
+|----|----|---------|---------|
+| new | assigned | असाइनी निर्दिष्ट करना | assigned_at रिकॉर्ड करें |
+| assigned | processing | असाइनी "स्वीकार करें" पर क्लिक करता है | कोई नहीं |
+| processing | pending | "लंबित करें" पर क्लिक करें | sla_paused_at रिकॉर्ड करें |
+| pending | processing | ग्राहक का उत्तर / मैन्युअल बहाली | रुकी हुई अवधि की गणना करें, paused_at साफ़ करें |
+| processing | resolved | "सुलझाएं" पर क्लिक करें | resolved_at रिकॉर्ड करें |
+| resolved | closed | ग्राहक की पुष्टि / 3 दिन का टाइमआउट | closed_at रिकॉर्ड करें |
+| * | cancelled | टिकट रद्द करें | कोई नहीं |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. SLA सेवा स्तर प्रबंधन
 
-### 5.1 AI Employee Team
+### 4.1 प्राथमिकता और SLA कॉन्फ़िगरेशन
 
-The system configures 8 AI employees in two categories:
+| प्राथमिकता | नाम | प्रतिक्रिया समय | समाधान समय | चेतावनी सीमा | विशिष्ट परिदृश्य |
+|--------|------|----------|----------|----------|----------|
+| P0 | गंभीर | 15 मिनट | 2 घंटे | 80% | सिस्टम डाउन, उत्पादन लाइन बंद |
+| P1 | उच्च | 1 घंटा | 8 घंटे | 80% | महत्वपूर्ण सुविधा की विफलता |
+| P2 | मध्यम | 4 घंटे | 24 घंटे | 80% | सामान्य समस्याएँ |
+| P3 | कम | 8 घंटे | 72 घंटे | 80% | पूछताछ, सुझाव |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 SLA गणना तर्क
 
-| ID | Name | Position | Core Capabilities |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+
+#### टिकट निर्माण के समय
+
+```
+प्रतिक्रिया की समय सीमा = सबमिशन समय + प्रतिक्रिया समय सीमा (मिनट)
+समाधान की समय सीमा = सबमिशन समय + समाधान समय सीमा (मिनट)
+```
+
+#### लंबित होने पर (pending)
+
+```
+SLA रुकने का समय = वर्तमान समय
+```
+
+#### बहाल होने पर (pending से वापस processing में)
+
+```
+-- वर्तमान रुकी हुई अवधि की गणना करें
+वर्तमान रुकी हुई अवधि = वर्तमान समय - SLA रुकने का समय
+
+-- कुल रुकी हुई अवधि में जोड़ें
+कुल रुकी हुई अवधि = कुल रुकी हुई अवधि + वर्तमान रुकी हुई अवधि
+
+-- समय सीमा बढ़ाएँ (रुकी हुई अवधि SLA में नहीं गिनी जाती)
+प्रतिक्रिया की समय सीमा = प्रतिक्रिया की समय सीमा + वर्तमान रुकी हुई अवधि
+समाधान की समय सीमा = समाधान की समय सीमा + वर्तमान रुकी हुई अवधि
+
+-- रुकने का समय साफ़ करें
+SLA रुकने का समय = रिक्त
+```
+
+#### SLA उल्लंघन का निर्धारण
+
+```
+-- प्रतिक्रिया उल्लंघन का निर्धारण
+क्या प्रतिक्रिया उल्लंघन हुआ = (पहली प्रतिक्रिया का समय रिक्त है और वर्तमान समय > प्रतिक्रिया की समय सीमा)
+                        या (पहली प्रतिक्रिया का समय > प्रतिक्रिया की समय सीमा)
+
+-- समाधान उल्लंघन का निर्धारण
+क्या समाधान उल्लंघन हुआ = (समाधान का समय रिक्त है और वर्तमान समय > समाधान की समय सीमा)
+                        या (समाधान का समय > समाधान की समय सीमा)
+```
+
+### 4.3 SLA चेतावनी तंत्र
+
+| चेतावनी स्तर | स्थिति | सूचित व्यक्ति | सूचना का तरीका |
+|----------|------|----------|----------|
+| पीली चेतावनी | शेष समय < 20% | असाइनी | इन-ऐप संदेश |
+| लाल चेतावनी | समय सीमा समाप्त | असाइनी + सुपरवाइज़र | इन-ऐप संदेश + ईमेल |
+| एस्केलेशन चेतावनी | 1 घंटा ओवरटाइम | विभाग प्रबंधक | ईमेल + SMS |
+
+### 4.4 SLA डैशबोर्ड मेट्रिक्स
+
+| मेट्रिक | गणना सूत्र | स्वास्थ्य सीमा |
+|------|----------|----------|
+| प्रतिक्रिया अनुपालन दर | गैर-उल्लंघन टिकट / कुल टिकट | > 95% |
+| समाधान अनुपालन दर | गैर-उल्लंघन सुलझाए गए टिकट / कुल सुलझाए गए टिकट | > 90% |
+| औसत प्रतिक्रिया समय | SUM(प्रतिक्रिया समय) / टिकटों की संख्या | < SLA का 50% |
+| औसत समाधान समय | SUM(समाधान समय) / टिकटों की संख्या | < SLA का 80% |
+
+---
+
+## 5. AI क्षमताएं और कर्मचारी सिस्टम
+
+### 5.1 AI कर्मचारी टीम
+
+सिस्टम में 8 AI कर्मचारी कॉन्फ़िगर किए गए हैं, जिन्हें दो श्रेणियों में बांटा गया है:
+
+**नए कर्मचारी (टिकटिंग सिस्टम विशिष्ट)**
+
+| ID | नाम | पद | मुख्य क्षमताएं |
 |----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+| sam | Sam | सर्विस डेस्क सुपरवाइज़र | टिकट वितरण, प्राथमिकता मूल्यांकन, एस्केलेशन निर्णय, SLA जोखिम पहचान |
+| grace | Grace | कस्टमर सक्सेस विशेषज्ञ | पेशेवर उत्तर तैयार करना, लहज़ा सुधारना, शिकायत प्रबंधन, संतुष्टि बहाली |
+| max | Max | ज्ञान सहायक | समान मामलों की खोज, ज्ञान अनुशंसा, समाधान संश्लेषण |
 
-**Reused Employees (General Capabilities)**
+**पुन: प्रयोज्य कर्मचारी (सामान्य क्षमताएं)**
 
-| ID | Name | Position | Core Capabilities |
+| ID | नाम | पद | मुख्य क्षमताएं |
 |----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+| dex | Dex | डेटा आयोजक | ईमेल-से-टिकट, कॉल-से-टिकट, बैच डेटा क्लीनिंग |
+| ellis | Ellis | ईमेल विशेषज्ञ | ईमेल भावना विश्लेषण, थ्रेड सारांश, उत्तर का मसौदा तैयार करना |
+| lexi | Lexi | अनुवादक | टिकट अनुवाद, उत्तर अनुवाद, रीयल-टाइम बातचीत अनुवाद |
+| cole | Cole | NocoBase विशेषज्ञ | सिस्टम उपयोग मार्गदर्शन, वर्कफ़्लो कॉन्फ़िगरेशन सहायता |
+| vera | Vera | अनुसंधान विश्लेषक | तकनीकी समाधान अनुसंधान, उत्पाद जानकारी सत्यापन |
 
-### 5.2 AI Task List
+### 5.2 AI कार्य सूची
 
-Each AI employee is configured with 4 specific tasks:
+प्रत्येक AI कर्मचारी के लिए 4 विशिष्ट कार्य कॉन्फ़िगर किए गए हैं:
 
-#### Sam's Tasks
+#### Sam के कार्य
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+| कार्य ID | नाम | ट्रिगर तरीका | विवरण |
+|--------|------|----------|------|
+| SAM-01 | टिकट विश्लेषण और वितरण | वर्कफ़्लो स्वचालित | नए टिकट निर्माण पर स्वचालित विश्लेषण |
+| SAM-02 | प्राथमिकता पुनर्मूल्यांकन | फ्रंटएंड इंटरैक्शन | नई जानकारी के आधार पर प्राथमिकता समायोजित करना |
+| SAM-03 | एस्केलेशन निर्णय | फ्रंटएंड/वर्कफ़्लो | निर्णय लेना कि क्या एस्केलेशन की आवश्यकता है |
+| SAM-04 | SLA जोखिम मूल्यांकन | वर्कफ़्लो स्वचालित | समय सीमा समाप्त होने के जोखिमों की पहचान |
 
-#### Grace's Tasks
+#### Grace के कार्य
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+| कार्य ID | नाम | ट्रिगर तरीका | विवरण |
+|--------|------|----------|------|
+| GRACE-01 | पेशेवर उत्तर तैयार करना | फ्रंटएंड इंटरैक्शन | संदर्भ के आधार पर उत्तर तैयार करना |
+| GRACE-02 | उत्तर का लहज़ा सुधारना | फ्रंटएंड इंटरैक्शन | मौजूदा उत्तर के लहज़े को अनुकूलित करना |
+| GRACE-03 | शिकायत का समाधान | फ्रंटएंड/वर्कफ़्लो | ग्राहक की शिकायतों को सुलझाना |
+| GRACE-04 | संतुष्टि बहाली | फ्रंटएंड/वर्कफ़्लो | नकारात्मक अनुभव के बाद अनुवर्ती कार्रवाई |
 
-#### Max's Tasks
+#### Max के कार्य
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+| कार्य ID | नाम | ट्रिगर तरीका | विवरण |
+|--------|------|----------|------|
+| MAX-01 | समान मामलों की खोज | फ्रंटएंड/वर्कफ़्लो | ऐतिहासिक समान टिकटों की खोज |
+| MAX-02 | ज्ञान लेख अनुशंसा | फ्रंटएंड/वर्कफ़्लो | संबंधित ज्ञान लेखों की अनुशंसा |
+| MAX-03 | समाधान संश्लेषण | फ्रंटएंड इंटरैक्शन | कई स्रोतों से समाधानों का संश्लेषण |
+| MAX-04 | समस्या निवारण मार्गदर्शिका | फ्रंटएंड इंटरैक्शन | व्यवस्थित समस्या निवारण प्रक्रिया बनाना |
 
-#### Lexi's Tasks
+#### Lexi के कार्य
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+| कार्य ID | नाम | ट्रिगर तरीका | विवरण |
+|--------|------|----------|------|
+| LEXI-01 | टिकट अनुवाद | वर्कफ़्लो स्वचालित | टिकट सामग्री का अनुवाद |
+| LEXI-02 | उत्तर अनुवाद | फ्रंटएंड इंटरैक्शन | एजेंट के उत्तर का अनुवाद |
+| LEXI-03 | बैच अनुवाद | वर्कफ़्लो स्वचालित | बैच अनुवाद प्रसंस्करण |
+| LEXI-04 | रीयल-टाइम बातचीत अनुवाद | फ्रंटएंड इंटरैक्शन | रीयल-टाइम संवाद अनुवाद |
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 5.3 AI कर्मचारी और टिकट जीवनचक्र
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
 
-### 5.4 AI Response Examples
+### 5.4 AI प्रतिक्रिया उदाहरण
 
-#### SAM-01 Ticket Analysis Response
+#### SAM-01 टिकट विश्लेषण प्रतिक्रिया
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "लॉगिन विफल", "टाइमआउट", "महीने के अंत का क्लोजिंग"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "यह टिकट ERP सिस्टम लॉगिन समस्या का वर्णन करता है जो वित्त विभाग के महीने के अंत के क्लोजिंग को प्रभावित कर रहा है, उच्च तात्कालिकता",
+  "suggested_reply": "प्रिय ग्राहक, इस समस्या की रिपोर्ट करने के लिए धन्यवाद...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "नमस्ते, हमारा ERP सिस्टम लॉगिन नहीं हो पा रहा है..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 उत्तर निर्माण प्रतिक्रिया
 
 ```
-Dear Mr. Zhang,
+प्रिय श्री झांग,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+ERP लॉगिन समस्या के बारे में हमसे संपर्क करने के लिए धन्यवाद। मैं पूरी तरह से समझता हूँ कि यह समस्या 
+आपकी कंपनी के महीने के अंत के क्लोजिंग कार्य को प्रभावित कर रही है, और हमने इसे उच्च प्राथमिकता दी है।
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+वर्तमान स्थिति:
+- तकनीकी टीम सर्वर कनेक्शन समस्याओं की जांच कर रही है
+- 30 मिनट के भीतर आपको अपडेट देने की उम्मीद है
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+इस बीच, आप यह प्रयास कर सकते हैं:
+1. बैकअप एड्रेस के माध्यम से एक्सेस करें: https://erp-backup.company.com
+2. यदि तत्काल रिपोर्ट की आवश्यकता है, तो एक्सपोर्ट सहायता के लिए हमसे संपर्क करें
 
-Please feel free to contact me if you have any other questions.
+यदि आपके कोई अन्य प्रश्न हैं, तो कृपया बेझिझक मुझसे संपर्क करें।
 
-Best regards,
-Technical Support Team
+सादर,
+तकनीकी सहायता टीम
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 AI भावनात्मक बुद्धिमत्ता (EQ) फ़ायरवॉल
 
-Grace's reply quality review blocks the following issues:
+Grace द्वारा की जाने वाली उत्तर गुणवत्ता समीक्षा निम्नलिखित समस्याओं को रोकती है:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| समस्या का प्रकार | मूल उदाहरण | AI सुझाव |
+|----------|----------|--------|
+| नकारात्मक लहज़ा | "नहीं, यह वारंटी के अंतर्गत नहीं है" | "यह दोष वर्तमान में मुफ्त वारंटी के अंतर्गत नहीं आता है, हम एक सशुल्क मरम्मत योजना की पेशकश कर सकते हैं" |
+| ग्राहक पर दोष मढ़ना | "आपने इसे खुद तोड़ा है" | "सत्यापन के बाद, यह दोष आकस्मिक क्षति की श्रेणी में आता है" |
+| ज़िम्मेदारी से बचना | "यह हमारी समस्या नहीं है" | "मुझे कारण की आगे जांच करने में आपकी सहायता करने दें" |
+| उदासीन अभिव्यक्ति | "पता नहीं" | "मैं आपके लिए संबंधित जानकारी खोजने में मदद करता हूँ" |
+| संवेदनशील जानकारी | "आपका पासवर्ड abc123 है" | [रोका गया] संवेदनशील जानकारी शामिल है, भेजने की अनुमति नहीं है |
 
 ---
 
-## 6. Knowledge Base System
+## 6. ज्ञानकोष (Knowledge Base) प्रणाली
 
-### 6.1 Knowledge Sources
+### 6.1 ज्ञान के स्रोत
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 टिकट-से-ज्ञान प्रवाह
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**मूल्यांकन आयाम**:
+- **सामान्यता**: क्या यह एक आम समस्या है?
+- **पूर्णता**: क्या समाधान स्पष्ट और पूर्ण है?
+- **पुनरावृत्ति**: क्या कदम पुन: प्रयोज्य हैं?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 ज्ञान अनुशंसा तंत्र
+
+जब एजेंट टिकट विवरण खोलता है, तो Max स्वचालित रूप से संबंधित ज्ञान की अनुशंसा करता है:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 अनुशंसित ज्ञान                               [विस्तार/छोटा करें] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 CNC सर्वो सिस्टम दोष निदान मार्गदर्शिका  मैच: 94%    │ │
+│ │ शामिल है: अलार्म कोड व्याख्या, सर्वो ड्राइव जांच चरण            │ │
+│ │ [देखें] [उत्तर में लागू करें] [मददगार के रूप में चिह्नित करें]     │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 XYZ-CNC3000 सीरीज रखरखाव मैनुअल        मैच: 87%    │ │
+│ │ शामिल है: सामान्य दोष, निवारक रखरखाव योजना                  │ │
+│ │ [देखें] [उत्तर में लागू करें] [मददगार के रूप में चिह्नित करें]     │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. वर्कफ़्लो इंजन
+
+### 7.1 वर्कफ़्लो श्रेणियाँ
+
+| कोड | श्रेणी | विवरण | ट्रिगर तरीका |
+|------|------|------|----------|
+| WF-T | टिकट वर्कफ़्लो | टिकट जीवनचक्र प्रबंधन | फ़ॉर्म इवेंट |
+| WF-S | SLA वर्कफ़्लो | SLA गणना और चेतावनी | फ़ॉर्म इवेंट/निर्धारित |
+| WF-C | टिप्पणी वर्कफ़्लो | टिप्पणी प्रसंस्करण और अनुवाद | फ़ॉर्म इवेंट |
+| WF-R | रेटिंग वर्कफ़्लो | रेटिंग आमंत्रण और आंकड़े | फ़ॉर्म इवेंट/निर्धारित |
+| WF-N | सूचना वर्कफ़्लो | सूचना भेजना | इवेंट-संचालित |
+| WF-AI | AI वर्कफ़्लो | AI विश्लेषण और निर्माण | फ़ॉर्म इवेंट |
+
+### 7.2 मुख्य वर्कफ़्लो
+
+#### WF-T01: टिकट निर्माण वर्कफ़्लो
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+
+#### WF-AI01: टिकट AI विश्लेषण
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+
+#### WF-AI04: टिप्पणी अनुवाद और समीक्षा
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+
+#### WF-AI03: ज्ञान निर्माण
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+
+### 7.3 निर्धारित कार्य (Scheduled Tasks)
+
+| कार्य | आवृत्ति | विवरण |
+|------|----------|------|
+| SLA चेतावनी जांच | हर 5 मिनट | उन टिकटों की जांच करें जिनकी समय सीमा समाप्त होने वाली है |
+| टिकट स्वचालित बंद | दैनिक | resolved स्थिति के 3 दिन बाद स्वचालित रूप से बंद करें |
+| रेटिंग आमंत्रण भेजना | दैनिक | बंद होने के 24 घंटे बाद रेटिंग आमंत्रण भेजें |
+| सांख्यिकीय डेटा अपडेट | प्रति घंटा | ग्राहक टिकट आंकड़ों को अपडेट करें |
 
 ---
 
-## 7. Workflow Engine
+## 8. मेनू और इंटरफ़ेस डिज़ाइन
 
-### 7.1 Workflow Categories
+### 8.1 बैकएंड एडमिन एंड
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
 
-### 7.2 Core Workflows
+### 8.2 ग्राहक पोर्टल एंड
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 डैशबोर्ड डिज़ाइन
 
-#### WF-AI01: Ticket AI Analysis
+#### कार्यकारी दृश्य (Executive View)
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| घटक | प्रकार | डेटा विवरण |
+|------|------|----------|
+| SLA अनुपालन दर | गेज (Gauge) | इस महीने की प्रतिक्रिया/समाधान अनुपालन दर |
+| संतुष्टि प्रवृत्ति | लाइन चार्ट | पिछले 30 दिनों में संतुष्टि में बदलाव |
+| टिकट मात्रा प्रवृत्ति | बार चार्ट | पिछले 30 दिनों में टिकटों की संख्या |
+| व्यवसाय प्रकार वितरण | पाई चार्ट | प्रत्येक व्यवसाय प्रकार का अनुपात |
 
-#### WF-AI04: Comment Translation & Review
+#### सुपरवाइज़र दृश्य (Supervisor View)
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| घटक | प्रकार | डेटा विवरण |
+|------|------|----------|
+| टाइमआउट चेतावनी | सूची | समय सीमा समाप्त होने वाले/समाप्त हो चुके टिकट |
+| टीम कार्यभार | बार चार्ट | टीम के सदस्यों के टिकटों की संख्या |
+| बैकलॉग वितरण | स्टैक्ड चार्ट | प्रत्येक स्थिति में टिकटों की संख्या |
+| प्रसंस्करण समय | हीटमैप | औसत प्रसंस्करण समय वितरण |
 
-#### WF-AI03: Knowledge Generation
+#### एजेंट दृश्य (Agent View)
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| घटक | प्रकार | डेटा विवरण |
+|------|------|----------|
+| मेरे कार्य | नंबर कार्ड | लंबित टिकटों की संख्या |
+| प्राथमिकता वितरण | पाई चार्ट | P0/P1/P2/P3 वितरण |
+| आज के आंकड़े | मेट्रिक कार्ड | आज संसाधित/सुलझाए गए टिकटों की संख्या |
+| SLA काउंटडाउन | सूची | शीर्ष 5 सबसे जरूरी टिकट |
 
 ---
 
-## Appendix
+## परिशिष्ट
 
-### A. Business Type Configuration
+### A. व्यवसाय प्रकार कॉन्फ़िगरेशन
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| प्रकार कोड | नाम | आइकन | संबंधित विस्तार तालिका |
+|----------|------|------|------------|
+| repair | उपकरण मरम्मत | 🔧 | nb_tts_biz_repair |
+| it_support | IT समर्थन | 💻 | nb_tts_biz_it_support |
+| complaint | ग्राहक शिकायत | 📢 | nb_tts_biz_complaint |
+| consultation | परामर्श/सुझाव | ❓ | कोई नहीं |
+| other | अन्य | 📝 | कोई नहीं |
 
-### B. Category Codes
+### B. श्रेणी कोड
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| कोड | नाम | विवरण |
+|------|------|------|
+| CONVEYOR | कन्वेयर सिस्टम | कन्वेयर सिस्टम की समस्याएँ |
+| PACKAGING | पैकेजिंग मशीन | पैकेजिंग मशीन की समस्याएँ |
+| WELDING | वेल्डिंग उपकरण | वेल्डिंग उपकरण की समस्याएँ |
+| COMPRESSOR | एयर कंप्रेसर | एयर कंप्रेसर की समस्याएँ |
+| COLD_STORE | कोल्ड स्टोरेज | कोल्ड स्टोरेज की समस्याएँ |
+| CENTRAL_AC | सेंट्रल AC | सेंट्रल AC की समस्याएँ |
+| FORKLIFT | फोर्कलिफ्ट | फोर्कलिफ्ट की समस्याएँ |
+| COMPUTER | कंप्यूटर | कंप्यूटर हार्डवेयर की समस्याएँ |
+| PRINTER | प्रिंटर | प्रिंटर की समस्याएँ |
+| PROJECTOR | प्रोजेक्टर | प्रोजेक्टर की समस्याएँ |
+| INTERNET | नेटवर्क | नेटवर्क कनेक्शन की समस्याएँ |
+| EMAIL | ईमेल | ईमेल सिस्टम की समस्याएँ |
+| ACCESS | एक्सेस | खाता अनुमति समस्याएँ |
+| PROD_INQ | उत्पाद पूछताछ | उत्पाद पूछताछ |
+| COMPLAINT | सामान्य शिकायत | सामान्य शिकायत |
+| DELAY | रसद विलंब | रसद विलंब की शिकायत |
+| DAMAGE | पैकेजिंग क्षति | पैकेजिंग क्षति की शिकायत |
+| QUANTITY | मात्रा की कमी | मात्रा की कमी की शिकायत |
+| SVC_ATTITUDE | सेवा रवैया | सेवा रवैये की शिकायत |
+| PROD_QUALITY | उत्पाद गुणवत्ता | उत्पाद गुणवत्ता की शिकायत |
+| TRAINING | प्रशिक्षण | प्रशिक्षण अनुरोध |
+| RETURN | वापसी | वापसी अनुरोध |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*दस्तावेज़ संस्करण: 2.0 | अंतिम अपडेट: 2026-01-05*

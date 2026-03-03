@@ -1,12 +1,16 @@
 ---
-displayName: "License settings"
+displayName: "Lisans ayarları"
 packageName: '@nocobase/plugin-license'
 description: |
-  Instance ID and license key settings
+  Örnek Kimliği ve lisans anahtarı ayarları
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-license/index) bakın.
+:::
+
+# Lisans ayarları

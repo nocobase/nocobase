@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "حقل المجموعة: ترتيب"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  يُستخدم لترتيب بيانات المجموعة.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-field-sort/index).
+:::
+
+# حقل المجموعة: ترتيب
