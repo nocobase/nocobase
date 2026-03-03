@@ -35,6 +35,85 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
+/**
+ * Extract a sortable value from a record for a given field
+ * Handles many-to-one (belongsTo) fields by extracting the title field value
+ */
+function extractSortableValue(
+  record: any,
+  dataIndex: string,
+  collectionField?: any,
+  titleField?: string,
+): string | number | null {
+  if (!record) return null;
+
+  const value = get(record, dataIndex);
+
+  if (collectionField?.type === 'belongsTo' && value && typeof value === 'object') {
+    if (titleField) {
+      const titleValue = get(value, titleField);
+      if (titleValue !== undefined && titleValue !== null) {
+        return titleValue;
+      }
+    }
+
+    const titleFieldName = collectionField?.targetCollectionTitleFieldName || 'id';
+    const titleValue = get(value, titleFieldName);
+    if (titleValue !== undefined && titleValue !== null) {
+      return titleValue;
+    }
+
+    const commonTitleFields = ['title', 'name', 'label', 'text'];
+    for (const fieldName of commonTitleFields) {
+      const fieldValue = get(value, fieldName);
+      if (fieldValue !== undefined && fieldValue !== null) {
+        return fieldValue;
+      }
+    }
+    if (value.id !== undefined && value.id !== null) {
+      return value.id;
+    }
+    return null;
+  }
+
+  return value;
+}
+
+/**
+ * Smart comparator that handles numeric and alphabetical sorting
+ * - Numbers come before letters (0-9 before A-Z)
+ * - Handles mixed content
+ */
+function smartCompare(a: any, b: any): number {
+  if (a == null && b == null) return 0;
+  if (a == null) return 1;
+  if (b == null) return -1;
+
+  const strA = String(a).trim();
+  const strB = String(b).trim();
+
+  // Check if both start with numbers
+  const numMatchA = strA.match(/^(\d+)/);
+  const numMatchB = strB.match(/^(\d+)/);
+
+  if (numMatchA && numMatchB) {
+    const numA = parseInt(numMatchA[1], 10);
+    const numB = parseInt(numMatchB[1], 10);
+    if (numA !== numB) {
+      return numA - numB;
+    }
+    const restA = strA.slice(numMatchA[1].length);
+    const restB = strB.slice(numMatchB[1].length);
+    return restA.localeCompare(restB, undefined, { numeric: true, sensitivity: 'base' });
+  }
+
+  if (numMatchA && !numMatchB) return -1;
+
+  if (!numMatchA && numMatchB) return 1;
+
+  return strA.localeCompare(strB, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 export function FieldDeletePlaceholder(props: any) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
@@ -141,12 +220,7 @@ export class TableColumnModel extends DisplayItemModel {
           key: fieldPath,
           label: field.title,
           refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
-          toggleable: (subModel) => {
-            return (
-              subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath &&
-              subModel.use === 'TableColumnModel'
-            );
-          },
+          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
           useModel: this.name,
           createModelOptions: () => ({
             use: this.name,
@@ -207,9 +281,19 @@ export class TableColumnModel extends DisplayItemModel {
     );
     const cellRenderer = this.render();
 
+    // Create sorter function if sorting is enabled
+    const sorter = this.props.sorter
+      ? (a: any, b: any) => {
+          const valueA = extractSortableValue(a, this.props.dataIndex, this.collectionField, this.props.titleField);
+          const valueB = extractSortableValue(b, this.props.dataIndex, this.collectionField, this.props.titleField);
+          return smartCompare(valueA, valueB);
+        }
+      : undefined;
+
     return {
       ...this.props,
       ellipsis: true,
+      sorter,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {titleContent}
@@ -222,7 +306,7 @@ export class TableColumnModel extends DisplayItemModel {
       ),
       onCell: (record, recordIndex) => ({
         record,
-        recordIndex: record?.__index || recordIndex,
+        recordIndex: record.__index || recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
@@ -246,14 +330,14 @@ export class TableColumnModel extends DisplayItemModel {
                     <Tooltip
                       title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
                     >
-                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record?.__index || index)}</div>
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
                     </Tooltip>
                   );
                 }
                 if (!this.collectionField) {
                   return <FieldDeletePlaceholder />;
                 }
-                return cellRenderer(value, record, record?.__index || index);
+                return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>
           </FlowModelProvider>
@@ -271,7 +355,7 @@ export class TableColumnModel extends DisplayItemModel {
       <>
         {this.mapSubModels('field', (field) => {
           const rowKey = getRowKey(record, this.context.collection.filterTargetKey);
-          const fork = field.createFork({}, `${record?.__index || index}_${rowKey}`);
+          const fork = field.createFork({}, `${record.__index || index}_${rowKey}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
@@ -300,11 +384,9 @@ export class TableColumnModel extends DisplayItemModel {
             cache: false,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => record?.__index || index,
+            get: () => record.__index || index,
           });
-          const namePath = this.context.prefixFieldPath
-            ? this.fieldPath.replace(`${this.context.prefixFieldPath}.`, '')
-            : this.fieldPath;
+          const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
           const value = get(record, namePath);
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
@@ -336,8 +418,12 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit
         await ctx.model.applySubModelsBeforeRenderFlows('field');
+        const componentProps = collectionField.getComponentProps();
+        // Enable sorting by default for many-to-one (belongsTo) fields
+        const isManyToOne = collectionField.type === 'belongsTo';
         ctx.model.setProps({
-          ...collectionField.getComponentProps(),
+          ...componentProps,
+          sorter: isManyToOne || componentProps.sorter || false,
         });
       },
     },
@@ -354,7 +440,7 @@ TableColumnModel.registerFlow({
               const originTitle = model.collectionField?.title;
               field.decoratorProps = {
                 ...field.decoratorProps,
-                extra: model.context.t('Original field title: ') + originTitle,
+                extra: model.context.t('Original field title: ') + (model.context.t(originTitle) ?? ''),
               };
             },
           },
@@ -364,8 +450,8 @@ TableColumnModel.registerFlow({
         title: ctx.model.collectionField?.title,
       }),
       handler(ctx, params) {
-        const options = { ns: 'lm-flow-engine', compareWith: ctx.model.collectionField?.title };
-        ctx.model.setProps({ title: ctx.t(params.title, options) || ctx.fieldPath });
+        const title = ctx.t(params.title || ctx.model.collectionField?.title);
+        ctx.model.setProps('title', title || ctx.fieldPath);
       },
     },
 
@@ -378,7 +464,7 @@ TableColumnModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        ctx.model.setProps('tooltip', ctx.t(params.tooltip, { ns: 'lm-flow-engine' }));
+        ctx.model.setProps('tooltip', params.tooltip);
       },
     },
     width: {
@@ -456,10 +542,14 @@ TableColumnModel.registerFlow({
       uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.model.collectionField.getInterfaceOptions();
-        return !targetInterface.sortable || ctx.associationModel;
+        return !targetInterface.sortable;
       },
-      defaultParams: {
-        sorter: false,
+      defaultParams: (ctx) => {
+        // Enable sorting by default for many-to-one (belongsTo) fields
+        const isManyToOne = ctx.model.collectionField?.type === 'belongsTo';
+        return {
+          sorter: isManyToOne || false,
+        };
       },
       handler(ctx, params) {
         ctx.model.setProps({
@@ -528,6 +618,7 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps({
           titleField: params.label,
+          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
     },
