@@ -13,17 +13,7 @@ import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
 import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
 import { ActionModel, ActionSceneEnum } from '../base';
-
-// 补全 URL
-function completeURL(url: string, origin = window.location.origin) {
-  if (!url) {
-    return '';
-  }
-  if (isURL(url)) {
-    return url;
-  }
-  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
-}
+import { handleLinkNavigation } from './LinkActionUtils';
 
 export function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
   if (!params?.length) return url;
@@ -90,18 +80,12 @@ LinkActionModel.registerFlow({
         const link = joinUrlSearch(url, searchParams);
 
         if (link) {
-          if (openInNewWindow) {
-            window.open(completeURL(link), '_blank');
-          } else {
-            if (isURL(link)) {
-              window.location.href = link;
-            } else {
-              ctx.router.navigate(link, { replace: true });
-              if (ctx.view) {
-                ctx.view.close();
-              }
-            }
-          }
+          handleLinkNavigation({
+            link,
+            openInNewWindow,
+            router: ctx.router,
+            isExternalLink: isURL(link),
+          });
         } else {
           console.error('link should be a string');
         }
