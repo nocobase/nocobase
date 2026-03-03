@@ -41,6 +41,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockProps } from './useTableBlockProps';
 import { getSchemaUidByRouteId } from './utils';
+import { updateRoutesInBatch } from './utils/updateRoutesInBatch';
 
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
 
@@ -138,9 +139,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: true,
-                  });
+                  await updateRoutesInBatch(
+                    filterByTk,
+                    {
+                      hideInMenu: true,
+                    },
+                    updateRoute,
+                  );
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
                   refreshMenu();
@@ -169,9 +174,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: false,
-                  });
+                  await updateRoutesInBatch(
+                    filterByTk,
+                    {
+                      hideInMenu: false,
+                    },
+                    updateRoute,
+                  );
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
                 },
