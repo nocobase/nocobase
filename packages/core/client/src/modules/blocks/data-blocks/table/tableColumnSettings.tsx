@@ -433,7 +433,9 @@ export const tableColumnSettings = new SchemaSettings({
             const field: any = useField();
             const { t } = useTranslation();
             const columnSchema = useFieldSchema();
+            const { columnSchema: tableColumnSchema } = useColumnSchema();
             const { dn } = useDesignable();
+            const targetColumnSchema = tableColumnSchema || columnSchema;
 
             return {
               title: (
@@ -451,13 +453,13 @@ export const tableColumnSettings = new SchemaSettings({
               checked: field.componentProps.columnHidden,
               onChange: (v) => {
                 const schema: ISchema = {
-                  ['x-uid']: columnSchema['x-uid'],
+                  ['x-uid']: targetColumnSchema['x-uid'],
                 };
-                columnSchema['x-component-props'] = {
-                  ...columnSchema['x-component-props'],
+                targetColumnSchema['x-component-props'] = {
+                  ...targetColumnSchema['x-component-props'],
                   columnHidden: v,
                 };
-                schema['x-component-props'] = columnSchema['x-component-props'];
+                schema['x-component-props'] = targetColumnSchema['x-component-props'];
                 field.componentProps.columnHidden = v;
                 dn.emit('patch', {
                   schema,
