@@ -161,24 +161,6 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         ctx.body = await db.runSQL(sql, { type, filter, bind });
         await next();
       },
-      'flowSql:destroy': async (ctx, next) => {
-        const { filterByTk } = ctx.action.params;
-        if (!filterByTk) {
-          ctx.throw(400, {
-            code: 'INVALID_PAYLOAD',
-            message: 'filterByTk is required',
-          });
-        }
-        const r = this.db.getRepository('flowSql');
-        // 如果是数字或数字字符串
-        if (typeof filterByTk === 'number' || (typeof filterByTk === 'string' && !isNaN(Number(filterByTk)))) {
-          await r.destroy({ filterByTk: Number(filterByTk) });
-        } else {
-          await r.destroy({ filter: { uid: filterByTk } });
-        }
-        ctx.body = 'ok';
-        await next();
-      },
     });
   }
 
