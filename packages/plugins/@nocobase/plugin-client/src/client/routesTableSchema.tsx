@@ -41,6 +41,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockProps } from './useTableBlockProps';
 import { getSchemaUidByRouteId } from './utils';
+import { normalizeRouteIds, updateRoutesInBatch } from './utils/updateRoutesInBatch';
 
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
 
@@ -96,18 +97,19 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
 
               return {
                 async onClick() {
-                  const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
-                  if (!filterByTk?.length) {
+                  const selectedRowKeys = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
+                  const routeIds = normalizeRouteIds(selectedRowKeys);
+                  if (!routeIds.length) {
                     return;
                   }
 
-                  for (const id of filterByTk) {
+                  for (const id of routeIds) {
                     const schemaUid = getSchemaUidByRouteId(id, data?.data, isMobile);
                     await deleteRouteSchema(schemaUid);
                   }
 
                   await resource.destroy({
-                    filterByTk,
+                    filterByTk: routeIds,
                   });
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
@@ -134,13 +136,18 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               const { updateRoute } = useNocoBaseRoutes(collectionName);
               return {
                 async onClick() {
-                  const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
-                  if (!filterByTk?.length) {
+                  const selectedRowKeys = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
+                  const routeIds = normalizeRouteIds(selectedRowKeys);
+                  if (!routeIds.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: true,
-                  });
+                  await updateRoutesInBatch(
+                    routeIds,
+                    {
+                      hideInMenu: true,
+                    },
+                    updateRoute,
+                  );
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
                   refreshMenu();
@@ -165,13 +172,18 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               const { updateRoute } = useNocoBaseRoutes(collectionName);
               return {
                 async onClick() {
-                  const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
-                  if (!filterByTk?.length) {
+                  const selectedRowKeys = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
+                  const routeIds = normalizeRouteIds(selectedRowKeys);
+                  if (!routeIds.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: false,
-                  });
+                  await updateRoutesInBatch(
+                    routeIds,
+                    {
+                      hideInMenu: false,
+                    },
+                    updateRoute,
+                  );
                   tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                   service?.refresh?.();
                 },
