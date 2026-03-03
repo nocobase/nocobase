@@ -79,7 +79,8 @@ function createWithACLMetaMiddleware() {
 
     for (const action of inspectActions) {
       const actionCtx: any = {
-        db,
+        db: ctx.db,
+        database: db,
         get: () => {
           return undefined;
         },
