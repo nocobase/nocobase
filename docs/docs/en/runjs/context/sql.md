@@ -1,28 +1,28 @@
 # ctx.sql
 
-`ctx.sql` provides SQL execution and management capabilities, commonly used in RunJS (such as JSBlock and Workflows) to access the database directly. It supports temporary SQL execution, execution of saved SQL templates by ID, parameter binding, template variables (`{{ctx.xxx}}`), and result type control.
+`ctx.sql` provides SQL execution and management, often used in RunJS (e.g. JSBlock, event flow) to access the database directly. It supports ad-hoc SQL, running saved SQL templates by ID, parameter binding, template variables (`{{ctx.xxx}}`), and result type control.
 
 ## Use Cases
 
 | Scenario | Description |
-|------|------|
-| **JSBlock** | Custom statistical reports, complex filtered lists, and cross-table aggregation queries. |
-| **Chart Block** | Saving SQL templates to drive chart data sources. |
-| **Workflow / Linkage** | Executing preset SQL to retrieve data for subsequent logic. |
-| **SQLResource** | Used in conjunction with `ctx.initResource('SQLResource')` for scenarios like paginated lists. |
+|----------|-------------|
+| **JSBlock** | Custom reports, complex filtered lists, cross-table aggregation |
+| **Chart block** | Saved SQL templates as chart data source |
+| **Event flow / linkage** | Run predefined SQL and use results in logic |
+| **SQLResource** | With `ctx.initResource('SQLResource')` for paginated lists, etc. |
 
-> Note: `ctx.sql` accesses the database via the `flowSql` API. Ensure the current user has execution permissions for the corresponding data source.
+> Note: `ctx.sql` uses the `flowSql` API to access the database; ensure the current user has execute permission on the target data source.
 
 ## Permissions
 
 | Permission | Method | Description |
-|------|------|------|
-| **Logged-in User** | `runById` | Execute based on a configured SQL template ID. |
-| **SQL Configuration Permission** | `run`, `save`, `destroy` | Execute temporary SQL, or save/update/delete SQL templates. |
+|------------|--------|-------------|
+| **Logged-in user** | `runById` | Run by configured SQL template ID |
+| **SQL config permission** | `run`, `save`, `destroy` | Ad-hoc SQL, save/update/delete SQL templates |
 
-Frontend logic intended for regular users should use `ctx.sql.runById(uid, options)`. When dynamic SQL or template management is required, ensure the current role possesses SQL configuration permissions.
+Front-end logic for normal users can use `ctx.sql.runById(uid, options)`; for dynamic SQL or template management, the current role must have SQL config permission.
 
-## Type Definition
+## Type
 
 ```ts
 sql: FlowSQLRepository;
@@ -56,44 +56,42 @@ interface FlowSQLRepository {
 
 ## Common Methods
 
-| Method | Description | Permission Requirement |
-|------|------|----------|
-| `ctx.sql.run(sql, options?)` | Executes temporary SQL; supports parameter binding and template variables. | SQL Configuration Permission |
-| `ctx.sql.save({ uid, sql, dataSourceKey? })` | Saves or updates a SQL template by ID for reuse. | SQL Configuration Permission |
-| `ctx.sql.runById(uid, options?)` | Executes a previously saved SQL template by its ID. | Any logged-in user |
-| `ctx.sql.destroy(uid)` | Deletes a specified SQL template by ID. | SQL Configuration Permission |
+| Method | Description | Permission |
+|--------|-------------|------------|
+| `ctx.sql.run(sql, options?)` | Run ad-hoc SQL; supports parameter binding and template variables | SQL config |
+| `ctx.sql.save({ uid, sql, dataSourceKey? })` | Save/update SQL template by ID for reuse | SQL config |
+| `ctx.sql.runById(uid, options?)` | Run saved SQL template by ID | Any logged-in user |
+| `ctx.sql.destroy(uid)` | Delete SQL template by ID | SQL config |
 
-Note:
+- `run`: for debugging SQL; requires config permission.
+- `save`, `destroy`: for managing SQL templates; require config permission.
+- `runById`: available to normal users; only runs saved templates.
+- Call `save` when a SQL template changes.
 
-- `run` is used for debugging SQL and requires configuration permissions.
-- `save` and `destroy` are used for managing SQL templates and require configuration permissions.
-- `runById` is open to regular users; it can only execute saved templates and cannot debug or modify the SQL.
-- When a SQL template is modified, `save` must be called to persist the changes.
+## Options
 
-## Parameters
+### run / runById options
 
-### options for run / runById
+| Option | Type | Description |
+|--------|------|-------------|
+| `bind` | `Record<string, any>` | Bound variables. Use `$name` in SQL and pass object `{ name: value }` |
+| `type` | `'selectRows'` \| `'selectRow'` \| `'selectVar'` | Result type: multiple rows, single row, single value; default `selectRows` |
+| `dataSourceKey` | `string` | Data source key; default is main data source |
+| `filter` | `Record<string, any>` | Extra filter (if supported) |
 
-| Parameter | Type | Description |
-|------|------|------|
-| `bind` | `Record<string, any>` \| `any[]` | Binding variables. Use an object for `:name` placeholders or an array for `?` placeholders. |
-| `type` | `'selectRows'` \| `'selectRow'` \| `'selectVar'` | Result type: multiple rows, single row, or single value. Defaults to `selectRows`. |
-| `dataSourceKey` | `string` | Data source identifier. Defaults to the main data source. |
-| `filter` | `Record<string, any>` | Additional filter conditions (depending on interface support). |
+### save options
 
-### options for save
+| Option | Type | Description |
+|--------|------|-------------|
+| `uid` | `string` | Template unique id; use with `runById(uid, ...)` |
+| `sql` | `string` | SQL text; supports `{{ctx.xxx}}` and `$name` placeholders |
+| `dataSourceKey` | `string` | Optional data source key |
 
-| Parameter | Type | Description |
-|------|------|------|
-| `uid` | `string` | Unique identifier for the template. Once saved, it can be executed via `runById(uid, ...)`. |
-| `sql` | `string` | SQL content. Supports `{{ctx.xxx}}` template variables and `:name` / `?` placeholders. |
-| `dataSourceKey` | `string` | Optional. Data source identifier. |
+## Template Variables and Parameter Binding
 
-## SQL Template Variables and Parameter Binding
+### Template variables `{{ctx.xxx}}`
 
-### Template Variables `{{ctx.xxx}}`
-
-You can use `{{ctx.xxx}}` in SQL to reference context variables. These are parsed into actual values before execution:
+In SQL you can use `{{ctx.xxx}}` to reference context variables; they are resolved before execution:
 
 ```js
 // Reference ctx.user.id
@@ -103,30 +101,22 @@ const user = await ctx.sql.run(
 );
 ```
 
-The sources for referencable variables are the same as `ctx.getVar()` (e.g., `ctx.user.*`, `ctx.record.*`, custom `ctx.defineProperty`, etc.).
+Variable sources are the same as for `ctx.getVar()` (e.g. `ctx.user.*`, `ctx.record.*`, custom `ctx.defineProperty`, etc.).
 
-### Parameter Binding
+### Parameter binding
 
-- **Named Parameters**: Use `:name` in SQL and pass an object `{ name: value }` in `bind`.
-- **Positional Parameters**: Use `?` in SQL and pass an array `[value1, value2]` in `bind`.
+- Use `$name` in SQL and pass `bind: { name: value }`
 
 ```js
-// Named parameters
 const users = await ctx.sql.run(
   'SELECT * FROM users WHERE status = $status AND age > $minAge',
   { bind: { status: 'active', minAge: 18 }, type: 'selectRows' }
-);
-
-// Positional parameters
-const count = await ctx.sql.run(
-  'SELECT COUNT(*) AS total FROM users WHERE city = ? AND status = ?',
-  { bind: ['London', 'active'], type: 'selectVar' }
 );
 ```
 
 ## Examples
 
-### Executing Temporary SQL (Requires SQL Configuration Permission)
+### Ad-hoc SQL (requires SQL config permission)
 
 ```js
 // Multiple rows (default)
@@ -138,14 +128,14 @@ const user = await ctx.sql.run(
   { bind: { id: 1 }, type: 'selectRow' }
 );
 
-// Single value (e.g., COUNT, SUM)
+// Single value (e.g. COUNT, SUM)
 const total = await ctx.sql.run(
   'SELECT COUNT(*) AS total FROM users',
   { type: 'selectVar' }
 );
 ```
 
-### Using Template Variables
+### Template variables
 
 ```js
 ctx.defineProperty('minId', { get: () => 1 });
@@ -156,55 +146,55 @@ const rows = await ctx.sql.run(
 );
 ```
 
-### Saving and Reusing Templates
+### Save template and reuse
 
 ```js
-// Save (Requires SQL Configuration Permission)
+// Save (requires SQL config permission)
 await ctx.sql.save({
   uid: 'active-users-report',
   sql: 'SELECT * FROM users WHERE status = $status ORDER BY created_at DESC',
 });
 
-// Any logged-in user can execute this
+// Any logged-in user can run
 const users = await ctx.sql.runById('active-users-report', {
   bind: { status: 'active' },
   type: 'selectRows',
 });
 
-// Delete template (Requires SQL Configuration Permission)
+// Delete template (requires SQL config permission)
 await ctx.sql.destroy('active-users-report');
 ```
 
-### Paginated List (SQLResource)
+### Paginated list (SQLResource)
 
 ```js
-// Use SQLResource when pagination or filtering is needed
+// For pagination and filters, use SQLResource
 ctx.initResource('SQLResource');
-ctx.resource.setFilterByTk('saved-sql-uid');  // ID of the saved SQL template
+ctx.resource.setFilterByTk('saved-sql-uid');  // Saved SQL template ID
 ctx.resource.setBind({ status: 'active' });
 await ctx.resource.refresh();
 const data = ctx.resource.getData();
-const meta = ctx.resource.getMeta();  // Includes page, pageSize, etc.
+const meta = ctx.resource.getMeta();  // page, pageSize, etc.
 ```
 
-## Relationship with ctx.resource and ctx.request
+## Relation to ctx.resource, ctx.request
 
-| Purpose | Recommended Usage |
-|------|----------|
-| **Execute SQL Query** | `ctx.sql.run()` or `ctx.sql.runById()` |
-| **SQL Paginated List (Block)** | `ctx.initResource('SQLResource')` + `ctx.resource.refresh()` |
-| **General HTTP Request** | `ctx.request()` |
+| Use | Recommended |
+|-----|-------------|
+| **Run SQL** | `ctx.sql.run()` or `ctx.sql.runById()` |
+| **SQL paginated list (block)** | `ctx.initResource('SQLResource')` + `ctx.resource.refresh()` |
+| **Generic HTTP** | `ctx.request()` |
 
-`ctx.sql` wraps the `flowSql` API and is specialized for SQL scenarios; `ctx.request` can be used to call any API.
+`ctx.sql` wraps the `flowSql` API for SQL; `ctx.request` is for arbitrary API calls.
 
 ## Notes
 
-- Use parameter binding (`:name` / `?`) instead of string concatenation to prevent SQL injection.
-- `type: 'selectVar'` returns a scalar value, typically used for `COUNT`, `SUM`, etc.
-- Template variables `{{ctx.xxx}}` are resolved before execution; ensure the corresponding variables are defined in the context.
+- Use parameter binding (`$name`) instead of string concatenation to avoid SQL injection.
+- With `type: 'selectVar'` the result is a scalar (e.g. for `COUNT`, `SUM`).
+- Template variables `{{ctx.xxx}}` are resolved before execution; ensure the context defines them.
 
 ## Related
 
-- [ctx.resource](./resource.md): Data resources; SQLResource calls the `flowSql` API internally.
-- [ctx.initResource()](./init-resource.md): Initializes SQLResource for paginated lists, etc.
-- [ctx.request()](./request.md): General HTTP requests.
+- [ctx.resource](./resource.md): data resource; SQLResource uses flowSql internally
+- [ctx.initResource()](./init-resource.md): initialize SQLResource for paginated lists
+- [ctx.request()](./request.md): generic HTTP requests
