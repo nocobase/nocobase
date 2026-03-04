@@ -28,7 +28,7 @@ import {
   toolCallStatusMiddleware,
   toolInteractionMiddleware,
 } from './middleware';
-import { defineTools, SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
+import { SkillsEntry, ToolsEntry, ToolsFilter, ToolsManager } from '@nocobase/ai';
 import { AIToolMessage } from '../types/ai-message.type';
 import { SequelizeCollectionSaver } from './checkpoints';
 import { createAgent as createLangChainAgent } from 'langchain';
@@ -37,7 +37,6 @@ import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
-import { z } from 'zod';
 
 export interface ModelRef {
   llmService: string;
@@ -1217,8 +1216,6 @@ If information is missing, clearly state it in the summary.</Important>`;
       toolsMap.set(tool.definition.name, tool);
     }
 
-    const loadSkillsTool = await this.buildSkillsTool(availableSkills);
-    toolsMap.set(loadSkillsTool.definition.name, loadSkillsTool);
     return {
       tools: Array.from(toolsMap.values()),
       baseToolNames,
@@ -1229,7 +1226,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     const list = (await this.aiToolMessagesModel.findAll({
       where: {
         sessionId: this.sessionId,
-        toolName: 'loadSkills',
+        toolName: 'getSkill',
         status: 'success',
       },
       order: [['id', 'ASC']],
@@ -1270,44 +1267,6 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
     }
     return result;
-  }
-
-  private async buildSkillsTool(availableSkills: SkillsEntry[]) {
-    const skillsMap = new Map(availableSkills.map((it) => [it.name, it]));
-    const available = availableSkills.map((it) => `${it.name}: ${it.description}`).join('\n');
-    return defineTools({
-      scope: 'GENERAL',
-      silence: true,
-      definition: {
-        name: 'loadSkills',
-        description: `Load a specialized skill.\n\nAvailable skills: \n${available}\n\nReturns the skill's prompt and context.`,
-        schema: z.object({
-          skillName: z.string().describe('Name of skill to load'),
-        }),
-      },
-      invoke: async (ctx, args) => {
-        const skillName = args.skillName as string;
-        const skills = skillsMap.get(skillName);
-        if (!skills) {
-          return {
-            status: 'error',
-            content: {
-              message: 'Skill not found',
-            },
-          };
-        }
-        const toolMap = await this.getToolsMap();
-        const activatedTools = (skills.tools ?? []).filter((toolName) => toolMap.has(toolName));
-        return {
-          status: 'success',
-          content: {
-            skillName: skills.name,
-            skillContent: skills.content,
-            activatedTools,
-          },
-        };
-      },
-    });
   }
 
   private getMiddleware(options: {

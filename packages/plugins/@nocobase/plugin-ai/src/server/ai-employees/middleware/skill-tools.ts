@@ -17,7 +17,6 @@ export const skillToolBindingMiddleware = (
   },
 ) => {
   const baseToolNames = new Set(options.baseToolNames ?? []);
-  baseToolNames.add('loadSkills');
 
   const getAllowedToolNames = async () => {
     const activatedSkillToolNames = await aiEmployee.getActivatedSkillToolNames();
