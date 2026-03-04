@@ -41,6 +41,7 @@ export type ParseableFile = {
   mimetype?: string;
   storageId?: number;
   meta?: Record<string, any>;
+  size?: number;
 };
 
 export type DocumentLoaderLike = {
