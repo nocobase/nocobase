@@ -118,9 +118,9 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const activeRunTokenRef = useRef(0);
   const cancelActiveCaptureRef = useRef<(() => void) | null>(null);
   const clearLogs = useCallback(() => setLogs([]), []);
-  const tr = hostCtx?.t || ((key: string) => key);
   const run = useCallback(
     async (code: string): Promise<RunResult | undefined> => {
+      const tr = hostCtx?.t || ((key: string) => key);
       setRunning(true);
       setLogs([]);
       activeRunTokenRef.current += 1;
@@ -162,7 +162,10 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const preferFlowKeys = ['jsSettings', 'clickSettings'] as const;
         const availableKey = preferFlowKeys.find((k) => runtimeModel.getFlow(k));
         const flowKey = availableKey || 'jsSettings';
-        const preparedForPreview = await prepareRunJsCode(code, { preprocessTemplates: true });
+        const [preparedWithTemplates, preparedWithoutTemplates] = await Promise.all([
+          prepareRunJsCode(code, { preprocessTemplates: true }).catch(() => undefined),
+          prepareRunJsCode(code, { preprocessTemplates: false }).catch(() => undefined),
+        ]);
 
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
@@ -180,8 +183,12 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         };
         cancelActiveCaptureRef.current = restore;
         proto.run = async function patchedRun(this: { globals?: Record<string, any> }, jsCode: string) {
-          // Be tolerant to flows that run either the raw source or the prepared (preprocessed/compiled) code.
-          const isPreviewCode = jsCode === preparedForPreview || jsCode === code;
+          // Be tolerant to flows that run:
+          // - raw source
+          // - prepared code with preprocessTemplates=true (v1-compatible)
+          // - prepared code with preprocessTemplates=false (v2-compatible)
+          const isPreviewCode =
+            jsCode === code || jsCode === preparedWithTemplates || jsCode === preparedWithoutTemplates;
           const prevConsole = this?.globals?.console;
           const prevLoggerDescriptor = this?.globals?.ctx
             ? Object.getOwnPropertyDescriptor(this.globals.ctx, 'logger')
@@ -254,15 +261,11 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
               { version },
             );
           } else if (typeof eventName === 'string') {
-            await m.dispatchEvent(eventName, { preview: { code, version } }, { sequential: true, useCache: false });
+            await m.dispatchEvent(eventName, { preview: { code } }, { sequential: true, useCache: false });
           } else if (isManual) {
-            await m.applyFlow(flowKey, { preview: { code, version } });
+            await m.applyFlow(flowKey, { preview: { code } });
           } else {
-            await m.dispatchEvent(
-              'beforeRender',
-              { preview: { code, version } },
-              { sequential: true, useCache: false },
-            );
+            await m.dispatchEvent('beforeRender', { preview: { code } }, { sequential: true, useCache: false });
           }
         };
 
@@ -277,7 +280,8 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const pushRunResultLog = (res: RunResult) => {
           if (!res?.success) {
             const errText = res?.timeout ? tr('Execution timed out') : String(res?.error || tr('Unknown error'));
-            const pos = parseErrorLineColumn(res?.error);
+            const hideLocation = !!(res?.error as any)?.__runjsHideLocation;
+            const pos = hideLocation ? null : parseErrorLineColumn(res?.error);
             if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
               setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
             } else {
@@ -322,7 +326,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         setRunning(false);
       }
     },
-    [hostCtx, version, tr],
+    [hostCtx, version],
   );
 
   return { run, logs, clearLogs, running };

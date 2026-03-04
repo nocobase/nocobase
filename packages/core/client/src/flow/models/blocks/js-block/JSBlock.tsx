@@ -92,7 +92,7 @@ JSBlockModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: 'v1',
+          version: 'v2',
           code:
             `// Welcome to the JS block
 // Create powerful interactive components with JavaScript

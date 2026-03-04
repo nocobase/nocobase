@@ -718,7 +718,7 @@ export const DefaultValue = connect((props: Props) => {
           const firstPath = item?.paths?.[0];
           if (firstPath === 'constant') return '';
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v1' };
+          if (firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {
