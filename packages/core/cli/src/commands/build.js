@@ -13,24 +13,24 @@ const { Command } = require('commander');
 const { run, nodeCheck, isPackageValid, buildIndexHtml } = require('../util');
 
 async function buildClientV2() {
-  const configPath = resolve(process.env.APP_PACKAGE_ROOT, 'client-v2/vite.config.ts');
+  const configPath = resolve(process.env.APP_PACKAGE_ROOT, 'client-v2/rspack.config.js');
   if (!existsSync(configPath)) {
     console.log(`client-v2 config not found: ${configPath}`);
     return;
   }
-  await run('vite', ['build', '--config', configPath], {
+  await run('rspack', ['build', '--config', configPath], {
     env: {
       ...process.env,
       APP_ENV: 'production',
       NODE_ENV: 'production',
-      VITE_API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
-      VITE_API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
-      VITE_API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
-      VITE_API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-      VITE_WS_URL: process.env.WEBSOCKET_URL || '',
-      VITE_WS_PATH: process.env.WS_PATH,
-      VITE_ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
-      VITE_ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+      API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+      API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+      API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+      API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+      WEBSOCKET_URL: process.env.WEBSOCKET_URL || '',
+      WS_PATH: process.env.WS_PATH,
+      ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
     },
   });
 }

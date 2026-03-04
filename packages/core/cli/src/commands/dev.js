@@ -100,22 +100,26 @@ module.exports = (cli) => {
 
       const runDevClientV2 = () => {
         console.log('starting client-v2', 1 * clientV2Port);
-        run('vite', ['--config', `${APP_PACKAGE_ROOT}/client-v2/vite.config.ts`, '--port', `${clientV2Port}`], {
-          env: {
-            ...process.env,
-            APP_V2_PORT: `${clientV2Port}`,
-            VITE_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,
-            VITE_API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
-            VITE_API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
-            VITE_API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
-            VITE_API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-            VITE_WS_URL:
-              process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : ''),
-            VITE_WS_PATH: process.env.WS_PATH,
-            VITE_ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
-            VITE_ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+        run(
+          'rspack',
+          ['serve', '--config', `${APP_PACKAGE_ROOT}/client-v2/rspack.config.js`, '--port', `${clientV2Port}`],
+          {
+            env: {
+              ...process.env,
+              APP_V2_PORT: `${clientV2Port}`,
+              RSPACK_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,
+              API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+              API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+              API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+              API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+              WEBSOCKET_URL:
+                process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : ''),
+              WS_PATH: process.env.WS_PATH,
+              ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+              ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+            },
           },
-        });
+        );
       };
 
       if (clientV2Only) {
