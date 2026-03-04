@@ -31,7 +31,7 @@ Mengambil inspirasi dari konsep "talenta berbentuk T" — keluasan horizontal + 
 - **Horizontal (Tabel Utama)**: Mencakup kemampuan umum untuk semua tipe bisnis — nomor tiket, status, petugas, SLA, dan bidang inti lainnya.
 - **Vertikal (Tabel Ekstensi)**: Bidang khusus yang mendalami bisnis tertentu — perbaikan peralatan memiliki nomor seri, keluhan memiliki rencana kompensasi.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Mengapa didesain seperti ini?**
 
@@ -61,7 +61,7 @@ Bukan sekadar "fitur AI", melainkan "karyawan AI". Setiap AI memiliki peran, kep
 
 #### Filosofi Tiga: Siklus Mandiri Pengetahuan
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Ini membentuk lingkaran tertutup **Akumulasi Pengetahuan - Aplikasi Pengetahuan**.
 
@@ -71,7 +71,7 @@ Ini membentuk lingkaran tertutup **Akumulasi Pengetahuan - Aplikasi Pengetahuan*
 
 ### 2.1 Ikhtisar Hubungan Entitas
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Detail Tabel Inti
@@ -296,18 +296,18 @@ Ini adalah inti dari sistem, menggunakan desain "tabel lebar" (wide table) yang 
 
 **Alur Utama (Dari Kiri ke Kanan)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Alur Cabang**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **State Machine Lengkap**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Aturan Transisi Status Utama
 
@@ -337,7 +337,7 @@ Ini adalah inti dari sistem, menggunakan desain "tabel lebar" (wide table) yang 
 
 ### 4.2 Logika Perhitungan SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Saat Membuat Tiket
 
@@ -466,7 +466,7 @@ Setiap karyawan AI dikonfigurasi dengan 4 tugas spesifik:
 
 ### 5.3 Karyawan AI dan Siklus Hidup Tiket
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Contoh Respons AI
 
@@ -528,12 +528,12 @@ Audit kualitas balasan yang dikelola oleh Grace akan memblokir masalah berikut:
 
 ### 6.1 Sumber Pengetahuan
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Alur Konversi Tiket ke Pengetahuan
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Dimensi Evaluasi**:
 - **Generalitas**: Apakah ini masalah umum?
@@ -580,19 +580,19 @@ Saat staf membuka detail tiket, Max secara otomatis merekomendasikan pengetahuan
 
 #### WF-T01: Alur Pembuatan Tiket
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Analisis AI Tiket
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Terjemahan dan Audit Komentar
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Pembuatan Pengetahuan
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Tugas Terjadwal
 
@@ -609,11 +609,11 @@ Saat staf membuka detail tiket, Max secara otomatis merekomendasikan pengetahuan
 
 ### 8.1 Admin Backend
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Portal Pelanggan
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Desain Dasbor
 

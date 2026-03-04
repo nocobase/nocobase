@@ -24,7 +24,7 @@ Page d'inscription
 
 Si l'inscription n'est pas autorisée, le lien de création de compte n'apparaît pas sur la page de connexion.
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a3745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 Lorsque l'inscription n'est pas autorisée, la page d'inscription est inaccessible.
 

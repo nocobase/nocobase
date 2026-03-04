@@ -30,7 +30,7 @@ Jeśli wtyczka jest włączona dla podaplikacji, klucz jest domyślnie zapisywan
 
 Wykorzystuje szyfrowanie kopertowe (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Proces tworzenia kluczy
 1.  Przy pierwszym tworzeniu zaszyfrowanego pola automatycznie generowany jest 32-bitowy `klucz aplikacji` i zapisywany w domyślnym katalogu przechowywania w kodowaniu Base64.

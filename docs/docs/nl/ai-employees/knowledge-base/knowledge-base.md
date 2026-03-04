@@ -55,10 +55,10 @@ Een lokale kennisbank is een kennisbank die lokaal in NocoBase wordt opgeslagen.
 
 Een alleen-lezen kennisbank is een kennisbank waarvan de documenten en vectorgegevens extern worden beheerd. Alleen een vector databaseverbinding wordt in NocoBase aangemaakt (momenteel wordt alleen PGVector ondersteund).
 
-![20251023101743](https://static-docs.nocobase.com/2025101743.png)
+![20251023101743](https://static-docs.nocobase.com/20251023101743.png)
 
 ### Externe kennisbank
 
 Een externe kennisbank is een kennisbank waarvan de documenten en vectorgegevens extern worden beheerd. Het ophalen van gegevens uit de vector database moet door ontwikkelaars worden uitgebreid, waardoor het gebruik van vector databases die momenteel niet door NocoBase worden ondersteund, mogelijk wordt.
 
-![20251023101949](https://static-docs.nocobase.com/2025101949.png)
+![20251023101949](https://static-docs.nocobase.com/20251023101949.png)

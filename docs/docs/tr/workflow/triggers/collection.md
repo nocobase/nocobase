@@ -90,4 +90,4 @@ Düğümlerin yapılandırması, belirli düğüm türleri için hazırlanan bel
 
 Bu iş akışını etkinleştirin ve arayüz üzerinden yeni bir sipariş oluşturarak test edin. "iPhone 14 Pro" için sipariş verdikten sonra, ilgili ürünün stoğu 9'a düşecektir. Eğer "iPhone 13 Pro" için sipariş verilirse, stok yetersizliği nedeniyle sipariş silinecektir.
 
-![Koleksiyon Olayı_Örnek_Yeni Sipariş Yürütme Sonucu](https://static-docs.nocobase.com/24cbe31e24ba4804b3bd48d99415c54f.png)
+![Koleksiyon Olayı_Örnek_Yeni Sipariş Yürütme Sonucu](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)

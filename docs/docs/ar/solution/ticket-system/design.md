@@ -31,7 +31,7 @@
 - **الأفقي (الجدول الرئيسي)**: يغطي القدرات العامة لجميع أنواع الأعمال — رقم التذكرة، الحالة، المسؤول، اتفاقية مستوى الخدمة (SLA) وغيرها من الحقول الأساسية.
 - **الرأسي (جداول التوسعة)**: حقول متخصصة متعمقة في أعمال محددة — إصلاح المعدات يحتوي على الأرقام التسلسلية، والشكاوى تحتوي على خطط التعويض.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **لماذا هذا التصميم؟**
 
@@ -61,7 +61,7 @@
 
 #### الفلسفة الثالثة: التدوير الذاتي للمعرفة
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 هذا يشكل حلقة مغلقة من **ترسيب المعرفة - تطبيق المعرفة**.
 
@@ -71,7 +71,7 @@
 
 ### 2.1 نظرة عامة على علاقات الكيانات
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 تفاصيل الجداول الأساسية
@@ -296,18 +296,18 @@
 
 **المسار الرئيسي (من اليسار إلى اليمين)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **المسارات الفرعية**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **آلة الحالة الكاملة**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 قواعد انتقال الحالات الرئيسية
 
@@ -337,7 +337,7 @@
 
 ### 4.2 منطق حساب SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### عند إنشاء التذكرة
 
@@ -466,7 +466,7 @@
 
 ### 5.3 موظفو الذكاء الاصطناعي ودورة حياة التذكرة
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 أمثلة على استجابات الذكاء الاصطناعي
 
@@ -526,12 +526,12 @@
 
 ### 6.1 مصادر المعرفة
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 إجراء تحويل التذكرة إلى معرفة
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **أبعاد التقييم**:
 - **العمومية**: هل هذه مشكلة شائعة؟
@@ -576,19 +576,19 @@
 
 #### WF-T01: إجراء إنشاء التذكرة
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: تحليل التذكرة بواسطة AI
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: ترجمة ومراجعة التعليقات
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: توليد المعرفة
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 المهام المجدولة
 
@@ -605,11 +605,11 @@
 
 ### 8.1 لوحة الإدارة الخلفية
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 بوابة العملاء
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 تصميم لوحة البيانات
 

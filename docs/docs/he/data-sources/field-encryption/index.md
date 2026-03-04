@@ -30,7 +30,7 @@ pkg: "@nocobase/plugin-field-encryption"
 
 הצפנת מעטפה (Envelope Encryption)
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### תהליך יצירת מפתח
 1. בפעם הראשונה שנוצר שדה מוצפן, המערכת מייצרת באופן אוטומטי `מפתח יישום` באורך 32 סיביות, והוא נשמר בתיקיית האחסון המוגדרת כברירת מחדל בקידוד Base64.

@@ -20,7 +20,7 @@ De plus, vous pouvez également utiliser la collection d'utilisateurs sur une pa
 
 ## Ajouter un utilisateur
 
-![](https://static-docs.nocobase.com/4f8ef9ff1c17f275b62b462f6385b19.png)
+![](https://static-docs.nocobase.com/4f8ef9ffc1c17f275b62b462f6385b19.png)
 
 ![](https://static-docs.nocobase.com/437828173950bd7c21b40a6243ffe150.png)
 
@@ -32,7 +32,7 @@ De plus, vous pouvez également utiliser la collection d'utilisateurs sur une pa
 
 ## Modifier le mot de passe utilisateur
 
-![](https://static-docs.nocobase.com/26c4c4cebda3d144dc4e9b728c2ede5.png)
+![](https://static-docs.nocobase.com/26c24c4cebda3d144dc4e9b728c2ede5.png)
 
 ![](https://static-docs.nocobase.com/23a2b2223cb5b387b3699cc6143302e8.png)
 

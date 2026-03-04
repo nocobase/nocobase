@@ -31,7 +31,7 @@
 - **Горизонтальна (головна таблиця)**: охоплює загальні можливості для всіх типів бізнесу — номер, статус, виконавець, SLA та інші основні поля.
 - **Вертикальна (таблиці розширень)**: спеціалізовані поля для конкретних видів діяльності — ремонт обладнання має серійні номери, скарги мають плани компенсації.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Чому обрано такий дизайн?**
 
@@ -61,7 +61,7 @@
 
 #### Концепція третя: Самоциркуляція знань
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Це формує замкнений цикл **Накопичення знань — Застосування знань**.
 
@@ -71,7 +71,7 @@
 
 ### 2.1 Огляд зв'язків між сутностями
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Детальний опис основних таблиць
@@ -296,18 +296,18 @@
 
 **Основний процес (зліва направо)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Допоміжні процеси**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Повна машина станів**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Ключові правила зміни статусів
 
@@ -337,7 +337,7 @@
 
 ### 4.2 Логіка розрахунку SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### При створенні тікета
 
@@ -466,7 +466,7 @@
 
 ### 5.3 ШІ-співробітники та життєвий цикл тікета
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Приклади відповідей ШІ
 
@@ -526,12 +526,12 @@
 
 ### 6.1 Джерела знань
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Процес перетворення тікета на знання
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Критерії оцінки**:
 - **Універсальність**: Чи є це поширеною проблемою?
@@ -578,19 +578,19 @@
 
 #### WF-T01: Процес створення тікета
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: ШІ-аналіз тікета
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Переклад та перевірка коментарів
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Генерація знань
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Завдання за розкладом
 
@@ -607,11 +607,11 @@
 
 ### 8.1 Панель адміністратора
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Портал клієнта
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Дизайн дашбордів
 

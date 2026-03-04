@@ -5,4 +5,4 @@ Tento dokument byl přeložen umělou inteligencí. V případě nepřesností s
 
 # Mapa učení
 
-![20250915220745](https://static-docs.nocobase.com/20250915220745.png)
+![20250915220745](https://static-docs.nocobase.com/20251102202401.png)

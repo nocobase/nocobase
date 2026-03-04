@@ -23,13 +23,13 @@ In Kombination mit dem Knoten „Antwortnachricht“ können Sie eine Antwortnac
 
 Wenn Sie einen Workflow erstellen, wählen Sie als Typ „Ereignis vor der Aktion“:
 
-![Ereignis vor der Aktion erstellen](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe984fc4b6.png)
+![Ereignis vor der Aktion erstellen](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9864fc4b6.png)
 
 ### Sammlung auswählen
 
 Im Trigger eines Interzeptions-Workflows konfigurieren Sie zuerst die Sammlung, die der Aktion entspricht:
 
-![Interzeptor-Ereignis-Konfiguration_Sammlung](https://static-docs.nocobase.com/8f7122caca159d334cf77f838d53d6.png)
+![Interzeptor-Ereignis-Konfiguration_Sammlung](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 Wählen Sie anschließend den Interzeptionsmodus. Sie können festlegen, dass nur Aktionsschaltflächen abgefangen werden, die an diesen Workflow gebunden sind, oder dass alle ausgewählten Aktionen für diese Sammlung abgefangen werden (unabhängig davon, von welchem Formular sie stammen und ohne dass der entsprechende Workflow gebunden werden muss).
 
@@ -92,7 +92,7 @@ Damit ist die Konfiguration des entsprechenden Workflows abgeschlossen. Sie kön
 
 Wenn der Knoten „Workflow beenden“ so konfiguriert ist, dass er mit dem Status „Erfolg“ beendet wird und dieser Knoten ausgeführt wird, wird die Anfrage für diese Aktion weiterhin abgefangen. Die zurückgegebene Antwortnachricht wird jedoch mit dem Status „Erfolg“ (und nicht „Fehler“) angezeigt:
 
-![Antwortnachricht mit Erfolgsstatus](https://static-docs.nocobase.com/9559b3b6067144759451294b18c790e.png)
+![Antwortnachricht mit Erfolgsstatus](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## Beispiel
 

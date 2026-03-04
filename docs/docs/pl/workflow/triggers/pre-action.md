@@ -85,7 +85,7 @@ Po skonfigurowaniu wyzwalacza mogą Państwo dostosować odpowiednią logikę de
 
 W tym momencie konfiguracja odpowiadającego przepływu pracy jest zakończona. Mogą Państwo teraz spróbować przesłać dane, które nie spełniają warunków skonfigurowanych w węźle warunkowym przepływu pracy, aby uruchomić logikę przechwytywania. Wówczas zobaczą Państwo zwróconą wiadomość zwrotną:
 
-![Wiadomość Zwrotna o Błędzie](https://static-docs.nocobase.com/06bd4a6b6ec499c39987f63a6a.png)
+![Wiadomość Zwrotna o Błędzie](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 ### Status wiadomości zwrotnej
 

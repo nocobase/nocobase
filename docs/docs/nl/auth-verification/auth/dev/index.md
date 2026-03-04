@@ -168,7 +168,7 @@ Als u van de inlogpagina naar de registratiepagina moet navigeren, moet u dit ze
 
 ### Beheerinstellingenformulier
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4f5afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 Bovenaan vindt u de algemene authenticatorconfiguratie, en onderaan het deel van het aangepaste configuratieformulier dat kan worden geregistreerd.
 

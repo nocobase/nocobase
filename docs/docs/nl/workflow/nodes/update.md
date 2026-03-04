@@ -16,7 +16,7 @@ In de workflow configuratie-interface klikt u op de plusknop ('+') in de workflo
 
 ## Node configuratie
 
-![更新节点_节点配置](https://static-docs.nocobase.com/98e0f941c7275fc835f08260d0b2e86.png)
+![更新节点_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 ### Collectie
 
@@ -45,6 +45,6 @@ Let op: Gegevens die door de 'Gegevens bijwerken' node in een workflow worden bi
 
 Stel bijvoorbeeld dat u bij het aanmaken van een nieuw 'Artikel' automatisch het veld 'Aantal artikelen' in de 'Artikelcategorie' collectie wilt bijwerken. Dit kunt u realiseren met de 'Gegevens bijwerken' node:
 
-![更新节点_示例_节点配置](https://static-docs.nocobase.com/98e0f941c7275fc835f08260d0b2e86.png)
+![更新节点_示例_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 Nadat de workflow is geactiveerd, wordt het veld 'Aantal artikelen' in de 'Artikelcategorie' collectie automatisch bijgewerkt naar het huidige aantal artikelen + 1.

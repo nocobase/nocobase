@@ -31,7 +31,7 @@ Inspirada en el concepto de "talento en forma de T": amplitud horizontal + profu
 - **Horizontal (Tabla principal)**: Capacidades universales que cubren todos los tipos de negocio: número de ticket, estado, encargado, SLA y otros campos principales.
 - **Vertical (Tablas de extensión)**: Campos especializados para tipos de negocio específicos: la reparación de equipos tiene números de serie, las reclamaciones tienen planes de compensación.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **¿Por qué este diseño?**
 
@@ -61,7 +61,7 @@ No se trata de "funciones de IA", sino de "empleados de IA". Cada IA tiene un ro
 
 #### Filosofía tres: Autocirculación del conocimiento
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Esto forma un ciclo cerrado de **Acumulación de conocimiento - Aplicación de conocimiento**.
 
@@ -71,7 +71,7 @@ Esto forma un ciclo cerrado de **Acumulación de conocimiento - Aplicación de c
 
 ### 2.1 Resumen de la relación entre entidades
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Detalle de las tablas principales
@@ -296,18 +296,18 @@ Este es el núcleo del sistema, utiliza un diseño de "tabla ancha" que incluye 
 
 **Flujo principal (de izquierda a derecha)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Flujos secundarios**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Máquina de estados completa**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Reglas clave de transición de estados
 
@@ -337,7 +337,7 @@ Este es el núcleo del sistema, utiliza un diseño de "tabla ancha" que incluye 
 
 ### 4.2 Lógica de cálculo de SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Al crear el ticket
 
@@ -467,7 +467,7 @@ Cada empleado de IA tiene configuradas 4 tareas específicas:
 
 ### 5.3 Empleados de IA y ciclo de vida del ticket
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Ejemplos de respuesta de IA
 
@@ -527,12 +527,12 @@ La revisión de calidad de respuesta de Grace bloquea los siguientes problemas:
 
 ### 6.1 Fuentes de conocimiento
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Flujo de ticket a conocimiento
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Dimensiones de evaluación**:
 - **Generalidad**: ¿Es este un problema común?
@@ -580,19 +580,19 @@ Cuando un agente abre los detalles del ticket, Max recomienda automáticamente c
 
 #### WF-T01: Flujo de creación de tickets
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Análisis de IA del ticket
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Traducción y revisión de comentarios
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Generación de conocimiento
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Tareas programadas
 
@@ -609,11 +609,11 @@ Cuando un agente abre los detalles del ticket, Max recomienda automáticamente c
 
 ### 8.1 Administración del backend
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Portal del cliente
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Diseño del tablero
 

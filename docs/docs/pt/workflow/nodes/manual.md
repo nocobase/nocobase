@@ -32,7 +32,7 @@ Um nó manual precisa que você especifique um usuário como executor da tarefa 
 
 Selecione um usuário ou escolha a chave primária ou estrangeira dos dados do usuário a partir do contexto, usando uma variável.
 
-![Nó Manual_Configurar_Responsável_Selecionar Variável](https://static-docs.nocobase.com/22fbca3b8e21fda3a81019037001445.png)
+![Nó Manual_Configurar_Responsável_Selecionar Variável](https://static-docs.nocobase.com/22fbca3b8e21fda3a831019037001445.png)
 
 :::info{title=Observação}
 Atualmente, a opção de responsável para nós manuais não suporta múltiplos usuários. Isso será implementado em uma versão futura.

@@ -12,7 +12,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 Nachdem Sie die App eingerichtet haben, kopieren Sie die **SSO-URL**, die **Entitäts-ID** und das **Zertifikat**.
 
-![](https://static-docs.nocobase.com/aafd30a794730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## Neuen Authentifikator in NocoBase hinzufügen
 

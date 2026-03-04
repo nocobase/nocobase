@@ -16,7 +16,7 @@ Obecnie węzeł usuwania nie obsługuje usuwania pojedynczych rekordów; zawsze 
 
 W interfejsie konfiguracji `przepływu pracy` proszę kliknąć przycisk plusa („+”) w przepływie, aby dodać węzeł „Usuń dane”:
 
-![Tworzenie węzła usuwania danych](https://static-docs.nocobase.com/e1d6b87251fcdbed6c7f50e5570da2.png)
+![Tworzenie węzła usuwania danych](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
 
 ## Konfiguracja węzła
 

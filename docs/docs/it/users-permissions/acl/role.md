@@ -26,7 +26,7 @@ L'identificatore del ruolo, che è un identificatore univoco di sistema, Le perm
 
 Il ruolo predefinito è quello che viene assegnato automaticamente ai nuovi utenti se non viene specificato un ruolo specifico durante la loro creazione.
 
-![](https://static-docs.nocobase.com/f41b47ff55ca28715c486dc45bc1708.png)
+![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
 ## Centro Personale
 

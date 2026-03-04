@@ -57,7 +57,7 @@ Buat layanan basis data
 
 Setelah memilih layanan basis data, pada opsi *dropdown* "Tabel Jarak Jauh", pilih koleksi data yang ingin Anda hubungkan.
 
-![Pilih koleksi data yang ingin dihubungkan](https://static-docs.nocobase.com/e91fd61552b52b4fc01b3808053cc8dc4.png)
+![Pilih koleksi data yang ingin dihubungkan](https://static-docs.nocobase.com/e91fd6152b52b4fc01b3808053cc8dc4.png)
 
 Konfigurasi informasi bidang
 

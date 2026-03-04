@@ -36,7 +36,7 @@ Vraťte se do konzole Google a na stránce **Podrobnosti o poskytovateli služeb
 
 ![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
-![](https://static-docs.nocobase.com/c7de1f8b84f1335de110e5a7c96255c4.png)
+![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 
 V části **Mapování atributů** přidejte mapování pro odpovídající atributy.
 

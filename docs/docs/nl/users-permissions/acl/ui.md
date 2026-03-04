@@ -32,11 +32,11 @@ Het volledige configuratieproces ziet er als volgt uit:
 
 **Bekijken**: Bepaalt of specifieke velden zichtbaar zijn op veldniveau. Hiermee kunt u bijvoorbeeld instellen welke velden van de collectie 'Bestellingen' zichtbaar zijn voor bepaalde rollen.
 
-![](https://static-docs.nocobase.com/30dea84d84d95039e6f7b180955a6cf.png)
+![](https://static-docs.nocobase.com/30dea84d984d95039e6f7b180955a6cf.png)
 
 In de UI worden in het blok van de collectie 'Bestellingen' alleen velden weergegeven waarvoor rechten zijn geconfigureerd. Systeemvelden (Id, CreatedAt, LastUpdatedAt) behouden hun 'bekijken'-rechten, zelfs zonder specifieke configuratie.
 
-![](https://static-docs.nocobase.com/40cc4717efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **Bewerken**: Bepaalt of velden bewerkt en opgeslagen (bijgewerkt) kunnen worden.
 

@@ -18,7 +18,7 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 ### APIキーの追加
 
-![](https://static-docs.nocobase.com/46181872fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **注意事項**
 

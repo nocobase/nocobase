@@ -16,11 +16,11 @@ Questo plugin offre un'interfaccia di gestione utenti all'interno del centro di 
 
 Inoltre, può anche aggiungere diversi blocchi dalla collezione Utenti nelle pagine per gestire gli utenti, come ad esempio i blocchi tabella:
 
-![](https://static-docs.nocobase.com/76b5a65d4659e8f18a4568a7c9.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## Aggiungere Utente
 
-![](https://static-docs.nocobase.com/4f8ef9ffc17f275b62b462f6385b19.png)
+![](https://static-docs.nocobase.com/4f8ef9ffc1c17f275b62b462f6385b19.png)
 
 ![](https://static-docs.nocobase.com/437828173950bd7c21b40a6243ffe150.png)
 

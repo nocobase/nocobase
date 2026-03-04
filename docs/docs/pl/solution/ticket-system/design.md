@@ -31,7 +31,7 @@ Nawiązuje ona do koncepcji "talentu typu T" — pozioma szerokość + pionowa g
 - **Poziomo (Tabela główna)**: Obejmuje uniwersalne możliwości dla wszystkich typów biznesowych — numer zgłoszenia, status, osoba przypisana, SLA i inne kluczowe pola.
 - **Pionowo (Tabele rozszerzeń)**: Specjalistyczne pola dla konkretnych rodzajów działalności — naprawa sprzętu zawiera numery seryjne, a reklamacje zawierają plany rekompensat.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Dlaczego taka konstrukcja?**
 
@@ -61,7 +61,7 @@ To nie tylko "funkcje AI", ale "pracownicy AI". Każdy AI ma określoną rolę, 
 
 #### Koncepcja trzecia: Samoobieg wiedzy
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Tworzy to zamkniętą pętlę **gromadzenia wiedzy i jej stosowania**.
 
@@ -71,7 +71,7 @@ Tworzy to zamkniętą pętlę **gromadzenia wiedzy i jej stosowania**.
 
 ### 2.1 Przegląd relacji encji
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Szczegóły kluczowych tabel
@@ -296,18 +296,18 @@ Jest to rdzeń systemu, wykorzystujący konstrukcję "szerokiej tabeli", w któr
 
 **Główny proces (od lewej do prawej)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Procesy poboczne**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Pełny automat stanów**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Kluczowe reguły zmiany statusu
 
@@ -337,7 +337,7 @@ Jest to rdzeń systemu, wykorzystujący konstrukcję "szerokiej tabeli", w któr
 
 ### 4.2 Logika obliczeń SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Przy tworzeniu zgłoszenia
 
@@ -466,7 +466,7 @@ Każdy pracownik AI ma skonfigurowane 4 konkretne zadania:
 
 ### 5.3 Pracownicy AI w cyklu życia zgłoszenia
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Przykłady odpowiedzi AI
 
@@ -526,12 +526,12 @@ Grace odpowiada za audyt jakości odpowiedzi, blokując następujące problemy:
 
 ### 6.1 Źródła wiedzy
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Proces przekształcania zgłoszenia w wiedzę
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Wymiary oceny**:
 - **Uniwersalność**: Czy to częsty problem?
@@ -576,19 +576,19 @@ Gdy agent otwiera szczegóły zgłoszenia, Max automatycznie rekomenduje wiedzę
 
 #### WF-T01: Proces tworzenia zgłoszenia
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Analiza zgłoszenia przez AI
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Tłumaczenie i audyt komentarzy
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Generowanie wiedzy
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Zadania zaplanowane
 
@@ -605,11 +605,11 @@ Gdy agent otwiera szczegóły zgłoszenia, Max automatycznie rekomenduje wiedzę
 
 ### 8.1 Panel administracyjny
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Portal klienta
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Projekt pulpitów nawigacyjnych
 

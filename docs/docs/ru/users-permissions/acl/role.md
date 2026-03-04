@@ -20,7 +20,7 @@ pkg: '@nocobase/plugin-acl'
 
 Идентификатор роли — это уникальный системный идентификатор. Вы можете настраивать роли по умолчанию, но системные роли удалить нельзя.
 
-![](https://static-docs.nocobase.com/35f346db4f9f12f9bee4dea63302.png)
+![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
 ### Настройка роли по умолчанию
 

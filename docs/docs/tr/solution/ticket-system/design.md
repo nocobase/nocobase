@@ -31,7 +31,7 @@ Müşteri hizmetlerinin sıkıcı süreç operasyonlarına değil, sorunları ç
 - **Yatay (Ana Tablo)**: Tüm iş türlerini kapsayan evrensel yetenekler — numara, durum, atanan kişi, SLA gibi temel alanlar.
 - **Dikey (Genişletme Tabloları)**: Belirli iş kollarına özgü uzmanlık alanları — cihaz onarımı için seri numaraları, şikayetler için tazminat planları.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Neden Bu Tasarım?**
 
@@ -61,7 +61,7 @@ Sadece "AI özellikleri" değil, "AI çalışanları". Her AI'nın net bir rolü
 
 #### Felsefe 3: Bilgi Öz-Döngüsü
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Bu, bir **Bilgi Birikimi - Bilgi Uygulaması** kapalı döngüsü oluşturur.
 
@@ -71,7 +71,7 @@ Bu, bir **Bilgi Birikimi - Bilgi Uygulaması** kapalı döngüsü oluşturur.
 
 ### 2.1 Varlık İlişkilerine Genel Bakış
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Temel Tablo Detayları
@@ -296,18 +296,18 @@ Sistemin çekirdeğidir; sık kullanılan tüm alanları ana tabloda toplayan "g
 
 **Ana Akış (Soldan Sağa)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Yan Akışlar**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Tam Durum Makinesi**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Kritik Durum Geçiş Kuralları
 
@@ -337,7 +337,7 @@ Sistemin çekirdeğidir; sık kullanılan tüm alanları ana tabloda toplayan "g
 
 ### 4.2 SLA Hesaplama Mantığı
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Talep Oluşturulduğunda
 
@@ -466,7 +466,7 @@ Her AI çalışanı 4 spesifik görevle yapılandırılmıştır:
 
 ### 5.3 AI Çalışanları ve Talep Yaşam Döngüsü
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 AI Yanıt Örnekleri
 
@@ -528,12 +528,12 @@ Grace tarafından yürütülen yanıt kalitesi denetimi şu sorunları engeller:
 
 ### 6.1 Bilgi Kaynakları
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Talepten Bilgiye Dönüşüm Akışı
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Değerlendirme Boyutları**:
 - **Genellik**: Bu yaygın bir sorun mu?
@@ -578,19 +578,19 @@ Bir temsilci talep detaylarını açtığında, Max otomatik olarak ilgili bilgi
 
 #### WF-T01: Talep Oluşturma Akışı
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Talep AI Analizi
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Yorum Çevirisi ve Denetimi
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Bilgi Oluşturma
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Zamanlanmış Görevler
 
@@ -607,11 +607,11 @@ Bir temsilci talep detaylarını açtığında, Max otomatik olarak ilgili bilgi
 
 ### 8.1 Yönetim Paneli
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Müşteri Portalı
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Gösterge Paneli Tasarımı
 

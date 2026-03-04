@@ -30,7 +30,7 @@ Se il plugin è abilitato da una sotto-applicazione, la chiave viene salvata di 
 
 Utilizza la crittografia a busta (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Processo di creazione della chiave
 1. La prima volta che viene creato un campo crittografato, il sistema genera automaticamente una `chiave applicazione` a 32 bit, che viene salvata nella directory di archiviazione predefinita con codifica Base64.

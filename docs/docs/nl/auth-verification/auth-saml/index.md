@@ -59,4 +59,4 @@ Het toewijzen van gebruikersorganisaties en -rollen wordt momenteel niet onderst
 
 Ga naar de inlogpagina en klik op de knop onder het inlogformulier om in te loggen via een externe service.
 
-![](https://static-docs.nocobase.com/7496365c9d36a294948e6adeb5b24bc.png)
+![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)

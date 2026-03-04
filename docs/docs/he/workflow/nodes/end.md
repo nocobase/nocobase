@@ -14,7 +14,7 @@
 
 ## הגדרות צומת
 
-![סיום תהליך עבודה_הגדרות צומת](https://static-docs.nocobase.com/bb6a397f25e9afb72836a14a0fe0683e.png)
+![סיום תהליך עבודה_הגדרות צומת](https://static-docs.nocobase.com/bb6a597f25e9afb72836a14a0fe0683e.png)
 
 ### סטטוס סיום
 

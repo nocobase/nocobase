@@ -15,7 +15,7 @@ pkg: '@nocobase/plugin-users'
 
 Крім того, ви також можете додавати різні блоки з колекції Користувачі для керування користувачами, наприклад, табличні блоки:
 
-![](https://static-docs.nocobase.com/76b59541a9e8f18a4568a7c9.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## Додати користувача
 

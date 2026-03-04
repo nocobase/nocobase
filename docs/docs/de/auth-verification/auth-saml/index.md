@@ -24,7 +24,7 @@ Gehen Sie zur Verwaltungsseite der Benutzerauthentifizierungs-Plugins.
 
 Hinzufügen - SAML
 
-![](https://static-docs.nocobase.com/5076fe5806b7799be308bbaf7c4425d.png)
+![](https://static-docs.nocobase.com/5076fe56086b7799be308bbaf7c4425d.png)
 
 ## Konfiguration
 

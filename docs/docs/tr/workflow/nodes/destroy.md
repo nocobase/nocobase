@@ -21,7 +21,7 @@ Silme düğümünün temel kullanımı, güncelleme düğümüne benzer. Ancak s
 
 ## Düğüm Yapılandırması
 
-![Silme düğümü_Düğüm yapılandırması](https://static-docs.nocobase.com/580600c2b3ef4e01dfa48b23539648e.png)
+![Silme düğümü_Düğüm yapılandırması](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
 
 ### Koleksiyon
 

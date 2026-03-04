@@ -46,7 +46,7 @@ Acceda alla tela del flusso di lavoro, clicchi sul trigger per aprire la finestr
 
 Quindi selezioni la modalità di attivazione, che può essere locale o globale:
 
-![Configurazione del flusso di lavoro_Selezione della modalità di attivazione](https://static-docs.nocobase.com/317809c48b2f2a38aedc7d08abdadc.png)
+![Configurazione del flusso di lavoro_Selezione della modalità di attivazione](https://static-docs.nocobase.com/317809c48b2f2a2d38aedc7d08abdadc.png)
 
 Dove:
 
@@ -178,7 +178,7 @@ Se l'evento è configurato in modalità globale, non è necessario utilizzare il
 
 Come mostrato nella figura seguente:
 
-![Ordine di esecuzione dell'azione](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Ordine di esecuzione dell'azione](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Differenza rispetto all'Evento della Collezione
 

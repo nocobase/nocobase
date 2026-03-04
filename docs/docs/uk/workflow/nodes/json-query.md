@@ -15,7 +15,7 @@ pkg: '@nocobase/plugin-workflow-json-query'
 
 В інтерфейсі конфігурації робочого процесу натисніть кнопку плюса («+») у процесі, щоб додати вузол «Обчислення JSON»:
 
-![Створення вузла](https://static-docs.nocobase.com/7de76517539ad9dfc88b7160f1d0dd7.png)
+![Створення вузла](https://static-docs.nocobase.com/7de796517539ad9dfc88b7160f1d0dd7.png)
 
 :::info{title=Примітка}
 Зазвичай вузол «Обчислення JSON» створюється під іншими вузлами даних для їхнього аналізу.

@@ -31,7 +31,7 @@ In Anlehnung an das Konzept der „T-förmigen Talente“ – horizontale Breite
 - **Horizontal (Haupttabelle)**: Deckt allgemeine Funktionen für alle Geschäftstypen ab – Ticketnummer, Status, Bearbeiter, SLA und andere Kernfelder.
 - **Vertikal (Erweiterungstabellen)**: Vertieft spezifische Geschäftsfelder – die Gerätereparatur enthält Seriennummern, Beschwerden enthalten Entschädigungspläne.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Warum dieses Design?**
 
@@ -61,7 +61,7 @@ Nicht nur „KI-Funktionen“, sondern „KI-Mitarbeiter“. Jede KI hat eine kl
 
 #### Philosophie Drei: Wissens-Selbstkreislauf
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Dies bildet einen geschlossenen Kreislauf aus **Wissensakkumulation und Wissensanwendung**.
 
@@ -71,7 +71,7 @@ Dies bildet einen geschlossenen Kreislauf aus **Wissensakkumulation und Wissensa
 
 ### 2.1 Übersicht der Entitätsbeziehungen
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Details der Kerntabellen
@@ -296,18 +296,18 @@ Dies ist das Herzstück des Systems, das ein „Wide Table“-Design verwendet, 
 
 **Hauptprozess (von links nach rechts)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Nebenprozesse**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Vollständige Zustandsmaschine**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Wichtige Regeln für Statusübergänge
 
@@ -337,7 +337,7 @@ Dies ist das Herzstück des Systems, das ein „Wide Table“-Design verwendet, 
 
 ### 4.2 SLA-Berechnungslogik
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Bei Ticket-Erstellung
 
@@ -466,7 +466,7 @@ Jeder KI-Mitarbeiter verfügt über 4 spezifische Aufgaben:
 
 ### 5.3 KI-Mitarbeiter und Ticket-Lebenszyklus
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Beispiele für KI-Antworten
 
@@ -526,12 +526,12 @@ Die von Grace durchgeführte Qualitätsprüfung fängt folgende Probleme ab:
 
 ### 6.1 Wissensquellen
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Prozess: Ticket zu Wissen
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Bewertungsdimensionen**:
 - **Allgemeingültigkeit**: Ist dies ein häufiges Problem?
@@ -576,19 +576,19 @@ Wenn ein Mitarbeiter die Ticket-Details öffnet, empfiehlt Max automatisch relev
 
 #### WF-T01: Ticket-Erstellungsprozess
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Ticket-KI-Analyse
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Kommentarübersetzung und -prüfung
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Wissensgenerierung
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Geplante Aufgaben
 
@@ -605,11 +605,11 @@ Wenn ein Mitarbeiter die Ticket-Details öffnet, empfiehlt Max automatisch relev
 
 ### 8.1 Backend-Verwaltung
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Kundenportal
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Dashboard-Design
 

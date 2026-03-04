@@ -31,7 +31,7 @@ Mô hình này mượn ý tưởng từ khái niệm "nhân tài hình chữ T" 
 - **Chiều ngang (Bảng chính)**: Bao quát các năng lực chung cho tất cả các loại nghiệp vụ — các trường cốt lõi như mã số, trạng thái, người xử lý, SLA, v.v.
 - **Chiều dọc (Bảng mở rộng)**: Các trường chuyên biệt đi sâu vào từng nghiệp vụ cụ thể — sửa chữa thiết bị có số sê-ri, khiếu nại có phương án bồi thường.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Tại sao lại thiết kế như vậy?**
 
@@ -61,7 +61,7 @@ Không chỉ là "tính năng AI", mà là "nhân viên AI". Mỗi AI có vai tr
 
 #### Triết lý 3: Tự tuần hoàn kiến thức
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Điều này tạo thành một vòng lặp khép kín giữa **Tích lũy kiến thức - Ứng dụng kiến thức**.
 
@@ -71,7 +71,7 @@ Không chỉ là "tính năng AI", mà là "nhân viên AI". Mỗi AI có vai tr
 
 ### 2.1 Tổng quan quan hệ thực thể
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Chi tiết các bảng cốt lõi
@@ -296,18 +296,18 @@ Không chỉ là "tính năng AI", mà là "nhân viên AI". Mỗi AI có vai tr
 
 **Quy trình chính (Từ trái sang phải)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Quy trình nhánh**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Máy trạng thái đầy đủ**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Quy tắc chuyển đổi trạng thái quan trọng
 
@@ -337,7 +337,7 @@ Không chỉ là "tính năng AI", mà là "nhân viên AI". Mỗi AI có vai tr
 
 ### 4.2 Logic tính toán SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Khi tạo công đơn
 
@@ -466,7 +466,7 @@ Mỗi nhân viên AI được cấu hình 4 nhiệm vụ cụ thể:
 
 ### 5.3 Nhân viên AI và Vòng đời công đơn
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Ví dụ phản hồi của AI
 
@@ -527,12 +527,12 @@ Việc kiểm duyệt chất lượng phản hồi do Grace phụ trách sẽ ng
 
 ### 6.1 Nguồn kiến thức
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Quy trình chuyển đổi công đơn thành kiến thức
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Các tiêu chí đánh giá**:
 - **Tính phổ biến**: Đây có phải là vấn đề thường gặp không?
@@ -577,19 +577,19 @@ Khi nhân viên hỗ trợ mở chi tiết công đơn, Max sẽ tự động đ
 
 #### WF-T01: Quy trình tạo công đơn
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Phân tích công đơn bằng AI
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Dịch và kiểm duyệt bình luận
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Tạo kiến thức
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Nhiệm vụ định kỳ
 
@@ -606,11 +606,11 @@ Khi nhân viên hỗ trợ mở chi tiết công đơn, Max sẽ tự động đ
 
 ### 8.1 Trang quản trị (Backend)
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Cổng thông tin khách hàng (Customer Portal)
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Thiết kế bảng điều khiển (Dashboard)
 

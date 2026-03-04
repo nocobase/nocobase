@@ -178,7 +178,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 아래 그림과 같습니다.
 
-![작업 실행 순서](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![작업 실행 순서](https://static-docs.nocobase.com/20251219234806.png)
 
 ### 컬렉션 이벤트와의 차이점
 

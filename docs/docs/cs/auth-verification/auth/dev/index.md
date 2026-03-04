@@ -169,7 +169,7 @@ Pokud potřebujete přejít z přihlašovací stránky na registrační stránku
 
 ### Formulář pro správu administrace
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 Nahoře je obecná konfigurace ověřovatele a dole je část formuláře pro vlastní konfiguraci, kterou lze registrovat.
 

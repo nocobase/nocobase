@@ -49,7 +49,7 @@ pkg: '@nocobase/plugin-acl'
 
   Повний процес налаштування:
 
-  ![](https://static-docs.nocobase.com/1dbe559a92c052e194e50edc74a7.gif)
+  ![](https://static-docs.nocobase.com/1dbe559a9579c2e052e194e50edc74a7.gif)
 
 - **Додавання**: Визначає, чи можна додавати (створювати) поля.
 

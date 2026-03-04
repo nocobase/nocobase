@@ -17,7 +17,7 @@ Anda dapat mendeklarasikan variabel dalam sebuah alur kerja atau menetapkan nila
 
 Pada antarmuka konfigurasi alur kerja, klik tombol plus ("+") di alur kerja untuk menambahkan node "Variabel":
 
-![Menambahkan Node Variabel](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Menambahkan Node Variabel](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Mengonfigurasi Node
 
@@ -42,7 +42,7 @@ Nilai variabel dapat berupa tipe apa pun. Ini bisa berupa konstanta, seperti str
 
 Dalam mode deklarasi, menetapkan nilai variabel setara dengan memberinya nilai awal.
 
-![Mendeklarasikan nilai awal](https://static-docs.nocobase.com/4ce2c50896565ad537343013758c6a4.png)
+![Mendeklarasikan nilai awal](https://static-docs.nocobase.com/4ce2c508986565ad537343013758c6a4.png)
 
 Dalam mode penetapan nilai, menetapkan nilai variabel setara dengan memodifikasi nilai variabel target yang sudah dideklarasikan menjadi nilai baru. Penggunaan selanjutnya akan mengambil nilai baru ini.
 

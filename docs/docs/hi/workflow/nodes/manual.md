@@ -104,11 +104,11 @@ pkg: '@nocobase/plugin-workflow-manual'
 
 आप पेज पर ब्लॉक में से "वर्कफ़्लो लंबित" का चयन करके एक लंबित सूची ब्लॉक जोड़ सकते हैं:
 
-![Manual Node_Add To-do Block](https://static-docs.nocobase.com/198b417545cd73b704267bf30fe5e647.png)
+![Manual Node_Add To-do Block](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 लंबित सूची ब्लॉक का उदाहरण:
 
-![Manual Node_To-do List](https://static-docs.nocobase.com/cfefb0c9c9dfa550d6b220f34.png)
+![Manual Node_To-do List](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### लंबित विवरण
 

@@ -74,7 +74,7 @@
 
 #### ตัวอย่างที่ 1: Overall Analytics (การวิเคราะห์ทางธุรกิจทั่วไป)
 
-![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-01-00-18-55.png)
+![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-18-55.png)
 
 ใน CRM Demo, `Overall Analytics` คือเอนจินการวิเคราะห์ทางธุรกิจที่ใช้เทมเพลตครับ/ค่ะ
 

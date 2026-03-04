@@ -21,7 +21,7 @@ ER Vztah
 
 Konfigurace pole
 
-![alt text](https://static-docs.nocobase.com/7659e128936bbd7c9ff51bcff1d646dd.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
 ## Vztah jeden k jednomu (Patří k)
 
@@ -33,7 +33,7 @@ ER Vztah
 
 Konfigurace pole
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a34982da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## Popis parametrů
 

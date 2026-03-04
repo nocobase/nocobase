@@ -30,7 +30,7 @@ Als de plugin is ingeschakeld voor een sub-applicatie, wordt de sleutel standaar
 
 Maakt gebruik van envelopversleuteling.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Proces voor sleutelcreatie
 1. De eerste keer dat u een versleuteld veld aanmaakt, genereert het systeem automatisch een 32-bits `applicatiesleutel`. Deze wordt in Base64-codering opgeslagen in de standaard opslagmap.

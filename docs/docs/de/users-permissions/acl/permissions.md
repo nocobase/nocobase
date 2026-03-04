@@ -26,7 +26,7 @@ Globale Aktionsberechtigungen gelten universell für alle Sammlungen und sind na
 
 ## Sammlungs-Aktionsberechtigungen
 
-![](https://static-docs.nocobase.com/6a6e02817391cecdea5b218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

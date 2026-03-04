@@ -64,7 +64,7 @@ Ensuite, créez un flux de travail déclenché par un événement de collection.
 
 Ajoutez ensuite un nœud de requête d'agrégation et configurez-le comme suit :
 
-![Nœud de requête d'agrégation_Exemple_Configuration du nœud](https://static-docs.nocobase.com/542272e63f6c0a567373d1b37ddda78.png)
+![Nœud de requête d'agrégation_Exemple_Configuration du nœud](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
 Ainsi, une fois le flux de travail déclenché, le nœud de requête d'agrégation comptera le nombre total d'articles dans la catégorie de l'article nouvellement ajouté et enregistrera ce résultat comme sortie du nœud.
 

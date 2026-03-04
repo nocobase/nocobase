@@ -30,7 +30,7 @@ pkg: "@nocobase/plugin-field-encryption"
 
 تعتمد طريقة تشفير الأظرف (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### عملية إنشاء المفتاح
 1. عند إنشاء حقل مشفر لأول مرة، ينشئ النظام تلقائيًا `مفتاح تطبيق` بحجم 32 بت، ويُحفظ بترميز Base64 في دليل التخزين الافتراضي.

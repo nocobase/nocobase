@@ -15,7 +15,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## การเปิดใช้งาน Authenticator
 
-![](https://static-docs.nocobase.com/7f1b8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 เฉพาะประเภทการยืนยันตัวตนที่เปิดใช้งานแล้วเท่านั้นที่จะแสดงบนหน้าเข้าสู่ระบบครับ
 

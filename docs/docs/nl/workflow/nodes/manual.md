@@ -60,7 +60,7 @@ Datablokken kunnen triggergegevens of de verwerkingsresultaten van elke knoop we
 
 Datablokken voor knoopgegevens werken op een vergelijkbare manier; u kunt het gegevensresultaat van een stroomopwaartse knoop selecteren om als details weer te geven. Denk bijvoorbeeld aan het resultaat van een stroomopwaartse rekenknoop, dat dient als contextuele referentie-informatie voor de taak van de verantwoordelijke:
 
-![Handmatige knoop_Knoopconfiguratie_Interfaceconfiguratie_Datablok_Knoopgegevens](https://static-docs.nocobase.com/a583e26e508e95440d998c4.png)
+![Handmatige knoop_Knoopconfiguratie_Interfaceconfiguratie_Datablok_Knoopgegevens](https://static-docs.nocobase.com/a583e26e508e954b47e5ddff80d998c4.png)
 
 :::info{title=Tip}
 Aangezien de workflow zich tijdens de interfaceconfiguratie in een niet-uitgevoerde staat bevindt, worden er geen specifieke gegevens weergegeven in de datablokken. De relevante gegevens voor een specifieke workflow-instantie zijn pas zichtbaar in de takenlijstpop-up nadat de workflow is geactiveerd en uitgevoerd.
@@ -104,11 +104,11 @@ Voor handmatige verwerking moet u ook een takenlijst aan een pagina toevoegen om
 
 U kunt "Workflow Takenlijst" selecteren uit de blokken op een pagina om een blok voor de takenlijst toe te voegen:
 
-![Handmatige knoop_Takenlijstblok toevoegen](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Handmatige knoop_Takenlijstblok toevoegen](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Voorbeeld van een takenlijstblok:
 
-![Handmatige knoop_Takenlijst](https://static-docs.nocobase.com/cfefb0d34.png)
+![Handmatige knoop_Takenlijst](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Takenlijstdetails
 

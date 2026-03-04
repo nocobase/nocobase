@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## प्रमाणीकरणकर्ताओं को सक्रिय करें
 
-![](https://static-docs.nocobase.com/7f1bf8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 केवल सक्रिय प्रमाणीकरण प्रकार ही लॉगिन पेज पर दिखाई देंगे।
 

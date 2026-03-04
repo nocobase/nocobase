@@ -21,7 +21,7 @@ Saat ini, fitur ini didukung untuk digunakan dalam alur kerja jenis "Peristiwa P
 
 Pada jenis alur kerja yang didukung, Anda dapat menambahkan node "Pesan respons" di mana saja dalam alur kerja. Cukup klik tombol plus ("+") pada alur kerja untuk menambahkannya:
 
-![Menambahkan node](https://static-docs.nocobase.com/eac2b3566e95e4ce59f340624062ed3d.png)
+![Menambahkan node](https://static-docs.nocobase.com/eac2b3565e95e4ce59f340624062ed3d.png)
 
 Pesan respons akan ada sebagai array sepanjang proses permintaan. Setiap kali node pesan respons dieksekusi dalam alur kerja, konten pesan baru akan ditambahkan ke array tersebut. Ketika server mengirimkan respons, semua pesan akan dikirimkan ke klien secara bersamaan.
 
@@ -37,7 +37,7 @@ Ketika alur kerja mengeksekusi node ini, template akan diurai untuk menghasilkan
 Stok produk "iPhone 14 pro" tidak mencukupi
 ```
 
-![Konten pesan](https://static-docs.nocobase.com/06bd4a6b6ec499c83f0c39987f63a6a.png)
+![Konten pesan](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 ## Konfigurasi Alur Kerja
 

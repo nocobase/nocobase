@@ -9,27 +9,27 @@ pkg: "@nocobase/plugin-email-manager"
 
 ## ภาพรวมการส่งอีเมลแบบกลุ่ม
 คุณสามารถส่งอีเมลแบบกลุ่มไปยังผู้รับหลายคนได้ โดยที่ผู้รับแต่ละคนจะได้รับอีเมลแยกกันครับ/ค่ะ
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_10_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_15_PM.png)
 
 ## การส่งอีเมลแบบกลุ่มผ่านตาราง
 คุณยังสามารถส่งอีเมลแบบกลุ่มผ่านตารางได้ด้วยครับ/ค่ะ:
 
 1. เพิ่มปุ่มส่งอีเมลลงในตาราง
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_14_PM.png)
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
 2. กำหนดค่าฟิลด์อีเมลในตาราง (ใช้สำหรับแยกวิเคราะห์ที่อยู่อีเมลหลังจากเลือกแถวในตาราง)
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_13_PM.png)
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_17_PM%20(1)
 
 3. เลือกข้อมูลในตารางเพื่อส่งอีเมล
-   ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_15_PM.png)
+   ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
 หากคุณต้องการส่งอีเมลไปยังที่อยู่ทั้งหมดในตาราง คุณสามารถเปิดใช้งานฟังก์ชัน **เลือกบันทึกทั้งหมดในตารางปัจจุบันเป็นผู้รับโดยค่าเริ่มต้น** ได้ครับ/ค่ะ:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_16_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_18_PM%20(1)
 
 หลังจากแก้ไขเนื้อหาอีเมลแล้ว ให้คลิกปุ่มส่งอีเมลแบบกลุ่มเพื่อส่งครับ/ค่ะ:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_17_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
 ## การติดตามการส่งอีเมล
 คุณสามารถดูและติดตามสถานะการส่งอีเมลที่เฉพาะเจาะจงได้ที่ศูนย์จัดการอีเมลครับ/ค่ะ:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_20_PM.png).png)
 ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM.png)

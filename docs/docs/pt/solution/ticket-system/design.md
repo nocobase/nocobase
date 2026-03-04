@@ -31,7 +31,7 @@ Inspirada no conceito de "profissionais em T" — amplitude horizontal + profund
 - **Horizontal (Tabela Principal)**: Abrange capacidades universais para todos os tipos de negócio — número do chamado, status, responsável, SLA e outros campos essenciais.
 - **Vertical (Tabelas de Extensão)**: Campos especializados para tipos de negócio específicos — reparo de equipamentos possui números de série, reclamações possuem planos de compensação.
 
-![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-50-45.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
 **Por que este design?**
 
@@ -61,7 +61,7 @@ Não são apenas "recursos de IA", mas "funcionários de IA". Cada IA tem uma fu
 
 #### Filosofia Três: Autociclo de Conhecimento
 
-![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-09.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
 Isso forma um ciclo fechado de **Acúmulo de Conhecimento - Aplicação de Conhecimento**.
 
@@ -71,7 +71,7 @@ Isso forma um ciclo fechado de **Acúmulo de Conhecimento - Aplicação de Conhe
 
 ### 2.1 Visão Geral do Relacionamento de Entidades
 
-![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-23.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
 
 ### 2.2 Detalhes das Tabelas Principais
@@ -296,18 +296,18 @@ Este é o núcleo do sistema, utilizando um design de "tabela larga" com todos o
 
 **Fluxo Principal (Esquerda para Direita)**
 
-![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-51-45.png)
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
 **Fluxos de Ramificação**
 
-![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-42.png)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-52-53.png)
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
 
 **Máquina de Estados Completa**
 
-![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-54-23.png)
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
 ### 3.3 Regras de Transição de Status Principais
 
@@ -337,7 +337,7 @@ Este é o núcleo do sistema, utilizando um design de "tabela larga" com todos o
 
 ### 4.2 Lógica de Cálculo de SLA
 
-![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-53-54.png)
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
 #### Na Criação do Chamado
 
@@ -467,7 +467,7 @@ Cada funcionário de IA é configurado com 4 tarefas específicas:
 
 ### 5.3 Funcionários de IA e Ciclo de Vida do Chamado
 
-![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-04.png)
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
 
 ### 5.4 Exemplos de Resposta de IA
 
@@ -527,12 +527,12 @@ A revisão de qualidade de resposta da Grace bloqueia os seguintes problemas:
 
 ### 6.1 Fontes de Conhecimento
 
-![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-20.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
 
 ### 6.2 Fluxo de Chamado para Conhecimento
 
-![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-38.png)
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
 **Dimensões de Avaliação**:
 - **Generalidade**: Este é um problema comum?
@@ -577,19 +577,19 @@ Quando um agente abre os detalhes do chamado, o Max recomenda automaticamente co
 
 #### WF-T01: Fluxo de Criação de Chamado
 
-![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-55-51.png)
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
 
 #### WF-AI01: Análise de Chamado por IA
 
-![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-03.png)
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
 
 #### WF-AI04: Tradução e Revisão de Comentários
 
-![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-19.png)
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
 
 #### WF-AI03: Geração de Conhecimento
 
-![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-56-37.png)
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
 
 ### 7.3 Tarefas Agendadas
 
@@ -606,11 +606,11 @@ Quando um agente abre os detalhes do chamado, o Max recomenda automaticamente co
 
 ### 8.1 Painel Administrativo (Backend)
 
-![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-10.png)
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
 ### 8.2 Portal do Cliente
 
-![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-2025-12-31-22-59-32.png)
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
 ### 8.3 Design do Painel de Indicadores (Dashboard)
 

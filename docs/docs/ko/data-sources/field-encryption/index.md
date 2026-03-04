@@ -30,7 +30,7 @@ pkg: "@nocobase/plugin-field-encryption"
 
 봉투 암호화(Envelope Encryption) 방식을 사용합니다.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### 키 생성 과정
 1. 암호화 필드를 처음 생성할 때, 시스템은 32비트 `애플리케이션 키`를 자동으로 생성하여 Base64 인코딩 방식으로 기본 저장 디렉터리에 저장합니다.

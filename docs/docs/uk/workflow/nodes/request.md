@@ -25,7 +25,7 @@ pkg: '@nocobase/plugin-workflow-request'
 
 ## Налаштування вузла
 
-![HTTP Запит_Налаштування вузла](https://static-docs.nocobase.com/2fcb29af66d869c80f8fbd362a54e644.png)
+![HTTP Запит_Налаштування вузла](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 ### Метод запиту
 
