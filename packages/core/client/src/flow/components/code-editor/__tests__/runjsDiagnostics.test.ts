@@ -211,4 +211,23 @@ describe('runjsDiagnostics', () => {
     const res = await previewRunJS(code, ctx as any);
     expect(res.success).toBe(true);
   });
+
+  it('diagnoseRunJS should follow version policy for template preprocessing', async () => {
+    const code = `return "{{ctx.user.id}}";`;
+    const ctx = createTestCtx();
+    let resolveCalls = 0;
+    ctx.defineMethod('resolveJsonTemplate', async () => {
+      resolveCalls += 1;
+      return 123;
+    });
+
+    const v1 = await diagnoseRunJS(code, ctx as any, { version: 'v1' });
+    expect(v1.issues.some((i) => i.type === 'runtime')).toBe(false);
+    expect(resolveCalls).toBeGreaterThan(0);
+
+    resolveCalls = 0;
+    const v2 = await diagnoseRunJS(code, ctx as any, { version: 'v2' });
+    expect(v2.issues.some((i) => i.type === 'runtime')).toBe(false);
+    expect(resolveCalls).toBe(0);
+  });
 });

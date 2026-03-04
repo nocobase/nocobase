@@ -89,6 +89,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
       title: string;
       url: string;
     }[];
+    reasoning?: { status: string; content: string };
   };
 };
 export type Action = {
