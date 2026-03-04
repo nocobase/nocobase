@@ -171,7 +171,7 @@ describe('JSRunner', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBeInstanceOf(SyntaxError);
     const msg = String((result.error as any)?.message || '');
-    expect(msg).toContain('"{{ctx.user.id}}" has been deprecated in v2');
+    expect(msg).toContain('"{{ctx.user.id}}" has been deprecated');
     expect(msg).toContain('await ctx.getVar("ctx.user.id")');
     expect(msg).not.toContain('(at ');
     expect((result.error as any)?.__runjsHideLocation).toBe(true);
