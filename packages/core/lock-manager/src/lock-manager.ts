@@ -87,7 +87,7 @@ class LocalLockAdapter implements ILockAdapter {
     }
   }
 
-  async tryAcquire(key: string) {
+  async tryAcquire(key: string, timeout = 5000) {
     const mutex = this.getLock(key);
     if (mutex.isLocked()) {
       throw new LockAcquireError('lock is locked');
@@ -100,16 +100,28 @@ class LocalLockAdapter implements ILockAdapter {
     const preAcquiredRelease = (await releasePromise) as Releaser;
     let preAcquiredConsumed = false;
 
+    // Safety guard: auto-release the pre-acquired lock if the caller never
+    // calls acquire() or runExclusive(), preventing a silent deadlock.
+    const safetyTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
+      if (!preAcquiredConsumed && mutex.isLocked()) {
+        preAcquiredConsumed = true;
+        preAcquiredRelease();
+      }
+    }, timeout);
+
+    const getRelease = async (): Promise<Releaser> => {
+      clearTimeout(safetyTimer);
+      if (!preAcquiredConsumed) {
+        preAcquiredConsumed = true;
+        return preAcquiredRelease;
+      }
+      return (await mutex.acquire()) as Releaser;
+    };
+
     return {
       acquire: async (ttl: number): Promise<Releaser> => {
-        let release: Releaser;
-        if (!preAcquiredConsumed) {
-          preAcquiredConsumed = true;
-          release = preAcquiredRelease;
-        } else {
-          release = (await mutex.acquire()) as Releaser;
-        }
-        const timer = setTimeout(() => {
+        const release = await getRelease();
+        const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
           if (mutex.isLocked()) {
             release();
           }
@@ -120,14 +132,8 @@ class LocalLockAdapter implements ILockAdapter {
         };
       },
       runExclusive: async <T>(fn: () => Promise<T>, ttl: number): Promise<T> => {
-        let release: Releaser;
-        if (!preAcquiredConsumed) {
-          preAcquiredConsumed = true;
-          release = preAcquiredRelease;
-        } else {
-          release = (await mutex.acquire()) as Releaser;
-        }
-        let timer;
+        const release = await getRelease();
+        let timer: ReturnType<typeof setTimeout>;
         try {
           timer = setTimeout(() => {
             if (mutex.isLocked()) {
@@ -207,9 +213,9 @@ export class LockManager {
     return client.runExclusive(key, fn, ttl);
   }
 
-  public async tryAcquire(key: string) {
+  public async tryAcquire(key: string, timeout?: number) {
     const client = await this.getAdapter();
-    return client.tryAcquire(key);
+    return client.tryAcquire(key, timeout);
   }
 }
 

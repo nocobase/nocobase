@@ -165,5 +165,53 @@ describe('lock manager', () => {
       await r2();
       expect(order).toEqual([1, 2, 3, 4]);
     });
+
+    it('tryAcquire: only one concurrent caller wins (TOCTOU race)', async () => {
+      // Simulate two nodes calling tryAcquire at the same time (single-process,
+      // like createMockCluster). Only one should succeed; the other must throw.
+      const results: Array<'acquired' | 'skipped'> = [];
+      await Promise.all(
+        [0, 1].map(async () => {
+          try {
+            const lock = await lockManager.tryAcquire('race-test');
+            const release = await lock.acquire(1000);
+            results.push('acquired');
+            await release();
+          } catch (e) {
+            if (e instanceof LockAcquireError) {
+              results.push('skipped');
+            } else {
+              throw e;
+            }
+          }
+        }),
+      );
+      expect(results.filter((r) => r === 'acquired').length).toBe(1);
+      expect(results.filter((r) => r === 'skipped').length).toBe(1);
+    });
+
+    it('tryAcquire: lock is released after safety timeout when acquire() is never called', async () => {
+      // Safety timeout: pre-acquired mutex should be auto-released if the caller
+      // discards the lock object without calling acquire() or runExclusive().
+      const safetyTimeout = 100;
+      await lockManager.tryAcquire('safety-test', safetyTimeout);
+      // Lock is held by the discarded lock object — a new tryAcquire should fail now
+      await expect(lockManager.tryAcquire('safety-test', safetyTimeout)).rejects.toThrowError(LockAcquireError);
+      // After the safety timeout, the lock should be auto-released
+      await sleep(safetyTimeout + 50);
+      const lock = await lockManager.tryAcquire('safety-test', safetyTimeout);
+      const release = await lock.acquire(1000);
+      await release();
+    });
+
+    it('tryAcquire: subsequent call succeeds after previous lock is released', async () => {
+      const lock1 = await lockManager.tryAcquire('seq-test');
+      const release = await lock1.acquire(1000);
+      await release();
+      // After release, a second tryAcquire on the same key should succeed
+      const lock2 = await lockManager.tryAcquire('seq-test');
+      const release2 = await lock2.acquire(1000);
+      await release2();
+    });
   });
 });
