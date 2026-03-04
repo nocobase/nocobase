@@ -37,6 +37,7 @@ import {
 
 import { BindWorkflowConfig } from '@nocobase/plugin-workflow/client';
 import { CONTEXT_TYPE, NAMESPACE } from '../common/constants';
+import { GlobalContextDataInput } from './components';
 
 function BindGlobalWorkflowConfig() {
   const { dn } = useDesignable();
@@ -54,7 +55,9 @@ function BindGlobalWorkflowConfig() {
         Alert,
         ArrayTable,
         RemoteSelect,
+        GlobalContextDataInput,
       }}
+      scope={{ t }}
       schema={
         {
           type: 'void',
@@ -66,7 +69,7 @@ function BindGlobalWorkflowConfig() {
               'x-component-props': {
                 message: multipleRecords
                   ? `{{t('Only support custom action workflow with context type set to "Multiple records".', { ns: "${NAMESPACE}" })}}`
-                  : `{{t('Only support custom action workflow with context type set to "Custom trigger data".', { ns: "${NAMESPACE}" })}}`,
+                  : `{{t('Only support custom action workflow with context type set to "Custom context".', { ns: "${NAMESPACE}" })}}`,
                 style: {
                   marginBottom: '1em',
                 },
@@ -155,15 +158,33 @@ function BindGlobalWorkflowConfig() {
                 },
               },
             },
+            ...(multipleRecords
+              ? {}
+              : {
+                  contextData: {
+                    type: 'string',
+                    title: `{{t('Context data', { ns: "${NAMESPACE}" })}}`,
+                    description: `{{t('Input JSON as context data passed into the workflow. Frontend variables are supported.', { ns: "${NAMESPACE}" })}}`,
+                    'x-decorator': 'FormItem',
+                    'x-component': 'GlobalContextDataInput',
+                    'x-component-props': {
+                      autoSize: { minRows: 5 },
+                    },
+                  },
+                }),
           },
         } as ISchema
       }
-      initialValues={{ group: fieldSchema?.['x-action-settings']?.triggerWorkflows }}
-      onSubmit={({ group }) => {
+      initialValues={{
+        group: fieldSchema?.['x-action-settings']?.triggerWorkflows,
+        contextData: fieldSchema?.['x-action-settings']?.contextData,
+      }}
+      onSubmit={({ group, contextData }) => {
         if (!fieldSchema['x-action-settings']) {
           fieldSchema['x-action-settings'] = {};
         }
         fieldSchema['x-action-settings']['triggerWorkflows'] = group;
+        fieldSchema['x-action-settings']['contextData'] = contextData;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

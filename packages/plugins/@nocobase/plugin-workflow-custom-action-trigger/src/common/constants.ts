@@ -19,7 +19,7 @@ export const CONTEXT_TYPE = {
 
 export const CONTEXT_TYPE_OPTIONS = [
   {
-    label: `{{t('Custom trigger data', { ns: "${NAMESPACE}" })}}`,
+    label: `{{t('Custom context', { ns: "${NAMESPACE}" })}}`,
     value: CONTEXT_TYPE.GLOBAL,
     tooltip: `{{t('Could be used on non-record related action buttons. You can provide custom JSON as trigger data.', { ns: "${NAMESPACE}" })}}`,
   },

@@ -190,7 +190,6 @@ export default class extends Trigger {
           'x-decorator': 'FormItem',
           'x-component': 'TriggerDataInput',
           default: null,
-          required: true,
         },
       },
     },
