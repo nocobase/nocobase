@@ -8,6 +8,7 @@
  */
 
 import { Application } from '@nocobase/client-v2';
+import { AppInfoDemoPlugin } from './plugins/AppInfoDemoPlugin';
 
 declare global {
   interface Window {
@@ -68,6 +69,15 @@ function parseShareToken(value: boolean | string | undefined) {
   return String(value || '').toLowerCase() === 'true';
 }
 
+type ClientStorageType = 'localStorage' | 'sessionStorage' | 'memory';
+
+function parseStorageType(value: string | undefined): ClientStorageType {
+  if (value === 'sessionStorage' || value === 'memory' || value === 'localStorage') {
+    return value;
+  }
+  return 'localStorage';
+}
+
 const v2PublicPath = getV2PublicPath();
 const rootPublicPath = getRootPublicPath(v2PublicPath);
 
@@ -75,8 +85,9 @@ const app = new Application({
   publicPath: v2PublicPath,
   apiClient: {
     shareToken: parseShareToken(window.__nocobase_api_client_share_token__ || import.meta.env.API_CLIENT_SHARE_TOKEN),
-    storageType:
-      window.__nocobase_api_client_storage_type__ || import.meta.env.API_CLIENT_STORAGE_TYPE || 'localStorage',
+    storageType: parseStorageType(
+      window.__nocobase_api_client_storage_type__ || import.meta.env.API_CLIENT_STORAGE_TYPE,
+    ),
     storagePrefix:
       window.__nocobase_api_client_storage_prefix__ || import.meta.env.API_CLIENT_STORAGE_PREFIX || 'NOCOBASE_',
     baseURL: window.__nocobase_api_base_url__ || import.meta.env.API_BASE_URL || `${rootPublicPath}api/`,
@@ -85,6 +96,7 @@ const app = new Application({
     url: window.__nocobase_ws_url__ || import.meta.env.WS_URL || '',
     basename: window.__nocobase_ws_path__ || import.meta.env.WS_PATH || `${rootPublicPath}ws`,
   },
+  plugins: [AppInfoDemoPlugin],
   loadRemotePlugins: false,
 });
 
