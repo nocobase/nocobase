@@ -118,9 +118,9 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const activeRunTokenRef = useRef(0);
   const cancelActiveCaptureRef = useRef<(() => void) | null>(null);
   const clearLogs = useCallback(() => setLogs([]), []);
-  const tr = hostCtx?.t || ((key: string) => key);
   const run = useCallback(
     async (code: string): Promise<RunResult | undefined> => {
+      const tr = hostCtx?.t || ((key: string) => key);
       setRunning(true);
       setLogs([]);
       activeRunTokenRef.current += 1;
@@ -280,7 +280,8 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const pushRunResultLog = (res: RunResult) => {
           if (!res?.success) {
             const errText = res?.timeout ? tr('Execution timed out') : String(res?.error || tr('Unknown error'));
-            const pos = parseErrorLineColumn(res?.error);
+            const hideLocation = !!(res?.error as any)?.__runjsHideLocation;
+            const pos = hideLocation ? null : parseErrorLineColumn(res?.error);
             if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
               setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
             } else {
@@ -325,7 +326,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         setRunning(false);
       }
     },
-    [hostCtx, version, tr],
+    [hostCtx, version],
   );
 
   return { run, logs, clearLogs, running };

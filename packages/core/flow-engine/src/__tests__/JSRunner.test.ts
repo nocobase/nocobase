@@ -164,6 +164,20 @@ describe('JSRunner', () => {
     expect((result.error as Error).message).toBe('Execution timed out');
   });
 
+  it('returns friendly hint when bare {{ctx.xxx}} appears in syntax error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const runner = new JSRunner();
+    const result = await runner.run('const z = {{ctx.user.id}}');
+    expect(result.success).toBe(false);
+    expect(result.error).toBeInstanceOf(SyntaxError);
+    const msg = String((result.error as any)?.message || '');
+    expect(msg).toContain('"{{ctx.user.id}}" has been deprecated in v2');
+    expect(msg).toContain('await ctx.getVar("ctx.user.id")');
+    expect(msg).not.toContain('(at ');
+    expect((result.error as any)?.__runjsHideLocation).toBe(true);
+    expect(spy).toHaveBeenCalled();
+  });
+
   it('skips execution when URL contains skipRunJs=true', async () => {
     // 模拟预览模式下通过 URL 参数跳过代码执行
     if (typeof window !== 'undefined' && typeof window.history?.pushState === 'function') {
