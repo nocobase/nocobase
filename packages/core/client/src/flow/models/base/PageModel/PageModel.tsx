@@ -10,6 +10,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { DragEndEvent } from '@dnd-kit/core';
+import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
@@ -39,6 +40,12 @@ type PageModelStructure = {
 };
 
 export class PageModel extends FlowModel<PageModelStructure> {
+  private tabsRootClassName = css`
+    .ant-tabs-tab {
+      min-width: 54px;
+    }
+  `;
+
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
   private dataSourceDirtyListener?: (_payload?: unknown) => void;
@@ -293,6 +300,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
+          rootClassName={this.context.flowSettingsEnabled ? this.tabsRootClassName : undefined}
           activeKey={
             this.context.view?.navigation?.viewParams
               ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
@@ -406,8 +414,6 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const token = ctx.themeToken;
-        const tabPaddingInline = token?.paddingLG ?? 16;
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (ctx.model.context.closable) {
           ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
@@ -423,7 +429,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgContainer)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         } else {
@@ -432,7 +437,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgLayout)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         }
