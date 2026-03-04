@@ -278,18 +278,27 @@ export class AssignFormItemModel extends FormItemModel {
           {...this.props}
           label={labelText}
           name={namePath}
+          initialValue={this.assignValue}
           valuePropName="__assign_value__"
           trigger="__assign_trigger__"
+          validateTrigger="__assign_trigger__"
         >
-          <VariableInput
-            value={this.assignValue}
-            onChange={(v: any) => {
-              this.assignValue = v;
-            }}
-            metaTree={mergedMetaTree}
-            converters={converters}
-            clearValue={''}
-          />
+          {React.createElement((formBindingProps: any) => {
+            const formValue = formBindingProps?.__assign_value__;
+            const mergedValue = typeof formValue === 'undefined' ? this.assignValue : formValue;
+            return (
+              <VariableInput
+                value={mergedValue}
+                onChange={(v: any) => {
+                  this.assignValue = v;
+                  formBindingProps?.__assign_trigger__?.(v);
+                }}
+                metaTree={mergedMetaTree}
+                converters={converters}
+                clearValue={''}
+              />
+            );
+          })}
         </FormItem>
       );
     };
