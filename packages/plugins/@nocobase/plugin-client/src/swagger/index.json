@@ -3,5 +3,287 @@
   "info": {
     "title": "NocoBase API - Client plugin"
   },
-  "paths": {}
+  "paths": {
+    "/desktopRoutes:listAccessible": {
+      "get": {
+        "tags": ["desktopRoutes"],
+        "description": "List desktop routes that current user can access. Note: creating/destroying routes has side effects via desktopRoutes.afterCreate/afterDestroy hooks (flowModels anchors are created/removed by schemaUid).",
+        "parameters": [
+          { "name": "tree", "in": "query", "required": false, "schema": { "type": "boolean", "default": false } },
+          { "name": "sort", "in": "query", "required": false, "schema": { "type": "string", "default": "sort" } },
+          { "name": "filter", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DesktopRoute" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/desktopRoutes:getAccessible": {
+      "get": {
+        "tags": ["desktopRoutes"],
+        "description": "Get one accessible desktop route by filter.",
+        "parameters": [
+          { "name": "filter", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "filterByTk", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": { "anyOf": [{ "$ref": "#/components/schemas/DesktopRoute" }, { "type": "null" }] }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/desktopRoutes:create": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Create a desktop route. Side effect: desktopRoutes.afterCreate hook will create a flowModels anchor with uid=schemaUid for the created route (if flowModels collection is enabled).",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DesktopRouteCreateValues" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/desktopRoutes:update": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Update a desktop route.",
+        "parameters": [{ "name": "filterByTk", "in": "query", "required": false, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DesktopRouteUpdateValues" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/desktopRoutes:updateOrCreate": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Update or create a desktop route by filterKeys.",
+        "parameters": [
+          {
+            "name": "filterKeys",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "array", "items": { "type": "string" } }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DesktopRouteCreateValues" } } }
+        },
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/desktopRoutes:move": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Move a route in the menu tree.",
+        "parameters": [
+          { "name": "sourceId", "in": "query", "required": true, "schema": { "type": "string" } },
+          { "name": "targetId", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "method", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/desktopRoutes:destroy": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Destroy a desktop route. Side effect: desktopRoutes.afterDestroy hook will remove a flowModels anchor with uid=schemaUid for the destroyed route (if flowModels collection is enabled).",
+        "parameters": [
+          { "name": "filterByTk", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "filter", "in": "query", "required": false, "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK" } }
+      }
+    },
+    "/desktopRoutes:createV2": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Create a Modern page (v2) in one transaction: creates page route + default hidden tab route, inserts uiSchemas FlowRoute shell, and precreates key flowModels subtrees. Idempotent on schemaUid: same schemaUid + same key fields returns existing; otherwise 409.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DesktopRouteCreateV2Request" },
+              "examples": {
+                "createV2": {
+                  "summary": "Create v2 page",
+                  "value": { "schemaUid": "page-uid-001", "parentId": null, "title": "My Page", "icon": "Icon" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/DesktopRouteCreateV2Response" } }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    },
+    "/desktopRoutes:destroyV2": {
+      "post": {
+        "tags": ["desktopRoutes"],
+        "description": "Destroy a Modern page (v2) by schemaUid in one transaction: removes page route (and its children), removes uiSchemas FlowRoute shell, and relies on desktopRoutes.afterDestroy to cleanup flowModels anchors.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/DesktopRouteDestroyV2Request" },
+              "examples": { "destroyV2": { "summary": "Destroy v2 page", "value": { "schemaUid": "page-uid-001" } } }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/OkResponse" } } }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorItem": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "code": { "type": "string" },
+          "message": { "type": "string" },
+          "details": { "type": "object" },
+          "opId": { "type": "string" },
+          "opIndex": { "type": "number" }
+        },
+        "additionalProperties": true
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["errors"],
+        "properties": {
+          "errors": { "type": "array", "items": { "$ref": "#/components/schemas/ErrorItem" } }
+        },
+        "additionalProperties": true
+      },
+      "DesktopRoute": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "icon": { "type": "string" },
+          "parentId": { "type": ["string", "number", "null"] },
+          "schemaUid": { "type": "string" },
+          "menuSchemaUid": { "type": "string" },
+          "tabSchemaName": { "type": "string" },
+          "hidden": { "type": "boolean" },
+          "enableTabs": { "type": "boolean" },
+          "children": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/DesktopRoute" }
+          }
+        },
+        "additionalProperties": true
+      },
+      "DesktopRouteCreateValues": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string" },
+          "title": { "type": "string" },
+          "icon": { "type": "string" },
+          "parentId": { "type": ["string", "number", "null"] },
+          "schemaUid": { "type": "string" },
+          "menuSchemaUid": { "type": "string" },
+          "enableTabs": { "type": "boolean" },
+          "hidden": { "type": "boolean" },
+          "children": { "type": "array", "items": { "type": "object" } }
+        },
+        "additionalProperties": true
+      },
+      "DesktopRouteUpdateValues": {
+        "type": "object",
+        "additionalProperties": true
+      },
+      "DesktopRouteCreateV2Request": {
+        "type": "object",
+        "required": ["schemaUid", "title"],
+        "properties": {
+          "schemaUid": { "type": "string" },
+          "parentId": { "type": ["string", "number", "null"] },
+          "title": { "type": "string" },
+          "icon": { "type": "string" }
+        },
+        "additionalProperties": false
+      },
+      "DesktopRouteCreateV2Response": {
+        "type": "object",
+        "required": ["page", "defaultTab"],
+        "properties": {
+          "page": {
+            "type": "object",
+            "properties": {
+              "id": { "type": ["string", "number"] },
+              "schemaUid": { "type": "string" },
+              "title": { "type": "string" },
+              "icon": { "type": "string" },
+              "parentId": { "type": ["string", "number", "null"] },
+              "menuSchemaUid": { "type": "string" }
+            },
+            "additionalProperties": true
+          },
+          "defaultTab": {
+            "type": ["object", "null"],
+            "properties": {
+              "id": { "type": ["string", "number"] },
+              "schemaUid": { "type": "string" },
+              "tabSchemaName": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      },
+      "DesktopRouteDestroyV2Request": {
+        "type": "object",
+        "required": ["schemaUid"],
+        "properties": { "schemaUid": { "type": "string" } },
+        "additionalProperties": false
+      },
+      "OkResponse": {
+        "type": "object",
+        "required": ["ok"],
+        "properties": { "ok": { "type": "boolean" } },
+        "additionalProperties": true
+      }
+    }
+  }
 }

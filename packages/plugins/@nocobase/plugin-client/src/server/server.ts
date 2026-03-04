@@ -168,6 +168,8 @@ export class PluginClientServer extends Plugin {
         'desktopRoutes:move',
         'desktopRoutes:destroy',
         'desktopRoutes:updateOrCreate',
+        'desktopRoutes:createV2',
+        'desktopRoutes:destroyV2',
       ],
     });
 
@@ -354,6 +356,228 @@ export class PluginClientServer extends Plugin {
       }
 
       await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('desktopRoutes:createV2', async (ctx, next) => {
+      const { values } = ctx.action.params as any;
+      const schemaUid = String(values?.schemaUid || '').trim();
+      const title = String(values?.title || '').trim();
+      const icon = values?.icon;
+      const parentId = values?.parentId ?? null;
+
+      if (!schemaUid) {
+        return ctx.throw(400, { code: 'INVALID_PARAMS', message: "desktopRoutes:createV2 requires 'schemaUid'" });
+      }
+      if (!title) {
+        return ctx.throw(400, { code: 'INVALID_PARAMS', message: "desktopRoutes:createV2 requires 'title'" });
+      }
+
+      const menuSchemaUid = `menu-${schemaUid}`;
+      const tabSchemaUid = `tabs-${schemaUid}`;
+      const tabSchemaName = `tab-${schemaUid}`;
+
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const uiSchemasModel = ctx.db.getCollection('uiSchemas')?.model;
+      const flowModelsRepository = ctx.db.getRepository('flowModels') as any;
+
+      const transaction = await ctx.db.sequelize.transaction();
+
+      const pickPage = (record: any) => ({
+        id: record?.id,
+        schemaUid: record?.schemaUid,
+        title: record?.title,
+        icon: record?.icon,
+        parentId: record?.parentId ?? null,
+        menuSchemaUid: record?.menuSchemaUid,
+      });
+
+      const pickTab = (record: any) =>
+        record
+          ? {
+              id: record?.id,
+              schemaUid: record?.schemaUid,
+              tabSchemaName: record?.tabSchemaName,
+            }
+          : null;
+
+      const isSameValue = (a: any, b: any) => String(a ?? '') === String(b ?? '');
+
+      try {
+        // 1) If page route exists, idempotently return it (do not backfill uiSchemas/flowModels)
+        const existingPage = await desktopRoutesRepository.findOne({
+          filter: { type: 'flowPage', schemaUid },
+          transaction,
+        });
+
+        if (existingPage) {
+          const pageJson = existingPage.toJSON?.() || existingPage;
+          const conflict =
+            !isSameValue(pageJson?.title, title) ||
+            !isSameValue(pageJson?.icon, icon) ||
+            !isSameValue(pageJson?.parentId ?? null, parentId ?? null);
+
+          if (conflict) {
+            ctx.throw(409, {
+              code: 'CONFLICT',
+              message: `desktopRoutes:createV2 schemaUid '${schemaUid}' already exists with different fields`,
+              details: {
+                expected: { title, icon, parentId: parentId ?? null },
+                actual: { title: pageJson?.title, icon: pageJson?.icon, parentId: pageJson?.parentId ?? null },
+              },
+            });
+          }
+
+          const existingTab = await desktopRoutesRepository.findOne({
+            filter: { parentId: pageJson?.id, type: 'tabs', hidden: true },
+            transaction,
+          });
+
+          await transaction.commit();
+          ctx.body = { page: pickPage(pageJson), defaultTab: pickTab(existingTab?.toJSON?.() || existingTab) };
+          return await next();
+        }
+
+        // 2) Create path: use uiSchemas row as a per-page mutex to avoid duplicate routes without adding schemaUid unique index
+        if (uiSchemasModel) {
+          await uiSchemasModel.findOrCreate({
+            where: { 'x-uid': schemaUid },
+            defaults: {
+              'x-uid': schemaUid,
+              schema: {
+                type: 'void',
+                'x-component': 'FlowRoute',
+                'x-uid': schemaUid,
+              },
+            },
+            transaction,
+          });
+          const dialect = ctx.db.sequelize.getDialect();
+          const supportsLock = dialect !== 'sqlite';
+          await uiSchemasModel.findByPk(
+            schemaUid,
+            supportsLock ? { transaction, lock: transaction.LOCK.UPDATE } : { transaction },
+          );
+        }
+
+        // re-check after lock
+        const existingAfterLock = await desktopRoutesRepository.findOne({
+          filter: { type: 'flowPage', schemaUid },
+          transaction,
+        });
+        if (existingAfterLock) {
+          const pageJson = existingAfterLock.toJSON?.() || existingAfterLock;
+          const conflict =
+            !isSameValue(pageJson?.title, title) ||
+            !isSameValue(pageJson?.icon, icon) ||
+            !isSameValue(pageJson?.parentId ?? null, parentId ?? null);
+
+          if (conflict) {
+            ctx.throw(409, {
+              code: 'CONFLICT',
+              message: `desktopRoutes:createV2 schemaUid '${schemaUid}' already exists with different fields`,
+              details: {
+                expected: { title, icon, parentId: parentId ?? null },
+                actual: { title: pageJson?.title, icon: pageJson?.icon, parentId: pageJson?.parentId ?? null },
+              },
+            });
+          }
+
+          const existingTab = await desktopRoutesRepository.findOne({
+            filter: { parentId: pageJson?.id, type: 'tabs', hidden: true },
+            transaction,
+          });
+
+          await transaction.commit();
+          ctx.body = { page: pickPage(pageJson), defaultTab: pickTab(existingTab?.toJSON?.() || existingTab) };
+          return await next();
+        }
+
+        const createdPage = await desktopRoutesRepository.create({
+          transaction,
+          values: {
+            type: 'flowPage',
+            schemaUid,
+            title,
+            icon,
+            parentId: parentId ?? null,
+            menuSchemaUid,
+            enableTabs: false,
+          },
+        });
+
+        const createdTab = await desktopRoutesRepository.create({
+          transaction,
+          values: {
+            type: 'tabs',
+            parentId: createdPage.get('id'),
+            schemaUid: tabSchemaUid,
+            tabSchemaName,
+            hidden: true,
+          },
+        });
+
+        // 3) Precreate flowModels under anchors to avoid first-open findOne→save
+        if (typeof flowModelsRepository?.ensureModel === 'function') {
+          await flowModelsRepository.ensureModel(
+            { parentId: schemaUid, subKey: 'page', subType: 'object', use: 'RootPageModel', async: true },
+            { transaction },
+          );
+          await flowModelsRepository.ensureModel(
+            { parentId: tabSchemaUid, subKey: 'grid', subType: 'object', use: 'BlockGridModel', async: true },
+            { transaction },
+          );
+        }
+
+        await transaction.commit();
+
+        ctx.body = {
+          page: pickPage(createdPage.toJSON()),
+          defaultTab: pickTab(createdTab.toJSON()),
+        };
+        await next();
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
+    });
+
+    this.app.resourceManager.registerActionHandler('desktopRoutes:destroyV2', async (ctx, next) => {
+      const { values } = ctx.action.params as any;
+      const schemaUid = String(values?.schemaUid || '').trim();
+
+      if (!schemaUid) {
+        return ctx.throw(400, { code: 'INVALID_PARAMS', message: "desktopRoutes:destroyV2 requires 'schemaUid'" });
+      }
+
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const uiSchemasRepository = ctx.db.getRepository('uiSchemas');
+
+      const transaction = await ctx.db.sequelize.transaction();
+      try {
+        const page = await desktopRoutesRepository.findOne({
+          filter: { type: 'flowPage', schemaUid },
+          transaction,
+        });
+
+        if (page) {
+          await desktopRoutesRepository.destroy({
+            filterByTk: page.get('id'),
+            transaction,
+          });
+        }
+
+        await uiSchemasRepository.destroy({
+          filterByTk: schemaUid,
+          transaction,
+        });
+
+        await transaction.commit();
+        ctx.body = { ok: true };
+        await next();
+      } catch (error) {
+        await transaction.rollback();
+        throw error;
+      }
     });
 
     this.app.resourceManager.registerActionHandler('roles.desktopRoutes:set', async (ctx, next) => {

@@ -389,6 +389,18 @@ export interface CreateModelOptions {
 }
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
+  /**
+   * Optional: ensure a model exists (create if missing) in a single request.
+   * When not implemented, FlowEngine will fall back to findOne→save.
+   */
+  ensure?: (
+    values: Record<string, any>,
+    options?: { includeAsyncNode?: boolean },
+  ) => Promise<Record<string, any> | null>;
+  /**
+   * Optional: run multiple ops in a single transaction (server capability).
+   */
+  mutate?: (values: Record<string, any>, options?: { includeAsyncNode?: boolean }) => Promise<Record<string, any>>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;

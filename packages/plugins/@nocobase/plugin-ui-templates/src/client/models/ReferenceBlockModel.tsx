@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { escapeT, FlowContext, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
+import { uid } from '@nocobase/utils/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
@@ -685,9 +686,6 @@ ReferenceBlockModel.registerFlow({
         const mode = params?.mode || 'reference';
         if (mode !== 'copy' || !v) return;
         const engine = ctx.engine;
-        // 1) 先在服务端复制目标模型，得到新的根节点 JSON（含新 uid）
-        const duplicated = await engine.duplicateModel(v);
-        if (!duplicated) return;
 
         // 2) 计算父模型与原位置
         const oldModel = ctx.model as FlowModel;
@@ -700,6 +698,92 @@ ReferenceBlockModel.registerFlow({
           ctx.exit();
           return;
         }
+
+        const repo = engine?.modelRepository as any;
+        const canMutate = typeof repo?.mutate === 'function';
+        const targetUid = `dup_${uid()}`;
+
+        // 1) 服务端复制（优先走 mutate 单次写入链路）
+        let duplicated: any;
+        let usedMutate = false;
+        if (canMutate) {
+          const ops: Array<{ opId: string; type: string; params: any }> = [
+            { opId: 'dup', type: 'duplicate', params: { uid: v, targetUid } },
+          ];
+
+          const isPresetOrNew = !!(oldModel as any).isNew;
+          if (isPresetOrNew) {
+            ops.push({
+              opId: 'attach',
+              type: 'attach',
+              params: { uid: targetUid, parentId: parent.uid, subKey, subType },
+            });
+          } else {
+            ops.push({
+              opId: 'move',
+              type: 'move',
+              params: { sourceId: targetUid, targetId: oldModel.uid, position: 'before' },
+            });
+            ops.push({
+              opId: 'destroyOld',
+              type: 'destroy',
+              params: { uid: oldModel.uid },
+            });
+          }
+
+          const parentStepParamsForUpsert = _.cloneDeep(parent.stepParams || {});
+          const parentPropsForUpsert = _.cloneDeep(parent.props || {});
+          const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+          if (gridParams?.rows && typeof gridParams.rows === 'object') {
+            const newRows = _.cloneDeep(gridParams.rows);
+            for (const rowId of Object.keys(newRows)) {
+              const columns = newRows[rowId];
+              if (Array.isArray(columns)) {
+                for (let ci = 0; ci < columns.length; ci++) {
+                  const col = columns[ci];
+                  if (Array.isArray(col)) {
+                    for (let ii = 0; ii < col.length; ii++) {
+                      if (col[ii] === oldModel.uid) {
+                        col[ii] = targetUid;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            parentStepParamsForUpsert['gridSettings'] = {
+              ...(parentStepParamsForUpsert['gridSettings'] || {}),
+              grid: { rows: newRows, sizes: gridParams.sizes || {} },
+            };
+            parentPropsForUpsert['rows'] = newRows;
+          }
+
+          // best-effort: keep old behavior (persist parent stepParams/props)
+          ops.push({
+            opId: 'saveParent',
+            type: 'upsert',
+            params: { values: { uid: parent.uid, stepParams: parentStepParamsForUpsert, props: parentPropsForUpsert } },
+          });
+
+          const mutateResult = await repo.mutate(
+            {
+              atomic: true,
+              ops,
+              returnModels: [targetUid],
+            },
+            { includeAsyncNode: true },
+          );
+
+          duplicated =
+            mutateResult?.models?.[targetUid] || mutateResult?.results?.find((r) => r.opId === 'dup')?.output;
+          usedMutate = true;
+        } else {
+          // fallback: legacy multi-call chain
+          duplicated = await engine.duplicateModel(v);
+        }
+
+        if (!duplicated) return;
 
         let insertIndex = -1;
         if (subType === 'array') {
@@ -738,6 +822,29 @@ ReferenceBlockModel.registerFlow({
               arr.push(newModel);
             }
             arr.forEach((m, idx) => (m.sortIndex = idx));
+
+            // 替换 Grid rows 中的 uid（避免 copy 后布局仍引用旧 uid）
+            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+            if (gridParams?.rows && typeof gridParams.rows === 'object') {
+              const newRows = _.cloneDeep(gridParams.rows);
+              for (const rowId of Object.keys(newRows)) {
+                const columns = newRows[rowId];
+                if (Array.isArray(columns)) {
+                  for (let ci = 0; ci < columns.length; ci++) {
+                    const col = columns[ci];
+                    if (Array.isArray(col)) {
+                      for (let ii = 0; ii < col.length; ii++) {
+                        if (col[ii] === oldModel.uid) {
+                          col[ii] = newModel.uid;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+              parent.setProps('rows', newRows);
+            }
           } else {
             parent.setSubModel(subKey, newModel);
           }
@@ -749,20 +856,24 @@ ReferenceBlockModel.registerFlow({
           await (newModel as any).afterAddAsSubModel?.();
 
           // 将服务端 duplicate 出来的完整子树挂载到目标父节点
-          await ctx.api.request({
-            method: 'POST',
-            url: 'flowModels:attach',
-            params: {
-              uid: newModel.uid,
-              parentId: parent.uid,
-              subKey,
-              subType,
-            },
-          });
-          await newModel.save();
+          if (!usedMutate) {
+            await ctx.api.request({
+              method: 'POST',
+              url: 'flowModels:attach',
+              params: {
+                uid: newModel.uid,
+                parentId: parent.uid,
+                subKey,
+                subType,
+              },
+            });
+            await newModel.save();
 
-          (newModel as any).isNew = false;
-          await parent.saveStepParams();
+            (newModel as any).isNew = false;
+            await parent.saveStepParams();
+          } else {
+            (newModel as any).isNew = false;
+          }
           parent.rerender();
         } else {
           // replace：保持当前位置不变——手动插入到与旧实例相同的索引，并更新 rows 将旧 uid 替换为新 uid
@@ -805,18 +916,23 @@ ReferenceBlockModel.registerFlow({
           }
 
           // 5) 已持久化场景：先保存新实例、再相对移动并删除旧实例，最后只保存布局参数
-          await newModel.save();
-          (newModel as any).isNew = false;
-          // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
-          if (subType === 'array' && engine.modelRepository) {
-            const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
-            if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
-              await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
+          if (!usedMutate) {
+            await newModel.save();
+            (newModel as any).isNew = false;
+            // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
+            if (subType === 'array' && engine.modelRepository) {
+              const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
+              if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
+                await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
+              }
             }
+            await engine.destroyModel(oldModel.uid);
+            // 持久化父模型的布局参数
+            await parent.saveStepParams();
+          } else {
+            (newModel as any).isNew = false;
+            engine.removeModelWithSubModels(oldModel.uid);
           }
-          await engine.destroyModel(oldModel.uid);
-          // 持久化父模型的布局参数
-          await parent.saveStepParams();
         }
 
         // 关闭设置视图

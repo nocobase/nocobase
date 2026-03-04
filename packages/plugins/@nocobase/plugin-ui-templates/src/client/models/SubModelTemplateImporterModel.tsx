@@ -32,6 +32,7 @@ import {
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 import { patchGridOptionsFromTemplateRoot } from '../utils/templateCopy';
 import { REF_HOST_CTX_KEY } from '../constants';
+import { uid } from '@nocobase/utils/client';
 
 type ImporterProps = {
   expectedRootUse?: string | string[];
@@ -191,8 +192,61 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
       const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
       const gridModel = root.subModels?.grid as FlowModel;
 
-      const duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
-      const duplicatedUid = duplicated.uid;
+      const repo = mountTarget.flowEngine.modelRepository as any;
+      const canMutate = typeof repo?.mutate === 'function';
+
+      let duplicated: any;
+      let duplicatedUid: string;
+
+      if (canMutate) {
+        const targetDuplicatedUid = `dup_${uid()}`;
+        const templateGridSnapshot = gridModel.serialize();
+        const patchedGrid = patchGridOptionsFromTemplateRoot(root, templateGridSnapshot);
+
+        const ops: Array<{ opId: string; type: string; params: any }> = [
+          {
+            opId: 'dup',
+            type: 'duplicate',
+            params: { uid: gridModel.uid, targetUid: targetDuplicatedUid },
+          },
+          {
+            opId: 'move',
+            type: 'move',
+            params: { sourceId: targetDuplicatedUid, targetId: existingGrid.uid, position: 'after' },
+          },
+          {
+            opId: 'destroyOld',
+            type: 'destroy',
+            params: { uid: existingGrid.uid },
+          },
+        ];
+
+        if (patchedGrid.patched) {
+          ops.push({
+            opId: 'patch',
+            type: 'upsert',
+            params: { values: { uid: targetDuplicatedUid, stepParams: patchedGrid.options?.stepParams } },
+          });
+        }
+
+        const mutateResult = await repo.mutate(
+          {
+            atomic: true,
+            ops,
+            returnModels: [targetDuplicatedUid],
+          },
+          { includeAsyncNode: true },
+        );
+
+        duplicated =
+          mutateResult?.models?.[targetDuplicatedUid] || mutateResult?.results?.find((r) => r.opId === 'dup')?.output;
+        duplicatedUid = String(duplicated?.uid || targetDuplicatedUid).trim();
+      } else {
+        duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
+        duplicatedUid = duplicated.uid;
+        // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 replaceModel/save 重建整棵树
+        await mountTarget.flowEngine.modelRepository.move(duplicatedUid, existingGrid.uid, 'after');
+      }
 
       // 自定义表单区块可能会对 FormItemModel 做映射：这里按 block 提供的映射将模板字段入口改为目标入口
       const rawMappedUse = resolveMappedFormItemUse(mountTarget);
@@ -219,9 +273,6 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
 
       const merged = patchGridOptionsFromTemplateRoot(root, normalized);
 
-      // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 replaceModel/save 重建整棵树
-      await mountTarget.flowEngine.modelRepository.move(duplicatedUid, existingGrid.uid, 'after');
-
       const newGrid = mountTarget.flowEngine.createModel<FlowModel>({
         ...merged.options,
         parentId: mountTarget.uid,
@@ -230,9 +281,13 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
       });
       mountTarget.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
-      await mountTarget.flowEngine.destroyModel(existingGrid.uid);
-      if (merged.patched) {
-        await newGrid.saveStepParams();
+      if (canMutate) {
+        mountTarget.flowEngine.removeModelWithSubModels(existingGrid.uid);
+      } else {
+        await mountTarget.flowEngine.destroyModel(existingGrid.uid);
+        if (merged.patched) {
+          await newGrid.saveStepParams();
+        }
       }
 
       await mountTarget.rerender();

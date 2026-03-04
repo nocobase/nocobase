@@ -978,13 +978,66 @@ export class FlowEngine {
       return hydrated;
     }
 
-    const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
-    if (data?.uid) {
-      model = this.createModel<T>(data as any, extra);
-    } else {
-      model = this.createModel<T>(options, extra);
-      await model.save();
+
+    // Prefer ensure (single request) over findOne→save (two requests)
+    const ensure = (this._modelRepository as any)?.ensure;
+    const canEnsure = typeof ensure === 'function';
+    const includeAsyncNode = !!(options as any)?.includeAsyncNode;
+    const use = (options as any)?.use;
+    const canUseEnsure = canEnsure && typeof use === 'string' && !!String(use).trim();
+
+    const buildEnsureValues = (): Record<string, any> | null => {
+      const uid = String((options as any)?.uid || '').trim();
+      const parentId = String((options as any)?.parentId || '').trim();
+      const subKey = String((options as any)?.subKey || '').trim();
+      const subType = (options as any)?.subType;
+
+      if (uid) {
+        return {
+          uid,
+          use,
+          async: !!(options as any)?.async,
+          props: (options as any)?.props,
+          stepParams: (options as any)?.stepParams,
+          flowRegistry: (options as any)?.flowRegistry,
+          subModels: (options as any)?.subModels,
+        };
+      }
+
+      if (parentId && subKey && subType === 'object') {
+        return {
+          parentId,
+          subKey,
+          subType: 'object',
+          use,
+          async: !!(options as any)?.async,
+          props: (options as any)?.props,
+          stepParams: (options as any)?.stepParams,
+          flowRegistry: (options as any)?.flowRegistry,
+          subModels: (options as any)?.subModels,
+        };
+      }
+
+      return null;
+    };
+
+    const ensureValues = canUseEnsure ? buildEnsureValues() : null;
+    if (ensureValues) {
+      const ensured = await ensure(ensureValues, { includeAsyncNode });
+      if (ensured?.uid) {
+        model = this.createModel<T>(ensured as any, extra);
+      }
+    }
+
+    if (!model) {
+      const data = await this._modelRepository.findOne(options);
+      if (data?.uid) {
+        model = this.createModel<T>(data as any, extra);
+      } else {
+        model = this.createModel<T>(options, extra);
+        await model.save();
+      }
     }
     if (model.parent) {
       const subModel = model.parent.findSubModel(model.subKey, (m) => {

@@ -11,6 +11,7 @@ import { Cache } from '@nocobase/cache';
 import { Repository, Transaction, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { default as _, default as lodash } from 'lodash';
+import { createHash } from 'node:crypto';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 export interface GetJsonSchemaOptions {
@@ -22,6 +23,20 @@ export interface GetJsonSchemaOptions {
 export interface GetPropertiesOptions {
   readFromCache?: boolean;
   transaction?: Transaction;
+}
+
+export class FlowModelOperationError extends Error {
+  status: number;
+  code: string;
+  details?: any;
+
+  constructor(params: { status: number; code: string; message: string; details?: any }) {
+    super(params.message);
+    this.status = params.status;
+    this.code = params.code;
+    this.details = params.details;
+    this.name = 'FlowModelOperationError';
+  }
 }
 
 export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
@@ -1569,6 +1584,270 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
   }
 
   @transaction()
+  async ensureModel(
+    values: any,
+    options?: Transactionable & {
+      includeAsyncNode?: boolean;
+    },
+  ) {
+    const includeAsyncNode = !!options?.includeAsyncNode;
+    const { transaction } = options || {};
+
+    const uidValue = String(values?.uid || '').trim();
+    const parentIdValue = String(values?.parentId || '').trim();
+    const subKeyValue = String(values?.subKey || '').trim();
+    const subTypeValue = values?.subType;
+
+    const hasUidLocator = !!uidValue;
+    const hasObjectChildLocator = !!parentIdValue || !!subKeyValue || subTypeValue !== undefined;
+
+    if (hasUidLocator && hasObjectChildLocator) {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:ensure requires either 'uid' OR ('parentId'+'subKey'+'subType=object'), not both",
+      });
+    }
+
+    if (!hasUidLocator && !hasObjectChildLocator) {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:ensure missing locator: provide 'uid' OR ('parentId'+'subKey'+'subType=object')",
+      });
+    }
+
+    if (uidValue) {
+      const exists = await this.model.findByPk(uidValue, { transaction });
+      if (exists) {
+        return await this.findModelById(uidValue, { transaction, includeAsyncNode });
+      }
+
+      const use = String(values?.use || '').trim();
+      if (!use) {
+        throw new FlowModelOperationError({
+          status: 400,
+          code: 'INVALID_PARAMS',
+          message: "flowModels:ensure missing required field 'use' when creating by uid",
+        });
+      }
+
+      const unwrapSqlError = (error: any) => {
+        return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
+      };
+      const isUniqueConstraint = (error: any) => {
+        if (!error) return false;
+        if (error?.name === 'SequelizeUniqueConstraintError') return true;
+        const err = unwrapSqlError(error);
+        if (!err) return false;
+        if (err?.code === '23505') return true; // postgres unique_violation
+        if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
+        if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
+        return false;
+      };
+
+      try {
+        await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
+          await this.upsertModel(
+            {
+              uid: uidValue,
+              use,
+              async: !!values?.async,
+              props: values?.props,
+              stepParams: values?.stepParams,
+              flowRegistry: values?.flowRegistry,
+              subModels: values?.subModels,
+            },
+            { transaction: innerTransaction },
+          );
+        });
+      } catch (error) {
+        // retry-safety for concurrent ensure by the same uid
+        if (isUniqueConstraint(error)) {
+          const createdByOther = await this.model.findByPk(uidValue, { transaction });
+          if (createdByOther) {
+            return await this.findModelById(uidValue, { transaction, includeAsyncNode });
+          }
+        }
+        throw error;
+      }
+      return await this.findModelById(uidValue, { transaction, includeAsyncNode });
+    }
+
+    // object child ensure: parentId + subKey + subType=object
+    if (!parentIdValue || !subKeyValue || subTypeValue !== 'object') {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:ensure by parent requires 'parentId'+'subKey' and 'subType' must be 'object'",
+      });
+    }
+
+    const supportsForUpdate =
+      this.database.sequelize.getDialect() === 'postgres' || this.database.isMySQLCompatibleDialect();
+
+    // lock parent row to make ensure concurrent-safe (best effort for dialects that don't support FOR UPDATE)
+    const lockedParent = await this.database.sequelize.query(
+      this.sqlAdapter(
+        `SELECT "uid" FROM ${this.flowModelsTableName} WHERE "uid" = :uid${supportsForUpdate ? ' FOR UPDATE' : ''}`,
+      ),
+      {
+        type: 'SELECT',
+        replacements: { uid: parentIdValue },
+        transaction,
+      },
+    );
+    if (!lockedParent?.length) {
+      throw new FlowModelOperationError({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: `flowModels:ensure parentId '${parentIdValue}' not found`,
+      });
+    }
+
+    const treeTable = this.flowModelTreePathTableName;
+    const existingChildren = await this.database.sequelize.query(
+      `SELECT TreeTable.descendant as uid
+       FROM ${treeTable} as TreeTable
+                LEFT JOIN ${treeTable} as NodeInfo
+                          ON NodeInfo.descendant = TreeTable.descendant
+                              AND NodeInfo.depth = 0
+       WHERE TreeTable.depth = 1
+         AND TreeTable.ancestor = :ancestor
+         AND NodeInfo.type = :type
+       ORDER BY TreeTable.sort ASC`,
+      {
+        type: 'SELECT',
+        replacements: {
+          ancestor: parentIdValue,
+          type: subKeyValue,
+        },
+        transaction,
+      },
+    );
+
+    if (existingChildren?.length) {
+      if (existingChildren.length > 1) {
+        throw new FlowModelOperationError({
+          status: 409,
+          code: 'CONFLICT',
+          message: `flowModels:ensure object subKey '${subKeyValue}' already has multiple children on parent '${parentIdValue}'`,
+        });
+      }
+
+      const childUid = String(existingChildren[0]?.uid || '').trim();
+      if (!childUid) {
+        throw new FlowModelOperationError({
+          status: 500,
+          code: 'INTERNAL_ERROR',
+          message: 'flowModels:ensure failed to resolve existing child uid',
+        });
+      }
+
+      const childInstance = await this.model.findByPk(childUid, { transaction });
+      if (!childInstance) {
+        throw new FlowModelOperationError({
+          status: 500,
+          code: 'INTERNAL_ERROR',
+          message: `flowModels:ensure child uid '${childUid}' not found`,
+        });
+      }
+
+      const childOptions = FlowModelRepository.optionsToJson(childInstance.get('options'));
+      if (childOptions?.subType && childOptions.subType !== 'object') {
+        throw new FlowModelOperationError({
+          status: 409,
+          code: 'CONFLICT',
+          message: `flowModels:ensure object subKey '${subKeyValue}' conflicts with existing subType '${childOptions.subType}'`,
+        });
+      }
+
+      return await this.findModelById(childUid, { transaction, includeAsyncNode });
+    }
+
+    const use = String(values?.use || '').trim();
+    if (!use) {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:ensure missing required field 'use' when creating object child model",
+      });
+    }
+
+    const newUid = `ens_${createHash('sha256')
+      .update(`${parentIdValue}\u0000${subKeyValue}\u0000object`)
+      .digest('hex')
+      .slice(0, 24)}`;
+
+    try {
+      await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
+        await this.upsertModel(
+          {
+            uid: newUid,
+            use,
+            async: !!values?.async,
+            props: values?.props,
+            stepParams: values?.stepParams,
+            flowRegistry: values?.flowRegistry,
+            subModels: values?.subModels,
+            parentId: parentIdValue,
+            subKey: subKeyValue,
+            subType: 'object',
+          },
+          { transaction: innerTransaction },
+        );
+      });
+    } catch (error) {
+      // retry-safety for concurrent ensure on dialects without row locks (or cross-instance races)
+      const unwrapSqlError = (error: any) => {
+        return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
+      };
+      const isUniqueConstraint = (error: any) => {
+        if (!error) return false;
+        if (error?.name === 'SequelizeUniqueConstraintError') return true;
+        const err = unwrapSqlError(error);
+        if (!err) return false;
+        if (err?.code === '23505') return true; // postgres unique_violation
+        if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
+        if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
+        return false;
+      };
+
+      if (isUniqueConstraint(error)) {
+        const treeTable = this.flowModelTreePathTableName;
+        const existing = await this.database.sequelize.query(
+          `SELECT TreeTable.descendant as uid
+           FROM ${treeTable} as TreeTable
+                    LEFT JOIN ${treeTable} as NodeInfo
+                              ON NodeInfo.descendant = TreeTable.descendant
+                                  AND NodeInfo.depth = 0
+           WHERE TreeTable.depth = 1
+             AND TreeTable.ancestor = :ancestor
+             AND NodeInfo.type = :type
+           ORDER BY TreeTable.sort ASC`,
+          {
+            type: 'SELECT',
+            replacements: {
+              ancestor: parentIdValue,
+              type: subKeyValue,
+            },
+            transaction,
+          },
+        );
+        if (existing?.length) {
+          const childUid = String(existing[0]?.uid || '').trim();
+          if (childUid) {
+            return await this.findModelById(childUid, { transaction, includeAsyncNode });
+          }
+        }
+      }
+      throw error;
+    }
+
+    return await this.findModelById(newUid, { transaction, includeAsyncNode });
+  }
+
+  @transaction()
   async attach(uid: string, attachOptions: FlowModelAttachOptions, options?: Transactionable) {
     const { transaction } = options || {};
     const modelUid = String(uid || '').trim();
@@ -1577,21 +1856,37 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const subType = attachOptions?.subType;
 
     if (!modelUid || !parentId || !subKey || (subType !== 'array' && subType !== 'object')) {
-      throw new Error('flowModels:attach missing required params');
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: 'flowModels:attach missing required params',
+      });
     }
     if (modelUid === parentId) {
-      throw new Error('flowModels:attach cannot attach model to itself');
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: 'flowModels:attach cannot attach model to itself',
+      });
     }
 
     const treeTable = this.flowModelTreePathTableName;
 
     const modelInstance = await this.model.findByPk(modelUid, { transaction });
     if (!modelInstance) {
-      throw new Error(`flowModels:attach uid '${modelUid}' not found`);
+      throw new FlowModelOperationError({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: `flowModels:attach uid '${modelUid}' not found`,
+      });
     }
     const parentInstance = await this.model.findByPk(parentId, { transaction });
     if (!parentInstance) {
-      throw new Error(`flowModels:attach parentId '${parentId}' not found`);
+      throw new FlowModelOperationError({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: `flowModels:attach parentId '${parentId}' not found`,
+      });
     }
 
     // 环检测：禁止将祖先挂到其子孙节点下
@@ -1610,7 +1905,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       },
     );
     if (cycle?.length) {
-      throw new Error('flowModels:attach cycle detected');
+      throw new FlowModelOperationError({
+        status: 409,
+        code: 'CYCLE_DETECTED',
+        message: 'flowModels:attach cycle detected',
+      });
     }
 
     // object 子模型：同一 parent + subKey 只能存在一个
@@ -1637,7 +1936,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         },
       );
       if (conflict?.length) {
-        throw new Error(`flowModels:attach subKey '${subKey}' already exists on parent '${parentId}'`);
+        throw new FlowModelOperationError({
+          status: 409,
+          code: 'CONFLICT',
+          message: `flowModels:attach subKey '${subKey}' already exists on parent '${parentId}'`,
+        });
       }
     }
 
@@ -1652,7 +1955,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
           return { type, target };
         }
       }
-      throw new Error('flowModels:attach invalid position');
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: 'flowModels:attach invalid position',
+      });
     };
 
     const position: FlowModelAttachPosition =
@@ -1662,7 +1969,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     if (typeof position === 'object') {
       const target = String(position.target || '').trim();
       if (target === modelUid) {
-        throw new Error('flowModels:attach position target cannot be itself');
+        throw new FlowModelOperationError({
+          status: 400,
+          code: 'INVALID_PARAMS',
+          message: 'flowModels:attach position target cannot be itself',
+        });
       }
 
       const ok = await this.database.sequelize.query(
@@ -1687,7 +1998,11 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         },
       );
       if (!ok?.length) {
-        throw new Error('flowModels:attach position target is not a sibling under the same parent/subKey');
+        throw new FlowModelOperationError({
+          status: 400,
+          code: 'INVALID_PARAMS',
+          message: 'flowModels:attach position target is not a sibling under the same parent/subKey',
+        });
       }
     }
 
@@ -1725,11 +2040,142 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return await this.findModelById(modelUid, { transaction, includeAsyncNode: true });
   }
 
-  async move(options) {
-    const { sourceId, targetId, position } = options;
-    return await this.insertAdjacent(position === 'after' ? 'afterEnd' : 'beforeBegin', targetId, {
-      ['uid']: sourceId,
+  @transaction()
+  async duplicateWithTargetUid(
+    modelUid: string,
+    targetUid: string,
+    options?: Transactionable & {
+      includeAsyncNode?: boolean;
+    },
+  ) {
+    const sourceUid = String(modelUid || '').trim();
+    const desiredUid = String(targetUid || '').trim();
+    const includeAsyncNode = !!options?.includeAsyncNode;
+    const { transaction } = options || {};
+
+    if (!sourceUid || !desiredUid) {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:mutate duplicate requires 'uid' and 'targetUid'",
+      });
+    }
+
+    const targetInstance = await this.model.findByPk(desiredUid, { transaction });
+    if (targetInstance) {
+      const targetOptions = FlowModelRepository.optionsToJson(targetInstance.get('options'));
+      const marker = targetOptions?.__mutateDuplicate;
+      if (marker?.sourceUid === sourceUid) {
+        return await this.findModelById(desiredUid, { transaction, includeAsyncNode });
+      }
+      throw new FlowModelOperationError({
+        status: 409,
+        code: 'CONFLICT',
+        message: `flowModels:mutate duplicate targetUid '${desiredUid}' already exists`,
+      });
+    }
+
+    let nodes = await this.findNodesById(sourceUid, { ...options, includeAsyncNode: true });
+    if (!nodes?.length) {
+      throw new FlowModelOperationError({
+        status: 404,
+        code: 'NOT_FOUND',
+        message: `flowModels:mutate duplicate uid '${sourceUid}' not found`,
+      });
+    }
+
+    nodes = this.dedupeNodesForDuplicate(nodes, sourceUid);
+
+    const buildUid = (root: string, old: string) => {
+      if (old === sourceUid) return root;
+      const h = createHash('sha256').update(`${root}:${old}`).digest('hex').slice(0, 24);
+      return `d_${h}`;
+    };
+
+    const uidMap: Record<string, string> = {};
+    for (const n of nodes) {
+      uidMap[n['uid']] = buildUid(desiredUid, n['uid']);
+    }
+
+    const sorted: any[] = [...nodes].sort((a: any, b: any) => {
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      const ap = a.parent || '';
+      const bp = b.parent || '';
+      if (ap !== bp) return ap < bp ? -1 : 1;
+      const at = a.type || '';
+      const bt = b.type || '';
+      if (at !== bt) return at < bt ? -1 : 1;
+      const as = a.sort ?? 0;
+      const bs = b.sort ?? 0;
+      return as - bs;
     });
+
+    for (const n of sorted) {
+      const oldUid = n['uid'];
+      const newUid = uidMap[oldUid];
+      const oldParentUid = n['parent'];
+      const newParentUid = uidMap[oldParentUid] ?? null;
+
+      const optionsObj = this.replaceStepParamsModelUids(
+        lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
+        uidMap,
+      );
+
+      if (oldUid === sourceUid) {
+        optionsObj.__mutateDuplicate = { sourceUid };
+      }
+
+      if (newParentUid) {
+        optionsObj.parent = newParentUid;
+        optionsObj.parentId = newParentUid;
+      }
+
+      const schemaNode: SchemaNode = {
+        uid: newUid,
+        ['x-async']: !!n.async,
+        ...optionsObj,
+      };
+
+      if (newParentUid) {
+        schemaNode.childOptions = {
+          parentUid: newParentUid,
+          type: n.type,
+          position: 'last',
+        };
+      }
+
+      await this.insertSingleNode(schemaNode, { transaction });
+    }
+
+    return await this.findModelById(desiredUid, { transaction, includeAsyncNode });
+  }
+
+  @transaction()
+  async move(
+    moveOptions: { sourceId: string; targetId: string; position: 'before' | 'after' },
+    options?: Transactionable,
+  ) {
+    const { transaction } = options || {};
+    const sourceId = String(moveOptions?.sourceId || '').trim();
+    const targetId = String(moveOptions?.targetId || '').trim();
+    const position = moveOptions?.position;
+
+    if (!sourceId || !targetId || (position !== 'before' && position !== 'after')) {
+      throw new FlowModelOperationError({
+        status: 400,
+        code: 'INVALID_PARAMS',
+        message: "flowModels:move requires 'sourceId'+'targetId'+'position=before|after'",
+      });
+    }
+
+    return await this.insertAdjacent(
+      position === 'after' ? 'afterEnd' : 'beforeBegin',
+      targetId,
+      {
+        ['uid']: sourceId,
+      },
+      { transaction },
+    );
   }
 }
 
