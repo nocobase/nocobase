@@ -34,6 +34,13 @@ import {
   updatePluginByCompressedFileUrl,
 } from './utils';
 
+class PluginLoadError extends Error {
+  constructor(pluginName: string) {
+    super(`${pluginName} plugin load error`);
+    this.name = 'PluginLoadError';
+  }
+}
+
 export const sleep = async (timeout = 0) => {
   return new Promise((resolve) => {
     setTimeout(resolve, timeout);
@@ -572,7 +579,7 @@ export class PluginManager {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
         if (!plugin) {
-          throw new Error(`${pluginName} plugin does not exist`);
+          throw new PluginLoadError(pluginName);
         }
         if (added[pluginName]) {
           continue;
@@ -595,7 +602,7 @@ export class PluginManager {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
         if (!plugin) {
-          throw new Error(`${pluginName} plugin does not exist`);
+          throw new PluginLoadError(pluginName);
         }
         if (added[pluginName]) {
           continue;
@@ -620,7 +627,7 @@ export class PluginManager {
       const { name: pluginName } = await PluginManager.parseName(name);
       const plugin = this.get(pluginName);
       if (!plugin) {
-        throw new Error(`${pluginName} plugin does not exist`);
+        throw new PluginLoadError(pluginName);
       }
       if (plugin.enabled) {
         continue;
@@ -694,7 +701,7 @@ export class PluginManager {
       const { name: pluginName } = await PluginManager.parseName(name);
       const plugin = this.get(pluginName);
       if (!plugin) {
-        throw new Error(`${pluginName} plugin does not exist`);
+        throw new PluginLoadError(pluginName);
       }
       if (!plugin.enabled) {
         continue;
