@@ -1,14 +1,18 @@
 ---
-displayName: "Action: Custom request"
+displayName: "Дія: Спеціальний запит"
 packageName: '@nocobase/plugin-action-custom-request'
 supportedVersions:
   - 1.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  Надсилання запиту до будь-якого HTTP-сервісу, підтримує надсилання контекстних даних до цільового сервісу.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Custom request
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-action-custom-request/index).
+:::
+
+# Дія: Спеціальний запит

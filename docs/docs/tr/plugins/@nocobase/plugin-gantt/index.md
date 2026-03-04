@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "Blok: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  Gantt bloğu sağlar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-gantt/index) bakın.
+:::
+
+# Blok: Gantt

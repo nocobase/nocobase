@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "Vložit NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
+  Vložte NocoBase do externího systému nebo stránky, aby se stal součástí daného systému nebo stránky.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-embed/index).
+:::
+
+# Vložit NocoBase

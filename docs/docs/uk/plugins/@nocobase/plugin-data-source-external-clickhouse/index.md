@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External ClickHouse"
+displayName: "Джерело даних: Зовнішній ClickHouse"
 packageName: '@nocobase/plugin-data-source-external-clickhouse'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external ClickHouse databases as data sources.
+  Використовуйте зовнішню базу даних ClickHouse як джерело даних.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Data source: External ClickHouse
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-data-source-external-clickhouse/index).
+:::
+
+# Джерело даних: Зовнішній ClickHouse

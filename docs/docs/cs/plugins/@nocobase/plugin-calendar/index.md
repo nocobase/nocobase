@@ -1,12 +1,16 @@
 ---
-displayName: "Calendar"
+displayName: "Kalendář"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  Poskytuje šablonu Collection a blok kalendáře pro správu datových údajů, obvykle pro informace související s datem/časem, jako jsou události, schůzky, úkoly atd.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Calendar
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-calendar/index).
+:::
+
+# Kalendář

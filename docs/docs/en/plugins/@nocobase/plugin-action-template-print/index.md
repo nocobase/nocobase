@@ -1,15 +1,15 @@
 ---
-displayName: "Template print"
+displayName: "Print Template"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  It supports users in printing templates within the NocoBase application.
+  Supports printing templates within NocoBase applications.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Template print
+# Print Template

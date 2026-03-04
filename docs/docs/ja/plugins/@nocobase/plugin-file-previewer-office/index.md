@@ -1,12 +1,16 @@
 ---
-displayName: "Office File Previewer"
+displayName: "Office ファイルプレビュー"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  A plugin for previewing office files via Microsoft live preview service.
+  Microsoft のオンラインサービスを利用して Office ファイルをプレビューするためのプラグインです。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Office File Previewer
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-file-previewer-office/index)をご参照ください。
+:::
+
+# Office ファイルプレビュー

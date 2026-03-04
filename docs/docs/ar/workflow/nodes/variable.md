@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 في واجهة إعدادات سير العمل، انقر على زر الزائد ("+") في سير العمل لإضافة عقدة "متغير":
 
-![إضافة عقدة متغير](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![إضافة عقدة متغير](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## إعداد العقدة
 
@@ -41,7 +41,7 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 في وضع التعريف، يعادل تعيين قيمة للمتغير إسناد قيمة أولية له.
 
-![تعريف قيمة أولية](https://static-docs.nocobase.com/4ce2c65ad537343013758c6a4.png)
+![تعريف قيمة أولية](https://static-docs.nocobase.com/4ce2c508986565ad537343013758c6a4.png)
 
 في وضع الإسناد، يعادل تعيين قيمة للمتغير تعديل قيمة المتغير الهدف المُعرّف إلى قيمة جديدة. وستحصل الاستخدامات اللاحقة على هذه القيمة الجديدة.
 

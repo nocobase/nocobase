@@ -1,14 +1,18 @@
 ---
-displayName: "UI templates"
+displayName: "Templat UI"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Menyediakan kemampuan penggunaan kembali templat blok dan templat popup.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-ui-templates/index).
+:::
+
+# Templat UI

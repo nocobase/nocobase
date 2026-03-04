@@ -1,12 +1,16 @@
 ---
-displayName: "Data source: Main"
+displayName: "מקור נתונים: מסד נתונים ראשי"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
+  מסד הנתונים הראשי של NocoBase, תומך במסדי נתונים יחסיים כגון PostgreSQL, MySQL, MariaDB וכו'.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data source: Main
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-data-source-main/index).
+:::
+
+# מקור נתונים: מסד נתונים ראשי

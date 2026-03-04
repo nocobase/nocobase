@@ -12,7 +12,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 Dopo aver configurato l'applicazione, copiare l'**URL SSO**, l'**ID entità** e il **Certificato**.
 
-![](https://static-docs.nocobase.com/aafd0a794730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## Aggiungere un nuovo autenticatore su NocoBase
 
@@ -33,7 +33,7 @@ Quindi, copiare l'Emittente SP/ID entità e l'URL ACS dalla sezione "Utilizzo".
 
 Tornare alla Console Google, nella pagina **Dettagli del provider di servizi**, inserire l'URL ACS e l'ID entità copiati in precedenza e selezionare **Risposta firmata**.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc7234317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
 ![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 

@@ -1,714 +1,708 @@
-# CRM 2.0 System Design
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/crm/design).
+:::
 
-## 1. System Overview & Design Philosophy
+# Detaljerad systemdesign för CRM 2.0
 
-### 1.1 System Positioning
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+## 1. Systemöversikt och designfilosofi
+
+### 1.1 Systempositionering
+
+Detta system är en **CRM 2.0-försäljningsplattform** byggd på NocoBase-plattformen för kodlös utveckling. Kärnmålet är:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+Låt säljarna fokusera på att bygga kundrelationer, snarare än datainmatning och repetitiv analys.
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+Systemet automatiserar rutinuppgifter via arbetsflöden och använder AI för att assistera med lead-poängsättning, analys av affärsmöjligheter och andra uppgifter, vilket hjälper säljteam att öka effektiviteten.
 
-### 1.2 Design Philosophy
+### 1.2 Designfilosofi
 
-#### Principle 1: Complete Sales Funnel
+#### Princip 1: Fullständig försäljningstratt
 
-**End-to-end sales flow:**
+**End-to-end försäljningsprocess:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**Varför designa på detta sätt?**
 
-**Why design it this way?**
+| Traditionell metod | Integrerat CRM |
+|---------|-----------|
+| Flera system används för olika stadier | Ett enda system täcker hela livscykeln |
+| Manuell dataöverföring mellan system | Automatiserat dataflöde och konvertering |
+| Inkonsekventa kundvyer | Enhetlig 360-graders kundvy |
+| Fragmenterad dataanalys | End-to-end-analys av försäljningspipelinen |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### Princip 2: Konfigurerbar försäljningspipeline
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+Olika branscher kan anpassa stadierna i försäljningspipelinen utan att ändra kod.
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### Princip 3: Modulär design
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- Kärnmoduler (Kunder + Affärsmöjligheter) är obligatoriska; andra moduler kan aktiveras vid behov.
+- Inaktivering av moduler kräver inga kodändringar; det görs via konfiguration i NocoBase-gränssnittet.
+- Varje modul är designad självständigt för att minska beroenden.
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. Modularkitektur och anpassning
 
-### 2.1 Module Overview
+### 2.1 Modulöversikt
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+CRM-systemet använder en **modulär arkitektur** – varje modul kan aktiveras eller inaktiveras oberoende baserat på verksamhetens behov.
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 Modulberoenden
 
-### 2.2 Module Dependencies
+| Modul | Obligatorisk | Beroenden | Villkor för inaktivering |
+|-----|---------|--------|---------|
+| **Kundhantering** | ✅ Ja | - | Kan inte inaktiveras (Kärna) |
+| **Hantering av affärsmöjligheter** | ✅ Ja | Kundhantering | Kan inte inaktiveras (Kärna) |
+| **Lead-hantering** | Valfri | - | När lead-insamling inte krävs |
+| **Offerthantering** | Valfri | Affärsmöjligheter, Produkter | Enkla transaktioner som inte kräver formella offerter |
+| **Orderhantering** | Valfri | Affärsmöjligheter (eller Offerter) | När order-/betalningsspårning inte krävs |
+| **Produkthantering** | Valfri | - | När en produktkatalog inte krävs |
+| **E-postintegration** | Valfri | Kunder, Kontakter | Vid användning av ett externt e-postsystem |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 Förkonfigurerade versioner
 
-### 2.3 Pre-configured Editions
+| Version | Inkluderade moduler | Användningsområde | Antal samlingar |
+|-----|---------|---------|-----------|
+| **Light** | Kunder + Affärsmöjligheter | Enkel transaktionsspårning | 6 |
+| **Standard** | Light + Leads + Offerter + Order + Produkter | Fullständig försäljningscykel | 15 |
+| **Enterprise** | Standard + E-postintegration | Full funktionalitet inklusive e-post | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 Mappning mellan moduler och samlingar
 
-### 2.4 Module–Table Mapping
+#### Samlingar för kärnmoduler (alltid obligatoriska)
 
-#### Core Module Tables (Always Required)
+| Samling | Modul | Beskrivning |
+|-------|------|------|
+| nb_crm_customers | Kundhantering | Kund-/företagsposter |
+| nb_crm_contacts | Kundhantering | Kontakter |
+| nb_crm_customer_shares | Kundhantering | Behörigheter för kunddelning |
+| nb_crm_opportunities | Hantering av affärsmöjligheter | Försäljningsmöjligheter |
+| nb_crm_opportunity_stages | Hantering av affärsmöjligheter | Konfiguration av stadier |
+| nb_crm_opportunity_users | Hantering av affärsmöjligheter | Medarbetare för affärsmöjligheter |
+| nb_crm_activities | Aktivitetshantering | Aktivitetsposter |
+| nb_crm_comments | Aktivitetshantering | Kommentarer/anteckningar |
+| nb_crm_tags | Kärna | Delade taggar |
+| nb_cbo_currencies | Grunddata | Valutalexikon |
+| nb_cbo_regions | Grunddata | Lexikon för länder/regioner |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 Hur ni inaktiverar moduler
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+Dölj helt enkelt menyalternativet för modulen i NocoBase administrationsgränssnitt; ni behöver inte ändra kod eller radera samlingar.
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. Kärnentiteter och datamodell
 
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
+### 3.1 Översikt över entitetsrelationer
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 Detaljer om kärnsamlingar
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 Leads (nb_crm_leads)
 
-**Stage flow:**
+Lead-hantering med ett förenklat arbetsflöde i 4 stadier.
+
+**Stadieprocess:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
+Ny → Pågående → Validerad → Konverterad till kund/affärsmöjlighet
+         ↓          ↓
+    Ej kvalificerad Ej kvalificerad
 ```
 
-**Key fields:**
+**Nyckelfält:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| lead_no | VARCHAR | Lead-nummer (Autogenererat) |
+| name | VARCHAR | Kontaktnamn |
+| company | VARCHAR | Företagsnamn |
+| title | VARCHAR | Yrkesroll |
+| email | VARCHAR | E-post |
+| phone | VARCHAR | Telefon |
+| mobile_phone | VARCHAR | Mobil |
+| website | TEXT | Webbplats |
+| address | TEXT | Adress |
+| source | VARCHAR | Lead-källa: website/ads/referral/exhibition/telemarketing/email/social |
+| industry | VARCHAR | Bransch |
+| annual_revenue | VARCHAR | Årlig omsättningsskala |
+| number_of_employees | VARCHAR | Antal anställda-skala |
 | status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| rating | VARCHAR | Betyg: hot/warm/cold |
+| owner_id | BIGINT | Ägare (FK → users) |
+| ai_score | INTEGER | AI-kvalitetspoäng 0-100 |
+| ai_convert_prob | DECIMAL | AI-konverteringssannolikhet |
+| ai_best_contact_time | VARCHAR | AI-rekommenderad kontakttid |
+| ai_tags | JSONB | AI-genererade taggar |
+| ai_scored_at | TIMESTAMP | Tid för AI-poängsättning |
+| ai_next_best_action | TEXT | AI-förslag på nästa bästa åtgärd |
+| ai_nba_generated_at | TIMESTAMP | Tid för generering av AI-förslag |
+| is_converted | BOOLEAN | Konverteringsflagga |
+| converted_at | TIMESTAMP | Konverteringstid |
+| converted_customer_id | BIGINT | Konverterat kund-ID |
+| converted_contact_id | BIGINT | Konverterat kontakt-ID |
+| converted_opportunity_id | BIGINT | Konverterat affärsmöjlighets-ID |
+| lost_reason | TEXT | Orsak till förlust |
+| disqualification_reason | TEXT | Orsak till diskvalificering |
+| description | TEXT | Beskrivning |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 Kunder (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+Kund-/företagshantering med stöd för internationell verksamhet.
 
-**Key fields:**
+**Nyckelfält:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| name | VARCHAR | Kundnamn (Obligatoriskt) |
+| account_number | VARCHAR | Kundnummer (Autogenererat, Unikt) |
+| phone | VARCHAR | Telefon |
+| website | TEXT | Webbplats |
+| address | TEXT | Adress |
+| industry | VARCHAR | Bransch |
+| type | VARCHAR | Typ: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | Antal anställda-skala |
+| annual_revenue | VARCHAR | Årlig omsättningsskala |
+| level | VARCHAR | Nivå: normal/important/vip |
 | status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
+| country | VARCHAR | Land |
 | region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| preferred_currency | VARCHAR | Föredragen valuta: CNY/USD/EUR |
+| owner_id | BIGINT | Ägare (FK → users) |
+| parent_id | BIGINT | Moderbolag (FK → self) |
+| source_lead_id | BIGINT | Käll-lead-ID |
+| ai_health_score | INTEGER | AI-hälsopoäng 0-100 |
+| ai_health_grade | VARCHAR | AI-hälsograd: A/B/C/D |
+| ai_churn_risk | DECIMAL | AI-risk för kundbortfall 0-100% |
+| ai_churn_risk_level | VARCHAR | AI-risknivå för kundbortfall: low/medium/high |
+| ai_health_dimensions | JSONB | Poäng för AI-hälsodimensioner |
+| ai_recommendations | JSONB | AI-rekommendationslista |
+| ai_health_assessed_at | TIMESTAMP | Tid för AI-hälsobedömning |
+| ai_tags | JSONB | AI-genererade taggar |
+| ai_best_contact_time | VARCHAR | AI-rekommenderad kontakttid |
+| ai_next_best_action | TEXT | AI-förslag på nästa bästa åtgärd |
+| ai_nba_generated_at | TIMESTAMP | Tid för generering av AI-förslag |
+| description | TEXT | Beskrivning |
+| is_deleted | BOOLEAN | Flagga för mjuk radering |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 Affärsmöjligheter (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+Hantering av försäljningsmöjligheter med konfigurerbara pipelinestadier.
 
-**Key fields:**
+**Nyckelfält:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| opportunity_no | VARCHAR | Nummer på affärsmöjlighet (Autogenererat, Unikt) |
+| name | VARCHAR | Namn på affärsmöjlighet (Obligatoriskt) |
+| amount | DECIMAL | Förväntat belopp |
+| currency | VARCHAR | Valuta |
+| exchange_rate | DECIMAL | Växelkurs |
+| amount_usd | DECIMAL | Belopp i USD-ekvivalent |
+| customer_id | BIGINT | Kund (FK) |
+| contact_id | BIGINT | Primär kontakt (FK) |
+| stage | VARCHAR | Stadiekod (FK → stages.code) |
+| stage_sort | INTEGER | Sorteringsordning för stadie (Redundant för enkel sortering) |
+| stage_entered_at | TIMESTAMP | Tidpunkt för inträde i nuvarande stadie |
+| days_in_stage | INTEGER | Dagar i nuvarande stadie |
+| win_probability | DECIMAL | Manuell vinstsannolikhet |
+| ai_win_probability | DECIMAL | AI-förutsagd vinstsannolikhet |
+| ai_analyzed_at | TIMESTAMP | Tid för AI-analys |
+| ai_confidence | DECIMAL | AI-konfidens för förutsägelse |
+| ai_trend | VARCHAR | AI-trend för förutsägelse: up/stable/down |
+| ai_risk_factors | JSONB | AI-identifierade riskfaktorer |
+| ai_recommendations | JSONB | AI-rekommendationslista |
+| ai_predicted_close | DATE | AI-förutsagt slutdatum |
+| ai_next_best_action | TEXT | AI-förslag på nästa bästa åtgärd |
+| ai_nba_generated_at | TIMESTAMP | Tid för generering av AI-förslag |
+| expected_close_date | DATE | Förväntat slutdatum |
+| actual_close_date | DATE | Faktiskt slutdatum |
+| owner_id | BIGINT | Ägare (FK → users) |
+| last_activity_at | TIMESTAMP | Tid för senaste aktivitet |
+| stagnant_days | INTEGER | Dagar utan aktivitet |
+| loss_reason | TEXT | Orsak till förlust |
+| competitor_id | BIGINT | Konkurrent (FK) |
+| lead_source | VARCHAR | Lead-källa |
+| campaign_id | BIGINT | Marknadsföringskampanj-ID |
+| expected_revenue | DECIMAL | Förväntad intäkt = belopp × sannolikhet |
+| description | TEXT | Beskrivning |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 Offerter (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+Offerthantering med stöd för flera valutor och godkännandearbetsflöden.
 
-**Status flow:**
+**Statusflöde:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
+Utkast → Väntar på godkännande → Godkänd → Skickad → Accepterad/Avvisad/Utgången
               ↓
-          Rejected → Revise → Draft
+           Avvisad → Redigera → Utkast
 ```
 
-**Key fields:**
+**Nyckelfält:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| quotation_no | VARCHAR | Offertnummer (Autogenererat, Unikt) |
+| name | VARCHAR | Offertnamn |
+| version | INTEGER | Versionsnummer |
+| opportunity_id | BIGINT | Affärsmöjlighet (FK, Obligatoriskt) |
+| customer_id | BIGINT | Kund (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| owner_id | BIGINT | Ägare (FK → users) |
+| currency_id | BIGINT | Valuta (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | Växelkurs |
+| subtotal | DECIMAL | Delsumma |
+| discount_rate | DECIMAL | Rabattsats |
+| discount_amount | DECIMAL | Rabattbelopp |
+| shipping_handling | DECIMAL | Frakt/hantering |
+| tax_rate | DECIMAL | Skattesats |
+| tax_amount | DECIMAL | Skattebelopp |
+| total_amount | DECIMAL | Totalbelopp |
+| total_amount_usd | DECIMAL | Belopp i USD-ekvivalent |
 | status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| submitted_at | TIMESTAMP | Inskickad tidpunkt |
+| approved_by | BIGINT | Godkännare (FK → users) |
+| approved_at | TIMESTAMP | Godkännandetid |
+| rejected_at | TIMESTAMP | Tidpunkt för avvisande |
+| sent_at | TIMESTAMP | Skickad tidpunkt |
+| customer_response_at | TIMESTAMP | Tid för kundsvar |
+| expired_at | TIMESTAMP | Utgångstidpunkt |
+| valid_until | DATE | Giltig till |
+| payment_terms | TEXT | Betalningsvillkor |
+| terms_condition | TEXT | Allmänna villkor |
+| address | TEXT | Leveransadress |
+| description | TEXT | Beskrivning |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 Order (nb_crm_orders)
 
-Order management with payment tracking.
+Orderhantering inklusive betalningsspårning.
 
-**Key fields:**
+**Nyckelfält:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| order_no | VARCHAR | Ordernummer (Autogenererat, Unikt) |
+| customer_id | BIGINT | Kund (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| opportunity_id | BIGINT | Affärsmöjlighet (FK) |
+| quotation_id | BIGINT | Offert (FK) |
+| owner_id | BIGINT | Ägare (FK → users) |
+| currency | VARCHAR | Valuta |
+| exchange_rate | DECIMAL | Växelkurs |
+| order_amount | DECIMAL | Orderbelopp |
+| paid_amount | DECIMAL | Betalat belopp |
+| unpaid_amount | DECIMAL | Obetalat belopp |
 | status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| payment_status | VARCHAR | Betalningsstatus: unpaid/partial/paid |
+| order_date | DATE | Orderdatum |
+| delivery_date | DATE | Förväntat leveransdatum |
+| actual_delivery_date | DATE | Faktiskt leveransdatum |
+| shipping_address | TEXT | Leveransadress |
+| logistics_company | VARCHAR | Logistikföretag |
+| tracking_no | VARCHAR | Spårningsnummer |
+| terms_condition | TEXT | Allmänna villkor |
+| description | TEXT | Beskrivning |
 
-### 3.3 Table Summary
+### 3.3 Sammanfattning av samlingar
 
-#### CRM Business Tables
+#### CRM-affärssamlingar
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| Nr | Samlingsnamn | Beskrivning | Typ |
+|-----|------|------|------|
+| 1 | nb_crm_leads | Lead-hantering | Affär |
+| 2 | nb_crm_customers | Kunder/Företag | Affär |
+| 3 | nb_crm_contacts | Kontakter | Affär |
+| 4 | nb_crm_opportunities | Försäljningsmöjligheter | Affär |
+| 5 | nb_crm_opportunity_stages | Stadiekonfiguration | Konfiguration |
+| 6 | nb_crm_opportunity_users | Medarbetare för affärsmöjligheter (Säljteam) | Association |
+| 7 | nb_crm_quotations | Offerter | Affär |
+| 8 | nb_crm_quotation_items | Offertartiklar | Affär |
+| 9 | nb_crm_quotation_approvals | Godkännandeposter | Affär |
+| 10 | nb_crm_orders | Order | Affär |
+| 11 | nb_crm_order_items | Orderartiklar | Affär |
+| 12 | nb_crm_payments | Betalningsposter | Affär |
+| 13 | nb_crm_products | Produktkatalog | Affär |
+| 14 | nb_crm_product_categories | Produktkategorier | Konfiguration |
+| 15 | nb_crm_price_tiers | Prisnivåer | Konfiguration |
+| 16 | nb_crm_activities | Aktivitetsposter | Affär |
+| 17 | nb_crm_comments | Kommentarer/anteckningar | Affär |
+| 18 | nb_crm_competitors | Konkurrenter | Affär |
+| 19 | nb_crm_tags | Taggar | Konfiguration |
+| 20 | nb_crm_lead_tags | Association Lead-Tagg | Association |
+| 21 | nb_crm_contact_tags | Association Kontakt-Tagg | Association |
+| 22 | nb_crm_customer_shares | Behörigheter för kunddelning | Association |
+| 23 | nb_crm_exchange_rates | Växelkurs historik | Konfiguration |
 
-#### Base Data Tables (Shared Module)
+#### Grunddatasamlingar (Gemensamma moduler)
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| Nr | Samlingsnamn | Beskrivning | Typ |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | Valutalexikon | Konfiguration |
+| 2 | nb_cbo_regions | Lexikon för länder/regioner | Konfiguration |
 
-### 3.4 Supporting Tables
+### 3.4 Hjälpsamlingar
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 Kommentarer (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+Generisk samling för kommentarer/anteckningar som kan associeras med olika affärsobjekt.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| content | TEXT | Kommentar innehåll |
+| lead_id | BIGINT | Associerad Lead (FK) |
+| customer_id | BIGINT | Associerad Kund (FK) |
+| opportunity_id | BIGINT | Associerad Affärsmöjlighet (FK) |
+| order_id | BIGINT | Associerad Order (FK) |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 Kunddelningar (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+Möjliggör samarbete mellan flera personer och delning av behörigheter för kunder.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| customer_id | BIGINT | Kund (FK, Obligatoriskt) |
+| shared_with_user_id | BIGINT | Delad med användare (FK, Obligatoriskt) |
+| shared_by_user_id | BIGINT | Delad av användare (FK) |
+| permission_level | VARCHAR | Behörighetsnivå: read/write/full |
+| shared_at | TIMESTAMP | Delningstidpunkt |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 Medarbetare för affärsmöjligheter (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+Stöder säljteams samarbete kring affärsmöjligheter.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| opportunity_id | BIGINT | Affärsmöjlighet (FK, Sammansatt PK) |
+| user_id | BIGINT | Användare (FK, Sammansatt PK) |
+| role | VARCHAR | Roll: owner/collaborator/viewer |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 Regioner (nb_cbo_regions)
 
-Country/region base data dictionary.
+Grunddatalexikon för länder/regioner.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
-
----
-
-## 4. Lead Lifecycle
-
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
-
-### 4.1 Status Definitions
-
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
-
-### 4.2 Status Flow
-
-
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
-
-### 4.3 Lead Conversion Flow
-
-The conversion UI presents three options simultaneously; users can create or link:
-
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
-
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| code_alpha2 | VARCHAR | ISO 3166-1 Alpha-2-kod (Unik) |
+| code_alpha3 | VARCHAR | ISO 3166-1 Alpha-3-kod (Unik) |
+| code_numeric | VARCHAR | ISO 3166-1 numerisk kod |
+| name | VARCHAR | Namn på land/region |
+| is_active | BOOLEAN | Är aktiv |
+| sort_order | INTEGER | Sorteringsordning |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. Leads livscykel
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+Lead-hantering använder ett förenklat arbetsflöde i 4 stadier. När en ny lead skapas kan ett arbetsflöde automatiskt trigga AI-poängsättning för att hjälpa säljare att snabbt identifiera högkvalitativa leads.
 
-### 5.1 Configurable Stages
+### 4.1 Statusdefinitioner
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| Status | Namn | Beskrivning |
+|-----|------|------|
+| new | Ny | Precis skapad, väntar på kontakt |
+| working | Pågående | Aktiv uppföljning pågår |
+| qualified | Validerad | Redo för konvertering |
+| unqualified | Ej kvalificerad | Passar inte |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 Statusflödesschema
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 Lead-konverteringsprocess
 
-### 5.3 Stagnation Detection
+Konverteringsgränssnittet erbjuder tre alternativ samtidigt; användare kan välja att skapa eller associera:
 
-Opportunities with no activity will be flagged:
+- **Kund**: Skapa en ny kund ELLER associera med en befintlig kund.
+- **Kontakt**: Skapa en ny kontakt (associerad med kunden).
+- **Affärsmöjlighet**: En affärsmöjlighet måste skapas.
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**Poster efter konvertering:**
+- `converted_customer_id`: Associerat kund-ID
+- `converted_contact_id`: Associerat kontakt-ID
+- `converted_opportunity_id`: Skapat affärsmöjlighets-ID
+
+---
+
+## 5. Affärsmöjlighetens livscykel
+
+Hantering av affärsmöjligheter använder konfigurerbara stadier i försäljningspipelinen. När ett stadie ändras kan det automatiskt trigga en AI-förutsägelse av vinstsannolikhet för att hjälpa säljare att identifiera risker och möjligheter.
+
+### 5.1 Konfigurerbara stadier
+
+Stadier lagras i samlingen `nb_crm_opportunity_stages` och kan anpassas:
+
+| Kod | Namn | Ordning | Standard vinstsannolikhet |
+|-----|------|------|---------|
+| prospecting | Prospektering | 1 | 10% |
+| analysis | Behovsanalys | 2 | 30% |
+| proposal | Offert/Förslag | 3 | 60% |
+| negotiation | Förhandling/Granskning | 4 | 80% |
+| won | Stängd Vunnen | 5 | 100% |
+| lost | Stängd Förlorad | 6 | 0% |
+
+### 5.2 Pipeline-flöde
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 Detektering av stagnation
+
+Affärsmöjligheter utan aktivitet kommer att flaggas:
+
+| Dagar utan aktivitet | Åtgärd |
+|-----------|------|
+| 7 dagar | Gul varning |
+| 14 dagar | Orange påminnelse till ägare |
+| 30 dagar | Röd påminnelse till chef |
 
 ```sql
--- Calculate stagnation days
+-- Beräkna stagnationsdagar
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 Hantering av vinst/förlust
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**Vid vinst:**
+1. Uppdatera stadie till 'won'.
+2. Registrera faktiskt slutdatum.
+3. Uppdatera kundstatus till 'active'.
+4. Trigga orderskapande (om en offert accepterades).
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**Vid förlust:**
+1. Uppdatera stadie till 'lost'.
+2. Registrera orsak till förlust.
+3. Registrera konkurrent-ID (om förlorad till en konkurrent).
+4. Meddela chef.
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. Offertens livscykel
 
-### 6.1 Status Definitions
+### 6.1 Statusdefinitioner
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| Status | Namn | Beskrivning |
+|-----|------|------|
+| draft | Utkast | Under förberedelse |
+| pending_approval | Väntar på godkännande | Väntar på godkännande |
+| approved | Godkänd | Redo att skickas |
+| sent | Skickad | Skickad till kund |
+| accepted | Accepterad | Accepterad av kund |
+| rejected | Avvisad | Avvisad av kund |
+| expired | Utgången | Giltighetstiden har passerat |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 Godkännanderegler (Ska fastställas)
 
-Approval flow is triggered based on the following conditions:
+Arbetsflöden för godkännande triggas baserat på följande villkor:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| Villkor | Godkännandenivå |
+|------|---------|
+| Rabatt > 10% | Försäljningschef |
+| Rabatt > 20% | Försäljningsdirektör |
+| Belopp > $100K | Ekonomi + VD |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 Stöd för flera valutor
 
-### 6.3 Multi-Currency Support
+#### Designfilosofi
 
-#### Design Rationale
+Använd **USD som enhetlig basvaluta** för alla rapporter och analyser. Varje beloppspost lagrar:
+- Ursprunglig valuta och belopp (det kunden ser)
+- Växelkurs vid transaktionstillfället
+- Belopp i USD-ekvivalent (för intern jämförelse)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### Valutalexikon (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+Valutakonfiguration använder en gemensam grunddatasamling som stöder dynamisk hantering. Fältet `current_rate` lagrar den aktuella växelkursen, uppdaterad av en schemalagd uppgift från den senaste posten i `nb_crm_exchange_rates`.
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| code | VARCHAR | Valutakod (Unik): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | Valutanamn |
+| symbol | VARCHAR | Valutasymbol |
+| decimal_places | INTEGER | Antal decimaler |
+| current_rate | DECIMAL | Aktuell kurs mot USD (Synkad från historik) |
+| is_active | BOOLEAN | Är aktiv |
+| sort_order | INTEGER | Sorteringsordning |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### Växelkurs historik (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+Registrerar historiska växelkurser. En schemalagd uppgift synkar de senaste kurserna till `nb_cbo_currencies.current_rate`.
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| currency_code | VARCHAR | Valutakod (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | Kurs mot USD |
+| effective_date | DATE | Giltighetsdatum |
+| source | VARCHAR | Källa: manual/api |
+| createdAt | TIMESTAMP | Skapad tidpunkt |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **Notera**: Offerter är associerade med samlingen `nb_cbo_currencies` via främmande nyckel `currency_id`, och växelkursen hämtas direkt från fältet `current_rate`. Affärsmöjligheter och order använder ett `currency` VARCHAR-fält för att lagra valutakoden.
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### Mönster för beloppsfält
 
-#### Monetary Field Pattern
+Samlingar som innehåller belopp följer detta mönster:
 
-Tables with monetary amounts follow this pattern:
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| currency | VARCHAR | Transaktionsvaluta |
+| amount | DECIMAL | Ursprungligt belopp |
+| exchange_rate | DECIMAL | Växelkurs mot USD vid transaktion |
+| amount_usd | DECIMAL | USD-ekvivalent (Beräknad) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**Tillämpas på:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### Integration i arbetsflöden
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**Logik för hämtning av växelkurs:**
+1. Hämta växelkurs direkt från `nb_cbo_currencies.current_rate` under affärsoperationer.
+2. USD-transaktioner: Kurs = 1.0, ingen sökning krävs.
+3. `current_rate` synkas av en schemalagd uppgift från den senaste `nb_crm_exchange_rates`-posten.
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 Versionshantering
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+När en offert avvisas eller går ut kan den dupliceras som en ny version:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → Avvisad
+QT-20260119-001 v2 → Skickad
+QT-20260119-001 v3 → Accepterad
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. Orderlivscykel
 
-### 7.1 Order Overview
+### 7.1 Orderöversikt
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+Order skapas när en offert accepteras och representerar ett bekräftat affärsåtagande.
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 Statusdefinitioner för order
 
-### 7.2 Order Status Definitions
+| Status | Kod | Beskrivning | Tillåtna åtgärder |
+|-----|------|------|---------|
+| Utkast | `draft` | Order skapad, ännu inte bekräftad | Redigera, Bekräfta, Avbryt |
+| Bekräftad | `confirmed` | Order bekräftad, väntar på uppfyllnad | Påbörja uppfyllnad, Avbryt |
+| Pågående | `in_progress` | Order behandlas/produceras | Uppdatera framsteg, Skicka, Avbryt (kräver godkännande) |
+| Skickad | `shipped` | Produkter skickade till kund | Markera som levererad |
+| Levererad | `delivered` | Kund har tagit emot varor | Slutför order |
+| Slutförd | `completed` | Order helt slutförd | Inga |
+| Avbruten | `cancelled` | Order avbruten | Inga |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 Orderdatamodell
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| order_no | VARCHAR | Ordernummer (Autogenererat, Unikt) |
+| customer_id | BIGINT | Kund (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| opportunity_id | BIGINT | Affärsmöjlighet (FK) |
+| quotation_id | BIGINT | Offert (FK) |
+| owner_id | BIGINT | Ägare (FK → users) |
+| status | VARCHAR | Orderstatus |
+| payment_status | VARCHAR | Betalningsstatus: unpaid/partial/paid |
+| order_date | DATE | Orderdatum |
+| delivery_date | DATE | Förväntat leveransdatum |
+| actual_delivery_date | DATE | Faktiskt leveransdatum |
+| currency | VARCHAR | Ordervaluta |
+| exchange_rate | DECIMAL | Kurs mot USD |
+| order_amount | DECIMAL | Totalt orderbelopp |
+| paid_amount | DECIMAL | Betalat belopp |
+| unpaid_amount | DECIMAL | Obetalat belopp |
+| shipping_address | TEXT | Leveransadress |
+| logistics_company | VARCHAR | Logistikföretag |
+| tracking_no | VARCHAR | Spårningsnummer |
+| terms_condition | TEXT | Allmänna villkor |
+| description | TEXT | Beskrivning |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| order_id | FK | Överordnad order |
+| product_id | FK | Produktreferens |
+| product_name | VARCHAR | Ögonblicksbild av produktnamn |
+| quantity | INT | Beställt antal |
+| unit_price | DECIMAL | Enhetspris |
+| discount_percent | DECIMAL | Rabattprocent |
+| line_total | DECIMAL | Radtotal |
+| notes | TEXT | Radanteckningar |
 
-### 7.4 Payment Tracking
+### 7.4 Betalningsspårning
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| Fält | Typ | Beskrivning |
+|-----|------|------|
+| id | BIGINT | Primärnyckel |
+| order_id | BIGINT | Associerad order (FK, Obligatoriskt) |
+| customer_id | BIGINT | Kund (FK) |
+| payment_no | VARCHAR | Betalningsnummer (Autogenererat, Unikt) |
+| amount | DECIMAL | Betalningsbelopp (Obligatoriskt) |
+| currency | VARCHAR | Betalningsvaluta |
+| payment_method | VARCHAR | Metod: transfer/check/cash/credit_card/lc |
+| payment_date | DATE | Betalningsdatum |
+| bank_account | VARCHAR | Bankkontonummer |
+| bank_name | VARCHAR | Banknamn |
+| notes | TEXT | Betalningsanteckningar |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. Kundens livscykel
 
-### 8.1 Customer Overview
+### 8.1 Kundöversikt
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+Kunder skapas under lead-konvertering eller när en affärsmöjlighet vinns. Systemet spårar hela livscykeln från förvärv till ambassadörskap.
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 Statusdefinitioner för kunder
 
-### 8.2 Customer Status Definitions
+| Status | Kod | Hälsa | Beskrivning |
+|-----|------|--------|------|
+| Prospekt | `prospect` | N/A | Konverterad lead, inga order än |
+| Aktiv | `active` | ≥70 | Betalande kund, god interaktion |
+| Växande | `growing` | ≥80 | Kund med expansionsmöjligheter |
+| Riskkund | `at_risk` | <50 | Kund som visar tecken på bortfall |
+| Förlorad | `churned` | N/A | Inte längre aktiv |
+| Återvinn | `win_back` | N/A | Tidigare kund som återaktiveras |
+| Ambassadör | `advocate` | ≥90 | Hög nöjdhet, ger referenser |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 Poängsättning av kundhälsa
 
-### 8.3 Customer Health Score
+Kundhälsa beräknas baserat på flera faktorer:
 
-Health score is calculated from multiple factors:
+| Faktor | Vikt | Mått |
+|-----|------|---------|
+| Köp-recens | 25% | Dagar sedan senaste order |
+| Köpfrekvens | 20% | Antal order per period |
+| Monetärt värde | 20% | Totalt och genomsnittligt ordervärde |
+| Engagemang | 15% | Öppningsgrad e-post, mötesdeltagande |
+| Supporthälsa | 10% | Ärendevolym och lösningsgrad |
+| Produktanvändning | 10% | Aktiva användningsmått (om tillämpligt) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**Hälso-tröskelvärden:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +711,216 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 Kundsegmentering
 
-#### Automatic Segmentation
+#### Automatiserad segmentering
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
+| Segment | Villkor | Föreslagen åtgärd |
+|-----|------|---------|
+| VIP | LTV > $100K | White-glove-service, ledningsstöd |
+| Enterprise | Företagsstorlek > 500 | Dedikerad Account Manager |
+| Mid-Market | Företagsstorlek 50-500 | Regelbundna avstämningar, skalat stöd |
+| Startup | Företagsstorlek < 50 | Självbetjäningsresurser, community |
+| Vilande | 90+ dagar utan aktivitet | Återaktiveringsmarknadsföring |
 
 ---
 
-## 9. Email Integration
+## 9. E-postintegration
 
-### 9.1 Overview
+### 9.1 Översikt
 
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
+NocoBase tillhandahåller en inbyggd plugin för e-postintegration med stöd för Gmail och Outlook. När e-postmeddelanden har synkroniserats kan arbetsflöden automatiskt trigga AI-analys av e-postens sentiment och avsikt, vilket hjälper säljare att snabbt förstå kundens attityd.
 
-### 9.2 Email Sync
+### 9.2 E-postsynkronisering
 
-**Supported mailboxes:**
+**Leverantörer som stöds:**
 - Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
+- Outlook/Microsoft 365 (via OAuth 2.0)
 
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
+**Synkroniseringsbeteende:**
+- Dubbelriktad synk av skickade och mottagna meddelanden.
+- Automatisk association av e-post till CRM-poster (Leads, Kontakter, Affärsmöjligheter).
+- Bilagor lagras i NocoBase-filsystemet.
 
-### 9.3 Email–CRM Association (To Be Refined)
+### 9.3 Association E-post-CRM (Ska fastställas)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
+### 9.4 E-postmallar
 
-### 9.4 Email Templates
+Säljare kan använda förinställda mallar:
 
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| Mallkategori | Exempel |
+|---------|------|
+| Första kontakt | Cold email, Varm introduktion, Uppföljning efter event |
+| Uppföljning | Mötesuppföljning, Offertuppföljning, Påminnelse vid uteblivet svar |
+| Offert | Offert bifogad, Offertrevidering, Offert går ut snart |
+| Order | Orderbekräftelse, Leveransavisering, Leveransbekräftelse |
+| Kundframgång | Välkomstmeddelande, Avstämning, Begäran om recension |
 
 ---
 
-## 10. AI Capabilities
+## 10. AI-assisterade funktioner
 
-### 10.1 AI Employee Team
+### 10.1 AI-medarbetarteam
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+CRM-systemet integrerar NocoBase AI-plugin och använder följande inbyggda AI-medarbetare konfigurerade med CRM-specifika uppgifter:
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+| ID | Namn | Inbyggd roll | CRM-utökade förmågor |
+|----|------|---------|-------------|
+| viz | Viz | Dataanalytiker | Analys av försäljningsdata, pipeline-prognoser |
+| dara | Dara | Diagramexpert | Datavisualisering, rapportutveckling, dashboard-design |
+| ellis | Ellis | Redaktör | Utkast till e-postsvar, kommunikationssammanfattningar, affärsmejl |
+| lexi | Lexi | Översättare | Kundkommunikation på flera språk, innehållsöversättning |
+| orin | Orin | Organisatör | Dagliga prioriteringar, förslag på nästa steg, uppföljningsplanering |
 
-### 10.2 AI Task List
+### 10.2 AI-uppgiftslista
 
-AI capabilities are divided into two independent categories:
+AI-förmågorna är uppdelade i två oberoende kategorier:
 
-#### 1. AI Employees (Frontend — User-Triggered)
+#### I. AI-medarbetare (Triggas via gränssnittsblock)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+Användare interagerar direkt med AI via AI-medarbetarblock i gränssnittet för att få analyser och förslag.
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+| Medarbetare | Uppgift | Beskrivning |
+|------|------|------|
+| Viz | Analys av försäljningsdata | Analysera pipeline-trender och konverteringsgrader |
+| Viz | Pipeline-prognoser | Förutsäg intäkter baserat på viktad pipeline |
+| Dara | Diagramgenerering | Generera diagram för försäljningsrapporter |
+| Dara | Dashboard-design | Designa layouter för datadashboards |
+| Ellis | Utkast till svar | Generera professionella e-postsvar |
+| Ellis | Kommunikationssammanfattning | Sammanfatta e-posttrådar |
+| Ellis | Affärsmejl | Mötesinbjudningar, uppföljningar, tackmejl etc. |
+| Orin | Dagliga prioriteringar | Generera en prioriterad uppgiftslista för dagen |
+| Orin | Nästa bästa åtgärd | Rekommendera nästa steg för varje affärsmöjlighet |
+| Lexi | Innehållsöversättning | Översätt marknadsföringsmaterial, förslag och e-post |
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
+#### II. LLM-noder i arbetsflöden (Automatiserad körning i backend)
 
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
+LLM-noder inbäddade i arbetsflöden, triggas automatiskt av samlingshändelser, åtgärdshändelser eller schemalagda uppgifter, oberoende av AI-medarbetare.
 
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
+| Uppgift | Triggermetod | Beskrivning | Målfält |
+|------|---------|------|---------|
+| Lead-poängsättning | Samlingshändelse (Skapa/Uppdatera) | Utvärdera lead-kvalitet | ai_score, ai_convert_prob |
+| Vinstprognos | Samlingshändelse (Stadieändring) | Förutsäg sannolikhet för framgång | ai_win_probability, ai_risk_factors |
 
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
+> **Notera**: LLM-noder i arbetsflöden använder promptar och Schema-output för strukturerad JSON, som parsas och skrivs till affärsdatafält utan användarinteraktion.
 
-### 10.3 AI Fields in the Database
+### 10.3 AI-fält i databasen
 
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
+| Tabell | AI-fält | Beskrivning |
+|----|--------|------|
+| nb_crm_leads | ai_score | AI-poäng 0-100 |
+| | ai_convert_prob | Konverteringssannolikhet |
+| | ai_best_contact_time | Bästa kontakttid |
+| | ai_tags | AI-genererade taggar (JSONB) |
+| | ai_scored_at | Tid för poängsättning |
+| | ai_next_best_action | Förslag på nästa bästa åtgärd |
+| | ai_nba_generated_at | Tid för generering av förslag |
+| nb_crm_opportunities | ai_win_probability | AI-förutsagd vinstsannolikhet |
+| | ai_analyzed_at | Tid för analys |
+| | ai_confidence | Konfidens för förutsägelse |
 | | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| | ai_risk_factors | Riskfaktorer (JSONB) |
+| | ai_recommendations | Rekommendationslista (JSONB) |
+| | ai_predicted_close | Förutsagt slutdatum |
+| | ai_next_best_action | Förslag på nästa bästa åtgärd |
+| | ai_nba_generated_at | Tid för generering av förslag |
+| nb_crm_customers | ai_health_score | Hälsopoäng 0-100 |
+| | ai_health_grade | Hälsograd: A/B/C/D |
+| | ai_churn_risk | Risk för kundbortfall 0-100% |
+| | ai_churn_risk_level | Risknivå för kundbortfall: low/medium/high |
+| | ai_health_dimensions | Dimensionspoäng (JSONB) |
+| | ai_recommendations | Rekommendationslista (JSONB) |
+| | ai_health_assessed_at | Tid för hälsobedömning |
+| | ai_tags | AI-genererade taggar (JSONB) |
+| | ai_best_contact_time | Bästa kontakttid |
+| | ai_next_best_action | Förslag på nästa bästa åtgärd |
+| | ai_nba_generated_at | Tid för generering av förslag |
 
 ---
 
-## 11. Workflow Engine
+## 11. Motor för arbetsflöden
 
-### 11.1 Implemented Workflows
+### 11.1 Implementerade arbetsflöden
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+| Namn på arbetsflöde | Triggertyp | Status | Beskrivning |
+|-----------|---------|------|------|
+| Leads Created | Samlingshändelse | Aktiverad | Triggas när en lead skapas |
+| CRM Overall Analytics | AI-medarbetarhändelse | Aktiverad | Övergripande CRM-dataanalys |
+| Lead Conversion | Händelse efter åtgärd | Aktiverad | Process för lead-konvertering |
+| Lead Assignment | Samlingshändelse | Aktiverad | Automatiserad lead-tilldelning |
+| Lead Scoring | Samlingshändelse | Inaktiverad | Lead-poängsättning (Ska fastställas) |
+| Follow-up Reminder | Schemalagd uppgift | Inaktiverad | Uppföljningspåminnelser (Ska fastställas) |
 
-### 11.2 Planned Workflows
+### 11.2 Arbetsflöden som ska implementeras
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
-
----
-
-## 12. Menu & Interface Design
-
-### 12.1 Admin Menu Structure
-
-
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
-
-### 12.2 Dashboard Views
-
-#### Sales Manager View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
-
-#### Sales Rep View
-
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| Arbetsflöde | Triggertyp | Beskrivning |
+|-------|---------|------|
+| Framsteg i affärsmöjlighet | Samlingshändelse | Uppdatera vinstsannolikhet och registrera tid vid stadieändring |
+| Detektering av stagnation | Schemalagd uppgift | Detektera inaktiva affärsmöjligheter och skicka påminnelser |
+| Offertgodkännande | Händelse efter åtgärd | Godkännandeprocess i flera nivåer |
+| Ordergenerering | Händelse efter åtgärd | Generera order automatiskt efter att offert accepterats |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 12. Meny- och gränssnittsdesign
+
+### 12.1 Administrationsstruktur
+
+| Meny | Typ | Beskrivning |
+|------|------|------|
+| **Dashboards** | Grupp | Dashboards |
+| - Dashboard | Sida | Standard-dashboard |
+| - SalesManager | Sida | Vy för försäljningschef |
+| - SalesRep | Sida | Vy för säljare |
+| - Executive | Sida | Vy för ledning |
+| **Leads** | Sida | Lead-hantering |
+| **Customers** | Sida | Kundhantering |
+| **Opportunities** | Sida | Hantering av affärsmöjligheter |
+| - Table | Flik | Lista över affärsmöjligheter |
+| **Products** | Sida | Produkthantering |
+| - Categories | Flik | Produktkategorier |
+| **Orders** | Sida | Orderhantering |
+| **Settings** | Grupp | Inställningar |
+| - Stage Settings | Sida | Konfiguration av stadier för affärsmöjligheter |
+| - Exchange Rate | Sida | Inställningar för växelkurs |
+| - Activity | Sida | Aktivitetsposter |
+| - Emails | Sida | E-posthantering |
+| - Contacts | Sida | Kontakthantering |
+| - Data Analysis | Sida | Dataanalys |
+
+### 12.2 Dashboard-vyer
+
+#### Vy för försäljningschef
+
+| Komponent | Typ | Data |
+|-----|------|------|
+| Pipeline-värde | KPI-kort | Totalt pipeline-belopp per stadie |
+| Team-topplista | Tabell | Ranking av säljares prestationer |
+| Riskvarningar | Varningslista | Affärsmöjligheter med hög risk |
+| Trend för vinstgrad | Linjediagram | Månatlig vinstgrad |
+| Stagnerade affärer | Lista | Affärer som kräver uppmärksamhet |
+
+#### Vy för säljare
+
+| Komponent | Typ | Data |
+|-----|------|------|
+| Mina framsteg mot kvot | Förloppsindikator | Månatligt faktiskt vs. kvot |
+| Väntande affärsmöjligheter | KPI-kort | Antal av mina väntande affärsmöjligheter |
+| Stängs denna vecka | Lista | Affärer som förväntas stängas snart |
+| Förfallna aktiviteter | Varning | Utgångna uppgifter |
+| Snabbåtgärder | Knappar | Logga aktivitet, Skapa affärsmöjlighet |
+
+#### Vy för ledning
+
+| Komponent | Typ | Data |
+|-----|------|------|
+| Årlig intäkt | KPI-kort | Intäkter hittills i år |
+| Pipeline-värde | KPI-kort | Totalt pipeline-belopp |
+| Vinstgrad | KPI-kort | Övergripande vinstgrad |
+| Kundhälsa | Distribution | Fördelning av hälsopoäng |
+| Prognos | Diagram | Månatlig intäktsprognos |
+
+---
+
+*Dokumentversion: v2.0 | Uppdaterad: 2026-02-06*

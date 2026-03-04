@@ -1,8 +1,8 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "संग्रह फ़ील्ड: संबंध स्नैपशॉट"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
+  डेटा जोड़ते समय, इसके संबंध डेटा के लिए एक स्नैपशॉट बनाएं और इसे वर्तमान डेटा में सहेजें। संबंध डेटा अपडेट होने पर, स्नैपशॉट अपडेट नहीं होगा।
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Collection field: Snapshot
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-snapshot-field/index) देखें।
+:::
 
-> Note: This plugin is deprecated.
+# संग्रह फ़ील्ड: संबंध स्नैपशॉट
+
+> नोट: यह प्लगइन अप्रचलित (deprecated) है।

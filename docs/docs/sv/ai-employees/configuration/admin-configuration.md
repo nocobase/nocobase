@@ -1,10 +1,11 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/ai-employees/configuration/admin-configuration).
 :::
 
 # AI-medarbetare · Administratörsguide för konfiguration
 
-> Det här dokumentet hjälper dig att snabbt förstå hur du konfigurerar och hanterar AI-medarbetare, och guidar dig steg för steg genom hela processen, från modelltjänster till uppgiftsfördelning.
+> Detta dokument hjälper er att snabbt förstå hur ni konfigurerar och hanterar AI-medarbetare, från modelltjänster till arbetsstart, och guidar er steg för steg genom hela processen.
+
 
 ## I. Innan ni börjar
 
@@ -16,112 +17,115 @@ Innan ni konfigurerar, se till att er miljö uppfyller följande villkor:
 *   **AI-medarbetare plugin** är aktiverat
 *   Minst en tillgänglig **stor språkmodell-tjänst** (t.ex. OpenAI, Claude, DeepSeek, GLM, etc.)
 
+
 ### 2. Förstå AI-medarbetares tvåskiktsdesign
 
 AI-medarbetare är uppdelade i två skikt: **"Rolldefinition"** och **"Uppgiftsanpassning"**.
 
-| Skikt            | Beskrivning                           | Egenskaper                        | Funktion                  |
-| :--------------- | :------------------------------------ | :-------------------------------- | :------------------------ |
+| Skikt | Beskrivning | Egenskaper | Funktion |
+| -------- | ------------ | ---------- | ------- |
 | **Rolldefinition** | Medarbetarens grundläggande personlighet och kärnkompetenser | Stabil och oföränderlig, som ett "CV" | Säkerställer rollkonsistens |
-| **Uppgiftsanpassning** | Konfiguration för olika affärsscenarier | Flexibel och justerbar            | Anpassar till specifika uppgifter |
+| **Uppgiftsanpassning** | Konfiguration för olika affärsscenarier | Flexibel och justerbar | Anpassar till specifika uppgifter |
 
 **Enkelt uttryckt:**
 
-> "Rolldefinition" bestämmer vem medarbetaren är,
-> "Uppgiftsanpassning" bestämmer vad den gör just nu.
+> "Rolldefinition" bestämmer vem denna medarbetare är,
+> "Uppgiftsanpassning" bestämmer vad hen ska göra just nu.
 
 Fördelarna med denna design är:
 
-*   Rollen förblir konstant, men kan hantera olika scenarier
-*   Uppgradering eller byte av uppgifter påverkar inte medarbetaren i sig
-*   Bakgrund och uppgifter är oberoende, vilket underlättar underhåll
+*   Rollen är oförändrad, men kan hantera olika scenarier
+*   Uppgradering eller utbyte av uppgifter påverkar inte medarbetaren själv
+*   Bakgrund och uppgifter är oberoende av varandra, vilket förenklar underhåll
 
-## II. Konfigurationsprocess (i 5 steg)
+
+## II. Konfigurationsflöde (5 steg)
 
 ### Steg 1: Konfigurera modelltjänst
 
-Modelltjänsten är som AI-medarbetarens hjärna och måste ställas in först.
+Modelltjänsten motsvarar AI-medarbetarens hjärna och måste ställas in först.
 
-> 💡 För detaljerade konfigurationsinstruktioner, se: [Konfigurera LLM-tjänst](/ai-employees/quick-start/llm-service)
+> 💡 För detaljerade konfigurationsinstruktioner, se: [Konfigurera LLM-tjänst](/ai-employees/features/llm-service)
 
 **Sökväg:**
-`Systeminställningar → AI-medarbetare → Modelltjänst`
+`Systeminställningar → AI-medarbetare → LLM service`
 
-![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
+![Gå till konfigurationssidan](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
 Klicka på **Lägg till** och fyll i följande information:
 
-| Objekt         | Beskrivning                               | Anmärkningar                       |
-| :------------- | :---------------------------------------- | :--------------------------------- |
-| Gränssnittstyp | t.ex. OpenAI, Claude, etc.                | Kompatibel med tjänster med samma specifikation |
-| API-nyckel     | Nyckeln som tillhandahålls av tjänsteleverantören | Håll den konfidentiell och byt den regelbundet |
-| Tjänstadress   | API-slutpunkt                             | Måste ändras vid användning av proxy |
-| Modellnamn     | Specifikt modellnamn (t.ex. gpt-4, claude-opus) | Påverkar kapacitet och kostnad     |
+| Objekt | Beskrivning | Anmärkningar |
+| ------ | -------------------------- | --------- |
+| Provider | t.ex. OpenAI, Claude, Gemini, Kimi etc. | Kompatibel med tjänster som följer samma specifikation |
+| API-nyckel | Nyckel tillhandahållen av tjänsteleverantören | Håll den hemlig och byt ut den regelbundet |
+| Base URL | API Endpoint (valfritt) | Behöver ändras vid användning av proxy |
+| Enabled Models | Rekommenderade modeller / Välj modeller / Manuell inmatning | Bestämmer vilka modeller som är valbara i konversationer |
 
-![Create a large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
+![Skapa modelltjänst](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-Efter konfigurationen, vänligen **testa anslutningen**.
-Om det misslyckas, kontrollera ert nätverk, API-nyckel eller modellnamn.
+Efter konfiguration, använd `Test flight` för att **testa anslutningen**.
+Om det misslyckas, kontrollera nätverk, nyckel eller modellnamn.
 
-![Test connection](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+![Testa anslutning](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
 
-### Steg 2: Skapa en AI-medarbetare
 
-> 💡 För detaljerade instruktioner, se: [Skapa en AI-medarbetare](/ai-employees/quick-start/ai-employees)
+### Steg 2: Skapa AI-medarbetare
+
+> 💡 För detaljerade instruktioner, se: [Skapa AI-medarbetare](/ai-employees/features/new-ai-employees)
 
 Sökväg: `AI-medarbetarhantering → Skapa medarbetare`
 
 Fyll i grundläggande information:
 
-| Fält         | Obligatoriskt | Exempel              |
-| :----------- | :------------ | :------------------- |
-| Namn         | ✓             | viz, dex, cole       |
-| Smeknamn     | ✓             | Viz, Dex, Cole       |
-| Aktiverad status | ✓             | På                   |
-| Biografi     | -             | "Dataanalysspecialist" |
-| Huvudprompt  | ✓             | Se prompt-engineering-guide |
-| Välkomstmeddelande | -             | "Hej, jag är Viz…"   |
+| Fält | Obligatorisk | Exempel |
+| ----- | -- | -------------- |
+| Namn | ✓ | viz, dex, cole |
+| Smeknamn | ✓ | Viz, Dex, Cole |
+| Aktiveringsstatus | ✓ | På |
+| Biografi | - | "Dataanalysexpert" |
+| Huvudprompt | ✓ | Se guide för prompt-engineering |
+| Välkomstmeddelande | - | "Hej, jag är Viz…" |
 
-![Basic information configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
+![Konfiguration av grundläggande information](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-Bind sedan den **modelltjänst** ni just konfigurerade.
-
-![Bind large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+I skapandefasen fokuseras främst på roll- och färdighetskonfiguration. Den faktiska modellen som används kan väljas i konversationen via `Model Switcher`.
 
 **Förslag för promptskrivning:**
 
-*   Förklara tydligt medarbetarens roll, ton och ansvar
+*   Var tydlig med medarbetarens roll, tonfall och ansvarsområden
 *   Använd ord som "måste" och "aldrig" för att betona regler
-*   Inkludera exempel när det är möjligt för att undvika abstrakta beskrivningar
-*   Håll det mellan 500–1000 tecken
+*   Inkludera exempel så långt som möjligt för att undvika abstrakta instruktioner
+*   Håll den mellan 500–1000 tecken
 
-> Ju tydligare prompten är, desto stabilare blir AI:ns prestanda.
-> Ni kan hänvisa till [Prompt Engineering Guide](./prompt-engineering-guide.md).
+> Ju tydligare prompten är, desto stabilare blir AI:ns prestation.
+> Se [Guide för prompt-engineering](./prompt-engineering-guide.md).
+
 
 ### Steg 3: Konfigurera färdigheter
 
-Färdigheter bestämmer vad en medarbetare "kan göra".
+Färdigheter bestämmer vad medarbetaren kan "göra".
 
-> 💡 För detaljerade instruktioner, se: [Färdigheter](/ai-employees/advanced/skill)
+> 💡 För detaljerade instruktioner, se: [Färdigheter](/ai-employees/features/tool)
 
-| Typ         | Kapacitetsomfång       | Exempel                 | Risknivå          |
-| :---------- | :--------------------- | :---------------------- | :---------------- |
-| Frontend    | Sidinteraktion         | Läs blockdata, fyll i formulär | Låg               |
-| Datamodell  | Datafrågor och analys  | Aggregera statistik     | Medel             |
-| Arbetsflöde | Utför affärsprocesser  | Anpassade verktyg       | Beror på arbetsflödet |
-| Övrigt      | Externa utökningar     | Webbsökning, filoperationer | Varierar          |
+| Typ | Kapacitetsområde | Exempel | Risknivå |
+| ---- | ------- | --------- | ------ |
+| Frontend | Sidinteraktion | Läsa blockdata, fylla i formulär | Låg |
+| Datamodell | Datafrågor och analys | Aggregerad statistik | Medel |
+| Arbetsflöde | Utföra affärsprocesser | Anpassade verktyg | Beror på arbetsflödet |
+| Övrigt | Externa utökningar | Webbsökning, filhantering | Beror på situationen |
 
 **Konfigurationsförslag:**
 
 *   3–5 färdigheter per medarbetare är mest lämpligt
-*   Det rekommenderas inte att välja alla färdigheter, då det kan orsaka förvirring
-*   Inaktivera Auto usage före viktiga operationer
+*   Vi rekommenderar inte att välja alla, då det lätt skapar förvirring
+*   För viktiga åtgärder rekommenderas behörigheten `Ask` istället för `Allow`
 
-![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+![Konfigurera färdigheter](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+
 
 ### Steg 4: Konfigurera kunskapsbas (valfritt)
 
-Om er AI-medarbetare behöver komma ihåg eller referera till en stor mängd material, såsom produktmanualer, FAQ:er etc., kan ni konfigurera en kunskapsbas.
+Om er AI-medarbetare behöver minnas eller referera till stora mängder material, som produktmanualer eller FAQ, kan ni konfigurera en kunskapsbas.
 
 > 💡 För detaljerade instruktioner, se:
 > - [Översikt över AI-kunskapsbas](/ai-employees/knowledge-base/index)
@@ -129,103 +133,109 @@ Om er AI-medarbetare behöver komma ihåg eller referera till en stor mängd mat
 > - [Konfiguration av kunskapsbas](/ai-employees/knowledge-base/knowledge-base)
 > - [RAG (Retrieval-Augmented Generation)](/ai-employees/knowledge-base/rag)
 
-Detta kräver installation av vektordatabas-pluginet.
+Detta kräver att vektordatabas-pluginet är installerat.
 
-![Configure knowledge base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
+![Konfigurera kunskapsbas](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
 
-**Tillämpliga scenarier:**
+**Användningsområden:**
 
-*   För att få AI:n att förstå företagets kunskap
-*   För att stödja dokumentfrågor och -sökning
-*   För att träna domänspecifika assistenter
+*   Låta AI:n förstå företagsspecifik kunskap
+*   Stödja dokumentbaserade frågor och svar samt sökning
+*   Träna domänspecifika assistenter
+
 
 ### Steg 5: Verifiera effekten
 
-Efter slutförandet kommer ni att se den nya medarbetarens avatar i det nedre högra hörnet av sidan.
+När det är klart ser ni den nya medarbetarens avatar i sidans nedre högra hörn.
 
-![Verify configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
+![Verifiera konfiguration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
 
-Kontrollera varje punkt:
+Kontrollera följande punkter:
 
-*   ✅ Visas ikonen korrekt?
-*   ✅ Kan den genomföra en grundläggande konversation?
-*   ✅ Kan färdigheter anropas korrekt?
+*   ✅ Visas ikonen korrekt
+*   ✅ Kan grundläggande konversationer genomföras
+*   ✅ Kan färdigheter anropas korrekt
 
-Om allt godkänns är konfigurationen lyckad 🎉
+Om allt fungerar är konfigurationen lyckad 🎉
 
-## III. Uppgiftskonfiguration: Få AI:n att arbeta
 
-Vad vi har gjort hittills är att "skapa en medarbetare".
-Nästa steg är att få dem "att arbeta".
+## III. Uppgiftskonfiguration: Få AI:n att börja arbeta
 
-AI-uppgifter definierar medarbetarens beteende på en specifik sida eller ett specifikt block.
+Det vi gjort hittills är att "skapa en medarbetare",
+nästa steg är att låta dem "gå till jobbet".
 
-> 💡 För detaljerade instruktioner, se: [Uppgifter](/ai-employees/advanced/task)
+AI-uppgifter definierar medarbetarens beteende på en specifik sida eller i ett specifikt block.
 
-### 1. Sidnivåuppgifter
+> 💡 För detaljerade instruktioner, se: [Uppgifter](/ai-employees/features/task)
 
-Tillämpligt för hela sidans omfång, till exempel "Analysera data på denna sida".
+
+### 1. Uppgifter på sidnivå
+
+Gäller för hela sidans omfång, till exempel "Analysera data på denna sida".
 
 **Konfigurationsingång:**
 `Sidinställningar → AI-medarbetare → Lägg till uppgift`
 
-| Fält         | Beskrivning                 | Exempel               |
-| :----------- | :-------------------------- | :-------------------- |
-| Titel        | Uppgiftsnamn                | Analys av stegkonvertering |
-| Kontext      | Kontexten för den aktuella sidan | Leads-listningssida   |
-| Standardmeddelande | Förinställd konversationsstartare | "Vänligen analysera månadens trender" |
-| Standardblock | Associera automatiskt med en samling | leads-tabell          |
-| Färdigheter  | Tillgängliga verktyg        | Fråga data, generera diagram |
+| Fält | Beskrivning | Exempel |
+| ---- | -------- | --------- |
+| Titel | Uppgiftens namn | Analys av stegkonvertering |
+| Bakgrund | Kontext för den aktuella sidan | Leads-listningssida |
+| Standardmeddelande | Förinställd dialog | "Analysera trenden för denna månad" |
+| Standardblock | Automatisk koppling till datatabell | leads-tabell |
+| Färdigheter | Tillgängliga verktyg | Fråga data, generera diagram |
 
-![Page-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
+![Konfiguration av uppgift på sidnivå](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
 
 **Stöd för flera uppgifter:**
-En enskild AI-medarbetare kan konfigureras med flera uppgifter, som presenteras som alternativ för användaren att välja mellan:
+Samma AI-medarbetare kan konfigureras med flera uppgifter, som visas som alternativ för användaren:
 
-![Multi-task support](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+![Stöd för flera uppgifter](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
 
 Förslag:
 
 *   En uppgift bör fokusera på ett mål
-*   Namnet ska vara tydligt och lätt att förstå
-*   Håll antalet uppgifter inom 5–7
+*   Namnet ska vara tydligt och lättförståeligt
+*   Håll antalet uppgifter inom 5–7 stycken
 
-### 2. Blocknivåuppgifter
 
-Lämpligt för att arbeta med ett specifikt block, till exempel "Översätt det aktuella formuläret".
+### 2. Uppgifter på blocknivå
+
+Lämpligt för åtgärder i ett specifikt block, som "Översätt aktuellt formulär".
 
 **Konfigurationsmetod:**
 
-1.  Öppna blockåtgärdskonfigurationen
+1.  Öppna konfigurationen för blockåtgärder
 2.  Lägg till "AI-medarbetare"
 
-![Add AI Employee button](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
+![Knapp för att lägga till AI-medarbetare](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
-3.  Bind den avsedda medarbetaren
+3.  Koppla till målmedarbetaren
 
-![Select AI Employee](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
+![Välj AI-medarbetare](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
-![Block-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
+![Konfiguration av uppgift på blocknivå](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
 
-| Jämförelse | Sidnivå     | Blocknivå        |
-| :--------- | :---------- | :--------------- |
-| Dataomfång | Hela sidan  | Aktuellt block   |
-| Granularitet | Global analys | Detaljerad bearbetning |
-| Typisk användning | Trendanalys | Formuläröversättning, fältutvinning |
+| Jämförelse | Sidnivå | Blocknivå |
+| ---- | ---- | --------- |
+| Dataomfång | Hela sidan | Aktuellt block |
+| Granularitet | Global analys | Detaljerad hantering |
+| Typisk användning | Trendanalys | Formuläröversättning, fältextraktion |
+
 
 ## IV. Bästa praxis
 
 ### 1. Konfigurationsförslag
 
-| Objekt          | Förslag                  | Anledning               |
-| :-------------- | :----------------------- | :---------------------- |
-| Antal färdigheter | 3–5                      | Hög noggrannhet, snabb respons |
-| Auto usage      | Aktivera med försiktighet | Förhindrar oavsiktliga operationer |
-| Promptlängd     | 500–1000 tecken          | Balanserar hastighet och kvalitet |
-| Uppgiftsmål     | Enkelt och tydligt       | Undviker att förvirra AI:n |
-| Arbetsflöde     | Använd efter att ha kapslat in komplexa uppgifter | Högre framgångsfrekvens |
+| Objekt | Förslag | Anledning |
+| ---------- | ----------- | -------- |
+| Antal färdigheter | 3–5 stycken | Hög precision, snabb respons |
+| Behörighetsläge (Ask / Allow) | Rekommendera Ask vid dataändring | Förhindra felaktiga åtgärder |
+| Promptlängd | 500–1000 tecken | Balanserar hastighet och kvalitet |
+| Uppgiftsmål | Enkelt och tydligt | Undvik att AI:n blir förvirrad |
+| Arbetsflöde | Använd efter inkapsling av komplexa uppgifter | Högre framgångsgrad |
 
-### 2. Praktiska förslag
+
+### 2. Praktiska råd
 
 **Börja smått, optimera gradvis:**
 
@@ -234,19 +244,20 @@ Lämpligt för att arbeta med ett specifikt block, till exempel "Översätt det 
 3.  Bekräfta att uppgifter kan utföras normalt
 4.  Utöka sedan gradvis med fler färdigheter och uppgifter
 
-**Kontinuerlig optimeringsprocess:**
+**Kontinuerlig optimering av flödet:**
 
 1.  Få den första versionen att fungera
-2.  Samla in användarfeedback
+2.  Samla in feedback från användning
 3.  Optimera prompter och uppgiftskonfigurationer
-4.  Testa och iterera
+4.  Testa och förbättra cykliskt
+
 
 ## V. Vanliga frågor och svar
 
 ### 1. Konfigurationsfasen
 
-**F: Vad händer om det misslyckas att spara?**
-S: Kontrollera om alla obligatoriska fält är ifyllda, särskilt modelltjänsten och prompten.
+**F: Vad gör jag om det inte går att spara?**
+S: Kontrollera om alla obligatoriska fält är ifyllda, särskilt modelltjänst och prompt.
 
 **F: Vilken modell ska jag välja?**
 
@@ -254,6 +265,7 @@ S: Kontrollera om alla obligatoriska fält är ifyllda, särskilt modelltjänste
 *   Analysrelaterat → Claude, DeepSeek
 *   Kostnadskänsligt → Qwen, GLM
 *   Lång text → Gemini, Claude
+
 
 ### 2. Användningsfasen
 
@@ -264,67 +276,69 @@ S: Kontrollera om alla obligatoriska fält är ifyllda, särskilt modelltjänste
 *   Kontrollera modelltjänstens latens
 *   Överväg att byta modell
 
-**F: Uppgiftsutförandet är felaktigt?**
+**F: Uppgiften utförs inte korrekt?**
 
 *   Prompten är inte tillräckligt tydlig
-*   För många färdigheter orsakar förvirring
-*   Dela upp uppgiften i mindre delar, lägg till exempel
+*   För många färdigheter skapar förvirring
+*   Dela upp i mindre uppgifter, lägg till exempel
 
-**F: När ska Auto usage aktiveras?**
+**F: När ska jag välja Ask / Allow?**
 
-*   Det kan aktiveras för frågebaserade uppgifter
-*   Det rekommenderas att inaktivera det för dataändrings-uppgifter
+*   För sökrelaterade uppgifter kan `Allow` användas
+*   För dataändringar rekommenderas `Ask`
 
-**F: Hur får jag AI:n att bearbeta ett specifikt formulär?**
+**F: Hur får jag AI:n att hantera ett specifikt formulär?**
 
-S: Om det är en sidnivåkonfiguration måste ni manuellt välja blocket.
+S: Om det är en konfiguration på sidnivå måste ni manuellt välja blocket.
 
-![Manually select block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
+![Välj block manuellt](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
 
-För blocknivåuppgiftskonfigurationer binds datakontexten automatiskt.
+Om det är en konfiguration på blocknivå binds datakontexten automatiskt.
+
 
 ## VI. Vidare läsning
 
-För att göra era AI-medarbetare ännu kraftfullare kan ni fortsätta läsa följande dokument:
+För att göra era AI-medarbetare mer kraftfulla kan ni läsa följande dokument:
 
-**Konfigurationsrelaterat:**
+**Relaterat till konfiguration:**
 
-*   [Prompt Engineering Guide](./prompt-engineering-guide.md) - Tekniker och bästa praxis för att skriva högkvalitativa prompter
-*   [Konfigurera LLM-tjänst](/ai-employees/quick-start/llm-service) - Detaljerade konfigurationsinstruktioner för stora modelltjänster
-*   [Skapa en AI-medarbetare](/ai-employees/quick-start/ai-employees) - Skapande och grundläggande konfiguration av AI-medarbetare
-*   [Samarbeta med AI-medarbetare](/ai-employees/quick-start/collaborate) - Hur man för effektiva samtal med AI-medarbetare
+*   [Guide för prompt-engineering](./prompt-engineering-guide.md) - Tekniker och bästa praxis för att skriva högkvalitativa prompter
+*   [Konfigurera LLM-tjänst](/ai-employees/features/llm-service) - Detaljerad beskrivning av konfiguration för stora modelltjänster
+*   [Skapa AI-medarbetare](/ai-employees/features/new-ai-employees) - Skapande och grundläggande konfiguration av AI-medarbetare
+*   [Samarbeta med AI-medarbetare](/ai-employees/features/collaborate) - Hur ni för effektiva dialoger med AI-medarbetare
 
 **Avancerade funktioner:**
 
-*   [Färdigheter](/ai-employees/advanced/skill) - Fördjupad förståelse för konfiguration och användning av olika färdigheter
-*   [Uppgifter](/ai-employees/advanced/task) - Avancerade tekniker för uppgiftskonfiguration
-*   [Välj block](/ai-employees/advanced/pick-block) - Hur man specificerar datablock för AI-medarbetare
-*   [Datakälla](/ai-employees/advanced/datasource) - Konfiguration och hantering av datakällor
-*   [Webbsökning](/ai-employees/advanced/web-search) - Konfigurera AI-medarbetares webbsökningsförmåga
+*   [Färdigheter](/ai-employees/features/tool) - Fördjupning i konfiguration och användning av olika färdigheter
+*   [Uppgifter](/ai-employees/features/task) - Avancerade tekniker för uppgiftskonfiguration
+*   [Välj block](/ai-employees/features/pick-block) - Hur ni anger datablock för AI-medarbetare
+*   Datakälla - Se dokumentationen för datakällskonfiguration i motsvarande plugin
+*   [Webbsökning](/ai-employees/features/web-search) - Konfigurera AI-medarbetarens förmåga till webbsökning
 
-**Kunskapsbas & RAG:**
+**Kunskapsbas och RAG:**
 
-*   [Översikt över AI-kunskapsbas](/ai-employees/knowledge-base/index) - Introduktion till kunskapsbasfunktionen
-*   [Vektordatabas](/ai-employees/knowledge-base/vector-database) - Konfiguration av vektordatabasen
-*   [Kunskapsbas](/ai-employees/knowledge-base/knowledge-base) - Hur man skapar och hanterar en kunskapsbas
+*   [Översikt över AI-kunskapsbas](/ai-employees/knowledge-base/index) - Introduktion till kunskapsbasfunktioner
+*   [Vektordatabas](/ai-employees/knowledge-base/vector-database) - Konfiguration av vektordatabas
+*   [Kunskapsbas](/ai-employees/knowledge-base/knowledge-base) - Hur ni skapar och hanterar kunskapsbaser
 *   [RAG (Retrieval-Augmented Generation)](/ai-employees/knowledge-base/rag) - Tillämpning av RAG-teknik
 
 **Arbetsflödesintegration:**
 
-*   [LLM-nod - Textkonversation](/ai-employees/workflow/nodes/llm/chat) - Använda textkonversation i arbetsflöden
-*   [LLM-nod - Multimodal konversation](/ai-employees/workflow/nodes/llm/multimodal-chat) - Hantera multimodala indata som bilder och filer
-*   [LLM-nod - Strukturerad utdata](/ai-employees/workflow/nodes/llm/structured-output) - Få strukturerade AI-svar
+*   [LLM-nod - Textdialog](/ai-employees/workflow/nodes/llm/chat) - Använda textdialog i arbetsflöden
+*   [LLM-nod - Multimodal dialog](/ai-employees/workflow/nodes/llm/multimodal-chat) - Hantera bilder, filer och annan multimodal indata
+*   [LLM-nod - Strukturerad utdata](/ai-employees/workflow/nodes/llm/structured-output) - Erhåll strukturerade AI-svar
 
-## Slutsats
 
-Det viktigaste när ni konfigurerar AI-medarbetare är: **få det att fungera först, sedan optimera**.
-Låt den första medarbetaren lyckas med sin uppgift, och utöka och finjustera sedan gradvis.
+##结语
+
+Det viktigaste vid konfiguration av AI-medarbetare är: **få det att fungera först, optimera sedan**.
+Låt den första medarbetaren börja arbeta framgångsrikt, och utöka samt finjustera därefter stegvis.
 
 Felsökning kan göras i följande ordning:
 
-1.  Är modelltjänsten ansluten?
-2.  Är antalet färdigheter för många?
-3.  Är prompten tydlig?
-4.  Är uppgiftsmålet väl definierat?
+1.  Är modelltjänsten ansluten
+2.  Är antalet färdigheter för många
+3.  Är prompten tydlig
+4.  Är uppgiftsmålet tydligt
 
-Så länge ni går steg för steg kan ni bygga ett verkligt effektivt AI-team.
+Genom att gå framåt stegvis kan ni bygga ett verkligt effektivt AI-team.

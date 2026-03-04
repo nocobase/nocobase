@@ -21,7 +21,7 @@ Kami telah menggunakan fitur variabel berkali-kali di [Memulai Cepat](../getting
 
 Di node pembaruan, gunakan data konteks pemicu sebagai variabel untuk kondisi filter, dan referensikan hasil dari node perhitungan sebagai variabel untuk nilai bidang data yang akan diperbarui:
 
-![Variabel node pembaruan data](https://static-docs.nocobase.com/2e147c9364e7ebc709b9b7ab4f3af8c.png)
+![Variabel node pembaruan data](https://static-docs.nocobase.com/2e147c93643e7ebc709b9b7ab4f3af8c.png)
 
 ## Struktur Data
 

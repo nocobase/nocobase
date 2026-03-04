@@ -136,4 +136,4 @@ ctx.render(<InputView />);
 
 - It is recommended to use a trusted CDN for loading external libraries and to have a fallback for failure scenarios (e.g., `if (!lib) return;`).
 - It is recommended to use `class` or `[name=...]` for selectors and avoid using fixed `id`s to prevent duplicate `id`s in multiple blocks or popups.
-- Event Cleanup: A field may be re-rendered multiple times due to data changes or view switches. Before binding an event, you should clean it up or deduplicate it to avoid repeated triggers.
+- Event Cleanup: A field may be re-rendered multiple times due to data changes or view switches. Before binding an event, you should clean it up or deduplicate it to avoid repeated triggers (e.g., "remove first, then add").

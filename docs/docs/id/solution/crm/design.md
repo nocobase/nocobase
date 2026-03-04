@@ -1,714 +1,707 @@
-# CRM 2.0 System Design
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/solution/crm/design).
+:::
 
-## 1. System Overview & Design Philosophy
+# Desain Detail Sistem CRM 2.0
 
-### 1.1 System Positioning
+## 1. Ikhtisar Sistem dan Filosofi Desain
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+### 1.1 Penempatan Sistem
+
+Sistem ini adalah **Platform Manajemen Penjualan CRM 2.0** yang dibangun di atas platform tanpa kode NocoBase. Tujuan utamanya adalah:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+Membiarkan tim penjualan fokus pada membangun hubungan pelanggan, bukan pada entri data dan analisis yang berulang.
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+Sistem ini mengotomatiskan tugas-tugas rutin melalui alur kerja dan menggunakan bantuan AI untuk menyelesaikan penilaian lead, analisis peluang, dan pekerjaan lainnya, membantu tim penjualan meningkatkan efisiensi.
 
-### 1.2 Design Philosophy
+### 1.2 Filosofi Desain
 
-#### Principle 1: Complete Sales Funnel
+#### Filosofi 1: Corong Penjualan yang Lengkap
 
-**End-to-end sales flow:**
+**Proses Penjualan End-to-End:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**Mengapa didesain seperti ini?**
 
-**Why design it this way?**
+| Metode Tradisional | CRM Terintegrasi |
+|---------|-----------|
+| Menggunakan beberapa sistem untuk tahap yang berbeda | Sistem tunggal yang mencakup seluruh siklus hidup |
+| Transfer data manual antar sistem | Aliran dan konversi data otomatis |
+| Tampilan pelanggan yang tidak konsisten | Tampilan pelanggan 360 derajat yang terpadu |
+| Analisis data yang terfragmentasi | Analisis pipeline penjualan end-to-end |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### Filosofi 2: Pipeline Penjualan yang Dapat Dikonfigurasi
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+Industri yang berbeda dapat menyesuaikan tahap pipeline penjualan tanpa perlu mengubah kode.
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### Filosofi 3: Desain Modular
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- Modul inti (Pelanggan + Peluang) bersifat wajib, modul lain dapat diaktifkan sesuai kebutuhan.
+- Menonaktifkan modul tidak memerlukan perubahan kode, cukup melalui konfigurasi antarmuka NocoBase.
+- Setiap modul didesain secara independen untuk mengurangi ketergantungan antar modul (coupling).
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. Arsitektur Modul dan Kustomisasi
 
-### 2.1 Module Overview
+### 2.1 Ikhtisar Modul
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+Sistem CRM mengadopsi desain **arsitektur modular**—setiap modul dapat diaktifkan atau dinonaktifkan secara independen sesuai dengan kebutuhan bisnis.
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 Ketergantungan Modul
 
-### 2.2 Module Dependencies
+| Modul | Apakah Wajib | Ketergantungan | Kondisi Penonaktifan |
+|-----|---------|--------|---------|
+| **Manajemen Pelanggan** | ✅ Ya | - | Tidak dapat dinonaktifkan (Inti) |
+| **Manajemen Peluang** | ✅ Ya | Manajemen Pelanggan | Tidak dapat dinonaktifkan (Inti) |
+| **Manajemen Lead** | Opsional | - | Saat akuisisi lead tidak diperlukan |
+| **Manajemen Penawaran** | Opsional | Peluang, Produk | Transaksi sederhana tanpa penawaran formal |
+| **Manajemen Pesanan** | Opsional | Peluang (atau Penawaran) | Saat pelacakan pesanan/pembayaran tidak diperlukan |
+| **Manajemen Produk** | Opsional | - | Saat katalog produk tidak diperlukan |
+| **Integrasi Email** | Opsional | Pelanggan, Kontak | Saat menggunakan sistem email eksternal |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 Versi Pra-konfigurasi
 
-### 2.3 Pre-configured Editions
+| Versi | Modul yang Disertakan | Skenario Penggunaan | Jumlah Koleksi |
+|-----|---------|---------|-----------|
+| **Versi Ringan (Lite)** | Pelanggan + Peluang | Pelacakan transaksi sederhana | 6 |
+| **Versi Standar** | Versi Ringan + Lead + Penawaran + Pesanan + Produk | Siklus penjualan lengkap | 15 |
+| **Versi Perusahaan** | Versi Standar + Integrasi Email | Fitur lengkap termasuk email | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 Pemetaan Modul ke Koleksi
 
-### 2.4 Module–Table Mapping
+#### Koleksi Modul Inti (Selalu Diperlukan)
 
-#### Core Module Tables (Always Required)
+| Koleksi | Modul | Deskripsi |
+|-------|------|------|
+| nb_crm_customers | Manajemen Pelanggan | Catatan Pelanggan/Perusahaan |
+| nb_crm_contacts | Manajemen Pelanggan | Kontak |
+| nb_crm_customer_shares | Manajemen Pelanggan | Izin berbagi pelanggan |
+| nb_crm_opportunities | Manajemen Peluang | Peluang Penjualan |
+| nb_crm_opportunity_stages | Manajemen Peluang | Konfigurasi tahap |
+| nb_crm_opportunity_users | Manajemen Peluang | Kolaborator peluang |
+| nb_crm_activities | Manajemen Aktivitas | Catatan aktivitas |
+| nb_crm_comments | Manajemen Aktivitas | Komentar/Catatan |
+| nb_crm_tags | Inti | Label bersama |
+| nb_cbo_currencies | Data Dasar | Kamus mata uang |
+| nb_cbo_regions | Data Dasar | Kamus negara/wilayah |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 Cara Menonaktifkan Modul
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+Cukup sembunyikan entri menu modul tersebut di latar belakang administrasi NocoBase, tanpa perlu mengubah kode atau menghapus koleksi data.
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. Entitas Inti dan Model Data
 
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
+### 3.1 Ikhtisar Hubungan Entitas
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 Detail Koleksi Inti
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 Tabel Lead (nb_crm_leads)
 
-**Stage flow:**
+Manajemen lead menggunakan alur kerja 4 tahap yang disederhanakan.
+
+**Proses Tahap:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
+Baru → Sedang Dikerjakan → Terverifikasi → Dikonversi menjadi Pelanggan/Peluang
+         ↓                    ↓
+Tidak Memenuhi Syarat   Tidak Memenuhi Syarat
 ```
 
-**Key fields:**
+**Bidang Kunci:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama (Primary Key) |
+| lead_no | VARCHAR | Nomor Lead (Dihasilkan otomatis) |
+| name | VARCHAR | Nama Kontak |
+| company | VARCHAR | Nama Perusahaan |
+| title | VARCHAR | Jabatan |
+| email | VARCHAR | Email |
+| phone | VARCHAR | Telepon |
+| mobile_phone | VARCHAR | Ponsel |
+| website | TEXT | Situs Web |
+| address | TEXT | Alamat |
+| source | VARCHAR | Sumber Lead: website/ads/referral/exhibition/telemarketing/email/social |
+| industry | VARCHAR | Industri |
+| annual_revenue | VARCHAR | Skala Pendapatan Tahunan |
+| number_of_employees | VARCHAR | Skala Jumlah Karyawan |
 | status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| rating | VARCHAR | Penilaian: hot/warm/cold |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| ai_score | INTEGER | Skor Kualitas AI 0-100 |
+| ai_convert_prob | DECIMAL | Probabilitas Konversi AI |
+| ai_best_contact_time | VARCHAR | Waktu Kontak Direkomendasikan AI |
+| ai_tags | JSONB | Label yang Dihasilkan AI |
+| ai_scored_at | TIMESTAMP | Waktu Penilaian AI |
+| ai_next_best_action | TEXT | Saran Tindakan Terbaik Selanjutnya dari AI |
+| ai_nba_generated_at | TIMESTAMP | Waktu Pembuatan Saran AI |
+| is_converted | BOOLEAN | Penanda Sudah Dikonversi |
+| converted_at | TIMESTAMP | Waktu Konversi |
+| converted_customer_id | BIGINT | ID Pelanggan Hasil Konversi |
+| converted_contact_id | BIGINT | ID Kontak Hasil Konversi |
+| converted_opportunity_id | BIGINT | ID Peluang Hasil Konversi |
+| lost_reason | TEXT | Alasan Hilang |
+| disqualification_reason | TEXT | Alasan Tidak Memenuhi Syarat |
+| description | TEXT | Deskripsi |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 Tabel Pelanggan (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+Mendukung manajemen pelanggan/perusahaan untuk bisnis perdagangan luar negeri.
 
-**Key fields:**
+**Bidang Kunci:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| name | VARCHAR | Nama Pelanggan (Wajib) |
+| account_number | VARCHAR | Nomor Pelanggan (Otomatis, Unik) |
+| phone | VARCHAR | Telepon |
+| website | TEXT | Situs Web |
+| address | TEXT | Alamat |
+| industry | VARCHAR | Industri |
+| type | VARCHAR | Tipe: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | Skala Jumlah Karyawan |
+| annual_revenue | VARCHAR | Skala Pendapatan Tahunan |
+| level | VARCHAR | Tingkat: normal/important/vip |
 | status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
-| region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| country | VARCHAR | Negara |
+| region_id | BIGINT | Wilayah (FK → nb_cbo_regions) |
+| preferred_currency | VARCHAR | Mata Uang Pilihan: CNY/USD/EUR |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| parent_id | BIGINT | Perusahaan Induk (FK → self) |
+| source_lead_id | BIGINT | ID Lead Sumber |
+| ai_health_score | INTEGER | Skor Kesehatan AI 0-100 |
+| ai_health_grade | VARCHAR | Tingkat Kesehatan AI: A/B/C/D |
+| ai_churn_risk | DECIMAL | Risiko Kehilangan AI 0-100% |
+| ai_churn_risk_level | VARCHAR | Tingkat Risiko Kehilangan AI: low/medium/high |
+| ai_health_dimensions | JSONB | Skor Dimensi Kesehatan AI |
+| ai_recommendations | JSONB | Daftar Saran AI |
+| ai_health_assessed_at | TIMESTAMP | Waktu Penilaian Kesehatan AI |
+| ai_tags | JSONB | Label yang Dihasilkan AI |
+| ai_best_contact_time | VARCHAR | Waktu Kontak Direkomendasikan AI |
+| ai_next_best_action | TEXT | Saran Tindakan Terbaik Selanjutnya dari AI |
+| ai_nba_generated_at | TIMESTAMP | Waktu Pembuatan Saran AI |
+| description | TEXT | Deskripsi |
+| is_deleted | BOOLEAN | Penanda Penghapusan Lunak |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 Tabel Peluang (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+Manajemen peluang penjualan dengan tahap pipeline yang dapat dikonfigurasi.
 
-**Key fields:**
+**Bidang Kunci:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| opportunity_no | VARCHAR | Nomor Peluang (Otomatis, Unik) |
+| name | VARCHAR | Nama Peluang (Wajib) |
+| amount | DECIMAL | Jumlah yang Diharapkan |
+| currency | VARCHAR | Mata Uang |
+| exchange_rate | DECIMAL | Nilai Tukar |
+| amount_usd | DECIMAL | Jumlah Setara USD |
+| customer_id | BIGINT | Pelanggan (FK) |
+| contact_id | BIGINT | Kontak Utama (FK) |
+| stage | VARCHAR | Kode Tahap (FK → stages.code) |
+| stage_sort | INTEGER | Urutan Tahap (Redundan, untuk kemudahan pengurutan) |
+| stage_entered_at | TIMESTAMP | Waktu Masuk Tahap Saat Ini |
+| days_in_stage | INTEGER | Jumlah Hari di Tahap Saat Ini |
+| win_probability | DECIMAL | Tingkat Kemenangan Manual |
+| ai_win_probability | DECIMAL | Prediksi Tingkat Kemenangan AI |
+| ai_analyzed_at | TIMESTAMP | Waktu Analisis AI |
+| ai_confidence | DECIMAL | Kepercayaan Prediksi AI |
+| ai_trend | VARCHAR | Tren Prediksi AI: up/stable/down |
+| ai_risk_factors | JSONB | Faktor Risiko yang Diidentifikasi AI |
+| ai_recommendations | JSONB | Daftar Saran AI |
+| ai_predicted_close | DATE | Prediksi Tanggal Penutupan AI |
+| ai_next_best_action | TEXT | Saran Tindakan Terbaik Selanjutnya dari AI |
+| ai_nba_generated_at | TIMESTAMP | Waktu Pembuatan Saran AI |
+| expected_close_date | DATE | Perkiraan Tanggal Penutupan |
+| actual_close_date | DATE | Tanggal Penutupan Aktual |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| last_activity_at | TIMESTAMP | Waktu Aktivitas Terakhir |
+| stagnant_days | INTEGER | Jumlah Hari Tanpa Aktivitas |
+| loss_reason | TEXT | Alasan Gagal |
+| competitor_id | BIGINT | Kompetitor (FK) |
+| lead_source | VARCHAR | Sumber Lead |
+| campaign_id | BIGINT | ID Kampanye Pemasaran |
+| expected_revenue | DECIMAL | Pendapatan yang Diharapkan = amount × probability |
+| description | TEXT | Deskripsi |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 Tabel Penawaran (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+Manajemen penawaran yang mendukung multi-mata uang dan alur kerja persetujuan.
 
-**Status flow:**
+**Proses Status:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
+Draf → Menunggu Persetujuan → Disetujui → Dikirim → Diterima/Ditolak/Kedaluwarsa
               ↓
-          Rejected → Revise → Draft
+           Ditolak → Ubah → Draf
 ```
 
-**Key fields:**
+**Bidang Kunci:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| quotation_no | VARCHAR | Nomor Penawaran (Otomatis, Unik) |
+| name | VARCHAR | Nama Penawaran |
+| version | INTEGER | Nomor Versi |
+| opportunity_id | BIGINT | Peluang (FK, Wajib) |
+| customer_id | BIGINT | Pelanggan (FK) |
+| contact_id | BIGINT | Kontak (FK) |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| currency_id | BIGINT | Mata Uang (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | Nilai Tukar |
 | subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
+| discount_rate | DECIMAL | Tingkat Diskon |
+| discount_amount | DECIMAL | Jumlah Diskon |
+| shipping_handling | DECIMAL | Biaya Pengiriman/Penanganan |
+| tax_rate | DECIMAL | Tingkat Pajak |
+| tax_amount | DECIMAL | Jumlah Pajak |
+| total_amount | DECIMAL | Total Jumlah |
+| total_amount_usd | DECIMAL | Jumlah Setara USD |
 | status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| submitted_at | TIMESTAMP | Waktu Pengajuan |
+| approved_by | BIGINT | Penyetuju (FK → users) |
+| approved_at | TIMESTAMP | Waktu Persetujuan |
+| rejected_at | TIMESTAMP | Waktu Penolakan |
+| sent_at | TIMESTAMP | Waktu Pengiriman |
+| customer_response_at | TIMESTAMP | Waktu Respon Pelanggan |
+| expired_at | TIMESTAMP | Waktu Kedaluwarsa |
+| valid_until | DATE | Berlaku Hingga |
+| payment_terms | TEXT | Syarat Pembayaran |
+| terms_condition | TEXT | Syarat dan Ketentuan |
+| address | TEXT | Alamat Pengiriman |
+| description | TEXT | Deskripsi |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 Tabel Pesanan (nb_crm_orders)
 
-Order management with payment tracking.
+Manajemen pesanan termasuk pelacakan pembayaran.
 
-**Key fields:**
+**Bidang Kunci:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| order_no | VARCHAR | Nomor Pesanan (Otomatis, Unik) |
+| customer_id | BIGINT | Pelanggan (FK) |
+| contact_id | BIGINT | Kontak (FK) |
+| opportunity_id | BIGINT | Peluang (FK) |
+| quotation_id | BIGINT | Penawaran (FK) |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| currency | VARCHAR | Mata Uang |
+| exchange_rate | DECIMAL | Nilai Tukar |
+| order_amount | DECIMAL | Jumlah Pesanan |
+| paid_amount | DECIMAL | Jumlah yang Sudah Dibayar |
+| unpaid_amount | DECIMAL | Jumlah yang Belum Dibayar |
 | status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| payment_status | VARCHAR | Status Pembayaran: unpaid/partial/paid |
+| order_date | DATE | Tanggal Pesanan |
+| delivery_date | DATE | Perkiraan Tanggal Pengiriman |
+| actual_delivery_date | DATE | Tanggal Pengiriman Aktual |
+| shipping_address | TEXT | Alamat Pengiriman |
+| logistics_company | VARCHAR | Perusahaan Logistik |
+| tracking_no | VARCHAR | Nomor Resi |
+| terms_condition | TEXT | Syarat dan Ketentuan |
+| description | TEXT | Deskripsi |
 
-### 3.3 Table Summary
+### 3.3 Ringkasan Koleksi Data
 
-#### CRM Business Tables
+#### Koleksi Bisnis CRM
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| No. | Nama Koleksi | Deskripsi | Tipe |
+|-----|------|------|------|
+| 1 | nb_crm_leads | Manajemen Lead | Bisnis |
+| 2 | nb_crm_customers | Pelanggan/Perusahaan | Bisnis |
+| 3 | nb_crm_contacts | Kontak | Bisnis |
+| 4 | nb_crm_opportunities | Peluang Penjualan | Bisnis |
+| 5 | nb_crm_opportunity_stages | Konfigurasi Tahap | Konfigurasi |
+| 6 | nb_crm_opportunity_users | Kolaborator Peluang (Tim Penjualan) | Relasi |
+| 7 | nb_crm_quotations | Penawaran Harga | Bisnis |
+| 8 | nb_crm_quotation_items | Detail Penawaran | Bisnis |
+| 9 | nb_crm_quotation_approvals | Catatan Persetujuan | Bisnis |
+| 10 | nb_crm_orders | Pesanan | Bisnis |
+| 11 | nb_crm_order_items | Detail Pesanan | Bisnis |
+| 12 | nb_crm_payments | Catatan Pembayaran | Bisnis |
+| 13 | nb_crm_products | Katalog Produk | Bisnis |
+| 14 | nb_crm_product_categories | Kategori Produk | Konfigurasi |
+| 15 | nb_crm_price_tiers | Penetapan Harga Berjenjang | Konfigurasi |
+| 16 | nb_crm_activities | Catatan Aktivitas | Bisnis |
+| 17 | nb_crm_comments | Komentar/Catatan | Bisnis |
+| 18 | nb_crm_competitors | Kompetitor | Bisnis |
+| 19 | nb_crm_tags | Label | Konfigurasi |
+| 20 | nb_crm_lead_tags | Relasi Lead-Label | Relasi |
+| 21 | nb_crm_contact_tags | Relasi Kontak-Label | Relasi |
+| 22 | nb_crm_customer_shares | Izin Berbagi Pelanggan | Relasi |
+| 23 | nb_crm_exchange_rates | Riwayat Nilai Tukar | Konfigurasi |
 
-#### Base Data Tables (Shared Module)
+#### Koleksi Data Dasar (Modul Publik)
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| No. | Nama Koleksi | Deskripsi | Tipe |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | Kamus Mata Uang | Konfigurasi |
+| 2 | nb_cbo_regions | Kamus Negara/Wilayah | Konfigurasi |
 
-### 3.4 Supporting Tables
+### 3.4 Tabel Pendukung
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 Tabel Komentar (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+Tabel komentar/catatan umum yang dapat dikaitkan dengan berbagai objek bisnis.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| content | TEXT | Isi Komentar |
+| lead_id | BIGINT | Lead Terkait (FK) |
+| customer_id | BIGINT | Pelanggan Terkait (FK) |
+| opportunity_id | BIGINT | Peluang Terkait (FK) |
+| order_id | BIGINT | Pesanan Terkait (FK) |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 Tabel Berbagi Pelanggan (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+Mengimplementasikan kolaborasi multi-orang dan berbagi izin untuk pelanggan.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| customer_id | BIGINT | Pelanggan (FK, Wajib) |
+| shared_with_user_id | BIGINT | Pengguna yang Diberi Akses (FK, Wajib) |
+| shared_by_user_id | BIGINT | Pemrakarsa Berbagi (FK) |
+| permission_level | VARCHAR | Tingkat Izin: read/write/full |
+| shared_at | TIMESTAMP | Waktu Berbagi |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 Tabel Kolaborator Peluang (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+Mendukung kolaborasi tim penjualan pada peluang bisnis.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| opportunity_id | BIGINT | Peluang (FK, Kunci Utama Gabungan) |
+| user_id | BIGINT | Pengguna (FK, Kunci Utama Gabungan) |
+| role | VARCHAR | Peran: owner/collaborator/viewer |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 Tabel Wilayah (nb_cbo_regions)
 
-Country/region base data dictionary.
+Kamus data dasar negara/wilayah.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
-
----
-
-## 4. Lead Lifecycle
-
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
-
-### 4.1 Status Definitions
-
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
-
-### 4.2 Status Flow
-
-
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
-
-### 4.3 Lead Conversion Flow
-
-The conversion UI presents three options simultaneously; users can create or link:
-
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
-
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| code_alpha2 | VARCHAR | Kode Dua Huruf ISO 3166-1 (Unik) |
+| code_alpha3 | VARCHAR | Kode Tiga Huruf ISO 3166-1 (Unik) |
+| code_numeric | VARCHAR | Kode Numerik ISO 3166-1 |
+| name | VARCHAR | Nama Negara/Wilayah |
+| is_active | BOOLEAN | Apakah Aktif |
+| sort_order | INTEGER | Urutan |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. Siklus Hidup Lead
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+Manajemen lead menggunakan alur kerja 4 tahap yang disederhanakan. Saat lead baru dibuat, alur kerja dapat secara otomatis memicu penilaian AI untuk membantu tim penjualan mengidentifikasi lead berkualitas tinggi dengan cepat.
 
-### 5.1 Configurable Stages
+### 4.1 Definisi Status
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| Status | Nama | Deskripsi |
+|-----|------|------|
+| new | Baru | Baru dibuat, menunggu untuk dihubungi |
+| working | Sedang Dikerjakan | Sedang ditindaklanjuti secara aktif |
+| qualified | Terverifikasi | Siap untuk dikonversi |
+| unqualified | Tidak Memenuhi Syarat | Tidak cocok |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 Diagram Alir Status
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 Proses Konversi Lead
 
-### 5.3 Stagnation Detection
+Antarmuka konversi menyediakan tiga opsi secara bersamaan, pengguna dapat memilih untuk membuat atau mengaitkan:
 
-Opportunities with no activity will be flagged:
+- **Pelanggan**: Buat pelanggan baru ATAU kaitkan dengan pelanggan yang sudah ada.
+- **Kontak**: Buat kontak baru (dikaitkan dengan pelanggan).
+- **Peluang**: Harus membuat peluang bisnis.
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**Catatan Setelah Konversi:**
+- `converted_customer_id`: ID Pelanggan yang dikaitkan
+- `converted_contact_id`: ID Kontak yang dikaitkan
+- `converted_opportunity_id`: ID Peluang yang dibuat
+
+---
+
+## 5. Siklus Hidup Peluang
+
+Manajemen peluang menggunakan tahap pipeline penjualan yang dapat dikonfigurasi. Saat tahap peluang berubah, prediksi tingkat kemenangan AI dapat dipicu secara otomatis untuk membantu tim penjualan mengidentifikasi risiko dan peluang.
+
+### 5.1 Tahap yang Dapat Dikonfigurasi
+
+Tahap disimpan dalam tabel `nb_crm_opportunity_stages` dan dapat disesuaikan:
+
+| Kode | Nama | Urutan | Tingkat Kemenangan Default |
+|-----|------|------|---------|
+| prospecting | Prospeksi | 1 | 10% |
+| analysis | Analisis Kebutuhan | 2 | 30% |
+| proposal | Pengajuan Proposal | 3 | 60% |
+| negotiation | Negosiasi Bisnis | 4 | 80% |
+| won | Berhasil Menang | 5 | 100% |
+| lost | Gagal/Hilang | 6 | 0% |
+
+### 5.2 Alur Pipeline
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 Deteksi Stagnasi
+
+Peluang tanpa aktivitas akan ditandai:
+
+| Hari Tanpa Aktivitas | Tindakan |
+|-----------|------|
+| 7 Hari | Peringatan Kuning |
+| 14 Hari | Pengingat Oranye kepada Penanggung Jawab |
+| 30 Hari | Pengingat Merah kepada Manajer |
 
 ```sql
--- Calculate stagnation days
+-- Menghitung hari stagnasi
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 Penanganan Menang/Gagal
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**Saat Menang:**
+1. Perbarui tahap menjadi 'won'
+2. Catat tanggal penutupan aktual
+3. Perbarui status pelanggan menjadi 'active'
+4. Pemicu pembuatan pesanan (jika penawaran diterima)
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**Saat Gagal:**
+1. Perbarui tahap menjadi 'lost'
+2. Catat alasan gagal
+3. Catat ID kompetitor (jika kalah dari kompetitor)
+4. Beri tahu manajer
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. Siklus Hidup Penawaran
 
-### 6.1 Status Definitions
+### 6.1 Definisi Status
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| Status | Nama | Deskripsi |
+|-----|------|------|
+| draft | Draf | Sedang dipersiapkan |
+| pending_approval | Menunggu Persetujuan | Menunggu persetujuan |
+| approved | Disetujui | Dapat dikirim |
+| sent | Dikirim | Sudah dikirim ke pelanggan |
+| accepted | Diterima | Pelanggan telah menerima |
+| rejected | Ditolak | Pelanggan telah menolak |
+| expired | Kedaluwarsa | Melewati masa berlaku |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 Aturan Persetujuan (Akan Disempurnakan)
 
-Approval flow is triggered based on the following conditions:
+Alur kerja persetujuan dipicu berdasarkan kondisi berikut:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| Kondisi | Tingkat Persetujuan |
+|------|---------|
+| Diskon > 10% | Manajer Penjualan |
+| Diskon > 20% | Direktur Penjualan |
+| Jumlah > $100K | Keuangan + Direktur Utama |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 Dukungan Multi-mata Uang
 
-### 6.3 Multi-Currency Support
+#### Filosofi Desain
 
-#### Design Rationale
+Menggunakan **USD sebagai mata uang dasar tunggal** untuk semua laporan dan analisis. Setiap catatan jumlah menyimpan:
+- Mata uang dan jumlah asli (yang dilihat pelanggan)
+- Nilai tukar pada saat transaksi
+- Jumlah setara USD (untuk perbandingan internal)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### Kamus Mata Uang (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+Konfigurasi mata uang menggunakan tabel data dasar publik, mendukung manajemen dinamis. Bidang `current_rate` menyimpan nilai tukar saat ini, yang diperbarui oleh tugas terjadwal dari catatan terbaru di `nb_crm_exchange_rates`.
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| code | VARCHAR | Kode Mata Uang (Unik): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | Nama Mata Uang |
+| symbol | VARCHAR | Simbol Mata Uang |
+| decimal_places | INTEGER | Jumlah Desimal |
+| current_rate | DECIMAL | Nilai Tukar Saat Ini terhadap USD (Sinkronisasi dari riwayat) |
+| is_active | BOOLEAN | Apakah Aktif |
+| sort_order | INTEGER | Urutan |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### Riwayat Nilai Tukar (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+Mencatat data riwayat nilai tukar, tugas terjadwal akan menyinkronkan nilai tukar terbaru ke `nb_cbo_currencies.current_rate`.
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| currency_code | VARCHAR | Kode Mata Uang (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | Nilai Tukar terhadap USD |
+| effective_date | DATE | Tanggal Berlaku |
+| source | VARCHAR | Sumber Nilai Tukar: manual/api |
+| createdAt | TIMESTAMP | Waktu Pembuatan |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **Catatan**: Penawaran dikaitkan dengan tabel `nb_cbo_currencies` melalui kunci asing `currency_id`, nilai tukar diambil langsung dari bidang `current_rate`. Peluang dan pesanan menggunakan bidang VARCHAR `currency` untuk menyimpan kode mata uang.
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### Pola Bidang Jumlah
 
-#### Monetary Field Pattern
+Tabel yang berisi jumlah mengikuti pola ini:
 
-Tables with monetary amounts follow this pattern:
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| currency | VARCHAR | Mata Uang Transaksi |
+| amount | DECIMAL | Jumlah Mata Uang Asli |
+| exchange_rate | DECIMAL | Nilai Tukar terhadap USD saat transaksi |
+| amount_usd | DECIMAL | Setara USD (Dihitung) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**Diterapkan pada:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### Integrasi Alur Kerja
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**Logika Pengambilan Nilai Tukar:**
+1. Saat operasi bisnis, ambil nilai tukar langsung dari `nb_cbo_currencies.current_rate`.
+2. Transaksi USD: Nilai tukar = 1.0, tidak perlu pencarian.
+3. `current_rate` disinkronkan oleh tugas terjadwal dari catatan terbaru `nb_crm_exchange_rates`.
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 Manajemen Versi
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+Saat penawaran ditolak atau kedaluwarsa, penawaran tersebut dapat disalin sebagai versi baru:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → Ditolak
+QT-20260119-001 v2 → Dikirim
+QT-20260119-001 v3 → Diterima
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. Siklus Hidup Pesanan
 
-### 7.1 Order Overview
+### 7.1 Ikhtisar Pesanan
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+Pesanan dibuat saat penawaran diterima, mewakili komitmen bisnis yang telah dikonfirmasi.
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 Definisi Status Pesanan
 
-### 7.2 Order Status Definitions
+| Status | Kode | Deskripsi | Tindakan yang Diizinkan |
+|-----|------|------|---------|
+| Draf | `draft` | Pesanan dibuat, belum dikonfirmasi | Edit, Konfirmasi, Batalkan |
+| Dikonfirmasi | `confirmed` | Pesanan dikonfirmasi, menunggu pemenuhan | Mulai Pemenuhan, Batalkan |
+| Dalam Proses | `in_progress` | Pesanan sedang diproses/diproduksi | Perbarui Progres, Kirim, Batalkan (perlu persetujuan) |
+| Dikirim | `shipped` | Produk telah dikirim ke pelanggan | Tandai Terkirim |
+| Terkirim | `delivered` | Pelanggan telah menerima barang | Selesaikan Pesanan |
+| Selesai | `completed` | Pesanan selesai sepenuhnya | Tidak ada |
+| Dibatalkan | `cancelled` | Pesanan dibatalkan | Tidak ada |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 Model Data Pesanan
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| order_no | VARCHAR | Nomor Pesanan (Otomatis, Unik) |
+| customer_id | BIGINT | Pelanggan (FK) |
+| contact_id | BIGINT | Kontak (FK) |
+| opportunity_id | BIGINT | Peluang (FK) |
+| quotation_id | BIGINT | Penawaran (FK) |
+| owner_id | BIGINT | Penanggung Jawab (FK → users) |
+| status | VARCHAR | Status Pesanan |
+| payment_status | VARCHAR | Status Pembayaran: unpaid/partial/paid |
+| order_date | DATE | Tanggal Pesanan |
+| delivery_date | DATE | Perkiraan Tanggal Pengiriman |
+| actual_delivery_date | DATE | Tanggal Pengiriman Aktual |
+| currency | VARCHAR | Mata Uang Pesanan |
+| exchange_rate | DECIMAL | Nilai Tukar terhadap USD |
+| order_amount | DECIMAL | Total Jumlah Pesanan |
+| paid_amount | DECIMAL | Jumlah yang Sudah Dibayar |
+| unpaid_amount | DECIMAL | Jumlah yang Belum Dibayar |
+| shipping_address | TEXT | Alamat Pengiriman |
+| logistics_company | VARCHAR | Perusahaan Logistik |
+| tracking_no | VARCHAR | Nomor Resi |
+| terms_condition | TEXT | Syarat dan Ketentuan |
+| description | TEXT | Deskripsi |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| order_id | FK | Pesanan Induk |
+| product_id | FK | Referensi Produk |
+| product_name | VARCHAR | Snapshot Nama Produk |
+| quantity | INT | Jumlah yang Dipesan |
+| unit_price | DECIMAL | Harga Satuan |
+| discount_percent | DECIMAL | Persentase Diskon |
+| line_total | DECIMAL | Total Item Baris |
+| notes | TEXT | Catatan Item Baris |
 
-### 7.4 Payment Tracking
+### 7.4 Pelacakan Pembayaran
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| Bidang | Tipe | Deskripsi |
+|-----|------|------|
+| id | BIGINT | Kunci Utama |
+| order_id | BIGINT | Pesanan Terkait (FK, Wajib) |
+| customer_id | BIGINT | Pelanggan (FK) |
+| payment_no | VARCHAR | Nomor Pembayaran (Otomatis, Unik) |
+| amount | DECIMAL | Jumlah Pembayaran (Wajib) |
+| currency | VARCHAR | Mata Uang Pembayaran |
+| payment_method | VARCHAR | Metode Pembayaran: transfer/check/cash/credit_card/lc |
+| payment_date | DATE | Tanggal Pembayaran |
+| bank_account | VARCHAR | Nomor Rekening Bank |
+| bank_name | VARCHAR | Nama Bank |
+| notes | TEXT | Catatan Pembayaran |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. Siklus Hidup Pelanggan
 
-### 8.1 Customer Overview
+### 8.1 Ikhtisar Pelanggan
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+Pelanggan dibuat saat konversi lead atau saat peluang berhasil dimenangkan. Sistem melacak siklus hidup lengkap dari akuisisi hingga menjadi pendukung (advocate).
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 Definisi Status Pelanggan
 
-### 8.2 Customer Status Definitions
+| Status | Kode | Kesehatan | Deskripsi |
+|-----|------|--------|------|
+| Potensial | `prospect` | N/A | Lead yang sudah dikonversi, belum ada pesanan |
+| Aktif | `active` | ≥70 | Pelanggan berbayar, interaksi baik |
+| Berkembang | `growing` | ≥80 | Pelanggan dengan peluang ekspansi |
+| Berisiko | `at_risk` | <50 | Pelanggan yang menunjukkan tanda-tanda akan berhenti |
+| Berhenti | `churned` | N/A | Pelanggan yang tidak lagi aktif |
+| Kembali | `win_back` | N/A | Mantan pelanggan yang sedang diaktifkan kembali |
+| Pendukung | `advocate` | ≥90 | Kepuasan tinggi, memberikan referensi |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 Penilaian Kesehatan Pelanggan
 
-### 8.3 Customer Health Score
+Kesehatan pelanggan dihitung berdasarkan beberapa faktor:
 
-Health score is calculated from multiple factors:
+| Faktor | Bobot | Metrik Pengukuran |
+|-----|------|---------|
+| Kebaruan Pembelian | 25% | Jumlah hari sejak pesanan terakhir |
+| Frekuensi Pembelian | 20% | Jumlah pesanan per periode |
+| Nilai Moneter | 20% | Total dan rata-rata nilai pesanan |
+| Tingkat Interaksi | 15% | Tingkat pembukaan email, partisipasi pertemuan |
+| Kesehatan Dukungan | 10% | Volume tiket dan tingkat penyelesaian |
+| Penggunaan Produk | 10% | Metrik penggunaan aktif (jika ada) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**Ambang Batas Kesehatan:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +710,217 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 Segmentasi Pelanggan
 
-#### Automatic Segmentation
+#### Segmentasi Otomatis
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
-
----
-
-## 9. Email Integration
-
-### 9.1 Overview
-
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
-
-### 9.2 Email Sync
-
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
-
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
-
-### 9.3 Email–CRM Association (To Be Refined)
-
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
-
-### 9.4 Email Templates
-
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| Segmen | Kondisi | Tindakan yang Disarankan |
+|-----|------|---------|
+| VIP | Nilai Seumur Hidup (LTV) > $100K | Layanan eksklusif, sponsor eksekutif |
+| Perusahaan Besar | Ukuran Perusahaan > 500 orang | Manajer Akun khusus |
+| Pasar Menengah | Ukuran Perusahaan 50-500 orang | Kunjungan rutin, dukungan berskala |
+| Startup | Ukuran Perusahaan < 50 orang | Sumber daya mandiri, komunitas |
+| Dormant | 90+ hari tanpa aktivitas | Pemasaran aktivasi kembali |
 
 ---
 
-## 10. AI Capabilities
+## 9. Integrasi Email
 
-### 10.1 AI Employee Team
+### 9.1 Ikhtisar
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+NocoBase menyediakan plugin integrasi email bawaan yang mendukung Gmail dan Outlook. Setelah email disinkronkan ke sistem, alur kerja dapat secara otomatis memicu analisis AI untuk mengetahui sentimen dan niat email, membantu tim penjualan memahami sikap pelanggan dengan cepat.
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+### 9.2 Sinkronisasi Email
 
-### 10.2 AI Task List
+**Email yang Didukung:**
+- Gmail (melalui OAuth 2.0)
+- Outlook/Microsoft 365 (melalui OAuth 2.0)
 
-AI capabilities are divided into two independent categories:
+**Perilaku Sinkronisasi:**
+- Sinkronisasi dua arah untuk email terkirim dan diterima
+- Pengaitan otomatis email ke catatan CRM (Lead, Kontak, Peluang)
+- Lampiran disimpan dalam sistem file NocoBase
 
-#### 1. AI Employees (Frontend — User-Triggered)
+### 9.3 Pengaitan Email-CRM (Akan Disempurnakan)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+### 9.4 Templat Email
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+Tim penjualan dapat menggunakan templat yang telah ditentukan:
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
-
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
-
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
-
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
-
-### 10.3 AI Fields in the Database
-
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
-| | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| Kategori Templat | Contoh |
+|---------|------|
+| Kontak Awal | Email dingin (cold email), perkenalan hangat, tindak lanjut acara |
+| Tindak Lanjut | Tindak lanjut pertemuan, tindak lanjut proposal, pengingat tanpa balasan |
+| Penawaran | Penawaran terlampir, revisi penawaran, penawaran segera kedaluwarsa |
+| Pesanan | Konfirmasi pesanan, pemberitahuan pengiriman, konfirmasi penerimaan |
+| Kesuksesan Pelanggan | Selamat datang, kunjungan rutin, permintaan ulasan |
 
 ---
 
-## 11. Workflow Engine
+## 10. Kemampuan Berbantuan AI
 
-### 11.1 Implemented Workflows
+### 10.1 Tim Karyawan AI
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+Sistem CRM mengintegrasikan plugin AI NocoBase, menggunakan kembali karyawan AI bawaan berikut, dan mengonfigurasi tugas khusus untuk skenario CRM:
 
-### 11.2 Planned Workflows
+| ID | Nama | Jabatan Bawaan | Kemampuan Ekstensi CRM |
+|----|------|---------|-------------|
+| viz | Viz | Analis Data | Analisis data penjualan, prediksi pipeline |
+| dara | Dara | Pakar Bagan | Visualisasi data, pengembangan laporan bagan, desain dasbor |
+| ellis | Ellis | Editor | Pembuatan draf balasan email, ringkasan komunikasi, draf email bisnis |
+| lexi | Lexi | Penerjemah | Komunikasi pelanggan multi-bahasa, terjemahan konten |
+| orin | Orin | Pengatur (Organizer) | Prioritas harian, saran langkah selanjutnya, rencana tindak lanjut |
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
+### 10.2 Daftar Tugas AI
 
----
+Kemampuan AI dibagi menjadi dua kategori yang saling independen:
 
-## 12. Menu & Interface Design
+#### I. Karyawan AI (Dipicu oleh Blok Antarmuka)
 
-### 12.1 Admin Menu Structure
+Melalui blok karyawan AI di antarmuka, pengguna berinteraksi langsung dengan AI untuk mendapatkan analisis dan saran.
 
+| Karyawan | Tugas | Deskripsi |
+|------|------|------|
+| Viz | Analis Data Penjualan | Menganalisis tren pipeline, tingkat konversi |
+| Viz | Prediksi Pipeline | Memprediksi pendapatan berdasarkan pipeline tertimbang |
+| Dara | Pembuatan Bagan | Menghasilkan bagan laporan penjualan |
+| Dara | Desain Dasbor | Mendesain tata letak dasbor data |
+| Ellis | Pembuatan Draf Balasan | Menghasilkan balasan email profesional |
+| Ellis | Ringkasan Komunikasi | Merangkum utas email |
+| Ellis | Draf Email Bisnis | Undangan pertemuan, tindak lanjut, ucapan terima kasih, dll. |
+| Orin | Prioritas Harian | Menghasilkan daftar tugas prioritas hari ini |
+| Orin | Saran Langkah Selanjutnya | Merekomendasikan tindakan selanjutnya untuk setiap peluang |
+| Lexi | Terjemahan Konten | Menerjemahkan materi pemasaran, proposal, email |
 
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
+#### II. Node LLM Alur Kerja (Eksekusi Otomatis di Latar Belakang)
 
-### 12.2 Dashboard Views
+Node LLM yang disematkan dalam alur kerja, dipicu secara otomatis melalui peristiwa tabel data, peristiwa operasi, tugas terjadwal, dll., dan tidak terkait dengan karyawan AI.
 
-#### Sales Manager View
+| Tugas | Metode Pemicu | Deskripsi | Bidang Penulisan |
+|------|---------|------|---------|
+| Penilaian Lead | Peristiwa Tabel (Buat/Perbarui) | Mengevaluasi kualitas lead | ai_score, ai_convert_prob |
+| Prediksi Tingkat Kemenangan | Peristiwa Tabel (Perubahan Tahap) | Memprediksi kemungkinan keberhasilan peluang | ai_win_probability, ai_risk_factors |
 
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
+> **Penjelasan**: Node LLM alur kerja menggunakan perintah (prompt) dan Schema untuk menghasilkan JSON terstruktur, yang kemudian diurai dan ditulis ke dalam bidang data bisnis tanpa campur tangan pengguna.
 
-#### Sales Rep View
+### 10.3 Bidang AI dalam Database
 
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| Tabel | Bidang AI | Deskripsi |
+|----|--------|------|
+| nb_crm_leads | ai_score | Skor AI 0-100 |
+| | ai_convert_prob | Probabilitas Konversi |
+| | ai_best_contact_time | Waktu Kontak Terbaik |
+| | ai_tags | Label yang Dihasilkan AI (JSONB) |
+| | ai_scored_at | Waktu Penilaian |
+| | ai_next_best_action | Saran Tindakan Terbaik Selanjutnya |
+| | ai_nba_generated_at | Waktu Pembuatan Saran |
+| nb_crm_opportunities | ai_win_probability | Prediksi Tingkat Kemenangan AI |
+| | ai_analyzed_at | Waktu Analisis |
+| | ai_confidence | Kepercayaan Prediksi |
+| | ai_trend | Tren: up/stable/down |
+| | ai_risk_factors | Faktor Risiko (JSONB) |
+| | ai_recommendations | Daftar Saran (JSONB) |
+| | ai_predicted_close | Prediksi Tanggal Penutupan |
+| | ai_next_best_action | Saran Tindakan Terbaik Selanjutnya |
+| | ai_nba_generated_at | Waktu Pembuatan Saran |
+| nb_crm_customers | ai_health_score | Skor Kesehatan 0-100 |
+| | ai_health_grade | Tingkat Kesehatan: A/B/C/D |
+| | ai_churn_risk | Risiko Kehilangan 0-100% |
+| | ai_churn_risk_level | Tingkat Risiko Kehilangan: low/medium/high |
+| | ai_health_dimensions | Skor Berbagai Dimensi (JSONB) |
+| | ai_recommendations | Daftar Saran (JSONB) |
+| | ai_health_assessed_at | Waktu Penilaian Kesehatan |
+| | ai_tags | Label yang Dihasilkan AI (JSONB) |
+| | ai_best_contact_time | Waktu Kontak Terbaik |
+| | ai_next_best_action | Saran Tindakan Terbaik Selanjutnya |
+| | ai_nba_generated_at | Waktu Pembuatan Saran |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 11. Mesin Alur Kerja
+
+### 11.1 Alur Kerja yang Telah Diimplementasikan
+
+| Nama Alur Kerja | Tipe Pemicu | Status | Penjelasan |
+|-----------|---------|------|------|
+| Leads Created | Peristiwa Tabel | Aktif | Dipicu saat lead dibuat |
+| CRM Overall Analytics | Peristiwa Karyawan AI | Aktif | Analisis data CRM secara keseluruhan |
+| Lead Conversion | Peristiwa Setelah Operasi | Aktif | Proses konversi lead |
+| Lead Assignment | Peristiwa Tabel | Aktif | Alokasi lead otomatis |
+| Lead Scoring | Peristiwa Tabel | Nonaktif | Penilaian lead (akan disempurnakan) |
+| Follow-up Reminder | Tugas Terjadwal | Nonaktif | Pengingat tindak lanjut (akan disempurnakan) |
+
+### 11.2 Alur Kerja yang Akan Datang
+
+| Alur Kerja | Tipe Pemicu | Penjelasan |
+|-------|---------|------|
+| Kemajuan Tahap Peluang | Peristiwa Tabel | Perbarui tingkat kemenangan dan catat waktu saat tahap berubah |
+| Deteksi Stagnasi Peluang | Tugas Terjadwal | Mendeteksi peluang tanpa aktivitas dan mengirim pengingat |
+| Persetujuan Penawaran | Peristiwa Setelah Operasi | Proses persetujuan bertingkat |
+| Pembuatan Pesanan | Peristiwa Setelah Operasi | Membuat pesanan otomatis setelah penawaran diterima |
+
+---
+
+## 12. Desain Menu dan Antarmuka
+
+### 12.1 Struktur Manajemen Latar Belakang
+
+| Menu | Tipe | Penjelasan |
+|------|------|------|
+| **Dasbor** | Grup | Dasbor |
+| - Dasbor | Halaman | Dasbor Default |
+| - Manajer Penjualan | Halaman | Tampilan Manajer Penjualan |
+| - Perwakilan Penjualan | Halaman | Tampilan Perwakilan Penjualan |
+| - Eksekutif | Halaman | Tampilan Eksekutif |
+| **Lead** | Halaman | Manajemen Lead |
+| **Pelanggan** | Halaman | Manajemen Pelanggan |
+| **Peluang** | Halaman | Manajemen Peluang |
+| - Tabel | Tab | Daftar Peluang |
+| **Produk** | Halaman | Manajemen Produk |
+| - Kategori | Tab | Kategori Produk |
+| **Pesanan** | Halaman | Manajemen Pesanan |
+| **Pengaturan** | Grup | Pengaturan |
+| - Pengaturan Tahap | Halaman | Konfigurasi Tahap Peluang |
+| - Nilai Tukar | Halaman | Pengaturan Nilai Tukar |
+| - Aktivitas | Halaman | Catatan Aktivitas |
+| - Email | Halaman | Manajemen Email |
+| - Kontak | Halaman | Manajemen Kontak |
+| - Analisis Data | Halaman | Analisis Data |
+
+### 12.2 Tampilan Dasbor
+
+#### Tampilan Manajer Penjualan
+
+| Komponen | Tipe | Data |
+|-----|------|------|
+| Nilai Pipeline | Kartu KPI | Total nilai pipeline di setiap tahap |
+| Papan Peringkat Tim | Tabel | Peringkat kinerja perwakilan |
+| Peringatan Risiko | Daftar Peringatan | Peluang berisiko tinggi |
+| Tren Tingkat Kemenangan | Bagan Garis | Tingkat kemenangan bulanan |
+| Transaksi Stagnan | Daftar | Transaksi yang memerlukan perhatian |
+
+#### Tampilan Perwakilan Penjualan
+
+| Komponen | Tipe | Data |
+|-----|------|------|
+| Progres Kuota Saya | Bilah Progres | Aktual bulanan vs Kuota |
+| Peluang Menunggu Diproses | Kartu KPI | Jumlah peluang saya yang menunggu diproses |
+| Akan Ditutup Minggu Ini | Daftar | Transaksi yang akan segera ditutup |
+| Aktivitas Terlambat | Peringatan | Tugas yang sudah kedaluwarsa |
+| Tindakan Cepat | Tombol | Catat aktivitas, buat peluang |
+
+#### Tampilan Eksekutif
+
+| Komponen | Tipe | Data |
+|-----|------|------|
+| Pendapatan Tahunan | Kartu KPI | Pendapatan tahun berjalan hingga saat ini |
+| Nilai Pipeline | Kartu KPI | Total nilai pipeline |
+| Tingkat Kemenangan | Kartu KPI | Tingkat kemenangan keseluruhan |
+| Kesehatan Pelanggan | Bagan Distribusi | Distribusi skor kesehatan |
+| Prediksi | Bagan | Prediksi pendapatan bulanan |
+
+
+---
+
+*Versi Dokumen: v2.0 | Tanggal Pembaruan: 2026-02-06*

@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: HTTP request node"
+displayName: "Workflow: HTTP İsteği Node"
 packageName: '@nocobase/plugin-workflow-request'
 description: |
-  Send HTTP requests to any HTTP service for data interaction in workflow.
+  Workflow içinde veri etkileşimi sağlamak amacıyla herhangi bir HTTP servisine HTTP istekleri göndermek için kullanılabilir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: HTTP request node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-request/index) bakın.
+:::
+
+# Workflow: HTTP İsteği Node

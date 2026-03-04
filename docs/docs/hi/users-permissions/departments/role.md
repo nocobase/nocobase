@@ -19,7 +19,7 @@ pkg: '@nocobase/plugin-departments'
 
 दूसरा तरीका यह है कि भूमिका प्रबंधन (role management) में संबंधित भूमिका (corresponding role) में विभाग जोड़ें।
 
-![](https://static-docs.nocobase.com/f2a7bec89aa1fb415c152a51a51cc23b.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 जिन विभागों के पास पहले से यह भूमिका है, उन्हें चुना नहीं जा सकता।
 

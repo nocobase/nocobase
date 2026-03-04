@@ -11,6 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
+import { FlowModelRenderer, useFlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
 import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
@@ -62,13 +63,15 @@ import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSe
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
-import { useFlowEngineContext } from '@nocobase/flow-engine';
+import { AdminLayoutModel } from './AdminLayoutModel';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
+
+const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';
 
 export const CurrentRouteProvider: FC<{ uid: string }> = memo(({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -266,10 +269,24 @@ function isDvhSupported() {
 
 export const LayoutContent = () => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const flowEngine = useFlowEngine();
+  const layoutContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+    model?.setLayoutContentElement(layoutContentRef.current);
+    return () => {
+      model?.setLayoutContentElement(null);
+    };
+  }, [flowEngine]);
 
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
+    <div
+      ref={layoutContentRef}
+      className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}
+      style={style}
+    >
       <div style={pageContentStyle}>
         <Outlet />
         <ShowTipWhenNoPages />
@@ -986,11 +1003,31 @@ export const AdminProvider = (props) => {
 };
 
 export const AdminLayout = (props) => {
-  return (
+  const flowEngine = useFlowEngine();
+  const modelRef = useRef<AdminLayoutModel>(null);
+  const modelChildren = (
     <AdminProvider>
       <InternalAdminLayout {...props} />
     </AdminProvider>
   );
+
+  if (!modelRef.current) {
+    modelRef.current =
+      flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID) ||
+      flowEngine.createModel<AdminLayoutModel>({
+        uid: ADMIN_LAYOUT_MODEL_UID,
+        use: AdminLayoutModel,
+        props: { ...props, children: modelChildren },
+      });
+  }
+
+  const model = modelRef.current;
+
+  useEffect(() => {
+    model.setProps({ ...props, children: modelChildren });
+  }, [model, modelChildren, props]);
+
+  return <FlowModelRenderer model={model} />;
 };
 
 export class AdminLayoutPlugin extends Plugin {
@@ -998,6 +1035,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
+    this.app.flowEngine.registerModels({ AdminLayoutModel });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
     this.app.use(MobileLayoutProvider);

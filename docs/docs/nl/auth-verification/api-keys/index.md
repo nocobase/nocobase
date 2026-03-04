@@ -17,7 +17,7 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 ### API-sleutel toevoegen
 
-![](https://static-docs.nocobase.com/461872fc0ad9a96fa5b14e97fcba12.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **Belangrijke opmerkingen**
 

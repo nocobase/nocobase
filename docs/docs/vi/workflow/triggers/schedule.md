@@ -75,6 +75,6 @@ Tạo một luồng công việc dựa trên tác vụ định kỳ. Trong cấu
 
 Sau đó, cấu hình các nút khác theo logic của quy trình để cập nhật trạng thái của đơn hàng có ID dữ liệu kích hoạt và trạng thái "chưa thanh toán" thành đã hủy:
 
-![Tác vụ định kỳ_Cấu hình kích hoạt_Chế độ trường thời gian của bộ sưu tập_Nút cập nhật](https://static-docs.nocobase.com/491dde9df7f41fb24a4e7baa1de6eb29.png)
+![Tác vụ định kỳ_Cấu hình kích hoạt_Chế độ trường thời gian của bộ sưu tập_Nút cập nhật](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
 Khác với chế độ thời gian tùy chỉnh, ở đây không cần tính toán thời gian 30 phút trước đó, vì ngữ cảnh dữ liệu kích hoạt của luồng công việc đã bao gồm hàng dữ liệu tương ứng thỏa mãn điều kiện thời gian, do đó bạn có thể trực tiếp cập nhật trạng thái của đơn hàng đó.

@@ -22,7 +22,7 @@ Chúng ta đã sử dụng tính năng biến nhiều lần trong [Bắt đầu 
 
 Trong một nút cập nhật, sử dụng dữ liệu ngữ cảnh kích hoạt làm biến cho điều kiện lọc, và tham chiếu kết quả của nút tính toán làm biến cho giá trị trường dữ liệu cần cập nhật:
 
-![Biến nút cập nhật dữ liệu](https://static-docs.nocobase.com/2e147c93642e7ebc709b9b7ab4f3af8c.png)
+![Biến nút cập nhật dữ liệu](https://static-docs.nocobase.com/2e147c93643e7ebc709b9b7ab4f3af8c.png)
 
 ## Cấu trúc dữ liệu
 

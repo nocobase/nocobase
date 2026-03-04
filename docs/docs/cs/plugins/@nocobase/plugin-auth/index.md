@@ -1,12 +1,16 @@
 ---
-displayName: "Authentication"
+displayName: "Autentizace uživatelů"
 packageName: '@nocobase/plugin-auth'
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Správa autentizace uživatelů, včetně základního ověřování heslem, SMS a podpory protokolů Single Sign-On (SSO), s možností rozšíření.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-auth/index).
+:::
+
+# Autentizace uživatelů

@@ -1,5 +1,5 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/template-print/syntax/formatters/date-formatting).
 :::
 
 ### Datumformatering
@@ -24,7 +24,7 @@ Formaterar ett datum genom att acceptera ett utdataformat (`patternOut`) och ett
 ```
 
 ##### Resultat
-Utdata är datumet formaterat enligt den angivna specifikationen.
+Utdata är en datumsträng i det angivna formatet.
 
 
 #### 2. :addD(amount, unit, patternIn)
@@ -157,15 +157,13 @@ Parametrar:
 
 ##### Exempel
 ```
-// Exempelmiljö: API-alternativ { "lang": "en", "timezone": "Europe/Paris" }
+
 '20160131':convDate('YYYYMMDD', 'L')      // Ger ut "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Ger ut "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Ger ut "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Ger ut "Sunday"
 1410715640:convDate('X', 'LLLL')          // Ger ut "Sunday, September 14, 2014 7:27 PM"
-// Franskt exempel:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Ger ut "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Ger ut "dimanche"
+
 ```
 
 ##### Resultat

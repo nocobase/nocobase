@@ -1,177 +1,181 @@
-# Ticketing Solution Overview
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/ticket-system/index) bakın.
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Destek Talebi Çözümüne Genel Bakış
 
-## 1. Background (Why)
+> **Not**: Bu sürüm erken bir önizleme sürümüdür. Özellikler henüz tamamlanmamıştır ve sürekli iyileştirme aşamasındayız. Geri bildirimlerinizi bekliyoruz!
 
-### Industry/Role/Management Problems Solved
+## 1. Arka Plan (Neden)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Hangi Sektör / Rol / Yönetim Sorunlarını Çözer?
 
-**Typical Business Scenarios:**
+İşletmeler günlük operasyonlarında çeşitli hizmet talepleriyle karşılaşırlar: cihaz onarımı, BT desteği, müşteri şikayetleri, danışmanlık önerileri vb. Bu talepler farklı kaynaklardan (CRM sistemleri, saha mühendisleri, e-postalar, genel formlar vb.) gelir, işlem süreçleri farklılık gösterir ve birleşik bir takip ve yönetim mekanizmasından yoksundur.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Tipik İş Senaryosu Örnekleri:**
 
-### Target User Profile
+- **Cihaz Onarımı**: Satış sonrası ekibi cihaz onarım taleplerini işler; seri numaraları, hata kodları ve yedek parçalar gibi cihaza özel bilgilerin kaydedilmesi gerekir.
+- **BT Desteği**: BT departmanı; dahili çalışanların şifre sıfırlama, yazılım kurulumu ve ağ arızaları gibi taleplerini yönetir.
+- **Müşteri Şikayetleri**: Müşteri hizmetleri ekibi çok kanallı müşteri şikayetlerini yönetir; bazı duygusal yoğunluğu yüksek müşterilerin öncelikli olarak ele alınması gerekir.
+- **Müşteri Self-Servis**: Son kullanıcılar, hizmet taleplerini kolayca iletmek ve işlem sürecini takip etmek isterler.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### Hedef Kullanıcı Profili
 
-### Pain Points of Current Mainstream Solutions
+| Boyut | Açıklama |
+|------|------|
+| İşletme Ölçeği | Önemli miktarda müşteri hizmeti ihtiyacı olan küçük, orta ve büyük ölçekli işletmeler |
+| Rol Yapısı | Müşteri hizmetleri ekipleri, BT desteği, satış sonrası ekipler, operasyon yöneticileri |
+| Dijital Olgunluk | Başlangıç ile orta seviye arası; Excel/e-posta yönetiminden sistematik yönetime geçmek isteyenler |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### Mevcut Ana Akım Çözümlerin Sorunlu Noktaları
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Yüksek Maliyet / Yavaş Özelleştirme**: SaaS destek talebi sistemleri pahalıdır ve özel geliştirme süreçleri uzundur.
+- **Sistem Parçalanması ve Veri Adaları**: Çeşitli iş verileri farklı sistemlere dağılmıştır, bu da birleşik analiz ve karar vermeyi zorlaştırır.
+- **Hızlı Değişen İş İhtiyaçları, Evrilmesi Zor Sistemler**: İş gereksinimleri değiştiğinde, sistemlerin hızlıca ayarlanması zordur.
+- **Yavaş Hizmet Yanıtı**: Farklı sistemler arasında dolaşan talepler zamanında atanamaz.
+- **Şeffaf Olmayan Süreç**: Müşteriler talebin ilerlemesini takip edemez, sıkça sorulan sorular müşteri hizmetleri üzerindeki baskıyı artırır.
+- **Kalite Güvencesi Zorluğu**: SLA izleme eksikliği nedeniyle, zaman aşımları ve olumsuz geri bildirimler zamanında uyarılmaz.
 
 ---
 
-## 3. Design Principles
+## 2. Referans Ürünler ve Karşılaştırma (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Piyasadaki Ana Akım Ürünler
+
+- **SaaS**: Salesforce, Zendesk, Odoo vb.
+- **Özel Sistemler / Dahili Sistemler**
+
+### Karşılaştırma Boyutları
+
+- Özellik Kapsamı
+- Esneklik
+- Genişletilebilirlik
+- Yapay Zeka Kullanım Biçimi
+
+### NocoBase Çözümünün Farklılıkları
+
+**Platform Düzeyinde Avantajlar:**
+
+- **Yapılandırma Öncelikli**: Temel veri tablolarından iş türlerine, SLA'dan beceri tabanlı yönlendirmeye kadar her şey yapılandırma yoluyla yönetilir.
+- **Düşük Kod (Low-Code) ile Hızlı Kurulum**: Özel geliştirmeden daha hızlı, SaaS çözümlerinden daha esnektir.
+
+**Geleneksel Sistemlerin Yapamadığı veya Maliyetinin Çok Yüksek Olduğu Alanlar:**
+
+- **Yerleşik Yapay Zeka Entegrasyonu**: NocoBase'in yapay zeka eklentileri sayesinde akıllı sınıflandırma, form doldurma yardımı ve bilgi önerileri sağlanır.
+- **Tüm Tasarımlar Kullanıcı Tarafından Kopyalanabilir**: Kullanıcılar şablonlar üzerinden kendi sistemlerini genişletebilirler.
+- **T-Tipi Veri Mimarisi**: Ana tablo + iş genişletme tabloları; yeni bir iş türü eklemek için sadece bir genişletme tablosu eklemek yeterlidir.
 
 ---
 
-## 4. Solution Overview
+## 3. Tasarım İlkeleri (Principles)
 
-### Summary Introduction
+- **Düşük Bilişsel Maliyet**
+- **Teknolojiden Önce İş Süreçleri**
+- **Tek Seferlik Değil, Evrilebilir Yapı**
+- **Yapılandırma Öncelikli, Kod Son Çare**
+- **Yapay Zekanın İnsanın Yerini Alması Değil, İnsan-Yapay Zeka İş Birliği**
+- **Tüm Tasarımlar Kullanıcı Tarafından Kopyalanabilir Olmalıdır**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Çözüme Genel Bakış (Solution Overview)
 
-### Ticket Processing Flow
+### Özet Tanıtım
+
+NocoBase düşük kod platformu üzerine inşa edilen genel destek talebi merkezi şunları sağlar:
+
+- **Birleşik Giriş**: Çok kaynaklı erişim, standartlaştırılmış işlem.
+- **Akıllı Dağıtım**: Yapay zeka destekli sınıflandırma, yük dengeli atama.
+- **Polimorfik İş Yapısı**: Çekirdek ana tablo + iş genişletme tabloları ile esnek genişleme.
+- **Kapalı Döngü Geri Bildirim**: SLA izleme, müşteri değerlendirmesi, olumsuz geri bildirim takibi.
+
+### Destek Talebi İşlem Süreci
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Çok Kaynaklı Giriş → Ön İşleme/AI Analizi → Akıllı Atama → Manuel Uygulama → Geri Bildirim Döngüsü
+        ↓                  ↓                   ↓                ↓                   ↓
+ Mükerrer Kontrolü   Niyet Tanımlama      Beceri Eşleştirme   Durum Akışı      Memnuniyet Değerlendirmesi
+                     Duygu Analizi        Yük Dengeleme       SLA İzleme       Olumsuz Geri Bildirim Takibi
+                     Otomatik Yanıt       Kuyruk Yönetimi     Yorum İletişimi  Veri Arşivleme
 ```
 
-### Core Module List
+### Temel Modül Listesi
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Modül | Açıklama |
+|------|----------|
+| Talep Alımı | Genel formlar, müşteri portalı, müşteri temsilcisi kaydı, API/Webhook, e-posta ayrıştırma |
+| Talep Yönetimi | Talep CRUD işlemleri, durum akışı, atama/devretme, yorum iletişimi, işlem günlükleri |
+| İş Genişletme | Cihaz onarımı, BT desteği, müşteri şikayetleri vb. için iş genişletme tabloları |
+| SLA Yönetimi | SLA yapılandırması, zaman aşımı uyarıları, zaman aşımı yükseltme |
+| Müşteri Yönetimi | Müşteri ana tablosu, kişi yönetimi, müşteri portalı |
+| Değerlendirme Sistemi | Çok boyutlu puanlama, hızlı etiketler, NPS, olumsuz geri bildirim uyarıları |
+| Yapay Zeka Yardımı | Niyet sınıflandırması, duygu analizi, bilgi önerisi, yanıt yardımı, üslup düzenleme |
 
-### Core Interface Display
+### Temel Arayüz Gösterimi
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. Yapay Zeka Çalışanları (AI Employee)
 
-### AI Employee Types and Scenarios
+### Yapay Zeka Çalışan Türleri ve Senaryoları
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Müşteri Hizmetleri Asistanı**, **Satış Asistanı**, **Veri Analisti**, **Denetçi**
+- İnsanların yerini almak için değil, onlara yardımcı olmak için.
 
-### AI Employee Value Quantification
+### Yapay Zeka Çalışan Değerinin Sayısallaştırılması
 
-In this solution, AI employees can:
+Bu çözümde, yapay zeka çalışanları şunları yapabilir:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Değer Boyutu | Somut Etki |
+|--------------|------------|
+| Verimliliği Artırma | Otomatik sınıflandırma ile manuel ayıklama süresinde %50+ azalma; bilgi önerileri ile sorunların daha hızlı çözülmesi |
+| Maliyetleri Düşürme | Basit sorulara otomatik yanıt vererek müşteri hizmetleri iş yükünü azaltma |
+| İnsan Çalışanları Güçlendirme | Duygu uyarıları ile temsilcilerin önceden hazırlanmasına yardımcı olma; yanıt düzenleme ile iletişim kalitesini artırma |
+| Müşteri Memnuniyetini Artırma | Daha hızlı yanıt, daha doğru atama, daha profesyonel cevaplar |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Öne Çıkanlar (Highlights)
 
-### How to Install and Use
+### 1. T-Tipi Veri Mimarisi
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Tüm talepler ana tabloyu paylaşır ve birleşik akış mantığını kullanır.
+- İş genişletme tabloları, türe özgü alanları taşır ve esnek genişleme sağlar.
+- Yeni bir iş türü eklemek, ana akışı etkilemeden sadece bir genişletme tablosu eklemeyi gerektirir.
+
+### 2. Tam Destek Talebi Yaşam Döngüsü
+
+- Yeni → Atandı → İşleniyor → Beklemede → Çözüldü → Kapatıldı.
+- Devretme, iade etme, yeniden açma gibi karmaşık senaryoları destekler.
+- SLA zamanlaması, bekleme/duraklatma durumlarında hassas şekilde hesaplanır.
+
+### 3. Çok Kanallı Birleşik Erişim
+
+- Genel formlar, müşteri portalı, API, e-posta, temsilci kaydı.
+- Mükerrerlik (idempotency) kontrolü ile aynı talebin birden fazla oluşturulması engellenir.
+
+### 4. Yerleşik Yapay Zeka Entegrasyonu
+
+- Sadece bir "AI butonu eklemek" değil, her aşamaya entegre edilmiştir.
+- Niyet tanıma, duygu analizi, bilgi önerisi, yanıt düzenleme.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Kurulum ve Dağıtım
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+### Nasıl Kurulur ve Kullanılır
+
+Çeşitli kısmi uygulamaları diğer uygulamalara taşımak ve entegre etmek için taşıma yönetimini kullanın.
+
+---
+
+## 8. Yol Haritası (Sürekli Güncelleniyor)
+
+- **Sistem Gömme**: Destek talebi modülünün ERP, CRM gibi farklı iş sistemlerine gömülmesini destekleme.
+- **Talep Bağlantısı**: Sistemler arası talep iş birliğini sağlamak için alt/üst sistem talep erişimi ve durum geri bildirimleri.
+- **Yapay Zeka Otomasyonu**: İş akışlarına gömülü, arka planda otomatik çalışan ve insansız işlem yapabilen yapay zeka çalışanları.
+- **Çoklu Kiracılık Desteği**: Çoklu alan/çoklu uygulama mimarisi ile farklı müşteri hizmetleri ekiplerine bağımsız operasyon imkanı.
+- **Bilgi Tabanı RAG**: Akıllı arama ve bilgi önerileri için tüm verilerin (talepler, müşteriler, ürünler vb.) otomatik vektörleştirilmesi.
+- **Çoklu Dil Desteği**: Uluslararası/bölgeler arası ekip iş birliği ihtiyaçlarını karşılamak için arayüz ve içerikte çoklu dil seçeneği.

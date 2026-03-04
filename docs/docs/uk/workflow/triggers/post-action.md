@@ -177,7 +177,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 Як показано на малюнку нижче:
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Відмінність від події колекції
 

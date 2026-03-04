@@ -74,7 +74,7 @@ Deze tools worden doorgaans gebruikt voor:
 
 #### Voorbeeld 1: Overall Analytics (algemene bedrijfsanalyse)
 
-![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/20251103001855.png)
+![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-18-55.png)
 
 In de CRM Demo is `Overall Analytics` een sjabloongebaseerde bedrijfsanalysemotor:
 
@@ -104,7 +104,7 @@ flowchart TD
 
 #### Voorbeeld 2: SQL Execution (geavanceerde analysetool)
 
-![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/20251103001713.png)
+![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-17-13.png)
 
 In de CRM Demo is `SQL Execution` een flexibelere, maar strikt te controleren tool:
 

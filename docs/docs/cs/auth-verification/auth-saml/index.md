@@ -58,4 +58,4 @@ Mapování uživatelských organizací a rolí v současné době není podporov
 
 Navštivte přihlašovací stránku a klikněte na tlačítko pod přihlašovacím formulářem pro zahájení přihlášení třetí stranou.
 
-![](https://static-docs.nocobase.com/7496365c9d36a294948e6adeb5b24bc.png)
+![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)

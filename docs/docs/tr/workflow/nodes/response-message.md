@@ -35,7 +35,7 @@ Mesaj içeriği, içine değişkenlerin eklenebildiği bir şablon dizesidir. Bu
 "iPhone 14 pro" ürününün stoğu yetersiz.
 ```
 
-![Mesaj içeriği](https://static-docs.nocobase.com/06fd4a6b6ec499c853f0c39987f63a6a.png)
+![Mesaj içeriği](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 ## İş Akışı Yapılandırması
 

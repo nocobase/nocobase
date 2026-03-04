@@ -1,15 +1,19 @@
 ---
-displayName: "Redis lock adapter"
+displayName: "محول القفل الموزع Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Distributed lock implemention based on Redis.
+  تنفيذ للقفل الموزع يعتمد على Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis lock adapter
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-lock-adapter-redis/index).
+:::
+
+# محول القفل الموزع Redis

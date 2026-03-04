@@ -1,15 +1,19 @@
 ---
-displayName: "Telemetry: Prometheus"
+displayName: "Telemetria: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Integrate Prometheus with NocoBase telemetry.
+  Integra Prometheus con il modulo di telemetria di NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Telemetry: Prometheus
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-telemetry-prometheus/index).
+:::
+
+# Telemetria: Prometheus

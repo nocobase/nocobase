@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/ticket-system/installation).
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Hur Ni installerar
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> Den nuvarande versionen använder **säkerhetskopiering och återställning** för driftsättning. I framtida versioner kan vi komma att byta till **inkrementell migrering** för att underlätta integreringen av lösningen i Era befintliga system.
 
-Before you begin, please ensure:
+För att Ni ska kunna driftsätta ärendesystemet snabbt och smidigt i Er egen NocoBase-miljö erbjuder vi två återställningsmetoder. Vänligen välj den som bäst passar Er användarversion och tekniska bakgrund.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+Innan Ni börjar, se till att:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- Ni redan har en grundläggande NocoBase-miljö. För installation av huvudsystemet, vänligen se den detaljerade [officiella installationsdokumentationen](https://docs-cn.nocobase.com/welcome/getting-started/installation).
+- NocoBase version **2.0.0-beta.5 och senare**
+- Ni har laddat ner motsvarande filer för ärendesystemet:
+  - **Säkerhetskopia**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - Gäller för metod ett
+  - **SQL-fil**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - Gäller för metod två
+
+**Viktig information**:
+- Denna lösning är byggd på **PostgreSQL 16**. Se till att Er miljö använder PostgreSQL 16.
+- **DB_UNDERSCORED får inte vara true**: Kontrollera Er `docker-compose.yml`-fil och säkerställ att miljövariabeln `DB_UNDERSCORED` inte är inställd på `true`, annars kommer det att krocka med lösningens säkerhetskopia och leda till misslyckad återställning.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Metod 1: Återställ med säkerhetskopieringshanteraren (rekommenderas för Pro/Enterprise-användare)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+Denna metod använder NocoBases inbyggda plugin "[säkerhetskopieringshanterare](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) för återställning med ett klick, vilket är det enklaste tillvägagångssättet. Den ställer dock vissa krav på miljö och användarversion.
 
-### Key Features
+### Kärnegenskaper
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **Fördelar**:
+  1. **Smidig hantering**: Kan slutföras i UI-gränssnittet och återställer alla konfigurationer inklusive plugins fullständigt.
+  2. **Fullständig återställning**: **Kan återställa alla systemfiler**, inklusive mallar för utskrift, filer uppladdade i tabellers filfält etc., vilket säkerställer full funktionalitet.
+* **Begränsningar**:
+  1. **Endast Pro/Enterprise**: "Säkerhetskopieringshanteraren" är en plugin på företagsnivå och är endast tillgänglig för Pro/Enterprise-användare.
+  2. **Stränga miljökrav**: Kräver att Er databasmiljö (version, inställningar för skiftlägeskänslighet etc.) är högt kompatibel med miljön där säkerhetskopian skapades.
+  3. **Plugin-beroenden**: Om lösningen innehåller kommersiella plugins som inte finns i Er lokala miljö kommer återställningen att misslyckas.
 
-### Steps
+### Steg för steg
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**Steg 1: [Rekommenderas starkt] Starta applikationen med `full`-imagen**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+För att undvika misslyckad återställning på grund av saknade databasklienter rekommenderar vi starkt att Ni använder `full`-versionen av Docker-imagen. Den innehåller alla nödvändiga stödprogram så att Ni slipper extra konfiguration.
 
-Example command to pull the image:
+Exempel på kommando för att hämta imagen:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+Använd sedan denna image för att starta Er NocoBase-tjänst.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **Obs**: Om Ni inte använder `full`-imagen kan Ni behöva installera databasklienten `pg_dump` manuellt i containern, vilket är krångligt och instabilt.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Steg 2: Aktivera pluginen "säkerhetskopieringshanterare"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Logga in i Er NocoBase.
+2. Gå till **`Pluginhantering`**.
+3. Hitta och aktivera pluginen **`säkerhetskopieringshanterare`**.
 
-**Step 3: Restore from local backup file**
+**Steg 3: Återställ från lokal säkerhetskopia**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. Uppdatera sidan efter att pluginen aktiverats.
+2. Gå till **`Systemadministration`** -> **`säkerhetskopieringshanterare`** i vänstermenyn.
+3. Klicka på knappen **`Återställ från lokal säkerhetskopia`** i övre högra hörnet.
+4. Dra den nedladdade säkerhetskopian till uppladdningsområdet.
+5. Klicka på **`Skicka`** och vänta tålmodigt på att systemet slutför återställningen. Processen kan ta allt från några tiotals sekunder till flera minuter.
 
-### Notes
+### Observera
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **Databaskompatibilitet**: Detta är den mest kritiska punkten för denna metod. Er PostgreSQL-databass **version, teckenuppsättning och inställningar för skiftlägeskänslighet** måste matcha källfilen. Särskilt namnet på `schema` måste vara identiskt.
+* **Matchning av kommersiella plugins**: Se till att Ni äger och har aktiverat alla kommersiella plugins som krävs för lösningen, annars kommer återställningen att avbrytas.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## Metod 2: Importera SQL-fil direkt (universell, passar bättre för Community-versionen)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+Denna metod återställer data genom att operera direkt i databasen och går förbi pluginen "säkerhetskopieringshanterare", vilket innebär att det inte finns några begränsningar för Pro/Enterprise-plugins.
 
-### Key Features
+### Kärnegenskaper
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **Fördelar**:
+  1. **Inga versionsbegränsningar**: Fungerar för alla NocoBase-användare, inklusive Community-versionen.
+  2. **Hög kompatibilitet**: Beror inte på applikationens `dump`-verktyg; det fungerar så länge Ni kan ansluta till databasen.
+  3. **Hög feltolerans**: Om lösningen innehåller kommersiella plugins som Ni saknar kommer relaterade funktioner inte att aktiveras, men det påverkar inte andra funktioners normala användning och applikationen kan startas framgångsrikt.
+* **Begränsningar**:
+  1. **Kräver databaskunskap**: Användaren behöver grundläggande kunskaper i databashantering, till exempel hur man kör en `.sql`-fil.
+  2. **Systemfiler går förlorade**: **Denna metod förlorar alla systemfiler**, inklusive mallar för utskrift, filer uppladdade i tabellers filfält etc.
 
-### Steps
+### Steg för steg
 
-**Step 1: Prepare a clean database**
+**Steg 1: Förbered en ren databas**
 
-Prepare a brand new, empty database for the data you're about to import.
+Förbered en helt ny, tom databas för den data Ni ska importera.
 
-**Step 2: Import the `.sql` file into the database**
+**Steg 2: Importera `.sql`-filen till databasen**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+Hämta den nedladdade databasfilen (vanligtvis i `.sql`-format) och importera dess innehåll till databasen Ni förberedde i föregående steg. Det finns flera sätt att göra detta beroende på Er miljö:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **Alternativ A: Via serverns kommandorad (exempel med Docker)**
+  Om Ni använder Docker för att installera NocoBase och databasen kan Ni ladda upp `.sql`-filen till servern och använda kommandot `docker exec` för att utföra importen. Antag att Er PostgreSQL-container heter `my-nocobase-db` och filnamnet är `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Kopiera sql-filen till containern
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # Gå in i containern och kör importkommandot
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **Alternativ B: Via en fjärrdatabasklient**
+  Om Er databasport är öppen kan Ni använda valfri grafisk databasklient (som DBeaver, Navicat, pgAdmin etc.) för att ansluta till databasen, öppna ett nytt frågefönster, klistra in hela innehållet från `.sql`-filen och köra det.
 
-**Step 3: Connect to the database and start the application**
+**Steg 3: Anslut databasen och starta applikationen**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+Konfigurera Era startparametrar för NocoBase (såsom miljövariablerna `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` etc.) så att de pekar på databasen där Ni just importerade data. Starta sedan NocoBase-tjänsten som vanligt.
 
-### Notes
+### Observera
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **Databasbehörigheter**: Denna metod kräver att Ni har ett konto och lösenord med behörighet att operera direkt i databasen.
+* **Plugin-status**: Efter lyckad import finns data för kommersiella plugins i systemet, men om Ni inte har installerat och aktiverat motsvarande plugins lokalt kommer relaterade funktioner inte att visas eller kunna användas. Detta kommer dock inte att få applikationen att krascha.
 
 ---
 
-## Summary and Comparison
+## Sammanfattning och jämförelse
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| Egenskap | Metod 1: Säkerhetskopieringshanterare | Metod 2: Direkt SQL-import |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **Målanvändare** | **Pro/Enterprise**-användare | **Alla användare** (inklusive Community) |
+| **Användarvänlighet** | ⭐⭐⭐⭐⭐ (Mycket enkelt, UI-hantering) | ⭐⭐⭐ (Kräver grundläggande databaskunskap) |
+| **Miljökrav** | **Stränga**, databas och systemversioner måste vara högt kompatibla | **Allmänna**, kräver databaskompatibilitet |
+| **Plugin-beroende** | **Starkt beroende**, plugins valideras vid återställning; saknas någon plugin leder det till **misslyckad återställning**. | **Funktioner är beroende av plugins**. Data kan importeras oberoende och systemet har grundläggande funktioner. Men om motsvarande plugins saknas blir relaterade funktioner **helt oanvändbara**. |
+| **Systemfiler** | **Fullständigt bevarade** (utskriftsmallar, uppladdade filer etc.) | **Går förlorade** (utskriftsmallar, uppladdade filer etc.) |
+| **Rekommenderat scenario** | Företagsanvändare med kontrollerad och enhetlig miljö som behöver fullständig funktionalitet | Saknar vissa plugins, söker hög kompatibilitet och flexibilitet, icke-Pro/Enterprise-användare, kan acceptera förlust av filfunktioner |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+Vi hoppas att denna guide hjälper Er att driftsätta ärendesystemet framgångsrikt. Om Ni stöter på några problem under processen är Ni välkomna att kontakta oss när som helst!

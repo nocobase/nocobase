@@ -1,14 +1,18 @@
 ---
-displayName: "Block: Multi-step form"
+displayName: "Blok: Çok adımlı form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
-  Break the form with many fields into multiple steps to ease the burden on users.
+  Kullanıcıların yükünü hafifletmek için çok sayıda alan içeren formları birden fazla adıma böler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Multi-step form
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-block-multi-step-form/index) bakın.
+:::
+
+# Blok: Çok adımlı form

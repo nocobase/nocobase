@@ -1,5 +1,5 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/file-manager/development/index).
 :::
 
 # Utveckling av tillägg
@@ -108,7 +108,7 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Här är `filePreviewTypes` instegsobjektet som tillhandahålls av `@nocobase/plugin-file-manager/client` för att utöka filförhandsvisningar. Använd metoden `add` för att lägga till en filtypbeskrivare.
+Här är `filePreviewTypes` ingångsobjektet som tillhandahålls av `@nocobase/plugin-file-manager/client` för att utöka filförhandsvisningar. Använd metoden `add` för att lägga till ett filtypbeskrivningsobjekt.
 
 Varje filtyp måste implementera en `match()`-metod för att kontrollera om filtypen uppfyller kraven. I exemplet används `matchMimetype` för att kontrollera filens `mimetype`-attribut. Om det matchar `docx`-typen betraktas den som den typ som ska hanteras. Om den inte matchar används den inbyggda typhanteringen.
 
@@ -159,7 +159,7 @@ Indataparametern `file` är dataobjektet för en uppladdad fil och innehåller r
 * `path`: relativ lagringssökväg för filen
 * `url`: filens URL
 
-Returnerar ett `boolean` som anger om det matchar.
+Returnerar ett booleskt värde som anger om det matchar.
 
 ##### `getThumbnailURL`
 
@@ -174,4 +174,3 @@ Inkommande props är:
 * `file`: aktuellt filobjekt (kan vara en sträng-URL eller ett objekt med `url`/`preview`)
 * `index`: index för filen i listan
 * `list`: fillista
-

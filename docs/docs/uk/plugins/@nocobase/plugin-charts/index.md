@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Діаграми (застаріло)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Цей плагін застарів, будь ласка, використовуйте плагін візуалізації даних замість нього.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-charts/index).
+:::
 
-> Note: This plugin is deprecated.
+# Діаграми (застаріло)
+
+> Примітка: Цей плагін застарів (deprecated).

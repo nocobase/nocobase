@@ -74,6 +74,6 @@ Buat **alur kerja** berbasis tugas terjadwal. Dalam konfigurasi pemicu, pilih mo
 
 Selanjutnya, konfigurasikan node lain sesuai dengan logika proses untuk memperbarui status pesanan dengan ID data pemicu dan status "belum dibayar" menjadi dibatalkan:
 
-![Tugas Terjadwal_Konfigurasi Pemicu_Mode Kolom Waktu Koleksi_Node Pembaruan](https://static-docs.nocobase.com/491dde9df77a1fb24a4e7baa1de6eb29.png)
+![Tugas Terjadwal_Konfigurasi Pemicu_Mode Kolom Waktu Koleksi_Node Pembaruan](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
 Berbeda dengan mode waktu kustom, di sini tidak perlu menghitung waktu 30 menit yang lalu, karena konteks data pemicu **alur kerja** sudah berisi baris data yang memenuhi kondisi waktu, sehingga Anda dapat langsung memperbarui status pesanan yang sesuai.

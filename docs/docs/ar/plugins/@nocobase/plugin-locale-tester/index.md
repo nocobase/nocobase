@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "أداة اختبار الترجمة"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-locale-tester/index).
+:::
+
+# أداة اختبار الترجمة

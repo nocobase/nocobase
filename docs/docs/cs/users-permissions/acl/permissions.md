@@ -25,7 +25,7 @@ Globální oprávnění k akcím platí univerzálně pro všechny **kolekce** a
 
 ## Oprávnění k akcím kolekce
 
-![](https://static-docs.nocobase.com/6a6e028139cecdea5b5218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

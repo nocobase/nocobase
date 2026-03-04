@@ -1,18 +1,18 @@
 # ctx.render()
 
-Renders a React element, HTML string, or DOM node into a container. Without `container`, renders into `ctx.element` and inherits the app’s ConfigProvider, theme, etc.
+Renders React elements, HTML strings, or DOM nodes into a specified container. If `container` is not provided, it defaults to rendering into `ctx.element` and automatically inherits the application's context, such as ConfigProvider and themes.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock** | Custom block content (charts, lists, cards, etc.) |
-| **JSField / JSItem / JSColumn** | Custom editable field or table column |
-| **Detail block** | Custom detail field display |
+|------|------|
+| **JSBlock** | Render custom block content (charts, lists, cards, etc.) |
+| **JSField / JSItem / JSColumn** | Render custom displays for editable fields or table columns |
+| **Details Block** | Customize the display format of fields in details pages |
 
-> Note: `ctx.render()` needs a container. If you don’t pass `container` and `ctx.element` is missing (e.g. no-UI logic), an error is thrown.
+> Note: `ctx.render()` requires a rendering container. If `container` is not passed and `ctx.element` does not exist (e.g., in pure logic scenarios without a UI), an error will be thrown.
 
-## Type
+## Type Definition
 
 ```ts
 render(
@@ -22,27 +22,27 @@ render(
 ```
 
 | Parameter | Type | Description |
-|------------|------|-------------|
-| `vnode` | `React.ReactElement` \| `Node` \| `DocumentFragment` \| `string` | Content to render |
-| `container` | `Element` \| `DocumentFragment` (optional) | Target container; default `ctx.element` |
+|------|------|------|
+| `vnode` | `React.ReactElement` \| `Node` \| `DocumentFragment` \| `string` | Content to be rendered |
+| `container` | `Element` \| `DocumentFragment` (Optional) | Target rendering container, defaults to `ctx.element` |
 
-**Returns**:
+**Return Value**:
 
-- For **React element**: `ReactDOMClient.Root` (for later `root.render()` updates).
-- For **HTML string** or **DOM node**: `null`.
+- When rendering a **React element**: Returns `ReactDOMClient.Root`, making it easy to call `root.render()` for subsequent updates.
+- When rendering an **HTML string** or **DOM node**: Returns `null`.
 
-## vnode types
+## vnode Type Description
 
 | Type | Behavior |
-|------|----------|
-| `React.ReactElement` (JSX) | Rendered with React `createRoot`; full React; inherits app context |
-| `string` | Sanitized with DOMPurify and set as container `innerHTML`; existing React root is unmounted first |
-| `Node` (Element, Text, etc.) | Container cleared then `appendChild`; existing React root unmounted first |
-| `DocumentFragment` | Fragment children appended to container; existing React root unmounted first |
+|------|------|
+| `React.ReactElement` (JSX) | Rendered using React's `createRoot`, providing full React capabilities and automatically inheriting the application context. |
+| `string` | Sets the container's `innerHTML` after sanitization with DOMPurify; any existing React root will be unmounted first. |
+| `Node` (Element, Text, etc.) | Appends via `appendChild` after clearing the container; any existing React root will be unmounted first. |
+| `DocumentFragment` | Appends fragment child nodes to the container; any existing React root will be unmounted first. |
 
 ## Examples
 
-### React (JSX)
+### Rendering React Elements (JSX)
 
 ```tsx
 const { Button, Card } = ctx.libs.antd;
@@ -56,23 +56,26 @@ ctx.render(
 );
 ```
 
-### HTML string
+### Rendering HTML Strings
 
 ```ts
 ctx.render('<h1>Hello World</h1>');
 
+// Combining with ctx.t for internationalization
 ctx.render('<div style="padding:16px">' + ctx.t('Content') + '</div>');
 
+// Conditional rendering
 ctx.render(hasData ? `<ul>${items.map(i => `<li>${i}</li>`).join('')}</ul>` : '<span style="color:#999">' + ctx.t('No data') + '</span>');
 ```
 
-### DOM node
+### Rendering DOM Nodes
 
 ```ts
 const div = document.createElement('div');
 div.textContent = 'Hello World';
 ctx.render(div);
 
+// Render an empty container first, then hand it over to a third-party library (e.g., ECharts) for initialization
 const container = document.createElement('div');
 container.style.width = '100%';
 container.style.height = '400px';
@@ -81,29 +84,31 @@ const chart = echarts.init(container);
 chart.setOption({ ... });
 ```
 
-### Custom container
+### Specifying a Custom Container
 
 ```ts
+// Render to a specific DOM element
 const customEl = document.getElementById('my-container');
 ctx.render(<div>Content</div>, customEl);
 ```
 
-### Multiple calls replace content
+### Multiple Calls Will Replace Content
 
 ```ts
+// The second call will replace the existing content in the container
 ctx.render(<div>First</div>);
-ctx.render(<div>Second</div>);  // Only "Second" is shown
+ctx.render(<div>Second</div>);  // Only "Second" will be displayed
 ```
 
 ## Notes
 
-- **Each call replaces**: Content is replaced, not appended.
-- **HTML safety**: HTML is sanitized with DOMPurify; still avoid concatenating untrusted user input.
-- **Don’t touch ctx.element directly**: `ctx.element.innerHTML` is deprecated; use `ctx.render()`.
-- **No container**: When `ctx.element` is `undefined` (e.g. inside a module loaded by `ctx.importAsync`), pass `container` explicitly.
+- **Multiple calls will replace content**: Each `ctx.render()` call replaces the existing content in the container rather than appending to it.
+- **HTML string safety**: Passed HTML is sanitized via DOMPurify to reduce XSS risks, but it is still recommended to avoid concatenating untrusted user input.
+- **Do not manipulate ctx.element directly**: `ctx.element.innerHTML` is deprecated; `ctx.render()` should be used consistently instead.
+- **Pass container when no default exists**: In scenarios where `ctx.element` is `undefined` (e.g., within modules loaded via `ctx.importAsync`), a `container` must be explicitly provided.
 
 ## Related
 
-- [ctx.element](./element.md): default container when `container` is not passed
-- [ctx.libs](./libs.md): React, antd, etc. for JSX
-- [ctx.importAsync()](./import-async.md): load external React/components then use with `ctx.render()`
+- [ctx.element](./element.md) - Default rendering container, used when no container is passed to `ctx.render()`.
+- [ctx.libs](./libs.md) - Built-in libraries like React and Ant Design, used for JSX rendering.
+- [ctx.importAsync()](./import-async.md) - Used in conjunction with `ctx.render()` after loading external React/component libraries on demand.

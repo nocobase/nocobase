@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "Workflow: E-postnod"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Send email in workflow.
+  Används för att skicka e-post i ett workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-workflow-mailer/index).
+:::
+
+# Workflow: E-postnod

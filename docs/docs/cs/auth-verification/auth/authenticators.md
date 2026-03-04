@@ -15,7 +15,7 @@ Při instalaci pluginu pro uživatelskou autentizaci se automaticky inicializuje
 
 ## Aktivace autentizátorů
 
-![](https://static-docs.nocobase.com/7f1bf8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 Na přihlašovací stránce se zobrazí pouze aktivované typy autentizace.
 

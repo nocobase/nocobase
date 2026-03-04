@@ -25,7 +25,7 @@ pkg: "@nocobase/plugin-api-doc"
 
 http://localhost:13000/admin/settings/api-doc/documentation
 
-![](https://static-docs.nocobase.com/8db51cf50e3c666aba5a50a0fb664a0.png)
+![](https://static-docs.nocobase.com/8db51cf50e3c666aba5a850a0fb664a0.png)
 
 ### 문서 개요
 

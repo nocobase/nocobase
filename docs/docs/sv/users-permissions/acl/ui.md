@@ -20,7 +20,7 @@ Global behörighetskonfiguration:
 
 **Samlingen** "Ordrar" individuell behörighetskonfiguration:
 
-![](https://static-docs.nocobase.com/a88caba1cad47001c16010bf402a4a2c1.png)
+![](https://static-docs.nocobase.com/a88caba1cad47001c1610bf402a4a2c1.png)
 
 I användargränssnittet visas inga block från **samlingen** "Ordrar".
 
@@ -50,7 +50,7 @@ I användargränssnittet visas endast fält med konfigurerade behörigheter inom
 
   Så här ser den fullständiga konfigurationsprocessen ut:
 
-  ![](https://static-docs.nocobase.com/1dbe559a97c2e052e194e50edc74a7.gif)
+  ![](https://static-docs.nocobase.com/1dbe559a9579c2e052e194e50edc74a7.gif)
 
 - **Lägg till**: Bestämmer om fält kan läggas till (skapas).
 

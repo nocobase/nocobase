@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sequence"
+displayName: "Bidang koleksi: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+  Secara otomatis menghasilkan kode berdasarkan aturan yang dikonfigurasi, mendukung kombinasi tanggal, angka, dan teks.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sequence
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-field-sequence/index).
+:::
+
+# Bidang koleksi: Sequence

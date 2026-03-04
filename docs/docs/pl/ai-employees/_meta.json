@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Szybki start",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Funkcje",
     "items": [
       {
         "type": "custom-link",
         "label": "Konfiguracja usług LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Tworzenie pracownika AI",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "Włączanie pracowników AI",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "Współpraca z pracownikiem AI",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Wbudowani pracownicy AI",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Przegląd",
-        "link": "/ai-employees/built-in/index"
+        "label": "Współpraca z pracownikami AI",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Analityk danych",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: Ekspert modelowania danych",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: Ekspert porządkowania danych",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Inżynier front-end",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Zaawansowane",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Wybór bloku",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Źródła danych",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Umiejętności",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Zadania",
-        "link": "/ai-employees/advanced/task"
+        "label": "Dodawanie kontekstu - bloki",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "Wyszukiwanie w sieci",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "Korzystanie z umiejętności",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Szybkie zadania",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Wbudowani pracownicy AI",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nowy pracownik AI",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "Zarządzanie plikami",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Przepływy pracy",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Węzeł LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Czat tekstowy",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Czat multimodalny",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Wyjście strukturalne",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Dokumentacja aplikacji",
+    "label": "Przepływ pracy",
     "items": [
       {
         "type": "custom-link",
-        "label": "Scenariusze",
+        "label": "Węzły LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: Konfiguracja scenariusza CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Konfiguracja",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Konfiguracja administratora",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Czat tekstowy",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Przewodnik po promptach",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Czat multimodalny",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wyjście strukturalne",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Praktyka zastosowań",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: Konfiguracja scenariusza CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Przewodnik po promptach",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

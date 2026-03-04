@@ -16,7 +16,7 @@
 
 ### עריכת קישור
 
-![20251029174725](https://static-docs.nocobase.com/202510174725.png)
+![20251029174725](https://static-docs.nocobase.com/20251029174725.png)
 
 ### פתיחה בחלון חדש
 

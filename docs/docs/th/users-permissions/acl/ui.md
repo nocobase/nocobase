@@ -49,7 +49,7 @@ pkg: '@nocobase/plugin-acl'
 
 ขั้นตอนการตั้งค่าทั้งหมดมีดังนี้ครับ/ค่ะ
 
-![](https://static-docs.nocobase.com/1dbe559a9597c2e052e194e50edc74a7.gif)
+![](https://static-docs.nocobase.com/1dbe559a9579c2e052e194e50edc74a7.gif)
 
 - `เพิ่ม`: ควบคุมว่าฟิลด์สามารถเพิ่ม (สร้าง) ได้หรือไม่ครับ/ค่ะ
 

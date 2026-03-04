@@ -17,7 +17,7 @@ Tento plugin poskytuje rozhraní pro správu uživatelů v centru konfigurace. P
 
 Kromě toho můžete také přidat různé bloky kolekce Uživatelé pro správu uživatelů, například tabulkové bloky:
 
-![](https://static-docs.nocobase.com/76b5a465f869541a9e8f18a4568a7c9.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## Přidání uživatele
 

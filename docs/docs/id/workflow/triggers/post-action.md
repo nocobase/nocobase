@@ -178,7 +178,7 @@ Jika event dikonfigurasi dalam mode global, Anda tidak perlu menggunakan paramet
 
 Seperti yang ditunjukkan pada gambar di bawah ini:
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Perbedaan dengan Event Koleksi
 

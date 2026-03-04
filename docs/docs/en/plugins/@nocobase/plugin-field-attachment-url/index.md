@@ -1,5 +1,5 @@
 ---
-displayName: "Collection field: Attachment(URL)"
+displayName: "Collection Field: Attachment (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
   Supports attachments in URL format.
@@ -9,4 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Attachment(URL)
+# Collection Field: Attachment (URL)

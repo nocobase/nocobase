@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: CC"
+displayName: "Pracovní postup: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
+  Poskytuje funkci CC v pracovních postupech pro zasílání schválení nebo jakýchkoli jiných informací konkrétním uživatelům.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: CC
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-workflow-cc/index).
+:::
+
+# Pracovní postup: CC

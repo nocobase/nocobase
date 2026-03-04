@@ -1,46 +1,40 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/template-print/syntax/formatters/time-interval-formatting).
 :::
 
-### Intervallformatering
+### Tidsintervallsformatering
 
 #### 1. :formatI(patternOut, patternIn)
 
-##### Syntaxbeskrivning
-Formaterar en varaktighet eller ett intervall. Följande utdataformat stöds:
-- `human+` eller `human` (lämpliga för användarvänlig visning)
-- Enheter som `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` (eller deras förkortningar).
+##### Syntaxförklaring
+Formaterar varaktighet eller intervall, de utdataformat som stöds inkluderar:
+- `human+`, `human` (lämpligt för användarvänlig visning)
+- samt enheter som `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` (eller deras förkortningar).
 
 Parametrar:
-- **patternOut:** Utdataformatet (till exempel `'second'` eller `'human+'`).
-- **patternIn:** Valfri, indataenheten (till exempel `'milliseconds'` eller `'s'`).
+- patternOut: utdataformat (till exempel `'second'`, `'human+'` etc.)
+- patternIn: valfritt, indataenhet (till exempel `'milliseconds'`, `'s'` etc.)
 
 ##### Exempel
 ```
-// Exempelmiljö: API-alternativ { "lang": "en", "timezone": "Europe/Paris" }
-2000:formatI('second')       // Outputs 2
-2000:formatI('seconds')      // Outputs 2
-2000:formatI('s')            // Outputs 2
-3600000:formatI('minute')    // Outputs 60
-3600000:formatI('hour')      // Outputs 1
-2419200000:formatI('days')   // Outputs 28
+2000:formatI('second')       // Utdata 2
+2000:formatI('seconds')      // Utdata 2
+2000:formatI('s')            // Utdata 2
+3600000:formatI('minute')    // Utdata 60
+3600000:formatI('hour')      // Utdata 1
+2419200000:formatI('days')   // Utdata 28
 
-// Franskt exempel:
-2000:formatI('human')        // Outputs "quelques secondes"
-2000:formatI('human+')       // Outputs "dans quelques secondes"
--2000:formatI('human+')      // Outputs "il y a quelques secondes"
-
-// Engelskt exempel:
-2000:formatI('human')        // Outputs "a few seconds"
-2000:formatI('human+')       // Outputs "in a few seconds"
--2000:formatI('human+')      // Outputs "a few seconds ago"
+// Användarvänlig visning:
+2000:formatI('human')        // Utdata "a few seconds"
+2000:formatI('human+')       // Utdata "in a few seconds"
+-2000:formatI('human+')      // Utdata "a few seconds ago"
 
 // Exempel på enhetskonvertering:
-60:formatI('ms', 'minute')   // Outputs 3600000
-4:formatI('ms', 'weeks')      // Outputs 2419200000
-'P1M':formatI('ms')          // Outputs 2628000000
-'P1Y2M3DT4H5M6S':formatI('hour')  // Outputs 10296.085
+60:formatI('ms', 'minute')   // Utdata 3600000
+4:formatI('ms', 'weeks')      // Utdata 2419200000
+'P1M':formatI('ms')          // Utdata 2628000000
+'P1Y2M3DT4H5M6S':formatI('hour')  // Utdata 10296.085
 ```
 
 ##### Resultat
-Resultatet visas som den motsvarande varaktigheten eller intervallet, baserat på indatavärdet och enhetskonverteringen.
+Utdata visas som motsvarande varaktighet eller intervall baserat på indatavärdet och enhetskonverteringen.

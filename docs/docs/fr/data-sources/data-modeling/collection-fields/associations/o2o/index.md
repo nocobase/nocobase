@@ -28,7 +28,7 @@ Cela indique qu'un profil personnel appartient à un employé spécifique.
 
 Relation ER
 
-![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98573ca24ac72d.png)
+![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
 Configuration du champ
 

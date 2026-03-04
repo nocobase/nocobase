@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: Węzeł ręczny"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  Służy do procesów, w których część decyzji jest podejmowana ręcznie.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-workflow-manual/index).
+:::
+
+# Workflow: Węzeł ręczny

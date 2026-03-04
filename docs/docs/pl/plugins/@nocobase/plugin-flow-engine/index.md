@@ -1,5 +1,5 @@
 ---
-displayName: "Flow engine"
+displayName: "Frontend FlowEngine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flow engine
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-flow-engine/index).
+:::
+
+# Frontend FlowEngine

@@ -47,7 +47,7 @@ Pilihan Mode:
 
 ### Properti Umum
 
-![20251026191332](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
+![20251026191332](https://static-docs.nocobase.com/20251026191332.png)
 
 - Tumpuk, haluskan (garis/area)
 - Tampilan label, tooltip, legenda

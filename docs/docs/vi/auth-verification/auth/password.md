@@ -27,7 +27,7 @@ Khi không cho phép đăng ký, trang đăng nhập sẽ không hiển thị li
 
 Khi không cho phép đăng ký, bạn không thể truy cập trang đăng ký.
 
-![](https://static-docs.nocobase.com/09325c4b07e09f88f80a14dff8030556.png)
+![](https://static-docs.nocobase.com/09325c4b07e09f88f80a14dff8430556.png)
 
 ## Cài đặt biểu mẫu đăng ký<Badge>v1.4.0-beta.7+</Badge>
 

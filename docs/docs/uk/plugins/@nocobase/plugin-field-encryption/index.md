@@ -1,14 +1,18 @@
 ---
-displayName: "Collection field: Encryption"
+displayName: "Поле колекції: Шифрування"
 packageName: '@nocobase/plugin-field-encryption'
 supportedVersions:
   - 2.x
 description: |
-  Encrypts and decrypts specified fields automatically for secure data storage.
+  Автоматично шифрує та дешифрує вказані поля для забезпечення безпеки даних.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Collection field: Encryption
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-field-encryption/index).
+:::
+
+# Поле колекції: Шифрування

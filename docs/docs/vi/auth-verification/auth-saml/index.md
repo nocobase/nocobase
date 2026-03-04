@@ -58,4 +58,4 @@ Hiện tại không hỗ trợ ánh xạ tổ chức và vai trò của người
 
 Truy cập trang đăng nhập, sau đó nhấp vào nút bên dưới biểu mẫu đăng nhập để bắt đầu đăng nhập bằng bên thứ ba.
 
-![](https://static-docs.nocobase.com/7496365c9d36a294948e6adeb5b24bc.png)
+![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)

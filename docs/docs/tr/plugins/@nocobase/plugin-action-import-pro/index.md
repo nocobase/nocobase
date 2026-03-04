@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records Pro"
+displayName: "İşlem: Kayıtları İçe Aktar Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Enhance data import capabilities with asynchronous imports for handling large volumes. Includes features for data processing recognition, data updates, and workflow triggering.
+  Veri içe aktarma işlevini geliştirin. Büyük veri hacimleri için asenkron içe aktarma. Veri işleme tanıma, veri güncelleme ve iş akışı tetikleme gibi özellikleri destekler.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Action: Import records Pro
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-action-import-pro/index) bakın.
+:::
+
+# İşlem: Kayıtları İçe Aktar Pro

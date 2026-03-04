@@ -1,7 +1,6 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/get-started/installation/docker).
 :::
-
 
 # Cài đặt Docker
 
@@ -12,37 +11,37 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 :::
 
-## 1. Tạo tệp `docker-compose.yml`
+## 1. Tạo mới docker-compose.yml
 
 ```bash
-# Tạo một thư mục tên là my-project (hoặc tên khác tùy ý) để lưu trữ các tệp hệ thống do NocoBase tạo ra
+# Tạo một thư mục tên là my-project (có thể là tên khác) để lưu trữ các tệp hệ thống do NocoBase tạo ra
 mkdir my-project && cd my-project
 
 # Tạo một tệp docker-compose.yml trống
 vi docker-compose.yml
 ```
 
-## 2. Cấu hình `docker-compose.yml`
+## 2. Cấu hình docker-compose.yml
 
-Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và loại cơ sở dữ liệu, sau đó sao chép cấu hình tương ứng vào tệp `docker-compose.yml`.
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và loại cơ sở dữ liệu, sao chép cấu hình tương ứng vào docker-compose.yml.
 
-:::tip Lưu ý cấu hình
+:::tip Giải thích cấu hình
 
 - **Chọn image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - Đối với môi trường sản xuất, bạn nên cố định một phiên bản cụ thể để tránh việc tự động nâng cấp không mong muốn. [Xem tất cả các phiên bản](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image từ Alibaba Cloud: `nocobase/nocobase:latest-full`
-  - Image từ Docker Hub: `nocobase/nocobase:latest-full`
-  - **Image full** bao gồm các client PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 cần thiết cho các **plugin** quản lý sao lưu và di chuyển, cũng như LibreOffice cần thiết để in mẫu (PDF).
-  - Nếu bạn muốn tự xây dựng image, bạn có thể tham khảo [Dockerfile (phiên bản rút gọn)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) và [Dockerfile-full (phiên bản đầy đủ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) do NocoBase cung cấp.
-- **Sửa đổi `APP_KEY`**: Vui lòng thay thế `your-secret-key` bằng một chuỗi ngẫu nhiên. Chuỗi này được dùng để mã hóa các thông tin nhạy cảm như token người dùng.
-- **Sử dụng cơ sở dữ liệu hiện có**: Nếu bạn đã có dịch vụ cơ sở dữ liệu, vui lòng thay đổi `DB_HOST` thành địa chỉ máy chủ cơ sở dữ liệu của bạn, và xóa hoặc ghi chú (comment) cấu hình dịch vụ cơ sở dữ liệu (ví dụ: các dịch vụ `postgres`, `mysql`, `mariadb`).
-- **Ánh xạ cổng**: Mặc định, cổng 80 của container được ánh xạ tới cổng 13000 của máy chủ. Bạn có thể thay đổi nếu cần.
+  - Đối với môi trường sản xuất, khuyến nghị cố định một phiên bản cụ thể để tránh việc tự động nâng cấp không mong muốn. [Xem tất cả các phiên bản](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Image Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Image Docker Hub: `nocobase/nocobase:latest-full`
+  - **Image full** bao gồm các client PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 cần thiết cho các **plugin** quản lý sao lưu, quản lý di chuyển, cũng như LibreOffice cần thiết cho in mẫu (PDF).
+  - Nếu cần tự xây dựng image, có thể tham khảo [Dockerfile (phiên bản tinh giản)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) và [Dockerfile-full (phiên bản đầy đủ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) do chính thức cung cấp.
+- **Sửa đổi `APP_KEY`**: Vui lòng thay thế `your-secret-key` bằng một chuỗi ngẫu nhiên, dùng để mã hóa các thông tin nhạy cảm như token người dùng.
+- **Sử dụng cơ sở dữ liệu hiện có**: Nếu đã có dịch vụ cơ sở dữ liệu, vui lòng sửa `DB_HOST` thành địa chỉ máy chủ cơ sở dữ liệu, và xóa hoặc ghi chú (comment) cấu hình dịch vụ cơ sở dữ liệu (như các dịch vụ `postgres`, `mysql`, `mariadb`).
+- **Ánh xạ cổng**: Mặc định ánh xạ cổng 80 của container tới cổng 13000 của máy chủ, có thể sửa đổi tùy theo nhu cầu.
 
 :::
 
 <Tabs>
 
-<Tab label="Phiên bản mới nhất">
+<Tab label="Phiên bản Latest">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -54,15 +53,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -86,9 +85,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động postgres
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,15 +111,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -135,7 +134,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -145,9 +144,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mysql
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,15 +170,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -194,7 +193,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -204,9 +203,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mariadb
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,15 +235,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -268,9 +267,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động postgres
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,15 +293,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -317,7 +316,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -327,9 +326,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mysql
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,15 +352,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -376,7 +375,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -386,9 +385,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mariadb
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,15 +417,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -450,9 +449,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động postgres
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,15 +475,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -499,7 +498,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -509,9 +508,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mysql
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,15 +534,15 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # Khóa ứng dụng, dùng để tạo token người dùng, v.v.
-      # Nếu APP_KEY thay đổi, các token cũ sẽ không còn hiệu lực
+      # Khóa của ứng dụng, dùng để tạo token người dùng, v.v.
+      # Nếu APP_KEY thay đổi, các token cũ cũng sẽ mất hiệu lực
       # Có thể là bất kỳ chuỗi ngẫu nhiên nào và đảm bảo không bị rò rỉ ra ngoài
       - APP_KEY=your-secret-key
       # Loại cơ sở dữ liệu, hỗ trợ postgres, mysql, mariadb
@@ -558,7 +557,7 @@ services:
       - DB_USER=root
       # Mật khẩu cơ sở dữ liệu
       - DB_PASSWORD=nocobase
-      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake_case không
+      # Tên bảng, tên trường cơ sở dữ liệu có chuyển đổi sang kiểu snake case không
       - DB_UNDERSCORED=true
       # Múi giờ
       - TZ=Asia/Shanghai
@@ -568,9 +567,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Nếu bạn sử dụng dịch vụ cơ sở dữ liệu hiện có, bạn có thể không khởi động mariadb
+  # Nếu sử dụng dịch vụ cơ sở dữ liệu hiện có, có thể không cần khởi động mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -593,13 +592,13 @@ services:
 ## 3. Cài đặt và khởi động NocoBase
 
 ```bash
-# Tải image mới nhất
+# Tải về image mới nhất
 docker compose pull
 
-# Chạy ở chế độ nền (lần chạy đầu tiên sẽ tự động thực hiện cài đặt)
+# Chạy trong nền (lần chạy đầu tiên sẽ tự động thực hiện cài đặt)
 docker compose up -d
 
-# Xem nhật ký cài đặt và hoạt động
+# Xem nhật ký cài đặt và vận hành
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -616,10 +615,10 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. Đăng nhập NocoBase
 
-Mở [http://localhost:13000](http://localhost:13000) trong trình duyệt của bạn. Tài khoản và mật khẩu ban đầu là `admin@nocobase.com` và `admin123`.
+Sử dụng trình duyệt mở [http://localhost:13000](http://localhost:13000), tài khoản và mật khẩu khởi tạo là `admin@nocobase.com` và `admin123`.
 
-:::warning Lưu ý về bảo mật tài khoản
+:::warning Gợi ý an toàn tài khoản
 
-Sau khi đăng nhập lần đầu, vui lòng thay đổi mật khẩu mặc định ngay lập tức để đảm bảo an toàn cho hệ thống.
+Sau khi đăng nhập lần đầu, vui lòng thay đổi mật khẩu mặc định kịp thời để đảm bảo an toàn hệ thống.
 
 :::

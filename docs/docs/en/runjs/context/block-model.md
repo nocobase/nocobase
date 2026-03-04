@@ -1,49 +1,49 @@
 # ctx.blockModel
 
-The parent block model (BlockModel instance) that hosts the current JS field / JS block. In JSField, JSItem, JSColumn, etc., `ctx.blockModel` refers to the form block or table block that hosts the current JS logic; in a standalone JSBlock it may be `null` or the same as `ctx.model`.
+The parent block model (BlockModel instance) where the current JS Field / JS Block is located. In scenarios such as JSField, JSItem, and JSColumn, `ctx.blockModel` points to the form block or table block carrying the current JS logic. In a standalone JSBlock, it may be `null` or the same as `ctx.model`.
 
-## Use Cases
+## Scenarios
 
 | Scenario | Description |
-|----------|-------------|
-| **JSField** | Access parent form block's `form`, `collection`, `resource` for linkage or validation |
-| **JSItem** | Access parent table/form block's resource and collection in sub-table items |
-| **JSColumn** | Access parent table block's `resource` (e.g. `getSelectedRows`), `collection` |
-| **Form actions / event flow** | Use `form` for pre-submit validation, `resource` for refresh, etc. |
+|------|------|
+| **JSField** | Access the `form`, `collection`, and `resource` of the parent form block within a form field to implement linkage or validation. |
+| **JSItem** | Access the resource and collection information of the parent table/form block within a sub-table item. |
+| **JSColumn** | Access the `resource` (e.g., `getSelectedRows`) and `collection` of the parent table block within a table column. |
+| **Form Actions / FlowEngine** | Access `form` for pre-submission validation, `resource` for refreshing, etc. |
 
-> Note: `ctx.blockModel` is only available in RunJS contexts that have a parent block; in a standalone JSBlock (no parent form/table) it may be `null`—check before use.
+> Note: `ctx.blockModel` is only available in RunJS contexts where a parent block exists. In standalone JSBlocks (without a parent form/table), it may be `null`. It is recommended to perform a null check before use.
 
-## Type
+## Type Definition
 
 ```ts
 blockModel: BlockModel | FormBlockModel | TableBlockModel | CollectionBlockModel | DataBlockModel | null;
 ```
 
-The exact type depends on the parent block: form blocks are usually `FormBlockModel` / `EditFormModel`, table blocks are usually `TableBlockModel`.
+The specific type depends on the parent block type: form blocks are mostly `FormBlockModel` or `EditFormModel`, while table blocks are mostly `TableBlockModel`.
 
 ## Common Properties
 
 | Property | Type | Description |
-|----------|------|-------------|
-| `uid` | `string` | Block model unique id |
-| `collection` | `Collection` | Collection bound to the block |
-| `resource` | `Resource` | Resource instance (`SingleRecordResource` / `MultiRecordResource`, etc.) |
-| `form` | `FormInstance` | Form block: Ant Design Form instance (`getFieldsValue`, `validateFields`, `setFieldsValue`, etc.) |
-| `emitter` | `EventEmitter` | Event emitter; can listen to `formValuesChange`, `onFieldReset`, etc. |
+|------|------|------|
+| `uid` | `string` | Unique identifier of the block model. |
+| `collection` | `Collection` | The collection bound to the current block. |
+| `resource` | `Resource` | The resource instance used by the block (`SingleRecordResource` / `MultiRecordResource`, etc.). |
+| `form` | `FormInstance` | Form Block: Ant Design Form instance, supporting `getFieldsValue`, `validateFields`, `setFieldsValue`, etc. |
+| `emitter` | `EventEmitter` | Event emitter, used to listen for `formValuesChange`, `onFieldReset`, etc. |
 
-## Relation to ctx.model, ctx.form
+## Relationship with ctx.model and ctx.form
 
-| Need | Recommended |
-|------|-------------|
-| **Parent block of current JS** | `ctx.blockModel` |
-| **Read/write form fields** | `ctx.form` (same as `ctx.blockModel?.form`; more convenient in form blocks) |
-| **Model for current execution context** | `ctx.model` (field model in JSField, block model in JSBlock) |
+| Requirement | Recommended Usage |
+|------|----------|
+| **Parent block of the current JS** | `ctx.blockModel` |
+| **Read/Write form fields** | `ctx.form` (equivalent to `ctx.blockModel?.form`, more convenient in form blocks) |
+| **Model of the current execution context** | `ctx.model` (Field model in JSField, Block model in JSBlock) |
 
-In JSField, `ctx.model` is the field model and `ctx.blockModel` is the form/table block that hosts it; `ctx.form` is usually `ctx.blockModel.form`.
+In a JSField, `ctx.model` is the field model, and `ctx.blockModel` is the form or table block carrying that field; `ctx.form` is typically `ctx.blockModel.form`.
 
 ## Examples
 
-### Table: get selected rows and process
+### Table: Get selected rows and process
 
 ```ts
 const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
@@ -53,7 +53,7 @@ if (rows.length === 0) {
 }
 ```
 
-### Form: validate and refresh
+### Form Scenario: Validate and Refresh
 
 ```ts
 if (ctx.blockModel?.form) {
@@ -62,15 +62,15 @@ if (ctx.blockModel?.form) {
 }
 ```
 
-### Listen to form changes
+### Listen for Form Changes
 
 ```ts
 ctx.blockModel?.emitter?.on?.('formValuesChange', (payload) => {
-  // React to latest form values or re-render
+  // Implement linkage or re-rendering based on the latest form values
 });
 ```
 
-### Trigger block re-render
+### Trigger Block Re-render
 
 ```ts
 ctx.blockModel?.rerender?.();
@@ -78,13 +78,13 @@ ctx.blockModel?.rerender?.();
 
 ## Notes
 
-- In a **standalone JSBlock** (no parent form/table), `ctx.blockModel` may be `null`; use optional chaining: `ctx.blockModel?.resource?.refresh?.()`.
-- In **JSField / JSItem / JSColumn**, `ctx.blockModel` is the form or table block that hosts the field; in **JSBlock**, it may be the block itself or an ancestor, depending on hierarchy.
-- `resource` exists only on data blocks; `form` exists only on form blocks; table blocks usually have no `form`.
+- In a **standalone JSBlock** (without a parent form or table block), `ctx.blockModel` may be `null`. It is recommended to use optional chaining when accessing its properties: `ctx.blockModel?.resource?.refresh?.()`.
+- In **JSField / JSItem / JSColumn**, `ctx.blockModel` refers to the form or table block carrying the current field. In a **JSBlock**, it may be itself or an upper-level block, depending on the actual hierarchy.
+- `resource` only exists in data blocks; `form` only exists in form blocks. Table blocks typically do not have a `form`.
 
 ## Related
 
-- [ctx.model](./model.md): model for current execution context
-- [ctx.form](./form.md): form instance, common in form blocks
-- [ctx.resource](./resource.md): resource instance (same as `ctx.blockModel?.resource` when present)
-- [ctx.getModel()](./get-model.md): get another block model by uid
+- [ctx.model](./model.md): The model of the current execution context.
+- [ctx.form](./form.md): Form instance, commonly used in form blocks.
+- [ctx.resource](./resource.md): Resource instance (equivalent to `ctx.blockModel?.resource`, use directly if available).
+- [ctx.getModel()](./get-model.md): Get other block models by UID.

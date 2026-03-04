@@ -21,7 +21,7 @@ Lors de l'installation initiale, l'application intègre deux rôles prédéfinis
 
 L'identifiant de rôle, qui est un identifiant système unique, vous permet de personnaliser les rôles par défaut. Cependant, les rôles prédéfinis du système ne peuvent pas être supprimés.
 
-![](https://static-docs.nocobase.com/35f323b6db4f9f12f9bee4dea63302.png)
+![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
 ### Définir le rôle par défaut
 

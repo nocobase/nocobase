@@ -21,7 +21,7 @@ Existen varios tipos de cambios en una colección:
 
 Puede elegir el momento del disparo según las diferentes necesidades de su negocio. Cuando el cambio seleccionado incluye la actualización de la colección, también puede especificar los campos que han cambiado. La condición del disparador se cumple solo cuando los campos seleccionados cambian. Si no selecciona ningún campo, significa que cualquier cambio en cualquier campo puede activar el disparador.
 
-![Collection Event_Select Changed Fields](https://static-docs.nocobase.com/874a175f01298b3c00267b2b4674611.png)
+![Collection Event_Select Changed Fields](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
 
 Más específicamente, puede configurar reglas de condición para cada campo de la fila de datos que activa el evento. El disparador solo se activará cuando los campos cumplan las condiciones correspondientes.
 
@@ -89,4 +89,4 @@ La configuración de los nodos se explicará en detalle en la documentación par
 
 Habilite este flujo de trabajo y pruébelo creando un nuevo pedido a través de la interfaz. Después de realizar un pedido para el "iPhone 14 Pro", el inventario del producto correspondiente se reducirá a 9. Si se realiza un pedido para el "iPhone 13 Pro", el pedido será eliminado debido a la falta de inventario.
 
-![Collection Event_Example_New Order Execution Result](https://static-docs.nocobase.com/24cbe31e24ba4804b3bd48d99415c54f.png)
+![Collection Event_Example_New Order Execution Result](https://static-docs.nocobase.com/24cbe51e24ba4804b3bd48d99415c54f.png)

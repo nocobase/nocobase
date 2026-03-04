@@ -17,7 +17,7 @@ V současné době uzel pro smazání dat nepodporuje mazání po jednotlivých 
 
 V rozhraní konfigurace pracovního postupu klikněte na tlačítko plus („+“) v toku a přidejte uzel „Smazat data“:
 
-![Vytvoření uzlu pro smazání dat](https://static-docs.nocobase.com/e1b6b8728251fcdbed6c7f50e5570da2.png)
+![Vytvoření uzlu pro smazání dat](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
 
 ## Konfigurace uzlu
 

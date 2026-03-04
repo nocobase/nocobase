@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Udostępnianie kolekcji w wielu aplikacjach"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Udostępnianie kolekcji w wielu aplikacjach
+
+> Uwaga: Ta wtyczka jest przestarzała (deprecated).

@@ -69,18 +69,13 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "แผงควบคุม",
+            "label": "แผงการดำเนินการ",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "บล็อกอ้างอิง",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -106,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "วิธีการโหลดข้อมูล",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "เลย์เอาต์",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
@@ -126,13 +126,28 @@
           },
           {
             "type": "custom-link",
-            "label": "ลบบล็อก",
+            "label": "การเรียงลำดับแบบลากวาง",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
+            "label": "การลบบล็อก",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
           {
             "type": "custom-link",
             "label": "ชื่อบล็อก",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "ความสูงของบล็อก",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "แบบร่างฟอร์ม",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "ตารางย่อย",
+            "label": "ตารางย่อย (การแก้ไขในบรรทัด)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "ตารางย่อย (การแก้ไขในป๊อปอัป)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -331,7 +351,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ยืนยันซ้ำ",
+            "label": "การยืนยันซ้ำ",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "แก้ไข",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "คัดลอก",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -448,6 +473,11 @@
           },
           {
             "type": "custom-link",
+            "label": "แก้ไขเป็นชุด",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "เพิ่มระเบียนย่อย",
             "link": "/interface-builder/actions/types/add-child"
           },
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "เทมเพลต UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

@@ -2,65 +2,65 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
-# Multi-Application Management
+# Multi-app Management
 
 ## Overview
 
-Multi-application management is a unified application management solution provided by NocoBase. It allows you to create and manage multiple **physically isolated** NocoBase application instances across one or more runtime environments. With **AppSupervisor**, users can create and maintain multiple applications from a single entry point, supporting different business needs and growth stages.
+Multi-app management is a unified application management solution provided by NocoBase for creating and managing multiple physically isolated NocoBase application instances in one or more runtime environments. Through the AppSupervisor, users can create and maintain multiple applications from a unified entry point to meet the needs of different businesses and scale stages.
 
-## Single Application
+## Single App
 
-At the early stage of a project, most users start with a single application.
+In the early stages of a project, most users start with a single app.
 
-In this mode, only one NocoBase instance is deployed. All business logic, data, and users run within the same application. Deployment is simple and configuration cost is low, making it ideal for prototyping, small projects, or internal tools.
+In this mode, only one NocoBase instance needs to be deployed, and all business functions, data, and users run in the same application. It is easy to deploy and has low configuration costs, making it ideal for prototyping, small projects, or internal tools.
 
-As the business grows, a single application naturally faces limitations:
+However, as the business becomes more complex, a single application faces some natural limitations:
 
 - Features keep accumulating, making the system bloated
-- Business domains are difficult to isolate
-- Scaling and maintenance costs continue to rise
+- Difficult to isolate different businesses
+- The cost of application expansion and maintenance continues to rise
 
-At this point, users typically want to split different businesses into multiple applications to improve maintainability and scalability.
+At this point, users will want to split different businesses into multiple applications to improve system maintainability and scalability.
 
-## Shared-Memory Multi-Application
+## Shared Memory Multi-app
 
-When users want to split business domains without introducing complex deployment and operations, they can upgrade to the shared-memory multi-application mode.
+When users want to split their business but do not want to introduce complex deployment and maintenance architectures, they can upgrade to the shared memory multi-app mode.
 
-In this mode, multiple applications run within a single NocoBase instance. Each application is independent, can connect to its own database, and can be created, started, or stopped independently. However, they share the same process and memory space, so users still maintain only one NocoBase instance.
+In this mode, multiple applications can run simultaneously in one NocoBase instance. Each application is independent, can connect to an independent database, and can be created, started, and stopped individually, but they share the same process and memory space. Users still only need to maintain one NocoBase instance.
 
 ![](https://static-docs.nocobase.com/202512231055907.png)
 
-This approach brings clear improvements:
+This approach brings significant improvements:
 
-- Business can be split at the application level
-- Application features and configurations are more explicit
-- Lower resource overhead compared to multi-process or multi-container setups
+- Business can be split by application dimension
+- Functions and configurations between applications are clearer
+- Lower resource consumption compared to multi-process or multi-container solutions
 
-However, since all applications run in the same process, they share CPU and memory. High load or failures in one application may affect the stability of others.
+However, since all applications run in the same process, they share resources such as CPU and memory. An anomaly or high load in a single application may affect the stability of other applications.
 
-As the number of applications grows, or when stronger isolation and stability are required, the architecture needs to evolve further.
+When the number of applications continues to increase, or when higher requirements for isolation and stability are raised, the architecture needs to be further upgraded.
 
-## Multi-Environment Hybrid Deployment
+## Multi-environment Hybrid Deployment
 
-When business scale and complexity increase and applications need to grow at scale, the shared-memory model faces challenges such as resource contention, stability, and security. At this stage, a **multi-environment hybrid deployment** can be adopted to support more complex scenarios.
+When the business scale and complexity reach a certain level and the number of applications needs to be expanded at scale, the shared memory multi-app mode will face challenges such as resource contention, stability, and security. In the scaling phase, users can consider adopting a multi-environment hybrid deployment to support more complex business scenarios.
 
-The core of this architecture is introducing an **entry application**: one NocoBase instance acts as a unified control plane, while multiple NocoBase instances are deployed as application runtime environments that actually host business applications.
+The core of this architecture is the introduction of an entry application, i.e., deploying one NocoBase as a unified management center, while deploying multiple NocoBase instances as application runtime environments for actually running business applications.
 
 The entry application is responsible for:
 
 - Application creation, configuration, and lifecycle management
-- Dispatching management commands and aggregating status
+- Dispatching management commands and status aggregation
 
-Runtime application environments are responsible for:
+The instance application environment is responsible for:
 
-- Hosting and running business applications using the shared-memory multi-application model
+- Actually hosting and running business applications through the shared memory multi-app mode
 
-From the user’s perspective, applications are still created and managed through a single entry point. Internally:
+For users, multiple applications can still be created and managed through a single entry point, but internally:
 
 - Different applications can run on different nodes or clusters
-- Each application can use its own database and middleware
-- High-load applications can be isolated or scaled independently
+- Each application can use independent databases and middleware
+- High-load applications can be expanded or isolated as needed
 
 ![](https://static-docs.nocobase.com/202512231215186.png)
 
-This model is well suited for SaaS platforms, large numbers of demo environments, and multi-tenant scenarios, improving stability and operability while preserving flexibility.
+This approach is suitable for SaaS platforms, large numbers of demo environments, or multi-tenant scenarios, improving system stability and maintainability while ensuring flexibility.

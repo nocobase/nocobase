@@ -1,714 +1,707 @@
-# CRM 2.0 System Design
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/solution/crm/design) देखें।
+:::
 
-## 1. System Overview & Design Philosophy
+# CRM 2.0 सिस्टम विस्तृत डिज़ाइन
 
-### 1.1 System Positioning
+## 1. सिस्टम अवलोकन और डिज़ाइन दर्शन
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+### 1.1 सिस्टम स्थिति
+
+यह सिस्टम NocoBase नो-कोड प्लेटफॉर्म पर निर्मित एक **CRM 2.0 बिक्री प्रबंधन प्लेटफॉर्म** है। इसका मुख्य लक्ष्य है:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+बिक्री टीम को डेटा प्रविष्टि और दोहराव वाले विश्लेषण के बजाय ग्राहक संबंध बनाने पर ध्यान केंद्रित करने दें
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+सिस्टम वर्कफ़्लो के माध्यम से नियमित कार्यों को स्वचालित करता है, और लीड स्कोरिंग, अवसर विश्लेषण जैसे कार्यों को पूरा करने के लिए AI की सहायता लेता है, जिससे बिक्री टीमों की दक्षता बढ़ाने में मदद मिलती है।
 
-### 1.2 Design Philosophy
+### 1.2 डिज़ाइन दर्शन
 
-#### Principle 1: Complete Sales Funnel
+#### सिद्धांत 1: पूर्ण बिक्री फ़नल
 
-**End-to-end sales flow:**
+**एंड-टू-एंड बिक्री प्रक्रिया:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**इसे इस तरह क्यों डिज़ाइन किया गया है?**
 
-**Why design it this way?**
+| पारंपरिक तरीका | एकीकृत CRM |
+|---------|-----------|
+| विभिन्न चरणों के लिए कई प्रणालियों का उपयोग | पूरे जीवनचक्र को कवर करने वाला एकल सिस्टम |
+| प्रणालियों के बीच मैन्युअल डेटा स्थानांतरण | स्वचालित डेटा प्रवाह और रूपांतरण |
+| असंगत ग्राहक दृश्य | एकीकृत ग्राहक 360-डिग्री दृश्य |
+| बिखरा हुआ डेटा विश्लेषण | एंड-टू-एंड बिक्री पाइपलाइन विश्लेषण |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### सिद्धांत 2: कॉन्फ़िगर करने योग्य बिक्री पाइपलाइन
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+विभिन्न उद्योग कोड में बदलाव किए बिना बिक्री पाइपलाइन चरणों को कस्टमाइज़ कर सकते हैं।
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### सिद्धांत 3: मॉड्यूलर डिज़ाइन
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- मुख्य मॉड्यूल (ग्राहक + अवसर) अनिवार्य हैं, अन्य मॉड्यूल आवश्यकतानुसार सक्षम किए जा सकते हैं।
+- मॉड्यूल को अक्षम करने के लिए कोड बदलने की आवश्यकता नहीं है, इसे NocoBase इंटरफ़ेस कॉन्फ़िगरेशन के माध्यम से किया जा सकता है।
+- कपलिंग (coupling) को कम करने के लिए प्रत्येक मॉड्यूल को स्वतंत्र रूप से डिज़ाइन किया गया है।
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. मॉड्यूल आर्किटेक्चर और कस्टमाइज़ेशन
 
-### 2.1 Module Overview
+### 2.1 मॉड्यूल अवलोकन
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+CRM सिस्टम **मॉड्यूलर आर्किटेक्चर** डिज़ाइन को अपनाता है—प्रत्येक मॉड्यूल को व्यावसायिक आवश्यकताओं के आधार पर स्वतंत्र रूप से सक्षम या अक्षम किया जा सकता है।
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 मॉड्यूल निर्भरता
 
-### 2.2 Module Dependencies
+| मॉड्यूल | क्या अनिवार्य है | निर्भरता | अक्षम करने की शर्त |
+|-----|---------|--------|---------|
+| **ग्राहक प्रबंधन** | ✅ हाँ | - | अक्षम नहीं किया जा सकता (मुख्य) |
+| **अवसर प्रबंधन** | ✅ हाँ | ग्राहक प्रबंधन | अक्षम नहीं किया जा सकता (मुख्य) |
+| **लीड प्रबंधन** | वैकल्पिक | - | जब लीड प्राप्ति की आवश्यकता न हो |
+| **कोटेशन प्रबंधन** | वैकल्पिक | अवसर, उत्पाद | सरल लेनदेन जिनमें औपचारिक कोटेशन की आवश्यकता नहीं होती |
+| **ऑर्डर प्रबंधन** | वैकल्पिक | अवसर (या कोटेशन) | जब ऑर्डर/भुगतान ट्रैकिंग की आवश्यकता न हो |
+| **उत्पाद प्रबंधन** | वैकल्पिक | - | जब उत्पाद कैटलॉग की आवश्यकता न हो |
+| **ईमेल एकीकरण** | वैकल्पिक | ग्राहक, संपर्क | बाहरी ईमेल सिस्टम का उपयोग करते समय |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 पूर्व-कॉन्फ़िगर संस्करण
 
-### 2.3 Pre-configured Editions
+| संस्करण | शामिल मॉड्यूल | उपयोग का मामला | संग्रहों की संख्या |
+|-----|---------|---------|-----------|
+| **लाइट (Lite)** | ग्राहक + अवसर | सरल लेनदेन ट्रैकिंग | 6 |
+| **स्टैंडर्ड (Standard)** | लाइट + लीड्स + कोटेशन + ऑर्डर + उत्पाद | पूर्ण बिक्री चक्र | 15 |
+| **एंटरप्राइज (Enterprise)** | स्टैंडर्ड + ईमेल एकीकरण | ईमेल सहित पूर्ण कार्यक्षमता | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 मॉड्यूल-से-संग्रह मैपिंग
 
-### 2.4 Module–Table Mapping
+#### मुख्य मॉड्यूल संग्रह (हमेशा आवश्यक)
 
-#### Core Module Tables (Always Required)
+| संग्रह | मॉड्यूल | विवरण |
+|-------|------|------|
+| nb_crm_customers | ग्राहक प्रबंधन | ग्राहक/कंपनी रिकॉर्ड |
+| nb_crm_contacts | ग्राहक प्रबंधन | संपर्क |
+| nb_crm_customer_shares | ग्राहक प्रबंधन | ग्राहक साझाकरण अनुमतियाँ |
+| nb_crm_opportunities | अवसर प्रबंधन | बिक्री के अवसर |
+| nb_crm_opportunity_stages | अवसर प्रबंधन | चरण कॉन्फ़िगरेशन |
+| nb_crm_opportunity_users | अवसर प्रबंधन | अवसर सहयोगी |
+| nb_crm_activities | गतिविधि प्रबंधन | गतिविधि रिकॉर्ड |
+| nb_crm_comments | गतिविधि प्रबंधन | टिप्पणियाँ/नोट्स |
+| nb_crm_tags | मुख्य | साझा टैग |
+| nb_cbo_currencies | आधार डेटा | मुद्रा शब्दकोश |
+| nb_cbo_regions | आधार डेटा | देश/क्षेत्र शब्दकोश |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 मॉड्यूल को कैसे अक्षम करें
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+NocoBase एडमिनिस्ट्रेशन इंटरफ़ेस में उस मॉड्यूल के मेनू एंट्री को बस छिपा दें; कोड को संशोधित करने या संग्रहों को हटाने की कोई आवश्यकता नहीं है।
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. मुख्य इकाइयाँ और डेटा मॉडल
 
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
+### 3.1 इकाई संबंध अवलोकन
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 मुख्य संग्रह विवरण
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 लीड्स (nb_crm_leads)
 
-**Stage flow:**
+सरलीकृत 4-चरणीय वर्कफ़्लो का उपयोग करके लीड प्रबंधन।
+
+**चरण प्रक्रिया:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
+नया → प्रगति पर → सत्यापित → ग्राहक/अवसर में परिवर्तित
+         ↓          ↓
+      अयोग्य      अयोग्य
 ```
 
-**Key fields:**
+**प्रमुख फ़ील्ड:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
-| status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| lead_no | VARCHAR | लीड नंबर (स्वचालित रूप से जनरेट) |
+| name | VARCHAR | संपर्क का नाम |
+| company | VARCHAR | कंपनी का नाम |
+| title | VARCHAR | पद |
+| email | VARCHAR | ईमेल |
+| phone | VARCHAR | फोन |
+| mobile_phone | VARCHAR | मोबाइल |
+| website | TEXT | वेबसाइट |
+| address | TEXT | पता |
+| source | VARCHAR | लीड स्रोत: website/ads/referral/exhibition/telemarketing/email/social |
+| industry | VARCHAR | उद्योग |
+| annual_revenue | VARCHAR | वार्षिक राजस्व पैमाना |
+| number_of_employees | VARCHAR | कर्मचारियों की संख्या का पैमाना |
+| status | VARCHAR | स्थिति: new/working/qualified/unqualified |
+| rating | VARCHAR | रेटिंग: hot/warm/cold |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| ai_score | INTEGER | AI गुणवत्ता स्कोर 0-100 |
+| ai_convert_prob | DECIMAL | AI रूपांतरण संभावना |
+| ai_best_contact_time | VARCHAR | AI अनुशंसित संपर्क समय |
+| ai_tags | JSONB | AI द्वारा जनरेट किए गए टैग |
+| ai_scored_at | TIMESTAMP | AI स्कोरिंग समय |
+| ai_next_best_action | TEXT | AI अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| ai_nba_generated_at | TIMESTAMP | AI सुझाव जनरेशन समय |
+| is_converted | BOOLEAN | रूपांतरित फ्लैग |
+| converted_at | TIMESTAMP | रूपांतरण समय |
+| converted_customer_id | BIGINT | रूपांतरित ग्राहक ID |
+| converted_contact_id | BIGINT | रूपांतरित संपर्क ID |
+| converted_opportunity_id | BIGINT | रूपांतरित अवसर ID |
+| lost_reason | TEXT | खोने का कारण |
+| disqualification_reason | TEXT | अयोग्यता का कारण |
+| description | TEXT | विवरण |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 ग्राहक (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+अंतरराष्ट्रीय व्यापार का समर्थन करने वाला ग्राहक/कंपनी प्रबंधन।
 
-**Key fields:**
+**प्रमुख फ़ील्ड:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
-| status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
-| region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| name | VARCHAR | ग्राहक का नाम (अनिवार्य) |
+| account_number | VARCHAR | ग्राहक नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| phone | VARCHAR | फोन |
+| website | TEXT | वेबसाइट |
+| address | TEXT | पता |
+| industry | VARCHAR | उद्योग |
+| type | VARCHAR | प्रकार: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | कर्मचारियों की संख्या का पैमाना |
+| annual_revenue | VARCHAR | वार्षिक राजस्व पैमाना |
+| level | VARCHAR | स्तर: normal/important/vip |
+| status | VARCHAR | स्थिति: potential/active/dormant/churned |
+| country | VARCHAR | देश |
+| region_id | BIGINT | क्षेत्र (FK → nb_cbo_regions) |
+| preferred_currency | VARCHAR | पसंदीदा मुद्रा: CNY/USD/EUR |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| parent_id | BIGINT | मूल कंपनी (FK → self) |
+| source_lead_id | BIGINT | स्रोत लीड ID |
+| ai_health_score | INTEGER | AI स्वास्थ्य स्कोर 0-100 |
+| ai_health_grade | VARCHAR | AI स्वास्थ्य ग्रेड: A/B/C/D |
+| ai_churn_risk | DECIMAL | AI मंथन (churn) जोखिम 0-100% |
+| ai_churn_risk_level | VARCHAR | AI मंथन जोखिम स्तर: low/medium/high |
+| ai_health_dimensions | JSONB | AI स्वास्थ्य आयाम स्कोर |
+| ai_recommendations | JSONB | AI सुझाव सूची |
+| ai_health_assessed_at | TIMESTAMP | AI स्वास्थ्य मूल्यांकन समय |
+| ai_tags | JSONB | AI द्वारा जनरेट किए गए टैग |
+| ai_best_contact_time | VARCHAR | AI अनुशंसित संपर्क समय |
+| ai_next_best_action | TEXT | AI अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| ai_nba_generated_at | TIMESTAMP | AI सुझाव जनरेशन समय |
+| description | TEXT | विवरण |
+| is_deleted | BOOLEAN | सॉफ्ट डिलीट फ्लैग |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 अवसर (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+कॉन्फ़िगर करने योग्य पाइपलाइन चरणों के साथ बिक्री अवसर प्रबंधन।
 
-**Key fields:**
+**प्रमुख फ़ील्ड:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| opportunity_no | VARCHAR | अवसर नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| name | VARCHAR | अवसर का नाम (अनिवार्य) |
+| amount | DECIMAL | अपेक्षित राशि |
+| currency | VARCHAR | मुद्रा |
+| exchange_rate | DECIMAL | विनिमय दर |
+| amount_usd | DECIMAL | USD समतुल्य राशि |
+| customer_id | BIGINT | ग्राहक (FK) |
+| contact_id | BIGINT | मुख्य संपर्क (FK) |
+| stage | VARCHAR | चरण कोड (FK → stages.code) |
+| stage_sort | INTEGER | चरण क्रम (आसान छँटाई के लिए) |
+| stage_entered_at | TIMESTAMP | वर्तमान चरण में प्रवेश का समय |
+| days_in_stage | INTEGER | वर्तमान चरण में बिताए गए दिन |
+| win_probability | DECIMAL | मैन्युअल जीत की संभावना |
+| ai_win_probability | DECIMAL | AI अनुमानित जीत की संभावना |
+| ai_analyzed_at | TIMESTAMP | AI विश्लेषण समय |
+| ai_confidence | DECIMAL | AI भविष्यवाणी विश्वास स्तर |
+| ai_trend | VARCHAR | AI भविष्यवाणी प्रवृत्ति: up/stable/down |
+| ai_risk_factors | JSONB | AI द्वारा पहचाने गए जोखिम कारक |
+| ai_recommendations | JSONB | AI सुझाव सूची |
+| ai_predicted_close | DATE | AI अनुमानित समापन तिथि |
+| ai_next_best_action | TEXT | AI अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| ai_nba_generated_at | TIMESTAMP | AI सुझाव जनरेशन समय |
+| expected_close_date | DATE | अपेक्षित समापन तिथि |
+| actual_close_date | DATE | वास्तविक समापन तिथि |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| last_activity_at | TIMESTAMP | अंतिम गतिविधि का समय |
+| stagnant_days | INTEGER | बिना गतिविधि के दिन |
+| loss_reason | TEXT | हारने का कारण |
+| competitor_id | BIGINT | प्रतिस्पर्धी (FK) |
+| lead_source | VARCHAR | लीड स्रोत |
+| campaign_id | BIGINT | मार्केटिंग अभियान ID |
+| expected_revenue | DECIMAL | अपेक्षित राजस्व = amount × probability |
+| description | TEXT | विवरण |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 कोटेशन (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+बहु-मुद्रा और अनुमोदन वर्कफ़्लो का समर्थन करने वाला कोटेशन प्रबंधन।
 
-**Status flow:**
+**स्थिति प्रवाह:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
+ड्राफ्ट → अनुमोदन लंबित → स्वीकृत → भेजा गया → स्वीकृत/अस्वीकृत/समय सीमा समाप्त
               ↓
-          Rejected → Revise → Draft
+           अस्वीकृत → संपादित करें → ड्राफ्ट
 ```
 
-**Key fields:**
+**प्रमुख फ़ील्ड:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
-| status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| quotation_no | VARCHAR | कोटेशन नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| name | VARCHAR | कोटेशन का नाम |
+| version | INTEGER | संस्करण संख्या |
+| opportunity_id | BIGINT | अवसर (FK, अनिवार्य) |
+| customer_id | BIGINT | ग्राहक (FK) |
+| contact_id | BIGINT | संपर्क (FK) |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| currency_id | BIGINT | मुद्रा (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | विनिमय दर |
+| subtotal | DECIMAL | उप-योग |
+| discount_rate | DECIMAL | छूट दर |
+| discount_amount | DECIMAL | छूट राशि |
+| shipping_handling | DECIMAL | शिपिंग/हैंडलिंग |
+| tax_rate | DECIMAL | कर दर |
+| tax_amount | DECIMAL | कर राशि |
+| total_amount | DECIMAL | कुल राशि |
+| total_amount_usd | DECIMAL | USD समतुल्य राशि |
+| status | VARCHAR | स्थिति: draft/pending_approval/approved/sent/accepted/rejected/expired |
+| submitted_at | TIMESTAMP | जमा करने का समय |
+| approved_by | BIGINT | अनुमोदक (FK → users) |
+| approved_at | TIMESTAMP | अनुमोदन का समय |
+| rejected_at | TIMESTAMP | अस्वीकृति का समय |
+| sent_at | TIMESTAMP | भेजने का समय |
+| customer_response_at | TIMESTAMP | ग्राहक प्रतिक्रिया का समय |
+| expired_at | TIMESTAMP | समय सीमा समाप्ति का समय |
+| valid_until | DATE | तक मान्य |
+| payment_terms | TEXT | भुगतान की शर्तें |
+| terms_condition | TEXT | नियम और शर्तें |
+| address | TEXT | शिपिंग पता |
+| description | TEXT | विवरण |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 ऑर्डर (nb_crm_orders)
 
-Order management with payment tracking.
+भुगतान ट्रैकिंग सहित ऑर्डर प्रबंधन।
 
-**Key fields:**
+**प्रमुख फ़ील्ड:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| order_no | VARCHAR | ऑर्डर नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| customer_id | BIGINT | ग्राहक (FK) |
+| contact_id | BIGINT | संपर्क (FK) |
+| opportunity_id | BIGINT | अवसर (FK) |
+| quotation_id | BIGINT | कोटेशन (FK) |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| currency | VARCHAR | मुद्रा |
+| exchange_rate | DECIMAL | विनिमय दर |
+| order_amount | DECIMAL | ऑर्डर राशि |
+| paid_amount | DECIMAL | भुगतान की गई राशि |
+| unpaid_amount | DECIMAL | बकाया राशि |
+| status | VARCHAR | स्थिति: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
+| payment_status | VARCHAR | भुगतान स्थिति: unpaid/partial/paid |
+| order_date | DATE | ऑर्डर की तारीख |
+| delivery_date | DATE | अपेक्षित डिलीवरी तिथि |
+| actual_delivery_date | DATE | वास्तविक डिलीवरी तिथि |
+| shipping_address | TEXT | शिपिंग पता |
+| logistics_company | VARCHAR | लॉजिस्टिक्स कंपनी |
+| tracking_no | VARCHAR | ट्रैकिंग नंबर |
+| terms_condition | TEXT | नियम और शर्तें |
+| description | TEXT | विवरण |
 
-### 3.3 Table Summary
+### 3.3 संग्रह सारांश
 
-#### CRM Business Tables
+#### CRM व्यावसायिक संग्रह
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| क्र.सं. | संग्रह का नाम | विवरण | प्रकार |
+|-----|------|------|------|
+| 1 | nb_crm_leads | लीड प्रबंधन | व्यवसाय |
+| 2 | nb_crm_customers | ग्राहक/कंपनियां | व्यवसाय |
+| 3 | nb_crm_contacts | संपर्क | व्यवसाय |
+| 4 | nb_crm_opportunities | बिक्री के अवसर | व्यवसाय |
+| 5 | nb_crm_opportunity_stages | चरण कॉन्फ़िगरेशन | कॉन्फ़िगरेशन |
+| 6 | nb_crm_opportunity_users | अवसर सहयोगी (बिक्री टीम) | संबंध |
+| 7 | nb_crm_quotations | कोटेशन | व्यवसाय |
+| 8 | nb_crm_quotation_items | कोटेशन आइटम | व्यवसाय |
+| 9 | nb_crm_quotation_approvals | अनुमोदन रिकॉर्ड | व्यवसाय |
+| 10 | nb_crm_orders | ऑर्डर | व्यवसाय |
+| 11 | nb_crm_order_items | ऑर्डर आइटम | व्यवसाय |
+| 12 | nb_crm_payments | भुगतान रिकॉर्ड | व्यवसाय |
+| 13 | nb_crm_products | उत्पाद कैटलॉग | व्यवसाय |
+| 14 | nb_crm_product_categories | उत्पाद श्रेणियां | कॉन्फ़िगरेशन |
+| 15 | nb_crm_price_tiers | स्तरीय मूल्य निर्धारण | कॉन्फ़िगरेशन |
+| 16 | nb_crm_activities | गतिविधि रिकॉर्ड | व्यवसाय |
+| 17 | nb_crm_comments | टिप्पणियाँ/नोट्स | व्यवसाय |
+| 18 | nb_crm_competitors | प्रतिस्पर्धी | व्यवसाय |
+| 19 | nb_crm_tags | टैग | कॉन्फ़िगरेशन |
+| 20 | nb_crm_lead_tags | लीड-टैग संबंध | संबंध |
+| 21 | nb_crm_contact_tags | संपर्क-टैग संबंध | संबंध |
+| 22 | nb_crm_customer_shares | ग्राहक साझाकरण अनुमतियाँ | संबंध |
+| 23 | nb_crm_exchange_rates | विनिमय दर इतिहास | कॉन्फ़िगरेशन |
 
-#### Base Data Tables (Shared Module)
+#### आधार डेटा संग्रह (सामान्य मॉड्यूल)
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| क्र.सं. | संग्रह का नाम | विवरण | प्रकार |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | मुद्रा शब्दकोश | कॉन्फ़िगरेशन |
+| 2 | nb_cbo_regions | देश/क्षेत्र शब्दकोश | कॉन्फ़िगरेशन |
 
-### 3.4 Supporting Tables
+### 3.4 सहायक संग्रह
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 टिप्पणियाँ (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+सामान्य टिप्पणियाँ/नोट्स संग्रह जिसे विभिन्न व्यावसायिक वस्तुओं के साथ जोड़ा जा सकता है।
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| content | TEXT | टिप्पणी सामग्री |
+| lead_id | BIGINT | संबद्ध लीड (FK) |
+| customer_id | BIGINT | संबद्ध ग्राहक (FK) |
+| opportunity_id | BIGINT | संबद्ध अवसर (FK) |
+| order_id | BIGINT | संबद्ध ऑर्डर (FK) |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 ग्राहक साझाकरण (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+ग्राहकों के लिए बहु-व्यक्ति सहयोग और अनुमति साझाकरण सक्षम करता है।
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| customer_id | BIGINT | ग्राहक (FK, अनिवार्य) |
+| shared_with_user_id | BIGINT | जिसके साथ साझा किया गया (FK, अनिवार्य) |
+| shared_by_user_id | BIGINT | जिसके द्वारा साझा किया गया (FK) |
+| permission_level | VARCHAR | अनुमति स्तर: read/write/full |
+| shared_at | TIMESTAMP | साझा करने का समय |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 अवसर सहयोगी (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+अवसरों पर बिक्री टीम के सहयोग का समर्थन करता है।
 
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| opportunity_id | BIGINT | अवसर (FK, कंपोजिट PK) |
+| user_id | BIGINT | उपयोगकर्ता (FK, कंपोजिट PK) |
+| role | VARCHAR | भूमिका: owner/collaborator/viewer |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 क्षेत्र (nb_cbo_regions)
 
-Country/region base data dictionary.
+देश/क्षेत्र आधार डेटा शब्दकोश।
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
-
----
-
-## 4. Lead Lifecycle
-
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
-
-### 4.1 Status Definitions
-
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
-
-### 4.2 Status Flow
-
-
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
-
-### 4.3 Lead Conversion Flow
-
-The conversion UI presents three options simultaneously; users can create or link:
-
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
-
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| code_alpha2 | VARCHAR | ISO 3166-1 अल्फा-2 कोड (अद्वितीय) |
+| code_alpha3 | VARCHAR | ISO 3166-1 अल्फा-3 कोड (अद्वितीय) |
+| code_numeric | VARCHAR | ISO 3166-1 न्यूमेरिक कोड |
+| name | VARCHAR | देश/क्षेत्र का नाम |
+| is_active | BOOLEAN | क्या सक्रिय है |
+| sort_order | INTEGER | छँटाई क्रम |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. लीड जीवनचक्र
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+लीड प्रबंधन एक सरलीकृत 4-चरणीय वर्कफ़्लो का उपयोग करता है। जब कोई नई लीड बनाई जाती है, तो एक वर्कफ़्लो स्वचालित रूप से AI स्कोरिंग को ट्रिगर कर सकता है ताकि बिक्री टीम को उच्च-गुणवत्ता वाली लीड की पहचान करने में मदद मिल सके।
 
-### 5.1 Configurable Stages
+### 4.1 स्थिति परिभाषाएँ
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| स्थिति | नाम | विवरण |
+|-----|------|------|
+| new | नया | अभी बनाया गया, संपर्क की प्रतीक्षा है |
+| working | प्रगति पर | सक्रिय रूप से अनुवर्ती कार्रवाई की जा रही है |
+| qualified | सत्यापित | रूपांतरण के लिए तैयार |
+| unqualified | अयोग्य | उपयुक्त नहीं है |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 स्थिति फ़्लोचार्ट
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 लीड रूपांतरण प्रक्रिया
 
-### 5.3 Stagnation Detection
+रूपांतरण इंटरफ़ेस एक साथ तीन विकल्प प्रदान करता है; उपयोगकर्ता बनाने या संबद्ध करने का विकल्प चुन सकते हैं:
 
-Opportunities with no activity will be flagged:
+- **ग्राहक**: नया ग्राहक बनाएं या मौजूदा ग्राहक के साथ संबद्ध करें।
+- **संपर्क**: नया संपर्क बनाएं (ग्राहक के साथ संबद्ध)।
+- **अवसर**: एक अवसर बनाया जाना अनिवार्य है।
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**रूपांतरण के बाद के रिकॉर्ड:**
+- `converted_customer_id`: संबद्ध ग्राहक ID
+- `converted_contact_id`: संबद्ध संपर्क ID
+- `converted_opportunity_id`: बनाया गया अवसर ID
+
+---
+
+## 5. अवसर जीवनचक्र
+
+अवसर प्रबंधन कॉन्फ़िगर करने योग्य बिक्री पाइपलाइन चरणों का उपयोग करता है। जब कोई अवसर चरण बदलता है, तो यह स्वचालित रूप से AI जीत की संभावना भविष्यवाणी को ट्रिगर कर सकता है ताकि बिक्री टीम जोखिमों और अवसरों की पहचान कर सके।
+
+### 5.1 कॉन्फ़िगर करने योग्य चरण
+
+चरण `nb_crm_opportunity_stages` संग्रह में संग्रहीत किए जाते हैं और इन्हें कस्टमाइज़ किया जा सकता है:
+
+| कोड | नाम | क्रम | डिफ़ॉल्ट जीत की संभावना |
+|-----|------|------|---------|
+| prospecting | प्रारंभिक संपर्क | 1 | 10% |
+| analysis | आवश्यकता विश्लेषण | 2 | 30% |
+| proposal | प्रस्ताव/मूल्य कोटेशन | 3 | 60% |
+| negotiation | बातचीत/समीक्षा | 4 | 80% |
+| won | जीत (Closed Won) | 5 | 100% |
+| lost | हार (Closed Lost) | 6 | 0% |
+
+### 5.2 पाइपलाइन प्रवाह
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 ठहराव का पता लगाना
+
+बिना गतिविधि वाले अवसरों को चिह्नित किया जाएगा:
+
+| बिना गतिविधि के दिन | कार्रवाई |
+|-----------|------|
+| 7 दिन | पीली चेतावनी |
+| 14 दिन | प्रभारी को नारंगी अनुस्मारक |
+| 30 दिन | प्रबंधक को लाल अनुस्मारक |
 
 ```sql
--- Calculate stagnation days
+-- ठहराव के दिनों की गणना करें
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 जीत/हार का प्रबंधन
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**जीतने पर:**
+1. चरण को 'won' पर अपडेट करें।
+2. वास्तविक समापन तिथि रिकॉर्ड करें।
+3. ग्राहक की स्थिति को 'active' पर अपडेट करें।
+4. ऑर्डर निर्माण ट्रिगर करें (यदि कोटेशन स्वीकार किया गया था)।
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**हारने पर:**
+1. चरण को 'lost' पर अपडेट करें।
+2. हारने का कारण रिकॉर्ड करें।
+3. प्रतिस्पर्धी ID रिकॉर्ड करें (यदि किसी प्रतिस्पर्धी से हार गए हैं)।
+4. प्रबंधक को सूचित करें।
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. कोटेशन जीवनचक्र
 
-### 6.1 Status Definitions
+### 6.1 स्थिति परिभाषाएँ
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| स्थिति | नाम | विवरण |
+|-----|------|------|
+| draft | ड्राफ्ट | तैयारी में |
+| pending_approval | अनुमोदन लंबित | अनुमोदन की प्रतीक्षा है |
+| approved | स्वीकृत | भेजने के लिए तैयार |
+| sent | भेजा गया | ग्राहक को भेजा गया |
+| accepted | स्वीकृत | ग्राहक द्वारा स्वीकार किया गया |
+| rejected | अस्वीकृत | ग्राहक द्वारा अस्वीकार किया गया |
+| expired | समय सीमा समाप्त | वैधता तिथि समाप्त |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 अनुमोदन नियम (अंतिम रूप दिया जाना बाकी)
 
-Approval flow is triggered based on the following conditions:
+अनुमोदन वर्कफ़्लो निम्नलिखित शर्तों के आधार पर ट्रिगर होते हैं:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| शर्त | अनुमोदन स्तर |
+|------|---------|
+| छूट > 10% | बिक्री प्रबंधक |
+| छूट > 20% | बिक्री निदेशक |
+| राशि > $100K | वित्त + महाप्रबंधक |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 बहु-मुद्रा समर्थन
 
-### 6.3 Multi-Currency Support
+#### डिज़ाइन दर्शन
 
-#### Design Rationale
+सभी रिपोर्टों और विश्लेषणों के लिए **USD को एकीकृत आधार मुद्रा** के रूप में उपयोग करें। प्रत्येक राशि रिकॉर्ड संग्रहीत करता है:
+- मूल मुद्रा और राशि (जो ग्राहक देखता है)
+- लेनदेन के समय विनिमय दर
+- USD समतुल्य राशि (आंतरिक तुलना के लिए)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### मुद्रा शब्दकोश (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+मुद्रा कॉन्फ़िगरेशन एक सामान्य आधार डेटा संग्रह का उपयोग करता है, जो गतिशील प्रबंधन का समर्थन करता है। `current_rate` फ़ील्ड वर्तमान विनिमय दर को संग्रहीत करता है, जिसे `nb_crm_exchange_rates` में नवीनतम रिकॉर्ड से एक निर्धारित कार्य (scheduled task) द्वारा अपडेट किया जाता है।
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| code | VARCHAR | मुद्रा कोड (अद्वितीय): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | मुद्रा का नाम |
+| symbol | VARCHAR | मुद्रा का प्रतीक |
+| decimal_places | INTEGER | दशमलव स्थान |
+| current_rate | DECIMAL | USD के मुकाबले वर्तमान दर (इतिहास से सिंक किया गया) |
+| is_active | BOOLEAN | क्या सक्रिय है |
+| sort_order | INTEGER | छँटाई क्रम |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### विनिमय दर इतिहास (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+ऐतिहासिक विनिमय दर डेटा रिकॉर्ड करता है। एक निर्धारित कार्य नवीनतम दरों को `nb_cbo_currencies.current_rate` में सिंक करता है।
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| currency_code | VARCHAR | मुद्रा कोड (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | USD के मुकाबले दर |
+| effective_date | DATE | प्रभावी तिथि |
+| source | VARCHAR | स्रोत: manual/api |
+| createdAt | TIMESTAMP | निर्माण का समय |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **नोट**: कोटेशन `currency_id` फॉरेन की के माध्यम से `nb_cbo_currencies` संग्रह से जुड़े होते हैं, और विनिमय दर सीधे `current_rate` फ़ील्ड से प्राप्त की जाती है। अवसर और ऑर्डर मुद्रा कोड संग्रहीत करने के लिए `currency` VARCHAR फ़ील्ड का उपयोग करते हैं।
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### राशि फ़ील्ड पैटर्न
 
-#### Monetary Field Pattern
+राशि वाले संग्रह इस पैटर्न का पालन करते हैं:
 
-Tables with monetary amounts follow this pattern:
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| currency | VARCHAR | लेनदेन मुद्रा |
+| amount | DECIMAL | मूल राशि |
+| exchange_rate | DECIMAL | लेनदेन के समय USD के मुकाबले विनिमय दर |
+| amount_usd | DECIMAL | USD समतुल्य (गणना की गई) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**इन पर लागू:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### वर्कफ़्लो एकीकरण
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**विनिमय दर प्राप्ति तर्क:**
+1. व्यावसायिक संचालन के दौरान सीधे `nb_cbo_currencies.current_rate` से विनिमय दर प्राप्त करें।
+2. USD लेनदेन: दर = 1.0, किसी लुकअप की आवश्यकता नहीं।
+3. `current_rate` को नवीनतम `nb_crm_exchange_rates` रिकॉर्ड से एक निर्धारित कार्य द्वारा सिंक किया जाता है।
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 संस्करण प्रबंधन
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+जब कोई कोटेशन अस्वीकार कर दिया जाता है या उसकी समय सीमा समाप्त हो जाती है, तो उसे एक नए संस्करण के रूप में डुप्लिकेट किया जा सकता है:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → अस्वीकृत
+QT-20260119-001 v2 → भेजा गया
+QT-20260119-001 v3 → स्वीकृत
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. ऑर्डर जीवनचक्र
 
-### 7.1 Order Overview
+### 7.1 ऑर्डर अवलोकन
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+ऑर्डर तब बनाए जाते हैं जब कोई कोटेशन स्वीकार किया जाता है, जो एक पुष्ट व्यावसायिक प्रतिबद्धता का प्रतिनिधित्व करता है।
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 ऑर्डर स्थिति परिभाषाएँ
 
-### 7.2 Order Status Definitions
+| स्थिति | कोड | विवरण | अनुमत कार्रवाइयां |
+|-----|------|------|---------|
+| ड्राफ्ट | `draft` | ऑर्डर बनाया गया, अभी तक पुष्ट नहीं हुआ | संपादित करें, पुष्टि करें, रद्द करें |
+| पुष्ट | `confirmed` | ऑर्डर पुष्ट, पूर्ति की प्रतीक्षा है | पूर्ति शुरू करें, रद्द करें |
+| प्रगति पर | `in_progress` | ऑर्डर संसाधित/तैयार किया जा रहा है | प्रगति अपडेट करें, शिप करें, रद्द करें (अनुमोदन आवश्यक) |
+| भेजा गया | `shipped` | उत्पाद ग्राहक को भेज दिए गए हैं | डिलीवर के रूप में चिह्नित करें |
+| डिलीवर किया गया | `delivered` | ग्राहक को सामान मिल गया है | ऑर्डर पूरा करें |
+| पूर्ण | `completed` | ऑर्डर पूरी तरह से पूरा हो गया है | कोई नहीं |
+| रद्द | `cancelled` | ऑर्डर रद्द कर दिया गया | कोई नहीं |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 ऑर्डर डेटा मॉडल
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| order_no | VARCHAR | ऑर्डर नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| customer_id | BIGINT | ग्राहक (FK) |
+| contact_id | BIGINT | संपर्क (FK) |
+| opportunity_id | BIGINT | अवसर (FK) |
+| quotation_id | BIGINT | कोटेशन (FK) |
+| owner_id | BIGINT | प्रभारी (FK → users) |
+| status | VARCHAR | ऑर्डर की स्थिति |
+| payment_status | VARCHAR | भुगतान स्थिति: unpaid/partial/paid |
+| order_date | DATE | ऑर्डर की तारीख |
+| delivery_date | DATE | अपेक्षित डिलीवरी तिथि |
+| actual_delivery_date | DATE | वास्तविक डिलीवरी तिथि |
+| currency | VARCHAR | ऑर्डर मुद्रा |
+| exchange_rate | DECIMAL | USD के मुकाबले दर |
+| order_amount | DECIMAL | कुल ऑर्डर राशि |
+| paid_amount | DECIMAL | भुगतान की गई राशि |
+| unpaid_amount | DECIMAL | बकाया राशि |
+| shipping_address | TEXT | शिपिंग पता |
+| logistics_company | VARCHAR | लॉजिस्टिक्स कंपनी |
+| tracking_no | VARCHAR | ट्रैकिंग नंबर |
+| terms_condition | TEXT | नियम और शर्तें |
+| description | TEXT | विवरण |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| order_id | FK | पैरेंट ऑर्डर |
+| product_id | FK | उत्पाद संदर्भ |
+| product_name | VARCHAR | उत्पाद नाम स्नैपशॉट |
+| quantity | INT | ऑर्डर की गई मात्रा |
+| unit_price | DECIMAL | इकाई मूल्य |
+| discount_percent | DECIMAL | छूट प्रतिशत |
+| line_total | DECIMAL | लाइन आइटम कुल |
+| notes | TEXT | लाइन आइटम नोट्स |
 
-### 7.4 Payment Tracking
+### 7.4 भुगतान ट्रैकिंग
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| फ़ील्ड | प्रकार | विवरण |
+|-----|------|------|
+| id | BIGINT | प्राइमरी की |
+| order_id | BIGINT | संबद्ध ऑर्डर (FK, अनिवार्य) |
+| customer_id | BIGINT | ग्राहक (FK) |
+| payment_no | VARCHAR | भुगतान नंबर (स्वचालित रूप से जनरेट, अद्वितीय) |
+| amount | DECIMAL | भुगतान राशि (अनिवार्य) |
+| currency | VARCHAR | भुगतान मुद्रा |
+| payment_method | VARCHAR | तरीका: transfer/check/cash/credit_card/lc |
+| payment_date | DATE | भुगतान की तारीख |
+| bank_account | VARCHAR | बैंक खाता संख्या |
+| bank_name | VARCHAR | बैंक का नाम |
+| notes | TEXT | भुगतान नोट्स |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. ग्राहक जीवनचक्र
 
-### 8.1 Customer Overview
+### 8.1 ग्राहक अवलोकन
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+ग्राहक लीड रूपांतरण के दौरान या अवसर जीतने पर बनाए जाते हैं। सिस्टम अधिग्रहण से लेकर वकालत (advocacy) तक के पूर्ण जीवनचक्र को ट्रैक करता है।
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 ग्राहक स्थिति परिभाषाएँ
 
-### 8.2 Customer Status Definitions
+| स्थिति | कोड | स्वास्थ्य | विवरण |
+|-----|------|--------|------|
+| संभावित | `prospect` | लागू नहीं | रूपांतरित लीड, अभी तक कोई ऑर्डर नहीं |
+| सक्रिय | `active` | ≥70 | भुगतान करने वाला ग्राहक, अच्छी बातचीत |
+| बढ़ता हुआ | `growing` | ≥80 | विस्तार के अवसरों वाला ग्राहक |
+| जोखिम में | `at_risk` | <50 | मंथन (churn) के संकेत दिखाने वाला ग्राहक |
+| मंथन (Churned) | `churned` | लागू नहीं | अब सक्रिय नहीं है |
+| वापस जीतें | `win_back` | लागू नहीं | पूर्व ग्राहक जिसे पुनः सक्रिय किया जा रहा है |
+| समर्थक (Advocate) | `advocate` | ≥90 | उच्च संतुष्टि, रेफरल प्रदान करता है |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 ग्राहक स्वास्थ्य स्कोरिंग
 
-### 8.3 Customer Health Score
+ग्राहक स्वास्थ्य की गणना कई कारकों के आधार पर की जाती है:
 
-Health score is calculated from multiple factors:
+| कारक | भार | मीट्रिक |
+|-----|------|---------|
+| खरीद की हालिया स्थिति | 25% | अंतिम ऑर्डर के बाद से दिन |
+| खरीद की आवृत्ति | 20% | प्रति अवधि ऑर्डर की संख्या |
+| मौद्रिक मूल्य | 20% | कुल और औसत ऑर्डर मूल्य |
+| जुड़ाव | 15% | ईमेल ओपन दरें, बैठक में भागीदारी |
+| सहायता स्वास्थ्य | 10% | टिकटों की संख्या और समाधान दर |
+| उत्पाद का उपयोग | 10% | सक्रिय उपयोग मेट्रिक्स (यदि लागू हो) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**स्वास्थ्य सीमाएँ (Thresholds):**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +710,216 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 ग्राहक विभाजन
 
-#### Automatic Segmentation
+#### स्वचालित विभाजन
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
-
----
-
-## 9. Email Integration
-
-### 9.1 Overview
-
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
-
-### 9.2 Email Sync
-
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
-
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
-
-### 9.3 Email–CRM Association (To Be Refined)
-
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
-
-### 9.4 Email Templates
-
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| सेगमेंट | शर्त | सुझाई गई कार्रवाई |
+|-----|------|---------|
+| VIP | LTV > $100K | विशेष सेवा, कार्यकारी प्रायोजन |
+| एंटरप्राइज | कंपनी का आकार > 500 | समर्पित खाता प्रबंधक |
+| मिड-मार्केट | कंपनी का आकार 50-500 | नियमित चेक-इन, बड़े पैमाने पर सहायता |
+| स्टार्टअप | कंपनी का आकार < 50 | स्वयं-सेवा संसाधन, समुदाय |
+| निष्क्रिय | 90+ दिन कोई गतिविधि नहीं | पुनः सक्रियण मार्केटिंग |
 
 ---
 
-## 10. AI Capabilities
+## 9. ईमेल एकीकरण
 
-### 10.1 AI Employee Team
+### 9.1 अवलोकन
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+NocoBase Gmail और Outlook का समर्थन करने वाला एक अंतर्निहित ईमेल एकीकरण प्लगइन प्रदान करता है। एक बार ईमेल सिंक हो जाने के बाद, वर्कफ़्लो स्वचालित रूप से ईमेल भावना और इरादे के AI विश्लेषण को ट्रिगर कर सकते हैं, जिससे बिक्री टीम को ग्राहकों के दृष्टिकोण को जल्दी समझने में मदद मिलती है।
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+### 9.2 ईमेल सिंक्रनाइज़ेशन
 
-### 10.2 AI Task List
+**समर्थित प्रदाता:**
+- Gmail (OAuth 2.0 के माध्यम से)
+- Outlook/Microsoft 365 (OAuth 2.0 के माध्यम से)
 
-AI capabilities are divided into two independent categories:
+**सिंक व्यवहार:**
+- भेजे गए और प्राप्त ईमेल का द्वि-दिशात्मक सिंक।
+- CRM रिकॉर्ड (लीड्स, संपर्क, अवसर) के साथ ईमेल का स्वचालित जुड़ाव।
+- अटैचमेंट NocoBase फ़ाइल सिस्टम में संग्रहीत किए जाते हैं।
 
-#### 1. AI Employees (Frontend — User-Triggered)
+### 9.3 ईमेल-CRM जुड़ाव (अंतिम रूप दिया जाना बाकी)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+### 9.4 ईमेल टेम्पलेट
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+बिक्री टीम पूर्व-निर्धारित टेम्पलेट्स का उपयोग कर सकती है:
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
-
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
-
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
-
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
-
-### 10.3 AI Fields in the Database
-
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
-| | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| टेम्पलेट श्रेणी | उदाहरण |
+|---------|------|
+| प्रारंभिक पहुंच | कोल्ड ईमेल, वार्म इंट्रो, इवेंट फॉलो-अप |
+| अनुवर्ती कार्रवाई | मीटिंग फॉलो-अप, प्रस्ताव फॉलो-अप, कोई प्रतिक्रिया नहीं मिलने पर संकेत |
+| कोटेशन | कोटेशन संलग्न, कोटेशन संशोधन, कोटेशन समाप्त होने वाला है |
+| ऑर्डर | ऑर्डर पुष्टिकरण, शिपिंग अधिसूचना, डिलीवरी पुष्टिकरण |
+| ग्राहक सफलता | स्वागत, चेक-इन, समीक्षा अनुरोध |
 
 ---
 
-## 11. Workflow Engine
+## 10. AI-सहायता प्राप्त क्षमताएं
 
-### 11.1 Implemented Workflows
+### 10.1 AI कर्मचारी टीम
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+CRM सिस्टम NocoBase AI प्लगइन को एकीकृत करता है, जिसमें CRM-विशिष्ट कार्यों के लिए कॉन्फ़िगर किए गए निम्नलिखित अंतर्निहित AI कर्मचारियों का उपयोग किया जाता है:
 
-### 11.2 Planned Workflows
+| ID | नाम | अंतर्निहित भूमिका | CRM विस्तार क्षमताएं |
+|----|------|---------|-------------|
+| viz | Viz | डेटा विश्लेषक | बिक्री डेटा विश्लेषण, पाइपलाइन भविष्यवाणी |
+| dara | Dara | चार्ट विशेषज्ञ | डेटा विज़ुअलाइज़ेशन, रिपोर्ट विकास, डैशबोर्ड डिज़ाइन |
+| ellis | Ellis | संपादक | ईमेल उत्तर ड्राफ्टिंग, संचार सारांश, व्यावसायिक ईमेल ड्राफ्टिंग |
+| lexi | Lexi | अनुवादक | बहु-भाषी ग्राहक संचार, सामग्री अनुवाद |
+| orin | Orin | आयोजक | दैनिक प्राथमिकताएं, अगले कदम के सुझाव, अनुवर्ती योजना |
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
+### 10.2 AI कार्य सूची
 
----
+AI क्षमताओं को दो स्वतंत्र श्रेणियों में विभाजित किया गया है:
 
-## 12. Menu & Interface Design
+#### I. AI कर्मचारी (फ्रंटएंड ब्लॉक द्वारा ट्रिगर)
 
-### 12.1 Admin Menu Structure
+उपयोगकर्ता विश्लेषण और सुझाव प्राप्त करने के लिए फ्रंटएंड AI कर्मचारी ब्लॉक के माध्यम से सीधे AI के साथ बातचीत करते हैं।
 
+| कर्मचारी | कार्य | विवरण |
+|------|------|------|
+| Viz | बिक्री डेटा विश्लेषण | पाइपलाइन प्रवृत्तियों और रूपांतरण दरों का विश्लेषण करें |
+| Viz | पाइपलाइन भविष्यवाणी | भारित पाइपलाइन के आधार पर राजस्व की भविष्यवाणी करें |
+| Dara | चार्ट जनरेशन | बिक्री रिपोर्ट चार्ट जनरेट करें |
+| Dara | डैशबोर्ड डिज़ाइन | डेटा डैशबोर्ड लेआउट डिज़ाइन करें |
+| Ellis | उत्तर ड्राफ्टिंग | पेशेवर ईमेल उत्तर जनरेट करें |
+| Ellis | संचार सारांश | ईमेल थ्रेड्स का सारांश तैयार करें |
+| Ellis | व्यावसायिक ईमेल ड्राफ्टिंग | मीटिंग आमंत्रण, फॉलो-अप, धन्यवाद ईमेल आदि। |
+| Orin | दैनिक प्राथमिकताएं | दिन के लिए प्राथमिकता वाले कार्यों की सूची जनरेट करें |
+| Orin | अगला सर्वश्रेष्ठ कार्रवाई | प्रत्येक अवसर के लिए अगले कदमों की सिफारिश करें |
+| Lexi | सामग्री अनुवाद | मार्केटिंग सामग्री, प्रस्तावों और ईमेल का अनुवाद करें |
 
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
+#### II. वर्कफ़्लो LLM नोड्स (बैकएंड स्वचालित निष्पादन)
 
-### 12.2 Dashboard Views
+वर्कफ़्लो के भीतर स्थित LLM नोड्स, जो संग्रह घटनाओं, कार्रवाई घटनाओं या निर्धारित कार्यों द्वारा स्वचालित रूप से ट्रिगर होते हैं, AI कर्मचारियों से स्वतंत्र होते हैं।
 
-#### Sales Manager View
+| कार्य | ट्रिगर विधि | विवरण | लक्ष्य फ़ील्ड |
+|------|---------|------|---------|
+| लीड स्कोरिंग | संग्रह घटना (बनाएं/अपडेट करें) | लीड गुणवत्ता का मूल्यांकन करें | ai_score, ai_convert_prob |
+| जीत की संभावना भविष्यवाणी | संग्रह घटना (चरण परिवर्तन) | अवसर की सफलता की संभावना का अनुमान लगाएं | ai_win_probability, ai_risk_factors |
 
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
+> **नोट**: वर्कफ़्लो LLM नोड्स संरचित JSON के लिए प्रॉम्प्ट और स्कीमा आउटपुट का उपयोग करते हैं, जिसे उपयोगकर्ता के हस्तक्षेप के बिना पार्स किया जाता है और व्यावसायिक डेटा फ़ील्ड में लिखा जाता है।
 
-#### Sales Rep View
+### 10.3 डेटाबेस में AI फ़ील्ड
 
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| तालिका | AI फ़ील्ड | विवरण |
+|----|--------|------|
+| nb_crm_leads | ai_score | AI स्कोर 0-100 |
+| | ai_convert_prob | रूपांतरण संभावना |
+| | ai_best_contact_time | सर्वोत्तम संपर्क समय |
+| | ai_tags | AI जनरेटेड टैग (JSONB) |
+| | ai_scored_at | स्कोरिंग समय |
+| | ai_next_best_action | अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| | ai_nba_generated_at | सुझाव जनरेशन समय |
+| nb_crm_opportunities | ai_win_probability | AI अनुमानित जीत की संभावना |
+| | ai_analyzed_at | विश्लेषण समय |
+| | ai_confidence | भविष्यवाणी विश्वास स्तर |
+| | ai_trend | प्रवृत्ति: up/stable/down |
+| | ai_risk_factors | जोखिम कारक (JSONB) |
+| | ai_recommendations | सुझाव सूची (JSONB) |
+| | ai_predicted_close | अनुमानित समापन तिथि |
+| | ai_next_best_action | अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| | ai_nba_generated_at | सुझाव जनरेशन समय |
+| nb_crm_customers | ai_health_score | स्वास्थ्य स्कोर 0-100 |
+| | ai_health_grade | स्वास्थ्य ग्रेड: A/B/C/D |
+| | ai_churn_risk | मंथन जोखिम 0-100% |
+| | ai_churn_risk_level | मंथन जोखिम स्तर: low/medium/high |
+| | ai_health_dimensions | आयाम स्कोर (JSONB) |
+| | ai_recommendations | सुझाव सूची (JSONB) |
+| | ai_health_assessed_at | स्वास्थ्य मूल्यांकन समय |
+| | ai_tags | AI जनरेटेड टैग (JSONB) |
+| | ai_best_contact_time | सर्वोत्तम संपर्क समय |
+| | ai_next_best_action | अगला सर्वश्रेष्ठ कार्रवाई सुझाव |
+| | ai_nba_generated_at | सुझाव जनरेशन समय |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 11. वर्कफ़्लो इंजन
+
+### 11.1 कार्यान्वित वर्कफ़्लो
+
+| वर्कफ़्लो का नाम | ट्रिगर प्रकार | स्थिति | विवरण |
+|-----------|---------|------|------|
+| Leads Created | संग्रह घटना | सक्षम | लीड बनने पर ट्रिगर होता है |
+| CRM Overall Analytics | AI कर्मचारी घटना | सक्षम | समग्र CRM डेटा विश्लेषण |
+| Lead Conversion | कार्रवाई के बाद की घटना | सक्षम | लीड रूपांतरण प्रक्रिया |
+| Lead Assignment | संग्रह घटना | सक्षम | स्वचालित लीड असाइनमेंट |
+| Lead Scoring | संग्रह घटना | अक्षम | लीड स्कोरिंग (अंतिम रूप दिया जाना बाकी) |
+| Follow-up Reminder | निर्धारित कार्य | अक्षम | अनुवर्ती अनुस्मारक (अंतिम रूप दिया जाना बाकी) |
+
+### 11.2 भविष्य में कार्यान्वित होने वाले वर्कफ़्लो
+
+| वर्कफ़्लो | ट्रिगर प्रकार | विवरण |
+|-------|---------|------|
+| अवसर चरण प्रगति | संग्रह घटना | चरण परिवर्तन पर जीत की संभावना अपडेट करें और समय रिकॉर्ड करें |
+| अवसर ठहराव का पता लगाना | निर्धारित कार्य | निष्क्रिय अवसरों का पता लगाएं और अनुस्मारक भेजें |
+| कोटेशन अनुमोदन | कार्रवाई के बाद की घटना | बहु-स्तरीय अनुमोदन प्रक्रिया |
+| ऑर्डर जनरेशन | कार्रवाई के बाद की घटना | कोटेशन स्वीकार होने के बाद स्वचालित रूप से ऑर्डर जनरेट करें |
+
+---
+
+## 12. मेनू और इंटरफ़ेस डिज़ाइन
+
+### 12.1 एडमिन संरचना
+
+| मेनू | प्रकार | विवरण |
+|------|------|------|
+| **Dashboards** | समूह | डैशबोर्ड्स |
+| - Dashboard | पेज | डिफ़ॉल्ट डैशबोर्ड |
+| - SalesManager | पेज | बिक्री प्रबंधक दृश्य |
+| - SalesRep | पेज | बिक्री प्रतिनिधि दृश्य |
+| - Executive | पेज | कार्यकारी दृश्य |
+| **Leads** | पेज | लीड प्रबंधन |
+| **Customers** | पेज | ग्राहक प्रबंधन |
+| **Opportunities** | पेज | अवसर प्रबंधन |
+| - Table | टैब | अवसर सूची |
+| **Products** | पेज | उत्पाद प्रबंधन |
+| - Categories | टैब | उत्पाद श्रेणियां |
+| **Orders** | पेज | ऑर्डर प्रबंधन |
+| **Settings** | समूह | सेटिंग्स |
+| - Stage Settings | पेज | अवसर चरण कॉन्फ़िगरेशन |
+| - Exchange Rate | पेज | विनिमय दर सेटिंग्स |
+| - Activity | पेज | गतिविधि रिकॉर्ड |
+| - Emails | पेज | ईमेल प्रबंधन |
+| - Contacts | पेज | संपर्क प्रबंधन |
+| - Data Analysis | पेज | डेटा विश्लेषण |
+
+### 12.2 डैशबोर्ड दृश्य
+
+#### बिक्री प्रबंधक दृश्य
+
+| घटक | प्रकार | डेटा |
+|-----|------|------|
+| पाइपलाइन मूल्य | KPI कार्ड | चरण के अनुसार कुल पाइपलाइन राशि |
+| टीम लीडरबोर्ड | तालिका | प्रतिनिधि प्रदर्शन रैंकिंग |
+| जोखिम अलर्ट | अलर्ट सूची | उच्च जोखिम वाले अवसर |
+| जीत दर प्रवृत्ति | लाइन चार्ट | मासिक जीत दर |
+| ठहरे हुए सौदे | सूची | ध्यान देने योग्य सौदे |
+
+#### बिक्री प्रतिनिधि दृश्य
+
+| घटक | प्रकार | डेटा |
+|-----|------|------|
+| मेरा कोटा प्रगति | प्रगति बार | मासिक वास्तविक बनाम कोटा |
+| लंबित अवसर | KPI कार्ड | मेरे लंबित अवसरों की संख्या |
+| इस सप्ताह बंद होने वाले | सूची | जल्द ही बंद होने वाले सौदे |
+| विलंबित गतिविधियाँ | अलर्ट | समय सीमा समाप्त कार्य |
+| त्वरित कार्रवाइयां | बटन | गतिविधि लॉग करें, अवसर बनाएं |
+
+#### कार्यकारी दृश्य
+
+| घटक | प्रकार | डेटा |
+|-----|------|------|
+| वार्षिक राजस्व | KPI कार्ड | वर्ष-दर-तारीख राजस्व |
+| पाइपलाइन मूल्य | KPI कार्ड | कुल पाइपलाइन राशि |
+| जीत दर | KPI कार्ड | समग्र जीत दर |
+| ग्राहक स्वास्थ्य | वितरण | स्वास्थ्य स्कोर वितरण |
+| पूर्वानुमान | चार्ट | मासिक राजस्व पूर्वानुमान |
+
+---
+
+*दस्तावेज़ संस्करण: v2.0 | अपडेट किया गया: 2026-02-06*

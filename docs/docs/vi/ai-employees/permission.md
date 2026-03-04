@@ -73,7 +73,7 @@ Các công cụ này thường được sử dụng cho:
 
 #### Ví dụ 1: Overall Analytics (Phân tích nghiệp vụ tổng thể)
 
-![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/20251103001855.png)
+![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-18-55.png)
 
 Trong CRM Demo, `Overall Analytics` là một công cụ phân tích nghiệp vụ dựa trên mẫu:
 
@@ -103,7 +103,7 @@ flowchart TD
 
 #### Ví dụ 2: SQL Execution (Công cụ phân tích nâng cao)
 
-![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/20251103001713.png)
+![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-17-13.png)
 
 Trong CRM Demo, `SQL Execution` là một công cụ linh hoạt hơn nhưng cần được kiểm soát chặt chẽ:
 

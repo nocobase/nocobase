@@ -1,12 +1,16 @@
 ---
-displayName: "Public forms"
+displayName: "Veřejné formuláře"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  Sdílejte veřejné formuláře externě a sbírejte informace od anonymních uživatelů.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-public-forms/index).
+:::
+
+# Veřejné formuláře

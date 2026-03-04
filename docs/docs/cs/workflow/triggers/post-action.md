@@ -177,7 +177,7 @@ Pokud je událost nakonfigurována v globálním režimu, nemusíte používat p
 
 Jak je znázorněno na obrázku níže:
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Rozdíl oproti události kolekce
 

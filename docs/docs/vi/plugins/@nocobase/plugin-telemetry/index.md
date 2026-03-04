@@ -4,11 +4,15 @@ packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
 description: |
-  An OpenTelemetry-based telemetry plugin providing CPU, memory, and HTTP request metrics with HTTP export support.
+  Plugin telemetry dựa trên OpenTelemetry, tích hợp sẵn các chỉ số về CPU, bộ nhớ, yêu cầu HTTP và hỗ trợ xuất dữ liệu qua giao thức HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-telemetry/index).
+:::
 
 # Telemetry

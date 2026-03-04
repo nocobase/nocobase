@@ -63,7 +63,7 @@ Ardından, bir koleksiyon olayı tarafından tetiklenen bir iş akışı oluştu
 
 Daha sonra bir agrega sorgusu düğümü ekleyin ve aşağıdaki gibi yapılandırın:
 
-![Agrega Sorgusu Düğümü_Örnek_Düğüm Yapılandırması](https://static-docs.nocobase.com/542272e6373d1b37ddda78.png)
+![Agrega Sorgusu Düğümü_Örnek_Düğüm Yapılandırması](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
 Bu şekilde, iş akışı tetiklendikten sonra, agrega sorgusu düğümü, yeni eklenen makalenin kategorisindeki tüm makalelerin sayısını sayacak ve bunu düğümün sonucu olarak kaydedecektir.
 

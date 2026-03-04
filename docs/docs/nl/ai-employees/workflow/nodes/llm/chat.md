@@ -1,11 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/ai-employees/workflow/nodes/llm/chat) voor nauwkeurige informatie.
 :::
-
-
 
 # Tekstchat
 
@@ -23,7 +22,7 @@ Omdat gesprekken met LLM-services vaak veel tijd in beslag nemen, kunt u de LLM-
 
 ## Model selecteren
 
-Kies eerst een gekoppelde LLM-service. Als u nog geen LLM-service hebt gekoppeld, moet u eerst een LLM-serviceconfiguratie toevoegen. Zie: [LLM Servicebeheer](/ai-employees/quick-start/llm-service)
+Kies eerst een gekoppelde LLM-service. Als u nog geen LLM-service hebt gekoppeld, moet u eerst een LLM-serviceconfiguratie toevoegen. Zie: [LLM Servicebeheer](/ai-employees/features/llm-service)
 
 Nadat u een service hebt geselecteerd, probeert de applicatie een lijst met beschikbare modellen op te halen van de LLM-service, zodat u een keuze kunt maken. Sommige online LLM-services hebben mogelijk API's voor het ophalen van modellen die niet voldoen aan de standaard API-protocollen; in dergelijke gevallen kunt u ook handmatig de model-ID invoeren.
 

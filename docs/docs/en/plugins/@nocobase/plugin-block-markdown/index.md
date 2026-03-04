@@ -1,5 +1,5 @@
 ---
-displayName: "Block: Markdown"
+displayName: "Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
   Provide Markdown block
@@ -9,4 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Markdown
+# Markdown

@@ -32,11 +32,11 @@ pkg: '@nocobase/plugin-acl'
 
 **צפייה**: קובע אם שדות ספציפיים גלויים ברמת השדה, ומאפשר שליטה אילו שדות גלויים לתפקידים מסוימים בתוך אוסף ההזמנות.
 
-![](https://static-docs.nocobase.com/30dea84d984d95049e6f7b180955a6cf.png)
+![](https://static-docs.nocobase.com/30dea84d984d95039e6f7b180955a6cf.png)
 
 בממשק המשתמש, רק שדות עם הרשאות מוגדרות גלויים בתוך בלוק אוסף ההזמנות. שדות מערכת (Id, CreatedAt, LastUpdatedAt) שומרים על הרשאות צפייה גם ללא תצורה ספציפית.
 
-![](https://static-docs.nocobase.com/40cc49b51efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **עריכה**: קובע אם ניתן לערוך ולשמור (לעדכן) שדות.
 
@@ -137,7 +137,7 @@ pkg: '@nocobase/plugin-acl'
 
 תצורת הרשאות פרטניות עבור אוסף ההזמנות, כאשר לשדה הקשר "לקוח" יש את כל הרשאות השדה:
 
-![](https://static-docs.nocobase.com/3a3ab972f14a7b3a35361219d67fa40.png)
+![](https://static-docs.nocobase.com/3a3ab9722f14a7b3a35361219d67fa40.png)
 
 תצורת הרשאות פרטניות עבור אוסף הלקוחות, כאשר לשדות יש הרשאות צפייה בלבד:
 

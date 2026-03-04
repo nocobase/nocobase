@@ -108,7 +108,7 @@ pkg: '@nocobase/plugin-workflow-loop'
 
     ![Loop Node_Example_Calculation Node Configuration](https://static-docs.nocobase.com/8df3604c71f8f8705b1552d3ebfe3b50.png)
 
-    ![Loop Node_Example_Update Stock Node Configuration](https://static-docs.nocobase.com/2d84baa9b3b1bd85fccda9eec992378.png)
+    ![Loop Node_Example_Update Stock Node Configuration](https://static-docs.nocobase.com/2d84baa9b3b01bd85fccda9eec992378.png)
 
 6.  В іншому випадку, у гілці "Ні" створіть вузол "Оновити запис", щоб оновити статус деталі замовлення на "недійсний":
 

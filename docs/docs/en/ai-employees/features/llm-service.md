@@ -15,7 +15,7 @@ Go to `System Settings -> AI Employees -> LLM service`.
    - `Recommended models`: use officially recommended models.
    - `Select models`: select from the provider model list.
    - `Manual input`: manually enter model ID and display name.
-5. Click `Submit`.
+5. Click `Submit` to save.
 
 ![llm-service-create-provider-enabled-models.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/llm-service-create-provider-enabled-models.png)
 

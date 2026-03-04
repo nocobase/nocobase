@@ -16,7 +16,7 @@ Wanneer de gebruikersauthenticatie-plugin wordt geïnstalleerd, initialiseert de
 
 ## Authenticators activeren
 
-![](https://static-docs.nocobase.com/7f1bf8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 Alleen geactiveerde authenticatietypen worden weergegeven op de inlogpagina.
 

@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
-:::
 
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/workflow/nodes/javascript).
+:::
 
 # Skrypt JavaScript
 
@@ -84,7 +84,7 @@ WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 Wtedy będą Państwo mogli używać pakietu `exceljs` w swoim skrypcie:
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 

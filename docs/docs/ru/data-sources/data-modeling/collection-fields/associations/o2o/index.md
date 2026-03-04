@@ -28,7 +28,7 @@ ER-диаграмма
 
 ER-диаграмма
 
-![](https://static-docs.nocobase.com/31e7cc3e630220cf1e9853ca24ac72d.png)
+![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
 Конфигурация поля
 

@@ -70,7 +70,7 @@ Po włączeniu przepływu pracy będzie on wyzwalany raz na minutę od czasu roz
 
 Proszę utworzyć przepływ pracy oparty na zadaniu cyklicznym. W konfiguracji wyzwalacza proszę wybrać tryb „Pole czasowe kolekcji”, wybrać kolekcję „Zamówienia”, ustawić czas rozpoczęcia na 30 minut po czasie utworzenia zamówienia i wybrać „Nie powtarzaj” dla reguły powtarzania:
 
-![Zadanie cykliczne_Konfiguracja wyzwalacza_Tryb pola czasowego kolekcji_Wyzwalacz](https://static-docs.nocobase.com/d40b5aef57f42799d31cc5882dd94246.png)
+![Zadanie cykliczne_Konfiguracja wyzwalacza_Tryb pola czasowego kolekcji_Wyzwalacz](https://static-docs.nocobase.com/d40d5aef57f42799d31cc5882dd94246.png)
 
 Następnie proszę skonfigurować inne węzły zgodnie z logiką procesu, aby zaktualizować status zamówienia o ID danych wyzwalających i statusie „nieopłacone” na anulowane:
 

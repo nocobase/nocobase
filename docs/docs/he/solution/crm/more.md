@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# תוכן נוסף
 
-Content coming soon...
+> פתרון ה-CRM הנוכחי מיועד לתצוגה מקדימה בלבד. גרסאות עתידיות ייבנו מחדש לחלוטין על בסיס NocoBase 2.0. תיעוד מפורט יותר יסופק בהמשך.
+
+תוכן יתווסף בקרוב...

@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "الرسوم البيانية (مهجور)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  تم إهمال هذا المكون الإضافي، يرجى استخدام مكون تصور البيانات بدلاً منه.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-charts/index).
+:::
 
-> Note: This plugin is deprecated.
+# الرسوم البيانية (مهجور)
+
+> ملاحظة: هذا المكون الإضافي مهجور (deprecated).

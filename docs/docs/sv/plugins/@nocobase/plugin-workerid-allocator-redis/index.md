@@ -1,15 +1,19 @@
 ---
-displayName: "Redis worker ID allocator"
+displayName: "Redis worker ID-allokerare"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Worker id allocator based on Redis.
+  Worker ID-allokerare baserad på Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis worker ID allocator
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-workerid-allocator-redis/index).
+:::
+
+# Redis worker ID-allokerare

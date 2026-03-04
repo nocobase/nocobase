@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: LDAP"
+displayName: "Autentisering: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  LDAP authentication.
+  Autentisera identitet via LDAP-protokollet.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Auth: LDAP
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-auth-ldap/index).
+:::
+
+# Autentisering: LDAP

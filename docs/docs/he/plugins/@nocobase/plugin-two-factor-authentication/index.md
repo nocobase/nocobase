@@ -1,15 +1,19 @@
 ---
-displayName: "Two-factor authentication (2FA)"
+displayName: "אימות דו-שלבי (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support enabling two-factor authentication (2FA) for password sign-in.
+  תמיכה בהפעלת אימות דו-שלבי (2FA) עבור התחברות באמצעות סיסמה.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Two-factor authentication (2FA)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-two-factor-authentication/index).
+:::
+
+# אימות דו-שלבי (2FA)

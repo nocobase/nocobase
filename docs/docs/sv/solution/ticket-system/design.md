@@ -1,690 +1,686 @@
-# Ticketing Solution Detailed Design
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/ticket-system/design).
+:::
+
+# Detaljerad design för ärendehanteringslösning
 
 > **Version**: v2.0-beta
 
-> **Updated**: 2026-01-05
+> **Uppdateringsdatum**: 2026-01-05
 
-> **Status**: Preview
+> **Status**: Förhandsversion
 
+## 1. Systemöversikt och designfilosofi
 
-## 1. System Overview and Design Philosophy
+### 1.1 Systempositionering
 
-### 1.1 System Positioning
-
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Detta system är en **AI-driven intelligent plattform för ärendehantering**, byggd på NocoBase lågkodsplattform. Kärnmålet är:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Låt kundtjänst fokusera på att lösa problem, snarare än på tidskrävande processhantering
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Designfilosofi
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Filosofi ett: T-formad dataarkitektur
 
-**What is T-Shaped Architecture?**
+**Vad är en T-formad arkitektur?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+Inspirerad av konceptet "T-formad kompetens" — horisontell bredd + vertikalt djup:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Horisontell (huvudtabell)**: Täcker universella funktioner för alla affärstyper — ärendenummer, status, handläggare, SLA och andra kärnfält.
+- **Vertikal (expansionstabeller)**: Specialiserade fält för specifika affärstyper — utrustningsreparation har serienummer, klagomål har kompensationsplaner.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
-**Why This Design?**
+**Varför denna design?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Traditionell lösning | T-formad arkitektur |
+|----------------------|----------------------|
+| En tabell per affärstyp, duplicerade fält | Gemensamma fält hanteras enhetligt, affärsfält expanderas efter behov |
+| Statistiska rapporter kräver sammanslagning av flera tabeller | En huvudtabell för statistik över alla ärenden |
+| Processändringar kräver modifieringar på flera ställen | Kärnprocesser ändras endast på ett ställe |
+| Nya affärstyper kräver nya tabeller | Lägg endast till expansionstabeller, huvudflödet förblir oförändrat |
 
-#### Philosophy Two: AI Employee Team
+#### Filosofi två: AI-medarbetarteam
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Inte bara "AI-funktioner", utan "AI-medarbetare". Varje AI har en tydlig roll, personlighet och ansvarsområden:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| AI-medarbetare | Roll | Kärnansvar | Utlösningsscenario |
+|----------------|------|------------|--------------------|
+| **Sam** | Service Desk-ansvarig | Ärendestyrning, prioritetsbedömning, eskaleringsbeslut | Automatisk vid skapande av ärende |
+| **Grace** | Expert på kundframgång | Generering av svar, tonjustering, hantering av klagomål | När handläggaren klickar på "AI-svar" |
+| **Max** | Kunskapsassistent | Liknande ärenden, kunskapsrekommendationer, sammanställning av lösningar | Automatisk på ärendets detaljsida |
+| **Lexi** | Översättare | Flerspråkig översättning, översättning av kommentarer | Automatisk när främmande språk upptäcks |
 
-**Why the "AI Employee" Model?**
+**Varför modellen med "AI-medarbetare"?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Tydliga ansvarsområden**: Sam sköter styrning, Grace sköter svar, ingen förvirring uppstår.
+- **Lätt att förstå**: Att säga "Låt Sam analysera detta" är vänligare än "Anropa klassificerings-API:et".
+- **Skalbarhet**: Att lägga till nya AI-funktioner motsvarar att anställa nya medarbetare.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Filosofi tre: Kunskapens självcirkulation
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Detta skapar ett slutet kretslopp för **kunskapsackumulering och kunskapsapplikation**.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Kärnentiteter och datamodell
 
-### 2.1 Entity Relationship Overview
+### 2.1 Översikt över entitetsrelationer
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Detaljer om kärntabeller
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Huvudtabell för ärenden (nb_tts_tickets)
 
-**Basic Information**
+Detta är systemets kärna, som använder en design med "bred tabell" där alla vanligt förekommande fält placeras i huvudtabellen.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
+**Grundläggande information**
+
+| Fält | Typ | Beskrivning | Exempel |
+|------|-----|-------------|---------|
+| id | BIGINT | Primärnyckel | 1001 |
+| ticket_no | VARCHAR | Ärendenummer | TKT-20251229-0001 |
+| title | VARCHAR | Rubrik | Långsam nätverksanslutning |
+| description | TEXT | Problembeskrivning | Sedan i morse har kontorets nätverk... |
+| biz_type | VARCHAR | Affärstyp | it_support |
+| priority | VARCHAR | Prioritet | P1 |
 | status | VARCHAR | Status | processing |
 
-**Source Tracking**
+**Källspårning**
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+| Fält | Typ | Beskrivning | Exempel |
+|------|-----|-------------|---------|
+| source_system | VARCHAR | Källsystem | crm / email / iot |
+| source_channel | VARCHAR | Källkanal | web / phone / wechat |
+| external_ref_id | VARCHAR | Externt referens-ID | CRM-2024-0001 |
 
-**Contact Information**
+**Kontaktinformation**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| customer_id | BIGINT | Kund-ID |
+| contact_name | VARCHAR | Kontaktpersonens namn |
+| contact_phone | VARCHAR | Telefonnummer |
+| contact_email | VARCHAR | E-postadress |
+| contact_company | VARCHAR | Företagsnamn |
 
-**Assignee Information**
+**Information om handläggare**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| assignee_id | BIGINT | Handläggar-ID |
+| assignee_department_id | BIGINT | Avdelnings-ID för handläggare |
+| transfer_count | INT | Antal överlämningar |
 
-**Time Nodes**
+**Tidspunkter**
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+| Fält | Typ | Beskrivning | Utlösningstidpunkt |
+|------|-----|-------------|--------------------|
+| submitted_at | TIMESTAMP | Inskickat tid | Vid skapande av ärende |
+| assigned_at | TIMESTAMP | Tilldelat tid | När handläggare utses |
+| first_response_at | TIMESTAMP | Första svarstid | Vid första svar till kund |
+| resolved_at | TIMESTAMP | Löst tid | När status ändras till resolved |
+| closed_at | TIMESTAMP | Stängt tid | När status ändras till closed |
 
-**SLA Related**
+**SLA-relaterat**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| sla_config_id | BIGINT | SLA-konfigurations-ID |
+| sla_response_due | TIMESTAMP | Deadline för svar |
+| sla_resolve_due | TIMESTAMP | Deadline för lösning |
+| sla_paused_at | TIMESTAMP | Starttid för SLA-paus |
+| sla_paused_duration | INT | Ackumulerad paustid (minuter) |
+| is_sla_response_breached | BOOLEAN | Svarsfrist överskriden |
+| is_sla_resolve_breached | BOOLEAN | Lösningsfrist överskriden |
 
-**AI Analysis Results**
+**AI-analysresultat**
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+| Fält | Typ | Beskrivning | Fylls i av |
+|------|-----|-------------|------------|
+| ai_category_code | VARCHAR | AI-identifierad kategori | Sam |
+| ai_sentiment | VARCHAR | Känsloanalys | Sam |
+| ai_urgency | VARCHAR | Brådskandegrad | Sam |
+| ai_keywords | JSONB | Nyckelord | Sam |
+| ai_reasoning | TEXT | Resonemangsprocess | Sam |
+| ai_suggested_reply | TEXT | Föreslaget svar | Sam/Grace |
+| ai_confidence_score | NUMERIC | Konfidensgrad | Sam |
+| ai_analysis | JSONB | Fullständigt analysresultat | Sam |
 
-**Multi-Language Support**
+**Flerspråkigt stöd**
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+| Fält | Typ | Beskrivning | Fylls i av |
+|------|-----|-------------|------------|
+| source_language_code | VARCHAR | Ursprungsspråk | Sam/Lexi |
+| target_language_code | VARCHAR | Målspråk | Systemstandard EN |
+| is_translated | BOOLEAN | Är översatt | Lexi |
+| description_translated | TEXT | Översatt beskrivning | Lexi |
 
-#### 2.2.2 Business Extension Tables
+#### 2.2.2 Affärsexpansionstabeller
 
-**Equipment Repair (nb_tts_biz_repair)**
+**Utrustningsreparation (nb_tts_biz_repair)**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| ticket_id | BIGINT | Associerat ärende-ID |
+| equipment_model | VARCHAR | Utrustningsmodell |
+| serial_number | VARCHAR | Serienummer |
+| fault_code | VARCHAR | Felkod |
+| spare_parts | JSONB | Reservdelslista |
+| maintenance_type | VARCHAR | Underhållstyp |
 
-**IT Support (nb_tts_biz_it_support)**
+**IT-support (nb_tts_biz_it_support)**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| ticket_id | BIGINT | Associerat ärende-ID |
+| asset_number | VARCHAR | Tillgångsnummer |
+| os_version | VARCHAR | Operativsystemversion |
+| software_name | VARCHAR | Berörd programvara |
+| remote_address | VARCHAR | Fjärradress |
+| error_code | VARCHAR | Felkod |
 
-**Customer Complaint (nb_tts_biz_complaint)**
+**Kundklagomål (nb_tts_biz_complaint)**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| ticket_id | BIGINT | Associerat ärende-ID |
+| related_order_no | VARCHAR | Berört ordernummer |
+| complaint_level | VARCHAR | Klagomålsnivå |
+| compensation_amount | DECIMAL | Ersättningsbelopp |
+| compensation_type | VARCHAR | Ersättningstyp |
+| root_cause | TEXT | Grundorsak |
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+#### 2.2.3 Kommentarstabell (nb_tts_ticket_comments)
 
-**Core Fields**
+**Kärnfält**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| id | BIGINT | Primärnyckel |
+| ticket_id | BIGINT | Ärende-ID |
+| parent_id | BIGINT | Överordnad kommentar (stöder trädstruktur) |
+| content | TEXT | Kommentar innehåll |
+| direction | VARCHAR | Riktning: inbound (kund) / outbound (handläggare) |
+| is_internal | BOOLEAN | Är intern anteckning |
+| is_first_response | BOOLEAN | Är första svar |
 
-**AI Review Fields (for outbound)**
+**AI-granskningsfält (för outbound)**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| source_language_code | VARCHAR | Ursprungsspråk |
+| content_translated | TEXT | Översatt innehåll |
+| is_translated | BOOLEAN | Är översatt |
+| is_ai_blocked | BOOLEAN | Blockad av AI |
+| ai_block_reason | VARCHAR | Orsak till blockering |
+| ai_block_detail | TEXT | Detaljerad förklaring |
+| ai_quality_score | NUMERIC | Kvalitetspoäng |
+| ai_suggestions | TEXT | Förbättringsförslag |
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+#### 2.2.4 Utvärderingstabell (nb_tts_ratings)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| ticket_id | BIGINT | Ärende-ID (unikt) |
+| overall_rating | INT | Övergripande nöjdhet (1-5) |
+| response_rating | INT | Svarshastighet (1-5) |
 | professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+| resolution_rating | INT | Problemlösning (1-5) |
+| nps_score | INT | NPS-poäng (0-10) |
+| tags | JSONB | Snabbtaggar |
+| comment | TEXT | Skriftlig utvärdering |
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+#### 2.2.5 Kunskapsartikeltabell (nb_tts_qa_articles)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
+| Fält | Typ | Beskrivning |
+|------|-----|-------------|
+| article_no | VARCHAR | Artikelnummer KB-T0001 |
+| title | VARCHAR | Rubrik |
+| content | TEXT | Innehåll (Markdown) |
+| summary | TEXT | Sammanfattning |
+| category_code | VARCHAR | Kategorikod |
+| keywords | JSONB | Nyckelord |
+| source_type | VARCHAR | Källa: ticket/faq/manual |
+| source_ticket_id | BIGINT | Ursprungligt ärende-ID |
+| ai_generated | BOOLEAN | AI-genererad |
+| ai_quality_score | NUMERIC | Kvalitetspoäng |
 | status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+| view_count | INT | Antal visningar |
+| helpful_count | INT | Antal "hjälpsam" |
 
-### 2.3 Data Table List
+### 2.3 Lista över datatabeller
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
-
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| Nr | Tabellnamn | Beskrivning | Posttyp |
+|----|------------|-------------|----------|
+| 1 | nb_tts_tickets | Huvudtabell för ärenden | Affärsdata |
+| 2 | nb_tts_biz_repair | Expansion för utrustningsreparation | Affärsdata |
+| 3 | nb_tts_biz_it_support | Expansion för IT-support | Affärsdata |
+| 4 | nb_tts_biz_complaint | Expansion för kundklagomål | Affärsdata |
+| 5 | nb_tts_customers | Huvudtabell för kunder | Affärsdata |
+| 6 | nb_tts_customer_contacts | Kundkontakter | Affärsdata |
+| 7 | nb_tts_ticket_comments | Ärendekommentarer | Affärsdata |
+| 8 | nb_tts_ratings | Nöjdhetsutvärdering | Affärsdata |
+| 9 | nb_tts_qa_articles | Kunskapsartiklar | Kunskapsdata |
+| 10 | nb_tts_qa_article_relations | Artikelrelationer | Kunskapsdata |
+| 11 | nb_tts_faqs | Vanliga frågor | Kunskapsdata |
+| 12 | nb_tts_tickets_categories | Ärendekategorier | Konfigurationsdata |
+| 13 | nb_tts_sla_configs | SLA-konfiguration | Konfigurationsdata |
+| 14 | nb_tts_skill_configs | Kompetenskonfiguration | Konfigurationsdata |
+| 15 | nb_tts_business_types | Affärstyper | Konfigurationsdata |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. Ärendets livscykel
 
-### 4.1 Priority and SLA Configuration
+### 3.1 Statusdefinitioner
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| Status | Namn | Beskrivning | SLA-tidtagning | Färg |
+|--------|------|-------------|----------------|------|
+| new | Nytt | Precis skapat, väntar på tilldelning | Startar | 🔵 Blå |
+| assigned | Tilldelat | Handläggare utsedd, väntar på acceptans | Fortsätter | 🔷 Cyan |
+| processing | Behandlas | Bearbetning pågår | Fortsätter | 🟠 Orange |
+| pending | Väntande | Väntar på feedback från kund | **Pausad** | ⚫ Grå |
+| transferred | Överfört | Överlämnat till annan person | Fortsätter | 🟣 Lila |
+| resolved | Löst | Väntar på bekräftelse från kund | Stoppas | 🟢 Grön |
+| closed | Stängt | Ärendet avslutat | Stoppas | ⚫ Grå |
+| cancelled | Avbrutet | Ärendet makulerat | Stoppas | ⚫ Grå |
 
-### 4.2 SLA Calculation Logic
+### 3.2 Statusflödesdiagram
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**Huvudflöde (från vänster till höger)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**Sidoflöden**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**Fullständig tillståndsmaskin**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 Regler för statusövergångar
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| Från | Till | Utlösningsvillkor | Systemåtgärd |
+|------|------|-------------------|---------------|
+| new | assigned | Handläggare utses | Registrera assigned_at |
+| assigned | processing | Handläggare klickar på "Acceptera" | Ingen |
+| processing | pending | Klickar på "Pausa" | Registrera sla_paused_at |
+| pending | processing | Kund svarar / Manuell återgång | Beräkna paustid, rensa paused_at |
+| processing | resolved | Klickar på "Lös" | Registrera resolved_at |
+| resolved | closed | Kund bekräftar / 3 dagars timeout | Registrera closed_at |
+| * | cancelled | Avbryt ärende | Ingen |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. SLA-hantering (Service Level Agreement)
 
-### 5.1 AI Employee Team
+### 4.1 Prioritet och SLA-konfiguration
 
-The system configures 8 AI employees in two categories:
+| Prioritet | Namn | Svarstid | Lösningstid | Varningströskel | Typiskt scenario |
+|-----------|------|----------|-------------|-----------------|------------------|
+| P0 | Kritisk | 15 minuter | 2 timmar | 80% | Systemavbrott, produktionsstopp |
+| P1 | Hög | 1 timme | 8 timmar | 80% | Fel i viktig funktion |
+| P2 | Medium | 4 timmar | 24 timmar | 80% | Allmänna problem |
+| P3 | Låg | 8 timmar | 72 timmar | 80% | Frågor, förslag |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 SLA-beräkningslogik
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
-**Reused Employees (General Capabilities)**
+#### Vid skapande av ärende
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+Deadline för svar = Inskickat tid + Svarsfrist (minuter)
+Deadline för lösning = Inskickat tid + Lösningsfrist (minuter)
+```
 
-### 5.2 AI Task List
+#### Vid paus (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+Starttid för SLA-paus = Aktuell tid
+```
 
-#### Sam's Tasks
+#### Vid återgång (från pending till processing)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- Beräkna aktuell paustid
+Aktuell paustid = Aktuell tid - Starttid för SLA-paus
 
-#### Grace's Tasks
+-- Ackumulera till total paustid
+Ackumulerad paustid = Ackumulerad paustid + Aktuell paustid
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- Förläng deadlines (paustid räknas inte in i SLA)
+Deadline för svar = Deadline för svar + Aktuell paustid
+Deadline för lösning = Deadline för lösning + Aktuell paustid
 
-#### Max's Tasks
+-- Rensa starttid för paus
+Starttid för SLA-paus = Tom
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### Fastställande av SLA-överträdelse
 
-#### Lexi's Tasks
+```
+-- Kontroll av svarsöverträdelse
+Svarsfrist överskriden = (Första svarstid är tom OCH Aktuell tid > Deadline för svar)
+                        ELLER (Första svarstid > Deadline för svar)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- Kontroll av lösningsöverträdelse
+Lösningsfrist överskriden = (Löst tid är tom OCH Aktuell tid > Deadline för lösning)
+                         ELLER (Löst tid > Deadline för lösning)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 SLA-varningsmekanism
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| Varningsnivå | Villkor | Mottagare | Metod |
+|--------------|---------|-----------|-------|
+| Gul varning | Återstående tid < 20% | Handläggare | Systemmeddelande |
+| Röd varning | Tiden har gått ut | Handläggare + Ansvarig | Systemmeddelande + E-post |
+| Eskaleringsvarning | 1 timme efter timeout | Avdelningschef | E-post + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 SLA-indikatorer på instrumentpanelen
 
-#### SAM-01 Ticket Analysis Response
+| Indikator | Beräkningsformel | Tröskelvärde för hälsa |
+|-----------|------------------|------------------------|
+| Svarsmåluppfyllelse | Ärenden utan överträdelse / Totalt antal ärenden | > 95% |
+| Lösningsmåluppfyllelse | Lösta ärenden utan överträdelse / Totalt antal lösta ärenden | > 90% |
+| Genomsnittlig svarstid | SUM(Svarstid) / Antal ärenden | < 50% av SLA |
+| Genomsnittlig lösningstid | SUM(Lösningstid) / Antal ärenden | < 80% av SLA |
+
+---
+
+## 5. AI-kapacitet och medarbetarsystem
+
+### 5.1 AI-medarbetarteam
+
+Systemet är konfigurerat med 8 AI-medarbetare, uppdelade i två kategorier:
+
+**Nya medarbetare (specifika för ärendehanteringssystemet)**
+
+| ID | Namn | Roll | Kärnkompetens |
+|----|------|------|---------------|
+| sam | Sam | Service Desk-ansvarig | Ärendestyrning, prioritetsbedömning, eskaleringsbeslut, identifiering av SLA-risker |
+| grace | Grace | Expert på kundframgång | Generering av professionella svar, tonjustering, hantering av klagomål, återställning av nöjdhet |
+| max | Max | Kunskapsassistent | Sökning efter liknande fall, kunskapsrekommendationer, sammanställning av lösningar |
+
+**Återanvända medarbetare (allmän kompetens)**
+
+| ID | Namn | Roll | Kärnkompetens |
+|----|------|------|---------------|
+| dex | Dex | Dataorganisatör | Extrahera ärenden från e-post, omvandla samtal till ärenden, batch-datarensning |
+| ellis | Ellis | E-postexpert | Känsloanalys i e-post, trådsammanfattning, utkast till svar |
+| lexi | Lexi | Översättare | Översättning av ärenden, svar och realtidskonversationer |
+| cole | Cole | NocoBase-expert | Vägledning i systemanvändning, hjälp med konfiguration av arbetsflöden |
+| vera | Vera | Forskningsanalytiker | Research av tekniska lösningar, verifiering av produktinformation |
+
+### 5.2 AI-uppgiftslista
+
+Varje AI-medarbetare har 4 specifika uppgifter:
+
+#### Sams uppgifter
+
+| Uppgifts-ID | Namn | Utlösningsmetod | Beskrivning |
+|-------------|------|-----------------|-------------|
+| SAM-01 | Ärendeanalys och styrning | Automatiskt arbetsflöde | Automatisk analys vid nytt ärende |
+| SAM-02 | Omvärdering av prioritet | Gränssnittsinteraktion | Justera prioritet baserat på ny info |
+| SAM-03 | Eskaleringsbeslut | Gränssnitt/Arbetsflöde | Bedöma om eskalering krävs |
+| SAM-04 | SLA-riskbedömning | Automatiskt arbetsflöde | Identifiera risk för timeout |
+
+#### Graces uppgifter
+
+| Uppgifts-ID | Namn | Utlösningsmetod | Beskrivning |
+|-------------|------|-----------------|-------------|
+| GRACE-01 | Professionell svarsgenerering | Gränssnittsinteraktion | Generera svar baserat på sammanhang |
+| GRACE-02 | Justering av svarston | Gränssnittsinteraktion | Optimera tonen i befintliga svar |
+| GRACE-03 | Hantering av klagomål | Gränssnitt/Arbetsflöde | Mildra och lösa kundklagomål |
+| GRACE-04 | Återställning av nöjdhet | Gränssnitt/Arbetsflöde | Uppföljning efter negativ upplevelse |
+
+#### Max uppgifter
+
+| Uppgifts-ID | Namn | Utlösningsmetod | Beskrivning |
+|-------------|------|-----------------|-------------|
+| MAX-01 | Sökning efter liknande fall | Gränssnitt/Arbetsflöde | Hitta historiskt liknande ärenden |
+| MAX-02 | Rekommendation av artiklar | Gränssnitt/Arbetsflöde | Rekommendera relevanta kunskapsartiklar |
+| MAX-03 | Sammanställning av lösning | Gränssnittsinteraktion | Sammanställ lösning från flera källor |
+| MAX-04 | Felsökningsguide | Gränssnittsinteraktion | Skapa systematiska felsökningsprocesser |
+
+#### Lexis uppgifter
+
+| Uppgifts-ID | Namn | Utlösningsmetod | Beskrivning |
+|-------------|------|-----------------|-------------|
+| LEXI-01 | Översättning av ärende | Automatiskt arbetsflöde | Översätt ärendets innehåll |
+| LEXI-02 | Översättning av svar | Gränssnittsinteraktion | Översätt handläggarens svar |
+| LEXI-03 | Batch-översättning | Automatiskt arbetsflöde | Hantera batch-översättningar |
+| LEXI-04 | Realtidsöversättning | Gränssnittsinteraktion | Översätt dialoger i realtid |
+
+### 5.3 AI-medarbetare och ärendets livscykel
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+
+### 5.4 Exempel på AI-svar
+
+#### SAM-01 Svar på ärendeanalys
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "inloggningsfel", "timeout", "månadsbokslut"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
+  "reasoning": "Ärendet beskriver inloggningsproblem i ERP-systemet som påverkar ekonomiavdelningens månadsbokslut, hög brådskandegrad",
+  "suggested_reply": "Bästa kund, tack för att ni rapporterar detta problem...",
   "source_language_code": "zh",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "Hej, vårt ERP-system kan inte logga in..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Svar på svarsgenerering
 
 ```
-Dear Mr. Zhang,
+Bästa Herr Zhang,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+Tack för att ni kontaktar oss angående inloggningsproblemen i ERP-systemet. Jag har full förståelse för att detta påverkar ert arbete med månadsbokslutet, och vi har gett detta ärende högsta prioritet.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+Aktuell status:
+- Det tekniska teamet undersöker anslutningsproblem med servern
+- Vi förväntar oss att ge er en uppdatering inom 30 minuter
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+Under tiden kan ni prova följande:
+1. Använd reservadressen: https://erp-backup.company.com
+2. Om ni har akuta behov av rapporter, kontakta oss så hjälper vi er med export
 
-Please feel free to contact me if you have any other questions.
+Tveka inte att kontakta mig om ni har ytterligare frågor.
 
-Best regards,
-Technical Support Team
+Med vänlig hälsning,
+Teknisk support
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 AI-brandvägg för emotionell intelligens
 
-Grace's reply quality review blocks the following issues:
+Grace ansvarar för kvalitetsgranskning av svar och blockerar följande problem:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Problemtyp | Exempel på originaltext | AI-förslag |
+|------------|-------------------------|------------|
+| Negativ ton | "Nej, det ingår inte i garantin" | "Detta fel omfattas tyvärr inte av garantin, men vi kan erbjuda en betald reparationsplan" |
+| Beskylla kunden | "Ni har sönder den själv" | "Vid kontroll har vi konstaterat att felet beror på en olyckshändelse" |
+| Frånsäga sig ansvar | "Det är inte vårt problem" | "Låt mig hjälpa er att undersöka orsaken till problemet ytterligare" |
+| Likgiltighet | "Vet inte" | "Jag ska hjälpa er att ta fram relevant information" |
+| Känslig info | "Ert lösenord är abc123" | [Blockerat] Innehåller känslig information, får ej skickas |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Kunskapsbassystem
 
-### 6.1 Knowledge Sources
+### 6.1 Kunskapskällor
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Flöde för att omvandla ärende till kunskap
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Utvärderingsdimensioner**:
+- **Allmängiltighet**: Är detta ett vanligt problem?
+- **Fullständighet**: Är lösningen tydlig och komplett?
+- **Repeterbarhet**: Kan stegen återanvändas?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Mekanism för kunskapsrekommendation
+
+När en handläggare öppnar ärendedetaljer rekommenderar Max automatiskt relevant kunskap:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Rekommenderad kunskap                      [Visa/Dölj]  │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 CNC-servosystem felsökningsguide  Matchning: 94%│ │
+│ │ Innehåller: Tolkning av larmkoder, kontroll av drivsteg  │ │
+│ │ [Visa] [Använd i svar] [Markera som hjälpsam]            │ │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 XYZ-CNC3000-serien underhållsmanual Matchning: 87%│ │
+│ │ Innehåller: Vanliga fel, förebyggande underhållsplan     │ │
+│ │ [Visa] [Använd i svar] [Markera som hjälpsam]            │ │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. Motor för arbetsflöden
+
+### 7.1 Kategorisering av arbetsflöden
+
+| Nr | Kategori | Beskrivning | Utlösningsmetod |
+|----|----------|-------------|-----------------|
+| WF-T | Ärendeflöde | Hantering av ärendets livscykel | Formulärhändelse |
+| WF-S | SLA-flöde | SLA-beräkning och varningar | Formulärhändelse/Schema |
+| WF-C | Kommentarflöde | Hantering och översättning av kommentarer | Formulärhändelse |
+| WF-R | Utvärderingsflöde | Inbjudan till utvärdering och statistik | Formulärhändelse/Schema |
+| WF-N | Aviseringsflöde | Skicka aviseringar | Händelsestyrd |
+| WF-AI | AI-flöde | AI-analys och generering | Formulärhändelse |
+
+### 7.2 Kärnarbetsflöden
+
+#### WF-T01: Flöde för skapande av ärende
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+
+#### WF-AI01: AI-analys av ärende
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+
+#### WF-AI04: Översättning och granskning av kommentarer
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+
+#### WF-AI03: Kunskapsgenerering
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
+
+### 7.3 Schemalagda uppgifter
+
+| Uppgift | Frekvens | Beskrivning |
+|---------|----------|-------------|
+| SLA-varningskontroll | Var 5:e minut | Kontrollera ärenden som närmar sig timeout |
+| Automatisk stängning | Dagligen | Stäng ärenden i status resolved efter 3 dagar |
+| Skicka utvärderingsinbjudan | Dagligen | Skicka inbjudan 24 timmar efter stängning |
+| Uppdatering av statistik | Varje timme | Uppdatera kundärendestatistik |
 
 ---
 
-## 7. Workflow Engine
+## 8. Meny- och gränssnittsdesign
 
-### 7.1 Workflow Categories
+### 8.1 Administrationsgränssnitt
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
-### 7.2 Core Workflows
+### 8.2 Kundportal
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 Design av instrumentpaneler
 
-#### WF-AI01: Ticket AI Analysis
+#### Ledningsvy
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| Komponent | Typ | Databeskrivning |
+|-----------|-----|-----------------|
+| SLA-måluppfyllelse | Mätare | Svars-/lösningsgrad för innevarande månad |
+| Nöjdhetstrend | Linjediagram | Förändring i nöjdhet senaste 30 dagarna |
+| Ärendevolymtrend | Stapeldiagram | Ärendevolym senaste 30 dagarna |
+| Fördelning av affärstyper | Cirkeldiagram | Andel för varje affärstyp |
 
-#### WF-AI04: Comment Translation & Review
+#### Ansvarigvy
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| Komponent | Typ | Databeskrivning |
+|-----------|-----|-----------------|
+| Timeout-varningar | Lista | Ärenden som närmar sig eller har nått timeout |
+| Personalens arbetsbelastning | Stapeldiagram | Antal ärenden per teammedlem |
+| Fördelning av eftersläpning | Staplat diagram | Antal ärenden per status |
+| Ledtid för hantering | Värmekarta | Fördelning av genomsnittlig hanteringstid |
 
-#### WF-AI03: Knowledge Generation
+#### Handläggarvy
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Komponent | Typ | Databeskrivning |
+|-----------|-----|-----------------|
+| Mina uppgifter | Sifferkort | Antal väntande ärenden |
+| Prioritetsfördelning | Cirkeldiagram | Fördelning av P0/P1/P2/P3 |
+| Dagens statistik | Indikatorkort | Antal hanterade/lösta ärenden idag |
+| SLA-nedräkning | Lista | De 5 mest brådskande ärendena |
 
 ---
 
-## Appendix
+## Bilaga
 
-### A. Business Type Configuration
+### A. Konfiguration av affärstyper
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| Typkod | Namn | Ikon | Kopplad expansionstabell |
+|--------|------|------|--------------------------|
+| repair | Utrustningsreparation | 🔧 | nb_tts_biz_repair |
+| it_support | IT-support | 💻 | nb_tts_biz_it_support |
+| complaint | Kundklagomål | 📢 | nb_tts_biz_complaint |
+| consultation | Konsultation/Förslag | ❓ | Ingen |
+| other | Övrigt | 📝 | Ingen |
 
-### B. Category Codes
+### B. Kategorikoder
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| Kod | Namn | Beskrivning |
+|-----|------|-------------|
+| CONVEYOR | Transportbandssystem | Problem med transportband |
+| PACKAGING | Förpackningsmaskin | Problem med förpackningsmaskin |
+| WELDING | Svetsutrustning | Problem med svetsutrustning |
+| COMPRESSOR | Luftkompressor | Problem med luftkompressor |
+| COLD_STORE | Kylrum | Problem med kylrum |
+| CENTRAL_AC | Central luftkonditionering | Problem med central AC |
+| FORKLIFT | Gaffeltruck | Problem med gaffeltruck |
+| COMPUTER | Dator | Problem med datorhårdvara |
+| PRINTER | Skrivare | Problem med skrivare |
+| PROJECTOR | Projektor | Problem med projektor |
+| INTERNET | Nätverk | Problem med nätverksanslutning |
+| EMAIL | E-post | Problem med e-postsystem |
+| ACCESS | Behörighet | Problem med kontobehörighet |
+| PROD_INQ | Produktförfrågan | Frågor om produkter |
+| COMPLAINT | Allmänt klagomål | Allmänna klagomål |
+| DELAY | Logistikfördröjning | Klagomål på försenad leverans |
+| DAMAGE | Skadat emballage | Klagomål på skadat emballage |
+| QUANTITY | Antalsbrist | Klagomål på saknade varor |
+| SVC_ATTITUDE | Servicebemötande | Klagomål på serviceattityd |
+| PROD_QUALITY | Produktkvalitet | Klagomål på produktkvalitet |
+| TRAINING | Utbildning | Begäran om utbildning |
+| RETURN | Retur | Begäran om retur |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Dokumentversion: 2.0 | Senast uppdaterad: 2026-01-05*

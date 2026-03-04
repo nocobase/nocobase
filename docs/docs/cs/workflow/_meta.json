@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Události databázové tabulky",
+        "label": "Události kolekce",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -62,7 +62,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Uzel",
+    "label": "Uzly",
     "collapsed": true,
     "items": [
       {
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "Záznamy o spuštění",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

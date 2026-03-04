@@ -1,12 +1,16 @@
 ---
-displayName: "Authentication"
+displayName: "Uwierzytelnianie"
 packageName: '@nocobase/plugin-auth'
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Zarządzanie uwierzytelnianiem użytkowników, w tym podstawowe uwierzytelnianie hasłem, SMS oraz obsługa protokołów SSO, z możliwością rozszerzenia.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-auth/index).
+:::
+
+# Uwierzytelnianie

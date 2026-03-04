@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Batch update"
+displayName: "פעולה: עדכון המוני"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch update all records or selected records.
+  עדכון המוני של כל הנתונים או הנתונים שנבחרו.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch update
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-action-bulk-update/index).
+:::
+
+# פעולה: עדכון המוני

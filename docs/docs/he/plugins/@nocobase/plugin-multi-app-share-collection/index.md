@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "שיתוף Collection ב-Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# שיתוף Collection ב-Multi-app
+
+> שים לב: תוסף זה מיושן (deprecated).

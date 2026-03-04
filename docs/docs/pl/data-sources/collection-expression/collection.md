@@ -24,4 +24,4 @@ Po utworzeniu formuł należy je powiązać z danymi biznesowymi. Bezpośrednie 
 
 Na przykład, proszę utworzyć przepływ pracy wyzwalany zdarzeniem kolekcji. Gdy zamówienie zostanie utworzone, wyzwalacz powinien wstępnie załadować powiązane dane produktów wraz z danymi wyrażeń dotyczącymi produktów:
 
-![Zdarzenie kolekcji_Konfiguracja wyzwalacza](https://static-docs.nocobase.com/f181f1b5b10007afd5de068f3458d2e04.png)
+![Zdarzenie kolekcji_Konfiguracja wyzwalacza](https://static-docs.nocobase.com/f181f75b10007afd5de068f3458d2e04.png)

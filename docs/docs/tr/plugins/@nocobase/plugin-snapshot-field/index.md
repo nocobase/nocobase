@@ -1,8 +1,8 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "Collection alanı: İlişki Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
+  Veri eklerken, ilişkili verileri için bir snapshot oluşturur ve bunu mevcut veriye kaydeder. İlişkili veriler güncellendiğinde snapshot güncellenmez.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Collection field: Snapshot
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-snapshot-field/index) bakın.
+:::
 
-> Note: This plugin is deprecated.
+# Collection alanı: İlişki Snapshot
+
+> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).

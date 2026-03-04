@@ -10,9 +10,10 @@
 import { ApiOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
+import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { Layout, Menu } from 'antd';
 import _ from 'lodash';
-import React, { createContext, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useACLRoleContext } from '../acl';
@@ -20,10 +21,13 @@ import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../applicat
 import { AppNotFound } from '../common/AppNotFound';
 import { useDocumentTitle } from '../document-title';
 import { useCompile } from '../schema-component';
+import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
 import { useStyles } from './style';
 
 export const SettingsCenterContext = createContext<any>({});
 SettingsCenterContext.displayName = 'SettingsCenterContext';
+
+const ADMIN_SETTINGS_LAYOUT_MODEL_UID = 'admin-settings-layout-model';
 
 function getMenuItems(list: PluginSettingsPageType[]) {
   const pinnedList = list.filter((item) => item.isPinned && !item.hidden);
@@ -76,7 +80,7 @@ function replaceRouteParams(urlTemplate, params) {
   });
 }
 
-export const AdminSettingsLayout = () => {
+export const InternalAdminSettingsLayout = () => {
   const { styles, theme } = useStyles();
   const app = useApp();
   const navigate = useNavigate();
@@ -169,9 +173,10 @@ export const AdminSettingsLayout = () => {
       snippets.includes('pm') && {
         type: 'divider',
       },
-      ...getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null }))),
+      ...(getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null }))) ||
+        []),
     ].filter(Boolean) as any[];
-  }, [settings]);
+  }, [settings, snippets, t]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;
   }
@@ -257,4 +262,28 @@ export const AdminSettingsLayout = () => {
       </Layout>
     </div>
   );
+};
+
+export const AdminSettingsLayout = (props) => {
+  const flowEngine = useFlowEngine();
+  const modelRef = useRef<AdminSettingsLayoutModel>(null);
+  const modelChildren = <InternalAdminSettingsLayout {...props} />;
+
+  if (!modelRef.current) {
+    modelRef.current =
+      flowEngine.getModel<AdminSettingsLayoutModel>(ADMIN_SETTINGS_LAYOUT_MODEL_UID) ||
+      flowEngine.createModel<AdminSettingsLayoutModel>({
+        uid: ADMIN_SETTINGS_LAYOUT_MODEL_UID,
+        use: AdminSettingsLayoutModel,
+        props: { ...props, children: modelChildren },
+      });
+  }
+
+  const model = modelRef.current;
+
+  useEffect(() => {
+    model.setProps({ ...props, children: modelChildren });
+  }, [model, modelChildren, props]);
+
+  return <FlowModelRenderer model={model} />;
 };

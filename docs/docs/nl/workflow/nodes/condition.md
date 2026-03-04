@@ -12,7 +12,7 @@ Net als een `if`-statement in programmeertalen, bepaalt een conditie de verdere 
 
 De Conditie-node heeft twee modi: 'Doorgaan bij waar' en 'Splitsen bij waar/onwaar'. U moet één van deze modi kiezen wanneer u de node aanmaakt; deze kan later niet meer worden gewijzigd in de configuratie van de node.
 
-![条件判断_模式选择](https://static-docs.nocobase.com/3de27308c1179523d606c66bf3a5fb4.png)
+![条件判断_模式选择](https://static-docs.nocobase.com/3de27308c1179523d8606c66bf3a5fb4.png)
 
 In de modus 'Doorgaan bij waar' zal de workflow de volgende nodes uitvoeren wanneer het resultaat van de conditie 'waar' is. Anders wordt de workflow beëindigd en voortijdig afgesloten met een mislukte status.
 

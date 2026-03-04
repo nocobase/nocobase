@@ -178,7 +178,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 כפי שמוצג בתמונה למטה:
 
-![סדר ביצוע פעולות](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![סדר ביצוע פעולות](https://static-docs.nocobase.com/20251219234806.png)
 
 ### הבדל מאירוע אוסף
 

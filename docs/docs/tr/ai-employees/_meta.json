@@ -7,122 +7,68 @@
   {
     "type": "custom-link",
     "label": "Hızlı Başlangıç",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Özellik Tanıtımı",
     "items": [
       {
         "type": "custom-link",
-        "label": "LLM Yapılandırması",
-        "link": "/ai-employees/quick-start/llm-service"
+        "label": "LLM Servisini Yapılandırın",
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "AI Çalışanı Oluşturma",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "AI Çalışanını Etkinleştirin",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "AI Çalışanı ile İşbirliği",
-        "link": "/ai-employees/quick-start/collaborate"
+        "label": "AI Çalışanı ile İş Birliği Yapın",
+        "link": "/ai-employees/features/collaborate"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bağlam Ekle - Bloklar",
+        "link": "/ai-employees/features/pick-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Web Araması",
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yetenekleri Kullanın",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kısayol Görevleri",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yerleşik AI Çalışanları",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yeni AI Çalışanı",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Dahili AI Çalışanları",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Genel Bakış",
-        "link": "/ai-employees/built-in/index"
-      },
-      {
-        "type": "custom-link",
-        "label": "Viz: İçgörü Analisti",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: Veri Modelleme Uzmanı",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: Veri Düzenleme Uzmanı",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Ön Uç Geliştirici",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Gelişmiş",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Blok Seçimi",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Veri Kaynakları",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Yetenekler",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Görevler",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "İnternet Araması",
-        "link": "/ai-employees/advanced/web-search"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "İzin Kontrolü",
+    "label": "Yetki Kontrolü",
     "link": "/ai-employees/permission"
   },
   {
     "type": "custom-link",
     "label": "Dosya Yönetimi",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "İş Akışları",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM Düğümü",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Metin Sohbeti",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Çok Modlu Sohbet",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Yapılandırılmış Çıktı",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Uygulama Belgeleri",
+    "label": "İş Akışı",
     "items": [
       {
         "type": "custom-link",
-        "label": "Senaryolar",
+        "label": "LLM Düğümleri",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: CRM Senaryo Yapılandırması",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Yapılandırma",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Yönetici Yapılandırması",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Metin Sohbeti",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Prompt Kılavuzu",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Çok Modlu Sohbet",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Yapılandırılmış Çıktı",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Uygulama Pratikleri",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: CRM Senaryo Yapılandırması",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Prompt Kılavuzu",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

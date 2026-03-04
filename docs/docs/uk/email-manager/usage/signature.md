@@ -10,15 +10,15 @@ pkg: "@nocobase/plugin-email-manager"
 ## Налаштування підпису
 
 Перейдіть до Центру керування електронною поштою та натисніть кнопку налаштувань:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
 Перейдіть до панелі підписів:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_51_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM%20(1)
 
 Тут ви можете керувати підписами. Поставте позначку біля підпису, щоб встановити його як стандартний:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_37_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_09_PM.png)
 
 ## Використання підписів
 
 У полі для тексту листа натисніть на іконку підпису, щоб вибрати потрібний підпис:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_40_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_11_PM.png)

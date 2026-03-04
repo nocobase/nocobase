@@ -35,7 +35,7 @@ Když se pracovní postup provede k tomuto uzlu, šablona bude analyzována a vy
 Produkt „iPhone 14 pro“ není skladem
 ```
 
-![Obsah zprávy](https://static-docs.nocobase.com/06fa4b6b6ec499c853f0c39987f63a6a.png)
+![Obsah zprávy](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 ## Konfigurace pracovního postupu
 

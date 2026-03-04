@@ -1,14 +1,18 @@
 ---
-displayName: "App supervisor"
+displayName: "Диспетчер приложений"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  The App Supervisor plugin provides unified supervision and orchestration of multiple NocoBase application instances, offering application discovery and runtime management capabilities.
+  Плагин «Диспетчер приложений» предназначен для централизованного контроля и управления несколькими экземплярами приложений NocoBase, обеспечивая функции обнаружения приложений и управления их работой.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# App supervisor
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-app-supervisor/index).
+:::
+
+# Диспетчер приложений

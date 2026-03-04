@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "الإجراء: تكرار السجل"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  تكرار سجل، يمكنك إما تكراره في نموذج وتعديله قبل الإرسال، أو تكراره مباشرة لإنشاء سجل جديد.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-action-duplicate/index).
+:::
+
+# الإجراء: تكرار السجل

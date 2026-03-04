@@ -58,7 +58,7 @@ NocoBase hỗ trợ tạo và quản lý nhiều loại bộ sưu tập:
 
 ### Các loại trường phong phú
 
-![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/2025-10-29-19-48-51.png)
+![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
 
 #### Chuyển đổi loại trường linh hoạt
 

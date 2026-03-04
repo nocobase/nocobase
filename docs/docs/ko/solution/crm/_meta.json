@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "솔루션 개요"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "상세 설계"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "설치 방법"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "이전 버전 CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "기타 내용"
   }
 ]

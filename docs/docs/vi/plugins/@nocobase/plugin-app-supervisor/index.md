@@ -1,14 +1,18 @@
 ---
-displayName: "App supervisor"
+displayName: "Giám sát ứng dụng"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  The App Supervisor plugin provides unified supervision and orchestration of multiple NocoBase application instances, offering application discovery and runtime management capabilities.
+  Plugin Giám sát ứng dụng được sử dụng để giám sát và điều phối thống nhất nhiều thực thể ứng dụng NocoBase, cung cấp khả năng khám phá ứng dụng và quản lý vận hành ứng dụng.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# App supervisor
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-app-supervisor/index).
+:::
+
+# Giám sát ứng dụng

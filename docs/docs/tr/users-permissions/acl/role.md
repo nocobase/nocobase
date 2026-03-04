@@ -25,7 +25,7 @@ Rol tanımlayıcısı (sisteme özgü benzersiz bir tanımlayıcı), varsayılan
 
 Buradaki varsayılan rol, yeni oluşturulan kullanıcılara belirli bir rol atanmadığında otomatik olarak verilen roldür.
 
-![](https://static-docs.nocobase.com/f41bba7ff55ca28717c486dc45bc1708.png)
+![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
 ## Kişisel Merkez
 

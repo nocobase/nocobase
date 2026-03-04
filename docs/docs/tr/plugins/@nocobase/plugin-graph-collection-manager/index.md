@@ -1,12 +1,16 @@
 ---
-displayName: "Graph collection manager"
+displayName: "Görsel Veri Tablosu Yönetimi"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |
-  An ER diagram-like tool. Currently only the Master database is supported.
+  ER diyagramı benzeri bir araç. Şu anda yalnızca ana veritabanı desteklenmektedir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Graph collection manager
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-graph-collection-manager/index) bakın.
+:::
+
+# Görsel Veri Tablosu Yönetimi

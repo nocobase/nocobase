@@ -1,29 +1,30 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/data-sources/data-source-kingbase/index).
 :::
 
 # Zdroj dat - KingbaseES
 
 ## Úvod
 
-Databázi KingbaseES můžete použít jako zdroj dat, a to buď jako primární, nebo jako externí databázi.
+Použití databáze KingbaseES jako zdroj dat; lze ji použít jako hlavní databázi nebo jako externí databázi.
 
 :::warning
-V současné době jsou podporovány pouze databáze KingbaseES běžící v režimu pg.
+V současné době je podporována pouze databáze KingbaseES běžící v režimu pg.
 :::
 
 ## Instalace
 
-### Použití jako primární databáze
+### Použití jako hlavní databáze
 
-Postup instalace naleznete v dokumentaci k instalaci. Hlavní rozdíl spočívá v proměnných prostředí.
+Postup instalace naleznete v dokumentaci k instalaci, rozdíl spočívá především v proměnných prostředí.
 
 #### Proměnné prostředí
 
-Upravte soubor .env a přidejte nebo upravte následující konfigurace proměnných prostředí:
+Upravte soubor .env pro přidání nebo úpravu následujících konfigurací proměnných prostředí
 
 ```bash
 # Upravte parametry DB podle potřeby
@@ -106,7 +107,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
 
 ### Použití jako externí databáze
 
-Spusťte příkaz pro instalaci nebo upgrade.
+Spusťte příkaz pro instalaci nebo upgrade
 
 ```bash
 yarn nocobase install
@@ -120,5 +121,5 @@ Aktivujte plugin
 
 ## Uživatelská příručka
 
-- Primární databáze: Viz [Hlavní zdroj dat](/data-sources/data-source-main/)
+- Hlavní databáze: Viz Hlavní zdroj dat
 - Externí databáze: Viz [Zdroj dat / Externí databáze](/data-sources/data-source-manager/external-database)

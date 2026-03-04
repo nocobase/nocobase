@@ -1,53 +1,53 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/fields/specific/js-column).
 :::
 
 # JS Column
 
 ## Introdução
 
-A JS Column é usada para "colunas personalizadas" em tabelas, renderizando o conteúdo de cada célula da linha via JavaScript. Ela não está vinculada a um campo específico e é ideal para cenários como colunas derivadas, exibições combinadas entre campos, selos de status, botões de ação e agregação de dados remotos.
+JS Column é usado para "colunas personalizadas" em tabelas, renderizando o conteúdo das células de cada linha via JavaScript. Não está vinculado a um campo específico, sendo adequado para cenários como colunas derivadas, exibições combinadas entre campos, emblemas de status, operações de botão, agregação de dados remotos, etc.
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
 ## API de Contexto de Tempo de Execução
 
-Ao renderizar cada célula, a JS Column oferece as seguintes APIs de contexto:
+Ao renderizar cada célula, a JS Column pode usar as seguintes capacidades de contexto:
 
-- `ctx.element`: O contêiner DOM da célula atual (ElementProxy), com suporte para `innerHTML`, `querySelector`, `addEventListener`, etc.
-- `ctx.record`: O objeto de registro da linha atual (somente leitura).
-- `ctx.recordIndex`: O índice da linha dentro da página atual (começa em 0, pode ser afetado pela paginação).
-- `ctx.collection`: Os metadados da **coleção** vinculada à tabela (somente leitura).
-- `ctx.requireAsync(url)`: Carrega assincronamente uma biblioteca AMD/UMD por URL.
-- `ctx.importAsync(url)`: Importa dinamicamente um módulo ESM por URL.
-- `ctx.openView(options)`: Abre uma visualização configurada (modal/gaveta/página).
-- `ctx.i18n.t()` / `ctx.t()`: Internacionalização.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderiza depois que o contêiner estiver pronto.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Bibliotecas integradas como React, ReactDOM, Ant Design, ícones do Ant Design e dayjs, usadas para renderização JSX e utilitários de data/hora. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` são mantidos para compatibilidade.)
-- `ctx.render(vnode)`: Renderiza um elemento React/HTML/DOM para o contêiner padrão `ctx.element` (a célula atual). Múltiplas renderizações reutilizarão o Root e sobrescreverão o conteúdo existente do contêiner.
+- `ctx.element`: O contêiner DOM da célula atual (ElementProxy), suportando `innerHTML`, `querySelector`, `addEventListener`, etc.;
+- `ctx.record`: O objeto de registro da linha atual (somente leitura);
+- `ctx.recordIndex`: O índice da linha na página atual (começa em 0, pode ser afetado pela paginação);
+- `ctx.collection`: Metainformações da coleção vinculada à tabela (somente leitura);
+- `ctx.requireAsync(url)`: Carrega bibliotecas AMD/UMD de forma assíncrona via URL;
+- `ctx.importAsync(url)`: Importa módulos ESM dinamicamente via URL;
+- `ctx.openView(options)`: Abre uma visualização configurada (janela modal/gaveta/página);
+- `ctx.i18n.t()` / `ctx.t()`: Internacionalização;
+- `ctx.onRefReady(ctx.ref, cb)`: Renderiza após o contêiner estar pronto;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Bibliotecas comuns integradas como React / ReactDOM / Ant Design / Ícones do Ant Design / dayjs / lodash / math.js / formula.js, usadas para renderização JSX, processamento de tempo, manipulação de dados e operações matemáticas. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` ainda são mantidos para compatibilidade.)
+- `ctx.render(vnode)`: Renderiza elementos React/HTML/DOM no contêiner padrão `ctx.element` (célula atual). Múltiplas renderizações reutilizarão o Root e substituirão o conteúdo existente do contêiner.
 
 ## Editor e Snippets
 
-O editor de script da JS Column oferece suporte a destaque de sintaxe, dicas de erro e snippets de código integrados.
+O editor de script da JS Column suporta realce de sintaxe, dicas de erro e trechos de código integrados (Snippets).
 
-- `Snippets`: Abre a lista de snippets de código integrados, permitindo que você pesquise e os insira na posição atual do cursor com um clique.
-- `Run`: Executa o código atual diretamente. O log de execução é exibido no painel `Logs` na parte inferior, com suporte para `console.log/info/warn/error` e destaque de erros.
+- `Snippets`: Abre a lista de trechos de código integrados, permitindo pesquisar e inserir na posição atual do cursor com um clique.
+- `Run`: Executa o código atual diretamente, com os logs de execução saindo no painel `Logs` na parte inferior, suportando `console.log/info/warn/error` e localização de erros com realce.
 
 ![jscolumn-toolbars-20251029](https://static-docs.nocobase.com/jscolumn-toolbars-20251029.png)
 
-Você também pode usar um Funcionário de IA para gerar código:
+Pode ser combinado com funcionários de IA para gerar código:
 
-- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/built-in/ai-coding)
+- [Funcionário de IA · Nathan: Engenheiro Frontend](/ai-employees/features/built-in-employee)
 
 ## Usos Comuns
 
-### 1) Renderização Básica (Lendo o registro da linha atual)
+### 1) Renderização básica (leitura do registro da linha atual)
 
 ```js
 ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
 ```
 
-### 2) Usando JSX para Renderizar Componentes React
+### 2) Usando JSX para renderizar componentes React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -60,7 +60,7 @@ ctx.render(
 );
 ```
 
-### 3) Abrindo um Modal/Gaveta a partir de uma Célula (Visualizar/Editar)
+### 3) Abrindo janela modal/gaveta na célula (visualizar/editar)
 
 ```js
 const tk = ctx.collection?.getFilterByTK?.(ctx.record);
@@ -77,7 +77,7 @@ ctx.render(
 );
 ```
 
-### 4) Carregando Bibliotecas de Terceiros (AMD/UMD ou ESM)
+### 4) Carregando bibliotecas de terceiros (AMD/UMD ou ESM)
 
 ```js
 // AMD/UMD
@@ -92,7 +92,7 @@ ctx.render(<span>{dayjs().format('YYYY-MM-DD')}</span>);
 
 ## Observações
 
-- É recomendável usar uma CDN confiável para carregar bibliotecas externas e ter um fallback para cenários de falha (por exemplo, `if (!lib) return;`).
-- É recomendável usar seletores `class` ou `[name=...]` em vez de `id`s fixos para evitar `id`s duplicados em vários blocos ou modais.
-- Limpeza de Eventos: As linhas da tabela podem mudar dinamicamente com a paginação ou atualização, fazendo com que as células sejam renderizadas várias vezes. Você deve limpar ou remover duplicatas de listeners de eventos antes de vinculá-los para evitar gatilhos repetidos.
-- Dica de Desempenho: Evite carregar bibliotecas grandes repetidamente em cada célula. Em vez disso, armazene a biblioteca em cache em um nível superior (por exemplo, usando uma variável global ou de nível de tabela) e reutilize-a.
+- Sugere-se usar CDNs confiáveis para o carregamento de bibliotecas externas e preparar um fallback para cenários de falha (ex: `if (!lib) return;`).
+- Recomenda-se priorizar o uso de seletores `class` ou `[name=...]`, evitando o uso de `id` fixo para prevenir duplicidade de `id` em múltiplos blocos/janelas modais.
+- Limpeza de eventos: as linhas da tabela podem mudar dinamicamente com a paginação/atualização e as células serão renderizadas várias vezes. Você deve limpar ou remover duplicatas antes de vincular eventos para evitar disparos repetidos.
+- Sugestão de desempenho: evite carregar repetidamente bibliotecas grandes em cada célula; você deve armazenar a biblioteca em cache no nível superior (como por meio de variáveis globais ou de nível de tabela) para reutilização.

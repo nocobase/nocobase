@@ -1,16 +1,16 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/workflow/triggers/approval).
+:::
 
 # Godkännande
 
 ## Introduktion
 
-Godkännande är en typ av process som är specifikt utformad för att initieras och hanteras manuellt för att bestämma statusen för relevant data. Det används ofta för kontorsautomation eller andra processer som involverar manuella beslut, till exempel för att skapa och hantera manuella arbetsflöden för scenarier som "semesteransökningar", "utläggsrapporter" och "godkännande av råvaruinköp".
+Godkännande är en processtyp specifikt utformad för att initieras och hanteras av människor för att fastställa status för relevant data. Det används vanligtvis för kontorsautomation eller andra ärenden som kräver mänskliga beslut, till exempel för att skapa och hantera manuella processer för scenarier som "semesteransökan", "utläggsredovisning" och "godkännande av råvaruinköp".
 
 Pluginet för godkännande erbjuder en dedikerad arbetsflödestyp (utlösare) "Godkännande (händelse)" och en dedikerad "Godkännande"-nod för denna process. I kombination med NocoBase unika anpassade samlingar och anpassade block kan ni snabbt och flexibelt skapa och hantera olika godkännandescenarier.
 
@@ -24,87 +24,145 @@ Därefter, i arbetsflödeskonfigurationsgränssnittet, klickar ni på utlösaren
 
 ## Utlösarkonfiguration
 
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
+
 ### Koppla en samling
 
-NocoBase plugin för godkännande är utformat för flexibilitet och kan användas med vilken anpassad samling som helst. Detta innebär att ni inte behöver konfigurera om datamodellen för godkännandekonfigurationen, utan istället direkt återanvända en befintlig samling. Därför, efter att ni har gått in i utlösarkonfigurationen, måste ni först välja en samling för att bestämma vilken samlings data som ska utlösa detta arbetsflöde vid skapande eller uppdatering:
+NocoBase plugin för godkännande är utformat för flexibilitet och kan användas med vilken anpassad samling som helst. Detta innebär att godkännandekonfigurationen inte behöver definiera om datamodellen, utan direkt återanvänder redan skapade samlingar. Efter att ni har gått in i utlösarkonfigurationen måste ni därför först välja en samling för att bestämma vilken samlings data processen ska gälla för:
 
-![Godkännandeutlösare_Utlösarkonfiguration_Välj samling](https://static-docs.nocobase.com/8232a441b1e28d2752b8f601132c82d.png)
+![Godkännandeutlösare_Utlösarkonfiguration_Välj samling](https://static-docs.nocobase.com/20251226103223.png)
 
-Därefter, i formuläret för att skapa (eller redigera) data för den motsvarande samlingen, kopplar ni detta arbetsflöde till skicka-knappen:
+### Utlösarmetod
 
-![Initiera godkännande_Koppla arbetsflöde](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+När ett godkännande initieras för affärsdata kan ni välja mellan följande två utlösarmetoder:
 
-Efter detta kommer en användares inskick av formuläret att utlösa det motsvarande godkännandearbetsflödet. Den inskickade datan sparas inte bara i den relevanta samlingen, utan tas också som en ögonblicksbild i godkännandeflödet för att senare kunna granskas och användas av godkännare.
+*   **Innan data sparas**
 
-### Återkalla
+    Initiera godkännandet innan den inskickade datan sparas. Detta är lämpligt för scenarier där data endast ska sparas efter att godkännande har beviljats. I detta läge är datan vid initieringen endast temporär och sparas formellt i motsvarande samling först efter att godkännandet har gått igenom.
 
-Om ett godkännandearbetsflöde tillåter initiativtagaren att återkalla det, måste ni aktivera knappen "Återkalla" i initiativtagarens gränssnittskonfiguration:
+*   **Efter att data har sparats**
 
-![Godkännandeutlösare_Utlösarkonfiguration_Tillåt återkallande](https://static-docs.nocobase.com/20251029232544.png)
+    Initiera godkännandet efter att den inskickade datan har sparats. Detta är lämpligt för scenarier där data kan sparas först och sedan godkännas. I detta läge är datan redan sparad i motsvarande samling när godkännandet startar, och ändringar som görs under godkännandeprocessen kommer också att sparas.
 
-När detta är aktiverat kan ett godkännande som initierats av detta arbetsflöde återkallas av initiativtagaren innan någon godkännare har behandlat det. Men efter att en godkännare i en efterföljande godkännandenod har behandlat det, kan det inte längre återkallas.
+### Plats för att initiera godkännande
 
-:::info{title=Obs}
-Efter att ni har aktiverat eller tagit bort återkalla-knappen, måste ni klicka på spara och skicka i utlösarkonfigurationens dialogruta för att ändringarna ska träda i kraft.
-:::
+Ni kan välja var i systemet godkännandet kan initieras:
+
+*   **Endast i datablock**
+
+    Ni kan koppla åtgärder från valfritt formulärblock för denna samling till arbetsflödet för att initiera godkännanden. Processen hanteras och spåras i godkännandeblocket för en enskild post, vilket vanligtvis är lämpligt för affärsdata.
+
+*   **I både datablock och Att göra-centret**
+
+    Förutom i datablock kan godkännanden även initieras och hanteras i det globala Att göra-centret, vilket vanligtvis är lämpligt för administrativa data.
+
+### Vem som kan initiera godkännande
+
+Ni kan konfigurera behörigheter baserat på användaromfång för att bestämma vilka användare som kan initiera godkännandet:
+
+*   **Alla användare**
+
+    Alla användare i systemet kan initiera detta godkännande.
+
+*   **Endast valda användare**
+
+    Endast användare inom det angivna omfånget tillåts initiera godkännandet. Flera val är möjliga.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
 
 ### Konfiguration av initiativtagarens formulärgränssnitt
 
-Slutligen måste ni konfigurera initiativtagarens formulärgränssnitt. Detta gränssnitt kommer att användas för inskick när ett godkännande initieras från godkännandecentret och när det återinitieras efter ett återkallande. Klicka på konfigurationsknappen för att öppna dialogrutan:
+Slutligen måste ni konfigurera initiativtagarens formulärgränssnitt. Detta gränssnitt används för inskick när ett godkännande initieras från godkännandecentret och när det återinitieras efter att initiativtagaren har återkallat det. Klicka på konfigurationsknappen för att öppna dialogrutan:
 
-![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär](https://static-docs.nocobase.com/20251226130239.png)
 
-Ni kan lägga till ett formulär för initiativtagarens gränssnitt baserat på den kopplade samlingen, eller lägga till beskrivande text (Markdown) för instruktioner och vägledning. Formuläret är obligatoriskt; annars kommer initiativtagaren inte att kunna utföra några åtgärder när de kommer in i gränssnittet.
+Ni kan lägga till ett formulär för initiativtagarens gränssnitt baserat på den kopplade samlingen, eller lägga till beskrivande text (Markdown) för instruktioner och vägledning. Ett formulärblock måste läggas till, annars kommer initiativtagaren inte att kunna utföra några åtgärder i gränssnittet.
 
-Efter att ni har lagt till ett formulärblock kan ni, precis som i ett vanligt formulärkonfigurationsgränssnitt, lägga till fältkomponenter från den motsvarande samlingen och arrangera dem efter behov för att organisera innehållet som ska fyllas i formuläret:
+Efter att ni har lagt till ett formulärblock kan ni, precis som i ett vanligt formulärkonfigurationsgränssnitt, lägga till fältkomponenter från motsvarande samling och arrangera dem fritt för att organisera innehållet som ska fyllas i:
 
-![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär_Fältkonfiguration](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär_Fältkonfiguration](https://static-docs.nocobase.com/20251226130339.png)
 
-Förutom den direkta skicka-knappen kan ni också lägga till en "Spara som utkast"-åtgärdsknapp för att stödja en process med tillfällig lagring:
+Till skillnad från en direkt skicka-knapp kan ni även lägga till en åtgärdsknapp för "Spara utkast" för att stödja processer med temporär lagring:
 
-![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär_Åtgärdskonfiguration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+![Godkännandeutlösare_Utlösarkonfiguration_Initiativtagarens formulär_Åtgärdskonfiguration_Spara](https://static-docs.nocobase.com/20251226130512.png)
+
+Om ett godkännandearbetsflöde tillåter initiativtagaren att återkalla, måste ni aktivera knappen "Återkalla" i initiativtagarens gränssnittskonfiguration:
+
+![Godkännandeutlösare_Utlösarkonfiguration_Tillåt återkallande](https://static-docs.nocobase.com/20251226130637.png)
+
+När detta är aktiverat kan ett godkännande som initierats av detta arbetsflöde återkallas av initiativtagaren innan någon godkännare har behandlat det. Men efter att en godkännare i någon efterföljande godkännandenod har behandlat det, kan det inte längre återkallas.
+
+:::info{title=Tips}
+Efter att ni har aktiverat eller tagit bort återkalla-knappen måste ni klicka på spara och skicka i utlösarkonfigurationens dialogruta för att ändringarna ska träda i kraft.
+:::
+
+### Kortet "Min ansökan" <Badge>2.0+</Badge>
+
+Används för att konfigurera uppgiftskorten i listan "Mina ansökningar" i Att göra-centret.
+
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
+
+Ni kan fritt konfigurera vilka affärsfält (förutom relationsfält) eller godkännanderelaterad information som ska visas på kortet.
+
+Efter att en godkännandeansökan har skapats kommer det anpassade uppgiftskortet att synas i listan i Att göra-centret:
+
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
+
+### Visningsläge för poster i flödet
+
+*   **Ögonblicksbild**
+
+    Den status för posten som initiativtagaren och godkännarna ser när de går in i processen. Efter inskick ser de endast de ändringar de själva har gjort – de ser inte uppdateringar som gjorts av andra senare.
+
+*   **Senaste**
+
+    Initiativtagaren och godkännarna ser alltid den senaste versionen av posten under hela processen, oavsett vilken status posten hade innan deras åtgärd. När processen är avslutad ser de den slutgiltiga versionen av posten.
 
 ## Godkännandenod
 
-I ett godkännandearbetsflöde måste ni använda den dedikerade "Godkännande"-noden för att konfigurera den operativa logiken för godkännare att behandla (godkänna, avvisa eller returnera) det initierade godkännandet. "Godkännande"-noden kan endast användas i godkännandearbetsflöden. Se [Godkännandenod](../nodes/approval.md) för mer information.
+I ett godkännandearbetsflöde måste ni använda den dedikerade "Godkännande"-noden för att konfigurera den operativa logiken för godkännare att behandla (godkänna, avvisa eller returnera) det initierade godkännandet. "Godkännande"-noden kan endast användas i godkännandearbetsflöden. Se [Godkännandenod](../nodes/approval.md) för detaljer.
 
-## Konfigurera initiering av godkännande
+:::info{title=Tips}
+Om ett godkännandearbetsflöde inte innehåller några "Godkännande"-noder kommer arbetsflödet att godkännas automatiskt.
+:::
 
-Efter att ni har konfigurerat och aktiverat ett godkännandearbetsflöde, kan ni koppla det till skicka-knappen i den motsvarande samlingens formulär, så att användare kan initiera ett godkännande vid inskick:
+## Konfiguration för att initiera godkännande
 
-![Initiera godkännande_Koppla arbetsflöde](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+Efter att ni har konfigurerat och aktiverat ett godkännandearbetsflöde kan ni koppla det till skicka-knappen i motsvarande samlings formulär, så att användare kan initiera ett godkännande vid inskick:
 
-Efter att arbetsflödet har kopplats, initieras ett godkännande när en användare skickar in det aktuella formuläret.
+![Initiera godkännande_Koppla arbetsflöde](https://static-docs.nocobase.com/20251226110710.png)
 
-:::info{title=Obs}
-För närvarande stöder knappen för att initiera ett godkännande endast "Skicka"- (eller "Spara"-) knappen i ett formulär för att skapa eller uppdatera. Den stöder inte knappen "Skicka till arbetsflöde" (denna knapp kan endast kopplas till "Efter åtgärdshändelse").
+Därefter kommer en användares inskick av formuläret att utlösa det motsvarande godkännandearbetsflödet. Den inskickade datan sparas inte bara i motsvarande samling, utan tas även som en ögonblicksbild i godkännandeflödet för efterföljande godkännare att granska.
+
+:::info{title=Tips}
+Knappen för att initiera ett godkännande stöder för närvarande endast "Skicka"- (eller "Spara"-) knappen i ett formulär för att skapa eller uppdatera. Den stöder inte knappen "Utlös arbetsflöde" (denna knapp kan endast kopplas till "Anpassade åtgärdshändelser").
 :::
 
 ## Att göra-center
 
-Att göra-centret erbjuder en enhetlig ingång för användare att visa och hantera sina att göra-uppgifter. Godkännanden som initierats av den aktuella användaren och deras väntande uppgifter kan nås via Att göra-centret i den övre verktygsfältet, och olika typer av att göra-uppgifter kan visas via navigeringen till vänster.
+Att göra-centret erbjuder en enhetlig ingång där användare enkelt kan se och hantera sina uppgifter. Godkännanden initierade av den aktuella användaren och väntande uppgifter kan nås via Att göra-centret i det övre verktygsfältet, och olika typer av uppgifter kan visas via navigeringen till vänster.
 
-![Att göra-center](https://static-docs.nocobase.com/20250310161203.png)
+![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
 ### Mina inskickade
 
-#### Visa inskickade godkännanden
+#### Visa initierade godkännanden
 
-![Visa inskickade godkännanden](https://static-docs.nocobase.com/20250310161609.png)
+![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
 #### Initiera ett nytt godkännande direkt
 
-![Initiera ett nytt godkännande direkt](https://static-docs.nocobase.com/20250310161658.png)
+![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
 
 ### Mina att göra-uppgifter
 
 #### Att göra-lista
 
-![Att göra-lista](https://static-docs.nocobase.com/20250310161934.png)
+![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
 #### Att göra-detaljer
 
-![Att göra-detaljer](https://static-docs.nocobase.com/20250310162111.png)
+![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
 ## HTTP API
 
@@ -123,17 +181,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Här är URL-parametern `triggerWorkflows` arbetsflödets nyckel; flera arbetsflödesnycklar separeras med kommatecken. Denna nyckel kan erhållas genom att hålla muspekaren över arbetsflödets namn högst upp på arbetsflödesduken:
+URL-parametern `triggerWorkflows` är arbetsflödets nyckel; flera arbetsflöden separeras med kommatecken. Denna nyckel kan erhållas genom att hålla muspekaren över arbetsflödets namn högst upp på arbetsflödesduken:
 
-![Arbetsflöde_Nyckel_Visningsmetod](https://static-docs.nocobase.com/20240426135108.png)
+![Arbetsflöde_nyckel_visningssätt](https://static-docs.nocobase.com/20240426135108.png)
 
-Vid ett lyckat anrop kommer godkännandearbetsflödet för den motsvarande samlingen `posts` att utlösas.
+Vid ett lyckat anrop kommer godkännandearbetsflödet för motsvarande `posts`-samling att utlösas.
 
-:::info{title="Obs"}
-Eftersom externa anrop också måste baseras på användaridentitet, måste autentiseringsinformation tillhandahållas vid anrop via HTTP API, precis som för förfrågningar som skickas från det vanliga gränssnittet. Detta inkluderar `Authorization`-huvudet eller `token`-parametern (token som erhållits vid inloggning), samt `X-Role`-huvudet (användarens aktuella rollnamn).
+:::info{title="Tips"}
+Eftersom externa anrop också måste baseras på användaridentitet, måste autentiseringsinformation tillhandahållas vid anrop via HTTP API, precis som för förfrågningar från det vanliga gränssnittet. Detta inkluderar `Authorization`-huvudet eller `token`-parametern (token erhållen vid inloggning), samt `X-Role`-huvudet (användarens aktuella rollnamn).
 :::
 
-Om ni behöver utlösa en händelse för en-till-en-relaterad data i denna åtgärd (en-till-många stöds ännu inte), kan ni använda `!` i parametern för att specificera utlösardatan för det associerade fältet:
+Om ni behöver utlösa en händelse för en-till-en-relaterad data i denna åtgärd (en-till-många stöds ännu inte), kan ni använda `!` i parametern för att specificera utlösardata för relationsfältet:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -147,10 +205,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Vid ett lyckat anrop kommer godkännandehändelsen för den motsvarande samlingen `categories` att utlösas.
+Vid ett lyckat anrop kommer godkännandehändelsen för motsvarande `categories`-samling att utlösas.
 
-:::info{title="Obs"}
-När ni utlöser en efter-åtgärdshändelse via HTTP API, måste ni också vara uppmärksam på arbetsflödets aktiverade status och om samlingskonfigurationen matchar; annars kan anropet misslyckas eller resultera i ett fel.
+:::info{title="Tips"}
+När ni utlöser en händelse efter en åtgärd via HTTP API måste ni också kontrollera arbetsflödets aktiveringsstatus och om samlingskonfigurationen matchar, annars kan anropet misslyckas eller resultera i ett fel.
 :::
 
 #### Initiera från godkännandecenter
@@ -168,16 +226,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametrar**
 
-*   `collectionName`: Namnet på målsamlingen för att initiera godkännandet. Obligatoriskt.
-*   `workflowId`: ID för det arbetsflöde som används för att initiera godkännandet. Obligatoriskt.
-*   `data`: Fälten för samlingsposten som skapas vid initiering av godkännandet. Obligatoriskt.
-*   `status`: Status för posten som skapas vid initiering av godkännandet. Obligatoriskt. Möjliga värden inkluderar:
-    *   `0`: Utkast, indikerar att posten sparas men inte skickas in för godkännande.
-    *   `1`: Skicka in för godkännande, indikerar att initiativtagaren skickar in godkännandeförfrågan och går in i godkännandeprocessen.
+* `collectionName`: Namnet på målsamlingen för att initiera godkännandet. Obligatoriskt.
+* `workflowId`: ID för det arbetsflöde som används för att initiera godkännandet. Obligatoriskt.
+* `data`: Fälten för samlingsposten som skapas vid initiering. Obligatoriskt.
+* `status`: Status för posten som skapas vid initiering. Obligatoriskt. Möjliga värden inkluderar:
+  * `0`: Utkast, innebär att posten sparas men inte skickas för godkännande.
+  * `2`: Skicka för godkännande, innebär att initiativtagaren skickar in ansökan och går in i godkännandeprocessen.
 
 #### Spara och skicka in
 
-När ett initierat (eller återkallat) godkännande är i utkaststatus kan ni spara eller skicka in det igen via följande API:
+När ett initierat (eller återkallat) godkännande är i utkaststatus kan ni spara eller skicka in det igen via följande gränssnitt:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -188,7 +246,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/approvals:update/<approval id>"
 ```
 
-#### Hämta lista över inskickade godkännanden
+#### Hämta lista över initierade godkännanden
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
@@ -197,7 +255,7 @@ curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 
 #### Återkalla
 
-Initiativtagaren kan återkalla en post som för närvarande är under godkännande via följande API:
+Initiativtagaren kan återkalla en post som för närvarande är under godkännande via följande gränssnitt:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -206,22 +264,22 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametrar**
 
-*   `<approval id>`: ID för den godkännandepost som ska återkallas. Obligatoriskt.
+* `<approval id>`: ID för den godkännandepost som ska återkallas. Obligatoriskt.
 
 ### Godkännare
 
-Efter att godkännandearbetsflödet går in i en godkännandenod skapas en att göra-uppgift för den aktuella godkännaren. Godkännaren kan slutföra godkännandeuppgiften via gränssnittet eller genom att anropa HTTP API:et.
+När arbetsflödet når en godkännandenod skapas en att göra-uppgift för den aktuella godkännaren. Godkännaren kan slutföra uppgiften via gränssnittet eller via HTTP API.
 
 #### Hämta godkännandeposter
 
-Att göra-uppgifter är godkännandeposter. Ni kan hämta alla den aktuella användarens godkännandeposter via följande API:
+Att göra-uppgifter är godkännandeposter. Ni kan hämta alla den aktuella användarens godkännandeposter via följande gränssnitt:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Här är `approvalRecords` en samlingsresurs, så ni kan använda vanliga frågevillkor som `filter`, `sort`, `pageSize` och `page`.
+Eftersom `approvalRecords` är en samlingsresurs kan ni använda vanliga frågeparametrar som `filter`, `sort`, `pageSize` och `page`.
 
 #### Hämta en enskild godkännandepost
 
@@ -244,16 +302,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametrar**
 
-*   `<record id>`: ID för posten som ska godkännas. Obligatoriskt.
-*   `status`: Fältet för godkännandeprocessens status. `2` för "Godkänn", `-1` för "Avvisa". Obligatoriskt.
-*   `comment`: Kommentarer för godkännandeprocessen. Valfritt.
-*   `data`: Ändringar av samlingsposten vid den aktuella godkännandenoden efter godkännande. Valfritt (gäller endast vid godkännande).
+* `<record id>`: ID för posten som ska behandlas. Obligatoriskt.
+* `status`: Status för godkännandebehandlingen, `2` för "Godkänn", `-1` för "Avvisa". Obligatoriskt.
+* `comment`: Kommentar för behandlingen. Valfritt.
+* `data`: Ändringar som ska göras i samlingsposten vid den aktuella noden efter godkännande. Valfritt (endast vid godkännande).
 
 #### Returnera <Badge>v1.9.0+</Badge>
 
-Före version v1.9.0 använde returnering samma API som "Godkänn" och "Avvisa", där `"status": 1` representerade en returnering.
+Före version v1.9.0 användes samma gränssnitt för returnering som för "Godkänn" och "Avvisa", med `"status": 1`.
 
-Från och med version v1.9.0 har returnering ett separat API:
+Från och med version v1.9.0 har returnering ett eget gränssnitt:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -265,10 +323,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametrar**
 
-*   `<record id>`: ID för posten som ska godkännas. Obligatoriskt.
-*   `returnToNodeKey`: Nyckeln till målnoden att returnera till. Valfritt. När ett intervall av returnerbara noder är konfigurerat i noden kan denna parameter användas för att specificera vilken nod som ska returneras till. Om inte konfigurerat behöver denna parameter inte skickas, och den kommer som standard att returnera till startpunkten för initiativtagaren att skicka in igen.
+* `<record id>`: ID för posten som ska behandlas. Obligatoriskt.
+* `returnToNodeKey`: Nyckel för målnoden att returnera till. Valfritt. Om noden har konfigurerats med ett intervall av noder som kan returneras till, kan denna parameter användas för att ange vilken nod. Om ingen konfiguration finns behövs inget värde, och den returneras som standard till startpunkten för ny inskickning av initiativtagaren.
 
-#### Delegera
+#### Transignera (Delegera)
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -280,10 +338,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametrar**
 
-*   `<record id>`: ID för posten som ska godkännas. Obligatoriskt.
-*   `assignee`: ID för användaren att delegera till. Obligatoriskt.
+* `<record id>`: ID för posten som ska behandlas. Obligatoriskt.
+* `assignee`: Användar-ID för den person som uppgiften delegeras till. Obligatoriskt.
 
-#### Lägg till signatär
+#### Gemensamt godkännande (Lägg till signatär)
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -296,6 +354,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametrar**
 
-*   `<record id>`: ID för posten som ska godkännas. Obligatoriskt.
-*   `assignees`: En lista över användar-ID:n att lägga till som signatärer. Obligatoriskt.
-*   `order`: Ordningen för den tillagda signatären. `-1` betyder före "mig", `1` betyder efter "mig".
+* `<record id>`: ID för posten som ska behandlas. Obligatoriskt.
+* `assignees`: Lista med användar-ID:n för de som läggs till. Obligatoriskt.
+* `order`: Ordningen för tillägget, `-1` för före "mig", `1` för efter "mig".

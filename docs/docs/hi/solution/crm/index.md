@@ -1,3 +1,7 @@
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/solution/crm/index) देखें।
+:::
+
 # NocoBase CRM 2.0 Solution
 
 > A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
@@ -125,7 +129,7 @@ The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages.
 
 Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
 
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
+**Ready out of the box:** Pre-built collections, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
 
 ---
 
@@ -135,7 +139,7 @@ Deploy the CRM package to your target environment using NocoBase's migration man
 - **Approval workflows**: Multi-level quote approval with mobile approval support
 - **AI automation**: AI employees embedded in workflows for unattended background execution — automated lead scoring and opportunity analysis
 - **Mobile-friendly**: Mobile-optimized interface for on-the-go customer follow-up
-- **Multi-tenant support**: Horizontal scaling across spaces/applications, distributing to independent sales teams
+- **Multi-tenant support**: Horizontal scaling across workspaces/apps, distributing to independent sales teams
 
 ---
 

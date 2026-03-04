@@ -1,14 +1,14 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/get-started/installation/create-nocobase-app).
 :::
-
 
 # Instalasi create-nocobase-app
 
 :::tip Prasyarat
 
--   Node.js 20+ dan Yarn 1.22.x sudah terinstal.
--   Salah satu database yang diperlukan sudah dikonfigurasi dan berjalan: MySQL 8.0.17+, MariaDB 10.9+, atau PostgreSQL 10+.
+- Instal Node.js 20+, Yarn 1.22.x
+- Konfigurasi dan jalankan salah satu database yang diperlukan: MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- Karena alasan lingkungan jaringan domestik, disarankan agar Anda mengganti mirror domestik (opsional)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -19,7 +19,7 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 ## 1. Buat Proyek NocoBase
 
-Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jenis database, lalu jalankan perintah yang sesuai.
+Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan tipe database, lalu jalankan perintah yang sesuai.
 
 <Tabs>
 
@@ -171,9 +171,9 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 :::warning Penjelasan Variabel Lingkungan
 
--   `TZ` digunakan untuk mengatur zona waktu aplikasi, yang secara default mengikuti zona waktu sistem operasi.
--   `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama akan menjadi tidak valid). Ini bisa berupa string acak apa pun. **Mohon ubah ke kunci rahasia Anda sendiri dan pastikan tidak bocor ke publik.**
--   `DB_*` adalah konfigurasi terkait database. Mohon modifikasi sesuai dengan informasi koneksi database Anda yang sebenarnya.
+- `TZ` digunakan untuk mengatur zona waktu aplikasi, default adalah zona waktu sistem operasi
+- `APP_KEY` adalah kunci rahasia aplikasi, digunakan untuk menghasilkan token pengguna, dll. (Jika `APP_KEY` diubah, token lama juga akan menjadi tidak valid). Ini bisa berupa string acak apa pun. **Silakan ubah menjadi kunci rahasia Anda sendiri, dan pastikan tidak bocor ke publik**
+- `DB_*` adalah konfigurasi terkait database, silakan ubah sesuai dengan informasi koneksi database Anda yang sebenarnya
 
 :::
 
@@ -185,7 +185,7 @@ cd my-nocobase-app
 
 ## 3. Instal Dependensi
 
-📢 Tergantung pada lingkungan jaringan, konfigurasi sistem, dan faktor lainnya, langkah ini mungkin memerlukan waktu lebih dari sepuluh menit.
+📢 Karena pengaruh faktor lingkungan jaringan, konfigurasi sistem, dll., langkah ini mungkin memerlukan waktu belasan menit.
 
 ```bash
 yarn install
@@ -193,7 +193,7 @@ yarn install
 
 :::tip Tips Lingkungan Produksi
 
-Saat melakukan deployment di lingkungan produksi, Anda dapat menginstal hanya dependensi yang diperlukan untuk mengurangi ukuran:
+Saat deployment di lingkungan produksi, untuk mengurangi ukuran, Anda dapat menginstal hanya dependensi yang diperlukan:
 
 ```bash
 yarn install --production
@@ -209,7 +209,7 @@ yarn nocobase install --lang=id-ID
 
 Proses instalasi akan secara otomatis membuat struktur tabel database dan menginisialisasi data.
 
-## 5. Mulai NocoBase
+## 5. Jalankan NocoBase
 
 **Lingkungan Pengembangan**
 
@@ -225,10 +225,10 @@ yarn start
 
 ## 6. Masuk ke NocoBase
 
-Buka [http://localhost:13000](http://localhost:13000) di browser Anda. Akun dan kata sandi awal adalah `admin@nocobase.com` dan `admin123`.
+Gunakan browser untuk membuka [http://localhost:13000](http://localhost:13000), akun dan kata sandi inisialisasi adalah `admin@nocobase.com` dan `admin123`.
 
 :::warning Tips Keamanan Akun
 
-Setelah login pertama Anda, mohon segera ubah kata sandi default untuk memastikan keamanan sistem.
+Setelah login pertama kali, silakan segera ubah kata sandi default untuk memastikan keamanan sistem.
 
 :::

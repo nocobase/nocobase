@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Action panel"
+displayName: "בלוק: לוח פעולות"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
+  ניהול והצגה מרכזיים של פעולות שונות, המאפשרים למשתמשים לבצע משימות במהירות. תומך בהרחבה, סוגי הפעולות הנתמכים כרגע הם חלונות קופצים, קישורים, סריקה ובקשות מותאמות אישית.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Action panel
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-block-workbench/index).
+:::
+
+# בלוק: לוח פעולות

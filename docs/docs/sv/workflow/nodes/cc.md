@@ -1,24 +1,24 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/workflow/nodes/cc).
+:::
 
 # Kopia <Badge>v1.8.2+</Badge>
 
 ## Introduktion
 
-Kopia-noden används för att skicka visst kontextuellt innehåll från ett arbetsflödes exekvering till angivna användare, så att de kan ta del av och granska det. I exempelvis en godkännande- eller annan process kan relevant information skickas som kopia till andra deltagare, så att de snabbt kan följa arbetets framsteg.
+Kopia-noden används för att skicka visst kontextuellt innehåll från ett arbetsflödes exekvering till angivna användare för kännedom och granskning. Till exempel kan relevant information i ett godkännande eller andra processer skickas som kopia till andra deltagare så att de kan hålla sig informerade om framstegen.
 
-Ni kan ställa in flera Kopia-noder i ett arbetsflöde. När arbetsflödet når en sådan nod skickas den relevanta informationen till de angivna mottagarna.
+Ni kan ställa in flera kopia-noder i ett arbetsflöde så att relevant information skickas till de angivna mottagarna när arbetsflödet når den noden.
 
-Innehållet som skickats som kopia visas i menyn ”Kopia till mig” i Att göra-centret, där användare kan se allt innehåll som skickats till dem. Systemet kommer också att indikera olästa objekt, och användare kan manuellt markera dem som lästa efter att de har granskats.
+Innehållet i kopian visas i menyn ”Kopia till mig” i Att göra-centret, där användare kan se allt innehåll som skickats till dem. Det kommer också att indikera olästa objekt som användaren ännu inte har sett, och användaren kan manuellt markera dem som lästa efter granskning.
 
 ## Skapa nod
 
-I gränssnittet för konfiguration av arbetsflöden klickar ni på plusknappen (”+”) i flödet för att lägga till en ”Kopia”-nod:
+I gränssnittet för konfiguration av arbetsflöden, klicka på plusknappen (”+”) i flödet för att lägga till en ”Kopia”-nod:
 
 ![抄送_添加](https://static-docs.nocobase.com/20250710222842.png)
 
@@ -36,9 +36,21 @@ Mottagare är en samling av målanvändare för kopian, vilket kan vara en eller
 
 ### Användargränssnitt
 
-Mottagare behöver se innehållet som skickats som kopia i menyn ”Kopia till mig” i Att göra-centret. Ni kan konfigurera resultaten från triggern och valfri nod i arbetsflödeskontexten som innehållsblock.
+Mottagare behöver se innehållet i kopian i menyn ”Kopia till mig” i Att göra-centret. Ni kan konfigurera resultat från triggern och valfri nod i arbetsflödeskontexten som innehållsblock.
 
 ![用户界面](https://static-docs.nocobase.com/20250710225400.png)
+
+### Uppgiftskort <Badge>2.0+</Badge>
+
+Kan användas för att konfigurera uppgiftskortet i listan ”Kopia till mig” i Att göra-centret.
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+I kortet kan ni fritt konfigurera de affärsfält ni vill visa (förutom relationsfält).
+
+När arbetsflödets kopieringsuppgift har skapats kan det anpassade uppgiftskortet ses i listan i Att göra-centret:
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### Uppgiftstitel
 

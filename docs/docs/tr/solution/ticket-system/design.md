@@ -1,690 +1,688 @@
-# Ticketing Solution Detailed Design
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/ticket-system/design) bakın.
+:::
 
-> **Version**: v2.0-beta
+# Destek Talebi Çözümü Detaylı Tasarımı
 
-> **Updated**: 2026-01-05
+> **Sürüm**: v2.0-beta
 
-> **Status**: Preview
+> **Güncelleme Tarihi**: 2026-01-05
 
+> **Durum**: Önizleme
 
-## 1. System Overview and Design Philosophy
+## 1. Sisteme Genel Bakış ve Tasarım Felsefesi
 
-### 1.1 System Positioning
+### 1.1 Sistem Konumlandırması
 
-This system is an **AI-driven intelligent ticket management platform** built on the NocoBase low-code platform. The core goal is:
+Bu sistem, NocoBase düşük kodlu platformu üzerine inşa edilmiş **AI destekli akıllı bir destek talebi yönetim platformudur**. Temel hedef şudur:
 
 ```
-Let customer service focus on solving problems, not tedious process operations
+Müşteri hizmetlerinin sıkıcı süreç operasyonlarına değil, sorunları çözmeye odaklanmasını sağlayın
 ```
 
-### 1.2 Design Philosophy
+### 1.2 Tasarım Felsefesi
 
-#### Philosophy One: T-Shaped Data Architecture
+#### Felsefe 1: T-Tipi Veri Mimarisi
 
-**What is T-Shaped Architecture?**
+**T-Tipi Mimari Nedir?**
 
-Inspired by the "T-shaped talent" concept — horizontal breadth + vertical depth:
+"T-tipi insan" kavramından esinlenilmiştir — yatay genişlik + dikey derinlik:
 
-- **Horizontal (Main Table)**: Universal capabilities covering all business types — ticket number, status, assignee, SLA and other core fields
-- **Vertical (Extension Tables)**: Specialized fields for specific business types — equipment repair has serial numbers, complaints have compensation plans
+- **Yatay (Ana Tablo)**: Tüm iş türlerini kapsayan evrensel yetenekler — numara, durum, atanan kişi, SLA gibi temel alanlar.
+- **Dikey (Genişletme Tabloları)**: Belirli iş kollarına özgü uzmanlık alanları — cihaz onarımı için seri numaraları, şikayetler için tazminat planları.
 
-![ticketing-imgs-en-2025-12-31-23-18-25](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
+![ticketing-imgs-2025-12-31-22-50-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-18-25.png)
 
-**Why This Design?**
+**Neden Bu Tasarım?**
 
-| Traditional Approach | T-Shaped Architecture |
-|---------------------|----------------------|
-| One table per business type, duplicated fields | Common fields unified, business fields extended as needed |
-| Statistical reports need to merge multiple tables | One main table for all ticket statistics |
-| Process changes require modifications in multiple places | Core process changes in one place only |
-| New business types require new tables | Only add extension tables, main flow unchanged |
+| Geleneksel Yöntem | T-Tipi Mimari |
+|-------------------|---------------|
+| Her iş türü için bir tablo, yinelenen alanlar | Ortak alanlar merkezi yönetimde, iş alanları ihtiyaca göre genişletilir |
+| İstatistiksel raporlar için birden fazla tabloyu birleştirmek gerekir | Tek bir ana tablo üzerinden tüm taleplerin istatistiği tutulur |
+| Süreç değişiklikleri birden fazla yerde düzenleme gerektirir | Temel süreç değişiklikleri sadece tek bir noktada yapılır |
+| Yeni iş türleri için yeni tablolar gerekir | Sadece genişletme tablosu eklenir, ana akış değişmez |
 
-#### Philosophy Two: AI Employee Team
+#### Felsefe 2: AI Çalışan Ekibi
 
-Not "AI features", but "AI employees". Each AI has a clear role, personality, and responsibilities:
+Sadece "AI özellikleri" değil, "AI çalışanları". Her AI'nın net bir rolü, kişiliği ve sorumlulukları vardır:
 
-| AI Employee | Position | Core Responsibilities | Trigger Scenario |
-|-------------|----------|----------------------|------------------|
-| **Sam** | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions | Automatic on ticket creation |
-| **Grace** | Customer Success Expert | Reply generation, tone adjustment, complaint handling | When agent clicks "AI Reply" |
-| **Max** | Knowledge Assistant | Similar cases, knowledge recommendations, solution synthesis | Automatic on ticket detail page |
-| **Lexi** | Translator | Multi-language translation, comment translation | Automatic when foreign language detected |
+| AI Çalışanı | Pozisyon | Temel Sorumluluklar | Tetikleme Senaryosu |
+|-------------|----------|---------------------|---------------------|
+| **Sam** | Hizmet Masası Sorumlusu | Talep yönlendirme, öncelik değerlendirme, eskalasyon kararları | Talep oluşturulduğunda otomatik |
+| **Grace** | Müşteri Başarı Uzmanı | Yanıt oluşturma, üslup düzenleme, şikayet yönetimi | Temsilci "AI Yanıtı"na tıkladığında |
+| **Max** | Bilgi Asistanı | Benzer vakalar, bilgi bankası önerileri, çözüm sentezi | Talep detay sayfasında otomatik |
+| **Lexi** | Tercüman | Çok dilli çeviri, yorum çevirisi | Yabancı dil algılandığında otomatik |
 
-**Why the "AI Employee" Model?**
+**Neden "AI Çalışanı" Modeli?**
 
-- **Clear Responsibilities**: Sam handles routing, Grace handles replies, no confusion
-- **Easy to Understand**: Saying "Let Sam analyze this" is friendlier than "Call the classification API"
-- **Extensible**: Adding new AI capabilities = hiring new employees
+- **Net Sorumluluklar**: Sam yönlendirmeyle, Grace yanıtlarla ilgilenir; karışıklık olmaz.
+- **Anlaşılması Kolay**: Kullanıcıya "Sınıflandırma API'sini çağır" demek yerine "Bırakalım Sam analiz etsin" demek daha dostanedir.
+- **Genişletilebilir**: Yeni AI yetenekleri eklemek = yeni çalışan işe almak.
 
-#### Philosophy Three: Knowledge Self-Circulation
+#### Felsefe 3: Bilgi Öz-Döngüsü
 
-![ticketing-imgs-en-2025-12-31-23-19-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
+![ticketing-imgs-2025-12-31-22-51-09](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-19-13.png)
 
-This forms a **Knowledge Accumulation - Knowledge Application** closed loop.
+Bu, bir **Bilgi Birikimi - Bilgi Uygulaması** kapalı döngüsü oluşturur.
 
 ---
 
-## 2. Core Entities and Data Model
+## 2. Temel Varlıklar ve Veri Modeli
 
-### 2.1 Entity Relationship Overview
+### 2.1 Varlık İlişkilerine Genel Bakış
 
-![ticketing-imgs-en-2025-12-31-23-20-02](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
+![ticketing-imgs-2025-12-31-22-51-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-20-02.png)
 
-### 2.2 Core Table Details
 
-#### 2.2.1 Ticket Main Table (nb_tts_tickets)
+### 2.2 Temel Tablo Detayları
 
-This is the core of the system, using a "wide table" design with all commonly used fields in the main table.
+#### 2.2.1 Destek Talebi Ana Tablosu (nb_tts_tickets)
 
-**Basic Information**
+Sistemin çekirdeğidir; sık kullanılan tüm alanları ana tabloda toplayan "geniş tablo" tasarımı kullanır.
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| id | BIGINT | Primary key | 1001 |
-| ticket_no | VARCHAR | Ticket number | TKT-20251229-0001 |
-| title | VARCHAR | Title | Slow network connection |
-| description | TEXT | Problem description | Since this morning, office network... |
-| biz_type | VARCHAR | Business type | it_support |
-| priority | VARCHAR | Priority | P1 |
-| status | VARCHAR | Status | processing |
+**Temel Bilgiler**
 
-**Source Tracking**
+| Alan | Tür | Açıklama | Örnek |
+|------|-----|----------|-------|
+| id | BIGINT | Birincil anahtar | 1001 |
+| ticket_no | VARCHAR | Talep numarası | TKT-20251229-0001 |
+| title | VARCHAR | Başlık | Ağ bağlantısı yavaş |
+| description | TEXT | Sorun açıklaması | Bu sabahtan beri ofis ağı... |
+| biz_type | VARCHAR | İş türü | it_support |
+| priority | VARCHAR | Öncelik | P1 |
+| status | VARCHAR | Durum | processing |
 
-| Field | Type | Description | Example |
-|-------|------|-------------|---------|
-| source_system | VARCHAR | Source system | crm / email / iot |
-| source_channel | VARCHAR | Source channel | web / phone / wechat |
-| external_ref_id | VARCHAR | External reference ID | CRM-2024-0001 |
+**Kaynak Takibi**
 
-**Contact Information**
+| Alan | Tür | Açıklama | Örnek |
+|------|-----|----------|-------|
+| source_system | VARCHAR | Kaynak sistem | crm / email / iot |
+| source_channel | VARCHAR | Kaynak kanal | web / phone / wechat |
+| external_ref_id | VARCHAR | Harici referans ID | CRM-2024-0001 |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| customer_id | BIGINT | Customer ID |
-| contact_name | VARCHAR | Contact name |
-| contact_phone | VARCHAR | Contact phone |
-| contact_email | VARCHAR | Contact email |
-| contact_company | VARCHAR | Company name |
+**İletişim Bilgileri**
 
-**Assignee Information**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| customer_id | BIGINT | Müşteri ID |
+| contact_name | VARCHAR | İlgili kişi adı |
+| contact_phone | VARCHAR | İletişim telefonu |
+| contact_email | VARCHAR | İletişim e-postası |
+| contact_company | VARCHAR | Şirket adı |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| assignee_id | BIGINT | Assignee ID |
-| assignee_department_id | BIGINT | Assignee department ID |
-| transfer_count | INT | Transfer count |
+**Atanan Bilgisi**
 
-**Time Nodes**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| assignee_id | BIGINT | Atanan kişi ID |
+| assignee_department_id | BIGINT | Atanan departman ID |
+| transfer_count | INT | Aktarım sayısı |
 
-| Field | Type | Description | Trigger Timing |
-|-------|------|-------------|----------------|
-| submitted_at | TIMESTAMP | Submission time | On ticket creation |
-| assigned_at | TIMESTAMP | Assignment time | When assignee specified |
-| first_response_at | TIMESTAMP | First response time | On first reply to customer |
-| resolved_at | TIMESTAMP | Resolution time | When status changes to resolved |
-| closed_at | TIMESTAMP | Closure time | When status changes to closed |
+**Zaman Noktaları**
 
-**SLA Related**
+| Alan | Tür | Açıklama | Tetikleme Zamanı |
+|------|-----|----------|------------------|
+| submitted_at | TIMESTAMP | Gönderim zamanı | Talep oluşturulduğunda |
+| assigned_at | TIMESTAMP | Atama zamanı | Sorumlu belirlendiğinde |
+| first_response_at | TIMESTAMP | İlk yanıt zamanı | Müşteriye ilk yanıt verildiğinde |
+| resolved_at | TIMESTAMP | Çözüm zamanı | Durum 'resolved' olduğunda |
+| closed_at | TIMESTAMP | Kapanış zamanı | Durum 'closed' olduğunda |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| sla_config_id | BIGINT | SLA config ID |
-| sla_response_due | TIMESTAMP | Response deadline |
-| sla_resolve_due | TIMESTAMP | Resolution deadline |
-| sla_paused_at | TIMESTAMP | SLA pause start time |
-| sla_paused_duration | INT | Cumulative pause duration (minutes) |
-| is_sla_response_breached | BOOLEAN | Response breached |
-| is_sla_resolve_breached | BOOLEAN | Resolution breached |
+**SLA İlişkili**
 
-**AI Analysis Results**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| sla_config_id | BIGINT | SLA yapılandırma ID |
+| sla_response_due | TIMESTAMP | Yanıt son tarihi |
+| sla_resolve_due | TIMESTAMP | Çözüm son tarihi |
+| sla_paused_at | TIMESTAMP | SLA duraklatma başlangıcı |
+| sla_paused_duration | INT | Toplam duraklatma süresi (dakika) |
+| is_sla_response_breached | BOOLEAN | Yanıt süresi ihlali |
+| is_sla_resolve_breached | BOOLEAN | Çözüm süresi ihlali |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| ai_category_code | VARCHAR | AI-identified category | Sam |
-| ai_sentiment | VARCHAR | Sentiment analysis | Sam |
-| ai_urgency | VARCHAR | Urgency level | Sam |
-| ai_keywords | JSONB | Keywords | Sam |
-| ai_reasoning | TEXT | Reasoning process | Sam |
-| ai_suggested_reply | TEXT | Suggested reply | Sam/Grace |
-| ai_confidence_score | NUMERIC | Confidence score | Sam |
-| ai_analysis | JSONB | Complete analysis result | Sam |
+**AI Analiz Sonuçları**
 
-**Multi-Language Support**
+| Alan | Tür | Açıklama | Dolduran |
+|------|-----|----------|----------|
+| ai_category_code | VARCHAR | AI tarafından tanımlanan kategori | Sam |
+| ai_sentiment | VARCHAR | Duygu analizi | Sam |
+| ai_urgency | VARCHAR | Aciliyet seviyesi | Sam |
+| ai_keywords | JSONB | Anahtar kelimeler | Sam |
+| ai_reasoning | TEXT | Akıl yürütme süreci | Sam |
+| ai_suggested_reply | TEXT | Önerilen yanıt | Sam/Grace |
+| ai_confidence_score | NUMERIC | Güven puanı | Sam |
+| ai_analysis | JSONB | Tam analiz sonucu | Sam |
 
-| Field | Type | Description | Populated By |
-|-------|------|-------------|--------------|
-| source_language_code | VARCHAR | Original language | Sam/Lexi |
-| target_language_code | VARCHAR | Target language | System default EN |
-| is_translated | BOOLEAN | Whether translated | Lexi |
-| description_translated | TEXT | Translated description | Lexi |
+**Çoklu Dil Desteği**
 
-#### 2.2.2 Business Extension Tables
+| Alan | Tür | Açıklama | Dolduran |
+|------|-----|----------|----------|
+| source_language_code | VARCHAR | Orijinal dil | Sam/Lexi |
+| target_language_code | VARCHAR | Hedef dil | Sistem varsayılanı EN |
+| is_translated | BOOLEAN | Çevrildi mi? | Lexi |
+| description_translated | TEXT | Çevrilmiş açıklama | Lexi |
 
-**Equipment Repair (nb_tts_biz_repair)**
+#### 2.2.2 İş Genişletme Tabloları
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| equipment_model | VARCHAR | Equipment model |
-| serial_number | VARCHAR | Serial number |
-| fault_code | VARCHAR | Fault code |
-| spare_parts | JSONB | Spare parts list |
-| maintenance_type | VARCHAR | Maintenance type |
+**Cihaz Onarımı (nb_tts_biz_repair)**
 
-**IT Support (nb_tts_biz_it_support)**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| ticket_id | BIGINT | İlişkili talep ID |
+| equipment_model | VARCHAR | Cihaz modeli |
+| serial_number | VARCHAR | Seri numarası |
+| fault_code | VARCHAR | Hata kodu |
+| spare_parts | JSONB | Yedek parça listesi |
+| maintenance_type | VARCHAR | Bakım türü |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| asset_number | VARCHAR | Asset number |
-| os_version | VARCHAR | OS version |
-| software_name | VARCHAR | Software involved |
-| remote_address | VARCHAR | Remote address |
-| error_code | VARCHAR | Error code |
+**BT Desteği (nb_tts_biz_it_support)**
 
-**Customer Complaint (nb_tts_biz_complaint)**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| ticket_id | BIGINT | İlişkili talep ID |
+| asset_number | VARCHAR | Varlık numarası |
+| os_version | VARCHAR | İşletim sistemi sürümü |
+| software_name | VARCHAR | İlgili yazılım |
+| remote_address | VARCHAR | Uzak adres |
+| error_code | VARCHAR | Hata kodu |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Associated ticket ID |
-| related_order_no | VARCHAR | Related order number |
-| complaint_level | VARCHAR | Complaint level |
-| compensation_amount | DECIMAL | Compensation amount |
-| compensation_type | VARCHAR | Compensation method |
-| root_cause | TEXT | Root cause |
+**Müşteri Şikayeti (nb_tts_biz_complaint)**
 
-#### 2.2.3 Comments Table (nb_tts_ticket_comments)
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| ticket_id | BIGINT | İlişkili talep ID |
+| related_order_no | VARCHAR | İlgili sipariş no |
+| complaint_level | VARCHAR | Şikayet seviyesi |
+| compensation_amount | DECIMAL | Tazminat tutarı |
+| compensation_type | VARCHAR | Tazminat yöntemi |
+| root_cause | TEXT | Kök neden |
 
-**Core Fields**
+#### 2.2.3 Yorum Tablosu (nb_tts_ticket_comments)
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| ticket_id | BIGINT | Ticket ID |
-| parent_id | BIGINT | Parent comment ID (supports tree structure) |
-| content | TEXT | Comment content |
-| direction | VARCHAR | Direction: inbound(customer)/outbound(agent) |
-| is_internal | BOOLEAN | Whether internal note |
-| is_first_response | BOOLEAN | Whether first response |
+**Temel Alanlar**
 
-**AI Review Fields (for outbound)**
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| id | BIGINT | Birincil anahtar |
+| ticket_id | BIGINT | Talep ID |
+| parent_id | BIGINT | Üst yorum ID (ağaç yapısı desteği) |
+| content | TEXT | Yorum içeriği |
+| direction | VARCHAR | Yön: inbound (müşteri)/outbound (temsilci) |
+| is_internal | BOOLEAN | Dahili not mu? |
+| is_first_response | BOOLEAN | İlk yanıt mı? |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| source_language_code | VARCHAR | Source language |
-| content_translated | TEXT | Translated content |
-| is_translated | BOOLEAN | Whether translated |
-| is_ai_blocked | BOOLEAN | Whether blocked by AI |
-| ai_block_reason | VARCHAR | Block reason |
-| ai_block_detail | TEXT | Detailed explanation |
-| ai_quality_score | NUMERIC | Quality score |
-| ai_suggestions | TEXT | Improvement suggestions |
+**AI Denetim Alanları (Giden yorumlar için)**
 
-#### 2.2.4 Ratings Table (nb_tts_ratings)
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| source_language_code | VARCHAR | Kaynak dil |
+| content_translated | TEXT | Çevrilmiş içerik |
+| is_translated | BOOLEAN | Çevrildi mi? |
+| is_ai_blocked | BOOLEAN | AI tarafından engellendi mi? |
+| ai_block_reason | VARCHAR | Engelleme nedeni |
+| ai_block_detail | TEXT | Detaylı açıklama |
+| ai_quality_score | NUMERIC | Kalite puanı |
+| ai_suggestions | TEXT | İyileştirme önerileri |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| ticket_id | BIGINT | Ticket ID (unique) |
-| overall_rating | INT | Overall satisfaction (1-5) |
-| response_rating | INT | Response speed (1-5) |
-| professionalism_rating | INT | Professionalism (1-5) |
-| resolution_rating | INT | Problem resolution (1-5) |
-| nps_score | INT | NPS score (0-10) |
-| tags | JSONB | Quick tags |
-| comment | TEXT | Written feedback |
+#### 2.2.4 Değerlendirme Tablosu (nb_tts_ratings)
 
-#### 2.2.5 Knowledge Articles Table (nb_tts_qa_articles)
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| ticket_id | BIGINT | Talep ID (benzersiz) |
+| overall_rating | INT | Genel memnuniyet (1-5) |
+| response_rating | INT | Yanıt hızı (1-5) |
+| professionalism_rating | INT | Profesyonellik (1-5) |
+| resolution_rating | INT | Sorun çözümü (1-5) |
+| nps_score | INT | NPS puanı (0-10) |
+| tags | JSONB | Hızlı etiketler |
+| comment | TEXT | Yazılı değerlendirme |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| article_no | VARCHAR | Article number KB-T0001 |
-| title | VARCHAR | Title |
-| content | TEXT | Content (Markdown) |
-| summary | TEXT | Summary |
-| category_code | VARCHAR | Category code |
-| keywords | JSONB | Keywords |
-| source_type | VARCHAR | Source: ticket/faq/manual |
-| source_ticket_id | BIGINT | Source ticket ID |
-| ai_generated | BOOLEAN | Whether AI-generated |
-| ai_quality_score | NUMERIC | Quality score |
-| status | VARCHAR | Status: draft/published/archived |
-| view_count | INT | View count |
-| helpful_count | INT | Helpful count |
+#### 2.2.5 Bilgi Bankası Makaleleri (nb_tts_qa_articles)
 
-### 2.3 Data Table List
+| Alan | Tür | Açıklama |
+|------|-----|----------|
+| article_no | VARCHAR | Makale no KB-T0001 |
+| title | VARCHAR | Başlık |
+| content | TEXT | İçerik (Markdown) |
+| summary | TEXT | Özet |
+| category_code | VARCHAR | Kategori kodu |
+| keywords | JSONB | Anahtar kelimeler |
+| source_type | VARCHAR | Kaynak: ticket/faq/manual |
+| source_ticket_id | BIGINT | Kaynak talep ID |
+| ai_generated | BOOLEAN | AI tarafından mı oluşturuldu? |
+| ai_quality_score | NUMERIC | Kalite puanı |
+| status | VARCHAR | Durum: draft/published/archived |
+| view_count | INT | Görüntülenme sayısı |
+| helpful_count | INT | Faydalı sayısı |
 
-| No. | Table Name | Description | Record Type |
-|-----|------------|-------------|-------------|
-| 1 | nb_tts_tickets | Ticket main table | Business data |
-| 2 | nb_tts_biz_repair | Equipment repair extension | Business data |
-| 3 | nb_tts_biz_it_support | IT support extension | Business data |
-| 4 | nb_tts_biz_complaint | Customer complaint extension | Business data |
-| 5 | nb_tts_customers | Customer main table | Business data |
-| 6 | nb_tts_customer_contacts | Customer contacts | Business data |
-| 7 | nb_tts_ticket_comments | Ticket comments | Business data |
-| 8 | nb_tts_ratings | Satisfaction ratings | Business data |
-| 9 | nb_tts_qa_articles | Knowledge articles | Knowledge data |
-| 10 | nb_tts_qa_article_relations | Article relations | Knowledge data |
-| 11 | nb_tts_faqs | FAQs | Knowledge data |
-| 12 | nb_tts_tickets_categories | Ticket categories | Config data |
-| 13 | nb_tts_sla_configs | SLA configuration | Config data |
-| 14 | nb_tts_skill_configs | Skill configuration | Config data |
-| 15 | nb_tts_business_types | Business types | Config data |
+### 2.3 Veri Tablosu Listesi
 
----
-
-## 3. Ticket Lifecycle
-
-### 3.1 Status Definitions
-
-| Status | Name | Description | SLA Timing | Color |
-|--------|------|-------------|------------|-------|
-| new | New | Just created, awaiting assignment | Start | Blue |
-| assigned | Assigned | Assignee specified, awaiting pickup | Continue | Cyan |
-| processing | Processing | Being processed | Continue | Orange |
-| pending | Pending | Waiting for customer feedback | **Paused** | Gray |
-| transferred | Transferred | Transferred to another person | Continue | Purple |
-| resolved | Resolved | Waiting for customer confirmation | Stop | Green |
-| closed | Closed | Ticket ended | Stop | Gray |
-| cancelled | Cancelled | Ticket cancelled | Stop | Gray |
-
-### 3.2 Status Flow Diagram
-
-**Main Flow (Left to Right)**
-
-![ticketing-imgs-en-2025-12-31-23-21-01](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
-
-**Branch Flows**
-
-![ticketing-imgs-en-2025-12-31-23-22-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
-
-![ticketing-imgs-en-2025-12-31-23-22-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
-
-**Complete State Machine**
-
-![ticketing-imgs-en-2025-12-31-23-23-13](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
-
-### 3.3 Key Status Transition Rules
-
-| From | To | Trigger Condition | System Action |
-|------|----|--------------------|---------------|
-| new | assigned | Assign handler | Record assigned_at |
-| assigned | processing | Handler clicks "Accept" | None |
-| processing | pending | Click "Pause" | Record sla_paused_at |
-| pending | processing | Customer reply / Manual resume | Calculate pause duration, clear paused_at |
-| processing | resolved | Click "Resolve" | Record resolved_at |
-| resolved | closed | Customer confirm / 3-day timeout | Record closed_at |
-| * | cancelled | Cancel ticket | None |
+| No | Tablo Adı | Açıklama | Kayıt Türü |
+|----|-----------|----------|------------|
+| 1 | nb_tts_tickets | Destek talebi ana tablosu | İş Verisi |
+| 2 | nb_tts_biz_repair | Cihaz onarımı genişletmesi | İş Verisi |
+| 3 | nb_tts_biz_it_support | BT desteği genişletmesi | İş Verisi |
+| 4 | nb_tts_biz_complaint | Müşteri şikayeti genişletmesi | İş Verisi |
+| 5 | nb_tts_customers | Müşteri ana tablosu | İş Verisi |
+| 6 | nb_tts_customer_contacts | Müşteri ilgili kişileri | İş Verisi |
+| 7 | nb_tts_ticket_comments | Talep yorumları | İş Verisi |
+| 8 | nb_tts_ratings | Memnuniyet değerlendirmeleri | İş Verisi |
+| 9 | nb_tts_qa_articles | Bilgi bankası makaleleri | Bilgi Verisi |
+| 10 | nb_tts_qa_article_relations | Makale ilişkileri | Bilgi Verisi |
+| 11 | nb_tts_faqs | Sıkça sorulan sorular | Bilgi Verisi |
+| 12 | nb_tts_tickets_categories | Talep kategorileri | Yapılandırma |
+| 13 | nb_tts_sla_configs | SLA yapılandırması | Yapılandırma |
+| 14 | nb_tts_skill_configs | Beceri yapılandırması | Yapılandırma |
+| 15 | nb_tts_business_types | İş türleri | Yapılandırma |
 
 ---
 
-## 4. SLA Service Level Management
+## 3. Destek Talebi Yaşam Döngüsü
 
-### 4.1 Priority and SLA Configuration
+### 3.1 Durum Tanımları
 
-| Priority | Name | Response Time | Resolution Time | Alert Threshold | Typical Scenario |
-|----------|------|---------------|-----------------|-----------------|------------------|
-| P0 | Critical | 15 min | 2 hours | 80% | System down, production line stopped |
-| P1 | High | 1 hour | 8 hours | 80% | Important feature failure |
-| P2 | Medium | 4 hours | 24 hours | 80% | General issues |
-| P3 | Low | 8 hours | 72 hours | 80% | Inquiries, suggestions |
+| Durum | Adı | Açıklama | SLA Zamanlaması | Renk |
+|-------|-----|----------|-----------------|------|
+| new | Yeni | Yeni oluşturuldu, atama bekliyor | Başlat | 🔵 Mavi |
+| assigned | Atandı | Sorumlu belirlendi, kabul bekliyor | Devam Et | 🔷 Cam Göbeği |
+| processing | İşleniyor | Üzerinde çalışılıyor | Devam Et | 🟠 Turuncu |
+| pending | Beklemede | Müşteri geri bildirimi bekleniyor | **Duraklat** | ⚫ Gri |
+| transferred | Aktarıldı | Başka birine devredildi | Devam Et | 🟣 Mor |
+| resolved | Çözüldü | Müşteri onayı bekleniyor | Durdur | 🟢 Yeşil |
+| closed | Kapalı | Talep sonuçlandı | Durdur | ⚫ Gri |
+| cancelled | İptal Edildi | Talep iptal edildi | Durdur | ⚫ Gri |
 
-### 4.2 SLA Calculation Logic
+### 3.2 Durum Akış Diyagramı
 
-![ticketing-imgs-en-2025-12-31-23-23-46](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
+**Ana Akış (Soldan Sağa)**
 
-#### On Ticket Creation
+![ticketing-imgs-2025-12-31-22-51-45](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-21-01.png)
 
-```
-sla_response_due = submitted_at + response_time_minutes
-sla_resolve_due = submitted_at + resolve_time_minutes
-```
+**Yan Akışlar**
 
-#### On Pause (pending)
+![ticketing-imgs-2025-12-31-22-52-42](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-14.png)
 
-```
--- Record pause start time
-sla_paused_at = NOW()
-```
+![ticketing-imgs-2025-12-31-22-52-53](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-22-32.png)
 
-#### On Resume (from pending to processing)
 
-```
--- Calculate pause duration
-pause_duration = NOW() - sla_paused_at
+**Tam Durum Makinesi**
 
--- Add to total pause duration
-sla_paused_duration = sla_paused_duration + pause_duration
+![ticketing-imgs-2025-12-31-22-54-23](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-13.png)
 
--- Extend deadlines
-sla_response_due = sla_response_due + pause_duration
-sla_resolve_due = sla_resolve_due + pause_duration
+### 3.3 Kritik Durum Geçiş Kuralları
 
--- Clear pause time
-sla_paused_at = NULL
-```
+| Kaynak | Hedef | Tetikleyici Koşul | Sistem Eylemi |
+|--------|-------|-------------------|---------------|
+| new | assigned | Sorumlu atanması | assigned_at kaydı |
+| assigned | processing | Sorumlunun "Kabul Et"e tıklaması | Yok |
+| processing | pending | "Beklemeye Al"a tıklanması | sla_paused_at kaydı |
+| pending | processing | Müşteri yanıtı / Manuel devam | Duraklatma süresini hesapla, paused_at'i temizle |
+| processing | resolved | "Çözüldü"ye tıklanması | resolved_at kaydı |
+| resolved | closed | Müşteri onayı / 3 gün zaman aşımı | closed_at kaydı |
+| * | cancelled | Talebin iptal edilmesi | Yok |
 
-#### SLA Breach Determination
-
-```
--- Response breach
-is_sla_response_breached = (first_response_at IS NULL AND NOW() > sla_response_due)
-                        OR (first_response_at > sla_response_due)
-
--- Resolution breach
-is_sla_resolve_breached = (resolved_at IS NULL AND NOW() > sla_resolve_due)
-                       OR (resolved_at > sla_resolve_due)
-```
-
-### 4.3 SLA Alert Mechanism
-
-| Alert Level | Condition | Notify | Method |
-|-------------|-----------|--------|--------|
-| Yellow Alert | Remaining time < 20% | Assignee | In-app notification |
-| Red Alert | Already timeout | Assignee + Supervisor | In-app + Email |
-| Escalation Alert | Timeout 1 hour | Department Manager | Email + SMS |
-
-### 4.4 SLA Dashboard Metrics
-
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Response Compliance Rate | Non-breached tickets / Total tickets | > 95% |
-| Resolution Compliance Rate | Non-breached resolved / Total resolved | > 90% |
-| Average Response Time | SUM(response time) / Ticket count | < 50% of SLA |
-| Average Resolution Time | SUM(resolution time) / Ticket count | < 80% of SLA |
 
 ---
 
-## 5. AI Capabilities and Employee System
+## 4. SLA Hizmet Seviyesi Yönetimi
 
-### 5.1 AI Employee Team
+### 4.1 Öncelik ve SLA Yapılandırması
 
-The system configures 8 AI employees in two categories:
+| Öncelik | Adı | Yanıt Süresi | Çözüm Süresi | Uyarı Eşiği | Tipik Senaryo |
+|---------|-----|--------------|--------------|-------------|---------------|
+| P0 | Kritik | 15 dakika | 2 saat | %80 | Sistem çökmesi, üretim hattı durması |
+| P1 | Yüksek | 1 saat | 8 saat | %80 | Önemli özellik arızası |
+| P2 | Orta | 4 saat | 24 saat | %80 | Genel sorunlar |
+| P3 | Düşük | 8 saat | 72 saat | %80 | Danışma, öneriler |
 
-**New Employees (Ticketing System Specific)**
+### 4.2 SLA Hesaplama Mantığı
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| sam | Sam | Service Desk Supervisor | Ticket routing, priority assessment, escalation decisions, SLA risk identification |
-| grace | Grace | Customer Success Expert | Professional reply generation, tone adjustment, complaint handling, satisfaction recovery |
-| max | Max | Knowledge Assistant | Similar case search, knowledge recommendations, solution synthesis |
+![ticketing-imgs-2025-12-31-22-53-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-23-46.png)
 
-**Reused Employees (General Capabilities)**
+#### Talep Oluşturulduğunda
 
-| ID | Name | Position | Core Capabilities |
-|----|------|----------|-------------------|
-| dex | Dex | Data Organizer | Email-to-ticket, call-to-ticket, batch data cleaning |
-| ellis | Ellis | Email Expert | Email sentiment analysis, thread summarization, reply drafting |
-| lexi | Lexi | Translator | Ticket translation, reply translation, real-time conversation translation |
-| cole | Cole | NocoBase Expert | System usage guidance, workflow configuration help |
-| vera | Vera | Research Analyst | Technical solution research, product information verification |
+```
+Yanıt Son Tarihi = Gönderim Zamanı + Yanıt Süresi (dakika)
+Çözüm Son Tarihi = Gönderim Zamanı + Çözüm Süresi (dakika)
+```
 
-### 5.2 AI Task List
+#### Beklemeye Alındığında (pending)
 
-Each AI employee is configured with 4 specific tasks:
+```
+SLA Duraklatma Başlangıcı = Şu anki zaman
+```
 
-#### Sam's Tasks
+#### Devam Edildiğinde (pending durumundan processing durumuna)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| SAM-01 | Ticket Analysis & Routing | Workflow auto | Auto-analyze on new ticket creation |
-| SAM-02 | Priority Re-evaluation | Frontend interaction | Adjust priority based on new info |
-| SAM-03 | Escalation Decision | Frontend/Workflow | Determine if escalation needed |
-| SAM-04 | SLA Risk Assessment | Workflow auto | Identify timeout risks |
+```
+-- Mevcut duraklatma süresini hesapla
+Mevcut Duraklatma Süresi = Şu anki zaman - SLA Duraklatma Başlangıcı
 
-#### Grace's Tasks
+-- Toplam duraklatma süresine ekle
+Toplam Duraklatma Süresi = Toplam Duraklatma Süresi + Mevcut Duraklatma Süresi
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| GRACE-01 | Professional Reply Generation | Frontend interaction | Generate reply based on context |
-| GRACE-02 | Reply Tone Adjustment | Frontend interaction | Optimize existing reply tone |
-| GRACE-03 | Complaint De-escalation | Frontend/Workflow | Resolve customer complaints |
-| GRACE-04 | Satisfaction Recovery | Frontend/Workflow | Follow-up after negative experience |
+-- Son tarihleri uzat (duraklatma süresi SLA'ya dahil edilmez)
+Yanıt Son Tarihi = Yanıt Son Tarihi + Mevcut Duraklatma Süresi
+Çözüm Son Tarihi = Çözüm Son Tarihi + Mevcut Duraklatma Süresi
 
-#### Max's Tasks
+-- Duraklatma başlangıcını temizle
+SLA Duraklatma Başlangıcı = Boş
+```
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| MAX-01 | Similar Case Search | Frontend/Workflow | Find similar historical tickets |
-| MAX-02 | Knowledge Article Recommendation | Frontend/Workflow | Recommend relevant knowledge articles |
-| MAX-03 | Solution Synthesis | Frontend interaction | Synthesize solutions from multiple sources |
-| MAX-04 | Troubleshooting Guide | Frontend interaction | Create systematic troubleshooting process |
+#### SLA İhlal Kararı
 
-#### Lexi's Tasks
+```
+-- Yanıt İhlali
+Yanıt İhlal Edildi mi? = (İlk Yanıt Zamanı boş VE Şu anki zaman > Yanıt Son Tarihi)
+                       VEYA (İlk Yanıt Zamanı > Yanıt Son Tarihi)
 
-| Task ID | Name | Trigger Method | Description |
-|---------|------|----------------|-------------|
-| LEXI-01 | Ticket Translation | Workflow auto | Translate ticket content |
-| LEXI-02 | Reply Translation | Frontend interaction | Translate agent replies |
-| LEXI-03 | Batch Translation | Workflow auto | Batch translation processing |
-| LEXI-04 | Real-time Conversation Translation | Frontend interaction | Real-time dialogue translation |
+-- Çözüm İhlali
+Çözüm İhlal Edildi mi? = (Çözüm Zamanı boş VE Şu anki zaman > Çözüm Son Tarihi)
+                       VEYA (Çözüm Zamanı > Çözüm Son Tarihi)
+```
 
-### 5.3 AI Employees and Ticket Lifecycle
+### 4.3 SLA Uyarı Mekanizması
 
-![ticketing-imgs-en-2025-12-31-23-24-22](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+| Uyarı Seviyesi | Koşul | Bildirim Alacak Kişi | Yöntem |
+|----------------|-------|----------------------|--------|
+| Sarı Uyarı | Kalan süre < %20 | Sorumlu | Sistem içi mesaj |
+| Kırmızı Uyarı | Zaman aşımı gerçekleşti | Sorumlu + Yönetici | Sistem içi + E-posta |
+| Eskalasyon | Zaman aşımı + 1 saat | Departman Müdürü | E-posta + SMS |
 
-### 5.4 AI Response Examples
+### 4.4 SLA Gösterge Paneli Metrikleri
 
-#### SAM-01 Ticket Analysis Response
+| Metrik | Formül | Sağlık Eşiği |
+|--------|--------|--------------|
+| Yanıt Uyumluluk Oranı | İhlal edilmeyen talepler / Toplam talepler | > %95 |
+| Çözüm Uyumluluk Oranı | İhlal edilmeden çözülenler / Toplam çözülenler | > %90 |
+| Ortalama Yanıt Süresi | TOPLAM(Yanıt Süresi) / Talep Sayısı | < SLA'nın %50'si |
+| Ortalama Çözüm Süresi | TOPLAM(Çözüm Süresi) / Talep Sayısı | < SLA'nın %80'i |
+
+---
+
+## 5. AI Yetenekleri ve Çalışan Sistemi
+
+### 5.1 AI Çalışan Ekibi
+
+Sistem, iki kategoride 8 AI çalışanı ile yapılandırılmıştır:
+
+**Yeni Çalışanlar (Destek Sistemine Özel)**
+
+| ID | Adı | Pozisyon | Temel Yetenekler |
+|----|-----|----------|------------------|
+| sam | Sam | Hizmet Masası Sorumlusu | Talep yönlendirme, öncelik değerlendirme, eskalasyon kararları, SLA risk tespiti |
+| grace | Grace | Müşteri Başarı Uzmanı | Profesyonel yanıt oluşturma, üslup düzenleme, şikayet yönetimi, memnuniyet kurtarma |
+| max | Max | Bilgi Asistanı | Benzer vaka bulma, bilgi bankası önerileri, çözüm sentezi |
+
+**Yeniden Kullanılan Çalışanlar (Genel Yetenekler)**
+
+| ID | Adı | Pozisyon | Temel Yetenekler |
+|----|-----|----------|------------------|
+| dex | Dex | Veri Düzenleyici | E-postadan talep oluşturma, çağrıdan talep oluşturma, toplu veri temizleme |
+| ellis | Ellis | E-posta Uzmanı | E-posta duygu analizi, yazışma özeti, yanıt taslağı hazırlama |
+| lexi | Lexi | Tercüman | Talep çevirisi, yanıt çevirisi, gerçek zamanlı diyalog çevirisi |
+| cole | Cole | NocoBase Uzmanı | Sistem kullanım rehberliği, iş akışı yapılandırma yardımı |
+| vera | Vera | Araştırma Analisti | Teknik çözüm araştırması, ürün bilgisi doğrulama |
+
+### 5.2 AI Görev Listesi
+
+Her AI çalışanı 4 spesifik görevle yapılandırılmıştır:
+
+#### Sam'in Görevleri
+
+| Görev ID | Adı | Tetikleme Yöntemi | Açıklama |
+|----------|-----|-------------------|----------|
+| SAM-01 | Talep Analizi ve Yönlendirme | Otomatik iş akışı | Yeni talep oluştuğunda otomatik analiz |
+| SAM-02 | Öncelik Yeniden Değerlendirme | Ön yüz etkileşimi | Yeni bilgilere göre önceliği ayarla |
+| SAM-03 | Eskalasyon Kararı | Ön yüz/İş akışı | Eskalasyon gerekip gerekmediğine karar ver |
+| SAM-04 | SLA Risk Değerlendirmesi | Otomatik iş akışı | Zaman aşımı risklerini belirle |
+
+#### Grace'in Görevleri
+
+| Görev ID | Adı | Tetikleme Yöntemi | Açıklama |
+|----------|-----|-------------------|----------|
+| GRACE-01 | Profesyonel Yanıt Oluşturma | Ön yüz etkileşimi | Bağlama göre yanıt oluştur |
+| GRACE-02 | Yanıt Üslup Düzenleme | Ön yüz etkileşimi | Mevcut yanıtın üslubunu optimize et |
+| GRACE-03 | Şikayet Yatıştırma | Ön yüz/İş akışı | Müşteri şikayetlerini çözüme kavuştur |
+| GRACE-04 | Memnuniyet Kurtarma | Ön yüz/İş akışı | Olumsuz deneyim sonrası takip |
+
+#### Max'in Görevleri
+
+| Görev ID | Adı | Tetikleme Yöntemi | Açıklama |
+|----------|-----|-------------------|----------|
+| MAX-01 | Benzer Vaka Arama | Ön yüz/İş akışı | Geçmişteki benzer talepleri bul |
+| MAX-02 | Bilgi Makalesi Önerisi | Ön yüz/İş akışı | İlgili bilgi bankası makalelerini öner |
+| MAX-03 | Çözüm Sentezi | Ön yüz etkileşimi | Çoklu kaynaktan çözüm sentezle |
+| MAX-04 | Sorun Giderme Kılavuzu | Ön yüz etkileşimi | Sistematik sorun giderme süreci oluştur |
+
+#### Lexi'nin Görevleri
+
+| Görev ID | Adı | Tetikleme Yöntemi | Açıklama |
+|----------|-----|-------------------|----------|
+| LEXI-01 | Talep Çevirisi | Otomatik iş akışı | Talep içeriğini çevir |
+| LEXI-02 | Yanıt Çevirisi | Ön yüz etkileşimi | Temsilci yanıtlarını çevir |
+| LEXI-03 | Toplu Çeviri | Otomatik iş akışı | Toplu çeviri işlemi |
+| LEXI-04 | Gerçek Zamanlı Diyalog Çevirisi | Ön yüz etkileşimi | Canlı sohbet çevirisi |
+
+### 5.3 AI Çalışanları ve Talep Yaşam Döngüsü
+
+![ticketing-imgs-2025-12-31-22-55-04](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-22.png)
+
+### 5.4 AI Yanıt Örnekleri
+
+#### SAM-01 Talep Analiz Yanıtı
 
 ```json
 {
   "category_code": "COMPUTER",
   "sentiment": "NEGATIVE",
   "urgency": "HIGH",
-  "keywords": ["ERP", "login failure", "timeout", "month-end closing"],
+  "keywords": ["ERP", "giriş hatası", "zaman aşımı", "ay sonu kapanışı"],
   "confidence": 0.92,
-  "reasoning": "This ticket describes an ERP system login issue affecting finance department month-end closing, high urgency",
-  "suggested_reply": "Dear Customer, thank you for reporting this issue...",
-  "source_language_code": "zh",
+  "reasoning": "Bu talep, finans departmanının ay sonu kapanışını etkileyen bir ERP sistemi giriş sorununu tanımlıyor, aciliyet yüksek",
+  "suggested_reply": "Sayın Müşterimiz, bu sorunu bildirdiğiniz için teşekkür ederiz...",
+  "source_language_code": "tr",
   "is_translated": true,
-  "description_translated": "Hello, our ERP system cannot login..."
+  "description_translated": "Merhaba, ERP sistemimize giriş yapamıyoruz..."
 }
 ```
 
-#### GRACE-01 Reply Generation Response
+#### GRACE-01 Yanıt Oluşturma Yanıtı
 
 ```
-Dear Mr. Zhang,
+Sayın Ahmet Bey,
 
-Thank you for contacting us about the ERP login issue. I fully understand this issue is
-affecting your company's month-end closing work, and we have prioritized this as high priority.
+ERP giriş sorunuyla ilgili bizimle iletişime geçtiğiniz için teşekkür ederiz. Bu sorunun 
+şirketinizin ay sonu kapanış çalışmalarını etkilediğini tamamen anlıyorum ve bu konuyu 
+yüksek öncelikli olarak işleme aldık.
 
-Current status:
-- Technical team is investigating server connection issues
-- Expected to provide an update within 30 minutes
+Mevcut durum:
+- Teknik ekibimiz sunucu bağlantı sorunlarını inceliyor
+- 30 dakika içinde size bir güncelleme sunmayı bekliyoruz
 
-In the meantime, you can try:
-1. Access via backup address: https://erp-backup.company.com
-2. For urgent report needs, contact us for export assistance
+Bu sırada şunları deneyebilirsiniz:
+1. Yedek adres üzerinden erişim: https://erp-backup.company.com
+2. Acil rapor ihtiyaçlarınız için dışa aktarma yardımı almak üzere bizimle iletişime geçebilirsiniz
 
-Please feel free to contact me if you have any other questions.
+Başka bir sorunuz olursa lütfen çekinmeden bana ulaşın.
 
-Best regards,
-Technical Support Team
+Saygılarımla,
+Teknik Destek Ekibi
 ```
 
-### 5.5 AI EQ Firewall
+### 5.5 AI Duygusal Zeka Güvenlik Duvarı
 
-Grace's reply quality review blocks the following issues:
+Grace tarafından yürütülen yanıt kalitesi denetimi şu sorunları engeller:
 
-| Issue Type | Original Example | AI Suggestion |
-|------------|------------------|---------------|
-| Negative tone | "No, this is not under warranty" | "This fault is not currently covered by free warranty, we can offer a paid repair plan" |
-| Blaming customer | "You broke it yourself" | "Upon verification, this fault is accidental damage" |
-| Shifting responsibility | "Not our problem" | "Let me help you further investigate the cause" |
-| Cold expression | "Don't know" | "Let me look up the relevant information for you" |
-| Sensitive information | "Your password is abc123" | [Blocked] Contains sensitive information, not allowed to send |
+| Sorun Türü | Orijinal Örnek | AI Önerisi |
+|------------|----------------|------------|
+| Olumsuz Üslup | "Hayır, bu garanti kapsamında değil" | "Bu arıza şu an için ücretsiz garanti kapsamında değildir, size ücretli bir onarım planı sunabiliriz" |
+| Müşteriyi Suçlama | "Kendiniz bozmuşsunuz" | "Yapılan inceleme sonucunda bu arızanın kaza sonucu oluşan bir hasar olduğu tespit edilmiştir" |
+| Sorumluluktan Kaçma | "Bizim sorunumuz değil" | "Sorunun nedenini daha detaylı araştırmanıza yardımcı olayım" |
+| Soğuk İfade | "Bilmiyorum" | "Sizin için ilgili bilgileri hemen araştırıyorum" |
+| Hassas Bilgi | "Şifreniz: abc123" | [Engellendi] Hassas bilgi içeriyor, gönderilmesine izin verilmiyor |
 
 ---
 
-## 6. Knowledge Base System
+## 6. Bilgi Bankası Sistemi
 
-### 6.1 Knowledge Sources
+### 6.1 Bilgi Kaynakları
 
-![ticketing-imgs-en-2025-12-31-23-24-57](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
+![ticketing-imgs-2025-12-31-22-55-20](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-24-57.png)
 
-### 6.2 Ticket-to-Knowledge Flow
 
-![ticketing-imgs-en-2025-12-31-23-25-18](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
+### 6.2 Talepten Bilgiye Dönüşüm Akışı
 
-**Evaluation Dimensions**:
-- **Generality**: Is this a common problem?
-- **Completeness**: Is the solution clear and complete?
-- **Reproducibility**: Are the steps reusable?
+![ticketing-imgs-2025-12-31-22-55-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-18.png)
 
-### 6.3 Knowledge Recommendation Mechanism
+**Değerlendirme Boyutları**:
+- **Genellik**: Bu yaygın bir sorun mu?
+- **Tamlık**: Çözüm net ve eksiksiz mi?
+- **Tekrarlanabilirlik**: Adımlar yeniden kullanılabilir mi?
 
-When an agent opens ticket details, Max automatically recommends related knowledge:
+### 6.3 Bilgi Önerisi Mekanizması
+
+Bir temsilci talep detaylarını açtığında, Max otomatik olarak ilgili bilgileri önerir:
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Recommended Knowledge                       [Expand/Collapse]│
+│ 📚 Önerilen Bilgiler                          [Genişlet/Daralt] │
 │ ┌────────────────────────────────────────────────────────┐ │
-│ │ KB-T0042 CNC Servo System Fault Diagnosis Guide  Match: 94% │
-│ │ Includes: Alarm code interpretation, servo drive check steps │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0042 CNC Servo Sistemi Arıza Teşhis Kılavuzu Eşleşme: %94 │
+│ │ İçerik: Alarm kodu yorumlama, servo sürücü kontrol adımları    │
+│ │ [Görüntüle] [Yanıta Uygula] [Faydalı Olarak İşaretle]          │
 │ ├────────────────────────────────────────────────────────┤ │
-│ │ KB-T0038 XYZ-CNC3000 Series Maintenance Manual   Match: 87% │
-│ │ Includes: Common faults, preventive maintenance plan      │
-│ │ [View] [Apply to Reply] [Mark Helpful]                   │
+│ │ KB-T0038 XYZ-CNC3000 Serisi Bakım El Kitabı      Eşleşme: %87 │
+│ │ İçerik: Yaygın arızalar, önleyici bakım planı                  │
+│ │ [Görüntüle] [Yanıta Uygula] [Faydalı Olarak İşaretle]          │
 │ └────────────────────────────────────────────────────────┘ │
 └────────────────────────────────────────────────────────────┘
 ```
 
-### 6.4 Knowledge Base Health Metrics
+---
 
-| Metric | Formula | Health Threshold |
-|--------|---------|------------------|
-| Coverage Rate | Tickets with recommendations / Total tickets | > 60% |
-| Effectiveness Rate | helpful_count / (helpful + not_helpful) | > 75% |
-| Citation Rate | Cited articles / Total published articles | > 40% |
-| Freshness | Articles updated in last 90 days ratio | > 50% |
+## 7. İş Akışı Motoru
+
+### 7.1 İş Akışı Kategorileri
+
+| Kod | Kategori | Açıklama | Tetikleme Yöntemi |
+|-----|----------|----------|-------------------|
+| WF-T | Talep Akışı | Talep yaşam döngüsü yönetimi | Form olayları |
+| WF-S | SLA Akışı | SLA hesaplama ve uyarılar | Form olayları/Zamanlanmış |
+| WF-C | Yorum Akışı | Yorum işleme ve çeviri | Form olayları |
+| WF-R | Değerlendirme Akışı | Değerlendirme davetleri ve istatistikler | Form olayları/Zamanlanmış |
+| WF-N | Bildirim Akışı | Bildirim gönderimi | Olay odaklı |
+| WF-AI | AI Akışı | AI analizi ve içerik oluşturma | Form olayları |
+
+### 7.2 Temel İş Akışları
+
+#### WF-T01: Talep Oluşturma Akışı
+
+![ticketing-imgs-2025-12-31-22-55-51](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+
+#### WF-AI01: Talep AI Analizi
+
+![ticketing-imgs-2025-12-31-22-56-03](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+
+#### WF-AI04: Yorum Çevirisi ve Denetimi
+
+![ticketing-imgs-2025-12-31-22-56-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+
+#### WF-AI03: Bilgi Oluşturma
+
+![ticketing-imgs-2025-12-31-22-56-37](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
+
+### 7.3 Zamanlanmış Görevler
+
+| Görev | Sıklık | Açıklama |
+|-------|--------|----------|
+| SLA Uyarı Kontrolü | Her 5 dakikada bir | Zaman aşımına yaklaşan talepleri kontrol et |
+| Talep Otomatik Kapatma | Günlük | 'Resolved' durumundaki talepleri 3 gün sonra kapat |
+| Değerlendirme Daveti | Günlük | Kapandıktan 24 saat sonra değerlendirme daveti gönder |
+| İstatistik Güncelleme | Saatlik | Müşteri talep istatistiklerini güncelle |
 
 ---
 
-## 7. Workflow Engine
+## 8. Menü ve Arayüz Tasarımı
 
-### 7.1 Workflow Categories
+### 8.1 Yönetim Paneli
 
-| Code | Category | Description | Trigger Method |
-|------|----------|-------------|----------------|
-| WF-T | Ticket Flow | Ticket lifecycle management | Form events |
-| WF-S | SLA Flow | SLA calculation and alerts | Form events/Scheduled |
-| WF-C | Comment Flow | Comment processing and translation | Form events |
-| WF-R | Rating Flow | Rating invitations and statistics | Form events/Scheduled |
-| WF-N | Notification Flow | Notification sending | Event-driven |
-| WF-AI | AI Flow | AI analysis and generation | Form events |
+![ticketing-imgs-2025-12-31-22-59-10](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
 
-### 7.2 Core Workflows
+### 8.2 Müşteri Portalı
 
-#### WF-T01: Ticket Creation Flow
+![ticketing-imgs-2025-12-31-22-59-32](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
 
-![ticketing-imgs-en-2025-12-31-23-25-48](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-25-48.png)
+### 8.3 Gösterge Paneli Tasarımı
 
-#### WF-AI01: Ticket AI Analysis
+#### Yönetici Görünümü
 
-![ticketing-imgs-en-2025-12-31-23-26-14](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-14.png)
+| Bileşen | Tür | Veri Açıklaması |
+|---------|-----|-----------------|
+| SLA Uyumluluk Oranı | Gösterge | Bu ayın yanıt/çözüm uyumluluğu |
+| Memnuniyet Trendi | Çizgi Grafik | Son 30 günlük memnuniyet değişimi |
+| Talep Hacmi Trendi | Sütun Grafik | Son 30 günlük talep hacmi |
+| İş Türü Dağılımı | Pasta Grafik | Her iş türünün oranı |
 
-#### WF-AI04: Comment Translation & Review
+#### Sorumlu Yönetici Görünümü
 
-![ticketing-imgs-en-2025-12-31-23-26-38](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-38.png)
+| Bileşen | Tür | Veri Açıklaması |
+|---------|-----|-----------------|
+| Zaman Aşımı Uyarıları | Liste | Zaman aşımına yaklaşan/geçen talepler |
+| Ekip İş Yükü | Sütun Grafik | Ekip üyelerinin talep sayıları |
+| Bekleyen İş Dağılımı | Yığılmış Grafik | Durumlara göre talep sayıları |
+| İşlem Süresi | Isı Haritası | Ortalama işlem süresi dağılımı |
 
-#### WF-AI03: Knowledge Generation
+#### Temsilci Görünümü
 
-![ticketing-imgs-en-2025-12-31-23-26-54](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-26-54.png)
-
-### 7.3 Scheduled Tasks
-
-| Task | Frequency | Description |
-|------|-----------|-------------|
-| SLA Alert Check | Every 5 minutes | Check tickets about to timeout |
-| Ticket Auto-Close | Daily | Auto-close resolved status after 3 days |
-| Rating Invitation | Daily | Send rating invitation 24 hours after close |
-| Statistics Update | Hourly | Update customer ticket statistics |
-
----
-
-## 8. Menu and Interface Design
-
-### 8.1 Backend Admin
-
-![ticketing-imgs-en-2025-12-31-23-27-19](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-19.png)
-
-### 8.2 Customer Portal
-
-![ticketing-imgs-en-2025-12-31-23-27-35](https://static-docs.nocobase.com/ticketing-imgs-en-2025-12-31-23-27-35.png)
-
-### 8.3 Dashboard Design
-
-#### Executive View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| SLA Compliance Rate | Gauge | This month's response/resolution compliance |
-| Satisfaction Trend | Line Chart | Last 30 days satisfaction changes |
-| Ticket Volume Trend | Bar Chart | Last 30 days ticket volume |
-| Business Type Distribution | Pie Chart | Proportion of each business type |
-
-#### Supervisor View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| Timeout Alerts | List | About to timeout/already timeout tickets |
-| Team Workload | Bar Chart | Team member ticket counts |
-| Backlog Distribution | Stacked Chart | Ticket counts by status |
-| Processing Time | Heatmap | Average processing time distribution |
-
-#### Agent View
-
-| Component | Type | Data Description |
-|-----------|------|------------------|
-| My To-Do | Number Card | Pending ticket count |
-| Priority Distribution | Pie Chart | P0/P1/P2/P3 distribution |
-| Today's Statistics | Metric Card | Today's processed/resolved count |
-| SLA Countdown | List | Top 5 most urgent tickets |
+| Bileşen | Tür | Veri Açıklaması |
+|---------|-----|-----------------|
+| Yapılacaklarım | Sayı Kartı | Bekleyen talep sayısı |
+| Öncelik Dağılımı | Pasta Grafik | P0/P1/P2/P3 dağılımı |
+| Bugünün İstatistikleri | Metrik Kartı | Bugün işlenen/çözülen sayısı |
+| SLA Geri Sayımı | Liste | En acil 5 talep |
 
 ---
 
-## Appendix
+## Ekler
 
-### A. Business Type Configuration
+### A. İş Türü Yapılandırması
 
-| Type Code | Name | Icon | Associated Extension Table |
-|-----------|------|------|---------------------------|
-| repair | Equipment Repair | wrench | nb_tts_biz_repair |
-| it_support | IT Support | computer | nb_tts_biz_it_support |
-| complaint | Customer Complaint | megaphone | nb_tts_biz_complaint |
-| consultation | Consultation | question | None |
-| other | Other | memo | None |
+| Tür Kodu | Adı | Simge | İlişkili Genişletme Tablosu |
+|----------|-----|-------|----------------------------|
+| repair | Cihaz Onarımı | 🔧 | nb_tts_biz_repair |
+| it_support | BT Desteği | 💻 | nb_tts_biz_it_support |
+| complaint | Müşteri Şikayeti | 📢 | nb_tts_biz_complaint |
+| consultation | Danışma | ❓ | Yok |
+| other | Diğer | 📝 | Yok |
 
-### B. Category Codes
+### B. Kategori Kodları
 
-| Code | Name | Description |
-|------|------|-------------|
-| CONVEYOR | Conveyor System | Conveyor system issues |
-| PACKAGING | Packaging Machine | Packaging machine issues |
-| WELDING | Welding Equipment | Welding equipment issues |
-| COMPRESSOR | Air Compressor | Air compressor issues |
-| COLD_STORE | Cold Storage | Cold storage issues |
-| CENTRAL_AC | Central AC | Central AC issues |
-| FORKLIFT | Forklift | Forklift issues |
-| COMPUTER | Computer | Computer hardware issues |
-| PRINTER | Printer | Printer issues |
-| PROJECTOR | Projector | Projector issues |
-| INTERNET | Network | Network connectivity issues |
-| EMAIL | Email | Email system issues |
-| ACCESS | Access | Account permission issues |
-| PROD_INQ | Product Inquiry | Product inquiry |
-| COMPLAINT | General Complaint | General complaint |
-| DELAY | Shipping Delay | Shipping delay complaint |
-| DAMAGE | Package Damage | Package damage complaint |
-| QUANTITY | Quantity Shortage | Quantity shortage complaint |
-| SVC_ATTITUDE | Service Attitude | Service attitude complaint |
-| PROD_QUALITY | Product Quality | Product quality complaint |
-| TRAINING | Training | Training request |
-| RETURN | Return | Return request |
+| Kod | Adı | Açıklama |
+|-----|-----|----------|
+| CONVEYOR | Konveyör Sistemi | Konveyör sistemi sorunları |
+| PACKAGING | Paketleme Makinesi | Paketleme makinesi sorunları |
+| WELDING | Kaynak Ekipmanı | Kaynak ekipmanı sorunları |
+| COMPRESSOR | Hava Kompresörü | Hava kompresörü sorunları |
+| COLD_STORE | Soğuk Hava Deposu | Soğuk hava deposu sorunları |
+| CENTRAL_AC | Merkezi Klima | Merkezi klima sorunları |
+| FORKLIFT | Forklift | Forklift sorunları |
+| COMPUTER | Bilgisayar | Bilgisayar donanım sorunları |
+| PRINTER | Yazıcı | Yazıcı sorunları |
+| PROJECTOR | Projeksiyon | Projeksiyon sorunları |
+| INTERNET | İnternet | Ağ bağlantı sorunları |
+| EMAIL | E-posta | E-posta sistemi sorunları |
+| ACCESS | Erişim | Hesap yetki sorunları |
+| PROD_INQ | Ürün Sorgulama | Ürün bilgisi sorgulama |
+| COMPLAINT | Genel Şikayet | Genel şikayetler |
+| DELAY | Nakliye Gecikmesi | Nakliye gecikme şikayeti |
+| DAMAGE | Paket Hasarı | Paket hasarı şikayeti |
+| QUANTITY | Miktar Eksikliği | Miktar eksikliği şikayeti |
+| SVC_ATTITUDE | Hizmet Tutumu | Hizmet tutumu şikayeti |
+| PROD_QUALITY | Ürün Kalitesi | Ürün kalitesi şikayeti |
+| TRAINING | Eğitim | Eğitim talebi |
+| RETURN | İade | İade talebi |
 
 ---
 
-*Document Version: 2.0 | Last Updated: 2026-01-05*
+*Belge Sürümü: 2.0 | Son Güncelleme: 2026-01-05*

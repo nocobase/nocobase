@@ -92,7 +92,7 @@ Po zakończeniu konfiguracji zalecamy przeprowadzenie testowego logowania:
 1. Proszę wylogować się z bieżącej sesji.
 2. Na stronie logowania proszę wybrać skonfigurowaną metodę SSO.
 
-![](https://static-docs.nocobase.com/74963865c9d36a2949486adeb5b24bc.png)
+![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)
 
 3. Proszę ukończyć proces uwierzytelniania u dostawcy tożsamości.
 4. Proszę zweryfikować, czy logowanie do NocoBase zakończyło się sukcesem.

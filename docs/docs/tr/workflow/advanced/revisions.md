@@ -9,7 +9,7 @@ Yapılandırılmış bir iş akışı en az bir kez tetiklendikten sonra, eğer 
 
 İş akışı yapılandırma sayfasında, sağ üst köşedeki sürüm menüsünden mevcut iş akışı sürümlerini görüntüleyebilirsiniz:
 
-![İş akışı sürümlerini görüntüle](https://static-docs.nocobase.com/ad93d2b08166b0e3e643fb148713a63f.png)
+![İş akışı sürümlerini görüntüle](https://static-docs.nocobase.com/ad93d2c08166b0e3e643fb148713a63f.png)
 
 Sağındaki daha fazla işlem (“...”) menüsünde, o an görüntülediğiniz sürümü yeni bir sürüme kopyalama seçeneğini bulabilirsiniz:
 

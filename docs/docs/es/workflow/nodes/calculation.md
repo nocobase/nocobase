@@ -10,7 +10,7 @@ El nodo de Cálculo le permite evaluar una expresión. El resultado de esta eval
 
 En la interfaz de configuración del flujo de trabajo, haga clic en el botón de signo más ("+") dentro del flujo para añadir un nodo de "Cálculo":
 
-![Nodo de Cálculo_Añadir](https://static-docs.nocobase.com/58a45540d26945251cd143eb4b16579.png)
+![Nodo de Cálculo_Añadir](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## Configuración del nodo
 

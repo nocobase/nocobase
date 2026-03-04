@@ -1,12 +1,16 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "Mobile (depresiasi)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  Sejak versi 2.0, plugin mobile telah digantikan oleh plugin ui-layout baru, yang masih dalam pengembangan.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-mobile/index).
+:::
+
+# Mobile (depresiasi)

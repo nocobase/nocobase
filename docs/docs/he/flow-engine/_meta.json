@@ -51,12 +51,12 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel Persistence",
+        "label": "התמדה של FlowModel",
         "link": "/flow-engine/flow-model-repository"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel Lifecycle",
+        "label": "מחזור החיים של FlowModel",
         "link": "/flow-engine/flow-model-lifecycle"
       },
       {
@@ -73,6 +73,11 @@
         "type": "custom-link",
         "label": "FlowModel vs React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "נקודות הרחבה של RunJS Plugin",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

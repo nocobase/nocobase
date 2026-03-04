@@ -1,46 +1,46 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/interface-builder/fields/specific/sub-table).
 :::
 
-# Sub-tabela
+# Sub-tabela (edição em linha)
 
 ## Introdução
 
-A sub-tabela é ideal para gerenciar campos de relacionamento de um para muitos. Ela permite criar e associar dados em massa na coleção de destino, ou selecionar e associar dados já existentes.
+A sub-tabela é adequada para lidar com campos de relacionamento para-muitos, suportando a criação em massa de dados na coleção de destino para associação ou a seleção de dados existentes para associação.
 
-## Como Usar
+## Instruções de uso
 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
-Na sub-tabela, diferentes tipos de campos exibem componentes de campo distintos. Campos de maior volume (como Rich Text, JSON, Texto Longo) são editados por meio de um modal pop-up.
+Diferentes tipos de campos na sub-tabela exibem diferentes componentes de campo; campos grandes (como Rich Text, JSON, texto multilinha, etc.) são editados por meio de uma janela pop-up flutuante.
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 Campos de relacionamento na sub-tabela.
 
-Pedidos (Um-para-Muitos) > Produtos do Pedido (Um-para-Um) > Oportunidade
+Pedido (Um-para-Muitos) > Order Products (Um-para-Um) > Opportunity
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
-O componente padrão para um campo de relacionamento é o Dropdown (suporta Dropdown/Seletor de Dados).
+O componente padrão do campo de relacionamento é o seletor suspenso (suporta seletor suspenso/seletor de dados).
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
 
-## Opções de Configuração do Campo
+## Itens de configuração do campo
 
-### Permitir Selecionar Dados Existentes (desativado por padrão)
+### Permitir selecionar dados existentes (ativado por padrão)
 
-Permite selecionar e associar dados já existentes.
+Suporta a seleção de associações a partir de dados existentes.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
 
 ![20251027224023](https://static-docs.nocobase.com/20251027224023.gif)
 
-### Componente de Campo
+### Componente de campo
 
-[Componente de Campo](/interface-builder/fields/association-field): Alterne para outros componentes de campo de relacionamento, como Dropdown, Seletor de Dados, etc.
+[Componente de campo](/interface-builder/fields/association-field): Alterne para outros componentes de campo de relacionamento, como seletor suspenso, seletor de dados, etc.;
 
-### Permitir Desvincular Dados Existentes
+### Permitir desvincular a associação de dados existentes
 
-> Define se é permitido desvincular dados existentes para o campo de relacionamento no formulário de edição.
+> Define se os dados do campo de relacionamento no formulário de edição têm permissão para desvincular a associação de dados existentes.
 
 ![20251028153425](https://static-docs.nocobase.com/20251028153425.gif)

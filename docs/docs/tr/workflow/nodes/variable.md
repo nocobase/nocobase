@@ -15,7 +15,7 @@ Bir iş akışında değişkenler tanımlayabilir veya tanımlanmış değişken
 
 iş akışı yapılandırma arayüzünde, iş akışındaki artı ('+') düğmesine tıklayarak bir "Değişken" düğümü ekleyebilirsiniz:
 
-![Değişken Düğümü Ekle](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Değişken Düğümü Ekle](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Düğümü Yapılandırma
 
@@ -32,7 +32,7 @@ Oluşturulan düğüm, iş akışındaki ilk değişken düğümü olduğunda, y
 
 Tanımlanmış bir değişkene değer atamayı seçtiğinizde, hedef değişkeni, yani değişkenin tanımlandığı düğümü de seçmeniz gerekir:
 
-![Değer Atanacak Değişkeni Seçin](https://static-docs.nocobase.com/1ce891154d87347e693d8cc8ac1953eb.png)
+![Değer Atanacak Değişkeni Seçin](https://static-docs.nocobase.com/1ce8911548d7347e693d8cc8ac1953eb.png)
 
 ### Değer
 

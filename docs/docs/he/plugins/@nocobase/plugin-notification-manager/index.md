@@ -1,12 +1,16 @@
 ---
-displayName: "Notification manager"
+displayName: "ניהול התראות"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
+  מספק שירות ניהול מאוחד הכולל הגדרת ערוצים, רישום לוגים ותכונות נוספות, ותומך בהגדרת ערוצי התראה מגוונים, כולל הודעות מערכת ודואר אלקטרוני.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification manager
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-notification-manager/index).
+:::
+
+# ניהול התראות

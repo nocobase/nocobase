@@ -1,16 +1,16 @@
 ---
 pkg: '@nocobase/plugin-workflow-custom-action-trigger'
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/workflow/triggers/custom-action).
+:::
 
 # Anpassad åtgärdshändelse
 
 ## Introduktion
 
-NocoBase har inbyggda vanliga dataåtgärder (lägg till, ta bort, uppdatera, visa, etc.). När dessa åtgärder inte räcker till för komplexa affärsbehov kan ni använda anpassade åtgärdshändelser i ett arbetsflöde. Genom att koppla denna händelse till en "Utlös arbetsflöde"-knapp i ett sidblock, kommer ett arbetsflöde för anpassade åtgärder att utlösas när en användare klickar på den.
+NocoBase har inbyggda vanliga dataåtgärder (skapa, läsa, uppdatera, radera etc.). När dessa åtgärder inte kan uppfylla komplexa affärsbehov kan ni använda anpassade åtgärdshändelser i ett arbetsflöde och binda händelsen till en "Utlös arbetsflöde"-knapp i ett sidblock. När en användare klickar på den kommer ett arbetsflöde för anpassade åtgärder att utlösas.
 
 ## Skapa ett arbetsflöde
 
@@ -22,25 +22,25 @@ När ni skapar ett arbetsflöde, välj "Anpassad åtgärdshändelse":
 
 ### Kontexttyp
 
-> v.1.6.0+
+> v1.6.0+
 
-Kontexttypen avgör vilka blockknappar arbetsflödet kan kopplas till:
+Olika kontexttyper avgör vilka blockknappar arbetsflödet kan kopplas till:
 
-*   Ingen kontext: En global händelse som kan kopplas till åtgärdsknappar i åtgärdsfältet och datablock.
-*   Enkel post: Kan kopplas till åtgärdsknappar i datablock som tabellrader, formulär och detaljvyer.
-*   Flera poster: Kan kopplas till massåtgärdsknappar i en tabell.
+* Ingen kontext: En global händelse som kan kopplas till åtgärdsknappar i åtgärdsfält och datablock;
+* Enkel post: Kan kopplas till åtgärdsknappar i datablock som tabellrader, formulär och detaljvyer;
+* Flera poster: Kan kopplas till massåtgärdsknappar i en tabell.
 
 ![Utlösarkonfiguration_Kontexttyp](https://static-docs.nocobase.com/20250215135808.png)
 
 ### Samling
 
-När kontexttypen är Enkel post eller Flera poster, behöver ni välja den samling som datamodellen ska kopplas till:
+När kontexttypen är Enkel post eller Flera poster behöver ni välja den samling som datamodellen ska kopplas till:
 
 ![Utlösarkonfiguration_Välj samling](https://static-docs.nocobase.com/20250215135919.png)
 
 ### Relationsdata att använda
 
-Om ni behöver använda relationsdata från den utlösande dataraden i arbetsflödet, kan ni välja djupa relationsfält här:
+Om ni behöver använda relationsdata från den utlösande dataraden i arbetsflödet kan ni välja djupa relationsfält här:
 
 ![Utlösarkonfiguration_Välj relationsdata att använda](https://static-docs.nocobase.com/20250215135955.png)
 
@@ -52,7 +52,7 @@ Konfigurationen av åtgärdsknappar i olika block varierar beroende på vilken k
 
 ### Ingen kontext
 
-> v.1.6.0+
+> v1.6.0+
 
 I åtgärdsfältet och andra datablock kan ni lägga till en "Utlös arbetsflöde"-knapp:
 
@@ -90,25 +90,25 @@ Därefter kommer ett klick på denna knapp att utlösa den anpassade åtgärdsh�
 
 ### Flera poster
 
-> v.1.6.0+
+> v1.6.0+
 
 I åtgärdsfältet för ett tabellblock, när ni lägger till en "Utlös arbetsflöde"-knapp, finns det ett extra alternativ för att välja kontexttyp: "Ingen kontext" eller "Flera poster":
 
 ![Lägg till åtgärdsknapp i block_Tabell](https://static-docs.nocobase.com/20250215222507.png)
 
-När "Ingen kontext" väljs, är det en global händelse och kan endast kopplas till arbetsflöden av typen ingen kontext.
+När "Ingen kontext" väljs är det en global händelse och kan endast kopplas till arbetsflöden av typen ingen kontext.
 
-När "Flera poster" väljs, kan ni koppla ett arbetsflöde för flera poster, vilket kan användas för massåtgärder efter att ha valt flera poster (stöds för närvarande endast av tabeller). De tillgängliga arbetsflödena är då begränsade till de som är konfigurerade för att matcha samlingen i det aktuella datablocket:
+När "Flera poster" väljs kan ni koppla ett arbetsflöde för flera poster, vilket kan användas för massåtgärder efter att ha valt flera poster (stöds för närvarande endast av tabeller). De tillgängliga arbetsflödena är då begränsade till de som är konfigurerade för att matcha samlingen i det aktuella datablocket:
 
-![Välj arbetsflöde för flera poster](https://static-docs.nocobase.com/20250215224436.png)
+![20250215224436](https://static-docs.nocobase.com/20250215224436.png)
 
-När ni klickar på knappen för att utlösa, måste några datarader i tabellen vara markerade; annars kommer arbetsflödet inte att utlösas:
+När ni klickar på knappen för att utlösa måste några datarader i tabellen vara markerade; annars kommer arbetsflödet inte att utlösas:
 
-![Inga rader markerade för utlösning](https://static-docs.nocobase.com/20250215224736.png)
+![20250215224736](https://static-docs.nocobase.com/20250215224736.png)
 
 ## Exempel
 
-Anta till exempel att vi har en "Prover"-samling. För prover med statusen "Insamlade" behöver vi tillhandahålla en "Skicka för inspektion"-åtgärd. Denna åtgärd kommer först att kontrollera provets grundläggande information, sedan generera en "Inspektionspost" och slutligen ändra provets status till "Insänd". Denna serie av processer kan inte slutföras med enkla "lägg till, ta bort, uppdatera, visa"-knapptryckningar, så en anpassad åtgärdshändelse kan användas för att implementera det.
+Anta till exempel att vi har en "Prover"-samling. För prover med statusen "Insamlade" behöver vi tillhandahålla en "Skicka för inspektion"-åtgärd. Denna åtgärd kommer först att kontrollera provets grundläggande information, sedan generera en "Inspektionspost" och slutligen ändra provets status till "Insänd". Denna serie av processer kan inte slutföras med enkla "skapa, läsa, uppdatera, radera"-knapptryckningar, så en anpassad åtgärdshändelse kan användas för att implementera det.
 
 Skapa först en "Prover"-samling och en "Inspektionsposter"-samling, och mata in grundläggande testdata i Prover-samlingen:
 
@@ -158,6 +158,21 @@ Härmed är en enkel anpassad åtgärdshändelse klar. På samma sätt kan anpas
 
 Utlösningen av anpassade åtgärdshändelser är inte begränsad till åtgärder i användargränssnittet; de kan också utlösas via HTTP API-anrop. Specifikt tillhandahåller anpassade åtgärdshändelser en ny åtgärdstyp för alla samlingsåtgärder för att utlösa arbetsflöden: `trigger`, som kan anropas med NocoBase standard API för åtgärder.
 
+:::info{title="Tips"}
+Eftersom externa anrop också måste baseras på användaridentitet, behöver ni, när ni anropar via HTTP API, precis som med förfrågningar som skickas från det vanliga gränssnittet, tillhandahålla autentiseringsinformation. Detta inkluderar `Authorization`-förfrågningshuvudet eller `token`-parametern (token som erhållits vid inloggning), samt `X-Role`-förfrågningshuvudet (användarens nuvarande rollnamn).
+:::
+
+### Ingen kontext
+
+Arbetsflöden utan kontext behöver utlösas mot resursen workflows:
+
+```bash
+curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
+  "http://localhost:3000/api/workflows:trigger?triggerWorkflows=workflowKey"
+```
+
+### Enkel post
+
 Ett arbetsflöde som utlöses av en knapp, som i exemplet, kan anropas så här:
 
 ```bash
@@ -165,15 +180,15 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
 
-Eftersom denna åtgärd är för en enskild post, måste ni, när ni anropar den för befintlig data, ange ID för dataraden och ersätta `<:id>`-delen i URL:en.
+Eftersom denna åtgärd är för en enskild post måste ni, när ni anropar den för befintlig data, ange ID för dataraden och ersätta `<:id>`-delen i URL:en.
 
-Om det anropas för ett formulär (till exempel för att skapa eller uppdatera), kan ni utelämna ID:t för ett formulär som skapar ny data, men ni måste skicka med den inskickade datan som exekveringskontext:
+Om det anropas för ett formulär (till exempel för att skapa eller uppdatera) kan ni utelämna ID:t för ett formulär som skapar ny data, men ni måste skicka med den inskickade datan som exekveringskontext:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger?triggerWorkflows=workflowKey"
 ```
@@ -184,15 +199,15 @@ För ett uppdateringsformulär behöver ni skicka med både ID för dataraden oc
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
 
-Om både ett ID och data skickas med, kommer dataraden som motsvarar ID:t att laddas först, och sedan kommer egenskaperna från det medskickade dataobjektet att användas för att skriva över den ursprungliga dataraden för att få den slutliga utlösande datakontexten.
+Om både ett ID och data skickas med kommer dataraden som motsvarar ID:t att laddas först, och sedan kommer egenskaperna från det medskickade dataobjektet att användas för att skriva över den ursprungliga dataraden för att få den slutliga utlösande datakontexten.
 
 :::warning{title="Obs"}
-Om relationsdata skickas med, kommer även dessa att skrivas över. Var särskilt försiktig när ni hanterar inkommande data om förladdning av relationsdataobjekt är konfigurerat, för att undvika oväntade överskrivningar av relationsdata.
+Om relationsdata skickas med kommer även dessa att skrivas över. Var särskilt försiktig när ni hanterar inkommande data om förladdning av relationsdataobjekt är konfigurerat, för att undvika oväntade överskrivningar av relationsdata.
 :::
 
 Dessutom är URL-parametern `triggerWorkflows` arbetsflödets nyckel; flera arbetsflödesnycklar separeras med kommatecken. Denna nyckel kan erhållas genom att hålla muspekaren över arbetsflödets namn högst upp på arbetsflödesduken:
@@ -202,18 +217,16 @@ Dessutom är URL-parametern `triggerWorkflows` arbetsflödets nyckel; flera arbe
 Efter ett lyckat anrop kommer den anpassade åtgärdshändelsen för den motsvarande `samples`-samlingen att utlösas.
 
 :::info{title="Tips"}
-Eftersom externa anrop också måste baseras på användaridentitet, behöver ni, när ni anropar via HTTP API, precis som med förfrågningar som skickas från det vanliga gränssnittet, tillhandahålla autentiseringsinformation. Detta inkluderar `Authorization`-förfrågningshuvudet eller `token`-parametern (token som erhållits vid inloggning), samt `X-Role`-förfrågningshuvudet (användarens nuvarande rollnamn).
+När ni utlöser en åtgärdshändelse via ett HTTP API-anrop behöver ni också vara uppmärksam på arbetsflödets aktiveringsstatus och om samlingskonfigurationen matchar; annars kan anropet misslyckas eller resultera i ett fel.
 :::
 
-Om ni behöver utlösa en händelse för en en-till-en-relationsdata (en-till-många stöds för närvarande inte) i denna åtgärd, kan ni använda `!` i parametern för att specificera relationsfältets utlösande data:
+### Flera poster
+
+Liknande anropet för enskild post, men den medskickade datan behöver endast innehålla flera primärnyckelparametrar (`filterByTk[]`), och ingen datadel krävs:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
-  "http://localhost:3000/api/posts:trigger/<:id>?triggerWorkflows=workflowKey!category"
+  "http://localhost:3000/api/samples:trigger?filterByTk[]=1&filterByTk[]=2&triggerWorkflows=workflowKey"
 ```
 
-Efter ett lyckat anrop kommer den anpassade åtgärdshändelsen för den motsvarande `categories`-samlingen att utlösas.
-
-:::info{title="Tips"}
-När ni utlöser en åtgärdshändelse via ett HTTP API-anrop, behöver ni också vara uppmärksam på arbetsflödets aktiveringsstatus och om samlingskonfigurationen matchar; annars kan anropet misslyckas eller resultera i ett fel.
-:::
+Detta anrop kommer att utlösa en anpassad åtgärdshändelse i läget för flera poster, och använda datan med ID 1 och 2 som utlösarkontext.

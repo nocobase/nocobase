@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "แผนภูมิ (เลิกใช้งานแล้ว)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  ปลั๊กอินนี้ถูกเลิกใช้งานแล้ว โปรดใช้ปลั๊กอินการแสดงข้อมูลด้วยภาพแทนครับ
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-charts/index)
+:::
 
-> Note: This plugin is deprecated.
+# แผนภูมิ (เลิกใช้งานแล้ว)
+
+> หมายเหตุ: ปลั๊กอินนี้ถูกเลิกใช้งานแล้ว (deprecated) ครับ

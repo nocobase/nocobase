@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External MySQL"
+displayName: "Data source: MySQL bên ngoài"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external MySQL databases as data sources.
+  Sử dụng cơ sở dữ liệu MySQL bên ngoài làm Data source.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: External MySQL
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-data-source-external-mysql/index).
+:::
+
+# Data source: MySQL bên ngoài

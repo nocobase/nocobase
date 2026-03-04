@@ -21,7 +21,7 @@ Det finns flera typer av ändringar i en samling:
 
 Ni kan välja när triggern ska utlösas baserat på olika affärsbehov. När den valda ändringen inkluderar uppdatering av samlingen, kan ni även specificera vilka fält som har ändrats. Triggervillkoret uppfylls endast när de valda fälten ändras. Om inga fält väljs, innebär det att en ändring i vilket fält som helst kan utlösa arbetsflödet.
 
-![数据表事件_发生变动的字段选择](https://static-docs.nocobase.com/8741475f01298b3c00267b2b4674611.png)
+![数据表事件_发生变动的字段选择](https://static-docs.nocobase.com/874a1475f01298b3c00267b2b4674611.png)
 
 Mer specifikt kan ni konfigurera villkorsregler för varje fält i den utlösande dataraden. Triggern utlöses endast när fälten uppfyller de motsvarande villkoren.
 

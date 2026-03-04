@@ -1,14 +1,18 @@
 ---
-displayName: "Telemetry"
+displayName: "Телеметрія"
 packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
 description: |
-  An OpenTelemetry-based telemetry plugin providing CPU, memory, and HTTP request metrics with HTTP export support.
+  Плагін телеметрії на базі OpenTelemetry, що надає метрики процесора (CPU), пам'яті та HTTP-запитів з підтримкою експорту через HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Telemetry
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-telemetry/index).
+:::
+
+# Телеметрія

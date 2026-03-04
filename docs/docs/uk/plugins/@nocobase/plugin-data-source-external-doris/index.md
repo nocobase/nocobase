@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External Doris"
+displayName: "Джерело даних: Зовнішній Doris"
 packageName: '@nocobase/plugin-data-source-external-doris'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external Apache Doris databases as data sources.
+  Використовуйте зовнішню базу даних Apache Doris як джерело даних.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Data source: External Doris
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-data-source-external-doris/index).
+:::
+
+# Джерело даних: Зовнішній Doris

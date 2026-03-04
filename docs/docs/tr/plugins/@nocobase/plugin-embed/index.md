@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "NocoBase'i Yerleştir"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
+  NocoBase'i harici bir sisteme veya sayfaya yerleştirerek o sistemin veya sayfanın bir parçası haline getirin.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-embed/index) bakın.
+:::
+
+# NocoBase'i Yerleştir

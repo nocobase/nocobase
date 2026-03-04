@@ -168,7 +168,7 @@ class CustomAuthPlugin extends Plugin {
 
 ### 管理設定フォーム
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 上部には汎用的な認証器設定があり、下部には登録可能なカスタム設定フォームの部分が表示されます。
 

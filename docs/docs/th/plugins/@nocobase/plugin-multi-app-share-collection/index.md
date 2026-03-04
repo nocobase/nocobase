@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "การแชร์ Collection แบบ Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-multi-app-share-collection/index)
+:::
 
-> Note: This plugin is deprecated.
+# การแชร์ Collection แบบ Multi-app
+
+> หมายเหตุ: ปลั๊กอินนี้ถูกยกเลิกการใช้งานแล้ว (deprecated)

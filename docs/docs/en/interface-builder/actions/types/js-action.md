@@ -93,5 +93,5 @@ else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refres
 ## Related Documents
 
 - [Variables and Context](/interface-builder/variables)
-- [Linkage Rules](/interface-builder/linkage-rule)
-- [Views and Pop-ups](/interface-builder/actions/types/view)
+- [Linkage rule](/interface-builder/linkage-rule)
+- [Views and Pop-up](/interface-builder/actions/types/view)

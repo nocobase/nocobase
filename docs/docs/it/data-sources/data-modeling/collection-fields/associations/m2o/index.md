@@ -8,7 +8,7 @@ In un database di una biblioteca, abbiamo due entità: libri e autori. Un autore
 
 Diagramma ER:
 
-![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf362.png)
+![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
 
 Configurazione del campo:
 

@@ -25,7 +25,7 @@ Dit is een ingebouwde plugin, u hoeft deze niet te installeren. Activeer de plug
 
 http://localhost:13000/admin/settings/api-doc/documentation
 
-![](https://static-docs.nocobase.com/8db51cf50e3c666aba5a5a850a0fb664a0.png)
+![](https://static-docs.nocobase.com/8db51cf50e3c666aba5a850a0fb664a0.png)
 
 ### Overzicht van de documentatie
 

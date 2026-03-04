@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Więcej treści
 
-Content coming soon...
+> Obecne rozwiązanie CRM służy wyłącznie do celów podglądowych. Przyszłe wersje zostaną całkowicie przebudowane w oparciu o NocoBase 2.0. Wówczas udostępniona zostanie pełniejsza dokumentacja.
+
+Treść w przygotowaniu...

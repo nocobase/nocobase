@@ -50,7 +50,7 @@ Di UI, hanya kolom dengan izin yang dikonfigurasi yang terlihat dalam blok kolek
 
   Proses konfigurasi lengkap:
 
-  ![](https://static-docs.nocobase.com/1dbe559a957c2e052e194e50edc74a7.gif)
+  ![](https://static-docs.nocobase.com/1dbe559a9579c2e052e194e50edc74a7.gif)
 
 - **Tambah**: Menentukan apakah kolom dapat ditambahkan (dibuat).
 

@@ -21,7 +21,7 @@ Abbiamo già utilizzato più volte la funzionalità delle variabili in [Guida ra
 
 In un nodo di aggiornamento, si utilizzano i dati di contesto del trigger come variabile per la condizione di filtro, e si fa riferimento al risultato del nodo di calcolo come variabile per il valore del campo da aggiornare:
 
-![Variabili del nodo di aggiornamento dati](https://static-docs.nocobase.com/2e17c93643e7ebc709b9b7ab4f3af8c.png)
+![Variabili del nodo di aggiornamento dati](https://static-docs.nocobase.com/2e147c93643e7ebc709b9b7ab4f3af8c.png)
 
 ## Struttura dei dati
 

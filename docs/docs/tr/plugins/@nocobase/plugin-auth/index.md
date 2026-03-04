@@ -1,12 +1,16 @@
 ---
-displayName: "Authentication"
+displayName: "Kimlik Doğrulama"
 packageName: '@nocobase/plugin-auth'
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Şifre, SMS ve SSO protokolü doğrulaması dahil olmak üzere genişletilebilir kullanıcı kimlik doğrulama yönetimi.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-auth/index) bakın.
+:::
+
+# Kimlik Doğrulama

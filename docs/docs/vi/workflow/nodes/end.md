@@ -15,7 +15,7 @@ Trong giao diện cấu hình luồng công việc, nhấp vào nút dấu cộn
 
 ## Cấu hình nút
 
-![Kết thúc luồng công việc_Cấu hình nút](https://static-docs.nocobase.com/bb6a57f25e9afb72836a14a0fe0683e.png)
+![Kết thúc luồng công việc_Cấu hình nút](https://static-docs.nocobase.com/bb6a597f25e9afb72836a14a0fe0683e.png)
 
 ### Trạng thái kết thúc
 

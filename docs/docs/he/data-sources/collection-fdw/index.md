@@ -65,7 +65,7 @@ MySQL משתמש במנוע ה-`federated`, שדורש הפעלה, ותומך ב
 
 אם חלו שינויים במבנה הטבלה המרוחקת, ניתן גם "לסנכרן מהטבלה המרוחקת"
 
-![סנכרן מהטבלה המרוחקת](https://static-docs.nocobase.com/3751a9f39f933889fb3fcc4d85a6f4ad.png)
+![סנכרן מהטבלה המרוחקת](https://static-docs.nocobase.com/3751a9a39f933889fb3fcc4d85a6f4ad.png)
 
 סנכרון טבלה מרוחקת
 

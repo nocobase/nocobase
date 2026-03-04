@@ -1,15 +1,19 @@
 ---
-displayName: "Verification: TOTP authenticator"
+displayName: "การยืนยันตัวตน: TOTP Authenticator"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  รองรับการให้ผู้ใช้งานผูกกับ TOTP Authenticator และยืนยันตัวตนโดยใช้รหัสผ่านแบบใช้ครั้งเดียวที่อิงตามเวลา (TOTP) ครับ
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Verification: TOTP authenticator
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-verification-totp-authenticator/index)
+:::
+
+# การยืนยันตัวตน: TOTP Authenticator

@@ -1,20 +1,19 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/template-print/syntax/formatters/number-formatting) voor nauwkeurige informatie.
 :::
 
-### Getalnotatie
+### Getalformattering
 
-#### 1. `:formatN(precision)`
+#### 1. :formatN(precision)
 
-##### Syntaxis
-Formatteert een getal volgens de lokalisatie-instellingen.
-Parameter:
-- `precision`: Het aantal decimalen.
-  Voor ODS/XLSX-formaten wordt het aantal weergegeven decimalen bepaald door de teksteditor; voor andere formaten wordt deze parameter gebruikt.
+##### Syntaxisuitleg
+Formatteert een getal op basis van de lokalisatie-instellingen.  
+Parameters:
+- precision: het aantal decimalen  
+  Voor ODS/XLSX-formaten wordt het aantal weergegeven decimalen bepaald door de teksteditor; voor andere formaten is dit afhankelijk van deze parameter.
 
 ##### Voorbeeld
 ```
-// Voorbeeldomgeving: API-opties { "lang": "en-us" }
 '10':formatN()         // Uitvoer "10.000"
 '1000.456':formatN()   // Uitvoer "1,000.456"
 ```
@@ -22,10 +21,11 @@ Parameter:
 ##### Resultaat
 Het getal wordt uitgevoerd volgens de opgegeven precisie en lokalisatie-indeling.
 
-#### 2. `:round(precision)`
 
-##### Syntaxis
-Rondt het getal af op het opgegeven aantal decimalen.
+#### 2. :round(precision)
+
+##### Syntaxisuitleg
+Rondt een getal af, waarbij de parameter het aantal decimalen specificeert.
 
 ##### Voorbeeld
 ```
@@ -34,14 +34,15 @@ Rondt het getal af op het opgegeven aantal decimalen.
 ```
 
 ##### Resultaat
-De uitvoer is het afgeronde getal.
+De uitvoer is de afgeronde waarde.
 
-#### 3. `:add(value)`
 
-##### Syntaxis
-Telt de opgegeven waarde op bij het huidige getal.
-Parameter:
-- `value`: Het getal dat moet worden opgeteld.
+#### 3. :add(value)
+
+##### Syntaxisuitleg
+Telt de opgegeven waarde op bij het huidige getal.  
+Parameters:
+- value: de op te tellen waarde
 
 ##### Voorbeeld
 ```
@@ -50,14 +51,15 @@ Parameter:
 ```
 
 ##### Resultaat
-De uitvoer is de som van het huidige getal en de opgegeven waarde.
+De uitvoer is de waarde na de optelling.
 
-#### 4. `:sub(value)`
 
-##### Syntaxis
-Trekt de opgegeven waarde af van het huidige getal.
-Parameter:
-- `value`: Het getal dat moet worden afgetrokken.
+#### 4. :sub(value)
+
+##### Syntaxisuitleg
+Trekt de opgegeven waarde af van het huidige getal.  
+Parameters:
+- value: de af te trekken waarde
 
 ##### Voorbeeld
 ```
@@ -66,14 +68,15 @@ Parameter:
 ```
 
 ##### Resultaat
-De uitvoer is het huidige getal min de opgegeven waarde.
+De uitvoer is de waarde na de aftrekking.
 
-#### 5. `:mul(value)`
 
-##### Syntaxis
-Vermenigvuldigt het huidige getal met de opgegeven waarde.
-Parameter:
-- `value`: De vermenigvuldiger.
+#### 5. :mul(value)
+
+##### Syntaxisuitleg
+Vermenigvuldigt het huidige getal met de opgegeven waarde.  
+Parameters:
+- value: de vermenigvuldiger
 
 ##### Voorbeeld
 ```
@@ -82,14 +85,15 @@ Parameter:
 ```
 
 ##### Resultaat
-De uitvoer is het product van het huidige getal en de opgegeven waarde.
+De uitvoer is de waarde na de vermenigvuldiging.
 
-#### 6. `:div(value)`
 
-##### Syntaxis
-Deelt het huidige getal door de opgegeven waarde.
-Parameter:
-- `value`: De deler.
+#### 6. :div(value)
+
+##### Syntaxisuitleg
+Deelt het huidige getal door de opgegeven waarde.  
+Parameters:
+- value: de deler
 
 ##### Voorbeeld
 ```
@@ -98,14 +102,15 @@ Parameter:
 ```
 
 ##### Resultaat
-De uitvoer is het resultaat van de deling.
+De uitvoer is de waarde na de deling.
 
-#### 7. `:mod(value)`
 
-##### Syntaxis
-Berekent de modulus (rest) van het huidige getal gedeeld door de opgegeven waarde.
-Parameter:
-- `value`: De modulusdeler.
+#### 7. :mod(value)
+
+##### Syntaxisuitleg
+Berekent de modulus (restwaarde) van het huidige getal ten opzichte van de opgegeven waarde.  
+Parameters:
+- value: de modulusdeler
 
 ##### Voorbeeld
 ```
@@ -114,11 +119,12 @@ Parameter:
 ```
 
 ##### Resultaat
-De uitvoer is de rest van de modulusbewerking.
+De uitvoer is het resultaat van de modulusbewerking.
 
-#### 8. `:abs`
 
-##### Syntaxis
+#### 8. :abs
+
+##### Syntaxisuitleg
 Retourneert de absolute waarde van het getal.
 
 ##### Voorbeeld
@@ -132,10 +138,11 @@ Retourneert de absolute waarde van het getal.
 ##### Resultaat
 De uitvoer is de absolute waarde.
 
-#### 9. `:ceil`
 
-##### Syntaxis
-Rondt het getal naar boven af naar het kleinste gehele getal dat groter is dan of gelijk is aan het huidige getal.
+#### 9. :ceil
+
+##### Syntaxisuitleg
+Rondt naar boven af, oftewel retourneert het kleinste gehele getal dat groter is dan of gelijk is aan het huidige getal.
 
 ##### Voorbeeld
 ```
@@ -145,12 +152,13 @@ Rondt het getal naar boven af naar het kleinste gehele getal dat groter is dan o
 ```
 
 ##### Resultaat
-De uitvoer is het naar boven afgeronde gehele getal.
+De uitvoer is het afgeronde gehele getal.
 
-#### 10. `:floor`
 
-##### Syntaxis
-Rondt het getal naar beneden af naar het grootste gehele getal dat kleiner is dan of gelijk is aan het huidige getal.
+#### 10. :floor
+
+##### Syntaxisuitleg
+Rondt naar beneden af, oftewel retourneert het grootste gehele getal dat kleiner is dan of gelijk is aan het huidige getal.
 
 ##### Voorbeeld
 ```
@@ -160,36 +168,40 @@ Rondt het getal naar beneden af naar het grootste gehele getal dat kleiner is da
 ```
 
 ##### Resultaat
-De uitvoer is het naar beneden afgeronde gehele getal.
+De uitvoer is het afgeronde gehele getal.
 
-#### 11. `:int`
 
-##### Syntaxis
+#### 11. :int
+
+##### Syntaxisuitleg
 Converteert het getal naar een geheel getal (niet aanbevolen voor gebruik).
 
-##### Voorbeeld en Resultaat
+##### Voorbeeld en resultaat
 Afhankelijk van de specifieke conversie.
 
-#### 12. `:toEN`
 
-##### Syntaxis
-Converteert het getal naar Engelse notatie (met `.` als decimaalteken). Niet aanbevolen voor gebruik.
+#### 12. :toEN
 
-##### Voorbeeld en Resultaat
+##### Syntaxisuitleg
+Converteert het getal naar het Engelse formaat (met '.' als decimaalteken), niet aanbevolen voor gebruik.
+
+##### Voorbeeld en resultaat
 Afhankelijk van de specifieke conversie.
 
-#### 13. `:toFixed`
 
-##### Syntaxis
-Converteert het getal naar een string, waarbij alleen het opgegeven aantal decimalen behouden blijft. Niet aanbevolen voor gebruik.
+#### 13. :toFixed
 
-##### Voorbeeld en Resultaat
+##### Syntaxisuitleg
+Converteert het getal naar een string en behoudt alleen het opgegeven aantal decimalen, niet aanbevolen voor gebruik.
+
+##### Voorbeeld en resultaat
 Afhankelijk van de specifieke conversie.
 
-#### 14. `:toFR`
 
-##### Syntaxis
-Converteert het getal naar Franse notatie (met `,` als decimaalscheidingsteken). Niet aanbevolen voor gebruik.
+#### 14. :toFR
 
-##### Voorbeeld en Resultaat
+##### Syntaxisuitleg
+Converteert het getal naar het Franse formaat (met ',' als decimaalteken), niet aanbevolen voor gebruik.
+
+##### Voorbeeld en resultaat
 Afhankelijk van de specifieke conversie.

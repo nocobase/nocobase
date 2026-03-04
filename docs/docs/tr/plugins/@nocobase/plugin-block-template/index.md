@@ -1,8 +1,8 @@
 ---
-displayName: "Block: template (deprecated)"
+displayName: "Blok: Şablon (kullanımdan kaldırıldı)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Create and manage block templates for reuse on pages.
+  Sayfalarda yeniden kullanmak üzere blok şablonları oluşturun ve yönetin.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Block: template (deprecated)
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-block-template/index) bakın.
+:::
 
-> Note: This plugin is deprecated.
+# Blok: Şablon (kullanımdan kaldırıldı)
+
+> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).

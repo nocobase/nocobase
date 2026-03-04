@@ -24,7 +24,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## סוגי אימות משתמשים
 
-![](https://static-docs.nocobase.com/da42343ebe470cbf7be4b12e4.png)
+![](https://static-docs.nocobase.com/da4250c0cea343ebe470cbf7be4b12e4.png)
 
 על ידי הוספת סוגים שונים של מנהלי אימות, תוכלו להוסיף למערכת שיטות אימות מתאימות.
 

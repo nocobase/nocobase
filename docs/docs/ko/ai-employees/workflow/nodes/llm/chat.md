@@ -1,11 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/ai-employees/workflow/nodes/llm/chat)을 참조하세요.
 :::
-
-
 
 # 텍스트 대화
 
@@ -20,7 +19,7 @@ LLM 서비스와의 대화는 일반적으로 시간이 많이 소요되므로, 
 ![](https://static-docs.nocobase.com/202503041013363.png)
 
 ## 모델 선택
-먼저 연결된 LLM 서비스를 선택합니다. 아직 LLM 서비스가 연결되지 않았다면, 먼저 LLM 서비스 설정을 추가해야 합니다. 참고: [LLM 서비스 관리](/ai-employees/quick-start/llm-service)
+먼저 연결된 LLM 서비스를 선택합니다. 아직 LLM 서비스가 연결되지 않았다면, 먼저 LLM 서비스 설정을 추가해야 합니다. 참고: [LLM 서비스 관리](/ai-employees/features/llm-service)
 
 서비스를 선택하면, 애플리케이션은 LLM 서비스에서 사용 가능한 모델 목록을 가져와 선택할 수 있도록 시도합니다. 일부 온라인 LLM 서비스의 모델 가져오기 API는 표준 API 프로토콜을 따르지 않을 수 있으며, 이 경우 사용자가 모델 ID를 수동으로 입력할 수도 있습니다.
 

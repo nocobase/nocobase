@@ -1,130 +1,137 @@
-# Installation Guide
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/crm/installation).
+:::
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# איך להתקין
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> הגרסה הנוכחית מאמצת את הצורה של **גיבוי ושחזור** לצורך פריסה. בגרסאות הבאות, ייתכן שנחליף לצורה של **הגירה מצטברת**, כדי להקל על שילוב הפתרון במערכות הקיימות שלכם.
 
-Before you begin, please ensure:
+כדי לאפשר לכם לפרוס את פתרון CRM 2.0 בסביבת ה-NocoBase שלכם בצורה מהירה וחלקה, אנו מספקים שתי שיטות שחזור. אנא בחרו את השיטה המתאימה לכם ביותר בהתאם לגרסת המשתמש והרקע הטכני שלכם.
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+לפני שתתחילו, אנא ודאו ש:
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+- כבר יש לכם סביבת עבודה בסיסית של NocoBase. לגבי התקנת המערכת הראשית, אנא עיינו ב[תיעוד ההתקנה הרשמי](https://docs-cn.nocobase.com/welcome/getting-started/installation) המפורט יותר.
+- גרסת NocoBase היא **v2.1.0-beta.2 ומעלה**
+- כבר הורדתם את הקבצים המתאימים של מערכת ה-CRM:
+  - **קובץ גיבוי**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - מתאים לשיטה 1
+  - **קובץ SQL**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - מתאים לשיטה 2
+
+**הערות חשובות**:
+- פתרון זה מבוסס על מסד נתונים **PostgreSQL 16**, אנא ודאו שהסביבה שלכם משתמשת ב-PostgreSQL 16.
+- **DB_UNDERSCORED לא יכול להיות true**: אנא בדקו את קובץ ה-`docker-compose.yml` שלכם, ודאו שמשתנה הסביבה `DB_UNDERSCORED` אינו מוגדר כ-`true`, אחרת הוא יתנגש עם גיבוי הפתרון ויוביל לכישלון השחזור.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## שיטה 1: שחזור באמצעות מנהל הגיבויים (מומלץ למשתמשי גרסת Pro/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+שיטה זו מתבצעת באמצעות תוסף "[מנהל הגיבויים](https://docs-cn.nocobase.com/handbook/backups)" (גרסת Pro/Enterprise) המובנה ב-NocoBase לשחזור בלחיצה אחת, והיא הפשוטה ביותר לתפעול. אך יש לה דרישות מסוימות מהסביבה ומגרסת המשתמש.
 
-### Key Characteristics
+### מאפיינים עיקריים
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **יתרונות**:
+  1. **נוחות תפעול**: ניתן להשלים בממשק המשתמש (UI), וניתן לשחזר באופן מלא את כל ההגדרות כולל תוספים.
+  2. **שחזור מלא**: **מסוגל לשחזר את כל קבצי המערכת**, כולל קבצי הדפסת תבניות, קבצים שהועלו בשדות קבצים בתוך אוסף וכו', כדי להבטיח שלמות פונקציונלית.
+* **מגבלות**:
+  1. **מוגבל לגרסת Pro/Enterprise**: "מנהל הגיבויים" הוא תוסף ברמת הארגון, הזמין רק למשתמשי גרסת Pro/Enterprise.
+  2. **דרישות סביבה מחמירות**: דורש שסביבת מסד הנתונים שלכם (גרסה, הגדרות רגישות לרישיות וכו') תהיה תואמת מאוד לסביבה שבה יצרנו את הגיבוי.
+  3. **תלות בתוספים**: אם הפתרון כולל תוספים מסחריים שאינם קיימים בסביבה המקומית שלכם, השחזור ייכשל.
 
-### Steps
+### שלבי ביצוע
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**שלב 1: 【המלצה חמה】 השתמשו באימג' `full` להפעלת האפליקציה**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+כדי למנוע כישלון בשחזור עקב חוסר בלקוח מסד נתונים, אנו ממליצים בחום להשתמש בגרסת ה-`full` של אימג' ה-Docker. היא כוללת את כל התוכניות הנלוות הנחוצות, כך שלא תצטרכו לבצע הגדרות נוספות.
+
+דוגמה לפקודה למשיכת האימג':
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+לאחר מכן השתמשו באימג' זה כדי להפעיל את שירות ה-NocoBase שלכם.
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **הערה**: אם לא תשתמשו באימג' `full`, ייתכן שתצטרכו להתקין ידנית את לקוח מסד הנתונים `pg_dump` בתוך הקונטיינר, תהליך מסורבל ולא יציב.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**שלב 2: הפעלת תוסף "מנהל הגיבויים"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. התחברו למערכת ה-NocoBase שלכם.
+2. היכנסו ל-**`ניהול תוספים`**.
+3. מצאו והפעילו את תוסף **`מנהל הגיבויים`**.
 
-**Step 3: Restore from local backup file**
+**שלב 3: שחזור מקובץ גיבוי מקומי**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. לאחר הפעלת התוסף, רעננו את הדף.
+2. היכנסו לתפריט השמאלי **`ניהול מערכת`** -> **`מנהל הגיבויים`**.
+3. לחצו על כפתור **`שחזור מגיבוי מקומי`** בפינה הימנית העליונה.
+4. גררו את קובץ הגיבוי שהורדתם לאזור ההעלאה.
+5. לחצו על **`שלח`**, והמתינו בסבלנות עד שהמערכת תשלים את השחזור. תהליך זה עשוי לקחת בין כמה עשרות שניות לכמה דקות.
 
-### Notes
+### הערות
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **תאימות מסד נתונים**: זוהי הנקודה הקריטית ביותר בשיטה זו. **הגרסה, ערכת התווים והגדרות הרגישות לרישיות** של מסד הנתונים PostgreSQL שלכם חייבות להתאים לקובץ המקור של הגיבוי. במיוחד שם ה-`schema` חייב להיות זהה.
+* **התאמת תוספים מסחריים**: אנא ודאו שיש לכם והפעלתם את כל התוספים המסחריים הנדרשים לפתרון, אחרת השחזור יופסק.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
+## שיטה 2: ייבוא ישיר של קובץ SQL (אוניברסלי, מתאים יותר לגרסת הקהילה)
 
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
+שיטה זו משחזרת נתונים באמצעות פעולה ישירה על מסד הנתונים, תוך עקיפת תוסף "מנהל הגיבויים", ולכן אין לה מגבלות של תוספי גרסת Pro/Enterprise.
 
-### Key Characteristics
+### מאפיינים עיקריים
 
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+* **יתרונות**:
+  1. **ללא הגבלת גרסה**: מתאים לכל משתמשי NocoBase, כולל גרסת הקהילה.
+  2. **תאימות גבוהה**: אינו תלוי בכלי ה-`dump` בתוך האפליקציה, כל עוד ניתן להתחבר למסד הנתונים ניתן לבצע את הפעולה.
+  3. **עמידות גבוהה לשגיאות**: אם הפתרון כולל תוספים מסחריים שאין לכם, הפונקציות הרלוונטיות לא יופעלו, אך זה לא ישפיע על השימוש הרגיל בפונקציות אחרות, והאפליקציה תוכל לעלות בהצלחה.
+* **מגבלות**:
+  1. **דורש יכולת תפעול מסד נתונים**: דורש מהמשתמש יכולת בסיסית בתפעול מסד נתונים, כגון כיצד להריץ קובץ `.sql`.
+  2. **אובדן קבצי מערכת**: **שיטה זו תגרום לאובדן של כל קבצי המערכת**, כולל קבצי הדפסת תבניות, קבצים שהועלו בשדות קבצים בתוך אוסף וכו'.
 
-### Steps
+### שלבי ביצוע
 
-**Step 1: Prepare a clean database**
+**שלב 1: הכנת מסד נתונים נקי**
 
-Create a brand new, empty database for the data you're about to import.
+הכינו מסד נתונים חדש וריק עבור הנתונים שאתם עומדים לייבא.
 
-**Step 2: Import the `.sql` file into the database**
+**שלב 2: ייבוא קובץ ה-`.sql` למסד הנתונים**
 
-* **Option A: Via server command line (Docker example)**
+השיגו את קובץ מסד הנתונים שהורדתם (בדרך כלל בפורמט `.sql`), וייבאו את תוכנו למסד הנתונים שהכנתם בשלב הקודם. ישנן מספר דרכים לביצוע, תלוי בסביבה שלכם:
+
+* **אפשרות א': באמצעות שורת הפקודה בשרת (לדוגמה Docker)**
+  אם אתם משתמשים ב-Docker להתקנת NocoBase ומסד הנתונים, תוכלו להעלות את קובץ ה-`.sql` לשרת, ולאחר מכן להשתמש בפקודת `docker exec` כדי לבצע את הייבוא. נניח ששם קונטיינר ה-PostgreSQL שלכם הוא `my-nocobase-db`, ושם הקובץ הוא `nocobase_crm_v2_sql_260223.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # העתקת קובץ ה-sql לתוך הקונטיינר
   docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
+  # כניסה לקונטיינר וביצוע פקודת הייבוא
   docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
   ```
+* **אפשרות ב': באמצעות לקוח מסד נתונים מרוחק (Navicat וכו')**
+  אם מסד הנתונים שלכם חשוף בפורט, תוכלו להשתמש בכל לקוח גרפי של מסד נתונים (כמו Navicat, DBeaver, pgAdmin וכו') כדי להתחבר למסד הנתונים, ולאחר מכן:
+  1. לחצו קליק ימני על מסד הנתונים המיועד
+  2. בחרו ב-"הפעל קובץ SQL" או "בצע סקריפט SQL"
+  3. בחרו את קובץ ה-`.sql` שהורדתם ובצעו
 
-* **Option B: Via a remote database client (Navicat, etc.)**
+**שלב 3: חיבור למסד הנתונים והפעלת האפליקציה**
 
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
+הגדירו את פרמטרי ההפעלה של NocoBase שלכם (כמו משתני הסביבה `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` וכו'), כך שיצביעו על מסד הנתונים שאליו ייבאתם זה עתה את הנתונים. לאחר מכן, הפעילו את שירות NocoBase כרגיל.
 
-**Step 3: Connect to the database and start the application**
+### הערות
 
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
+* **הרשאות מסד נתונים**: שיטה זו דורשת שיהיה לכם חשבון וסיסמה שיכולים לפעול ישירות על מסד הנתונים.
+* **מצב תוספים**: לאחר ייבוא מוצלח, למרות שנתוני התוספים המסחריים הכלולים במערכת קיימים, אם לא התקנתם והפעלתם את התוספים המתאימים באופן מקומי, הפונקציות הרלוונטיות לא יוצגו ולא יהיו ניתנות לשימוש, אך זה לא יגרום לקריסת האפליקציה.
 
 ---
 
-## Summary & Comparison
+## סיכום והשוואה
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
+| תכונה            | שיטה 1: מנהל הגיבויים                                               | שיטה 2: ייבוא SQL ישיר                                                                                   |
+| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **משתמשים מתאימים**    | משתמשי גרסת **Pro/Enterprise**                                              | **כל המשתמשים** (כולל גרסת הקהילה)                                                                             |
+| **קלות תפעול**  | ⭐⭐⭐⭐⭐ (פשוט מאוד, פעולה ב-UI)                                   | ⭐⭐⭐ (דורש ידע בסיסי במסדי נתונים)                                                                            |
+| **דרישות סביבה**    | **מחמירות**, גרסאות מסד נתונים ומערכת צריכות להיות תואמות מאוד                           | **רגילות**, דורש תאימות מסד נתונים                                                                               |
+| **תלות בתוספים**    | **תלות חזקה**, תוספים נבדקים בזמן השחזור, חוסר בכל תוסף יוביל ל**כישלון השחזור**. | **הפונקציות תלויות מאוד בתוספים**. ניתן לייבא נתונים באופן עצמאי, למערכת יהיו פונקציות בסיסיות. אך אם חסרים תוספים מתאימים, הפונקציות הרלוונטיות יהיו **בלתי ניתנות לשימוש לחלוטין**. |
+| **קבצי מערכת**    | **נשמרים במלואם** (תבניות הדפסה, קבצים שהועלו וכו')                          | **יאבדו** (תבניות הדפסה, קבצים שהועלו וכו')                                                                  |
+| **תרחיש מומלץ**   | משתמשים ארגוניים, כשהסביבה ניתנת לשליטה ועקבית, וזקוקים לפונקציונליות מלאה                     | חוסר בחלק מהתוספים, שאיפה לתאימות וגמישות גבוהה, משתמשים שאינם בגרסת Pro/Enterprise, או כאלה שיכולים לקבל אובדן של פונקציות קבצים                                |
 
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+אנו מקווים שמדריך זה יעזור לכם לפרוס בהצלחה את מערכת ה-CRM 2.0. אם תיתקלו בבעיות כלשהן במהלך התהליך, אתם מוזמנים ליצור איתנו קשר בכל עת!

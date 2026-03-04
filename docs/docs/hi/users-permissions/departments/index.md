@@ -34,7 +34,7 @@ pkg: '@nocobase/plugin-departments'
 
 विभाग संपादन फ़ॉर्म में 'उच्च विभाग' फ़ील्ड को बदलें। वर्तमान विभाग और उसके उप-विभागों का चयन नहीं किया जा सकता।
 
-![](https://static-docs.nocobase.com/9d80dd1e10268adcd35445e9f1dac771.png)
+![](https://static-docs.nocobase.com/9d80ddf42f32c77186566ed8ada70128.png)
 
 ## विभाग सदस्य प्रबंधन
 

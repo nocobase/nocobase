@@ -1,10 +1,10 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-यह दस्तावेज़ AI द्वारा अनुवादित किया गया है। किसी भी अशुद्धि के लिए, कृपया [अंग्रेजी संस्करण](/en) देखें
-:::
 
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/data-sources/data-source-kingbase/index) देखें।
+:::
 
 # डेटा स्रोत - किंगबेसईएस डेटाबेस
 
@@ -12,7 +12,7 @@ pkg: "@nocobase/plugin-data-source-kingbase"
 
 किंगबेसईएस डेटाबेस को डेटा स्रोत के रूप में उपयोग किया जा सकता है, चाहे वह मुख्य डेटाबेस के रूप में हो या बाहरी डेटाबेस के रूप में।
 
-:::चेतावनी
+:::warning
 वर्तमान में, केवल pg मोड में चलने वाले किंगबेसईएस डेटाबेस ही समर्थित हैं।
 :::
 
@@ -45,7 +45,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -76,7 +76,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -121,5 +121,5 @@ yarn nocobase upgrade
 
 ## उपयोगकर्ता मार्गदर्शिका
 
-- मुख्य डेटाबेस: [मुख्य डेटा स्रोत](/data-sources/data-source-main/) देखें
+- मुख्य डेटाबेस: मुख्य डेटा स्रोत देखें
 - बाहरी डेटाबेस: [डेटा स्रोत / बाहरी डेटाबेस](/data-sources/data-source-manager/external-database) देखें

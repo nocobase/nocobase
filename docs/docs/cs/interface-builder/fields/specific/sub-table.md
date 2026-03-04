@@ -1,35 +1,34 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/interface-builder/fields/specific/sub-table).
 :::
 
-
-# Podtabulka
+# Podtabulka (inline editace)
 
 ## Úvod
 
-Podtabulka je vhodná pro práci s relačními poli typu 'jeden k mnoha'. Podporuje hromadné vytváření a následné propojení nových dat v cílové kolekci, nebo výběr a propojení existujících dat.
+Podtabulka je vhodná pro práci s relačními poli typu One-to-Many (O2M). Podporuje hromadné vytváření a následné propojení nových dat v cílové kolekci, nebo výběr a propojení existujících dat.
 
 ## Použití
 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
-Různé typy polí v podtabulce zobrazují různé komponenty polí. Velká pole (například Rich Text, JSON, Víceřádkový text) se upravují prostřednictvím vyskakovacího modálního okna.
+Různé typy polí v podtabulce zobrazují různé komponenty polí. Velká pole (například Rich Text, JSON, Long Text) se upravují prostřednictvím vyskakovacího modálního okna.
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 Relační pole v podtabulce.
 
-Objednávky (Jeden k mnoha) > Produkty objednávek (Jeden k jednomu) > Příležitost
+Objednávky (One-to-Many (O2M)) > Produkty objednávek (One-to-One (O2O)) > Příležitost
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
-Výchozí komponentou pro relační pole je rozbalovací seznam (podporuje rozbalovací seznam / výběr dat).
+Výchozí komponentou pro relační pole je Single select (podporuje Single select / Data selector).
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
 
 ## Možnosti konfigurace pole
 
-### Povolit výběr existujících dat (ve výchozím nastavení vypnuto)
+### Povolit výběr existujících dat (ve výchozím nastavení zapnuto)
 
 Podporuje výběr a propojení existujících dat.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
@@ -38,7 +37,7 @@ Podporuje výběr a propojení existujících dat.
 
 ### Komponenta pole
 
-[Komponenta pole](/interface-builder/fields/association-field): Přepněte na jiné komponenty relačních polí, jako je rozbalovací seznam, výběr dat atd.;
+[Komponenta pole](/interface-builder/fields/association-field): Přepněte na jiné komponenty relačních polí, jako je Single select, Data selector atd.;
 
 ### Povolit zrušení propojení existujících dat
 
