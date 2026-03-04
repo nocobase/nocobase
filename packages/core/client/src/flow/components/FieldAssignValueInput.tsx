@@ -1185,7 +1185,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
             return useDateVariableConstant ? { type: 'today' } : '';
           }
           if (firstPath === 'null') return null;
-          if (firstPath === 'runjs') return { code: '', version: 'v1' };
+          if (firstPath === 'runjs') return { code: '', version: 'v2' };
           return undefined;
         },
         resolvePathFromValue: (currentValue) => {

@@ -381,7 +381,7 @@ export async function updatePluginByCompressedFileUrl(
 
   if (!instance) {
     await removeTmpDir(tempFile, tempPackageContentDir);
-    throw new Error(`plugin ${packageName} does not exist`);
+    throw new Error(`${packageName} does not exist`);
   }
 
   const { packageDir } = await copyTempPackageToStorageAndLinkToNodeModules(

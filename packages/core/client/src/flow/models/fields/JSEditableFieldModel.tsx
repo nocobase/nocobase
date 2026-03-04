@@ -168,7 +168,7 @@ JSEditableFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
-          version: 'v1',
+          version: 'v2',
           code: DEFAULT_CODE,
         };
       },

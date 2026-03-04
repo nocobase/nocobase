@@ -17,6 +17,12 @@ import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
 import { AIMessageChunk } from '@langchain/core/messages';
 
+// Kimi code API only accept anthropic client
+// And anthropic default max_tokens is 2k that is too small for Kimi code
+const MAX_TOKENS_PRESET = {
+  'kimi-for-coding': 128 * 1024,
+};
+
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
 
@@ -55,6 +61,8 @@ export class AnthropicProvider extends LLMProvider {
         delete sanitizedModelOptions[key];
       }
     }
+
+    this.setMaxTokens(sanitizedModelOptions);
 
     return new ChatAnthropic({
       apiKey,
@@ -189,21 +197,34 @@ export class AnthropicProvider extends LLMProvider {
     const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
-        type: 'image_url',
-        image_url: {
-          url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+        placement: 'contentBlocks',
+        content: {
+          type: 'image_url',
+          image_url: {
+            url: `data:image/${attachment.mimetype.split('/')[1]};base64,${data}`,
+          },
         },
       };
     } else {
       return {
-        type: 'document',
-        source: {
-          type: 'base64',
-          media_type: attachment.mimetype,
-          data,
+        placement: 'contentBlocks',
+        content: {
+          type: 'document',
+          source: {
+            type: 'base64',
+            media_type: attachment.mimetype,
+            data,
+          },
         },
       };
     }
+  }
+
+  private setMaxTokens(options: Record<string, any> = {}) {
+    if (!options.model || options.maxTokens) {
+      return;
+    }
+    options.maxTokens = Object.entries(MAX_TOKENS_PRESET).find(([key]) => options.model.startsWith(key))?.[1];
   }
 }
 
