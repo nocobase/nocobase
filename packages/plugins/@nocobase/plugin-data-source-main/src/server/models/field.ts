@@ -95,6 +95,9 @@ export class FieldModel extends MagicAttributeModel {
   async syncUniqueIndex(options: Transactionable) {
     const unique = this.get('unique');
     const collection = this.getFieldCollection();
+    if (!collection) {
+      return;
+    }
     const field = collection.getField(this.get('name'));
     const columnName = collection.model.rawAttributes[this.get('name')].field;
     const tableName = collection.model.tableName;
