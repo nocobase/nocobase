@@ -150,7 +150,7 @@ http://your-kkfileview-server:8012/onlinePreview?url=<encoded-url>
 
 ### v2.1.0-beta.5
 - 修复了在某些预览模式下下载按钮失效的问题，改为使用本地实现的 `saveAs` 下载。
-- 修复了下载文件时由于文件名重复拼接导致出现双后缀（例如 `file.pdf.pdf`）的问题。
+- 修复了下载文件时以及向外部预览器（如 BaseMetas `fileName` 传参时）由于文件名重复拼接导致出现双后缀（例如 `file.pdf.pdf`）的问题。
 
 ## 许可证
 

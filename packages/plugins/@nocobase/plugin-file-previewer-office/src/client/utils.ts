@@ -21,6 +21,14 @@ export function safeBase64Encode(str: string): string {
   }
 }
 
+export function getFileNameWithExt(file: any): string {
+  let filename = file.title || file.filename || file.name || '';
+  if (file.extname && !filename.toLowerCase().endsWith(file.extname.toLowerCase())) {
+    filename = `${filename}${file.extname}`;
+  }
+  return filename;
+}
+
 export function encodeUrlForKKFileView(url: string): string {
   if (!url) return '';
   // If URL is standard ASCII (Percent-Encoded), use pure btoa to avoid double encoding issues

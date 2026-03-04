@@ -17,6 +17,7 @@ import { PreviewerModal } from './components/PreviewerModal';
 import {
   encodeUrlForKKFileView,
   getAbsoluteFileUrl,
+  getFileNameWithExt,
   isImageOrPdf,
   isOfficeFile,
   isMixedContent,
@@ -74,10 +75,7 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      let filename = file.title || file.name || 'download';
-      if (file.extname && !filename.toLowerCase().endsWith(file.extname.toLowerCase())) {
-        filename = `${filename}${file.extname}`;
-      }
+      const filename = getFileNameWithExt(file) || 'download';
       saveAs(file.url, filename);
     },
     [file.extname, file.name, file.title, file.url],
@@ -252,7 +250,7 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
       const fileUrl = getAbsoluteFileUrl(file);
       const encodedFileUrl = encodeUrlForKKFileView(fileUrl);
       // Add fullfilename parameter to help KKFileView display correct filename
-      const filename = file.title ? `${file.title}${file.extname || ''}` : file.filename || '';
+      const filename = getFileNameWithExt(file);
       const encodedFilename = encodeURIComponent(filename);
       previewUrl = `${kkUrl}/onlinePreview?url=${encodedFileUrl}&fullfilename=${encodedFilename}`;
     } else if (mode === 'basemetas') {
@@ -272,7 +270,7 @@ function FilePreviewer({ index, list, onSwitchIndex }) {
       const fileUrl = getAbsoluteFileUrl(file);
       const encodedFileUrl = encodeURIComponent(fileUrl);
       // fileName is used for file type detection
-      const fileName = file.filename || `${file.title}${file.extname || ''}`;
+      const fileName = getFileNameWithExt(file);
       const encodedFileName = encodeURIComponent(fileName);
       // displayName is used for display in title bar
       const displayName = file.title || fileName;
@@ -441,7 +439,7 @@ const getPreviewState = (file, config, t) => {
 
     const fileUrl = getAbsoluteFileUrl(file);
     const encodedFileUrl = encodeUrlForKKFileView(fileUrl);
-    const filename = file.title ? `${file.title}${file.extname || ''}` : file.filename || '';
+    const filename = getFileNameWithExt(file);
     const encodedFilename = encodeURIComponent(filename);
     previewUrl = `${kkUrl}/onlinePreview?url=${encodedFileUrl}&fullfilename=${encodedFilename}`;
   } else if (mode === 'basemetas') {
@@ -457,7 +455,7 @@ const getPreviewState = (file, config, t) => {
 
     const fileUrl = getAbsoluteFileUrl(file);
     const encodedFileUrl = encodeURIComponent(fileUrl);
-    const fileName = file.filename || `${file.title}${file.extname || ''}`;
+    const fileName = getFileNameWithExt(file);
     const encodedFileName = encodeURIComponent(fileName);
     const displayName = file.title || fileName;
     const encodedDisplayName = encodeURIComponent(displayName);
