@@ -17,6 +17,12 @@ import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { Context } from '@nocobase/actions';
 import { AIMessageChunk } from '@langchain/core/messages';
 
+// Kimi code API only accept anthropic client
+// And anthropic default max_tokens is 2k that is too small for Kimi code
+const MAX_TOKENS_PRESET = {
+  'kimi-for-coding': 128 * 1024,
+};
+
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
 
@@ -55,6 +61,8 @@ export class AnthropicProvider extends LLMProvider {
         delete sanitizedModelOptions[key];
       }
     }
+
+    this.setMaxTokens(sanitizedModelOptions);
 
     return new ChatAnthropic({
       apiKey,
@@ -210,6 +218,13 @@ export class AnthropicProvider extends LLMProvider {
         },
       };
     }
+  }
+
+  private setMaxTokens(options: Record<string, any> = {}) {
+    if (!options.model || options.maxTokens) {
+      return;
+    }
+    options.maxTokens = Object.entries(MAX_TOKENS_PRESET).find(([key]) => options.model.startsWith(key))?.[1];
   }
 }
 

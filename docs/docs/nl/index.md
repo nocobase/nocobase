@@ -42,4 +42,13 @@ features:
         details: Ontdek meer tutorials over plugin-ontwikkeling.
         link: /development
 
+  - title: Oplossingen
+    details: Branche-oplossingssjablonen gebouwd op NocoBase.
+    items:
+      - title: Ticketoplossing
+        details: AI-gestuurde intelligente ticketingsplatform met multi-channel toegang, SLA-beheer, kennisdatabase en meer.
+        link: /solution/ticket-system/
+      - title: CRM (Preview)
+        details: No-code, flexibel klantrelatiebeheerplatform met klanten, leads, kansen, bestellingen en meer.
+        link: /solution/crm/
 ---

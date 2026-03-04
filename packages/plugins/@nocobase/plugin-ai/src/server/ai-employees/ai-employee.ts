@@ -152,7 +152,7 @@ export class AIEmployee {
       userDecisions,
       tools,
       middleware,
-      getSystemPrompt: () => this.getSystemPrompt(),
+      getSystemPrompt: (userMessages) => this.getSystemPrompt(userMessages),
       formatMessages: (messages) => this.formatMessages({ messages, provider }),
     });
 
@@ -605,7 +605,7 @@ export class AIEmployee {
     return message;
   }
 
-  async getSystemPrompt() {
+  async getSystemPrompt(userMessages: AIMessageInput[]) {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
         userId: this.ctx.auth?.user.id,
@@ -613,7 +613,7 @@ export class AIEmployee {
       },
     });
 
-    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt);
+    let systemMessage = await parseVariables(this.ctx, this.employee.about ?? this.employee.defaultPrompt ?? '');
     const dataSourceMessage = this.getEmployeeDataSourceContext();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
@@ -631,16 +631,18 @@ export class AIEmployee {
     }
 
     let knowledgeBase;
-    if (this.isEnabledKnowledgeBase() && this.employee.knowledgeBasePrompt) {
-      const lastUserMessage = await this.aiChatConversation.lastUserMessage();
-      const docs = await this.retrieveKnowledgeBase(lastUserMessage);
-      const knowledgeBaseData = docs.map((x) => x.content).join('\n');
-      const promptTemplate = ChatPromptTemplate.fromTemplate(this.employee.knowledgeBasePrompt);
-      knowledgeBase = _.isEmpty(knowledgeBaseData)
-        ? undefined
-        : await promptTemplate.format({
-            knowledgeBaseData,
-          });
+    if (this.isEnabledKnowledgeBase() && this.employee.knowledgeBasePrompt && userMessages?.length) {
+      const lastUserMessage = userMessages.filter((x) => x.role === 'user').at(-1);
+      if (lastUserMessage) {
+        const docs = await this.retrieveKnowledgeBase(lastUserMessage);
+        const knowledgeBaseData = docs.map((x) => x.content).join('\n');
+        const promptTemplate = ChatPromptTemplate.fromTemplate(this.employee.knowledgeBasePrompt);
+        knowledgeBase = _.isEmpty(knowledgeBaseData)
+          ? undefined
+          : await promptTemplate.format({
+              knowledgeBaseData,
+            });
+      }
     }
 
     const systemPrompt = getSystemPrompt({
@@ -671,7 +673,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     }
   }
 
-  async retrieveKnowledgeBase(userMessage: AIMessage): Promise<DocumentSegmentedWithScore[]> {
+  async retrieveKnowledgeBase(userMessage: AIMessageInput): Promise<DocumentSegmentedWithScore[]> {
     const vectorStoreProvider = this.plugin.features.vectorStoreProvider;
     let queryResult: DocumentSegmentedWithScore[] = [];
     const queryString: string = userMessage.content.content as string;

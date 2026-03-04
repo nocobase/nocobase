@@ -44,14 +44,15 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     this.previousBeforeRenderHash = this.context.location.search;
   }
 
-  onActive() {
+  onActive(forceRefresh = false) {
     if (!this.hidden && this.previousBeforeRenderHash !== this.context.location.search) {
       this.rerender();
-      return;
+      if (!forceRefresh) {
+        return;
+      }
     }
 
     if (this.hidden) return;
-    if (this.isManualRefresh) return;
 
     const resource = this.context.resource as BaseRecordResource | undefined;
     if (!resource) return;
@@ -62,6 +63,25 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
     const engine = this.context.engine as FlowEngine;
     const currentVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+
+    if (forceRefresh) {
+      if (this.dirtyRefreshing) return;
+      this.dirtyRefreshing = true;
+      void resource
+        .refresh()
+        .then(() => {
+          this.lastSeenDirtyVersion = currentVersion;
+        })
+        .catch(() => {
+          // keep lastSeenDirtyVersion unchanged so next activate can retry
+        })
+        .finally(() => {
+          this.dirtyRefreshing = false;
+        });
+      return;
+    }
+
+    if (this.isManualRefresh) return;
 
     const shouldRefresh = this.lastSeenDirtyVersion === null || currentVersion !== this.lastSeenDirtyVersion;
     if (!shouldRefresh) return;
