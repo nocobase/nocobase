@@ -544,4 +544,72 @@ describe('ReferenceBlockModel', () => {
       TEST_TIMEOUT,
     );
   });
+
+  describe('Props forwarding', () => {
+    it(
+      'should forward props mutations to target model after beforeRender',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
+        expect(referenceBlockModel.props).toBe(target!.props);
+
+        (referenceBlockModel.props as any).summary = 'x';
+        expect((target!.props as any).summary).toBe('x');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should forward setProps/getProps to target model',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
+
+        referenceBlockModel.setProps({ summary: 'y' as any });
+        expect((target!.props as any).summary).toBe('y');
+        expect((referenceBlockModel.getProps() as any).summary).toBe('y');
+      },
+      TEST_TIMEOUT,
+    );
+  });
 });
