@@ -1,12 +1,16 @@
 ---
-displayName: "Action: Print"
+displayName: "Eylem: Yazdır"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Calls the browser's print function to print a record.
+  Tek bir kaydı yazdırmak için tarayıcının yazdırma işlevini çağırır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Print
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-action-print/index) bakın.
+:::
+
+# Eylem: Yazdır

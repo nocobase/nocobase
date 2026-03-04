@@ -1,12 +1,16 @@
 ---
-displayName: "Notification: Email"
+displayName: "התראה: אימייל"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Used for sending email notifications with built-in SMTP transport.
+  שליחת התראות דרך ערוץ האימייל, כרגע תומך רק בשיטת העברה SMTP.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification: Email
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-notification-email/index).
+:::
+
+# התראה: אימייל

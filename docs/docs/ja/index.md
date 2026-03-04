@@ -41,4 +41,14 @@ features:
       - title: その他...
         details: プラグイン開発に関するその他のチュートリアルをご覧ください。
         link: /development
+
+  - title: ソリューション
+    details: NocoBase をベースに構築した業界向けソリューションテンプレート。
+    items:
+      - title: チケットソリューション
+        details: AI 駆動のインテリジェントチケット管理プラットフォーム。マルチチャネル対応、SLA 管理、ナレッジベースなどをサポート。
+        link: /solution/ticket-system/
+      - title: CRM（プレビュー）
+        details: ノーコードで柔軟な顧客関係管理基盤。顧客、リード、商機、注文などの機能をカバー。
+        link: /solution/crm/
 ---

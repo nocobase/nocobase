@@ -1,7 +1,6 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/ai-employees/knowledge-base/vector-store).
 :::
-
 
 # Kho lưu trữ vector
 
@@ -21,7 +20,7 @@ Nhấp vào nút `Add new` ở góc trên bên phải để thêm kho lưu trữ
 
 - Trong ô nhập liệu `Name`, nhập tên kho lưu trữ vector;
 - Trong `Vector store`, chọn cơ sở dữ liệu vector đã được cấu hình. Tham khảo: [Cơ sở dữ liệu vector](/ai-employees/knowledge-base/vector-database);
-- Trong `LLM service`, chọn dịch vụ LLM đã được cấu hình. Tham khảo: [Quản lý dịch vụ LLM](/ai-employees/quick-start/llm-service);
+- Trong `LLM service`, chọn dịch vụ LLM đã được cấu hình. Tham khảo: [Quản lý dịch vụ LLM](/ai-employees/features/llm-service);
 - Trong ô nhập liệu `Embedding model`, nhập tên mô hình `Embedding` muốn sử dụng;
 
 Nhấp vào nút `Submit` để lưu thông tin kho lưu trữ vector.

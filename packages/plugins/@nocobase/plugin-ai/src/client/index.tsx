@@ -31,8 +31,7 @@ import {
   AIEmployeeButtonModel,
 } from './ai-employees/flow/models';
 import './ai-employees/flow/events';
-import { aiEmployeesData } from './ai-employees/flow/context';
-import { LLMServicesRepository } from './llm-services/LLMServicesRepository';
+import { AIConfigRepository } from './repositories/AIConfigRepository';
 import { FlowModelsContext } from './ai-employees/context/flow-models';
 import { DatasourceContext } from './ai-employees/context/datasource';
 import { CodeEditorContext } from './ai-employees/context/code-editor';
@@ -138,10 +137,10 @@ export class PluginAIClient extends Plugin {
   }
 
   async setupAIFeatures() {
-    this.app.flowEngine.context.defineProperty(...aiEmployeesData);
-
-    const llmServicesRepository = new LLMServicesRepository(this.app.apiClient);
-    this.app.flowEngine.context.defineProperty('llmServicesRepository', { value: llmServicesRepository });
+    const aiConfigRepository = new AIConfigRepository(this.app.apiClient, {
+      toolsManager: this.app.aiManager.toolsManager,
+    });
+    this.app.flowEngine.context.defineProperty('aiConfigRepository', { value: aiConfigRepository });
 
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
@@ -193,12 +192,12 @@ export class PluginAIClient extends Plugin {
 export default PluginAIClient;
 export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
-export type { ToolCall } from './ai-employees/types';
+export type { AIEmployee, ToolCall } from './ai-employees/types';
 export * from './features';
 export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
-export { useAIEmployeesData } from './ai-employees/hooks/useAIEmployeesData';
 export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
 export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
 export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
+export { useAIConfigRepository } from './repositories/hooks/useAIConfigRepository';
 export { ProfileCard } from './ai-employees/ProfileCard';
 export { avatars } from './ai-employees/avatars';

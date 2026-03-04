@@ -1,14 +1,18 @@
 ---
-displayName: "Form drafts"
+displayName: "Черновики форм"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
-isFree: false
-builtIn: false
+  Поддержка сохранения черновиков при заполнении форм для последующего редактирования и отправки.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form drafts
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-form-drafts/index).
+:::
+
+# Черновики форм

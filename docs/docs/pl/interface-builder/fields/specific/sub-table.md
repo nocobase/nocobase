@@ -1,8 +1,8 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/interface-builder/fields/specific/sub-table).
 :::
 
-# Podtabela
+# Podtabela (edycja w wierszu)
 
 ## Wprowadzenie
 
@@ -28,7 +28,7 @@ Domyślnym komponentem dla pola relacji jest lista rozwijana (obsługuje listę 
 
 ## Opcje konfiguracji pola
 
-### Zezwalaj na wybór istniejących danych (domyślnie wyłączone)
+### Zezwalaj na wybór istniejących danych (domyślnie włączone)
 
 Umożliwia wybór i powiązanie istniejących danych.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)

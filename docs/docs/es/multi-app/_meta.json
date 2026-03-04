@@ -1,17 +1,28 @@
 [
   {
     "type": "custom-link",
-    "label": "Visión general",
-    "link": "/multi-app/"
+    "label": "Multiaplicación",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Resumen",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modo de memoria compartida",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modo multi-entorno",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "Múltiples aplicaciones",
-    "link": "/multi-app/multi-app"
-  },
-  {
-    "type": "custom-link",
-    "label": "Múltiples espacios",
+    "label": "Multi-space",
     "link": "/multi-app/multi-space"
   }
 ]

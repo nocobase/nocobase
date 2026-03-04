@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "Bädda in NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
-isFree: false
-builtIn: false
+  Bädda in NocoBase i ett externt system eller en webbsida, så att det blir en del av det systemet eller den sidan.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-embed/index).
+:::
+
+# Bädda in NocoBase

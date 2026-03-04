@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "NocoBase एम्बेड करें"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
-isFree: false
-builtIn: false
+  NocoBase को किसी बाहरी सिस्टम या पेज में एम्बेड करें, जिससे यह उस सिस्टम या पेज का हिस्सा बन जाए।
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-embed/index) देखें।
+:::
+
+# NocoBase एम्बेड करें

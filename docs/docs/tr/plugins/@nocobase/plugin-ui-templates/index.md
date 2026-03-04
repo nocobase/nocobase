@@ -1,14 +1,18 @@
 ---
-displayName: "UI templates"
+displayName: "UI Şablonları"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Blok şablonlarını ve açılır pencere şablonlarını yeniden kullanma yeteneği sağlar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-ui-templates/index) bakın.
+:::
+
+# UI Şablonları

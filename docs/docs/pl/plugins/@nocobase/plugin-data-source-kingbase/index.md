@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: KingbaseES"
+displayName: "Źródło danych: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Using the KingbaseES database as a data source, it can serve as the main database or as an external database.
+  Użycie bazy danych KingbaseES jako źródła danych; może ona służyć jako główna baza danych lub jako zewnętrzna baza danych.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Data source: KingbaseES
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-data-source-kingbase/index).
+:::
+
+# Źródło danych: KingbaseES

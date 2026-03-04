@@ -31,6 +31,5 @@ describe('TreeComponent', () => {
     // expect(document.querySelectorAll('.ant-tree-treenode-switcher-open').length).toBe(2);
 
     // expect(document.querySelector('.ant-tree-node-selected > span')).toHaveStyle('color: rgb(22, 119, 255);');
-  })
+  });
 });
-

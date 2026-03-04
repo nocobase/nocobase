@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Panoramica della soluzione"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Progettazione dettagliata"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Installazione"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Altre informazioni"
+  }
+]

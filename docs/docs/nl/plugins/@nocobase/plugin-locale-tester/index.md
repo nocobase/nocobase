@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Vertaaltesttool"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-locale-tester/index) voor nauwkeurige informatie.
+:::
+
+# Vertaaltesttool

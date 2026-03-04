@@ -14,6 +14,11 @@ import { useTranslation } from 'react-i18next';
 import { SchemaSettingsModalItem } from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 
+const BadgeVariableTextArea = (props) => {
+  const variables = useVariableOptions({} as any);
+  return <Variable.TextArea {...props} scope={variables} />;
+};
+
 const EditBadge: FC = () => {
   const { t } = useTranslation(NAMESPACE);
   const currentRoute = useCurrentRoute();
@@ -30,11 +35,15 @@ const EditBadge: FC = () => {
           'x-decorator-props': {
             tooltip: t('You can enter numbers, text, variables, aggregation variables, expressions, etc.'),
           },
-          'x-component': (props) => {
-            const variables = useVariableOptions({} as any);
-            return <Variable.TextArea {...props} scope={variables} />;
-          },
-          description: <span>{t('Syntax references: ')}<a href="https://docs.nocobase.com/handbook/calculation-engines/formula" target="_blank" rel="noreferrer">Formula.js</a></span>,
+          'x-component': BadgeVariableTextArea,
+          description: (
+            <span>
+              {t('Syntax references: ')}
+              <a href="https://docs.nocobase.com/handbook/calculation-engines/formula" target="_blank" rel="noreferrer">
+                Formula.js
+              </a>
+            </span>
+          ),
         },
         color: {
           title: t('Background color'),
@@ -94,7 +103,7 @@ const EditBadge: FC = () => {
             badge: {
               ...currentRoute.options?.badge,
               ...badge,
-              count: (badge.count == null || badge.count === '') ? undefined : badge.count,
+              count: badge.count == null || badge.count === '' ? undefined : badge.count,
             },
           },
         });

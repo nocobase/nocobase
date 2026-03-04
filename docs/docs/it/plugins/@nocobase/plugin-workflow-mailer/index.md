@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: mailer node"
+displayName: "Workflow: Nodo Mailer"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |
-  Send email in workflow.
+  Può essere utilizzato per inviare email all'interno di un workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: mailer node
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-workflow-mailer/index).
+:::
+
+# Workflow: Nodo Mailer

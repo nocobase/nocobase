@@ -1,12 +1,16 @@
 ---
-displayName: "WEB client"
+displayName: "WEB Client"
 packageName: '@nocobase/plugin-client'
 description: |
-  Provides a client interface for the NocoBase server
+  ให้บริการอินเทอร์เฟซไคลเอนต์สำหรับเซิร์ฟเวอร์ NocoBase
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# WEB client
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-client/index)
+:::
+
+# WEB Client

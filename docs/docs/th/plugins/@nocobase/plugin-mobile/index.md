@@ -1,12 +1,16 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "โมบายล์ (เลิกใช้งานแล้ว)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  ตั้งแต่เวอร์ชัน 2.0 เป็นต้นไป โมบายล์ถูกแทนที่ด้วยปลั๊กอิน ui-layout ใหม่ ซึ่งยังคงอยู่ระหว่างการพัฒนา
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-mobile/index)
+:::
+
+# โมบายล์ (เลิกใช้งานแล้ว)

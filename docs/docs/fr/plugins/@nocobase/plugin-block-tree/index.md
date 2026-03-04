@@ -1,14 +1,18 @@
 ---
-displayName: "Block: Tree"
+displayName: "Bloc : Arborescence"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Provides tree structure filter block
-isFree: false
-builtIn: false
+  Fournit un bloc de filtrage d'arborescence
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Tree
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-block-tree/index).
+:::
+
+# Bloc : Arborescence

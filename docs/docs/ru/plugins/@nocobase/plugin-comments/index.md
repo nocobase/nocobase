@@ -1,15 +1,19 @@
 ---
-displayName: "Comments"
+displayName: "Комментарии"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
-isFree: false
-builtIn: false
+  Предоставляет шаблон коллекции комментариев и блок для добавления функции комментирования к данным любой коллекции.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
-# Comments
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-comments/index).
+:::
+
+# Комментарии

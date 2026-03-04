@@ -106,28 +106,42 @@ echo "Releasing version: $new_version"
 
 lerna version "$new_version" --preid alpha --force-publish=* --no-git-tag-version -y
 
+VERSION=$(jq -r '.version' lerna.json)
+
+commit_and_tag_if_changed() {
+  # `git commit` exits 1 when there is nothing to commit; with `set -e` that would abort release.
+  # Also, if there are no changes, we should NOT create a new version tag pointing at an old commit.
+  # So we only commit+tag when there are staged changes.
+  local version="$1"
+  local msg="chore(versions): 😊 publish v${version}"
+  local tag="v${version}"
+
+  if ! git diff --cached --quiet; then
+    git commit -m "$msg"
+    git tag "$tag"
+  else
+    echo "Skip commit+tag (no staged changes): $(pwd)"
+  fi
+}
+
 echo $PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
-  git tag v$(jq -r '.version' ../../../../lerna.json)
+  commit_and_tag_if_changed "$VERSION"
   cd ../../../../
 done
 echo $CUSTOM_PRO_PLUGIN_REPOS | jq -r '.[]' | while read i; do
   cd ./packages/pro-plugins/@nocobase/$i
   git add package.json
-  git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../../../lerna.json)"
-  git tag v$(jq -r '.version' ../../../../lerna.json)
+  commit_and_tag_if_changed "$VERSION"
   cd ../../../../
 done
 cd ./packages/pro-plugins
 git add .
-git commit -m "chore(versions): 😊 publish v$(jq -r '.version' ../../lerna.json)"
-git tag v$(jq -r '.version' ../../lerna.json)
-#git push --atomic origin main v$(jq -r '.version' ../../lerna.json)
+commit_and_tag_if_changed "$VERSION"
+#git push --atomic origin main v$VERSION
 cd ../../
 git add .
-git commit -m "chore(versions): 😊 publish v$(jq -r '.version' lerna.json)"
-git tag v$(jq -r '.version' lerna.json)
-# git push --atomic origin main v$(jq -r '.version' lerna.json)
+commit_and_tag_if_changed "$VERSION"
+# git push --atomic origin main v$VERSION
 

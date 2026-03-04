@@ -5,8 +5,8 @@ supportedVersions:
   - 1.x
 description: |
   支持常见字段的多关键词筛选，支持快捷输入或从 Excel 批量导入关键词。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

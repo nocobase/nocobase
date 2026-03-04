@@ -1,15 +1,19 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "HTTP-verzoekversleuteling"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  Wordt gebruikt om aanvraagparameters (Query Parameters) te versleutelen voordat een HTTP-verzoek wordt verzonden.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-request-encryption/index) voor nauwkeurige informatie.
+:::
+
+# HTTP-verzoekversleuteling

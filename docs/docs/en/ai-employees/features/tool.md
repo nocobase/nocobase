@@ -12,9 +12,9 @@ The Skills page is split into three sections:
 
 ![skills-three-sections-general-specific-custom.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/skills-three-sections-general-specific-custom.png)
 
-## Permission Model
+## Skill Permissions
 
-Permissions are unified as:
+Skill permissions are unified as:
 
 - `Ask`: ask for confirmation before calling.
 - `Allow`: allow direct calling.
@@ -25,4 +25,4 @@ Recommendation: use `Ask` by default for data-modifying skills.
 
 ## Add and Maintain
 
-Use `Add skill` in `Custom skills` to add skills and configure permissions based on risk.
+Click `Add skill` in `Custom skills` to add skills and configure permissions based on business risk.

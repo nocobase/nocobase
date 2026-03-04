@@ -1,14 +1,18 @@
 ---
-displayName: "Record history"
+displayName: "Riwayat rekaman"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Tracks and stores the change history of collection records.
+  Melacak dan menyimpan riwayat perubahan dari rekaman koleksi.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Record history
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-record-history/index).
+:::
+
+# Riwayat rekaman

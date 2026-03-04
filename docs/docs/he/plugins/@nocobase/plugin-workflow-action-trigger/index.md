@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Post-action event"
+displayName: "Workflow: אירוע לאחר פעולה"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
+  מופעל לאחר השלמת בקשה שנשלחה דרך כפתור פעולה או API, למשל לאחר הוספה, עדכון, מחיקת נתונים או "שליחה ל-Workflow". מתאים לעיבוד נתונים, שליחת התראות וכו' לאחר סיום הפעולה.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Post-action event
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-workflow-action-trigger/index).
+:::
+
+# Workflow: אירוע לאחר פעולה

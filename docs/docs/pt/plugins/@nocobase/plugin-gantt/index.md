@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "Bloco: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  Fornece o bloco de Gantt.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-gantt/index).
+:::
+
+# Bloco: Gantt

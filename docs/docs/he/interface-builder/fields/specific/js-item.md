@@ -1,42 +1,42 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/interface-builder/fields/specific/js-item).
 :::
 
-# פריט JS
+# JS Item
 
-## מבוא
+##介绍 (מבוא)
 
-פריט JS משמש עבור "פריטים מותאמים אישית" (שאינם מקושרים לשדה) בטופס. אתם יכולים להשתמש ב-JavaScript/JSX כדי לרנדר כל תוכן (כגון טיפים, סטטיסטיקות, תצוגות מקדימות, כפתורים ועוד), ולקיים אינטראקציה עם הקשר הטופס והרשומה. הוא מתאים לתרחישים כמו תצוגות מקדימות בזמן אמת, טיפים והוראות, ורכיבי אינטראקציה קטנים.
+JS Item משמש עבור "פריטים מותאמים אישית" (שאינם קשורים לשדה) בטופס. ניתן להשתמש ב-JavaScript/JSX כדי לרנדר כל תוכן (הנחיות, סטטיסטיקות, תצוגה מקדימה, כפתורים וכו') ולקיים אינטראקציה עם הקשר הטופס והרשומה, מתאים לתרחישים כמו תצוגה מקדימה בזמן אמת, הנחיות הסבר, רכיבי אינטראקציה קטנים וכו'.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
-## API של הקשר זמן ריצה (שימושים נפוצים)
+## 运行时上下文 API（常用） (API של הקשר זמן ריצה - שימושים נפוצים)
 
-- `ctx.element`: קונטיינר ה-DOM (ElementProxy) של הפריט הנוכחי, תומך ב-`innerHTML`, `querySelector`, `addEventListener` ועוד.
-- `ctx.form`: מופע ה-AntD Form, מאפשר פעולות כמו `getFieldValue / getFieldsValue / setFieldsValue / validateFields` ועוד.
-- `ctx.blockModel`: מודל בלוק הטופס אליו הוא שייך, יכול להאזין ל-`formValuesChange` כדי ליישם קישוריות (linkage).
-- `ctx.record` / `ctx.collection`: הרשומה הנוכחית ומטא-נתוני ה**אוסף** (זמינים בתרחישים מסוימים).
-- `ctx.requireAsync(url)`: טוען ספריית AMD/UMD באופן אסינכרוני לפי URL.
-- `ctx.importAsync(url)`: מייבא מודול ESM באופן דינמי לפי URL.
-- `ctx.openView(viewUid, options)`: פותח תצוגה מוגדרת (מגירה/דיאלוג/עמוד).
-- `ctx.message` / `ctx.notification`: הודעה והתראה גלובליות.
-- `ctx.t()` / `ctx.i18n.t()`: בינאום (Internationalization).
-- `ctx.onRefReady(ctx.ref, cb)`: מרנדר לאחר שהקונטיינר מוכן.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: ספריות מובנות כמו React, ReactDOM, Ant Design, אייקוני Ant Design ו-dayjs, המשמשות לרינדור JSX ולטיפול בתאריכים ושעות. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` נשמרו לתאימות לאחור.)
-- `ctx.render(vnode)`: מרנדר אלמנט React/HTML/DOM לקונטיינר ברירת המחדל `ctx.element`. רינדורים מרובים יעשו שימוש חוזר ב-Root וידרסו את התוכן הקיים בקונטיינר.
+- `ctx.element`: מכולת ה-DOM (ElementProxy) של הפריט הנוכחי, תומך ב-`innerHTML`, `querySelector`, `addEventListener` וכו';
+- `ctx.form`: מופע AntD Form, מאפשר `getFieldValue / getFieldsValue / setFieldsValue / validateFields` וכו';
+- `ctx.blockModel`: מודל בלוק הטופס שבו הוא נמצא, ניתן להאזין ל-`formValuesChange` כדי לממש קישוריות;
+- `ctx.record` / `ctx.collection`: מידע מטא של הרשומה וה**אוסף** הנוכחיים (זמין בתרחישים מסוימים);
+- `ctx.requireAsync(url)`: טעינה אסינכרונית של ספריית AMD/UMD לפי URL;
+- `ctx.importAsync(url)`: ייבוא דינמי של מודול ESM לפי URL;
+- `ctx.openView(viewUid, options)`: פתיחת תצוגה שהוגדרה (מגירה/תיבת דו-שיח/דף);
+- `ctx.message` / `ctx.notification`: הודעות והתראות גלובליות;
+- `ctx.t()` / `ctx.i18n.t()`: בינאום;
+- `ctx.onRefReady(ctx.ref, cb)`: רינדור לאחר שהמכולה מוכנה;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: ספריות מובנות כגון React / ReactDOM / Ant Design / אייקוני Ant Design / dayjs / lodash / math.js / formula.js וכו', המשמשות לרינדור JSX, טיפול בזמן, מניפולציה של נתונים וחישובים מתמטיים. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` נשמרים לצורך תאימות.)
+- `ctx.render(vnode)`: מרנדר אלמנט React/HTML/DOM למכולת ברירת המחדל `ctx.element`; רינדורים מרובים יעשו שימוש חוזר ב-Root וידרסו את התוכן הקיים במכולה.
 
-## עורך וקטעי קוד (Snippets)
+## 编辑器与片段 (עורך וקטעי קוד)
 
-- `Snippets`: פותח רשימה של קטעי קוד מובנים, ומאפשר לכם לחפש ולהוסיף אותם במיקום הסמן הנוכחי בלחיצה אחת.
-- `Run`: מריץ את הקוד הנוכחי ישירות ומוציא את יומני ההרצה ללוח ה-`Logs` בתחתית. הוא תומך ב-`console.log/info/warn/error` ובהדגשת שגיאות.
+- `Snippets`: פותח רשימה של קטעי קוד מובנים, ניתן לחיפוש ולהכנסה בלחיצה אחת במיקום הסמן הנוכחי.
+- `Run`: מריץ את הקוד הנוכחי ישירות ומציג את יומני ההרצה בחלונית ה-`Logs` בתחתית; תומך ב-`console.log/info/warn/error` ומיקום שגיאות מודגש.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- ניתן להשתמש עם עובד AI כדי ליצור/לשנות סקריפטים: [עובד AI · נתן: מהנדס פרונטאנד](/ai-employees/built-in/ai-coding)
+- ניתן לשלב עם עובד AI ליצירה/שינוי של סקריפטים: [עובד AI · Nathan: מהנדס פרונטאנד](/ai-employees/features/built-in-employee)
 
-## שימושים נפוצים (דוגמאות פשוטות)
+## 常见用法（精简示例） (שימושים נפוצים - דוגמאות תמציתיות)
 
-### 1) תצוגה מקדימה בזמן אמת (קריאת ערכי טופס)
+### 1) 实时预览（读取表单值） (תצוגה מקדימה בזמן אמת - קריאת ערכי טופס)
 
 ```js
 const render = () => {
@@ -53,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) פתיחת תצוגה (מגירה)
+### 2) 打开视图（抽屉） (פתיחת תצוגה - מגירה)
 
 ```js
 ctx.render(
@@ -66,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) טעינה ורינדור של ספריות חיצוניות
+### 3) 加载外部库并渲染 (טעינת ספריות חיצוניות ורינדור)
 
 ```js
 // AMD/UMD
@@ -78,13 +78,13 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</span>);
 ```
 
-## הערות
+## 注意事项 (הערות)
 
-- מומלץ להשתמש ב-CDN אמין לטעינת ספריות חיצוניות, ולדאוג למנגנון גיבוי לתרחישי כשל (לדוגמה, `if (!lib) return;`).
-- מומלץ לתעדף שימוש ב-`class` או `[name=...]` עבור סלקטורים ולהימנע משימוש ב-`id` קבועים, כדי למנוע כפילויות של `id` בבלוקים/חלונות קופצים מרובים.
-- ניקוי אירועים: שינויים תכופים בערכי הטופס יפעילו רינדורים מרובים. לפני קישור אירוע, יש לנקות אותו או למנוע כפילויות (לדוגמה, `remove` לפני `add`, שימוש ב-`{ once: true }`, או שימוש בתכונת `dataset` למניעת כפילויות).
+- טעינת ספריות חיצוניות מומלצת באמצעות CDN מהימן, ויש להכין פתרון חלופי למקרה של כשל (למשל `if (!lib) return;`).
+- מומלץ לתעדף שימוש ב-`class` או `[name=...]` עבור סלקטורים, ולהימנע משימוש ב-`id` קבוע כדי למנוע כפילות `id` במספר בלוקים/חלונות קופצים.
+- ניקוי אירועים: שינויים תכופים בערכי הטופס יפעילו רינדורים מרובים, יש לנקות או למנוע כפילות לפני הצמדת אירועים (למשל `remove` לפני `add`, או `{ once: true }`, או סימון `dataset` למניעת כפילות).
 
-## תיעוד קשור
+## 相关文档 (תיעוד קשור)
 
 - [משתנים והקשר](/interface-builder/variables)
 - [כללי קישוריות](/interface-builder/linkage-rule)

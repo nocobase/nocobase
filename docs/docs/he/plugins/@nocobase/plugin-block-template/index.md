@@ -1,8 +1,8 @@
 ---
-displayName: "Block: template (deprecated)"
+displayName: "בלוק: תבנית (מיושן)"
 packageName: '@nocobase/plugin-block-template'
 description: |
-  Create and manage block templates for reuse on pages.
+  יצירה וניהול של תבניות בלוקים לשימוש חוזר בדפים.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Block: template (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-block-template/index).
+:::
 
-> Note: This plugin is deprecated.
+# בלוק: תבנית (מיושן)
+
+> הערה: תוסף זה מיושן (deprecated).

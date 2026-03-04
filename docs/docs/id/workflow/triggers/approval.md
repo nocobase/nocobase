@@ -1,118 +1,176 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
-:::
 
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/workflow/triggers/approval).
+:::
 
 # Persetujuan
 
 ## Pendahuluan
 
-Persetujuan adalah bentuk alur kerja yang dirancang khusus untuk dimulai dan diproses secara manual oleh manusia guna memutuskan status data terkait. Umumnya digunakan untuk manajemen alur kerja otomatisasi kantor atau tugas pengambilan keputusan manual lainnya, misalnya Anda dapat membuat dan mengelola alur kerja manual untuk skenario seperti "pengajuan cuti", "persetujuan penggantian biaya", dan "persetujuan pengadaan bahan baku".
+Persetujuan adalah jenis alur kerja yang dirancang khusus untuk dimulai secara manual dan diproses secara manual untuk memutuskan status data terkait. Biasanya digunakan untuk manajemen alur kerja otomatisasi kantor atau urusan pengambilan keputusan manual lainnya, misalnya dapat membuat dan mengelola alur kerja manual untuk skenario seperti "pengajuan cuti", "persetujuan penggantian biaya", dan "persetujuan pengadaan bahan baku".
 
-**Plugin** Persetujuan menyediakan jenis **alur kerja** (pemicu) khusus "Persetujuan (event)" dan node "Persetujuan" khusus untuk **alur kerja** ini. Dikombinasikan dengan **koleksi** kustom dan blok kustom unik NocoBase, Anda dapat dengan cepat dan fleksibel membuat dan mengelola berbagai skenario persetujuan.
+Plugin persetujuan menyediakan jenis alur kerja (pemicu) khusus "Persetujuan (event)" dan node "Persetujuan" khusus untuk alur kerja tersebut. Dikombinasikan dengan koleksi kustom dan blok kustom unik NocoBase, Anda dapat dengan cepat dan fleksibel membuat serta mengelola berbagai skenario persetujuan.
 
-## Membuat Alur Kerja
+## Membuat alur kerja
 
-Saat membuat **alur kerja**, pilih jenis "Persetujuan" untuk membuat **alur kerja** persetujuan:
+Pilih jenis "Persetujuan" saat membuat alur kerja untuk membuat alur kerja persetujuan:
 
-![Approval Trigger_Create Approval Workflow](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Pemicu Persetujuan_Membuat alur kerja persetujuan](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
-Setelah itu, di antarmuka konfigurasi **alur kerja**, klik pemicu untuk membuka dialog guna konfigurasi lebih lanjut.
+Setelah itu, klik pemicu pada antarmuka konfigurasi alur kerja untuk membuka jendela sembul guna melakukan konfigurasi lebih lanjut.
 
-## Konfigurasi Pemicu
+## Konfigurasi pemicu
 
-### Mengikat Koleksi
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
 
-**Plugin** Persetujuan NocoBase dirancang untuk fleksibilitas dan dapat digunakan dengan **koleksi** kustom apa pun. Ini berarti konfigurasi persetujuan tidak perlu mengonfigurasi ulang model data, melainkan langsung menggunakan kembali **koleksi** yang sudah ada. Oleh karena itu, setelah masuk ke konfigurasi pemicu, pertama-tama Anda perlu memilih **koleksi** untuk menentukan pembuatan atau pembaruan data **koleksi** mana yang akan memicu **alur kerja** ini:
+### Mengikat koleksi
 
-![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/8732a4854f46a669e0c1c7fb487a17ea.png)
+Plugin persetujuan NocoBase dirancang berdasarkan fleksibilitas dan dapat digunakan dengan koleksi kustom apa pun, yang berarti konfigurasi persetujuan tidak perlu mengonfigurasi ulang model data, melainkan langsung menggunakan kembali koleksi yang telah dibuat. Oleh karena itu, setelah masuk ke konfigurasi pemicu, pertama-tama Anda perlu memilih koleksi untuk menentukan data dari koleksi mana yang akan diproses oleh alur kerja ini:
 
-Kemudian, dalam formulir untuk membuat (atau mengedit) data untuk **koleksi** yang sesuai, ikat **alur kerja** ini ke tombol kirim:
+![Pemicu Persetujuan_Konfigurasi pemicu_Pilih koleksi](https://static-docs.nocobase.com/20251226103223.png)
 
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+### Metode pemicu
 
-Setelah itu, ketika pengguna mengirimkan formulir ini, **alur kerja** persetujuan yang sesuai akan terpicu. Data yang dikirimkan tidak hanya disimpan di **koleksi** yang sesuai, tetapi juga akan diambil snapshot-nya ke dalam alur persetujuan untuk ditinjau dan digunakan oleh pemberi persetujuan berikutnya.
+Saat memulai persetujuan untuk data bisnis, Anda dapat memilih dua metode pemicu berikut:
 
-### Tarik Kembali
+*   **Sebelum data disimpan**
 
-Jika sebuah **alur kerja** persetujuan memungkinkan pemrakarsa untuk menariknya kembali, Anda perlu mengaktifkan tombol "Tarik Kembali" dalam konfigurasi antarmuka pemrakarsa:
+    Memulai persetujuan sebelum data yang dikirimkan disimpan, cocok untuk skenario di mana data hanya boleh disimpan setelah persetujuan diberikan. Dalam mode ini, data saat persetujuan dimulai hanya bersifat sementara, dan hanya akan disimpan secara resmi ke koleksi terkait setelah persetujuan diberikan.
 
-![Approval Trigger_Trigger Configuration_Allow Withdraw](https://static-docs.nocobase.com/20251029232544.png)
+*   **Setelah data disimpan**
 
-Setelah diaktifkan, persetujuan yang dimulai oleh **alur kerja** ini dapat ditarik kembali oleh pemrakarsa sebelum diproses oleh pemberi persetujuan mana pun. Namun, setelah diproses oleh pemberi persetujuan di node persetujuan berikutnya, persetujuan tersebut tidak dapat lagi ditarik kembali.
+    Memulai persetujuan setelah data yang dikirimkan disimpan, cocok untuk skenario di mana data dapat disimpan terlebih dahulu baru kemudian dilakukan persetujuan. Dalam mode ini, data saat persetujuan dimulai sudah disimpan di koleksi terkait, dan modifikasi selama proses persetujuan juga akan disimpan.
 
-:::info{title=Catatan}
-Setelah mengaktifkan atau menghapus tombol tarik kembali, Anda perlu mengklik simpan dan kirim di dialog konfigurasi pemicu agar perubahan berlaku.
+### Lokasi inisiasi persetujuan
+
+Anda dapat memilih lokasi untuk memulai persetujuan di dalam sistem:
+
+*   **Hanya dimulai di blok data**
+
+    Dapat mengikat tindakan dari blok formulir apa pun pada tabel ini ke alur kerja tersebut untuk memulai persetujuan, serta memproses dan melacak proses persetujuan di blok persetujuan data tunggal, biasanya cocok untuk data bisnis.
+
+*   **Dapat dimulai di blok data dan pusat tugas**
+
+    Selain blok data, persetujuan juga dapat dimulai dan diproses di pusat tugas global, yang biasanya cocok untuk data administratif.
+
+### Siapa yang dapat memulai persetujuan
+
+Dapat mengonfigurasi izin berdasarkan cakupan pengguna untuk menentukan pengguna mana yang dapat memulai persetujuan tersebut:
+
+*   **Semua pengguna**
+
+    Semua pengguna dalam sistem dapat memulai persetujuan tersebut.
+
+*   **Hanya pengguna yang dipilih**
+
+    Hanya mengizinkan pengguna dalam cakupan yang ditentukan untuk memulai persetujuan tersebut, dapat memilih lebih dari satu.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Konfigurasi antarmuka formulir pemrakarsa
+
+Terakhir, perlu mengonfigurasi antarmuka formulir pemrakarsa, antarmuka ini akan digunakan untuk operasi pengiriman saat memulai dari blok pusat persetujuan dan saat mengirim ulang setelah pengguna menarik kembali. Klik tombol konfigurasi untuk membuka jendela sembul:
+
+![Pemicu Persetujuan_Konfigurasi pemicu_Formulir pemrakarsa](https://static-docs.nocobase.com/20251226130239.png)
+
+Dapat menambahkan formulir pengisian berdasarkan koleksi yang terikat untuk antarmuka pemrakarsa, atau teks penjelasan (Markdown) untuk petunjuk dan panduan. Formulir wajib ditambahkan, jika tidak pemrakarsa tidak akan dapat beroperasi setelah masuk ke antarmuka tersebut.
+
+Setelah menambahkan blok formulir, sama seperti antarmuka konfigurasi formulir biasa, Anda dapat menambahkan komponen bidang dari koleksi terkait, dan dapat mengaturnya secara bebas untuk mengatur konten yang perlu diisi dalam formulir:
+
+![Pemicu Persetujuan_Konfigurasi pemicu_Formulir pemrakarsa_Konfigurasi bidang](https://static-docs.nocobase.com/20251226130339.png)
+
+Berbeda dengan tombol pengiriman langsung, Anda juga dapat menambahkan tombol operasi "Simpan draf" untuk mendukung alur pemrosesan penyimpanan sementara:
+
+![Pemicu Persetujuan_Konfigurasi pemicu_Formulir pemrakarsa_Konfigurasi operasi_Simpan](https://static-docs.nocobase.com/20251226130512.png)
+
+Jika alur kerja persetujuan mengizinkan pemrakarsa untuk menarik kembali, perlu mengaktifkan tombol "Tarik kembali" dalam konfigurasi antarmuka pemrakarsa:
+
+![Pemicu Persetujuan_Konfigurasi pemicu_Izinkan tarik kembali](https://static-docs.nocobase.com/20251226130637.png)
+
+Setelah diaktifkan, persetujuan yang dimulai oleh alur kerja ini dapat ditarik kembali oleh pemrakarsa sebelum diproses oleh pemberi persetujuan mana pun, tetapi setelah diproses oleh pemberi persetujuan yang dikonfigurasi pada node persetujuan berikutnya, maka tidak dapat ditarik kembali lagi.
+
+:::info{title=Petunjuk}
+Setelah mengaktifkan atau menghapus tombol tarik kembali, Anda perlu mengklik simpan dan kirim pada jendela sembul konfigurasi pemicu agar perubahan berlaku.
 :::
 
-### Konfigurasi Antarmuka Formulir Pemrakarsa Persetujuan
+### Kartu "Pengajuan Saya" <Badge>2.0+</Badge>
 
-Terakhir, Anda perlu mengonfigurasi antarmuka formulir pemrakarsa. Antarmuka ini akan digunakan untuk tindakan pengiriman saat memulai dari blok pusat persetujuan dan saat memulai kembali setelah penarikan. Klik tombol konfigurasi untuk membuka dialog:
+Dapat digunakan untuk mengonfigurasi kartu tugas dalam daftar "Pengajuan Saya" di pusat tugas.
 
-![Approval Trigger_Trigger Configuration_Initiator Form](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Anda dapat menambahkan formulir pengisian untuk antarmuka pemrakarsa berdasarkan **koleksi** yang terikat, atau menambahkan teks deskriptif (Markdown) untuk petunjuk dan panduan. Formulir ini wajib ditambahkan; jika tidak, pemrakarsa tidak akan dapat melakukan tindakan apa pun setelah masuk ke antarmuka ini.
+Dalam kartu, Anda dapat secara bebas mengonfigurasi bidang bisnis yang ingin ditampilkan (kecuali bidang relasi), atau informasi terkait persetujuan.
 
-Setelah menambahkan blok formulir, sama seperti di antarmuka konfigurasi formulir biasa, Anda dapat menambahkan komponen bidang dari **koleksi** yang sesuai dan mengaturnya sesuai kebutuhan untuk mengatur konten yang akan diisi dalam formulir.
+Setelah pengajuan persetujuan dibuat, kartu tugas kustom dapat dilihat di daftar pusat tugas:
 
-![Approval Trigger_Trigger Configuration_Initiator Form_Field Configuration](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-Selain tombol kirim langsung, Anda juga dapat menambahkan tombol tindakan "Simpan sebagai Draf" untuk mendukung proses penyimpanan sementara:
+### Mode tampilan catatan dalam alur kerja
 
-![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+*   **Snapshot**
 
-## Node Persetujuan
+    Dalam alur kerja persetujuan, status catatan yang dilihat oleh pemohon dan pemberi persetujuan saat masuk, dan setelah pengiriman hanya dapat melihat catatan yang mereka modifikasi sendiri—tidak akan melihat pembaruan yang dilakukan oleh orang lain setelahnya.
 
-Dalam **alur kerja** persetujuan, Anda perlu menggunakan node "Persetujuan" khusus untuk mengonfigurasi logika operasional bagi pemberi persetujuan untuk memproses (menyetujui, menolak, atau mengembalikan) persetujuan yang dimulai. Node "Persetujuan" hanya dapat digunakan dalam **alur kerja** persetujuan. Lihat [Node Persetujuan](../nodes/approval.md) untuk detail lebih lanjut.
+*   **Terbaru**
 
-## Konfigurasi Pemrakarsaan Persetujuan
+    Dalam alur kerja persetujuan, pemohon dan pemberi persetujuan selalu melihat versi terbaru dari catatan di sepanjang alur kerja, terlepas dari status catatan sebelum mereka beroperasi. Setelah alur kerja selesai, mereka akan melihat versi final dari catatan tersebut.
 
-Setelah mengonfigurasi dan mengaktifkan **alur kerja** persetujuan, Anda dapat mengikatnya ke tombol kirim formulir **koleksi** yang sesuai, memungkinkan pengguna untuk memulai persetujuan saat pengiriman:
+## Node persetujuan
 
-![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+Dalam alur kerja persetujuan, perlu menggunakan node "Persetujuan" khusus untuk mengonfigurasi logika operasi bagi pemberi persetujuan guna memproses (menyetujui, menolak, atau mengembalikan) persetujuan yang dimulai, node "Persetujuan" juga hanya dapat digunakan dalam alur kerja persetujuan. Lihat [Node Persetujuan](../nodes/approval.md) untuk detail lebih lanjut.
 
-Setelah mengikat **alur kerja**, ketika pengguna mengirimkan formulir saat ini, persetujuan akan dimulai.
-
-:::info{title=Catatan}
-Saat ini, tombol untuk memulai persetujuan hanya mendukung tombol 'Kirim' (atau 'Simpan') dalam formulir buat atau perbarui. Tombol ini tidak mendukung tombol 'Kirim ke **alur kerja**' (yang hanya dapat diikat ke 'Event setelah tindakan').
+:::info{title=Petunjuk}
+Jika sebuah alur kerja persetujuan tidak memiliki node "Persetujuan" apa pun, alur kerja tersebut akan disetujui secara otomatis.
 :::
 
-## Pusat Tugas
+## Konfigurasi inisiasi persetujuan
 
-Pusat Tugas menyediakan titik masuk terpadu bagi pengguna untuk melihat dan memproses tugas-tugas mereka. Persetujuan yang dimulai oleh pengguna saat ini dan tugas-tugas yang tertunda dapat diakses melalui Pusat Tugas di bilah alat atas, dan berbagai jenis tugas yang harus dilakukan dapat dilihat melalui navigasi di sebelah kiri.
+Setelah mengonfigurasi dan mengaktifkan alur kerja persetujuan, Anda dapat mengikat alur kerja tersebut ke tombol pengiriman formulir dari koleksi terkait, agar pengguna dapat memulai persetujuan saat mengirimkan:
+
+![Inisiasi Persetujuan_Ikat alur kerja](https://static-docs.nocobase.com/20251226110710.png)
+
+Setelah itu, pengiriman formulir oleh pengguna akan memicu alur kerja persetujuan terkait, data yang dikirimkan selain disimpan di koleksi terkait, juga akan diambil snapshot-nya ke dalam alur persetujuan untuk ditinjau oleh personel persetujuan berikutnya.
+
+:::info{title=Petunjuk}
+Tombol untuk memulai persetujuan saat ini hanya mendukung penggunaan tombol "Kirim" (atau "Simpan") dalam formulir tambah atau perbarui, tidak mendukung penggunaan tombol "Picu alur kerja" (tombol tersebut hanya dapat diikat ke "Event operasi kustom").
+:::
+
+## Pusat tugas
+
+Pusat tugas menyediakan pintu masuk terpadu untuk memudahkan pengguna melihat dan memproses tugas, persetujuan yang dimulai oleh pengguna saat ini dan tugas yang harus dilakukan dapat diakses melalui pusat tugas di bilah alat atas, dan berbagai jenis tugas dapat dilihat melalui navigasi kategori di sebelah kiri.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
-### Pengajuan Saya
+### Pengajuan saya
 
-#### Melihat Persetujuan yang Diajukan
+#### Melihat persetujuan yang telah dimulai
 
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
-#### Langsung Memulai Persetujuan Baru
+#### Memulai persetujuan baru secara langsung
 
 ![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
 
-### Tugas Saya
+### Tugas saya
 
-#### Daftar Tugas
+#### Daftar tugas
 
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
-#### Detail Tugas
+#### Detail tugas
 
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
-## API HTTP
+## HTTP API
 
 ### Pemrakarsa
 
-#### Memulai dari Koleksi
+#### Inisiasi koleksi
 
-Untuk memulai dari blok data, Anda dapat melakukan panggilan seperti ini (menggunakan tombol buat **koleksi** `posts` sebagai contoh):
+Memulai dari blok data, dapat dipanggil seperti ini (contoh menggunakan tombol buat pada tabel `posts`):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -123,17 +181,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Di sini, parameter URL `triggerWorkflows` adalah kunci **alur kerja**; beberapa kunci **alur kerja** dipisahkan oleh koma. Kunci ini dapat diperoleh dengan mengarahkan kursor mouse ke nama **alur kerja** di bagian atas kanvas **alur kerja**:
+Di mana parameter URL `triggerWorkflows` adalah key dari alur kerja, beberapa alur kerja dipisahkan dengan koma. Key tersebut dapat diperoleh dengan mengarahkan kursor ke nama alur kerja di bagian atas kanvas alur kerja:
 
-![Workflow_Key_View_Method](https://static-docs.nocobase.com/20240426135108.png)
+![Alur kerja_key_Cara melihat](https://static-docs.nocobase.com/20240426135108.png)
 
-Setelah panggilan berhasil, **alur kerja** persetujuan untuk **koleksi** `posts` yang sesuai akan terpicu.
+Setelah panggilan berhasil, alur kerja persetujuan untuk tabel `posts` terkait akan dipicu.
 
-:::info{title="Catatan"}
-Karena panggilan eksternal juga perlu didasarkan pada identitas pengguna, saat memanggil melalui API HTTP, sama seperti permintaan yang dikirim dari antarmuka biasa, informasi autentikasi harus disediakan, termasuk header `Authorization` atau parameter `token` (token yang diperoleh saat masuk), dan header `X-Role` (nama peran pengguna saat ini).
+:::info{title="Petunjuk"}
+Karena panggilan eksternal juga perlu didasarkan pada identitas pengguna, saat memanggil melalui HTTP API, sama seperti permintaan yang dikirim dari antarmuka biasa, informasi autentikasi harus disediakan, termasuk header `Authorization` atau parameter `token` (token yang diperoleh saat login), serta header `X-Role` (nama peran pengguna saat ini).
 :::
 
-Jika Anda perlu memicu event untuk data terkait satu-ke-satu dalam tindakan ini (satu-ke-banyak belum didukung), Anda dapat menggunakan `!` dalam parameter untuk menentukan data pemicu untuk bidang asosiasi:
+Jika perlu memicu event untuk data relasi satu-ke-satu (satu-ke-banyak belum didukung) dalam operasi tersebut, Anda dapat menggunakan `!` dalam parameter untuk menentukan data pemicu bidang relasi:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -147,13 +205,13 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Setelah panggilan di atas berhasil, event persetujuan untuk **koleksi** `categories` yang sesuai akan terpicu.
+Setelah panggilan di atas berhasil, event persetujuan untuk tabel `categories` terkait akan dipicu.
 
-:::info{title="Catatan"}
-Saat memicu event setelah tindakan melalui API HTTP, Anda juga perlu memperhatikan status aktif **alur kerja** dan apakah konfigurasi **koleksi** cocok; jika tidak, panggilan mungkin tidak berhasil atau dapat menyebabkan kesalahan.
+:::info{title="Petunjuk"}
+Saat memicu event setelah operasi melalui panggilan HTTP API, perhatikan juga status aktif alur kerja, serta apakah konfigurasi koleksi cocok, jika tidak panggilan mungkin tidak berhasil atau terjadi kesalahan.
 :::
 
-#### Memulai dari Pusat Persetujuan
+#### Inisiasi pusat persetujuan
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -168,16 +226,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parameter**
 
-*   `collectionName`: Nama **koleksi** target untuk memulai persetujuan. Wajib diisi.
-*   `workflowId`: ID **alur kerja** yang digunakan untuk memulai persetujuan. Wajib diisi.
-*   `data`: Bidang-bidang catatan **koleksi** yang dibuat saat memulai persetujuan. Wajib diisi.
-*   `status`: Status catatan yang dibuat saat memulai persetujuan. Wajib diisi. Nilai yang mungkin termasuk:
-    *   `0`: Draf, menunjukkan penyimpanan tanpa pengajuan persetujuan.
-    *   `1`: Ajukan persetujuan, menunjukkan pemrakarsa mengajukan permintaan persetujuan, memasuki proses persetujuan.
+* `collectionName`: Nama koleksi target untuk memulai persetujuan, wajib diisi.
+* `workflowId`: ID alur kerja yang digunakan untuk memulai persetujuan, wajib diisi.
+* `data`: Bidang catatan koleksi yang dibuat saat memulai persetujuan, wajib diisi.
+* `status`: Status catatan yang dibuat saat memulai persetujuan, wajib diisi. Nilai yang tersedia meliputi:
+  * `0`: Draf, menunjukkan penyimpanan tetapi tidak mengajukan persetujuan.
+  * `2`: Mengajukan persetujuan, menunjukkan pemrakarsa mengajukan permohonan persetujuan, masuk ke proses persetujuan.
 
-#### Simpan dan Kirim
+#### Simpan dan kirim
 
-Ketika persetujuan yang dimulai (atau ditarik kembali) berada dalam status draf, Anda dapat menyimpan atau mengirimkannya lagi melalui API berikut:
+Saat persetujuan yang dimulai (atau ditarik kembali) berada dalam status draf, Anda dapat menyimpan atau mengirimkannya kembali melalui antarmuka berikut:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -188,16 +246,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/approvals:update/<approval id>"
 ```
 
-#### Mendapatkan Daftar Persetujuan yang Diajukan
+#### Mendapatkan daftar persetujuan yang telah dimulai
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
   "http://localhost:3000/api/approvals:listMine"
 ```
 
-#### Tarik Kembali
+#### Tarik kembali
 
-Pemrakarsa dapat menarik kembali catatan yang sedang dalam persetujuan melalui API berikut:
+Pemrakarsa dapat menarik kembali catatan yang saat ini sedang dalam persetujuan melalui antarmuka berikut:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -206,31 +264,31 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parameter**
 
-*   `<approval id>`: ID catatan persetujuan yang akan ditarik kembali. Wajib diisi.
+* `<approval id>`: ID catatan persetujuan yang akan ditarik kembali, wajib diisi.
 
-### Pemberi Persetujuan
+### Pemberi persetujuan
 
-Setelah **alur kerja** persetujuan masuk ke node persetujuan, tugas yang harus dilakukan akan dibuat untuk pemberi persetujuan saat ini. Pemberi persetujuan dapat menyelesaikan tugas persetujuan melalui antarmuka atau dengan memanggil API HTTP.
+Setelah alur kerja persetujuan masuk ke node persetujuan, tugas yang harus dilakukan akan dibuat untuk pemberi persetujuan saat ini. Pemberi persetujuan dapat menyelesaikan tugas persetujuan melalui operasi antarmuka, atau melalui panggilan HTTP API.
 
-#### Mendapatkan Catatan Pemrosesan Persetujuan
+#### Mendapatkan catatan pemrosesan persetujuan
 
-Tugas yang harus dilakukan adalah catatan pemrosesan persetujuan. Anda dapat memperoleh semua catatan pemrosesan persetujuan pengguna saat ini melalui API berikut:
+Tugas yang harus dilakukan adalah catatan pemrosesan persetujuan, Anda dapat memperoleh semua catatan pemrosesan persetujuan pengguna saat ini melalui antarmuka berikut:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Di sini, `approvalRecords` sebagai sumber daya **koleksi**, juga dapat menggunakan kondisi kueri umum seperti `filter`, `sort`, `pageSize`, dan `page`.
+Di mana `approvalRecords` sebagai sumber daya koleksi, juga dapat menggunakan kondisi kueri umum, seperti `filter`, `sort`, `pageSize`, dan `page`.
 
-#### Mendapatkan Satu Catatan Pemrosesan Persetujuan
+#### Mendapatkan catatan pemrosesan persetujuan tunggal
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:get/<record id>"
 ```
 
-#### Menyetujui dan Menolak
+#### Setuju dan tolak
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -244,16 +302,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameter**
 
-*   `<record id>`: ID catatan yang akan diproses persetujuannya. Wajib diisi.
-*   `status`: Bidang untuk status pemrosesan persetujuan. `2` berarti "Setuju", `-1` berarti "Tolak". Wajib diisi.
-*   `comment`: Informasi catatan untuk pemrosesan persetujuan. Opsional.
-*   `data`: Modifikasi pada catatan **koleksi** di node persetujuan saat ini setelah persetujuan. Opsional (hanya berlaku saat disetujui).
+* `<record id>`: ID catatan yang akan diproses persetujuannya, wajib diisi.
+* `status`: Bidang untuk status pemrosesan persetujuan, `2` menunjukkan "Setuju", `-1` menunjukkan "Tolak", wajib diisi.
+* `comment`: Catatan pemrosesan persetujuan, opsional.
+* `data`: Menunjukkan modifikasi pada catatan koleksi di node persetujuan saat ini setelah persetujuan diberikan, opsional (hanya berlaku saat setuju).
 
-#### Kembalikan <Badge>v1.9.0+</Badge>
+#### Kembali <Badge>v1.9.0+</Badge>
 
-Sebelum versi v1.9.0, pengembalian menggunakan API yang sama dengan 'Setuju' dan 'Tolak', dengan `"status": 1` mewakili pengembalian.
+Sebelum versi v1.9.0, kembali menggunakan antarmuka yang sama dengan "Setuju" dan "Tolak", menggunakan `"status": 1` untuk mewakili kembali.
 
-Mulai dari versi v1.9.0, pengembalian memiliki API terpisah:
+Mulai versi v1.9.0, kembali memiliki antarmuka terpisah:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -265,10 +323,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameter**
 
-*   `<record id>`: ID catatan yang akan diproses persetujuannya. Wajib diisi.
-*   `returnToNodeKey`: Kunci node target untuk dikembalikan. Opsional. Ketika rentang node yang dapat dikembalikan dikonfigurasi dalam node, parameter ini dapat digunakan untuk menentukan node mana yang akan dikembalikan. Jika tidak dikonfigurasi, parameter ini tidak perlu diteruskan, dan secara default akan kembali ke titik awal untuk diajukan ulang oleh pemrakarsa.
+* `<record id>`: ID catatan yang akan diproses persetujuannya, wajib diisi.
+* `returnToNodeKey`: Key node target untuk dikembalikan, opsional. Saat cakupan node yang dapat dikembalikan dikonfigurasi dalam node, parameter ini dapat digunakan untuk menentukan pengembalian ke node mana. Jika tidak dikonfigurasi, parameter ini tidak perlu dikirim, secara default akan kembali ke titik awal untuk dikirim ulang oleh pemrakarsa.
 
-#### Delegasikan
+#### Transfer
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -280,10 +338,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameter**
 
-*   `<record id>`: ID catatan yang akan diproses persetujuannya. Wajib diisi.
-*   `assignee`: ID pengguna yang akan didelegasikan. Wajib diisi.
+* `<record id>`: ID catatan yang akan diproses persetujuannya, wajib diisi.
+* `assignee`: ID pengguna tujuan transfer, wajib diisi.
 
-#### Tambah Penanda Tangan
+#### Tambah penanda tangan
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -296,6 +354,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parameter**
 
-*   `<record id>`: ID catatan yang akan diproses persetujuannya. Wajib diisi.
-*   `assignees`: Daftar ID pengguna yang akan ditambahkan sebagai penanda tangan. Wajib diisi.
-*   `order`: Urutan penanda tangan yang ditambahkan. `-1` berarti sebelum "saya", `1` berarti setelah "saya".
+* `<record id>`: ID catatan yang akan diproses persetujuannya, wajib diisi.
+* `assignees`: Daftar ID pengguna yang ditambahkan sebagai penanda tangan, wajib diisi.
+* `order`: Urutan penambahan penanda tangan, `-1` menunjukkan sebelum "saya", `1` menunjukkan setelah "saya".

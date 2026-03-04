@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Lösningsöversikt"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Detaljerad design"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Installation"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Äldre CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Mer innehåll"
+  }
+]

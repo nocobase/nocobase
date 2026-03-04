@@ -5,11 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  Bir Action düğmesi veya API aracılığıyla bir Approval isteği başlatıldığında tetiklenir. Approval süreçlerine özeldir; belgeleri yönetmek ve işlem süreçlerini takip etmek için özel Approval Node'u ve bloğu içerir.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-approval/index) bakın.
+:::
 
 # Workflow: Approval

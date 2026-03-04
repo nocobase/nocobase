@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Çözüme Genel Bakış"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Detaylı Tasarım"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Kurulum"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Daha Fazla İçerik"
+  }
+]

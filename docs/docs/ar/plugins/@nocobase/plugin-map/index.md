@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Map"
+displayName: "مكون: الخريطة"
 packageName: '@nocobase/plugin-map'
 description: |
-  Map block, support Gaode map and Google map, you can also extend more map types.
+  مكون الخريطة، يدعم خرائط Gaode وخرائط Google، كما يمكنك توسيع المزيد من أنواع الخرائط.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Map
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-map/index).
+:::
+
+# مكون: الخريطة

@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Testverktyg för översättning"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-locale-tester/index).
+:::
+
+# Testverktyg för översättning

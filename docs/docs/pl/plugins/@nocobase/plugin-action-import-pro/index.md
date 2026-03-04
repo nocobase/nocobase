@@ -12,4 +12,8 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-action-import-pro/index).
+:::
+
 # Action: Import records Pro

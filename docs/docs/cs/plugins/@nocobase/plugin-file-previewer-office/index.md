@@ -1,12 +1,16 @@
 ---
-displayName: "Office File Previewer"
+displayName: "Náhled souborů Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  A plugin for previewing office files via Microsoft live preview service.
+  Doplněk pro náhled souborů Office prostřednictvím online služby Microsoft.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Office File Previewer
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-file-previewer-office/index).
+:::
+
+# Náhled souborů Office

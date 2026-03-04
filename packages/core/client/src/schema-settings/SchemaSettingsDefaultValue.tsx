@@ -23,7 +23,6 @@ import {
   useRecord,
 } from '..';
 import { useFormBlockContext } from '../block-provider/FormBlockProvider';
-import { useTableBlockContext } from '../block-provider/TableBlockProvider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
 import { useLocalVariables, useVariables } from '../variables';
@@ -82,7 +81,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
   const parentFieldSchema = collectionField?.interface === 'm2o' && findParentFieldSchema(fieldSchema);
   const parentCollectionField = parentFieldSchema && getCollectionJoinField(parentFieldSchema?.['x-collection-field']);
-  const tableCtx = useTableBlockContext();
   const isAllowContextVariable =
     collectionField?.interface === 'm2m' ||
     collectionField?.interface === 'mbm' ||
@@ -101,7 +99,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
       return scope;
     },
-    [getFields, name],
+    [getCollectionFields, getFields, name],
   );
 
   const DefaultValueComponent: any = useMemo(() => {
@@ -120,7 +118,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
         );
       },
     };
-  }, []);
+  }, [props?.hideVariableButton]);
 
   const schema = useMemo(() => {
     return {
@@ -156,6 +154,20 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               _.set(clonedSchema, 'x-decorator-props.showTitle', false);
 
               const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
+
+              if (clonedSchema['x-component'] === 'CollectionField' && collectionField?.uiSchema) {
+                const collectionFieldUiSchema = _.cloneDeep(collectionField.uiSchema);
+                clonedSchema['x-component'] = collectionFieldUiSchema['x-component'] || 'Input';
+                clonedSchema['x-use-component-props'] =
+                  clonedSchema['x-use-component-props'] || collectionFieldUiSchema['x-use-component-props'];
+                clonedSchema['x-component-props'] = {
+                  ...(collectionFieldUiSchema['x-component-props'] || {}),
+                  ...(clonedSchema['x-component-props'] || {}),
+                };
+                if (collectionFieldUiSchema.type) {
+                  clonedSchema.type = collectionFieldUiSchema.type;
+                }
+              }
 
               if (collectionField.target && clonedSchema['x-component-props']) {
                 clonedSchema['x-component-props'].mode = 'Select';
@@ -196,7 +208,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
 
               // the props.onChange's value is dynamic, so we can't use useMemo to wrap it
               _.set(schema, 'x-component-props.onChange', props.onChange);
-
               return (
                 <FormProvider>
                   <SchemaComponent schema={schema} />
@@ -210,6 +221,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
       },
     } as ISchema;
   }, [
+    actionCollection,
     collectionField,
     fieldSchema,
     fieldSchemaWithoutRequired,
@@ -220,7 +232,6 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
     record,
     returnScope,
     t,
-    tableCtx.collection,
     targetField,
     variables,
   ]);

@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Tổng quan giải pháp"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Thiết kế chi tiết"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Cài đặt"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Nội dung khác"
+  }
+]

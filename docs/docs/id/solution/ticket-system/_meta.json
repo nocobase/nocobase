@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Ikhtisar Solusi"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Desain Terperinci"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Instalasi"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Konten Lainnya"
+  }
+]

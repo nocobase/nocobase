@@ -984,6 +984,7 @@ const HighPerformanceTable = React.memo(
 
     return (
       <MemoizedTable
+        summary={model.props.summary}
         components={components}
         tableLayout="fixed"
         size={size}

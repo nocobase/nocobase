@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Collection alanı: Sıralama"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Collection verilerini sıralamak için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-field-sort/index) bakın.
+:::
+
+# Collection alanı: Sıralama

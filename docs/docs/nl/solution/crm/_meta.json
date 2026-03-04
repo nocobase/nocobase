@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Overzicht van de oplossing"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Gedetailleerd ontwerp"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Installatie"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Verouderde CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Meer inhoud"
+  }
+]

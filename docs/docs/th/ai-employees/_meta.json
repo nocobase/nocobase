@@ -6,84 +6,57 @@
   },
   {
     "type": "custom-link",
-    "label": "เริ่มต้นใช้งาน",
+    "label": "เริ่มต้นใช้งานด่วน",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "แนะนำฟีเจอร์",
     "items": [
       {
         "type": "custom-link",
         "label": "กำหนดค่าบริการ LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "สร้างพนักงาน AI",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "เปิดใช้งานพนักงาน AI",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
         "label": "ทำงานร่วมกับพนักงาน AI",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "พนักงาน AI ในตัว",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "ภาพรวม",
-        "link": "/ai-employees/built-in/index"
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: นักวิเคราะห์ข้อมูลเชิงลึก",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: ผู้เชี่ยวชาญด้านการสร้างโมเดลข้อมูล",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: ผู้เชี่ยวชาญด้านการจัดระเบียบข้อมูล",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: วิศวกรส่วนหน้า",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "ขั้นสูง",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "เลือกบล็อก",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "แหล่งข้อมูล",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "ทักษะ",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "งาน",
-        "link": "/ai-employees/advanced/task"
+        "label": "เพิ่มบริบท - บล็อก",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "ค้นหาผ่านเว็บ",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "การใช้ทักษะ",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "งานด่วน",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "พนักงาน AI ในตัว",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "สร้างพนักงาน AI ใหม่",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "การจัดการไฟล์",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "เวิร์กโฟลว์",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "โหนด LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "การสนทนาข้อความ",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "การสนทนาหลายรูปแบบ",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "ผลลัพธ์ที่มีโครงสร้าง",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "เอกสารแอปพลิเคชัน",
+    "label": "เวิร์กโฟลว์",
     "items": [
       {
         "type": "custom-link",
-        "label": "กรณีการใช้งาน",
+        "label": "โหนด LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: การกำหนดค่าสถานการณ์ CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "การกำหนดค่า",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "การกำหนดค่าผู้ดูแลระบบ",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "การสนทนาข้อความ",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "คู่มือพรอมต์",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "การสนทนาหลายรูปแบบ",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "ผลลัพธ์ที่มีโครงสร้าง",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การประยุกต์ใช้งานจริง",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: การกำหนดค่าสถานการณ์ CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "คู่มือพรอมต์",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

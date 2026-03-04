@@ -11,9 +11,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { List, Button, Dropdown, Tooltip, Space, Segmented, Flex, Collapse, Switch } from 'antd';
 import { PlusOutlined, QuestionCircleOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { SchemaComponent, useCollectionRecordData, useToken, useTools } from '@nocobase/client';
+import { SchemaComponent, useCollectionRecordData, useToken } from '@nocobase/client';
 import { Schema, useField } from '@formily/react';
 import { Field } from '@formily/core';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { observer } from '@nocobase/flow-engine';
 
 export const SkillsListItem: React.FC<{
   name: string;
@@ -53,13 +55,19 @@ export const SkillsListItem: React.FC<{
   );
 };
 
-export const Skills: React.FC = () => {
+export const Skills: React.FC = observer(() => {
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
-  const { tools = [], loading } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const loading = aiConfigRepository.aiToolsLoading;
+  const tools = aiConfigRepository.aiTools;
   const record = useCollectionRecordData();
   const isBuiltIn = record?.builtIn;
+
+  useEffect(() => {
+    aiConfigRepository.getAITools();
+  }, [aiConfigRepository]);
 
   const handleAdd = (name: string) => {
     const skills = [...(field.value || [])];
@@ -365,7 +373,7 @@ export const Skills: React.FC = () => {
       )}
     </>
   );
-};
+});
 
 export const SkillSettings: React.FC = () => {
   const t = useT();

@@ -200,11 +200,18 @@ export default class RequestInterceptionTrigger extends Trigger {
       });
     }
     const params = values.action === INTERCEPTABLE_ACTIONS.DESTROY ? { filterByTk } : { values: target };
+    const { userId } = values;
+    if (userId == null) {
+      throw new Error('user is not provided');
+    }
     const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
-      filterByTk: values.userId,
+      filterByTk: typeof userId === 'object' ? userId['id'] : userId,
       appends: ['roles'],
     });
+    if (!actor) {
+      throw new Error('user not found');
+    }
     if (!actor) {
       throw new Error('user not found');
     }

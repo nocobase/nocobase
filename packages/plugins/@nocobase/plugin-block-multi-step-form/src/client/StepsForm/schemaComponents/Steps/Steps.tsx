@@ -34,7 +34,7 @@ export function Steps(props: StepProps) {
                     },
                   },
                   'x-content': x.title,
-                }, 
+                },
               },
             }}
           />

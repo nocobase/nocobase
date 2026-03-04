@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Alat Penguji Terjemahan"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-locale-tester/index).
+:::
+
+# Alat Penguji Terjemahan

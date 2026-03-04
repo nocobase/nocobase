@@ -1,5 +1,5 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/actions/types/js-action).
 :::
 
 # JS Action
@@ -24,6 +24,7 @@ JS Action wird verwendet, um JavaScript auszuführen, wenn ein Button geklickt w
 
 - `ctx.requireAsync(url)`: Lädt eine AMD/UMD-Bibliothek asynchron über eine URL.
 - `ctx.importAsync(url)`: Importiert ein ESM-Modul dynamisch über eine URL.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Integrierte Bibliotheken wie React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js für JSX-Rendering, Zeitverarbeitung, Datenmanipulation und mathematische Berechnungen.
 
 > Die tatsächlich verfügbaren Variablen können je nach Position des Buttons variieren. Die obige Liste bietet einen Überblick über die gängigsten Funktionen.
 
@@ -34,7 +35,7 @@ JS Action wird verwendet, um JavaScript auszuführen, wenn ein Button geklickt w
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Sie können KI-Mitarbeiter nutzen, um Skripte zu generieren/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/ai-coding)
+- Sie können KI-Mitarbeiter nutzen, um Skripte zu generieren/zu ändern: [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
 
 ## Häufige Anwendungsfälle (Vereinfachte Beispiele)
 

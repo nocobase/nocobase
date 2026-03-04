@@ -1,5 +1,5 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/interface-builder/fields/specific/js-field).
 :::
 
 # Champ JS
@@ -58,7 +58,7 @@ L'éditeur de script du Champ JS prend en charge la coloration syntaxique, les i
 
 Vous pouvez également générer du code avec l'employé IA :
 
-- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/built-in/ai-coding)
+- [Employé IA · Nathan : Ingénieur Frontend](/ai-employees/features/built-in-employee)
 
 ## Utilisations courantes
 

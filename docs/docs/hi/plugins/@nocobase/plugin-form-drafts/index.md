@@ -1,14 +1,18 @@
 ---
-displayName: "Form drafts"
+displayName: "फ़ॉर्म ड्राफ़्ट"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
-isFree: false
-builtIn: false
+  फ़ॉर्म भरते समय ड्राफ़्ट सहेजने की सुविधा देता है, ताकि उन्हें बाद में संपादित और सबमिट किया जा सके।
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form drafts
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-form-drafts/index) देखें।
+:::
+
+# फ़ॉर्म ड्राफ़्ट

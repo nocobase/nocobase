@@ -1,12 +1,16 @@
 ---
-displayName: "Logger"
+displayName: "Logs"
 packageName: '@nocobase/plugin-logger'
 description: |
-  Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.
+  Logs do servidor, incluindo principalmente logs de requisições de API e logs de execução do sistema, com suporte para empacotamento e download de arquivos de log.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Logger
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-logger/index).
+:::
+
+# Logs

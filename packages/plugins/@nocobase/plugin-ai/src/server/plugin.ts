@@ -102,12 +102,7 @@ export class PluginAIServer extends Plugin {
   registerTools() {
     const toolsManager = this.ai.toolsManager;
 
-    const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
-
-    toolsManager.registerTools([
-      createDocsSearchTool({ description: docsModulesDescription }),
-      createReadDocEntryTool(),
-    ]);
+    toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
   }

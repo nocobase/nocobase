@@ -8,4 +8,4 @@ export const parseFilter = (filter: any, ctx: Record<string, any>) => {
   });
 
   return JSON.parse(filter);
-}
+};

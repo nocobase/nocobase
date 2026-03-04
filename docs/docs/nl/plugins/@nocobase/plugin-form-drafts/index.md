@@ -1,14 +1,18 @@
 ---
-displayName: "Form drafts"
+displayName: "Formulierconcepten"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
-  Allow users to save form drafts and continue editing later.
-isFree: false
-builtIn: false
+  Ondersteunt het opslaan van concepten tijdens het invullen van formulieren, zodat deze later verder bewerkt en ingediend kunnen worden.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Form drafts
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-form-drafts/index) voor nauwkeurige informatie.
+:::
+
+# Formulierconcepten

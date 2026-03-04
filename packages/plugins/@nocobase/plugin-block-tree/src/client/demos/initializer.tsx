@@ -11,19 +11,22 @@ import { schemaViewer } from './fixtures/schemaViewer';
 const initializer = createSingleItemInitializer(treeInitializerItem);
 
 const Demo = () => {
-  return <SchemaComponent schema={schemaViewer({
-    type: 'void',
-    name: 'test',
-    'x-component': 'Grid',
-    'x-initializer': initializer.name,
-  })}
-  />;
+  return (
+    <SchemaComponent
+      schema={schemaViewer({
+        type: 'void',
+        name: 'test',
+        'x-component': 'Grid',
+        'x-initializer': initializer.name,
+      })}
+    />
+  );
 };
 
 class DemoPlugin extends Plugin {
   async load() {
     this.app.schemaInitializerManager.add(initializer);
-    this.app.router.add('root', { path: '/', Component: Demo })
+    this.app.router.add('root', { path: '/', Component: Demo });
   }
 }
 

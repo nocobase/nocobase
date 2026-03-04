@@ -1,12 +1,16 @@
 ---
-displayName: "Public forms"
+displayName: "Публічні форми"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  Діліться публічними формами ззовні, щоб збирати інформацію від анонімних користувачів.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-public-forms/index).
+:::
+
+# Публічні форми

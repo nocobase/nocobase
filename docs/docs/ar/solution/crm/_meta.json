@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "نظرة عامة على الحل"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "التصميم التفصيلي"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "كيفية التثبيت"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "نظام CRM القديم (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "المزيد من المحتوى"
+  }
+]

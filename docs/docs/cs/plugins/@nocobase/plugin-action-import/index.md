@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records"
+displayName: "Action: Importovat záznamy"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
+  Importujte data pomocí šablon Excelu. Můžete nakonfigurovat, která pole se mají importovat, a šablony se vygenerují automaticky.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Import records
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-action-import/index).
+:::
+
+# Action: Importovat záznamy

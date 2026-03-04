@@ -1,44 +1,48 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/template-print/syntax/formatters/date-formatting).
 :::
 
-### Formato de Fechas
+### Formateo de fechas
 
 #### 1. :formatD(patternOut, patternIn)
 
-##### Explicación de la Sintaxis
-Formatea una fecha, aceptando un patrón de formato de salida `patternOut` y un patrón de formato de entrada `patternIn` (que por defecto es ISO 8601).
-Puede ajustar la zona horaria y el idioma a través de `options.timezone` y `options.lang`.
+##### Explicación de la sintaxis
+Formatea una fecha, acepta el patrón de formato de salida `patternOut` y el patrón de formato de entrada `patternIn` (por defecto es ISO 8601).
 
-##### Ejemplo
+##### Ejemplos comunes
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Salida 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Salida 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Salida 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Salida 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Salida 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Salida 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Salida 2024年1月15日 星期一
+```
+
+##### Más ejemplos de formato
+```
 '20160131':formatD(L)      // Salida 01/31/2016
 '20160131':formatD(LL)     // Salida January 31, 2016
 '20160131':formatD(LLLL)   // Salida Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Salida Sunday
-
-// Ejemplo en francés:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Salida mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Salida dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Salida dimanche 14 septembre 2014 19:27
 ```
 
 ##### Resultado
 La salida es una cadena de fecha con el formato especificado.
 
+
 #### 2. :addD(amount, unit, patternIn)
 
-##### Explicación de la Sintaxis
-Añade una cantidad de tiempo específica a una fecha. Las unidades admitidas incluyen: `day`, `week`, `month`, `quarter`, `year`, `hour`, `minute`, `second`, `millisecond`.
+##### Explicación de la sintaxis
+Añade la cantidad de tiempo especificada a la fecha. Unidades admitidas: day, week, month, quarter, year, hour, minute, second, millisecond.  
 Parámetros:
-- `amount`: La cantidad a añadir.
-- `unit`: La unidad de tiempo (no distingue entre mayúsculas y minúsculas).
-- `patternIn`: Opcional, el formato de entrada (por defecto es ISO8601).
+- amount: La cantidad a añadir
+- unit: Unidad de tiempo (no distingue entre mayúsculas y minúsculas)
+- patternIn: Opcional, formato de entrada, por defecto ISO8601
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Salida "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Salida "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Salida "2016-02-03T00:00:00.000Z"
@@ -47,16 +51,16 @@ Parámetros:
 ```
 
 ##### Resultado
-La salida es la nueva fecha después de haber añadido el tiempo especificado.
+La salida es la nueva fecha después de añadir el tiempo.
+
 
 #### 3. :subD(amount, unit, patternIn)
 
-##### Explicación de la Sintaxis
-Resta una cantidad de tiempo específica de una fecha. Los parámetros son los mismos que en `addD`.
+##### Explicación de la sintaxis
+Resta la cantidad de tiempo especificada de la fecha. Parámetros iguales a `addD`.
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Salida "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Salida "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Salida "2016-01-28T00:00:00.000Z"
@@ -65,19 +69,19 @@ Resta una cantidad de tiempo específica de una fecha. Los parámetros son los m
 ```
 
 ##### Resultado
-La salida es la nueva fecha después de haber restado el tiempo especificado.
+La salida es la nueva fecha después de restar el tiempo.
+
 
 #### 4. :startOfD(unit, patternIn)
 
-##### Explicación de la Sintaxis
-Establece la fecha al inicio de la unidad de tiempo especificada.
+##### Explicación de la sintaxis
+Establece la fecha al momento inicial de la unidad de tiempo especificada.  
 Parámetros:
-- `unit`: La unidad de tiempo.
-- `patternIn`: Opcional, el formato de entrada.
+- unit: Unidad de tiempo
+- patternIn: Opcional, formato de entrada
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Salida "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Salida "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Salida "2016-01-31T00:00:00.000Z"
@@ -86,17 +90,17 @@ Parámetros:
 ```
 
 ##### Resultado
-La salida es la cadena de fecha establecida al inicio de la unidad especificada.
+La salida es la cadena de fecha del momento inicial.
+
 
 #### 5. :endOfD(unit, patternIn)
 
-##### Explicación de la Sintaxis
-Establece la fecha al final de la unidad de tiempo especificada.
-Los parámetros son los mismos que para `startOfD`.
+##### Explicación de la sintaxis
+Establece la fecha al momento final de la unidad de tiempo especificada.  
+Parámetros iguales a los anteriores.
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Salida "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Salida "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Salida "2016-01-31T23:59:59.999Z"
@@ -105,11 +109,12 @@ Los parámetros son los mismos que para `startOfD`.
 ```
 
 ##### Resultado
-La salida es la cadena de fecha establecida al final de la unidad especificada.
+La salida es la cadena de fecha del momento final.
+
 
 #### 6. :diffD(toDate, unit, patternFromDate, patternToDate)
 
-##### Explicación de la Sintaxis
+##### Explicación de la sintaxis
 Calcula la diferencia entre dos fechas y la devuelve en la unidad especificada. Las unidades de salida admitidas incluyen:
 - `day(s)` o `d`
 - `week(s)` o `w`
@@ -122,10 +127,10 @@ Calcula la diferencia entre dos fechas y la devuelve en la unidad especificada. 
 - `millisecond(s)` o `ms` (unidad por defecto)
 
 Parámetros:
-- `toDate`: La fecha de destino.
-- `unit`: La unidad para la salida.
-- `patternFromDate`: Opcional, el formato de la fecha de inicio.
-- `patternToDate`: Opcional, el formato de la fecha de destino.
+- toDate: Fecha objetivo
+- unit: Unidad de salida
+- patternFromDate: Opcional, formato de la fecha inicial
+- patternToDate: Opcional, formato de la fecha objetivo
 
 ##### Ejemplo
 ```
@@ -140,48 +145,46 @@ Parámetros:
 ```
 
 ##### Resultado
-La salida es la diferencia de tiempo entre las dos fechas, convertida a la unidad especificada.
+La salida es la diferencia de tiempo entre las dos fechas, convertida según la unidad especificada.
+
 
 #### 7. :convDate(patternIn, patternOut)
 
-##### Explicación de la Sintaxis
-Convierte una fecha de un formato a otro (no se recomienda su uso).
+##### Explicación de la sintaxis
+Convierte una fecha de un formato a otro. (No se recomienda su uso)  
 Parámetros:
-- `patternIn`: El formato de fecha de entrada.
-- `patternOut`: El formato de fecha de salida.
+- patternIn: Formato de fecha de entrada
+- patternOut: Formato de fecha de salida
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // Salida "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Salida "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Salida "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Salida "Sunday"
 1410715640:convDate('X', 'LLLL')          // Salida "Sunday, September 14, 2014 7:27 PM"
-// Ejemplo en francés:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Salida "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Salida "dimanche"
 ```
 
 ##### Resultado
-La salida es la cadena de fecha convertida al formato especificado.
+La salida es la cadena de fecha convertida.
 
-#### 8. Patrones de Formato de Fecha
-Símbolos comunes de formato de fecha (consulte la documentación de DayJS):
-- `X`: Marca de tiempo Unix (en segundos), por ejemplo, 1360013296
-- `x`: Marca de tiempo Unix en milisegundos, por ejemplo, 1360013296123
-- `YY`: Año de dos dígitos, por ejemplo, 18
-- `YYYY`: Año de cuatro dígitos, por ejemplo, 2018
+
+#### 8. Patrones de formato de fecha
+Descripción de los patrones de formato de fecha comunes (consulte la descripción de DayJS):
+- `X`: Marca de tiempo Unix (segundos), como 1360013296
+- `x`: Marca de tiempo Unix en milisegundos, como 1360013296123
+- `YY`: Año de dos dígitos, como 18
+- `YYYY`: Año de cuatro dígitos, como 2018
 - `M`, `MM`, `MMM`, `MMMM`: Mes (número, dos dígitos, abreviado, nombre completo)
 - `D`, `DD`: Día (número, dos dígitos)
-- `d`, `dd`, `ddd`, `dddd`: Día de la semana (número, mínimo, abreviado, nombre completo)
+- `d`, `dd`, `ddd`, `dddd`: Semana (número, mínimo, abreviado, nombre completo)
 - `H`, `HH`, `h`, `hh`: Hora (formato de 24 horas o 12 horas)
-- `m`, `mm`: Minuto
-- `s`, `ss`: Segundo
-- `SSS`: Milisegundo (3 dígitos)
-- `Z`, `ZZ`: Desplazamiento UTC, por ejemplo, +05:00 o +0500
+- `m`, `mm`: Minutos
+- `s`, `ss`: Segundos
+- `SSS`: Milisegundos (3 dígitos)
+- `Z`, `ZZ`: Desplazamiento UTC, como +05:00 o +0500
 - `A`, `a`: AM/PM
 - `Q`: Trimestre (1-4)
-- `Do`: Día del mes con ordinal, por ejemplo, 1º, 2º, ...
-- Para otros formatos, consulte la documentación completa.
-  Además, existen formatos localizados basados en el idioma, como `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL`, etc.
+- `Do`: Día con ordinal, como 1st, 2nd, …
+- Para otros formatos, consulte la documentación completa.  
+  Además, existen formatos localizados basados en el idioma: como `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL`, etc.

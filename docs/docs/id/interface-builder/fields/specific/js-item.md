@@ -1,38 +1,38 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/interface-builder/fields/specific/js-item).
 :::
 
 # JS Item
 
-## Pendahuluan
+## Pengenalan
 
-JS Item digunakan untuk "item kustom" (tidak terikat pada bidang) dalam sebuah formulir. Anda dapat menggunakan JavaScript/JSX untuk merender konten apa pun (seperti tips, statistik, pratinjau, tombol, dll.) dan berinteraksi dengan konteks formulir dan catatan. Ini cocok untuk skenario seperti pratinjau real-time, petunjuk instruksional, dan komponen interaktif kecil.
+JS Item digunakan untuk "item kustom" (bukan pengikatan bidang) dalam formulir. Anda dapat menggunakan JavaScript/JSX untuk merender konten apa pun (petunjuk, statistik, pratinjau, tombol, dll.), dan berinteraksi dengan formulir serta konteks catatan, cocok untuk skenario seperti pratinjau real-time, petunjuk instruksional, komponen interaksi kecil, dll.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## API Konteks Runtime (Sering Digunakan)
 
-- `ctx.element`: Kontainer DOM (ElementProxy) dari item saat ini, mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.
-- `ctx.form`: Instans Formulir AntD, memungkinkan operasi seperti `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, dll.
-- `ctx.blockModel`: Model blok formulir tempatnya berada, yang dapat mendengarkan `formValuesChange` untuk mengimplementasikan keterkaitan.
-- `ctx.record` / `ctx.collection`: Catatan saat ini dan metadata koleksi (tersedia dalam beberapa skenario).
-- `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL.
-- `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL.
-- `ctx.openView(viewUid, options)`: Membuka tampilan yang telah dikonfigurasi (drawer/dialog/halaman).
-- `ctx.message` / `ctx.notification`: Pesan dan notifikasi global.
-- `ctx.t()` / `ctx.i18n.t()`: Internasionalisasi.
-- `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Pustaka bawaan seperti React, ReactDOM, Ant Design, ikon Ant Design, dan dayjs, digunakan untuk rendering JSX dan utilitas waktu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
-- `ctx.render(vnode)`: Merender elemen React/HTML/DOM ke kontainer default `ctx.element`. Beberapa rendering akan menggunakan kembali Root dan menimpa konten yang ada di kontainer.
+- `ctx.element`: Kontainer DOM (ElementProxy) dari item saat ini, mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.;
+- `ctx.form`: Instans AntD Form, dapat melakukan `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, dll.;
+- `ctx.blockModel`: Model blok formulir tempatnya berada, dapat mendengarkan `formValuesChange` untuk menerapkan keterkaitan;
+- `ctx.record` / `ctx.collection`: Informasi metadata catatan dan koleksi saat ini (tersedia dalam beberapa skenario);
+- `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL;
+- `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL;
+- `ctx.openView(viewUid, options)`: Membuka tampilan yang telah dikonfigurasi (laci/dialog/halaman);
+- `ctx.message` / `ctx.notification`: Petunjuk dan notifikasi global;
+- `ctx.t()` / `ctx.i18n.t()`: Internasionalisasi;
+- `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Pustaka bawaan seperti React / ReactDOM / Ant Design / Ikon Ant Design / dayjs / lodash / math.js / formula.js, digunakan untuk perenderaan JSX, pemrosesan waktu, manipulasi data, dan operasi matematika. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
+- `ctx.render(vnode)`: Merender elemen React/HTML/DOM ke kontainer default `ctx.element`; perenderaan berulang akan menggunakan kembali Root dan menimpa konten kontainer yang ada.
 
-## Editor dan Cuplikan Kode
+## Editor dan Potongan Kode
 
-- `Snippets`: Membuka daftar cuplikan kode bawaan, memungkinkan Anda mencari dan menyisipkannya di posisi kursor saat ini dengan satu klik.
-- `Run`: Menjalankan kode saat ini secara langsung dan menampilkan log eksekusi ke panel `Logs` di bagian bawah. Ini mendukung `console.log/info/warn/error` dan penyorotan kesalahan.
+- `Snippets`: Membuka daftar potongan kode bawaan, dapat dicari dan dimasukkan ke posisi kursor saat ini dengan satu klik.
+- `Run`: Menjalankan kode saat ini secara langsung, dan mengeluarkan log eksekusi ke panel `Logs` di bagian bawah; mendukung `console.log/info/warn/error` dan penentuan lokasi kesalahan dengan penyorotan.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Dapat digunakan bersama dengan Karyawan AI untuk menghasilkan/memodifikasi skrip: [Karyawan AI · Nathan: Insinyur Frontend](/ai-employees/built-in/ai-coding)
+- Dapat dikombinasikan dengan Karyawan AI untuk menghasilkan/memodifikasi skrip: [Karyawan AI · Nathan: Insinyur Frontend](/ai-employees/features/built-in-employee)
 
 ## Penggunaan Umum (Contoh Sederhana)
 
@@ -53,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) Membuka Tampilan (Drawer)
+### 2) Membuka Tampilan (Laci)
 
 ```js
 ctx.render(
@@ -66,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) Memuat dan Merender Pustaka Eksternal
+### 3) Memuat Pustaka Eksternal dan Merender
 
 ```js
 // AMD/UMD
@@ -80,12 +80,12 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Catatan
 
-- Disarankan untuk menggunakan CDN tepercaya untuk memuat pustaka eksternal, dan memiliki mekanisme fallback untuk skenario kegagalan (misalnya, `if (!lib) return;`).
-- Disarankan untuk memprioritaskan penggunaan `class` atau `[name=...]` untuk selektor dan menghindari penggunaan `id` tetap untuk mencegah duplikasi `id` di beberapa blok/popup.
-- Pembersihan event: Perubahan nilai formulir yang sering akan memicu beberapa rendering. Sebelum mengikat event, event tersebut harus dibersihkan atau diduplikasi (misalnya, `remove` sebelum `add`, gunakan `{ once: true }`, atau gunakan atribut `dataset` untuk mencegah duplikasi).
+- Pemuatan pustaka eksternal disarankan menggunakan CDN tepercaya, siapkan penanganan cadangan untuk skenario kegagalan (seperti `if (!lib) return;`).
+- Selektor disarankan memprioritaskan penggunaan `class` atau `[name=...]`, hindari penggunaan `id` tetap untuk mencegah duplikasi `id` dalam beberapa blok/pop-up.
+- Pembersihan event: Perubahan nilai formulir yang sering akan memicu perenderaan berulang, bersihkan atau hapus duplikasi sebelum mengikat event (seperti `remove` sebelum `add`, atau `{ once: true }`, atau gunakan penanda `dataset` untuk mencegah pengulangan).
 
 ## Dokumentasi Terkait
 
 - [Variabel dan Konteks](/interface-builder/variables)
 - [Aturan Keterkaitan](/interface-builder/linkage-rule)
-- [Tampilan dan Popup](/interface-builder/actions/types/view)
+- [Tampilan dan Pop-up](/interface-builder/actions/types/view)

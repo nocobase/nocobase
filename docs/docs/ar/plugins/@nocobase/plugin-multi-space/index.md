@@ -1,14 +1,18 @@
 ---
-displayName: "Multi-space"
+displayName: "مساحات متعددة"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Implements multiple independent data spaces within a single application instance through logical isolation.
+  تحقيق مساحات بيانات مستقلة متعددة من خلال العزل المنطقي داخل مثيل تطبيق واحد.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Multi-space
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-multi-space/index).
+:::
+
+# مساحات متعددة

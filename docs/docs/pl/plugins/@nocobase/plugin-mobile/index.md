@@ -1,12 +1,16 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "Urządzenia mobilne (wycofane)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  Od wersji 2.0 wtyczka mobilna została zastąpiona nową wtyczką ui-layout, która jest wciąż w fazie rozwoju.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-mobile/index).
+:::
+
+# Urządzenia mobilne (wycofane)

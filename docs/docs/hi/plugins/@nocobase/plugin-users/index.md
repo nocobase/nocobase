@@ -1,12 +1,16 @@
 ---
-displayName: "Users"
+displayName: "उपयोगकर्ता"
 packageName: '@nocobase/plugin-users'
 description: |
-  Provides basic user model, as well as created by and updated by fields.
+  बुनियादी User model, साथ ही Created by और Updated by Fields प्रदान करता है।
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Users
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-users/index) देखें।
+:::
+
+# उपयोगकर्ता

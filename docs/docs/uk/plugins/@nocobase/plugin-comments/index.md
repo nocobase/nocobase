@@ -1,15 +1,19 @@
 ---
-displayName: "Comments"
+displayName: "Коментарі"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
-isFree: false
-builtIn: false
+  Надає шаблон колекції коментарів та блок для додавання функціональності коментування до будь-якої колекції.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
-# Comments
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-comments/index).
+:::
+
+# Коментарі

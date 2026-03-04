@@ -1,5 +1,5 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/ai-employees/knowledge-base/vector-store).
 :::
 
 # אחסון וקטורי
@@ -20,7 +20,7 @@
 
 - בשדה הקלט `Name`, הזינו את שם האחסון הווקטורי;
 - ב-`Vector store`, בחרו מסד נתונים וקטורי שכבר הוגדר. ראו: [מסד נתונים וקטורי](/ai-employees/knowledge-base/vector-database);
-- ב-`LLM service`, בחרו שירות LLM שכבר הוגדר. ראו: [ניהול שירותי LLM](/ai-employees/quick-start/llm-service);
+- ב-`LLM service`, בחרו שירות LLM שכבר הוגדר. ראו: [ניהול שירותי LLM](/ai-employees/features/llm-service);
 - בשדה הקלט `Embedding model`, הזינו את שם מודל ה-`Embedding` לשימוש;
   
 לחצו על כפתור `Submit` כדי לשמור את פרטי האחסון הווקטורי.

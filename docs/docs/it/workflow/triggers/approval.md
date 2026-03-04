@@ -1,108 +1,166 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/workflow/triggers/approval).
+:::
 
 # Approvazione
 
 ## Introduzione
 
-L'approvazione è una forma di processo pensata specificamente per attività avviate e gestite manualmente, con l'obiettivo di determinare lo stato dei dati correlati. Viene tipicamente impiegata per la gestione dei processi nell'automazione d'ufficio o in altre attività che richiedono decisioni umane. Ad esempio, permette di creare e gestire **flussi di lavoro** manuali per scenari come le "richieste di ferie", le "approvazioni di rimborsi spese" e le "approvazioni per l'acquisto di materie prime".
+L'approvazione è una forma di processo dedicata all'avvio e all'elaborazione manuale per decidere lo stato dei dati correlati. Viene solitamente utilizzata per l'automazione d'ufficio o altre attività decisionali umane; ad esempio, è possibile creare e gestire processi manuali per scenari come "richieste di ferie", "approvazione rimborsi spese" e "approvazione acquisto materie prime".
 
-Il **plugin** di Approvazione offre un **tipo di flusso di lavoro** (trigger) dedicato, "Approvazione (evento)", e un **nodo** "Approvazione" specifico per questo processo. In combinazione con le **collezioni** e i blocchi personalizzati unici di NocoBase, consente di creare e gestire in modo rapido e flessibile diversi scenari di approvazione.
+Il plugin di approvazione fornisce un tipo di flusso di lavoro dedicato (trigger) "Approvazione (evento)" e un nodo "Approvazione" specifico per questo processo. In combinazione con le collezioni personalizzate e i blocchi personalizzati di NocoBase, consente di creare e gestire in modo rapido e flessibile vari scenari di approvazione.
 
-## Creare un Flusso di Lavoro
+## Creare un flusso di lavoro
 
-Quando crea un **flusso di lavoro**, selezioni il tipo "Approvazione" per creare un **flusso di lavoro** di approvazione:
+Durante la creazione di un flusso di lavoro, selezioni il tipo "Approvazione" per creare un flusso di lavoro di approvazione:
 
-![Trigger di Approvazione_Creare un Flusso di Lavoro di Approvazione](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Trigger di approvazione_Creare un flusso di lavoro di approvazione](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
-Successivamente, nell'interfaccia di configurazione del **flusso di lavoro**, clicchi sul trigger per aprire una finestra di dialogo e procedere con ulteriori configurazioni.
+Successivamente, nell'interfaccia di configurazione del flusso di lavoro, clicchi sul trigger per aprire la finestra di dialogo ed eseguire ulteriori configurazioni.
 
-## Configurazione del Trigger
+## Configurazione del trigger
 
-### Collegare una Collezione
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
 
-Il **plugin** di Approvazione di NocoBase è progettato per la massima flessibilità e può essere utilizzato con qualsiasi **collezione** personalizzata. Ciò significa che la configurazione dell'approvazione non richiede di riconfigurare il modello di **dati**, ma riutilizza direttamente una **collezione** esistente. Pertanto, dopo essere entrato nella configurazione del trigger, deve prima selezionare una **collezione** per determinare quale **collezione** di **dati** attiverà questo **flusso di lavoro** al momento della creazione o dell'aggiornamento dei **dati**:
+### Collegare una collezione
 
-![Trigger di Approvazione_Configurazione del Trigger_Selezionare la Collezione](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
+Il plugin di approvazione di NocoBase si basa su un design flessibile e può essere utilizzato con qualsiasi collezione personalizzata. Ciò significa che la configurazione dell'approvazione non richiede la riconfigurazione del modello dati, ma riutilizza direttamente le collezioni già create. Pertanto, dopo essere entrato nella configurazione del trigger, deve innanzitutto selezionare una collezione per decidere su quali dati della collezione il processo eseguirà l'approvazione:
 
-Successivamente, nel modulo per la creazione (o modifica) dei **dati** della **collezione** corrispondente, colleghi questo **flusso di lavoro** al pulsante di invio:
+![Trigger di approvazione_Configurazione del trigger_Selezionare la collezione](https://static-docs.nocobase.com/20251226103223.png)
 
-![Avviare Approvazione_Collegare il Flusso di Lavoro](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+### Metodo di attivazione
 
-Dopodiché, l'invio di questo modulo da parte di un utente attiverà il **flusso di lavoro** di approvazione corrispondente. I **dati** inviati non solo vengono salvati nella **collezione** pertinente, ma vengono anche "fotografati" (snapshot) all'interno del **flusso di lavoro** di approvazione per essere consultati dagli approvatori successivi.
+Quando si avvia un'approvazione per i dati aziendali, è possibile scegliere tra i seguenti due metodi di attivazione:
 
-### Ritiro
+*   **Prima del salvataggio dei dati**
 
-Se un **flusso di lavoro** di approvazione consente all'iniziatore di ritirare la richiesta, è necessario abilitare il pulsante "Ritiro" nella configurazione dell'interfaccia dell'iniziatore:
+    Avvia l'approvazione prima che i dati inviati vengano salvati; è adatto per scenari in cui i dati devono essere salvati solo dopo l'approvazione. In questa modalità, i dati al momento dell'avvio dell'approvazione sono solo dati temporanei e verranno salvati ufficialmente nella collezione corrispondente solo dopo l'approvazione.
 
-![Trigger di Approvazione_Configurazione del Trigger_Consenti Ritiro](https://static-docs.nocobase.com/20251029232544.png)
+*   **Dopo il salvataggio dei dati**
 
-Una volta abilitata, un'approvazione avviata da questo **flusso di lavoro** può essere ritirata dall'iniziatore prima che qualsiasi approvatore la elabori. Tuttavia, dopo che un approvatore in un **nodo** di approvazione successivo l'ha elaborata, non potrà più essere ritirata.
+    Avvia l'approvazione dopo che i dati inviati sono stati salvati; è adatto per scenari in cui i dati possono essere salvati prima dell'approvazione. In questa modalità, i dati al momento dell'avvio dell'approvazione sono già stati salvati nella collezione corrispondente e anche le modifiche apportate durante il processo di approvazione verranno salvate.
 
-:::info{title=Nota}
-Dopo aver abilitato o eliminato il pulsante di ritiro, è necessario cliccare su "Salva" e "Invia" nella finestra di dialogo di configurazione del trigger affinché le modifiche abbiano effetto.
+### Posizione di avvio dell'approvazione
+
+È possibile scegliere la posizione nel sistema da cui avviare l'approvazione:
+
+*   **Avvia solo nei blocchi dati**
+
+    È possibile collegare l'azione di qualsiasi blocco modulo di questa tabella al flusso di lavoro per avviare l'approvazione, e gestire o tracciare il processo di approvazione nel blocco di approvazione del singolo record; solitamente adatto per i dati aziendali.
+
+*   **Avvia sia nei blocchi dati che nel Centro attività**
+
+    Oltre ai blocchi dati, è possibile avviare e gestire le approvazioni nel Centro attività globale; solitamente adatto per i dati amministrativi.
+
+### Chi può avviare l'approvazione
+
+È possibile configurare i permessi in base all'ambito dell'utente per decidere quali utenti possono avviare l'approvazione:
+
+*   **Tutti gli utenti**
+
+    Tutti gli utenti nel sistema possono avviare l'approvazione.
+
+*   **Solo gli utenti selezionati**
+
+    Consente l'avvio dell'approvazione solo agli utenti nell'ambito specificato; è possibile selezionarne più di uno.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Configurazione dell'interfaccia del modulo dell'iniziatore
+
+Infine, è necessario configurare l'interfaccia del modulo dell'iniziatore, che verrà utilizzata per le operazioni di invio dal blocco del Centro approvazioni e per il reinvio dopo il ritiro da parte dell'utente. Clicchi sul pulsante di configurazione per aprire la finestra di dialogo:
+
+![Trigger di approvazione_Configurazione del trigger_Modulo dell'iniziatore](https://static-docs.nocobase.com/20251226130239.png)
+
+Può aggiungere all'interfaccia dell'iniziatore un modulo di compilazione basato sulla collezione collegata, oppure un testo descrittivo (Markdown) per suggerimenti e guida. L'aggiunta del modulo è obbligatoria, altrimenti l'iniziatore non potrà operare una volta entrato in questa interfaccia.
+
+Dopo aver aggiunto un blocco modulo, come in una normale interfaccia di configurazione del modulo, può aggiungere i componenti di campo della collezione corrispondente e disporli liberamente per organizzare il contenuto da compilare:
+
+![Trigger di approvazione_Configurazione del trigger_Modulo dell'iniziatore_Configurazione campi](https://static-docs.nocobase.com/20251226130339.png)
+
+A differenza del pulsante di invio diretto, può anche aggiungere un pulsante di azione "Salva bozza" per supportare i processi di archiviazione temporanea:
+
+![Trigger di approvazione_Configurazione del trigger_Modulo dell'iniziatore_Configurazione azioni_Salva](https://static-docs.nocobase.com/20251226130512.png)
+
+Se un flusso di lavoro di approvazione consente all'iniziatore di ritirare la richiesta, è necessario abilitare il pulsante "Ritiro" nella configurazione dell'interfaccia dell'iniziatore:
+
+![Trigger di approvazione_Configurazione del trigger_Consenti ritiro](https://static-docs.nocobase.com/20251226130637.png)
+
+Una volta abilitato, l'approvazione avviata da questo flusso può essere ritirata dall'iniziatore prima che qualsiasi approvatore la elabori; tuttavia, dopo che qualsiasi approvatore configurato nei nodi di approvazione successivi l'ha elaborata, non sarà più possibile ritirarla.
+
+:::info{title=Suggerimento}
+Dopo aver abilitato o eliminato il pulsante di ritiro, è necessario cliccare su salva e invia nella finestra di dialogo di configurazione del trigger affinché le modifiche abbiano effetto.
 :::
 
-### Configurazione dell'Interfaccia del Modulo dell'Iniziatore
+### Scheda "Le mie richieste" <Badge>2.0+</Badge>
 
-Infine, deve configurare l'interfaccia del modulo dell'iniziatore. Questa interfaccia verrà utilizzata per le operazioni di invio quando si avvia dal blocco del centro approvazioni e quando si riavvia dopo un ritiro. Clicchi sul pulsante di configurazione per aprire la finestra di dialogo:
+Può essere utilizzata per configurare le schede delle attività nell'elenco "Le mie richieste" del Centro attività.
 
-![Trigger di Approvazione_Configurazione del Trigger_Modulo dell'Iniziatore](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Può aggiungere all'interfaccia dell'iniziatore un modulo di compilazione basato sulla **collezione** collegata, oppure un testo descrittivo (Markdown) per suggerimenti e guida. Il modulo è obbligatorio; in caso contrario, l'iniziatore non sarà in grado di eseguire alcuna operazione una volta entrato in questa interfaccia.
+Nella scheda è possibile configurare liberamente i campi aziendali che si desidera visualizzare (esclusi i campi di relazione) o le informazioni relative all'approvazione.
 
-Dopo aver aggiunto un blocco modulo, proprio come in una normale interfaccia di configurazione del modulo, può aggiungere i componenti di campo dalla **collezione** corrispondente e disporli a piacimento per organizzare il contenuto da compilare nel modulo:
+Dopo la creazione della richiesta di approvazione, sarà possibile vedere la scheda dell'attività personalizzata nell'elenco del Centro attività:
 
-![Trigger di Approvazione_Configurazione del Trigger_Modulo dell'Iniziatore_Configurazione Campi](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-Oltre al pulsante di invio diretto, può anche aggiungere un pulsante di azione "Salva come bozza" per supportare un processo di archiviazione temporanea:
+### Modalità di visualizzazione dei record nel flusso
 
-![Trigger di Approvazione_Configurazione del Trigger_Modulo dell'Iniziatore_Configurazione Azioni](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+*   **Snapshot**
 
-## Nodo di Approvazione
+    Lo stato del record visto dal richiedente e dagli approvatori al momento dell'accesso; dopo l'invio, vedranno solo i record da loro modificati e non vedranno gli aggiornamenti apportati successivamente da altri.
 
-In un **flusso di lavoro** di approvazione, è necessario utilizzare il **nodo** "Approvazione" dedicato per configurare la logica operativa che gli approvatori useranno per elaborare (approvare, rifiutare o restituire) l'approvazione avviata. Il **nodo** "Approvazione" può essere utilizzato solo nei **flussi di lavoro** di approvazione. Per maggiori dettagli, consulti [Nodo di Approvazione](../nodes/approval.md).
+*   **Ultimo**
 
-## Configurare l'Avvio dell'Approvazione
+    Il richiedente e gli approvatori vedono sempre l'ultima versione del record durante l'intero processo, indipendentemente dallo stato del record prima della loro operazione. Al termine del processo, vedranno la versione finale del record.
 
-Dopo aver configurato e abilitato un **flusso di lavoro** di approvazione, può collegarlo al pulsante di invio del modulo della **collezione** corrispondente, consentendo agli utenti di avviare un'approvazione al momento dell'invio:
+## Nodo di approvazione
 
-![Avviare Approvazione_Collegare il Flusso di Lavoro](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+Nel flusso di lavoro di approvazione, è necessario utilizzare il nodo dedicato "Approvazione" per configurare la logica operativa (approvazione, rifiuto o restituzione) che gli approvatori utilizzeranno per gestire l'approvazione avviata. Il nodo "Approvazione" può essere utilizzato solo nei flussi di lavoro di approvazione. Consulti [Nodo di approvazione](../nodes/approval.md) per i dettagli.
 
-Dopo aver collegato il **flusso di lavoro**, quando un utente invia il modulo corrente, viene avviata un'approvazione.
-
-:::info{title=Nota}
-Attualmente, il pulsante per avviare un'approvazione supporta solo il pulsante "Invia" (o "Salva") nei moduli di creazione o aggiornamento. Non supporta il pulsante "Invia al flusso di lavoro" (che può essere collegato solo a un "Evento dopo l'azione").
+:::info{title=Suggerimento}
+Se un flusso di lavoro di approvazione non contiene alcun nodo "Approvazione", il flusso verrà approvato automaticamente.
 :::
 
-## Centro Attività
+## Configurazione dell'avvio dell'approvazione
 
-Il Centro Attività offre un punto di accesso unificato per consentire agli utenti di visualizzare ed elaborare le proprie attività in sospeso. Le approvazioni avviate dall'utente corrente e le attività in attesa possono essere consultate tramite il Centro Attività nella barra degli strumenti superiore, e i diversi tipi di attività in sospeso possono essere visualizzati tramite la navigazione categorizzata sulla sinistra.
+Dopo aver configurato e abilitato un flusso di lavoro di approvazione, è possibile collegare tale flusso al pulsante di invio del modulo della collezione corrispondente, in modo che l'utente possa avviare l'approvazione al momento dell'invio:
+
+![Avviare approvazione_Collegare flusso di lavoro](https://static-docs.nocobase.com/20251226110710.png)
+
+Successivamente, l'invio di tale modulo da parte dell'utente attiverà il flusso di lavoro di approvazione corrispondente. I dati inviati, oltre ad essere salvati nella collezione pertinente, verranno anche "fotografati" (snapshot) nel flusso di approvazione per la consultazione da parte del personale di approvazione successivo.
+
+:::info{title=Suggerimento}
+Il pulsante per avviare l'approvazione supporta attualmente solo il pulsante "Invia" (o "Salva") nei moduli di creazione o aggiornamento; non supporta il pulsante "Attiva flusso di lavoro" (tale pulsante può essere collegato solo a "Eventi di azione personalizzati").
+:::
+
+## Centro attività
+
+Il Centro attività fornisce un punto di ingresso unificato per consentire agli utenti di visualizzare e gestire le attività in sospeso. Le approvazioni avviate dall'utente corrente e le attività in sospeso sono accessibili tramite il Centro attività nella barra degli strumenti superiore, e i diversi tipi di attività possono essere visualizzati tramite la navigazione categorizzata a sinistra.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
-### Le Mie Richieste
+### Le mie richieste
 
-#### Visualizzare le Approvazioni Inviate
+#### Visualizzare le approvazioni inviate
 
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
-#### Avviare Direttamente una Nuova Approvazione
+#### Avviare direttamente una nuova approvazione
 
 ![20250310161658](https://static-docs.nocobase.com/20250310161658.png)
 
-### Le Mie Attività in Sospeso
+### Le mie attività
 
-#### Elenco Attività in Sospeso
+#### Elenco attività
 
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
-#### Dettagli Attività in Sospeso
+#### Dettagli attività
 
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
@@ -110,9 +168,9 @@ Il Centro Attività offre un punto di accesso unificato per consentire agli uten
 
 ### Iniziatore
 
-#### Avviare da Collezione
+#### Avviare da collezione
 
-Per avviare da un blocco **dati**, può effettuare una chiamata come questa (usando come esempio il pulsante di creazione della **collezione** `posts`):
+Per avviare da un blocco dati, è possibile effettuare una chiamata come questa (usando come esempio il pulsante di creazione della collezione `posts`):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -123,17 +181,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Qui, il parametro URL `triggerWorkflows` è la chiave del **flusso di lavoro**; più chiavi di **flusso di lavoro** sono separate da virgole. Questa chiave può essere ottenuta passando il mouse sopra il nome del **flusso di lavoro** nella parte superiore della tela del **flusso di lavoro**:
+Il parametro URL `triggerWorkflows` è la chiave del flusso di lavoro; più flussi di lavoro sono separati da virgole. Questa chiave può essere ottenuta passando il mouse sul nome del flusso di lavoro nella parte superiore della tela del flusso di lavoro:
 
-![Flusso di Lavoro_Chiave_Metodo di Visualizzazione](https://static-docs.nocobase.com/20240426135108.png)
+![Flusso di lavoro_chiave_metodo di visualizzazione](https://static-docs.nocobase.com/20240426135108.png)
 
-Dopo una chiamata riuscita, verrà attivato il **flusso di lavoro** di approvazione per la **collezione** `posts` corrispondente.
+Dopo una chiamata riuscita, verrà attivato il flusso di lavoro di approvazione per la collezione `posts` corrispondente.
 
-:::info{title="Nota"}
+:::info{title="Suggerimento"}
 Poiché anche le chiamate esterne devono basarsi sull'identità dell'utente, quando si effettua una chiamata tramite HTTP API, proprio come le richieste inviate dall'interfaccia normale, è necessario fornire le informazioni di autenticazione, inclusi l'header `Authorization` o il parametro `token` (il token ottenuto al login), e l'header `X-Role` (il nome del ruolo corrente dell'utente).
 :::
 
-Se è necessario attivare un evento per **dati** correlati uno-a-uno in questa azione (il uno-a-molti non è ancora supportato), può utilizzare `!` nel parametro per specificare i **dati** del trigger per il campo di associazione:
+Se è necessario attivare un evento per dati correlati uno-a-uno in questa azione (il uno-a-molti non è ancora supportato), può utilizzare `!` nel parametro per specificare i dati del trigger per il campo di relazione:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -147,13 +205,13 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Dopo una chiamata riuscita, verrà attivato l'evento di approvazione per la **collezione** `categories` corrispondente.
+Dopo una chiamata riuscita, verrà attivato l'evento di approvazione per la collezione `categories` corrispondente.
 
-:::info{title="Nota"}
-Quando si attiva un evento post-azione tramite HTTP API, è necessario prestare attenzione anche allo stato di abilitazione del **flusso di lavoro** e alla corrispondenza della configurazione della **collezione**; in caso contrario, la chiamata potrebbe non riuscire o potrebbe verificarsi un errore.
+:::info{title="Suggerimento"}
+Quando si attiva un evento post-azione tramite HTTP API, è necessario prestare attenzione anche allo stato di abilitazione del flusso di lavoro e alla corrispondenza della configurazione della collezione; in caso contrario, la chiamata potrebbe non riuscire o potrebbe verificarsi un errore.
 :::
 
-#### Avviare dal Centro Approvazioni
+#### Avviare dal Centro approvazioni
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -168,16 +226,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametri**
 
-*   `collectionName`: Il nome della **collezione** di destinazione per l'avvio dell'approvazione. Obbligatorio.
-*   `workflowId`: L'ID del **flusso di lavoro** utilizzato per avviare l'approvazione. Obbligatorio.
-*   `data`: I campi del record della **collezione** creati all'avvio dell'approvazione. Obbligatorio.
-*   `status`: Lo stato del record creato all'avvio dell'approvazione. Obbligatorio. I valori possibili includono:
-    *   `0`: Bozza, indica il salvataggio senza invio per l'approvazione.
-    *   `1`: Invia per approvazione, indica che l'iniziatore invia la richiesta di approvazione, entrando nel processo di approvazione.
+* `collectionName`: Il nome della collezione di destinazione per l'avvio dell'approvazione. Obbligatorio.
+* `workflowId`: L'ID del flusso di lavoro utilizzato per avviare l'approvazione. Obbligatorio.
+* `data`: I campi del record della collezione creati all'avvio dell'approvazione. Obbligatorio.
+* `status`: Lo stato del record creato all'avvio dell'approvazione. Obbligatorio. I valori possibili includono:
+  * `0`: Bozza, indica il salvataggio senza invio per l'approvazione.
+  * `2`: Invia per approvazione, indica che l'iniziatore invia la richiesta di approvazione, entrando nel processo di approvazione.
 
-#### Salva e Invia
+#### Salva e invia
 
-Quando un'approvazione avviata (o ritirata) si trova in stato di bozza, può salvarla o inviarla nuovamente tramite la seguente API:
+Quando un'approvazione avviata (o ritirata) si trova in stato di bozza, può salvarla o inviarla nuovamente tramite la seguente interfaccia:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -188,7 +246,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/approvals:update/<approval id>"
 ```
 
-#### Ottenere l'Elenco delle Approvazioni Inviate
+#### Ottenere l'elenco delle approvazioni inviate
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
@@ -197,7 +255,7 @@ curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 
 #### Ritiro
 
-L'iniziatore può ritirare un record attualmente in approvazione tramite la seguente API:
+L'iniziatore può ritirare un record attualmente in approvazione tramite la seguente interfaccia:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -206,31 +264,31 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametri**
 
-*   `<approval id>`: L'ID del record di approvazione da ritirare. Obbligatorio.
+* `<approval id>`: L'ID del record di approvazione da ritirare. Obbligatorio.
 
 ### Approvatore
 
-Dopo che il **flusso di lavoro** di approvazione entra in un **nodo** di approvazione, viene creata un'attività in sospeso per l'approvatore corrente. L'approvatore può completare l'attività di approvazione tramite l'interfaccia o richiamando l'HTTP API.
+Dopo che il flusso di lavoro di approvazione entra in un nodo di approvazione, viene creata un'attività in sospeso per l'approvatore corrente. L'approvatore può completare l'attività di approvazione tramite l'interfaccia o richiamando l'HTTP API.
 
-#### Ottenere i Record di Approvazione
+#### Ottenere i record di elaborazione dell'approvazione
 
-Le attività in sospeso sono i record di approvazione. Può ottenere tutti i record di approvazione dell'utente corrente tramite la seguente API:
+Le attività in sospeso sono i record di elaborazione dell'approvazione. Può ottenere tutti i record di elaborazione dell'approvazione dell'utente corrente tramite la seguente interfaccia:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Qui, `approvalRecords` è una risorsa di **collezione**, quindi può utilizzare condizioni di query comuni come `filter`, `sort`, `pageSize` e `page`.
+Qui, `approvalRecords` è una risorsa di collezione, quindi può utilizzare condizioni di query comuni come `filter`, `sort`, `pageSize` e `page`.
 
-#### Ottenere un Singolo Record di Approvazione
+#### Ottenere un singolo record di elaborazione dell'approvazione
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:get/<record id>"
 ```
 
-#### Approva e Rifiuta
+#### Approva e rifiuta
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -244,16 +302,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametri**
 
-*   `<record id>`: L'ID del record da approvare. Obbligatorio.
-*   `status`: Lo stato del processo di approvazione. `2` per "Approva", `-1` per "Rifiuta". Obbligatorio.
-*   `comment`: Note per il processo di approvazione. Opzionale.
-*   `data`: Modifiche al record della **collezione** nel **nodo** di approvazione corrente dopo l'approvazione. Opzionale (efficace solo in caso di approvazione).
+* `<record id>`: L'ID del record da elaborare. Obbligatorio.
+* `status`: Lo stato dell'elaborazione dell'approvazione. `2` per "Approva", `-1` per "Rifiuta". Obbligatorio.
+* `comment`: Note per l'elaborazione dell'approvazione. Opzionale.
+* `data`: Modifiche al record della collezione nel nodo di approvazione corrente dopo l'approvazione. Opzionale (efficace solo in caso di approvazione).
 
 #### Restituisci <Badge>v1.9.0+</Badge>
 
-Prima della versione v1.9.0, la restituzione utilizzava la stessa API di "Approva" e "Rifiuta", con `"status": 1` che rappresentava una restituzione.
+Prima della versione v1.9.0, la restituzione utilizzava la stessa interfaccia di "Approva" e "Rifiuta", con `"status": 1` che rappresentava una restituzione.
 
-A partire dalla versione v1.9.0, la restituzione ha un'API separata:
+A partire dalla versione v1.9.0, la restituzione ha un'interfaccia separata:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -265,8 +323,8 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametri**
 
-*   `<record id>`: L'ID del record da approvare. Obbligatorio.
-*   `returnToNodeKey`: La chiave del **nodo** di destinazione a cui tornare. Opzionale. Quando nel **nodo** è configurato un intervallo di **nodi** a cui è possibile tornare, questo parametro può essere utilizzato per specificare a quale **nodo** tornare. Se non configurato, questo parametro non deve essere passato e, per impostazione predefinita, si tornerà al punto di partenza affinché l'iniziatore possa inviare nuovamente.
+* `<record id>`: L'ID del record da elaborare. Obbligatorio.
+* `returnToNodeKey`: La chiave del nodo di destinazione a cui tornare. Opzionale. Quando nel nodo è configurato un intervallo di nodi a cui è possibile tornare, questo parametro può essere utilizzato per specificare a quale nodo tornare. Se non configurato, questo parametro non deve essere passato e, per impostazione predefinita, si tornerà al punto di partenza affinché l'iniziatore possa inviare nuovamente.
 
 #### Delega
 
@@ -280,10 +338,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametri**
 
-*   `<record id>`: L'ID del record da approvare. Obbligatorio.
-*   `assignee`: L'ID dell'utente a cui delegare. Obbligatorio.
+* `<record id>`: L'ID del record da elaborare. Obbligatorio.
+* `assignee`: L'ID dell'utente a cui delegare. Obbligatorio.
 
-#### Aggiungi Firmatario
+#### Aggiungi firmatario
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -296,6 +354,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametri**
 
-*   `<record id>`: L'ID del record da approvare. Obbligatorio.
-*   `assignees`: Un elenco di ID utente da aggiungere come firmatari. Obbligatorio.
-*   `order`: L'ordine del firmatario aggiunto. `-1` indica "prima di me", `1` indica "dopo di me".
+* `<record id>`: L'ID del record da elaborare. Obbligatorio.
+* `assignees`: Un elenco di ID utente da aggiungere come firmatari. Obbligatorio.
+* `order`: L'ordine del firmatario aggiunto. `-1` indica "prima di me", `1` indica "dopo di me".

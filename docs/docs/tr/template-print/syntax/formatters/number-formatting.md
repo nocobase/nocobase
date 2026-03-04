@@ -1,7 +1,6 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/template-print/syntax/formatters/number-formatting) bakın.
 :::
-
 
 ### Sayı Biçimlendirme
 
@@ -15,7 +14,6 @@ Parametre:
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "en-us" }
 '10':formatN()         // Çıktı "10.000"
 '1000.456':formatN()   // Çıktı "1,000.456"
 ```

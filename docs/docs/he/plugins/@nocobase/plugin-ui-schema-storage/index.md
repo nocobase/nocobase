@@ -1,12 +1,16 @@
 ---
-displayName: "UI schema storage"
+displayName: "שירות אחסון UI schema"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |
-  Provides centralized UI schema storage service.
+  מספק שירות אחסון UI schema מרכזי.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI schema storage
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-ui-schema-storage/index).
+:::
+
+# שירות אחסון UI schema

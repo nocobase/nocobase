@@ -1,42 +1,41 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/get-started/installation/docker).
 :::
-
 
 # Instalasi Docker
 
 :::tip Prasyarat
 
-- Pastikan [Docker](https://docs.docker.com/get-docker/) dan Docker Compose sudah terinstal.
-- Pastikan layanan Docker sedang berjalan.
+- Sudah terinstal [Docker](https://docs.docker.com/get-docker/) dan Docker Compose
+- Pastikan layanan Docker sedang berjalan
 
 :::
 
-## 1. Buat `docker-compose.yml`
+## 1. Membuat docker-compose.yml
 
 ```bash
-# Buat folder bernama my-project (Anda bisa menggunakan nama lain) untuk menyimpan file sistem yang dihasilkan oleh NocoBase
+# Buat folder bernama my-project (bisa berupa nama lain) untuk menyimpan file sistem yang dihasilkan oleh NocoBase
 mkdir my-project && cd my-project
 
 # Buat file docker-compose.yml kosong
 vi docker-compose.yml
 ```
 
-## 2. Konfigurasi `docker-compose.yml`
+## 2. Mengonfigurasi docker-compose.yml
 
-Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan jenis basis data, lalu salin konfigurasi yang sesuai ke dalam `docker-compose.yml`.
+Pilih versi NocoBase ([Perbandingan Versi](../quickstart.md)) dan tipe database, lalu salin konfigurasi yang sesuai ke dalam docker-compose.yml.
 
-:::tip Catatan Konfigurasi
+:::tip Keterangan Konfigurasi
 
-- **Pilih Image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - Untuk lingkungan produksi, disarankan untuk menggunakan nomor versi spesifik agar terhindar dari pembaruan otomatis yang tidak disengaja. [Lihat semua versi](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Image Alibaba Cloud: `nocobase/nocobase:latest-full`
+- **Pilih image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - Untuk lingkungan produksi, disarankan untuk menetapkan nomor versi spesifik guna menghindari pembaruan otomatis yang tidak disengaja. [Lihat semua versi](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Image Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
   - Image Docker Hub: `nocobase/nocobase:latest-full`
-  - **Image full** mencakup klien PostgreSQL 16/17, klien MySQL 8.0, klien Oracle 19.25 yang diperlukan untuk plugin manajemen cadangan dan migrasi, serta LibreOffice yang dibutuhkan untuk pencetakan templat (PDF).
-  - Jika Anda perlu membuat image sendiri, Anda dapat merujuk pada [Dockerfile (versi ringkas)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) dan [Dockerfile-full (versi lengkap)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) resmi.
+  - **Image full** mencakup klien PostgreSQL 16/17, klien MySQL 8.0, klien Oracle 19.25 yang diperlukan untuk plugin manajemen pencadangan dan migrasi, serta LibreOffice yang diperlukan untuk pencetakan templat (PDF).
+  - Jika Anda perlu membangun image sendiri, Anda dapat merujuk ke [Dockerfile (versi ramping)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) dan [Dockerfile-full (versi lengkap)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) resmi yang disediakan.
 - **Ubah `APP_KEY`**: Harap ganti `your-secret-key` dengan string acak, yang digunakan untuk mengenkripsi informasi sensitif seperti token pengguna.
-- **Gunakan Basis Data yang Sudah Ada**: Jika Anda sudah memiliki layanan basis data, harap ubah `DB_HOST` ke alamat server basis data, dan hapus atau komentari konfigurasi layanan basis data (misalnya, layanan `postgres`, `mysql`, `mariadb`).
-- **Pemetaan Port**: Secara default, port 80 dari kontainer dipetakan ke port 13000 dari host. Anda dapat mengubahnya sesuai kebutuhan.
+- **Gunakan database yang sudah ada**: Jika sudah memiliki layanan database, harap ubah `DB_HOST` menjadi alamat server database, dan hapus atau beri komentar pada konfigurasi layanan database (seperti layanan `postgres`, `mysql`, `mariadb`).
+- **Pemetaan port**: Secara default, port 80 kontainer dipetakan ke port 13000 host, dapat diubah sesuai kebutuhan.
 
 :::
 
@@ -54,7 +53,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -62,20 +61,20 @@ services:
       - postgres
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=postgres
-      # Port basis data
+      # Database port
       - DB_PORT=5432
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=nocobase
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -86,9 +85,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,7 +111,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -120,22 +119,22 @@ services:
       - mysql
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mysql
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -145,9 +144,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,7 +170,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -179,22 +178,22 @@ services:
       - mariadb
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mariadb
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -204,9 +203,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,7 +235,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -244,20 +243,20 @@ services:
       - postgres
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=postgres
-      # Port basis data
+      # Database port
       - DB_PORT=5432
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=nocobase
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -268,9 +267,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,7 +293,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -302,22 +301,22 @@ services:
       - mysql
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mysql
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -327,9 +326,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,7 +352,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -361,22 +360,22 @@ services:
       - mariadb
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mariadb
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -386,9 +385,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,7 +417,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -426,20 +425,20 @@ services:
       - postgres
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=postgres
-      # Port basis data
+      # Database port
       - DB_PORT=5432
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=nocobase
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -450,9 +449,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan postgres.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,7 +475,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -484,22 +483,22 @@ services:
       - mysql
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mysql
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -509,9 +508,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mysql.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,7 +534,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -543,22 +542,22 @@ services:
       - mariadb
     environment:
       # Kunci aplikasi, digunakan untuk menghasilkan token pengguna, dll.
-      # Jika APP_KEY diubah, token lama akan menjadi tidak valid.
-      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar.
+      # Jika APP_KEY diubah, token lama juga akan menjadi tidak valid
+      # Bisa berupa string acak apa pun, dan pastikan tidak bocor ke luar
       - APP_KEY=your-secret-key
-      # Jenis basis data, mendukung postgres, mysql, mariadb
+      # Tipe database, mendukung postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host basis data, bisa diganti dengan IP server basis data yang sudah ada.
+      # Host database, dapat diganti dengan IP server database yang sudah ada
       - DB_HOST=mariadb
-      # Port basis data
+      # Database port
       - DB_PORT=3306
-      # Nama basis data
+      # Nama database
       - DB_DATABASE=nocobase
-      # Pengguna basis data
+      # Pengguna database
       - DB_USER=root
-      # Kata sandi basis data
+      # Kata sandi database
       - DB_PASSWORD=nocobase
-      # Apakah nama tabel dan kolom basis data diubah menjadi gaya snake case.
+      # Apakah nama tabel dan nama field database diubah ke gaya snake case
       - DB_UNDERSCORED=true
       # Zona waktu
       - TZ=Asia/Shanghai
@@ -568,9 +567,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jika Anda menggunakan layanan basis data yang sudah ada, Anda bisa tidak menjalankan mariadb.
+  # Jika menggunakan layanan database yang sudah ada, tidak perlu menjalankan mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -590,14 +589,13 @@ services:
 
 </Tabs>
 
-
-## 3. Instal dan Jalankan NocoBase
+## 3. Menginstal dan Menjalankan NocoBase
 
 ```bash
 # Tarik image terbaru
 docker compose pull
 
-# Jalankan di latar belakang (instalasi akan berjalan otomatis pada saat pertama kali dijalankan)
+# Jalankan di latar belakang (instalasi akan dijalankan secara otomatis pada saat pertama kali dijalankan)
 docker compose up -d
 
 # Lihat log instalasi dan jalannya aplikasi
@@ -615,12 +613,12 @@ app-postgres-app-1  | 2022-04-28T15:45:38: PM2 log: App [index:0] online
 app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 ```
 
-## 4. Masuk ke NocoBase
+## 4. Login ke NocoBase
 
-Buka [http://localhost:13000](http://localhost:13000) di browser Anda. Akun dan kata sandi awal adalah `admin@nocobase.com` dan `admin123`.
+Gunakan browser untuk membuka [http://localhost:13000](http://localhost:13000), akun dan kata sandi inisialisasi adalah `admin@nocobase.com` dan `admin123`.
 
-:::warning Pemberitahuan Keamanan Akun
+:::warning Peringatan Keamanan Akun
 
-Setelah masuk untuk pertama kalinya, harap segera ubah kata sandi default untuk memastikan keamanan sistem.
+Setelah login untuk pertama kalinya, harap segera ubah kata sandi default untuk memastikan keamanan sistem.
 
 :::

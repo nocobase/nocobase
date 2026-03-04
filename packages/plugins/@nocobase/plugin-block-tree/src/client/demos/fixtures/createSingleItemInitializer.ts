@@ -1,5 +1,5 @@
-import { Grid, SchemaInitializerItemType } from "@nocobase/client";
-import { SchemaInitializer } from "@nocobase/client";
+import { Grid, SchemaInitializerItemType } from '@nocobase/client';
+import { SchemaInitializer } from '@nocobase/client';
 
 export function createSingleItemInitializer(initializerItem: SchemaInitializerItemType) {
   return new SchemaInitializer({
@@ -10,8 +10,6 @@ export function createSingleItemInitializer(initializerItem: SchemaInitializerIt
     style: {
       marginLeft: 8,
     },
-    items: [
-      initializerItem
-    ]
+    items: [initializerItem],
   });
 }

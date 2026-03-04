@@ -20,12 +20,12 @@ import { uid } from '@formily/shared';
 import { aiEmployeeRole } from '../roles';
 import { useChatToolsStore } from '../stores/chat-tools';
 import { useAPIClient } from '@nocobase/client';
-import { useLLMServicesRepository } from '../../../llm-services/hooks/useLLMServicesRepository';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 import { getAllModels, isSameModel, isValidModel, resolveModel } from '../model';
 
 export const useChatBoxActions = () => {
   const api = useAPIClient();
-  const llmServicesRepository = useLLMServicesRepository();
+  const aiConfigRepository = useAIConfigRepository();
   const t = useT();
 
   const open = useChatBoxStore.use.open();
@@ -91,8 +91,7 @@ export const useChatBoxActions = () => {
 
   const ensureModel = useCallback(
     async (aiEmployee: AIEmployee) => {
-      await llmServicesRepository.load();
-      const allModels = getAllModels(llmServicesRepository.services);
+      const allModels = getAllModels(await aiConfigRepository.getLLMServices());
       const currentModel = useChatBoxStore.getState().model;
       const resolvedModel = resolveModel(api, aiEmployee.username, allModels, currentModel);
       if (!isSameModel(currentModel, resolvedModel)) {
@@ -100,13 +99,12 @@ export const useChatBoxActions = () => {
       }
       return resolvedModel;
     },
-    [api, llmServicesRepository, setModel],
+    [api, aiConfigRepository, setModel],
   );
 
   const resolveTaskModel = useCallback(
     async (aiEmployee: AIEmployee, taskModel?: { llmService: string; model: string } | null) => {
-      await llmServicesRepository.load();
-      const allModels = getAllModels(llmServicesRepository.services);
+      const allModels = getAllModels(await aiConfigRepository.getLLMServices());
       if (isValidModel(taskModel, allModels)) {
         const currentModel = useChatBoxStore.getState().model;
         if (!isSameModel(currentModel, taskModel)) {
@@ -121,7 +119,7 @@ export const useChatBoxActions = () => {
       }
       return resolvedModel;
     },
-    [api, llmServicesRepository, setModel],
+    [api, aiConfigRepository, setModel],
   );
 
   const startNewConversation = useCallback(() => {
@@ -205,7 +203,9 @@ export const useChatBoxActions = () => {
           model: taskModel,
         } = await parseTask(task);
         const resolvedModel = await resolveTaskModel(aiEmployee, taskModel);
-        const service = llmServicesRepository.services.find((s) => s.llmService === resolvedModel?.llmService);
+        const service = (await aiConfigRepository.getLLMServices()).find(
+          (s) => s.llmService === resolvedModel?.llmService,
+        );
         const resolvedWebSearch =
           service?.supportWebSearch === false ? false : typeof webSearch === 'boolean' ? webSearch : false;
         setWebSearch(resolvedWebSearch);
@@ -249,7 +249,7 @@ export const useChatBoxActions = () => {
       });
       setMessages(msgs);
     },
-    [open, currentConversation, ensureModel, llmServicesRepository, resolveTaskModel, setWebSearch],
+    [open, currentConversation, ensureModel, aiConfigRepository, resolveTaskModel, setWebSearch],
   );
 
   return {

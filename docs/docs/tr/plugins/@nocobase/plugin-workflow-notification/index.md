@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: notification node"
+displayName: "Workflow: Bildirim Node"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |
-  Send notification in workflow.
+  Workflow içinde çeşitli bildirimler göndermek için kullanılabilir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: notification node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-notification/index) bakın.
+:::
+
+# Workflow: Bildirim Node

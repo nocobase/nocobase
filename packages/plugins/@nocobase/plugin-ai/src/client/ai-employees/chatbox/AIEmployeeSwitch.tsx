@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Avatar, Button, Divider, Dropdown, Flex, Popover, Tag } from 'antd';
 import { UserAddOutlined, CloseCircleOutlined, CheckOutlined, DownOutlined } from '@ant-design/icons';
 import { useToken } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../locale';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { avatars } from '../avatars';
@@ -20,19 +21,23 @@ import { ContextItemsHeader } from './ContextItemsHeader';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { EditMessageHeader } from './EditMessageHeader';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 
-export const AIEmployeeSwitcher: React.FC = () => {
+export const AIEmployeeSwitcher: React.FC = observer(() => {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const { switchAIEmployee } = useChatBoxActions();
   const { token } = useToken();
 
-  const menuItems = useMemo(() => {
-    if (!aiEmployees.length) {
-      return [
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
+
+  const menuItems = !aiEmployees.length
+    ? [
         {
           key: 'empty',
           label: (
@@ -41,23 +46,20 @@ export const AIEmployeeSwitcher: React.FC = () => {
           disabled: true,
           style: { cursor: 'default', padding: '16px 12px', height: 'auto', minHeight: 0 },
         },
-      ];
-    }
-
-    return aiEmployees.map((employee) => {
-      const isSelected = currentEmployee?.username === employee.username;
-      return {
-        key: employee.username,
-        label: (
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-            <AIEmployeeListItem aiEmployee={employee} />
-            {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
-          </span>
-        ),
-        onClick: () => switchAIEmployee(employee),
-      };
-    });
-  }, [aiEmployees, currentEmployee?.username, switchAIEmployee, t, token.colorPrimary, token.colorTextSecondary]);
+      ]
+    : aiEmployees.map((employee) => {
+        const isSelected = currentEmployee?.username === employee.username;
+        return {
+          key: employee.username,
+          label: (
+            <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <AIEmployeeListItem aiEmployee={employee} />
+              {isSelected && <CheckOutlined style={{ fontSize: 12, color: token.colorPrimary }} />}
+            </span>
+          ),
+          onClick: () => switchAIEmployee(employee),
+        };
+      });
 
   const hasEmployees = aiEmployees.length > 0;
   const currentLabel = currentEmployee ? currentEmployee.nickname : `${t('Select an')} ${t('AI employee')}`;
@@ -105,10 +107,11 @@ export const AIEmployeeSwitcher: React.FC = () => {
       {dropdownContent}
     </Dropdown>
   );
-};
+});
 
-export const SenderHeader: React.FC = () => {
-  const { aiEmployees } = useAIEmployeesData();
+export const SenderHeader: React.FC = observer(() => {
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
   const { token } = useToken();
   const t = useT();
 
@@ -117,19 +120,21 @@ export const SenderHeader: React.FC = () => {
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const items = useMemo(() => {
-    return aiEmployees?.map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
-  }, [aiEmployees, switchAIEmployee]);
+  useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
+
+  const items = aiEmployees?.map((employee) => ({
+    key: employee.username,
+    label: (
+      <AIEmployeeListItem
+        aiEmployee={employee}
+        onClick={() => {
+          switchAIEmployee(employee);
+        }}
+      />
+    ),
+  }));
 
   const avatar = useMemo(() => {
     if (!currentEmployee) {
@@ -222,4 +227,4 @@ export const SenderHeader: React.FC = () => {
       {currentEmployee ? <AttachmentsHeader /> : null}
     </div>
   );
-};
+});

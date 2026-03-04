@@ -73,6 +73,11 @@
         "type": "custom-link",
         "label": "FlowModel مقابل React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "نقاط توسع إضافة RunJS",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

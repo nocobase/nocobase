@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: DingTalk"
+displayName: "인증: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  DingTalk authentication.
+  DingTalk 계정을 통해 신원을 인증합니다.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
-# Auth: DingTalk
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/plugins/@nocobase/plugin-auth-dingtalk/index)을 참조하세요.
+:::
+
+# 인증: DingTalk

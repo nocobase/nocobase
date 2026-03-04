@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Çözüm Özeti"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Detaylı Tasarım"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Kurulum"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Eski CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Daha Fazla İçerik"
+  }
+]

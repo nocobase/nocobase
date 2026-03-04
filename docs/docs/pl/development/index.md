@@ -4,56 +4,61 @@ pageName: development
 
 features:
   - title: Architektura rdzenia
-    details: Poznaj podstawowe mechanizmy rozszerzeń i zasady działania NocoBase, w tym system wtyczek, FlowEngine oraz moduł bazodanowy, aby zbudować solidne podstawy do dalszego rozwoju.
+    details: Proszę opanować podstawowe mechanizmy rozszerzeń i zasady działania NocoBase, w tym system wtyczek, FlowEngine oraz moduły jądra bazy danych, aby zbudować solidne podstawy programistyczne.
     items:
       - title: Rozwój wtyczek
-        details: Dowiedz się, jak tworzyć, publikować i utrzymywać niestandardowe wtyczki.
+        details: Proszę dowiedzieć się, jak tworzyć, publikować i utrzymywać niestandardowe wtyczki.
         link: /plugin-development
         showOnHome: true
-      - title: Silnik FlowEngine (front-end)
-        details: Silnik do tworzenia aplikacji front-endowych w modelu no-code/low-code dla NocoBase 2.0.
+      - title: Frontend FlowEngine
+        details: Silnik do tworzenia rozwiązań no-code i low-code w NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: Baza danych
-        details: Moduł bazodanowy rdzenia NocoBase, który zapewnia wtyczkom ujednolicone API do dostępu, modelowania i operacji na danych. Jest to kluczowa podstawa interakcji danych między wtyczkami.
-        link: /database
+      - title: Frontend RunJS
+        details: Środowisko wykonawcze JavaScript dla bloków JS, pól JS, akcji JS i podobnych scenariuszy.
+        link: /runjs
         showOnHome: true
-  - title: Interfejs i interakcje
-    details: Dowiedz się, jak rozszerzać i dostosowywać interfejs użytkownika (front-end), tworzyć komponenty, pola i logikę działań odpowiadające potrzebom biznesowym, a także poprawiać wizualizację i interaktywność systemu.
+  - title: Interfejs i interakcja
+    details: Proszę dowiedzieć się, jak rozszerzać i dostosowywać interfejs frontendowy, budować komponenty, pola i logikę akcji odpowiadającą potrzebom biznesowym oraz poprawiać wizualizację i interakcję systemu.
     items:
-      - title: Bloki
-        details: Twórz, ponownie wykorzystuj i konfiguruj niestandardowe komponenty bloków, aby budować elastyczne układy interfejsu.
+      - title: Bloki (Blocks)
+        details: Tworzenie, ponowne wykorzystywanie i konfigurowanie niestandardowych komponentów bloków w celu budowy elastycznych układów interfejsu.
         link: /ui-development-block
         showOnHome: true
-      - title: Pola
-        details: Definiuj nowe typy komponentów pól, aby wzbogacić metody wprowadzania i wyświetlania danych.
+      - title: Pola (Fields)
+        details: Definiowanie nowych typów komponentów pól w celu wzbogacenia metod wprowadzania i wyświetlania danych.
         link: /ui-development-field
         showOnHome: true
-      - title: Akcje
-        details: Rozszerzaj lub dostosowuj zachowania akcji, aby implementować różnorodne procesy biznesowe i interakcje użytkownika.
+      - title: Akcje (Actions)
+        details: Rozszerzanie lub dostosowywanie zachowań akcji w celu implementacji różnorodnych procesów biznesowych i interakcji użytkownika.
         link: /ui-development-action
         showOnHome: true
   - title: Ekosystem wtyczek
-    details: Rozszerzaj możliwości istniejących wtyczek za pomocą kolejnych wtyczek, budując hierarchiczny i modułowy ekosystem, który zwiększy rozszerzalność i zdolność systemu do współpracy.
+    details: Rozszerzanie możliwości istniejących wtyczek za pomocą innych wtyczek, budowanie hierarchicznego i modułowego ekosystemu wtyczek w celu zwiększenia rozszerzalności i współpracy systemu.
     items:
       - title: Rozszerzenie źródła danych
-        details: Rozszerzaj lub integruj zewnętrzne źródła danych, łącz się z bazami danych lub usługami stron trzecich, aby uzyskać dostęp do danych i synchronizację między systemami.
+        details: Rozszerzanie lub integrowanie zewnętrznych źródeł danych, łączenie się z bazami danych lub usługami stron trzecich w celu uzyskania dostępu do danych i synchronizacji między systemami.
         link: /data-sources/development
         showOnHome: true
       - title: Rozszerzenie przepływu pracy
-        details: Rozszerzaj lub integruj funkcje związane z przepływem pracy, aby implementować zautomatyzowane i procesowe scenariusze biznesowe.
+        details: Rozszerzanie lub integrowanie funkcji związanych z przepływem pracy w celu implementacji zautomatyzowanych i procesowych scenariuszy biznesowych.
         link: /workflow/development
         showOnHome: true
       - title: Rozszerzenie kanału powiadomień
-        details: Opracowuj nowe metody powiadomień lub integruj zewnętrzne usługi komunikacyjne, aby wspierać dystrybucję wiadomości wielokanałowych.
+        details: Tworzenie nowych metod powiadomień lub integrowanie zewnętrznych usług komunikacyjnych w celu wsparcia wielokanałowej dystrybucji wiadomości.
         link: /notification-manager/development/extension
       - title: Rozszerzenie uwierzytelniania użytkowników
-        details: Implementuj niestandardową logikę uwierzytelniania lub łącz się z systemami logowania stron trzecich, aby zwiększyć bezpieczeństwo i możliwości dostępu.
+        details: Implementacja niestandardowej logiki uwierzytelniania lub łączenie się z zewnętrznymi systemami logowania w celu zwiększenia bezpieczeństwa i możliwości dostępu.
         link: /auth-verification/auth/dev
       - title: Rozszerzenie przechowywania plików
-        details: Integruj usługi przechowywania w chmurze lub niestandardowe rozwiązania pamięci masowej, aby elastycznie rozszerzać funkcje przesyłania, pobierania i zarządzania plikami.
+        details: Integracja usług przechowywania w chmurze lub niestandardowych rozwiązań pamięci masowej w celu elastycznego rozszerzania funkcji przesyłania, pobierania i zarządzania plikami.
         link: /file-manager/development
       - title: Rozszerzenie podglądu plików
-        details: Rozszerzaj możliwości podglądu plików, aby wspierać podgląd online i renderowanie większej liczby formatów plików.
+        details: Rozszerzanie możliwości podglądu plików w celu wsparcia podglądu online i renderowania większej liczby formatów plików.
         link: /file-manager/development
 ---
+
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/development/index).
+:::
+

@@ -367,7 +367,7 @@ const CancelButton = ({ style }) => {
 };
 
 ChartBlockModel.define({
-  label: 'Charts',
+  label: tStr('Charts'),
 });
 
 ChartBlockModel.registerFlow({

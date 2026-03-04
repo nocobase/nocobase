@@ -1,8 +1,8 @@
 ---
-displayName: "App backup & restore (deprecated)"
+displayName: "Säkerhetskopiering och återställning av app (föråldrad)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
+  Säkerhetskopiera och återställ appar, kan användas för scenarier som replikering, migrering och uppgradering av appar.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# App backup & restore (deprecated)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-backup-restore/index).
+:::
 
-> Note: This plugin is deprecated.
+# Säkerhetskopiering och återställning av app (föråldrad)
+
+> Observera: Denna plugin är föråldrad (deprecated).

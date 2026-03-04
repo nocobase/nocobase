@@ -1,42 +1,41 @@
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/get-started/installation/docker)
 :::
 
+# การติดตั้ง Docker
 
-# การติดตั้ง NocoBase ด้วย Docker
+:::tip เงื่อนไขเบื้องต้น
 
-:::tip ข้อกำหนดเบื้องต้น
-
-- คุณได้ติดตั้ง [Docker](https://docs.docker.com/get-docker/) และ Docker Compose เรียบร้อยแล้วครับ/ค่ะ
+- ติดตั้ง [Docker](https://docs.docker.com/get-docker/) และ Docker Compose เรียบร้อยแล้วครับ/ค่ะ
 - ตรวจสอบให้แน่ใจว่าบริการ Docker กำลังทำงานอยู่ครับ/ค่ะ
 
 :::
 
-## 1. สร้างไฟล์ docker-compose.yml
+## 1. สร้าง docker-compose.yml ใหม่
 
 ```bash
-# สร้างโฟลเดอร์ชื่อ my-project (หรือชื่ออื่น ๆ ที่คุณต้องการ) เพื่อใช้เก็บไฟล์ระบบที่ NocoBase สร้างขึ้นครับ/ค่ะ
+# สร้างโฟลเดอร์ชื่อ my-project (หรือชื่ออื่น ๆ) เพื่อใช้เก็บไฟล์ระบบที่ NocoBase สร้างขึ้นครับ/ค่ะ
 mkdir my-project && cd my-project
 
-# สร้างไฟล์ docker-compose.yml เปล่า ๆ ขึ้นมาครับ/ค่ะ
+# สร้างไฟล์ docker-compose.yml เปล่าครับ/ค่ะ
 vi docker-compose.yml
 ```
 
 ## 2. กำหนดค่า docker-compose.yml
 
-เลือกเวอร์ชันของ NocoBase ([เปรียบเทียบเวอร์ชัน](../quickstart.md)) และชนิดของฐานข้อมูล จากนั้นคัดลอกการตั้งค่าที่เกี่ยวข้องลงในไฟล์ docker-compose.yml ครับ/ค่ะ
+เลือกเวอร์ชันของ NocoBase ([เปรียบเทียบเวอร์ชัน](../quickstart.md)) และประเภทฐานข้อมูล จากนั้นคัดลอกการกำหนดค่าที่เกี่ยวข้องลงใน docker-compose.yml ครับ/ค่ะ
 
-:::tip หมายเหตุการกำหนดค่า
+:::tip คำอธิบายการกำหนดค่า
 
-- **เลือกอิมเมจ (Image)**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - สำหรับสภาพแวดล้อมการใช้งานจริง (Production) แนะนำให้ระบุเวอร์ชันที่เป็นตัวเลขที่แน่นอน เพื่อหลีกเลี่ยงการอัปเกรดอัตโนมัติโดยไม่ตั้งใจครับ/ค่ะ [ดูเวอร์ชันทั้งหมด](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - อิมเมจบน Alibaba Cloud: `nocobase/nocobase:latest-full`
-  - อิมเมจบน Docker Hub: `nocobase/nocobase:latest-full`
-  - **อิมเมจแบบ full** จะรวมถึงไคลเอนต์ PostgreSQL 16/17, ไคลเอนต์ MySQL 8.0, ไคลเอนต์ Oracle 19.25 ที่จำเป็นสำหรับปลั๊กอินการจัดการสำรองข้อมูลและการย้ายข้อมูล รวมถึง LibreOffice ที่จำเป็นสำหรับการพิมพ์เทมเพลต (PDF) ครับ/ค่ะ
-  - หากคุณต้องการสร้างอิมเมจเอง สามารถอ้างอิงจาก [Dockerfile (เวอร์ชันย่อ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) และ [Dockerfile-full (เวอร์ชันเต็ม)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) ที่ทาง NocoBase จัดเตรียมไว้ให้ได้เลยครับ/ค่ะ
-- **แก้ไข `APP_KEY`**: โปรดแทนที่ `your-secret-key` ด้วยสตริงแบบสุ่ม (random string) ที่ใช้สำหรับเข้ารหัสข้อมูลสำคัญ เช่น โทเค็นของผู้ใช้ครับ/ค่ะ
-- **ใช้ฐานข้อมูลที่มีอยู่แล้ว**: หากคุณมีบริการฐานข้อมูลอยู่แล้ว โปรดแก้ไข `DB_HOST` ให้เป็นที่อยู่ของเซิร์ฟเวอร์ฐานข้อมูล และลบหรือคอมเมนต์การตั้งค่าบริการฐานข้อมูล (เช่น บริการ `postgres`, `mysql`, `mariadb`) ออกไปครับ/ค่ะ
-- **การแมปพอร์ต (Port Mapping)**: โดยค่าเริ่มต้น พอร์ต 80 ของคอนเทนเนอร์จะถูกแมปไปยังพอร์ต 13000 ของโฮสต์ คุณสามารถแก้ไขได้ตามความต้องการครับ/ค่ะ
+- **เลือกอิมเมจ**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - สำหรับสภาพแวดล้อมการใช้งานจริง แนะนำให้ระบุเวอร์ชันเป็นตัวเลขที่แน่นอน เพื่อหลีกเลี่ยงการอัปเกรดอัตโนมัติโดยไม่ตั้งใจครับ/ค่ะ [ดูเวอร์ชันทั้งหมด](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - อิมเมจ Alibaba Cloud: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - อิมเมจ Docker Hub: `nocobase/nocobase:latest-full`
+  - **อิมเมจ full** ประกอบด้วยไคลเอนต์ PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 ที่จำเป็นสำหรับปลั๊กอินการจัดการสำรองข้อมูลและการย้ายข้อมูล รวมถึง LibreOffice ที่จำเป็นสำหรับการพิมพ์เทมเพลต (PDF) ครับ/ค่ะ
+  - หากต้องการสร้างอิมเมจเอง สามารถอ้างอิง [Dockerfile (ฉบับย่อ)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) และ [Dockerfile-full (ฉบับเต็ม)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) ที่เป็นทางการได้ครับ/ค่ะ
+- **แก้ไข `APP_KEY`**: โปรดเปลี่ยน `your-secret-key` เป็นสตริงแบบสุ่ม เพื่อใช้ในการเข้ารหัสข้อมูลที่ละเอียดอ่อน เช่น token ของผู้ใช้ครับ/ค่ะ
+- **ใช้ฐานข้อมูลที่มีอยู่**: หากมีบริการฐานข้อมูลอยู่แล้ว โปรดแก้ไข `DB_HOST` เป็นที่อยู่เซิร์ฟเวอร์ฐานข้อมูล และลบหรือคอมเมนต์การกำหนดค่าบริการฐานข้อมูลออก (เช่น บริการ `postgres`, `mysql`, `mariadb`) ครับ/ค่ะ
+- **การแมปพอร์ต**: โดยค่าเริ่มต้นจะแมปพอร์ต 80 ของคอนเทนเนอร์ไปยังพอร์ต 13000 ของโฮสต์ สามารถแก้ไขได้ตามต้องการครับ/ค่ะ
 
 :::
 
@@ -54,22 +53,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=postgres
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=5432
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -86,9 +85,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน postgres ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ postgres ครับ/ค่ะ
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,22 +111,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mysql
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -135,7 +134,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -145,9 +144,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mysql ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mysql ครับ/ค่ะ
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,22 +170,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mariadb
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -194,7 +193,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -204,9 +203,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mariadb ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mariadb ครับ/ค่ะ
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,22 +235,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=postgres
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=5432
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -268,9 +267,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน postgres ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ postgres ครับ/ค่ะ
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,22 +293,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mysql
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -317,7 +316,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -327,9 +326,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mysql ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mysql ครับ/ค่ะ
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,22 +352,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mariadb
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -376,7 +375,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -386,9 +385,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mariadb ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mariadb ครับ/ค่ะ
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,22 +417,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - postgres
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=postgres
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=5432
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -450,9 +449,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน postgres ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ postgres ครับ/ค่ะ
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,22 +475,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mysql
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mysql
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -499,7 +498,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -509,9 +508,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mysql ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mysql ครับ/ค่ะ
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,22 +534,22 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
     depends_on:
       - mariadb
     environment:
-      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้างโทเค็นของผู้ใช้ เป็นต้น
-      # หาก APP_KEY ถูกแก้ไข โทเค็นเก่าก็จะใช้งานไม่ได้ครับ/ค่ะ
-      # สามารถเป็นสตริงแบบสุ่มใด ๆ ก็ได้ และต้องแน่ใจว่าจะไม่รั่วไหลออกไปภายนอกครับ/ค่ะ
+      # คีย์ของแอปพลิเคชัน ใช้สำหรับสร้าง token ของผู้ใช้ เป็นต้น
+      # หาก APP_KEY ถูกแก้ไข token เก่าจะใช้งานไม่ได้ครับ/ค่ะ
+      # สามารถเป็นสตริงแบบสุ่มใดก็ได้ และตรวจสอบให้แน่ใจว่าไม่รั่วไหลครับ/ค่ะ
       - APP_KEY=your-secret-key
-      # ชนิดของฐานข้อมูลที่รองรับ: postgres, mysql, mariadb
+      # ประเภทฐานข้อมูล รองรับ postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # โฮสต์ของฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่แล้วได้ครับ/ค่ะ
+      # โฮสต์ฐานข้อมูล สามารถแทนที่ด้วย IP ของเซิร์ฟเวอร์ฐานข้อมูลที่มีอยู่ได้ครับ/ค่ะ
       - DB_HOST=mariadb
-      # พอร์ตของฐานข้อมูล
+      # Database port
       - DB_PORT=3306
       # ชื่อฐานข้อมูล
       - DB_DATABASE=nocobase
@@ -558,7 +557,7 @@ services:
       - DB_USER=root
       # รหัสผ่านฐานข้อมูล
       - DB_PASSWORD=nocobase
-      # กำหนดให้ชื่อตารางและชื่อฟิลด์ของฐานข้อมูลถูกแปลงเป็นรูปแบบ snake_case หรือไม่
+      # กำหนดว่าชื่อตารางและชื่อฟิลด์ในฐานข้อมูลจะถูกแปลงเป็นรูปแบบ snake case หรือไม่
       - DB_UNDERSCORED=true
       # เขตเวลา
       - TZ=Asia/Shanghai
@@ -568,9 +567,9 @@ services:
       - '13000:80'
     # init: true
 
-  # หากคุณใช้บริการฐานข้อมูลที่มีอยู่แล้ว คุณสามารถเลือกที่จะไม่รัน mariadb ได้ครับ/ค่ะ
+  # หากใช้บริการฐานข้อมูลที่มีอยู่แล้ว ไม่จำเป็นต้องเริ่มการทำงานของ mariadb ครับ/ค่ะ
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -590,17 +589,16 @@ services:
 
 </Tabs>
 
-
 ## 3. ติดตั้งและเริ่มใช้งาน NocoBase
 
 ```bash
-# ดึงอิมเมจล่าสุด
+# ดึงอิมเมจล่าสุดครับ/ค่ะ
 docker compose pull
 
-# รันในพื้นหลัง (การติดตั้งจะทำงานโดยอัตโนมัติในการรันครั้งแรก)
+# รันในพื้นหลัง (การรันครั้งแรกจะดำเนินการติดตั้งโดยอัตโนมัติ) ครับ/ค่ะ
 docker compose up -d
 
-# ดูบันทึกการติดตั้งและการทำงาน
+# ดูบันทึกการติดตั้งและการรันครับ/ค่ะ
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -617,9 +615,9 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. เข้าสู่ระบบ NocoBase
 
-เปิด [http://localhost:13000](http://localhost:13000) ในเบราว์เซอร์ของคุณครับ/ค่ะ บัญชีผู้ใช้และรหัสผ่านเริ่มต้นคือ `admin@nocobase.com` และ `admin123`
+ใช้เบราว์เซอร์เปิด [http://localhost:13000](http://localhost:13000) บัญชีและรหัสผ่านเริ่มต้นคือ `admin@nocobase.com` และ `admin123` ครับ/ค่ะ
 
-:::warning คำเตือนด้านความปลอดภัยของบัญชี
+:::warning คำแนะนำด้านความปลอดภัยของบัญชี
 
 หลังจากเข้าสู่ระบบครั้งแรก โปรดเปลี่ยนรหัสผ่านเริ่มต้นทันทีเพื่อความปลอดภัยของระบบครับ/ค่ะ
 

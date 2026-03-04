@@ -5,11 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+  WeCom एकीकरण की क्षमताएं प्रदान करता है, जिसमें प्रमाणीकरण के तरीके, सूचना चैनल और उपयोगकर्ता डेटा सिंक्रनाइज़ेशन स्रोत शामिल हैं।
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
+
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-auth-wecom/index) देखें।
+:::
 
 # WeCom

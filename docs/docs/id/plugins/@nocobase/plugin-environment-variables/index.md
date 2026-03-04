@@ -1,12 +1,16 @@
 ---
-displayName: "Variables and secrets"
+displayName: "Variabel dan Rahasia"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
+  Manajemen terpusat variabel lingkungan dan rahasia, digunakan untuk penyimpanan data sensitif, penggunaan kembali data konfigurasi, isolasi multi-lingkungan, dan lainnya.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Variables and secrets
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-environment-variables/index).
+:::
+
+# Variabel dan Rahasia

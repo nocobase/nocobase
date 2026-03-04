@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Огляд рішення"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Детальний дизайн"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Як встановити"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Застаріла CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Більше вмісту"
+  }
+]

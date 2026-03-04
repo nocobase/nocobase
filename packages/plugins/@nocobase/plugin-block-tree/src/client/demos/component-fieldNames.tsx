@@ -36,9 +36,7 @@ const generateData = (_level: number, _preKey?: React.Key, _tns?: TreeNode[]) =>
 generateData(z);
 
 const App: React.FC = () => {
-  return (
-    <Tree treeData={treeData as any} fieldNames={{ title: 'nickname', key: 'id', children: 'customChildren' }} />
-  );
+  return <Tree treeData={treeData as any} fieldNames={{ title: 'nickname', key: 'id', children: 'customChildren' }} />;
 };
 
 export default App;

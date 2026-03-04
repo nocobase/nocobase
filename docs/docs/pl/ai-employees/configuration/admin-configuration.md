@@ -1,10 +1,9 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/ai-employees/configuration/admin-configuration).
 :::
 
-# Pracownik AI · Przewodnik konfiguracji dla administratora
-
 Ten dokument pomoże Panu/Pani szybko zrozumieć, jak skonfigurować i zarządzać Pracownikami AI, prowadząc krok po kroku przez cały proces – od usług modelowych po przydzielanie zadań.
+
 
 ## I. Zanim zaczniemy
 
@@ -16,12 +15,13 @@ Przed przystąpieniem do konfiguracji proszę upewnić się, że środowisko spe
 * Włączona **wtyczka Pracownik AI**
 * Dostępna co najmniej jedna **usługa dużego modelu językowego** (np. OpenAI, Claude, DeepSeek, GLM itp.)
 
+
 ### 2. Zrozumienie dwuwarstwowej architektury Pracowników AI
 
 Pracownicy AI są podzieleni na dwie warstwy: **„Definicja roli”** i **„Dostosowanie zadań”**.
 
 | Warstwa | Opis | Charakterystyka | Funkcja |
-|---|---|---|---|
+| -------- | ------------ | ---------- | ------- |
 | **Definicja roli** | Podstawowa osobowość i kluczowe umiejętności pracownika | Stabilna i niezmienna, jak „CV” | Zapewnia spójność roli |
 | **Dostosowanie zadań** | Konfiguracja dla różnych scenariuszy biznesowych | Elastyczna i regulowana | Dostosowuje się do konkretnych zadań |
 
@@ -32,9 +32,10 @@ Pracownicy AI są podzieleni na dwie warstwy: **„Definicja roli”** i **„Do
 
 Korzyści z takiego podejścia to:
 
-* Rola pozostaje stała, ale może być wykorzystywana w różnych scenariuszach
+* Rola pozostaje stała, ale może勝任 być wykorzystywana w różnych scenariuszach
 * Aktualizacja lub zmiana zadań nie wpływa na samego pracownika
 * Kontekst i zadania są niezależne, co ułatwia konserwację
+
 
 ## II. Proces konfiguracji (5 kroków)
 
@@ -42,51 +43,50 @@ Korzyści z takiego podejścia to:
 
 Usługa modelowa jest jak mózg Pracownika AI i musi zostać najpierw skonfigurowana.
 
-> 💡 Szczegółowe instrukcje konfiguracji znajdzie Pan/Pani w: [Konfiguracja usługi LLM](/ai-employees/quick-start/llm-service)
+> 💡 Szczegółowe instrukcje konfiguracji znajdzie Pan/Pani w: [Konfiguracja usługi LLM](/ai-employees/features/llm-service)
 
 **Ścieżka:**
-`Ustawienia systemowe → Pracownik AI → Usługa modelowa`
+`Ustawienia systemowe → Pracownik AI → LLM service`
 
 ![Wejście na stronę konfiguracji](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
 Proszę kliknąć **Dodaj** i wypełnić następujące informacje:
 
 | Element | Opis | Uwagi |
-|---|---|---|
-| Typ interfejsu | Np. OpenAI, Claude itp. | Kompatybilny z usługami używającymi tej samej specyfikacji |
+| ------ | -------------------------- | --------- |
+| Provider | Np. OpenAI, Claude, Gemini, Kimi itp. | Kompatybilny z usługami używającymi tej samej specyfikacji |
 | Klucz API | Klucz dostarczony przez dostawcę usługi | Proszę zachować poufność i regularnie zmieniać |
-| Adres usługi | Endpoint API | Wymaga modyfikacji przy użyciu proxy |
-| Nazwa modelu | Konkretna nazwa modelu (np. gpt-4, claude-opus) | Wpływa na możliwości i koszty |
+| Base URL | API Endpoint (opcjonalnie) | Wymaga modyfikacji przy użyciu proxy |
+| Enabled Models | Rekomendowane modele / Wybór modeli / Ręczne wprowadzanie | Określa zakres modeli dostępnych w czacie |
 
 ![Tworzenie usługi dużego modelu](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-Po konfiguracji proszę **przetestować połączenie**.
+Po konfiguracji proszę użyć `Test flight`, aby **przetestować połączenie**.
 W przypadku niepowodzenia proszę sprawdzić sieć, klucz API lub nazwę modelu.
 
 ![Test połączenia](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
 
+
 ### Krok 2: Tworzenie Pracownika AI
 
-> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Tworzenie Pracownika AI](/ai-employees/quick-start/ai-employees)
+> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Tworzenie Pracownika AI](/ai-employees/features/new-ai-employees)
 
 Ścieżka: `Zarządzanie Pracownikami AI → Utwórz pracownika`
 
 Proszę wypełnić podstawowe informacje:
 
 | Pole | Wymagane | Przykład |
-|---|---|---|
+| ----- | -- | -------------- |
 | Nazwa | ✓ | viz, dex, cole |
 | Pseudonim | ✓ | Viz, Dex, Cole |
 | Status włączenia | ✓ | Włączony |
-| Opis | - | „Ekspert ds. analizy danych” |
+| Biogram | - | „Ekspert ds. analizy danych” |
 | Główny prompt | ✓ | Patrz Przewodnik inżynierii promptów |
 | Wiadomość powitalna | - | „Witaj, jestem Viz…” |
 
 ![Konfiguracja podstawowych informacji](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-Następnie proszę powiązać właśnie skonfigurowaną **usługę modelową**.
-
-![Wiązanie usługi dużego modelu](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+Na etapie tworzenia pracownika konfiguruje się głównie rolę i umiejętności. Konkretny model można wybrać podczas rozmowy za pomocą `Model Switcher`.
 
 **Sugestie dotyczące pisania promptów:**
 
@@ -98,14 +98,15 @@ Następnie proszę powiązać właśnie skonfigurowaną **usługę modelową**.
 > Im jaśniejszy prompt, tym stabilniejsze działanie AI.
 > Może Pan/Pani zapoznać się z [Przewodnikiem inżynierii promptów](./prompt-engineering-guide.md).
 
+
 ### Krok 3: Konfiguracja umiejętności
 
 Umiejętności określają, co pracownik „może robić”.
 
-> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Umiejętności](/ai-employees/advanced/skill)
+> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Umiejętności](/ai-employees/features/tool)
 
 | Typ | Zakres możliwości | Przykład | Poziom ryzyka |
-|---|---|---|---|
+| ---- | ------- | --------- | ------ |
 | Frontend | Interakcja ze stroną | Odczytywanie danych z bloku, wypełnianie formularzy | Niski |
 | Model danych | Zapytania i analiza danych | Statystyki agregowane | Średni |
 | Przepływ pracy | Wykonywanie procesów biznesowych | Niestandardowe narzędzia | Zależy od przepływu pracy |
@@ -115,9 +116,10 @@ Umiejętności określają, co pracownik „może robić”.
 
 * Optymalna liczba umiejętności na pracownika to 3–5
 * Nie zaleca się wybierania wszystkich umiejętności, ponieważ może to prowadzić do zamieszania
-* Proszę wyłączyć automatyczne użycie (Auto usage) przed ważnymi operacjami
+* Dla ważnych operacji zaleca się używanie uprawnienia `Ask` zamiast `Allow`
 
 ![Konfiguracja umiejętności](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+
 
 ### Krok 4: Konfiguracja bazy wiedzy (opcjonalnie)
 
@@ -139,6 +141,7 @@ Wymaga to dodatkowej instalacji wtyczki wektorowej bazy danych.
 * Wsparcie dla pytań i odpowiedzi oraz wyszukiwania w dokumentach
 * Szkolenie asystentów specjalizujących się w danej dziedzinie
 
+
 ### Krok 5: Weryfikacja efektów
 
 Po zakończeniu zobaczy Pan/Pani awatar nowego pracownika w prawym dolnym rogu strony.
@@ -153,6 +156,7 @@ Proszę sprawdzić każdy element:
 
 Jeśli wszystkie punkty są zgodne, konfiguracja zakończyła się sukcesem 🎉
 
+
 ## III. Konfiguracja zadań: Uruchomienie Pracownika AI
 
 Do tej pory zakończyliśmy „tworzenie pracownika”.
@@ -160,7 +164,8 @@ Następnym krokiem jest „przekazanie im pracy”.
 
 Zadania AI definiują zachowanie pracownika na konkretnej stronie lub w bloku.
 
-> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Zadania](/ai-employees/advanced/task)
+> 💡 Szczegółowe instrukcje znajdzie Pan/Pani w: [Zadania](/ai-employees/features/task)
+
 
 ### 1. Zadania na poziomie strony
 
@@ -170,11 +175,11 @@ Dotyczy całego zakresu strony, np. „Analiza danych na tej stronie”.
 `Ustawienia strony → Pracownik AI → Dodaj zadanie`
 
 | Pole | Opis | Przykład |
-|---|---|---|
+| ---- | -------- | --------- |
 | Tytuł | Nazwa zadania | Analiza konwersji etapów |
 | Kontekst | Kontekst bieżącej strony | Strona listy leadów |
 | Domyślna wiadomość | Wstępnie ustawiona rozmowa | „Proszę przeanalizować trendy z tego miesiąca” |
-| Domyślny blok | Automatyczne powiązanie z **kolekcją** | tabela leadów |
+| Domyślny blok | Automatyczne powiązanie z kolekcją | tabela leads |
 | Umiejętności | Dostępne narzędzia | Zapytania o dane, generowanie wykresów |
 
 ![Konfiguracja zadań na poziomie strony](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
@@ -187,144 +192,4 @@ Jeden Pracownik AI może mieć skonfigurowanych wiele zadań, które są prezent
 Sugestie:
 
 * Jedno zadanie powinno koncentrować się na jednym celu
-* Nazwa powinna być jasna i łatwa do zrozumienia
-* Proszę ograniczyć liczbę zadań do 5–7
-
-### 2. Zadania na poziomie bloku
-
-Odpowiednie do operacji na konkretnym bloku, np. „Przetłumacz bieżący formularz”.
-
-**Metoda konfiguracji:**
-
-1. Otworzyć konfigurację akcji bloku
-2. Dodać „Pracownika AI”
-
-![Przycisk Dodaj Pracownika AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
-
-3. Powiązać docelowego pracownika
-
-![Wybór Pracownika AI](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
-
-![Konfiguracja zadań na poziomie bloku](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
-
-| Porównanie | Poziom strony | Poziom bloku |
-|---|---|---|
-| Zakres danych | Cała strona | Bieżący blok |
-| Granularność | Analiza globalna | Szczegółowe przetwarzanie |
-| Typowe zastosowanie | Analiza trendów | Tłumaczenie formularzy, ekstrakcja pól |
-
-## IV. Najlepsze praktyki
-
-### 1. Sugestie dotyczące konfiguracji
-
-| Element | Sugestia | Powód |
-|---|---|---|
-| Liczba umiejętności | 3–5 | Wysoka dokładność, szybka reakcja |
-| Automatyczne użycie | Włączać ostrożnie | Zapobiega przypadkowym operacjom |
-| Długość promptu | 500–1000 znaków | Równowaga między szybkością a jakością |
-| Cel zadania | Pojedynczy i jasny | Zapobiega dezorientacji AI |
-| Przepływ pracy | Używać po hermetyzacji złożonych zadań | Wyższa skuteczność |
-
-### 2. Praktyczne sugestie
-
-**Zaczynać od małych kroków, optymalizować stopniowo:**
-
-1. Najpierw utworzyć podstawowych pracowników (np. Viz, Dex)
-2. Włączyć 1–2 kluczowe umiejętności do testowania
-3. Potwierdzić, że zadania są wykonywane prawidłowo
-4. Następnie stopniowo rozszerzać o więcej umiejętności i zadań
-
-**Ciągły proces optymalizacji:**
-
-1. Uruchomić wersję początkową
-2. Zbieranie opinii użytkowników
-3. Optymalizacja promptów i konfiguracji zadań
-4. Testowanie i cykliczne ulepszanie
-
-## V. Często zadawane pytania
-
-### 1. Etap konfiguracji
-
-**P: Co zrobić, jeśli zapisywanie się nie powiedzie?**
-O: Proszę sprawdzić, czy wszystkie wymagane pola zostały wypełnione, zwłaszcza usługa modelowa i prompt.
-
-**P: Który model powinienem wybrać?**
-
-* Związane z kodem → Claude, GPT-4
-* Związane z analizą → Claude, DeepSeek
-* Wrażliwe na koszty → Qwen, GLM
-* Długi tekst → Gemini, Claude
-
-### 2. Etap użytkowania
-
-**P: Odpowiedź AI jest zbyt wolna?**
-
-* Zmniejszyć liczbę umiejętności
-* Zoptymalizować prompt
-* Sprawdzić opóźnienie usługi modelowej
-* Rozważyć zmianę modelu
-
-**P: Wykonanie zadania jest niedokładne?**
-
-* Prompt jest niewystarczająco jasny
-* Zbyt wiele umiejętności powoduje zamieszanie
-* Podzielić zadanie na mniejsze części, dodać przykłady
-
-**P: Kiedy należy włączyć automatyczne użycie (Auto usage)?**
-
-* Można włączyć dla zadań typu zapytania
-* Zaleca się wyłączenie dla zadań modyfikujących dane
-
-**P: Jak sprawić, by AI przetwarzała konkretny formularz?**
-
-O: W przypadku konfiguracji na poziomie strony, należy ręcznie wybrać blok.
-
-![Ręczne wybieranie bloku](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
-
-W przypadku konfiguracji zadań na poziomie bloku, kontekst danych jest automatycznie wiązany.
-
-## VI. Dalsza lektura
-
-Aby Pracownicy AI byli jeszcze potężniejsi, może Pan/Pani kontynuować lekturę następujących dokumentów:
-
-**Związane z konfiguracją:**
-
-* [Przewodnik inżynierii promptów](./prompt-engineering-guide.md) - Techniki i najlepsze praktyki pisania wysokiej jakości promptów
-* [Konfiguracja usługi LLM](/ai-employees/quick-start/llm-service) - Szczegółowe instrukcje konfiguracji usług dużych modeli
-* [Tworzenie Pracownika AI](/ai-employees/quick-start/ai-employees) - Tworzenie i podstawowa konfiguracja Pracowników AI
-* [Współpraca z Pracownikiem AI](/ai-employees/quick-start/collaborate) - Jak prowadzić efektywne rozmowy z Pracownikami AI
-
-**Funkcje zaawansowane:**
-
-* [Umiejętności](/ai-employees/advanced/skill) - Dogłębne zrozumienie konfiguracji i użycia różnych umiejętności
-* [Zadania](/ai-employees/advanced/task) - Zaawansowane techniki konfiguracji zadań
-* [Wybór bloku](/ai-employees/advanced/pick-block) - Jak przypisać bloki danych Pracownikom AI
-* [Źródło danych](/ai-employees/advanced/datasource) - Konfiguracja i zarządzanie **źródłami danych**
-* [Wyszukiwanie w sieci](/ai-employees/advanced/web-search) - Konfiguracja możliwości wyszukiwania w sieci dla Pracowników AI
-
-**Baza wiedzy i RAG:**
-
-* [Przegląd bazy wiedzy AI](/ai-employees/knowledge-base/index) - Wprowadzenie do funkcji bazy wiedzy
-* [Wektorowa baza danych](/ai-employees/knowledge-base/vector-database) - Konfiguracja wektorowej bazy danych
-* [Baza wiedzy](/ai-employees/knowledge-base/knowledge-base) - Jak tworzyć i zarządzać bazą wiedzy
-* [RAG (Retrieval-Augmented Generation)](/ai-employees/knowledge-base/rag) - Zastosowanie technologii RAG
-
-**Integracja z przepływami pracy:**
-
-* [Węzeł LLM - Czat tekstowy](/ai-employees/workflow/nodes/llm/chat) - Użycie czatu tekstowego w **przepływach pracy**
-* [Węzeł LLM - Czat multimodalny](/ai-employees/workflow/nodes/llm/multimodal-chat) - Obsługa wejść multimodalnych, takich jak obrazy i pliki
-* [Węzeł LLM - Strukturalne wyjście](/ai-employees/workflow/nodes/llm/structured-output) - Uzyskiwanie strukturalnych odpowiedzi AI
-
-## Zakończenie
-
-Najważniejsza rzecz podczas konfiguracji Pracowników AI to: **najpierw uruchomić, potem optymalizować**.
-Najpierw proszę sprawić, aby pierwszy pracownik pomyślnie rozpoczął pracę, a następnie stopniowo rozszerzać i dostosowywać.
-
-Kierunki rozwiązywania problemów można ustalić w następującej kolejności:
-
-1. Czy usługa modelowa jest połączona?
-2. Czy liczba umiejętności nie jest zbyt duża?
-3. Czy prompt jest jasny?
-4. Czy cel zadania jest jasno określony?
-
-Postępując krok po kroku, może Pan/Pani zbudować naprawdę efektywny zespół AI.
+* Nazwa powinna

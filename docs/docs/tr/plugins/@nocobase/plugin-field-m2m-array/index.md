@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Many to many (array)"
+displayName: "Koleksiyon alanı: Çoktan çoğa (dizi)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |
-  Allows to create many to many relationships between two models by storing an array of unique keys of the target model.
+  Hedef koleksiyonun benzersiz anahtarlarını bir dizi içinde saklayarak çoktan çoğa ilişkiler kurulmasını destekler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Many to many (array)
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-field-m2m-array/index) bakın.
+:::
+
+# Koleksiyon alanı: Çoktan çoğa (dizi)

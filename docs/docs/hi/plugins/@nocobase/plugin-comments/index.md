@@ -1,15 +1,19 @@
 ---
-displayName: "Comments"
+displayName: "टिप्पणियाँ"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
-isFree: false
-builtIn: false
+  किसी भी Collection के डेटा में टिप्पणी सुविधा जोड़ने के लिए टिप्पणी Collection टेम्पलेट और ब्लॉक प्रदान करता है।
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
-# Comments
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-comments/index) देखें।
+:::
+
+# टिप्पणियाँ

@@ -244,7 +244,7 @@ describe('PageModel', () => {
       listeners['dataSource:dirty']({ dataSourceKey: 'main', resourceNames: ['posts'] });
       await Promise.resolve();
 
-      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive', false);
     });
 
     it('should invoke current tab onActive on mount when view:activated happened before PageModel mounted', () => {

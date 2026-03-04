@@ -1,93 +1,96 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/actions/types/js-action).
 :::
 
-# Azione JS
+# JS Action
 
 ## Introduzione
 
-L'Azione JS viene utilizzata per eseguire JavaScript al clic di un pulsante, consentendo di personalizzare qualsiasi comportamento aziendale. Può essere utilizzata in diverse posizioni, come le barre degli strumenti dei moduli, le barre degli strumenti delle tabelle (a livello di collezione), le righe delle tabelle (a livello di record), per eseguire operazioni come la validazione, la visualizzazione di notifiche, le chiamate API, l'apertura di popup/drawer e l'aggiornamento dei dati.
+JS Action è utilizzato per eseguire JavaScript al clic di un pulsante, personalizzando qualsiasi comportamento aziendale. Può essere utilizzato in posizioni come barre degli strumenti dei moduli, barre degli strumenti delle tabelle (livello collezione), righe delle tabelle (livello record), ecc., per realizzare operazioni come validazione, suggerimenti, chiamate a interfacce, apertura di popup/drawer, aggiornamento dei dati, ecc.
 
 ![jsaction-add-20251029](https://static-docs.nocobase.com/jsaction-add-20251029.png)
 
 ## API del Contesto di Runtime (Uso Comune)
 
-- `ctx.api.request(options)`: Invia una richiesta HTTP.
-- `ctx.openView(viewUid, options)`: Apre una vista configurata (drawer/dialog/pagina).
-- `ctx.message` / `ctx.notification`: Messaggi e notifiche globali.
-- `ctx.t()` / `ctx.i18n.t()`: Internazionalizzazione.
-- `ctx.resource`: Risorsa dati per il contesto a livello di collezione (ad es. barra degli strumenti della tabella), include metodi come `getSelectedRows()` e `refresh()`.
-- `ctx.record`: Il record della riga corrente per il contesto a livello di record (ad es. pulsante della riga della tabella).
-- `ctx.form`: L'istanza del Form AntD per il contesto a livello di modulo (ad es. pulsante della barra degli strumenti del modulo).
-- `ctx.collection`: Metadati della collezione corrente.
-- L'editor di codice supporta i frammenti `Snippets` e l'esecuzione preliminare `Run` (vedere sotto).
+- `ctx.api.request(options)`: Invia una richiesta HTTP;
+- `ctx.openView(viewUid, options)`: Apre una vista configurata (drawer/dialogo/pagina);
+- `ctx.message` / `ctx.notification`: Suggerimenti e notifiche globali;
+- `ctx.t()` / `ctx.i18n.t()`: Internazionalizzazione;
+- `ctx.resource`: Risorsa dati del contesto a livello di collezione (come la barra degli strumenti della tabella, include `getSelectedRows()`, `refresh()`, ecc.);
+- `ctx.record`: Record della riga corrente del contesto a livello di record (come i pulsanti delle righe della tabella);
+- `ctx.form`: Istanza AntD Form del contesto a livello di modulo (come i pulsanti della barra degli strumenti del modulo);
+- `ctx.collection`: Meta-informazioni della collezione corrente;
+- L'editor di codice supporta i frammenti `Snippets` e la pre-esecuzione `Run` (vedere sotto).
 
-- `ctx.requireAsync(url)`: Carica in modo asincrono una libreria AMD/UMD da un URL.
-- `ctx.importAsync(url)`: Importa dinamicamente un modulo ESM da un URL.
 
-> Le variabili effettivamente disponibili possono variare a seconda della posizione del pulsante. L'elenco sopra è una panoramica delle capacità comuni.
+- `ctx.requireAsync(url)`: Carica asincronamente librerie AMD/UMD tramite URL;
+- `ctx.importAsync(url)`: Importa dinamicamente moduli ESM tramite URL;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Librerie comuni integrate come React / ReactDOM / Ant Design / Icone Ant Design / dayjs / lodash / math.js / formula.js, utilizzate per il rendering JSX, l'elaborazione del tempo, la manipolazione dei dati e le operazioni matematiche.
+
+> Le variabili effettivamente disponibili variano a seconda della posizione del pulsante; quella sopra è una panoramica delle capacità comuni.
 
 ## Editor e Frammenti
 
-- `Snippets`: Apre un elenco di frammenti di codice predefiniti che possono essere cercati e inseriti nella posizione corrente del cursore con un solo clic.
-- `Run`: Esegue direttamente il codice corrente e visualizza i log di esecuzione nel pannello `Logs` in basso; supporta `console.log/info/warn/error` e l'evidenziazione degli errori per una facile localizzazione.
+- `Snippets`: Apre l'elenco dei frammenti di codice integrati, ricercabili e inseribili con un clic nella posizione corrente del cursore.
+- `Run`: Esegue direttamente il codice corrente e invia i log di esecuzione al pannello `Logs` in basso; supporta `console.log/info/warn/error` e la localizzazione degli errori con evidenziazione.
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- È possibile utilizzare gli assistenti AI per generare/modificare script: [Assistente AI · Nathan: Ingegnere Frontend](/ai-employees/built-in/ai-coding)
+- È possibile combinare i dipendenti AI per generare/modificare script: [Dipendente AI · Nathan: Ingegnere Frontend](/ai-employees/features/built-in-employee)
 
 ## Casi d'Uso Comuni (Esempi Semplificati)
 
-### 1) Richiesta API e Notifica
+### 1) Richiesta di interfaccia e suggerimenti
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
-ctx.message.success(ctx.t('Richiesta completata'));
-console.log(ctx.t('Dati della risposta:'), resp?.data);
+ctx.message.success(ctx.t('Request finished'));
+console.log(ctx.t('Response data:'), resp?.data);
 ```
 
-### 2) Pulsante della Collezione: Validare la Selezione ed Elaborare
+### 2) Pulsante collezione: validazione della selezione ed elaborazione
 
 ```js
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (!rows.length) {
-  ctx.message.warning(ctx.t('Selezioni i record'));
+  ctx.message.warning(ctx.t('Please select records'));
   return;
 }
-// TODO: Implementare la logica di business…
-ctx.message.success(ctx.t('{n} elementi selezionati', { n: rows.length }));
+// TODO: Esecuzione della logica di business…
+ctx.message.success(ctx.t('Selected {n} items', { n: rows.length }));
 ```
 
-### 3) Pulsante del Record: Leggere il Record della Riga Corrente
+### 3) Pulsante record: lettura del record della riga corrente
 
 ```js
 if (!ctx.record) {
-  ctx.message.error(ctx.t('Nessun record'));
+  ctx.message.error(ctx.t('No record'));
 } else {
-  ctx.message.success(ctx.t('ID Record: {id}', { id: ctx.record.id }))
+  ctx.message.success(ctx.t('Record ID: {id}', { id: ctx.record.id }))
 }
 ```
 
-### 4) Aprire una Vista (Drawer/Dialog)
+### 4) Apertura vista (drawer/dialogo)
 
 ```js
 const popupUid = ctx.model.uid + '-open'; // Si lega al pulsante corrente per stabilità
-await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Dettagli'), size: 'large' });
+await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Details'), size: 'large' });
 ```
 
-### 5) Aggiornare i Dati Dopo l'Invio
+### 5) Aggiornamento dati dopo l'invio
 
 ```js
-// Aggiornamento generale: prioritizza le risorse di tabelle/liste, poi la risorsa del blocco che contiene il modulo
+// Aggiornamento generale: priorità alle risorse di tabelle/liste, poi alla risorsa del blocco in cui si trova il modulo
 if (ctx.resource?.refresh) await ctx.resource.refresh();
 else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refresh();
 ```
 
+
 ## Note
 
-- **Azioni Idempotenti**: Per evitare invii multipli causati da clic ripetuti, può aggiungere un flag di stato nella sua logica o disabilitare il pulsante.
-- **Gestione degli Errori**: Aggiunga blocchi try/catch per le chiamate API e fornisca un feedback intuitivo all'utente.
-- **Interazione con le Viste**: Quando apre un popup/drawer con `ctx.openView`, si consiglia di passare i parametri in modo esplicito e, se necessario, di aggiornare attivamente la risorsa padre dopo un invio riuscito.
+- Idempotenza del comportamento: Eviti invii multipli causati da clic ripetuti; può aggiungere un interruttore di stato o disabilitare il pulsante nella logica.
+- Gestione degli errori: Aggiunga try/catch alle chiamate di interfaccia e fornisca suggerimenti all'utente.
+- Collegamento delle viste: Quando apre popup/drawer tramite `ctx.openView`, si consiglia di passare i parametri in modo esplicito e, se necessario, aggiornare attivamente la risorsa genitore dopo un invio riuscito.
 
 ## Documenti Correlati
 

@@ -1,12 +1,16 @@
 ---
-displayName: "File manager"
+displayName: "מנהל קבצים"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides files storage services with files collection template and attachment field.
+  מספק שירותי אחסון קבצים, ומספק תבנית אוסף קבצים ושדה קובץ מצורף.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-file-manager/index).
+:::
+
+# מנהל קבצים

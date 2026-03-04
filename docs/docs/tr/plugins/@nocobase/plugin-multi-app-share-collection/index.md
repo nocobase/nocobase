@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Multi-app collection paylaşımı"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-multi-app-share-collection/index) bakın.
+:::
 
-> Note: This plugin is deprecated.
+# Multi-app collection paylaşımı
+
+> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).

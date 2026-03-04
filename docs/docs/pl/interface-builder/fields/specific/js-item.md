@@ -1,5 +1,5 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/interface-builder/fields/specific/js-item).
 :::
 
 # JS Item
@@ -22,7 +22,7 @@ JS Item służy do tworzenia „niestandardowych elementów” (niepowiązanych 
 - `ctx.message` / `ctx.notification`: Globalne komunikaty i powiadomienia.
 - `ctx.t()` / `ctx.i18n.t()`: Internacjonalizacja.
 - `ctx.onRefReady(ctx.ref, cb)`: Renderowanie po gotowości kontenera.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Wbudowane biblioteki React, ReactDOM, Ant Design, ikon Ant Design i dayjs, przeznaczone do renderowania JSX i obsługi daty/czasu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` są zachowane dla kompatybilności.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Wbudowane biblioteki React, ReactDOM, Ant Design, ikon Ant Design, dayjs, lodash, math.js i formula.js, przeznaczone do renderowania JSX, obsługi daty/czasu, operacji na danych i obliczeń matematycznych. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` są zachowane dla kompatybilności.)
 - `ctx.render(vnode)`: Renderuje element React/HTML/DOM do domyślnego kontenera `ctx.element`. Wielokrotne renderowanie spowoduje ponowne użycie Root i nadpisanie istniejącej zawartości kontenera.
 
 ## Edytor i fragmenty kodu
@@ -32,7 +32,7 @@ JS Item służy do tworzenia „niestandardowych elementów” (niepowiązanych 
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Można używać z pracownikiem AI do generowania/modyfikowania skryptów: [Pracownik AI · Nathan: Inżynier Frontendowy](/ai-employees/built-in/ai-coding)
+- Można używać z pracownikiem AI do generowania/modyfikowania skryptów: [Pracownik AI · Nathan: Inżynier Frontendowy](/ai-employees/features/built-in-employee)
 
 ## Typowe zastosowania (uproszczone przykłady)
 

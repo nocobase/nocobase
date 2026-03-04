@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Обзор решения"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Подробное проектирование"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Установка"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Дополнительные материалы"
+  }
+]

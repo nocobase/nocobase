@@ -12,19 +12,20 @@ import { useT } from '../../locale';
 import { Avatar, Popover } from 'antd';
 import {
   useChatMessagesStore,
-  useAIEmployeesData,
+  useAIConfigRepository,
   useChatBoxStore,
   useChatBoxActions,
   ProfileCard,
   avatars,
 } from '@nocobase/plugin-ai/client';
 import type { EditorRef } from '@nocobase/client';
-import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 
-export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx }) => {
+export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = observer(({ ctx }) => {
   const t = useT();
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
   const aiEmployee = aiEmployees?.find((e) => e.username === 'dara');
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
@@ -86,10 +87,14 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx })
   };
 
   React.useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
+
+  React.useEffect(() => {
     setEditorRef(uid, panelRef);
     setCurrentEditorRefUid(uid);
     return () => setEditorRef(uid, null);
-  }, [uid]);
+  }, [uid, setEditorRef, setCurrentEditorRefUid]);
 
   const systemPrompt =
     'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
@@ -159,6 +164,6 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx })
       />
     </Popover>
   );
-};
+});
 
 export default DaraButton;

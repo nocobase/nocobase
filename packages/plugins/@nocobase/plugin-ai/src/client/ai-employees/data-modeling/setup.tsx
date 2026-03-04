@@ -13,10 +13,12 @@ import React, { useMemo, useState } from 'react';
 import { Avatar, Button, Popover } from 'antd';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
 import { isDataModelingAssistant } from '../built-in/utils';
+import { useRequest } from '@nocobase/client';
+import { AIEmployee } from '../types';
 
 export const setupDataModeling = (plugin: PluginAIClient) => {
   const dataSourceManager = plugin.pm.get<PluginDataSourceManagerClient>('data-source-manager');
@@ -27,7 +29,10 @@ export const setupDataModeling = (plugin: PluginAIClient) => {
 
 const AIButton = () => {
   const [focus, setFocus] = useState(false);
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const { data: aiEmployees = [] } = useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
   const currentEmployee = useChatBoxStore.use.currentEmployee();

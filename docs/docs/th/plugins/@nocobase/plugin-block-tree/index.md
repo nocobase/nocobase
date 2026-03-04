@@ -1,14 +1,18 @@
 ---
-displayName: "Block: Tree"
+displayName: "บล็อก: Tree"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Provides tree structure filter block
-isFree: false
-builtIn: false
+  ให้บริการบล็อกตัวกรองที่มีโครงสร้างแบบ Tree
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Tree
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-block-tree/index)
+:::
+
+# บล็อก: Tree

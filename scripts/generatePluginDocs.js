@@ -137,6 +137,20 @@ function generateForPlugin(dir, { isPro }) {
   // Only handle @nocobase scoped plugins
   if (!packageName || !packageName.startsWith('@nocobase/')) return;
   // Skip if no displayName defined in package.json, and delete existing docs if present
+  if (pkgJson.internal) {
+    // 删掉目录
+    const pluginNameToDelete = packageName.split('/')[1];
+    const targetBaseDel = path.join('@nocobase', pluginNameToDelete);
+    for (const lang of LOCALES) {
+      const fileDel = path.join(DOCS_ROOT, lang, 'plugins', targetBaseDel, 'index.md');
+      if (fs.existsSync(fileDel)) {
+        fs.unlinkSync(fileDel);
+      }
+    }
+    // eslint-disable-next-line no-console
+    console.log('Skip (internal):', packageName);
+    return;
+  }
   if (!pkgJson['displayName']) {
     const pluginNameToDelete = packageName.split('/')[1];
     const targetBaseDel = path.join('@nocobase', pluginNameToDelete);

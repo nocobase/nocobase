@@ -1,15 +1,19 @@
 ---
-displayName: "HTTP request encryption"
+displayName: "Enkripsi permintaan HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Encrypts request parameters (Query Parameters) before sending an HTTP request.
+  Digunakan untuk mengenkripsi parameter permintaan (Query Parameters) sebelum mengirimkan permintaan HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# HTTP request encryption
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-request-encryption/index).
+:::
+
+# Enkripsi permintaan HTTP

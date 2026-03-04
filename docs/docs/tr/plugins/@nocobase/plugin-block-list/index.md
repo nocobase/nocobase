@@ -1,12 +1,16 @@
 ---
-displayName: "Block: List"
+displayName: "Blok: Liste"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Display data in a list with pagination support.
+  Verileri liste biçiminde görüntüleyin, sayfalandırma ayarlarını destekler
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: List
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-block-list/index) bakın.
+:::
+
+# Blok: Liste

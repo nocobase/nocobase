@@ -1,12 +1,16 @@
 ---
-displayName: "Authentication"
+displayName: "Autenticazione"
 packageName: '@nocobase/plugin-auth'
 description: |
-  User authentication management, including password, SMS, and support for Single Sign-On (SSO) protocols, with extensibility.
+  Gestione dell'autenticazione utente, inclusa l'autenticazione tramite password, SMS e protocolli SSO, estensibile.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Authentication
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-auth/index).
+:::
+
+# Autenticazione

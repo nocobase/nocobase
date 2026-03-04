@@ -26,7 +26,7 @@ export class RootPageModel extends PageModel {
           const firstTab = this.subModels.tabs?.[0];
           if (firstTab) {
             this.setProps('tabActiveKey', firstTab.uid);
-            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive');
+            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive', true);
           }
         }
         if (this.context.pageActive.value === false) {

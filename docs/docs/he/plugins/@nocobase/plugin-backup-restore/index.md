@@ -1,8 +1,8 @@
 ---
-displayName: "App backup & restore (deprecated)"
+displayName: "גיבוי ושחזור אפליקציה (מיושן)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
-  Backup and restore applications for scenarios such as application replication, migration, and upgrades.
+  גיבוי ושחזור אפליקציות, ניתן לשימוש עבור תרחישים כגון שכפול, נדידה ושדרוג של אפליקציות.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# App backup & restore (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-backup-restore/index).
+:::
 
-> Note: This plugin is deprecated.
+# גיבוי ושחזור אפליקציה (מיושן)
+
+> הערה: תוסף זה מיושן (deprecated).

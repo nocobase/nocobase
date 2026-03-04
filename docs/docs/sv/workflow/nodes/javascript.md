@@ -1,22 +1,22 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
-:::
 
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/workflow/nodes/javascript).
+:::
 
 # JavaScript-skript
 
 ## Introduktion
 
-JavaScript-skriptnoden låter dig köra ett anpassat JavaScript-skript på serversidan inom ett arbetsflöde. Skriptet kan använda variabler från tidigare steg i arbetsflödet som parametrar, och dess returvärde kan sedan användas av efterföljande noder.
+JavaScript-skriptnoden tillåter användare att exekvera ett anpassat JavaScript-skript på serversidan i ett arbetsflöde. Variabler från uppströms i flödet kan användas som parametrar i skriptet, och skriptets returvärde kan tillhandahållas till nedströms noder för användning.
 
-Skriptet körs i en arbetstråd på NocoBase-applikationens server och stöder de flesta Node.js-funktioner. Det finns dock vissa skillnader jämfört med en inbyggd exekveringsmiljö. För mer information, se [Funktionslista](#funktionslista).
+Skriptet körs i en arbetstråd på NocoBase-applikationens server och stöder de flesta funktionerna i Node.js, men det finns fortfarande vissa skillnader från den ursprungliga exekveringsmiljön, se [Funktionslista](#funktionslista) för detaljer.
 
-## Skapa en nod
+## Skapa nod
 
-I konfigurationsgränssnittet för arbetsflödet klickar du på plusknappen ("+") i flödet för att lägga till en "JavaScript"-nod:
+I konfigurationsgränssnittet för arbetsflödet, klicka på plusknappen ("+") i flödet för att lägga till en ”JavaScript”-nod:
 
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
 
@@ -26,65 +26,65 @@ I konfigurationsgränssnittet för arbetsflödet klickar du på plusknappen ("+"
 
 ### Parametrar
 
-Används för att skicka variabler eller statiska värden från arbetsflödets kontext till skriptet, för användning i kodlogiken. `name` är parameternamnet, som blir variabelnamnet när det skickas till skriptet. `value` är parametervärdet, som kan vara en variabel eller en konstant.
+Används för att skicka in variabler från arbetsflödets kontext eller statiska värden till skriptet för användning i kodlogiken. Där är `name` parameternamnet, vilket fungerar som variabelnamn efter att det skickats till skriptet. `value` är parametervärdet, där ni kan välja en variabel eller ange en konstant.
 
 ### Skriptinnehåll
 
-Skriptinnehållet kan betraktas som en funktion. Du kan skriva vilken JavaScript-kod som helst som stöds i Node.js-miljön och använda `return`-satsen för att returnera ett värde som nodens exekveringsresultat, vilket sedan kan användas som en variabel av efterföljande noder.
+Skriptinnehållet kan ses som en funktion. Ni kan skriva vilken JavaScript-kod som helst som stöds i Node.js-miljön, och ni kan använda `return`-satsen för att returnera ett värde som nodens körresultat, vilket kan användas som en variabel av efterföljande noder.
 
-När du har skrivit koden kan du klicka på testknappen under redigeraren för att öppna en dialogruta för testkörning. Där kan du fylla i parametrar med statiska värden för en simulerad körning. Efter körningen kan du se returvärdet och utdata (loggen) i dialogrutan.
+Efter att ha skrivit koden kan ni via testknappen under redigeringsrutan öppna en dialogruta för testkörning och använda statiska värden för att fylla i parametrar för simulerad exekvering. Efter exekvering kan ni se returvärdet och utdata (logg) i dialogrutan.
 
 ![20241202203833](https://static-docs.nocobase.com/20241202203833.png)
 
-### Tidsgränsinställning
+### Timeout-inställning
 
-Enheten är millisekunder. Ett värde på `0` innebär att ingen tidsgräns är inställd.
+Enheten beräknas i millisekunder. När den är inställd på `0` innebär det att ingen timeout är inställd.
 
-### Fortsätt arbetsflödet vid fel
+### Fortsätt arbetsflödet efter fel
 
-Om du markerar detta kommer efterföljande noder att fortsätta exekveras även om skriptet stöter på ett fel eller om en tidsgräns överskrids.
+Om detta är markerat kommer efterföljande noder fortfarande att exekveras även om skriptet stöter på ett fel eller ett timeout-fel.
 
 :::info{title="Tips"}
-Om skriptet misslyckas kommer det inte att ha något returvärde, och nodens resultat fylls med felmeddelandet. Om efterföljande noder använder resultatvariabeln från skriptnoden, bör detta hanteras med försiktighet.
+Om skriptet felar kommer det inte att finnas något returvärde, och nodens resultat kommer att fyllas med felinformation. Om efterföljande noder använder resultatvariabeln från skriptnoden måste ni hantera detta med försiktighet.
 :::
 
 ## Funktionslista
 
 ### Node.js-version
 
-Samma som Node.js-versionen som kör huvudapplikationen.
+Samma som den Node.js-version som kör huvudapplikationen.
 
 ### Modulstöd
 
-Moduler kan användas i skriptet med vissa begränsningar, i enlighet med CommonJS, genom att använda `require()`-direktivet för att importera moduler.
+I skriptet kan moduler användas med begränsningar, i enlighet med CommonJS, där koden använder instruktionen `require()` för att importera moduler.
 
-Stöder inbyggda Node.js-moduler och moduler installerade i `node_modules` (inklusive beroenden som redan används av NocoBase). Moduler som ska vara tillgängliga för koden måste deklareras i applikationens miljövariabel `WORKFLOW_SCRIPT_MODULES`, där flera paketnamn separeras med kommatecken, till exempel:
+Stöder inbyggda Node.js-moduler och moduler installerade i `node_modules` (inklusive beroendepaket som redan används av NocoBase). Moduler som ska tillhandahållas koden måste deklareras i applikationens miljövariabel `WORKFLOW_SCRIPT_MODULES`, där flera paketnamn separeras med kommatecken, till exempel:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
 :::info{title="Tips"}
-Moduler som inte deklarerats i miljövariabeln `WORKFLOW_SCRIPT_MODULES` kan **inte** användas i skriptet, även om de är inbyggda i Node.js eller redan installerade i `node_modules`. Denna policy kan användas på driftsnivå för att kontrollera vilka moduler användare får använda, och i vissa scenarier förhindra att skript får för höga behörigheter.
+Moduler som inte deklarerats i miljövariabeln `WORKFLOW_SCRIPT_MODULES` kan **inte** användas i skriptet, även om de är inbyggda i Node.js eller redan installerade i `node_modules`. Denna strategi kan användas för att kontrollera listan över moduler som användare kan använda på driftsnivå, för att i vissa scenarier undvika att skript får för höga behörigheter.
 :::
 
-I en miljö som inte är källkodsbaserad, om en modul inte är installerad i `node_modules`, kan du manuellt installera det nödvändiga paketet i `storage`-katalogen. Om du till exempel behöver använda paketet `exceljs` kan du utföra följande steg:
+I miljöer som inte är källkodsbaserade, om en modul inte är installerad i `node_modules`, kan ni manuellt installera de nödvändiga paketen i katalogen `storage`. Om ni till exempel behöver använda paketet `exceljs` kan ni utföra följande åtgärder:
 
 ```shell
 cd storage
 npm i --no-save --no-package-lock --prefix . exceljs
 ```
 
-Lägg sedan till paketets relativa (eller absoluta) sökväg, baserat på applikationens CWD (aktuell arbetsmapp), till miljövariabeln `WORKFLOW_SCRIPT_MODULES`:
+Lägg sedan till paketets relativa (eller absoluta) sökväg baserat på applikationens CWD (aktuell arbetskatalog) i miljövariabeln `WORKFLOW_SCRIPT_MODULES`:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-Du kan sedan använda paketet `exceljs` i ditt skript:
+Därefter kan ni använda paketet `exceljs` i skriptet (namnet i `require` måste överensstämma exakt med det som definierats i miljövariabeln):
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 
@@ -93,16 +93,16 @@ const ExcelJS = require('exceljs');
 **Stöder inte** globala variabler som `global`, `process`, `__dirname` och `__filename`.
 
 ```js
-console.log(global); // will throw error: "global is not defined"
+console.log(global); // kommer att kasta fel: "global is not defined"
 ```
 
 ### Indataparametrar
 
-Parametrar som konfigurerats i noden blir globala variabler inom skriptet och kan användas direkt. Parametrar som skickas till skriptet stöder endast grundläggande typer, såsom `boolean`, `number`, `string`, `object` och arrayer. Ett `Date`-objekt kommer att konverteras till en sträng i ISO-format när det skickas in. Andra komplexa typer, som instanser av anpassade klasser, kan inte skickas direkt.
+Parametrar som konfigurerats i noden fungerar som globala variabler i skriptet och kan användas direkt. Parametrar som skickas till skriptet stöder endast grundläggande typer, såsom `boolean`, `number`, `string`, `object` och arrayer. `Date`-objekt konverteras till ISO-baserade strängar efter att de skickats in. Andra komplexa typer kan inte skickas direkt, såsom instanser av anpassade klasser.
 
 ### Returvärde
 
-Med `return`-satsen kan du returnera data av grundläggande typer (samma regler som för parametrar) till noden som dess resultat. Om `return`-satsen inte anropas i koden, kommer nodexekveringen inte att ha något returvärde.
+Genom `return`-satsen kan data av grundläggande typ returneras (samma regler som för parametrar) till noden som resultat. Om ingen `return`-sats anropas i koden har nodexekveringen inget returvärde.
 
 ```js
 return 123;
@@ -116,11 +116,11 @@ return 123;
 console.log('hello world!');
 ```
 
-När arbetsflödet exekveras loggas även skriptnodens utdata i den motsvarande arbetsflödets loggfil.
+När arbetsflödet exekveras kommer även skriptnodens utdata att registreras i motsvarande arbetsflödes loggfil.
 
 ### Asynkron
 
-**Stöder** användning av `async` för att definiera asynkrona funktioner och `await` för att anropa dem. **Stöder** användning av det globala `Promise`-objektet.
+**Stöder** användning av `async` för att definiera asynkrona funktioner, samt `await` för att anropa asynkrona funktioner. **Stöder** användning av det globala objektet `Promise`.
 
 ```js
 async function test() {
@@ -133,7 +133,7 @@ return value;
 
 ### Timers
 
-För att använda metoder som `setTimeout`, `setInterval` eller `setImmediate` behöver du importera dem från Node.js-paketet `timers`.
+Om ni behöver använda metoder som `setTimeout`, `setInterval` eller `setImmediate`, måste dessa importeras via Node.js-paketet `timers`.
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

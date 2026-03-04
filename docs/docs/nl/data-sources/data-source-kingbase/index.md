@@ -1,16 +1,16 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/data-sources/data-source-kingbase/index) voor nauwkeurige informatie.
 :::
 
-
-# Gegevensbron - KingbaseES-database
+# Gegevensbron - KingbaseES
 
 ## Introductie
 
-U kunt de KingbaseES-database gebruiken als gegevensbron, zowel als primaire database als als externe database.
+Gebruik de KingbaseES-database als gegevensbron; deze kan worden gebruikt als hoofddatabase of als externe database.
 
 :::warning
 Momenteel worden alleen KingbaseES-databases ondersteund die in pg-modus draaien.
@@ -18,16 +18,16 @@ Momenteel worden alleen KingbaseES-databases ondersteund die in pg-modus draaien
 
 ## Installatie
 
-### Gebruiken als primaire database
+### Als hoofddatabase gebruiken
 
-Raadpleeg de installatiedocumentatie voor de installatieprocedures. Het belangrijkste verschil zit in de omgevingsvariabelen.
+Raadpleeg de installatiedocumentatie voor het installatieproces; het verschil zit voornamelijk in de omgevingsvariabelen.
 
 #### Omgevingsvariabelen
 
-Bewerk het .env-bestand om de volgende omgevingsvariabelen toe te voegen of aan te passen:
+Pas het .env-bestand aan om de volgende relevante configuraties voor omgevingsvariabelen toe te voegen of te wijzigen:
 
 ```bash
-# Pas de DB-parameters aan waar nodig
+# Pas de DB-gerelateerde parameters aan op basis van de werkelijke situatie
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -105,9 +105,9 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e TZ=Asia/Shanghai
 ```
 
-### Gebruiken als externe database
+### Als externe database gebruiken
 
-Voer het installatie- of upgradecommando uit:
+Voer het installatie- of upgradecommando uit
 
 ```bash
 yarn nocobase install
@@ -121,5 +121,5 @@ Activeer de plugin
 
 ## Gebruikershandleiding
 
-- Primaire database: Raadpleeg de [Hoofdgegevensbron](/data-sources/data-source-main/)
-- Externe database: Zie [Gegevensbron / Externe database](/data-sources/data-source-manager/external-database)
+- Hoofddatabase: Raadpleeg Hoofdgegevensbron
+- Externe database: Raadpleeg [Gegevensbron / Externe database](/data-sources/data-source-manager/external-database)

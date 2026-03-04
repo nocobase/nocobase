@@ -180,6 +180,7 @@ export abstract class LLMProvider {
       options,
     };
   }
+
   async testFlight(): Promise<{ status: 'success' | 'error'; code: number; message?: string }> {
     try {
       const result = await this.chatModel.invoke('hello');
@@ -218,6 +219,10 @@ export abstract class LLMProvider {
 
   parseResponseMetadata(output: LLMResult): any {
     return [null, null];
+  }
+
+  parseResponseError(err) {
+    return err?.message ?? 'Unexpected LLM service error';
   }
 }
 

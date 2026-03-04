@@ -1,12 +1,16 @@
 ---
-displayName: "Notification manager"
+displayName: "إدارة الإشعارات"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
+  يوفر خدمة إدارة موحدة تشمل تكوين القنوات، وتسجيل السجلات، وغيرها من الميزات، مع دعم تكوين قنوات إشعار متنوعة، بما في ذلك الرسائل داخل التطبيق والبريد الإلكتروني.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification manager
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-notification-manager/index).
+:::
+
+# إدارة الإشعارات

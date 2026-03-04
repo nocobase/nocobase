@@ -1,38 +1,38 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/fields/specific/js-item).
 :::
 
 # JS Item
 
 ## Introduzione
 
-JS Item è utilizzato per gli "elementi personalizzati" (non collegati a un campo) all'interno di un modulo. È possibile usare JavaScript/JSX per renderizzare qualsiasi contenuto (come suggerimenti, statistiche, anteprime, pulsanti, ecc.) e interagire con il modulo e il contesto del record. È ideale per scenari come anteprime in tempo reale, suggerimenti esplicativi e piccoli componenti interattivi.
+JS Item viene utilizzato per gli "elementi personalizzati" (non legati a un campo) nei moduli. È possibile utilizzare JavaScript/JSX per renderizzare qualsiasi contenuto (suggerimenti, statistiche, anteprime, pulsanti, ecc.) e interagire con il modulo e il contesto del record; è adatto per scenari come anteprime in tempo reale, suggerimenti esplicativi, piccoli componenti interattivi, ecc.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
-## API del contesto di runtime (le più usate)
+## API del contesto di runtime (comuni)
 
--   `ctx.element`: Il contenitore DOM (ElementProxy) dell'elemento corrente, supporta `innerHTML`, `querySelector`, `addEventListener`, ecc.
--   `ctx.form`: L'istanza del modulo AntD, che consente operazioni come `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, ecc.
--   `ctx.blockModel`: Il modello del blocco del modulo a cui appartiene, che può ascoltare `formValuesChange` per implementare il collegamento.
--   `ctx.record` / `ctx.collection`: Il record corrente e i metadati della collezione (disponibili in alcuni scenari).
--   `ctx.requireAsync(url)`: Carica in modo asincrono una libreria AMD/UMD tramite URL.
--   `ctx.importAsync(url)`: Importa dinamicamente un modulo ESM tramite URL.
--   `ctx.openView(viewUid, options)`: Apre una vista configurata (drawer/dialog/pagina).
--   `ctx.message` / `ctx.notification`: Messaggio e notifica globali.
--   `ctx.t()` / `ctx.i18n.t()`: Internazionalizzazione.
--   `ctx.onRefReady(ctx.ref, cb)`: Esegue il rendering dopo che il contenitore è pronto.
--   `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Librerie integrate come React, ReactDOM, Ant Design, icone di Ant Design e dayjs, utili per il rendering JSX e la gestione di date/ore. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenuti per compatibilità.)
--   `ctx.render(vnode)`: Esegue il rendering di un elemento React/HTML/DOM nel contenitore predefinito `ctx.element`. Renderizzazioni multiple riutilizzeranno la Root e sovrascriveranno il contenuto esistente del contenitore.
+- `ctx.element`: Contenitore DOM dell'elemento corrente (ElementProxy), supporta `innerHTML`, `querySelector`, `addEventListener`, ecc.;
+- `ctx.form`: Istanza del modulo AntD, consente `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, ecc.;
+- `ctx.blockModel`: Modello del blocco del modulo in cui si trova, può ascoltare `formValuesChange` per implementare il collegamento;
+- `ctx.record` / `ctx.collection`: Record corrente e metadati della collezione (disponibili in alcuni scenari);
+- `ctx.requireAsync(url)`: Carica in modo asincrono una libreria AMD/UMD tramite URL;
+- `ctx.importAsync(url)`: Importa dinamicamente un modulo ESM tramite URL;
+- `ctx.openView(viewUid, options)`: Apre una vista configurata (drawer/dialogo/pagina);
+- `ctx.message` / `ctx.notification`: Suggerimenti e notifiche globali;
+- `ctx.t()` / `ctx.i18n.t()`: Internazionalizzazione;
+- `ctx.onRefReady(ctx.ref, cb)`: Esegue il rendering dopo che il contenitore è pronto;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Librerie integrate come React, ReactDOM, Ant Design, icone di Ant Design, dayjs, lodash, math.js e formula.js, utilizzate per il rendering JSX, l'elaborazione del tempo, la manipolazione dei dati e le operazioni matematiche. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenuti per compatibilità.)
+- `ctx.render(vnode)`: Rende l'elemento React/HTML/DOM nel contenitore predefinito `ctx.element`; i rendering multipli riutilizzeranno la Root e sovrascriveranno il contenuto esistente del contenitore.
 
-## Editor e Snippet
+## Editor e frammenti
 
--   `Snippets`: Apre un elenco di snippet di codice predefiniti, consentendo di cercarli e inserirli nella posizione corrente del cursore con un clic.
--   `Run`: Esegue direttamente il codice corrente e visualizza i log di esecuzione nel pannello `Logs` in basso. Supporta `console.log/info/warn/error` e l'evidenziazione degli errori.
+- `Snippets`: Apre l'elenco dei frammenti di codice integrati, consente di cercare e inserire con un clic nella posizione corrente del cursore.
+- `Run`: Esegue direttamente il codice corrente e visualizza i log di esecuzione nel pannello `Logs` in basso; supporta `console.log/info/warn/error` e l'evidenziazione degli errori.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
--   Può essere utilizzato con l'AI Employee per generare/modificare script: [AI Employee · Nathan: Ingegnere Frontend](/ai-employees/built-in/ai-coding)
+- Può essere combinato con i dipendenti AI per generare o modificare script: [Dipendente AI · Nathan: Ingegnere Frontend](/ai-employees/features/built-in-employee)
 
 ## Usi comuni (esempi semplificati)
 
@@ -80,12 +80,12 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Note
 
--   Si consiglia di utilizzare un CDN affidabile per il caricamento di librerie esterne e di prevedere un fallback per scenari di errore (ad esempio, `if (!lib) return;`).
--   Si raccomanda di dare priorità all'uso di `class` o `[name=...]` per i selettori ed evitare di usare `id` fissi per prevenire duplicati in blocchi/popup multipli.
--   Pulizia degli eventi: Frequenti modifiche ai valori del modulo attiveranno rendering multipli. Prima di associare un evento, è consigliabile pulirlo o deduplicarlo (ad esempio, `remove` prima di `add`, usare `{ once: true }`, o un attributo `dataset` per prevenire duplicati).
+- Si consiglia di utilizzare CDN affidabili per il caricamento di librerie esterne e di gestire gli scenari di errore (ad esempio, `if (!lib) return;`).
+- Si consiglia di dare la priorità all'uso di `class` o `[name=...]` per i selettori, evitando l'uso di `id` fissi per prevenire la duplicazione di `id` in più blocchi o finestre pop-up.
+- Pulizia degli eventi: le frequenti modifiche ai valori del modulo attiveranno più rendering; prima di associare un evento, è necessario pulirlo o rimuovere i duplicati (ad esempio, `remove` prima di `add`, oppure `{ once: true }`, o utilizzare marcatori `dataset` per prevenire ripetizioni).
 
 ## Documentazione correlata
 
--   [Variabili e Contesto](/interface-builder/variables)
--   [Regole di collegamento](/interface-builder/linkage-rule)
--   [Viste e Popup](/interface-builder/actions/types/view)
+- [Variabili e contesto](/interface-builder/variables)
+- [Regole di collegamento](/interface-builder/linkage-rule)
+- [Viste e finestre pop-up](/interface-builder/actions/types/view)

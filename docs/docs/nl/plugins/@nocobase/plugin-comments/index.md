@@ -1,15 +1,19 @@
 ---
-displayName: "Comments"
+displayName: "Reacties"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides comment collection template and block to add commenting functionality for any collection.
-isFree: false
-builtIn: false
+  Biedt een collectiesjabloon en blok voor reacties om reactiefunctionaliteit toe te voegen aan gegevens van elke collectie.
+isFree: true
+builtIn: true
 defaultEnabled: false
-points: 0
+editionLevel: 0
 ---
 
-# Comments
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-comments/index) voor nauwkeurige informatie.
+:::
+
+# Reacties

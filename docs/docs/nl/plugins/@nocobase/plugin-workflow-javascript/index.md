@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: JavaScript"
+displayName: "Workflow: JavaScript-node"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Execute a piece of JavaScript in an isolated Node.js environment.
-isFree: false
-builtIn: false
+  Voer een stuk JavaScript-code uit in een geïsoleerde omgeving.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: JavaScript
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-workflow-javascript/index) voor nauwkeurige informatie.
+:::
+
+# Workflow: JavaScript-node

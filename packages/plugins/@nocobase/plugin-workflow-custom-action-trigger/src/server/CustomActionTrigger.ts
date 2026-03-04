@@ -273,9 +273,13 @@ export default class CustomActionTrigger extends Trigger {
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions) {
+    const { userId } = values;
+    if (userId == null) {
+      throw new Error('user is not provided');
+    }
     const UserRepo = this.workflow.app.db.getRepository('users');
     const actor = await UserRepo.findOne({
-      filterByTk: values.userId,
+      filterByTk: typeof userId === 'object' ? userId['id'] : userId,
       appends: ['roles'],
     });
     if (!actor) {

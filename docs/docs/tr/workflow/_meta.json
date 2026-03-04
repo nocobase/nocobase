@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "İş Akışları"
+    "label": "İş Akışı"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Tetikleyici",
+    "label": "Tetikleyiciler",
     "collapsed": true,
     "items": [
       {
@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Veri Tablosu Olayı",
+        "label": "Koleksiyon Olayı",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -62,7 +62,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Düğüm",
+    "label": "Düğümler",
     "collapsed": true,
     "items": [
       {
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "Yapay Zeka",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "Büyük Dil Modeli",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -102,7 +102,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Değişken",
+            "label": "Değişkenler",
             "link": "/workflow/nodes/variable"
           },
           {
@@ -132,7 +132,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bitir",
+            "label": "Son",
             "link": "/workflow/nodes/end"
           }
         ]
@@ -160,11 +160,11 @@
       },
       {
         "type": "section-header",
-        "label": "Veri İşlemi",
+        "label": "Veri İşlemleri",
         "items": [
           {
             "type": "custom-link",
-            "label": "Veri Ekle",
+            "label": "Veri Oluştur",
             "link": "/workflow/nodes/create"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Genişletilmiş Tür",
+        "label": "Genişletilmiş Türler",
         "items": [
           {
             "type": "custom-link",
@@ -250,13 +250,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Değişken",
+    "label": "Değişkenler",
     "link": "/workflow/advanced/variables"
   },
   {
     "type": "custom-link",
-    "label": "Yürütme Kaydı",
-    "link": "/workflow/advanced/execution"
+    "label": "Yürütme Kayıtları",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -270,7 +270,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Eklenti Geliştirme",
+    "label": "Genişletme Geliştirme",
     "items": [
       {
         "type": "custom-link",
@@ -279,12 +279,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Tetikleyici Türünü Genişlet",
+        "label": "Tetikleyici Türlerini Genişletme",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Düğüm Türünü Genişlet",
+        "label": "Düğüm Türlerini Genişletme",
         "link": "/workflow/development/node"
       },
       {

@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "تضمين NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
-isFree: false
-builtIn: false
+  تضمين NocoBase في نظام خارجي أو صفحة، مما يجعله جزءاً من ذلك النظام أو تلك الصفحة.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-embed/index).
+:::
+
+# تضمين NocoBase

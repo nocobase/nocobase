@@ -1,5 +1,5 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/interface-builder/fields/specific/js-column).
 :::
 
 # עמודת JS
@@ -23,7 +23,7 @@
 - `ctx.openView(options)`: פותח תצוגה מוגדרת (חלון קופץ/מגירה/עמוד).
 - `ctx.i18n.t()` / `ctx.t()`: בינאום.
 - `ctx.onRefReady(ctx.ref, cb)`: מרנדר לאחר שהמיכל מוכן.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: ספריות מובנות כמו React, ReactDOM, Ant Design, Ant Design Icons ו-dayjs, המשמשות לרינדור JSX וטיפול בזמן-תאריך. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` נשמרים לתאימות לאחור).
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: ספריות מובנות כמו React, ReactDOM, Ant Design, Ant Design Icons, dayjs, lodash, math.js ו-formula.js, המשמשות לרינדור JSX, טיפול בזמן-תאריך, עיבוד נתונים וחישובים מתמטיים. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` נשמרים לתאימות לאחור).
 - `ctx.render(vnode)`: מרנדר אלמנט React/HTML/DOM למיכל ברירת המחדל `ctx.element` (התא הנוכחי). רינדורים מרובים יעשו שימוש חוזר ב-Root וידרסו את התוכן הקיים של המיכל.
 
 ## עורך וקטעי קוד
@@ -37,7 +37,7 @@
 
 באפשרותכם גם להשתמש בעובד AI כדי ליצור קוד:
 
-- [עובד AI · נתן: מהנדס פרונטאנד](/ai-employees/built-in/ai-coding)
+- [עובד AI · Nathan: מהנדס פרונטאנד](/ai-employees/features/built-in-employee)
 
 ## שימושים נפוצים
 

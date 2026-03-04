@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "ソリューションの概要"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "詳細設計"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "インストール"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "その他の内容"
+  }
+]

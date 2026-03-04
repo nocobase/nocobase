@@ -1,5 +1,5 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/template-print/syntax/formatters/time-interval-formatting) voor nauwkeurige informatie.
 :::
 
 ### Tijdinterval formatteren
@@ -17,7 +17,6 @@ Parameters:
 
 ##### Voorbeeld
 ```
-// Voorbeeldomgeving: API-opties { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // Geeft 2 terug
 2000:formatI('seconds')      // Geeft 2 terug
 2000:formatI('s')            // Geeft 2 terug
@@ -25,12 +24,7 @@ Parameters:
 3600000:formatI('hour')      // Geeft 1 terug
 2419200000:formatI('days')   // Geeft 28 terug
 
-// Frans voorbeeld:
-2000:formatI('human')        // Geeft "quelques secondes" terug
-2000:formatI('human+')       // Geeft "dans quelques secondes" terug
--2000:formatI('human+')      // Geeft "il y a quelques secondes" terug
-
-// Engels voorbeeld:
+// Mensvriendelijke weergave:
 2000:formatI('human')        // Geeft "a few seconds" terug
 2000:formatI('human+')       // Geeft "in a few seconds" terug
 -2000:formatI('human+')      // Geeft "a few seconds ago" terug

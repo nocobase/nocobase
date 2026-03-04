@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 const { parentPort, workerData } = require('node:worker_threads');
 const { Script } = require('node:vm');
 const Path = require('node:path');
@@ -7,7 +16,7 @@ let timer = null;
 function customRequire(m) {
   const configuredModules = (process.env.WORKFLOW_SCRIPT_MODULES?.split(',') ?? []).filter(Boolean);
   let mainName;
-  if (m.startsWith('/')) {
+  if (Path.isAbsolute(m)) {
     // absolute path
     mainName = m;
   } else if (m.startsWith('.')) {

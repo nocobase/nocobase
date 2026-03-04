@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Přehled řešení"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Podrobný návrh"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Jak nainstalovat"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "Starší verze CRM (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Více obsahu"
+  }
+]

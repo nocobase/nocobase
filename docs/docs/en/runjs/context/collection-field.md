@@ -1,18 +1,18 @@
 # ctx.collectionField
 
-The collection field (CollectionField) instance for the current RunJS context; used to access field metadata, type, validation rules, and association info. Only present when the field is bound to a collection definition; custom/virtual fields may have `null`.
+The `CollectionField` instance associated with the current RunJS execution context, used to access field metadata, types, validation rules, and association information. It only exists when the field is bound to a collection definition; custom/virtual fields may be `null`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSField** | Use `interface`, `enum`, `targetCollection`, etc. for linkage or validation |
-| **JSItem** | Access metadata of the column’s field in sub-table items |
-| **JSColumn** | Choose render by `collectionField.interface`, or use `targetCollection` |
+|------|------|
+| **JSField** | Perform linkage or validation in form fields based on `interface`, `enum`, `targetCollection`, etc. |
+| **JSItem** | Access metadata of the field corresponding to the current column in sub-table items. |
+| **JSColumn** | Select rendering methods based on `collectionField.interface` or access `targetCollection` in table columns. |
 
-> Note: `ctx.collectionField` is only available when the field is bound to a collection; in standalone JSBlock or actions with no field binding it is usually `undefined`—check before use.
+> Note: `ctx.collectionField` is only available when the field is bound to a Collection definition; it is usually `undefined` in scenarios like JSBlock independent blocks or action events without field binding. It is recommended to check for null values before use.
 
-## Type
+## Type Definition
 
 ```ts
 collectionField: CollectionField | null | undefined;
@@ -21,46 +21,47 @@ collectionField: CollectionField | null | undefined;
 ## Common Properties
 
 | Property | Type | Description |
-|----------|------|-------------|
-| `name` | `string` | Field name (e.g. `status`, `userId`) |
-| `title` | `string` | Field title (i18n) |
-| `type` | `string` | Data type (`string`, `integer`, `belongsTo`, etc.) |
-| `interface` | `string` | UI type (`input`, `select`, `m2o`, `o2m`, `m2m`, etc.) |
-| `collection` | `Collection` | Field’s collection |
-| `targetCollection` | `Collection` | Target collection for association fields only |
-| `target` | `string` | Target collection name (association) |
-| `enum` | `array` | Enum options (select, radio, etc.) |
+|------|------|------|
+| `name` | `string` | Field name (e.g., `status`, `userId`) |
+| `title` | `string` | Field title (including internationalization) |
+| `type` | `string` | Field data type (`string`, `integer`, `belongsTo`, etc.) |
+| `interface` | `string` | Field interface type (`input`, `select`, `m2o`, `o2m`, `m2m`, etc.) |
+| `collection` | `Collection` | The collection the field belongs to |
+| `targetCollection` | `Collection` | The target collection of the association field (only for association types) |
+| `target` | `string` | Target collection name (for association fields) |
+| `enum` | `array` | Enumeration options (select, radio, etc.) |
 | `defaultValue` | `any` | Default value |
-| `collectionName` | `string` | Collection name |
-| `foreignKey` | `string` | Foreign key (e.g. belongsTo) |
-| `sourceKey` | `string` | Source key (e.g. hasMany) |
-| `targetKey` | `string` | Target key |
-| `fullpath` | `string` | Full path (e.g. `main.users.status`) for API/variables |
-| `resourceName` | `string` | Resource name (e.g. `users.status`) |
-| `readonly` | `boolean` | Read-only |
-| `titleable` | `boolean` | Can be used as title |
-| `validation` | `object` | Validation config |
-| `uiSchema` | `object` | UI config |
-| `targetCollectionTitleField` | `CollectionField` | Title field of target collection (association) |
+| `collectionName` | `string` | Name of the collection it belongs to |
+| `foreignKey` | `string` | Foreign key field name (belongsTo, etc.) |
+| `sourceKey` | `string` | Association source key (hasMany, etc.) |
+| `targetKey` | `string` | Association target key |
+| `fullpath` | `string` | Full path (e.g., `main.users.status`), used for API or variable references |
+| `resourceName` | `string` | Resource name (e.g., `users.status`) |
+| `readonly` | `boolean` | Whether it is read-only |
+| `titleable` | `boolean` | Whether it can be displayed as a title |
+| `validation` | `object` | Validation rule configuration |
+| `uiSchema` | `object` | UI configuration |
+| `targetCollectionTitleField` | `CollectionField` | The title field of the target collection (for association fields) |
 
 ## Common Methods
 
 | Method | Description |
-|--------|-------------|
-| `isAssociationField(): boolean` | Whether it is an association (belongsTo, hasMany, hasOne, belongsToMany, etc.) |
-| `isRelationshipField(): boolean` | Whether it is a relationship (o2o, m2o, o2m, m2m, etc.) |
-| `getComponentProps(): object` | Default props for the field component |
-| `getFields(): CollectionField[]` | Fields of target collection (association only) |
-| `getFilterOperators(): object[]` | Filter operators (e.g. `$eq`, `$ne`) |
+|------|------|
+| `isAssociationField(): boolean` | Whether it is an association field (belongsTo, hasMany, hasOne, belongsToMany, etc.) |
+| `isRelationshipField(): boolean` | Whether it is a relationship field (including o2o, m2o, o2m, m2m, etc.) |
+| `getComponentProps(): object` | Get the default props of the field component |
+| `getFields(): CollectionField[]` | Get the field list of the target collection (association fields only) |
+| `getFilterOperators(): object[]` | Get the filter operators supported by this field (e.g., `$eq`, `$ne`, etc.) |
 
 ## Examples
 
-### Branch by field type
+### Branch rendering based on field type
 
 ```ts
 if (!ctx.collectionField) return null;
 const { interface: iface } = ctx.collectionField;
 if (['m2o', 'o2m', 'm2m'].includes(iface)) {
+  // Association field: display associated records
   const target = ctx.collectionField.targetCollection;
   // ...
 } else if (iface === 'select' || iface === 'radioGroup') {
@@ -69,24 +70,24 @@ if (['m2o', 'o2m', 'm2m'].includes(iface)) {
 }
 ```
 
-### Check association and use target collection
+### Determine if it is an association field and access the target collection
 
 ```ts
 if (ctx.collectionField?.isAssociationField()) {
   const targetCol = ctx.collectionField.targetCollection;
   const titleField = targetCol?.titleCollectionField?.name;
-  // ...
+  // Process according to the target collection structure
 }
 ```
 
-### Get enum options
+### Get enumeration options
 
 ```ts
 const options = ctx.collectionField?.enum ?? [];
 const labels = options.map((o) => (typeof o === 'object' ? o.label : o));
 ```
 
-### Conditional render by readonly
+### Conditional rendering based on read-only/view mode
 
 ```ts
 const { Input } = ctx.libs.antd;
@@ -97,34 +98,35 @@ if (ctx.collectionField?.readonly) {
 }
 ```
 
-### Title field of target collection
+### Get the title field of the target collection
 
 ```ts
+// When displaying an association field, use targetCollectionTitleField to get the title field name
 const titleField = ctx.collectionField?.targetCollectionTitleField;
 const titleKey = titleField?.name ?? 'title';
 const assocValue = ctx.getValue?.() ?? ctx.record?.[ctx.collectionField?.name];
 const label = assocValue?.[titleKey];
 ```
 
-## Relation to ctx.collection
+## Relationship with ctx.collection
 
-| Need | Recommended |
-|------|-------------|
-| **Collection of current field** | `ctx.collectionField?.collection` or `ctx.collection` |
+| Requirement | Recommended Usage |
+|------|----------|
+| **Current field's collection** | `ctx.collectionField?.collection` or `ctx.collection` |
 | **Field metadata (name, type, interface, enum, etc.)** | `ctx.collectionField` |
 | **Target collection** | `ctx.collectionField?.targetCollection` |
 
-`ctx.collection` is usually the block’s collection; `ctx.collectionField` is the field definition; they can differ in sub-tables and associations.
+`ctx.collection` usually represents the collection bound to the current block; `ctx.collectionField` represents the definition of the current field in the collection. In scenarios like sub-tables or association fields, the two may differ.
 
 ## Notes
 
-- In **JSBlock**, **JSAction (no field binding)**, `ctx.collectionField` is usually `undefined`; use optional chaining.
-- Custom JS fields not bound to a collection field may have `ctx.collectionField` as `null`.
-- `targetCollection` exists only for association fields (m2o, o2m, m2m); `enum` only for select, radioGroup, etc.
+- In scenarios such as **JSBlock** or **JSAction (without field binding)**, `ctx.collectionField` is usually `undefined`. It is recommended to use optional chaining before access.
+- If a custom JS field is not bound to a collection field, `ctx.collectionField` may be `null`.
+- `targetCollection` only exists for association type fields (e.g., m2o, o2m, m2m); `enum` only exists for fields with options like select or radioGroup.
 
 ## Related
 
-- [ctx.collection](./collection.md): collection for current context
-- [ctx.model](./model.md): model for current execution context
-- [ctx.blockModel](./block-model.md): parent block
-- [ctx.getValue()](./get-value.md), [ctx.setValue()](./set-value.md): read/write current field value
+- [ctx.collection](./collection.md): Collection associated with the current context
+- [ctx.model](./model.md): Model where the current execution context is located
+- [ctx.blockModel](./block-model.md): Parent block carrying the current JS
+- [ctx.getValue()](./get-value.md), [ctx.setValue()](./set-value.md): Read and write the current field value

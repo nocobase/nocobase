@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Visão geral da solução"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Design detalhado"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Como instalar"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "CRM legado (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Mais conteúdo"
+  }
+]

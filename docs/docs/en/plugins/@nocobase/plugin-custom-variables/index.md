@@ -5,8 +5,8 @@ supportedVersions:
   - 1.x
 description: |
   Support for adding and using custom variables
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

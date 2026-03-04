@@ -1,0 +1,22 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Огляд рішення"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Детальний дизайн"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Встановлення"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Більше вмісту"
+  }
+]

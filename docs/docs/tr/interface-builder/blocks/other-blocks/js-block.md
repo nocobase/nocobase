@@ -1,51 +1,50 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/interface-builder/blocks/other-blocks/js-block) bakın.
 :::
 
-
-# JS Bloğu
+# JS Block Bloğu
 
 ## Giriş
 
-JS Bloğu, arayüzler oluşturmak, olayları bağlamak, veri API'lerini çağırmak veya üçüncü taraf kütüphaneleri entegre etmek için doğrudan JavaScript betikleri yazmanıza olanak tanıyan son derece esnek bir "özel oluşturma bloğudur". Yerleşik bloklarla kapsanması zor olan kişiselleştirilmiş görselleştirmeler, geçici denemeler ve hafif genişletme senaryoları için idealdir.
+JS Block, arayüzler oluşturmak, olayları bağlamak, veri arayüzlerini çağırmak veya üçüncü taraf kütüphaneleri entegre etmek için doğrudan JavaScript betikleri yazmanıza olanak tanıyan son derece esnek bir "özel oluşturma bloğudur". Yerleşik blokların kapsayamadığı kişiselleştirilmiş görselleştirme, geçici denemeler ve hafif genişletme senaryoları için uygundur.
 
 ## Çalışma Zamanı Bağlamı API'si
 
-JS Bloğu'nun çalışma zamanı bağlamına yaygın yetenekler enjekte edilmiştir ve doğrudan kullanılabilir:
+JS Block'un çalışma zamanı bağlamına yaygın yetenekler enjekte edilmiştir ve bunlar doğrudan kullanılabilir:
 
-- `ctx.element`: Bloğun DOM kapsayıcısı (ElementProxy olarak güvenli bir şekilde sarmalanmıştır), `innerHTML`, `querySelector`, `addEventListener` vb. destekler;
-- `ctx.requireAsync(url)`: Bir AMD/UMD kütüphanesini URL'ye göre eşzamansız olarak yükler;
-- `ctx.importAsync(url)`: Bir ESM modülünü URL'ye göre dinamik olarak içe aktarır;
-- `ctx.openView`: Yapılandırılmış bir görünümü (açılır pencere/çekmece/sayfa) açar;
-- `ctx.useResource(...)` + `ctx.resource`: Verilere bir kaynak olarak erişir;
+- `ctx.element`: Bloğun DOM kapsayıcısı (güvenli bir şekilde sarmalanmış ElementProxy); `innerHTML`, `querySelector`, `addEventListener` vb. destekler;
+- `ctx.requireAsync(url)`: URL'ye göre AMD/UMD kütüphanelerini eşzamansız olarak yükler;
+- `ctx.importAsync(url)`: URL'ye göre ESM modüllerini dinamik olarak içe aktarır;
+- `ctx.openView`: Yapılandırılmış görünümü (açılır pencere/çekmece/sayfa) açar;
+- `ctx.useResource(...)` + `ctx.resource`: Verilere kaynak yöntemiyle erişir;
 - `ctx.i18n.t()` / `ctx.t()`: Yerleşik uluslararasılaştırma yeteneği;
 - `ctx.onRefReady(ctx.ref, cb)`: Zamanlama sorunlarını önlemek için kapsayıcı hazır olduktan sonra oluşturur;
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: JSX oluşturma ve zaman işleme için yerleşik React, ReactDOM, Ant Design, Ant Design ikonları ve dayjs gibi genel kütüphaneler. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` uyumluluk için hala korunmaktadır.)
-- `ctx.render(vnode)`: Bir React öğesini, HTML dizesini veya DOM düğümünü varsayılan kapsayıcı `ctx.element`'e oluşturur; birden fazla çağrı aynı React Root'u yeniden kullanır ve kapsayıcının mevcut içeriğini üzerine yazar.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: JSX oluşturma, zaman işleme, veri işlemleri ve matematiksel hesaplamalar için yerleşik React / ReactDOM / Ant Design / Ant Design İkonları / dayjs / lodash / math.js / formula.js gibi genel kütüphaneler. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` uyumluluk için hala korunmaktadır.)
+- `ctx.render(vnode)`: React öğesini, HTML dizesini veya DOM düğümünü varsayılan kapsayıcı `ctx.element` içine oluşturur; birden fazla çağrı aynı React Root'u yeniden kullanır ve kapsayıcının mevcut içeriğinin üzerine yazar.
 
 ## Blok Ekleme
 
-Bir sayfaya veya açılır pencereye bir JS Bloğu ekleyebilirsiniz.
+- Sayfalara veya açılır pencerelere JS Block eklenebilir.
 ![jsblock-add-20251029](https://static-docs.nocobase.com/jsblock-add-20251029.png)
 
 ## Düzenleyici ve Kod Parçacıkları
 
-JS Bloğu'nun betik düzenleyicisi; sözdizimi vurgulama, hata ipuçları ve yerleşik kod parçacıklarını (Snippets) destekler. Bu sayede grafik oluşturma, düğme olaylarını bağlama, harici kütüphaneleri yükleme, React/Vue bileşenlerini oluşturma, zaman çizelgeleri, bilgi kartları gibi yaygın örnekleri hızlıca ekleyebilirsiniz.
+JS Block betik düzenleyicisi; sözdizimi vurgulama, hata ipuçları ve yerleşik kod parçacıklarını (Snippets) destekler. Grafik oluşturma, düğme olaylarını bağlama, harici kütüphaneleri yükleme, React/Vue bileşenlerini oluşturma, zaman çizelgesi, bilgi kartları gibi yaygın örnekleri hızlıca ekleyebilirsiniz.
 
-- `Snippets`: Yerleşik kod parçacıkları listesini açar. Seçilen parçacığı arayabilir ve tek tıklamayla kod düzenleme alanındaki mevcut imleç konumuna ekleyebilirsiniz.
-- `Run`: Mevcut düzenleyicideki kodu doğrudan çalıştırır ve çalışma günlüklerini alttaki `Logs` paneline çıkarır. `console.log/info/warn/error` mesajlarını görüntülemeyi destekler; hatalar vurgulanır ve belirli satır ve sütunlara konumlandırılabilir.
+- `Snippets`: Yerleşik kod parçacıkları listesini açar; arama yapabilir ve seçilen parçacığı imlecin bulunduğu konuma tek tıklamayla ekleyebilirsiniz.
+- `Run`: Düzenleyicideki kodu doğrudan çalıştırır ve çalışma günlüklerini alttaki `Logs` paneline aktarır. `console.log/info/warn/error` görüntülemeyi destekler; hatalar vurgulanır ve ilgili satır/sütuna konumlandırılabilir.
 
 ![jsblock-toolbars-20251029](https://static-docs.nocobase.com/jsblock-toolbars-20251029.png)
 
-Ayrıca, düzenleyicinin sağ üst köşesinden yapay zeka çalışanı "Ön Uç Mühendisi · Nathan"ı doğrudan çağırabilirsiniz. Nathan, mevcut bağlama göre betik yazmanıza veya değiştirmenize yardımcı olabilir. Tek tıklamayla "Apply to editor" (Düzenleyiciye Uygula) seçeneğiyle düzenleyiciye uyguladıktan sonra çalıştırıp etkisini görebilirsiniz. Ayrıntılar için bakınız:
+Ayrıca, düzenleyicinin sağ üst köşesinden AI çalışanı "Ön Uç Mühendisi · Nathan"ı doğrudan çağırabilirsiniz. Nathan, mevcut bağlama göre betik yazmanıza veya düzenlemenize yardımcı olur; "Apply to editor" ile tek tıklamayla uygulayıp sonucu görebilirsiniz. Ayrıntılar için bakınız:
 
-- [Yapay Zeka Çalışanı · Nathan: Ön Uç Mühendisi](/ai-employees/built-in/ai-coding)
+- [AI Çalışanı · Nathan: Ön Uç Mühendisi](/ai-employees/features/built-in-employee)
 
 ## Çalışma Ortamı ve Güvenlik
 
-- **Kapsayıcı**: Sistem, betik için güvenli bir DOM kapsayıcısı (`ctx.element`, ElementProxy) sağlar. Bu kapsayıcı yalnızca mevcut bloğu etkiler ve sayfanın diğer alanlarına müdahale etmez.
-- **Korumalı Alan (Sandbox)**: Betik kontrollü bir ortamda çalışır. `window`/`document`/`navigator` güvenli proxy nesneleri kullanır, bu sayede yaygın API'ler kullanılabilirken riskli davranışlar kısıtlanmıştır.
-- **Yeniden Oluşturma**: Blok gizlendikten sonra tekrar gösterildiğinde otomatik olarak yeniden oluşturulur (ilk bağlamanın tekrar çalıştırılmasını önlemek için).
+- Kapsayıcı: Sistem, betik için güvenli bir DOM kapsayıcısı `ctx.element` (ElementProxy) sağlar; yalnızca mevcut bloğu etkiler, sayfanın diğer alanlarına müdahale etmez.
+- Sandbox: Betik kontrollü bir ortamda çalışır; `window`/`document`/`navigator` güvenli proxy nesneleri kullanır, yaygın API'ler kullanılabilir ancak riskli davranışlar kısıtlanmıştır.
+- Yeniden Oluşturma: Blok gizlenip tekrar gösterildiğinde otomatik olarak yeniden oluşturulur (ilk montajın tekrarlanmasını önlemek için).
 
 ## Yaygın Kullanım (Basitleştirilmiş Örnekler)
 
@@ -104,8 +103,8 @@ ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JS
 ## Notlar
 
 - Harici kütüphaneleri yüklemek için güvenilir CDN'ler kullanmanız önerilir.
-- **Seçici Kullanım Önerisi**: Öncelikli olarak `class` veya `[name=...]` nitelik seçicilerini kullanın; birden fazla blok/açılır pencerede yinelenen `id`'lerin stil veya olay çakışmalarına yol açmasını önlemek için sabit `id`'ler kullanmaktan kaçının.
-- **Olay Temizliği**: Blok birden çok kez yeniden oluşturulabilir, bu nedenle olayları bağlamadan önce temizlenmeli veya yinelenenler kaldırılmalıdır. Tekrarlanan tetiklemeleri önlemek için "önce kaldır sonra ekle" yaklaşımını, tek seferlik dinleyicileri veya tekrarı önlemek için bir işaret eklemeyi kullanabilirsiniz.
+- Seçici kullanım önerisi: Öncelikli olarak `class` veya `[name=...]` nitelik seçicilerini kullanın; birden fazla blok/açılır pencerede yinelenen `id`'lerin stil veya olay çakışmalarına yol açmasını önlemek için sabit `id` kullanmaktan kaçının.
+- Olay temizliği: Blok birden çok kez yeniden oluşturulabilir, bu nedenle olayları bağlamadan önce temizlenmeli veya yinelenenler kaldırılmalıdır. "Önce kaldır sonra ekle" yaklaşımını, tek seferlik dinleyicileri veya tekrarı önlemek için bir işaret eklemeyi kullanabilirsiniz.
 
 ## İlgili Belgeler
 

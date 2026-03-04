@@ -1,15 +1,19 @@
 ---
-displayName: "Custom brand"
+displayName: "Özel Marka"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Customize the brand name and more brand-related information.
+  Marka adını ve markayla ilgili daha fazla bilgiyi özelleştirmenize olanak tanır.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Custom brand
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-custom-brand/index) bakın.
+:::
+
+# Özel Marka

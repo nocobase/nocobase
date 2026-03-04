@@ -10,7 +10,7 @@
 import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { Input, Empty, Spin, App } from 'antd';
 import { Conversations as AntConversations } from '@ant-design/x';
-import { SchemaComponent, useAPIClient, useActionContext } from '@nocobase/client';
+import { SchemaComponent, useAPIClient, useActionContext, useRequest } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { useT } from '../../locale';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
@@ -23,7 +23,8 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useChatBoxStore } from './stores/chat-box';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
+import { AIEmployee } from '../types';
 
 const useCloseActionProps = () => {
   const { setVisible } = useActionContext();
@@ -131,7 +132,11 @@ export const Conversations: React.FC = memo(() => {
   const t = useT();
   const api = useAPIClient();
   const { modal, message } = App.useApp();
-  const { aiEmployeesMap } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  useRequest<AIEmployee[]>(async () => {
+    return aiConfigRepository.getAIEmployees();
+  });
+  const aiEmployeesMap = aiConfigRepository.getAIEmployeesMap();
 
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const setCurrentEmployee = useChatBoxStore.use.setCurrentEmployee();

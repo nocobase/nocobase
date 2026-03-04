@@ -1,12 +1,16 @@
 ---
-displayName: "Public forms"
+displayName: "Formulir publik"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  Bagikan formulir publik secara eksternal untuk mengumpulkan informasi dari pengguna anonim.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-public-forms/index).
+:::
+
+# Formulir publik

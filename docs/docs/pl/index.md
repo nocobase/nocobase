@@ -40,4 +40,13 @@ features:
         details: Zapoznaj się z innymi samouczkami dotyczącymi tworzenia wtyczek.
         link: /development
 
+  - title: Rozwiązania
+    details: Szablony rozwiązań branżowych zbudowane na NocoBase.
+    items:
+      - title: Rozwiązanie do obsługi zgłoszeń
+        details: Inteligentna platforma zgłoszeń oparta na AI z obsługą wielu kanałów, zarządzaniem SLA, bazą wiedzy i nie tylko.
+        link: /solution/ticket-system/
+      - title: CRM (Podgląd)
+        details: Platforma zarządzania relacjami z klientami bez kodu i elastyczna, obejmująca klientów, leady, szanse, zamówienia i nie tylko.
+        link: /solution/crm/
 ---

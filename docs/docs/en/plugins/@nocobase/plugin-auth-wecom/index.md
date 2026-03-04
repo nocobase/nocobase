@@ -1,15 +1,15 @@
 ---
 displayName: "WeCom"
-packageName: '@nocobase/plugin-auth-wecom'
+pkg: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+  Provides WeCom integration capabilities, including authentication methods, notification channels, and user data synchronization sources.
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
 # WeCom

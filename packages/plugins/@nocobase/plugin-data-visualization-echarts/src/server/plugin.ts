@@ -1,19 +1,19 @@
 import { Plugin } from '@nocobase/server';
 
 export class PluginDataVisualizationEchartsServer extends Plugin {
-  async afterAdd() { }
+  async afterAdd() {}
 
-  async beforeLoad() { }
+  async beforeLoad() {}
 
-  async load() { }
+  async load() {}
 
-  async install() { }
+  async install() {}
 
-  async afterEnable() { }
+  async afterEnable() {}
 
-  async afterDisable() { }
+  async afterDisable() {}
 
-  async remove() { }
+  async remove() {}
 }
 
 export default PluginDataVisualizationEchartsServer;

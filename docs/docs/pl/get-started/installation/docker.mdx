@@ -1,42 +1,41 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/get-started/installation/docker).
 :::
 
-
-# Instalacja Docker
+# Docker Instalacja
 
 :::tip Wymagania wstępne
 
-- Zainstalowane [Docker](https://docs.docker.com/get-docker/) i Docker Compose
-- Upewnij się, że usługa Docker jest uruchomiona
+- Zainstalowano [Docker](https://docs.docker.com/get-docker/) i Docker Compose
+- Proszę upewnić się, że usługa Docker jest uruchomiona
 
 :::
 
-## 1. Tworzenie pliku `docker-compose.yml`
+## 1. Utworzenie pliku docker-compose.yml
 
 ```bash
-# Proszę utworzyć folder o nazwie my-project (lub innej wybranej nazwie), który będzie przechowywał pliki systemowe generowane przez NocoBase.
+# Utworzenie folderu o nazwie my-project (może być inna nazwa) do przechowywania plików systemowych wygenerowanych przez NocoBase
 mkdir my-project && cd my-project
 
-# Proszę utworzyć pusty plik docker-compose.yml.
+# Utworzenie pustego pliku docker-compose.yml
 vi docker-compose.yml
 ```
 
-## 2. Konfiguracja pliku `docker-compose.yml`
+## 2. Konfiguracja docker-compose.yml
 
-Proszę wybrać wersję NocoBase ([Porównanie wersji](../quickstart.md)) oraz typ bazy danych, a następnie skopiować odpowiednią konfigurację do pliku `docker-compose.yml`.
+Proszę wybrać wersję NocoBase ([Porównanie wersji](../quickstart.md)) oraz typ bazy danych i skopiować odpowiednią konfigurację do pliku docker-compose.yml.
 
-:::tip Uwagi dotyczące konfiguracji
+:::tip Wyjaśnienie konfiguracji
 
 - **Wybór obrazu**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - W środowiskach produkcyjnych zaleca się używanie konkretnego numeru wersji, aby uniknąć nieplanowanych automatycznych aktualizacji. [Zobacz wszystkie wersje](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Obraz z Aliyun: `nocobase/nocobase:latest-full`
-  - Obraz z Docker Hub: `nocobase/nocobase:latest-full`
-  - **Obraz `full`** zawiera klientów PostgreSQL 16/17, MySQL 8.0, Oracle 19.25, niezbędnych dla wtyczek do zarządzania kopiami zapasowymi i migracjami, a także LibreOffice do drukowania szablonów (PDF).
-  - Jeśli chcą Państwo zbudować własny obraz, mogą Państwo skorzystać z oficjalnych plików [Dockerfile (wersja uproszczona)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) oraz [Dockerfile-full (wersja pełna)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
-- **Modyfikacja `APP_KEY`**: Proszę zastąpić `your-secret-key` losowym ciągiem znaków, który służy do szyfrowania wrażliwych informacji, takich jak tokeny użytkowników.
-- **Użycie istniejącej bazy danych**: Jeśli posiadają Państwo już usługę bazy danych, proszę zmienić `DB_HOST` na adres serwera bazy danych oraz usunąć lub zakomentować konfigurację usługi bazy danych (np. usługi `postgres`, `mysql`, `mariadb`).
-- **Mapowanie portów**: Domyślnie port 80 kontenera jest mapowany na port 13000 hosta. Mogą Państwo to zmienić w zależności od potrzeb.
+  - W środowisku produkcyjnym zaleca się ustawienie konkretnej wersji numerycznej, aby uniknąć niezamierzonej automatycznej aktualizacji. [Zobacz wszystkie wersje](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Obraz Aliyun: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Obraz Docker Hub: `nocobase/nocobase:latest-full`
+  - **Obraz full** zawiera klientów PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 wymaganych przez wtyczki do zarządzania kopiami zapasowymi i migracją, a także LibreOffice niezbędny do drukowania szablonów (PDF)
+  - Jeśli potrzebują Państwo zbudować własny obraz, można zapoznać się z oficjalnymi plikami [Dockerfile (wersja uproszczona)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) i [Dockerfile-full (wersja pełna)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
+- **Zmiana `APP_KEY`**: Proszę zastąpić `your-secret-key` losowym ciągiem znaków, służącym do szyfrowania wrażliwych informacji, takich jak tokeny użytkowników
+- **Użycie istniejącej bazy danych**: Jeśli posiadają Państwo już usługę bazy danych, proszę zmienić `DB_HOST` na adres serwera bazy danych oraz usunąć lub zakomentować konfigurację usług bazy danych (np. usługi `postgres`, `mysql`, `mariadb`)
+- **Mapowanie portów**: Domyślnie port 80 kontenera jest mapowany na port 13000 hosta, co można zmienić w razie potrzeby
 
 :::
 
@@ -54,7 +53,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -62,12 +61,12 @@ services:
       - postgres
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=postgres
       # Port bazy danych
       - DB_PORT=5432
@@ -86,9 +85,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie postgres.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,7 +111,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -120,12 +119,12 @@ services:
       - mysql
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mysql
       # Port bazy danych
       - DB_PORT=3306
@@ -135,7 +134,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -145,9 +144,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mysql.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,7 +170,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -179,12 +178,12 @@ services:
       - mariadb
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mariadb
       # Port bazy danych
       - DB_PORT=3306
@@ -194,7 +193,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -204,9 +203,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mariadb.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,7 +235,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -244,12 +243,12 @@ services:
       - postgres
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=postgres
       # Port bazy danych
       - DB_PORT=5432
@@ -268,9 +267,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie postgres.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,7 +293,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -302,12 +301,12 @@ services:
       - mysql
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mysql
       # Port bazy danych
       - DB_PORT=3306
@@ -317,7 +316,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -327,9 +326,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mysql.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,7 +352,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -361,12 +360,12 @@ services:
       - mariadb
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mariadb
       # Port bazy danych
       - DB_PORT=3306
@@ -376,7 +375,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -386,9 +385,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mariadb.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,7 +417,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -426,12 +425,12 @@ services:
       - postgres
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=postgres
       # Port bazy danych
       - DB_PORT=5432
@@ -450,9 +449,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie postgres.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać postgres
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,7 +475,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -484,12 +483,12 @@ services:
       - mysql
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mysql
       # Port bazy danych
       - DB_PORT=3306
@@ -499,7 +498,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -509,9 +508,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mysql.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mysql
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,7 +534,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -543,12 +542,12 @@ services:
       - mariadb
     environment:
       # Klucz aplikacji, używany do generowania tokenów użytkowników itp.
-      # Jeśli APP_KEY zostanie zmieniony, stare tokeny staną się nieważne.
-      # Może to być dowolny losowy ciąg znaków; proszę upewnić się, że nie zostanie ujawniony.
+      # Jeśli APP_KEY zostanie zmieniony, stare tokeny również stracą ważność
+      # Może to być dowolny losowy ciąg znaków; należy upewnić się, że nie zostanie ujawniony
       - APP_KEY=your-secret-key
       # Typ bazy danych, obsługuje postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Host bazy danych, można zastąpić istniejącym adresem IP serwera bazy danych.
+      # Host bazy danych, można zastąpić adresem IP istniejącego serwera bazy danych
       - DB_HOST=mariadb
       # Port bazy danych
       - DB_PORT=3306
@@ -558,7 +557,7 @@ services:
       - DB_USER=root
       # Hasło bazy danych
       - DB_PASSWORD=nocobase
-      # Czy nazwy tabel i pól mają być konwertowane na styl snake_case?
+      # Czy nazwy tabel i pól bazy danych mają być konwertowane na styl snake_case
       - DB_UNDERSCORED=true
       # Strefa czasowa
       - TZ=Asia/Shanghai
@@ -568,9 +567,9 @@ services:
       - '13000:80'
     # init: true
 
-  # Jeśli używają Państwo istniejącej usługi bazy danych, można pominąć uruchamianie mariadb.
+  # Jeśli używają Państwo istniejącej usługi bazy danych, można nie uruchamiać mariadb
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -590,17 +589,16 @@ services:
 
 </Tabs>
 
-
 ## 3. Instalacja i uruchomienie NocoBase
 
 ```bash
-# Proszę pobrać najnowszy obraz
+# Pobranie najnowszego obrazu
 docker compose pull
 
-# Proszę uruchomić w tle (przy pierwszym uruchomieniu instalacja zostanie wykonana automatycznie)
+# Uruchomienie w tle (pierwsze uruchomienie automatycznie wykona instalację)
 docker compose up -d
 
-# Proszę wyświetlić logi instalacji i działania
+# Wyświetlenie logów instalacji i działania
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -617,9 +615,9 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. Logowanie do NocoBase
 
-Proszę otworzyć [http://localhost:13000](http://localhost:13000) w przeglądarce. Początkowe dane logowania to `admin@nocobase.com` (konto) i `admin123` (hasło).
+Proszę otworzyć [http://localhost:13000](http://localhost:13000) w przeglądarce. Początkowe konto i hasło to `admin@nocobase.com` oraz `admin123`.
 
-:::warning Wskazówki dotyczące bezpieczeństwa konta
+:::warning Wskazówka dotycząca bezpieczeństwa konta
 
 Po pierwszym zalogowaniu proszę niezwłocznie zmienić domyślne hasło, aby zapewnić bezpieczeństwo systemu.
 

@@ -1,5 +1,5 @@
 ---
-displayName: "Template print"
+displayName: "Print template"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
@@ -12,4 +12,8 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Template print
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-action-template-print/index).
+:::
+
+# Print template

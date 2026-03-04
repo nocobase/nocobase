@@ -14,9 +14,9 @@ features:
         details: NocoBase 2.0 için kodsuz ve düşük kodlu ön uç geliştirme motoru.
         link: /flow-engine
         showOnHome: true
-      - title: Veritabanı
-        details: NocoBase çekirdeğinin veritabanı modülü, eklentiler için birleşik veri erişimi, modelleme ve işlem API'leri sunar. Eklentiler arası veri etkileşiminin temelini oluşturur.
-        link: /database
+      - title: Ön Uç RunJS
+        details: JS blokları, JS alanları ve JS eylemleri gibi senaryolar için JavaScript yürütme ortamı.
+        link: /runjs
         showOnHome: true
   - title: Arayüz ve Etkileşim
     details: Ön uç arayüzünü nasıl genişleteceğinizi ve özelleştireceğinizi, iş ihtiyaçlarınıza uygun bileşenler, alanlar ve işlem mantığı oluşturarak sistemin görselleştirme ve etkileşim deneyimini nasıl geliştireceğinizi öğrenin.
@@ -57,3 +57,8 @@ features:
         details: Daha fazla dosya formatının çevrimiçi önizlemesini ve oluşturulmasını desteklemek için dosya önizleme yeteneklerini genişletin.
         link: /file-manager/development
 ---
+
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/development/index) bakın.
+:::
+

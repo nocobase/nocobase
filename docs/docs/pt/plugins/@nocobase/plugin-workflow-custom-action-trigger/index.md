@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Custom action event"
+displayName: "Workflow: Evento de ação personalizada"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggers after click a custom action button.
-isFree: false
-builtIn: false
+  Acionado após clicar em um botão vinculado a um evento personalizado. Adequado para a orquestração de ações personalizadas em linhas de dados.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Custom action event
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-workflow-custom-action-trigger/index).
+:::
+
+# Workflow: Evento de ação personalizada

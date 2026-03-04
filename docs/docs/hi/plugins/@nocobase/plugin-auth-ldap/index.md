@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: LDAP"
+displayName: "प्रमाणीकरण: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  LDAP authentication.
+  LDAP प्रोटोकॉल के माध्यम से पहचान प्रमाणित करें।
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Auth: LDAP
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-auth-ldap/index) देखें।
+:::
+
+# प्रमाणीकरण: LDAP

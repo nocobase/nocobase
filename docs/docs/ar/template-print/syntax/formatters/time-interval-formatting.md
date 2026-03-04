@@ -1,5 +1,5 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/template-print/syntax/formatters/time-interval-formatting).
 :::
 
 ### تنسيق الفواصل الزمنية
@@ -17,7 +17,6 @@
 
 ##### أمثلة
 ```
-// بيئة المثال: خيارات API { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // الناتج 2
 2000:formatI('seconds')      // الناتج 2
 2000:formatI('s')            // الناتج 2
@@ -25,12 +24,7 @@
 3600000:formatI('hour')      // الناتج 1
 2419200000:formatI('days')   // الناتج 28
 
-// مثال باللغة الفرنسية:
-2000:formatI('human')        // الناتج "quelques secondes"
-2000:formatI('human+')       // الناتج "dans quelques secondes"
--2000:formatI('human+')      // الناتج "il y a quelques secondes"
-
-// مثال باللغة الإنجليزية:
+// عرض سهل القراءة للبشر:
 2000:formatI('human')        // الناتج "a few seconds"
 2000:formatI('human+')       // الناتج "in a few seconds"
 -2000:formatI('human+')      // الناتج "a few seconds ago"

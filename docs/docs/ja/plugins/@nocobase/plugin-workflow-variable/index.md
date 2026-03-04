@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Custom variable"
+displayName: "ワークフロー：カスタム変数ノード"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
-isFree: false
-builtIn: false
+  ワークフロー内でカスタム変数を作成したり、値を代入したりして、プロセス内の一時データを保存するために使用します。
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Custom variable
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-workflow-variable/index)をご参照ください。
+:::
+
+# ワークフロー：カスタム変数ノード

@@ -63,6 +63,7 @@ export default defineCollection({
     {
       name: 'blob',
       type: 'blob',
+      length: 'long',
       allowNull: false,
     },
   ],

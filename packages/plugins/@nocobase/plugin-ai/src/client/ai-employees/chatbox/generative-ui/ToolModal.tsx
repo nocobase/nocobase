@@ -7,15 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { Modal, Select, message } from 'antd';
 import { useChatToolsStore } from '../stores/chat-tools';
-import { ToolsUIProperties, toToolsMap, useTools } from '@nocobase/client';
+import { ToolsUIProperties, toToolsMap } from '@nocobase/client';
 import { Schema } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
 import { useChatMessageActions } from '../hooks/useChatMessageActions';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useToolCallActions } from '../hooks/useToolCallActions';
+import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
 
 const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   return {
@@ -23,10 +25,15 @@ const useDefaultOnOk = (decisions: ToolsUIProperties['decisions']) => {
   };
 };
 
-export const ToolModal: React.FC = () => {
+export const ToolModal: React.FC = observer(() => {
   const t = useT();
-  const { tools } = useTools();
+  const aiConfigRepository = useAIConfigRepository();
+  const tools = aiConfigRepository.aiTools;
   const toolsMap = toToolsMap(tools);
+
+  useEffect(() => {
+    aiConfigRepository.getAITools();
+  }, [aiConfigRepository]);
 
   const open = useChatToolsStore.use.openToolModal();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
@@ -126,4 +133,4 @@ export const ToolModal: React.FC = () => {
       {C ? <C tool={activeTool} saveToolArgs={saveToolArgs} /> : null}
     </Modal>
   );
-};
+});

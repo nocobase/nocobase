@@ -1,14 +1,18 @@
 ---
-displayName: "Multi-keyword filter"
+displayName: "تصفية بكلمات رئيسية متعددة"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
-  Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.
-isFree: false
-builtIn: false
+  يدعم تصفية الكلمات الرئيسية المتعددة للحقول الشائعة، مع خيارات للإدخال السريع أو استيراد الكلمات الرئيسية دفعة واحدة من Excel.
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-keyword filter
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-multi-keyword-filter/index).
+:::
+
+# تصفية بكلمات رئيسية متعددة

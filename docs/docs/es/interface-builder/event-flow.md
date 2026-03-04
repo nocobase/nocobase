@@ -1,147 +1,203 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/interface-builder/event-flow).
 :::
 
 # Flujo de eventos
 
 ## Introducción
 
-Si desea activar acciones personalizadas cuando un formulario cambia, puede usar un flujo de eventos. Además de los formularios, las páginas, los bloques, los botones y los campos también pueden utilizar flujos de eventos para configurar operaciones personalizadas.
+Si desea activar algunas acciones personalizadas cuando cambia un formulario, puede utilizar el flujo de eventos para lograrlo. Además de los formularios, las páginas, los bloques, los botones y los campos también pueden utilizar flujos de eventos para configurar algunas operaciones personalizadas.
 
 ## Cómo usarlo
 
-A continuación, le mostraremos cómo configurar un flujo de eventos con un ejemplo sencillo. Crearemos una vinculación entre dos tablas: al hacer clic en una fila de la tabla izquierda, los datos de la tabla derecha se filtrarán automáticamente.
+A continuación, se utilizará un ejemplo sencillo para explicar cómo configurar un flujo de eventos. Implementemos una vinculación entre dos tablas: al hacer clic en una fila de la tabla izquierda, se filtrarán automáticamente los datos de la tabla derecha.
 
 ![20251031092211_rec_](https://static-docs.nocobase.com/20251031092211_rec_.gif)
 
 Los pasos de configuración son los siguientes:
 
-1. Haga clic en el icono de "rayo" en la esquina superior derecha del bloque de la tabla izquierda para abrir la interfaz de configuración del flujo de eventos.
+1. Haga clic en el icono de «rayo» en la esquina superior derecha del bloque de tabla izquierdo para abrir la interfaz de configuración del flujo de eventos.
 ![20251031092425](https://static-docs.nocobase.com/20251031092425.png)
-2. Haga clic en "Agregar flujo de eventos" y, en "Evento desencadenante", seleccione "Clic en fila". Esto indica que el flujo se activará al hacer clic en una fila de la tabla.
+2. Haga clic en «Agregar flujo de eventos (Add event flow)», seleccione «Clic en fila» como «Evento desencadenante», lo que indica que se activará al hacer clic en una fila de la tabla.
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
-3. La "Condición desencadenante" se utiliza para configurar las condiciones. El flujo de eventos solo se activará cuando se cumplan estas condiciones. En este caso, no necesitamos configurar ninguna, por lo que el flujo se activará con cualquier clic en una fila.
+3. Configure el «Momento de ejecución», que se utiliza para controlar el orden de este flujo de eventos en relación con los procesos integrados del sistema. Generalmente, mantenga el valor predeterminado; si desea mostrar un aviso o redirigir después de que se ejecute la lógica integrada, puede elegir «Después de todos los flujos». Consulte más detalles a continuación en [Momento de ejecución](#momento-de-ejecución).
+![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
+4. La «Condición desencadenante (Trigger condition)» se utiliza para configurar condiciones; el flujo de eventos solo se activará cuando se cumplan las condiciones. Aquí no necesitamos configurarla, ya que cualquier clic en la fila activará el flujo de eventos.
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
-4. Pase el ratón sobre "Agregar paso" para añadir pasos de operación. Seleccionaremos "Establecer alcance de datos" para configurar el alcance de datos de la tabla derecha.
+5. Pase el ratón sobre «Agregar paso (Add step)» para añadir algunos pasos de operación. Seleccionamos «Establecer alcance de datos (Set data scope)» para configurar el alcance de datos de la tabla derecha.
 ![20251031092755](https://static-docs.nocobase.com/20251031092755.png)
-5. Copie el UID de la tabla derecha y péguelo en el campo de entrada "UID del bloque de destino". Inmediatamente aparecerá una interfaz de configuración de condiciones donde podrá definir el alcance de datos para la tabla derecha.
+6. Copie el UID de la tabla derecha y péguelo en el cuadro de entrada «UID del bloque de destino (Target block UID)». Inmediatamente se mostrará una interfaz de configuración de condiciones, donde podrá configurar el alcance de datos de la tabla derecha.
 ![20251031092915](https://static-docs.nocobase.com/20251031092915.png)
-6. Configuremos una condición, como se muestra a continuación:
+7. Configuremos una condición, como se muestra en la siguiente imagen:
 ![20251031093233](https://static-docs.nocobase.com/20251031093233.png)
-7. Después de configurar el alcance de datos, deberá actualizar el bloque para que se muestren los resultados filtrados. A continuación, configuraremos la actualización del bloque de la tabla derecha. Agregue un paso de "Actualizar bloques de destino" y luego ingrese el UID de la tabla derecha.
+8. Después de configurar el alcance de datos, es necesario actualizar el bloque para que se muestren los resultados del filtrado. A continuación, configuremos la actualización del bloque de la tabla derecha. Agregue un paso de «Actualizar bloques de destino (Refresh target blocks)» y luego ingrese el UID de la tabla derecha.
 ![20251031093150](https://static-docs.nocobase.com/20251031093150.png)
 ![20251031093341](https://static-docs.nocobase.com/20251031093341.png)
-8. Finalmente, haga clic en el botón de guardar en la esquina inferior derecha para completar la configuración.
+9. Finalmente, haga clic en el botón de guardar en la esquina inferior derecha y la configuración estará completa.
 
-## Eventos
+## Eventos详解
 
 ### Antes de renderizar
 
-Este es un evento universal que se puede utilizar en páginas, bloques, botones o campos. En este evento, puede realizar tareas de inicialización, como configurar diferentes alcances de datos según distintas condiciones.
+Evento universal que se puede utilizar en páginas, bloques, botones o campos. En este evento, se pueden realizar tareas de inicialización. Por ejemplo, configurar diferentes alcances de datos bajo diferentes condiciones.
 
-### Clic en fila
+### Clic en fila (Row click)
 
-Evento exclusivo para bloques de tabla. Se activa al hacer clic en una fila de la tabla. Cuando se activa, añade un "Registro de fila clicada" (Clicked row record) al contexto, que puede utilizarse como variable en condiciones y pasos.
+Evento exclusivo para bloques de tabla. Se activa al hacer clic en una fila de la tabla. Al activarse, se añade un «Clicked row record» al contexto, que puede utilizarse como variable en condiciones y pasos.
 
-### Cambio de valores del formulario
+### Cambio de valores del formulario (Form values change)
 
-Evento exclusivo para bloques de formulario. Se activa cuando cambian los valores de los campos del formulario. Puede obtener los valores del formulario a través de la variable "Formulario actual" (Current form) en las condiciones y pasos.
+Evento exclusivo para bloques de formulario. Se activa cuando cambia el valor de un campo del formulario. Puede obtener los valores del formulario a través de la variable «Current form» en las condiciones y pasos.
 
-### Clic
+### Clic (Click)
 
 Evento exclusivo para botones. Se activa al hacer clic en el botón.
 
-## Pasos
+## Momento de ejecución
 
-### Variable personalizada
+En la configuración del flujo de eventos, hay dos conceptos que se confunden fácilmente:
+
+- **Evento desencadenante:** Cuándo comenzar la ejecución (por ejemplo: Antes de renderizar, Clic en fila, Clic, Cambio de valores del formulario, etc.).
+- **Momento de ejecución:** Después de que ocurra el mismo evento desencadenante, en qué posición del **proceso integrado** se debe insertar su **flujo de eventos personalizado** para ejecutarse.
+
+### ¿Qué son los «procesos integrados / pasos integrados»?
+
+Muchas páginas, bloques u operaciones incluyen por sí mismos un conjunto de procesos de procesamiento integrados en el sistema (por ejemplo: enviar, abrir ventana emergente, solicitar datos, etc.). Cuando agrega un nuevo flujo de eventos personalizado para el mismo evento (por ejemplo, «Clic»), el «Momento de ejecución» se utiliza para decidir:
+
+- Si se ejecuta primero su flujo de eventos o primero la lógica integrada;
+- O si se inserta su flujo de eventos antes o después de un paso específico del proceso integrado.
+
+### ¿Cómo entender las opciones de momento de ejecución en la interfaz de usuario?
+
+- **Antes de todos los flujos (predeterminado):** Se ejecuta primero. Adecuado para realizar «intercepción/preparación» (por ejemplo, validación, confirmación secundaria, inicialización de variables, etc.).
+- **Después de todos los flujos:** Se ejecuta después de que se completa la lógica integrada. Adecuado para realizar «finalización/retroalimentación» (por ejemplo, mensajes de aviso, actualizar otros bloques, saltar de página, etc.).
+- **Antes de un flujo específico / Después de un flujo específico:** Un punto de inserción más preciso. Tras seleccionarlo, debe elegir el «proceso integrado» específico.
+- **Antes de un paso de flujo específico / Después de un paso de flujo específico:** El punto de inserción más preciso. Tras seleccionarlo, debe elegir tanto el «proceso integrado» como el «paso del proceso integrado».
+
+> Sugerencia: Si no está seguro de qué proceso/paso integrado elegir, utilice prioritariamente las dos primeras opciones («Antes / Después»).
+
+## Pasos详解
+
+### Variable personalizada (Custom variable)
 
 Se utiliza para definir una variable personalizada y luego usarla en el contexto.
 
 #### Alcance
 
-Las variables personalizadas tienen un alcance. Por ejemplo, una variable definida en el flujo de eventos de un bloque solo puede usarse dentro de ese bloque. Si desea que una variable esté disponible en todos los bloques de la página actual, deberá configurarla en el flujo de eventos de la página.
+Las variables personalizadas tienen un alcance; por ejemplo, una variable definida en el flujo de eventos de un bloque solo puede usarse en ese bloque. Si desea que esté disponible en todos los bloques de la página actual, debe configurarla en el flujo de eventos de la página.
 
-#### Variable de formulario
+#### Variable de formulario (Form variable)
 
-Utiliza los valores de un bloque de formulario específico como variable. La configuración es la siguiente:
+Utiliza el valor de un bloque de formulario específico como variable. La configuración específica es la siguiente:
 
 ![20251031093516](https://static-docs.nocobase.com/20251031093516.png)
 
-- Título de la variable: Título de la variable
-- Identificador de la variable: Identificador de la variable
-- UID del formulario: UID del formulario
+- Variable title: Título de la variable
+- Variable identifier: Identificador de la variable
+- Form UID: UID del formulario
 
 #### Otras variables
 
-Próximamente se añadirán más tipos de variables. ¡Esté atento!
+Próximamente se admitirán otras variables, por favor espérelo.
 
-### Establecer alcance de datos
+### Establecer alcance de datos (Set data scope)
 
-Establece el alcance de datos para un bloque de destino. La configuración es la siguiente:
+Establece el alcance de datos del bloque de destino. La configuración específica es la siguiente:
 
 ![20251031093609](https://static-docs.nocobase.com/20251031093609.png)
 
-- UID del bloque de destino: UID del bloque de destino
-- Condición: Condición de filtro
+- Target block UID: UID del bloque de destino
+- Condition: Condiciones de filtrado
 
-### Actualizar bloques de destino
+### Actualizar bloques de destino (Refresh target blocks)
 
-Actualiza los bloques de destino. Permite configurar varios bloques. La configuración es la siguiente:
+Actualiza los bloques de destino, permitiendo configurar múltiples bloques. La configuración específica es la siguiente:
 
 ![20251031093657](https://static-docs.nocobase.com/20251031093657.png)
 
-- UID del bloque de destino: UID del bloque de destino
+- Target block UID: UID del bloque de destino
 
-### Navegar a URL
+### Navegar a URL (Navigate to URL)
 
-Navega a una URL específica. La configuración es la siguiente:
+Salta a una URL específica. La configuración específica es la siguiente:
 
 ![20251031093742](https://static-docs.nocobase.com/20251031093742.png)
 
 - URL: URL de destino, admite el uso de variables
-- Parámetros de búsqueda: Parámetros de consulta en la URL
-- Abrir en nueva ventana: Si está marcado, abrirá la URL en una nueva pestaña del navegador.
+- Search parameters: Parámetros de consulta en la URL
+- Open in new window: Si se marca, se abrirá una nueva página del navegador al saltar
 
-### Mostrar mensaje
+### Mostrar mensaje (Show message)
 
-Muestra mensajes de retroalimentación de operaciones a nivel global.
+Muestra información de retroalimentación de la operación a nivel global.
 
 #### Cuándo usarlo
 
-- Puede proporcionar mensajes de retroalimentación de éxito, advertencia y error.
-- Se muestra centrado en la parte superior y desaparece automáticamente, ofreciendo una forma ligera de notificación que no interrumpe las operaciones del usuario.
+- Puede proporcionar información de retroalimentación como éxito, advertencia y error.
+- Se muestra centrado en la parte superior y desaparece automáticamente; es una forma ligera de aviso que no interrumpe las operaciones del usuario.
 
-#### Configuración
+#### Configuración específica
 
 ![20251031093825](https://static-docs.nocobase.com/20251031093825.png)
 
-- Tipo de mensaje: Tipo de mensaje
-- Contenido del mensaje: Contenido del mensaje
-- Duración: Tiempo de visualización (en segundos)
+- Message type: Tipo de aviso
+- Message content: Contenido del aviso
+- Duration: Cuánto tiempo dura, en segundos
 
-### Mostrar notificación
+### Mostrar notificación (Show notification)
 
-Muestra alertas de notificación a nivel global.
+Muestra información de alerta de notificación a nivel global.
 
 #### Cuándo usarlo
 
-Muestra alertas de notificación en las cuatro esquinas del sistema. Se utiliza comúnmente en los siguientes casos:
+Muestra información de alerta de notificación en las cuatro esquinas del sistema. Se utiliza frecuentemente en los siguientes casos:
 
-- Contenido de notificación más complejo.
-- Notificaciones interactivas que ofrecen al usuario los siguientes pasos a seguir.
-- Notificaciones iniciadas por el sistema.
+- Contenido de notificación relativamente complejo.
+- Notificaciones con interacción, que ofrecen al usuario puntos de acción para el siguiente paso.
+- Envío activo por parte del sistema.
 
-#### Configuración
+#### Configuración específica
 
 ![20251031093934](https://static-docs.nocobase.com/20251031093934.png)
 
-- Tipo de notificación: Tipo de notificación
-- Título de la notificación: Título de la notificación
-- Descripción de la notificación: Descripción de la notificación
-- Posición: Ubicación, opciones disponibles: superior izquierda, superior derecha, inferior izquierda, inferior derecha.
+- Notification type: Tipo de notificación
+- Notification title: Título de la notificación
+- Notification description: Descripción de la notificación
+- Placement: Posición, las opciones incluyen: superior izquierda, superior derecha, inferior izquierda, inferior derecha
 
-### Ejecutar JavaScript
+### Ejecutar JavaScript (Execute JavaScript)
 
 ![20251031094046](https://static-docs.nocobase.com/20251031094046.png)
 
 Ejecuta código JavaScript.
+
+## Ejemplo
+
+### Formulario: llamar a una API de terceros para completar campos
+
+Escenario: activar un flujo de eventos en un formulario, solicitar una API de terceros y, tras obtener los datos, completarlos automáticamente en los campos del formulario.
+
+Pasos de configuración:
+
+1. Abra la configuración del flujo de eventos en el bloque de formulario y añada un nuevo flujo de eventos;
+2. Seleccione «Antes de renderizar» como evento desencadenante;
+3. Seleccione «Después de todos los flujos» como momento de ejecución;
+4. Añada el paso «Ejecutar JavaScript (Execute JavaScript)», pegue y modifique el siguiente código según sea necesario:
+
+```js
+const res = await ctx.api.request({
+  method: 'get',
+  url: 'https://jsonplaceholder.typicode.com/users/2',
+  skipNotify: true,
+  // Note: ctx.api will include the current NocoBase authentication/custom headers by default
+  // Here we override it with an "empty Authorization" to avoid sending the token to a third party
+  headers: {
+    Authorization: 'Bearer ',
+  },
+});
+
+const username = res?.data?.username;
+
+// reemplace con el nombre real del campo
+ctx.form.setFieldsValue({ username });
+```

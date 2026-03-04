@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: test kit"
+displayName: "Workflow: ערכת בדיקה"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: test kit
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-workflow-test/index).
+:::
+
+# Workflow: ערכת בדיקה

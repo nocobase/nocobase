@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "התחלה מהירה",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "הצגת תכונות",
     "items": [
       {
         "type": "custom-link",
         "label": "הגדרת שירות LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "יצירת עובד AI",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "הפעלת עובדי AI",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "שיתוף פעולה עם עובד AI",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "עובדי AI מובנים",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "סקירה כללית",
-        "link": "/ai-employees/built-in/index"
+        "label": "שיתוף פעולה עם עובדי AI",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: אנליסט תובנות",
-        "link": "/ai-employees/built-in/viz"
+        "label": "הוספת הקשר - בלוקים",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
-        "label": "Orin: מומחה למידול נתונים",
-        "link": "/ai-employees/built-in/data-modeling"
+        "label": "חיפוש באינטרנט",
+        "link": "/ai-employees/features/web-search"
       },
       {
         "type": "custom-link",
-        "label": "Dex: מומחה לסידור נתונים",
-        "link": "/ai-employees/built-in/data-organizer"
+        "label": "שימוש במיומנויות",
+        "link": "/ai-employees/features/tool"
       },
       {
         "type": "custom-link",
-        "label": "Nathan: מהנדס Frontend",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "מתקדם",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "בחירת בלוק",
-        "link": "/ai-employees/advanced/pick-block"
+        "label": "משימות קיצור דרך",
+        "link": "/ai-employees/features/task"
       },
       {
         "type": "custom-link",
-        "label": "מקור נתונים",
-        "link": "/ai-employees/advanced/datasource"
+        "label": "עובדי AI מובנים",
+        "link": "/ai-employees/features/built-in-employee"
       },
       {
         "type": "custom-link",
-        "label": "מיומנויות",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "משימות",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "חיפוש ברשת",
-        "link": "/ai-employees/advanced/web-search"
+        "label": "עובד AI חדש",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -99,11 +72,42 @@
   },
   {
     "type": "custom-link",
-    "label": "זרימת עבודה",
+    "label": "מאגר ידע AI",
     "items": [
       {
         "type": "custom-link",
-        "label": "LLM Node",
+        "label": "סקירה כללית",
+        "link": "/ai-employees/knowledge-base/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "מסד נתונים וקטורי",
+        "link": "/ai-employees/knowledge-base/vector-database"
+      },
+      {
+        "type": "custom-link",
+        "label": "אחסון וקטורי",
+        "link": "/ai-employees/knowledge-base/vector-store"
+      },
+      {
+        "type": "custom-link",
+        "label": "מאגר ידע",
+        "link": "/ai-employees/knowledge-base/knowledge-base"
+      },
+      {
+        "type": "custom-link",
+        "label": "RAG",
+        "link": "/ai-employees/knowledge-base/rag"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "תהליך עבודה",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "צמתי LLM",
         "items": [
           {
             "type": "custom-link",
@@ -126,65 +130,17 @@
   },
   {
     "type": "custom-link",
-    "label": "מאגר ידע AI",
+    "label": "פרקטיקות יישום",
     "items": [
       {
         "type": "custom-link",
-        "label": "סקירה כללית",
-        "link": "/ai-employees/knowledge-base/index"
+        "label": "Viz: הגדרת תרחיש CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
       },
       {
         "type": "custom-link",
-        "label": "Vector Database",
-        "link": "/ai-employees/knowledge-base/vector-database"
-      },
-      {
-        "type": "custom-link",
-        "label": "Vector Storage",
-        "link": "/ai-employees/knowledge-base/vector-store"
-      },
-      {
-        "type": "custom-link",
-        "label": "מאגר ידע",
-        "link": "/ai-employees/knowledge-base/knowledge-base"
-      },
-      {
-        "type": "custom-link",
-        "label": "RAG",
-        "link": "/ai-employees/knowledge-base/rag"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "תיעוד יישומים",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "תרחישים",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Viz: הגדרת תרחיש CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "הגדרות",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "הגדרות מנהל מערכת",
-            "link": "/ai-employees/configuration/admin-configuration"
-          },
-          {
-            "type": "custom-link",
-            "label": "מדריך הנחיות",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
-          }
-        ]
+        "label": "מדריך הנדסת הנחיות",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

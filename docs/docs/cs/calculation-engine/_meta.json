@@ -1,0 +1,21 @@
+[
+  {
+    "type": "section-header",
+    "label": "Výpočetní engine"
+  },
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/calculation-engine/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formula.js",
+    "link": "/calculation-engine/formula"
+  },
+  {
+    "type": "custom-link",
+    "label": "Math.js",
+    "link": "/calculation-engine/math"
+  }
+]

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Avatar, Dropdown, FloatButton } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
@@ -15,7 +15,7 @@ import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
+import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
 import { useChatConversationsStore } from './stores/chat-conversations';
@@ -26,7 +26,11 @@ export const ChatButton: React.FC = observer(() => {
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { token } = useToken();
 
-  const { aiEmployees } = useAIEmployeesData();
+  const aiConfigRepository = useAIConfigRepository();
+  const aiEmployees = aiConfigRepository.aiEmployees;
+  React.useEffect(() => {
+    aiConfigRepository.getAIEmployees();
+  }, [aiConfigRepository]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -38,23 +42,21 @@ export const ChatButton: React.FC = observer(() => {
 
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
 
-  const items = useMemo(() => {
-    return aiEmployees
-      ?.filter((employee) => !isHide(employee))
-      .map((employee) => ({
-        key: employee.username,
-        label: (
-          <AIEmployeeListItem
-            aiEmployee={employee}
-            onClick={() => {
-              setWebSearch(true);
-              setOpen(true);
-              switchAIEmployee(employee);
-            }}
-          />
-        ),
-      }));
-  }, [aiEmployees]);
+  const items = aiEmployees
+    ?.filter((employee) => !isHide(employee))
+    .map((employee) => ({
+      key: employee.username,
+      label: (
+        <AIEmployeeListItem
+          aiEmployee={employee}
+          onClick={() => {
+            setWebSearch(true);
+            setOpen(true);
+            switchAIEmployee(employee);
+          }}
+        />
+      ),
+    }));
 
   if (open || !aiEmployees?.length || isV1Page) {
     return null;

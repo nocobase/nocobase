@@ -1,0 +1,27 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "Giới thiệu giải pháp"
+  },
+  {
+    "type": "file",
+    "name": "design",
+    "label": "Thiết kế chi tiết"
+  },
+  {
+    "type": "file",
+    "name": "installation",
+    "label": "Hướng dẫn cài đặt"
+  },
+  {
+    "type": "file",
+    "name": "v1",
+    "label": "CRM phiên bản cũ (v1)"
+  },
+  {
+    "type": "file",
+    "name": "more",
+    "label": "Nội dung khác"
+  }
+]

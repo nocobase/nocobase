@@ -22,7 +22,7 @@ const aggregators = {
 };
 
 export class PluginCustomVariablesServer extends Plugin {
-  afterAdd() { }
+  afterAdd() {}
 
   async load() {
     this.app.resourceManager.registerActionHandler('customVariables:parse', async (ctx, next) => {
@@ -59,13 +59,9 @@ export class PluginCustomVariablesServer extends Plugin {
 
         const {
           collection,
-          params: {
-            field,
-            filter,
-            distinct,
-          },
+          params: { field, filter, distinct },
           aggregator,
-          precision = 2
+          precision = 2,
         } = options;
 
         if (!collection || !field || !aggregator || !aggregators[aggregator]) {
@@ -88,7 +84,7 @@ export class PluginCustomVariablesServer extends Plugin {
           method: aggregators[aggregator],
           field,
           filter,
-          distinct
+          distinct,
         };
 
         // 为 avg 聚合设置数据类型
@@ -102,7 +98,7 @@ export class PluginCustomVariablesServer extends Plugin {
         // 5. 对查询结果进行精度处理
         const processedResult = round(
           (aggregator === 'avg' ? Number(result) : result) || 0,
-          Math.max(0, Math.min(precision, 14))
+          Math.max(0, Math.min(precision, 14)),
         );
 
         // 6. 将处理后的结果返回给前端
@@ -116,13 +112,13 @@ export class PluginCustomVariablesServer extends Plugin {
     this.app.acl.allow('customVariables', ['parse', 'create', 'update', 'destroy', 'list', 'get'], 'loggedIn');
   }
 
-  async install(options?: InstallOptions) { }
+  async install(options?: InstallOptions) {}
 
-  async afterEnable() { }
+  async afterEnable() {}
 
-  async afterDisable() { }
+  async afterDisable() {}
 
-  async remove() { }
+  async remove() {}
 }
 
 export default PluginCustomVariablesServer;

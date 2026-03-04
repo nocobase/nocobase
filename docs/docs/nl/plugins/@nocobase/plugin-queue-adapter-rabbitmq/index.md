@@ -1,15 +1,19 @@
 ---
-displayName: "RabbitMQ queue adapter"
+displayName: "RabbitMQ-wachtrijadapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with RabbitMQ.
+  Wordt gebruikt voor het afhandelen van de berichtenwachtrij met RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# RabbitMQ queue adapter
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-queue-adapter-rabbitmq/index) voor nauwkeurige informatie.
+:::
+
+# RabbitMQ-wachtrijadapter
