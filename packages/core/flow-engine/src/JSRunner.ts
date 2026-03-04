@@ -67,7 +67,7 @@ function toCtxTemplateSyntaxHintError(
     expression: string;
   },
 ): Error {
-  const hint = `"${usage.placeholder}" has been deprecated in v2 and cannot be used as executable RunJS syntax. Use await ctx.getVar("${usage.expression}") instead, or keep "${usage.placeholder}" as a plain string for downstream processors.`;
+  const hint = `"${usage.placeholder}" has been deprecated and cannot be used as executable RunJS syntax. Use await ctx.getVar("${usage.expression}") instead, or keep "${usage.placeholder}" as a plain string.`;
   const out = new SyntaxError(hint);
   try {
     (out as any).cause = err;
