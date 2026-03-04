@@ -8,16 +8,19 @@
  */
 
 import path from 'node:path';
-import { ChatOpenAI } from '@langchain/openai';
+import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
+import { Model } from '@nocobase/database';
+import _ from 'lodash';
 import PluginAIServer from '../../plugin';
-import { LLMProvider, LLMProviderOptions } from '../provider';
+import { LLMProvider } from '../provider';
 import { LLMProviderMeta, SupportedModel } from '../../manager/ai-manager';
 import { CachedDocumentLoader } from '../../document-loader';
 import { KimiDocumentLoader } from './document-loader';
+import { ReasoningChatOpenAI } from '../common/reasoning';
 
 export class KimiProvider extends LLMProvider {
-  declare chatModel: ChatOpenAI;
+  declare chatModel: ReasoningChatOpenAI;
   private _documentLoader: CachedDocumentLoader;
 
   get baseURL() {
@@ -34,17 +37,44 @@ export class KimiProvider extends LLMProvider {
     if (responseFormat === 'json_schema' && schema) {
       responseFormatOptions['json_schema'] = schema;
     }
-    return new ChatOpenAI({
+    return new ReasoningChatOpenAI({
       apiKey,
       ...this.modelOptions,
       modelKwargs: {
         response_format: responseFormatOptions,
-        thinking: { type: 'disabled' },
       },
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
     });
+  }
+
+  parseResponseMessage(message: Model) {
+    const result = super.parseResponseMessage(message);
+    if (['user', 'tool'].includes(result?.role)) {
+      return result;
+    }
+    const { metadata } = message?.toJSON() ?? {};
+    if (!_.isEmpty(metadata?.additional_kwargs?.reasoning_content)) {
+      result.content = {
+        ...(result.content ?? {}),
+        reasoning: {
+          status: 'stop',
+          content: metadata?.additional_kwargs.reasoning_content,
+        },
+      };
+    }
+    return result;
+  }
+
+  parseReasoningContent(chunk: AIMessageChunk): { status: string; content: string } {
+    if (!_.isEmpty(chunk?.additional_kwargs?.reasoning_content)) {
+      return {
+        status: 'streaming',
+        content: chunk.additional_kwargs.reasoning_content as string,
+      };
+    }
+    return null;
   }
 
   async parseAttachment(ctx: Context, attachment: any): Promise<any> {
