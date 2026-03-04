@@ -327,9 +327,67 @@ export class CollectionGlobalTriggerWorkflowActionModel extends ActionModel {
   };
 }
 
+export class WorkbenchTriggerWorkflowActionModel extends ActionModel {
+  defaultProps: ButtonProps = {
+    title: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+    icon: 'ThunderboltOutlined',
+  };
+}
+
 CollectionGlobalTriggerWorkflowActionModel.define({
   label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
 });
+
+WorkbenchTriggerWorkflowActionModel.define({
+  label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+});
+
+function globalTriggerWorkflowUiSchema(ctx) {
+  const baseSchema = createTriggerWorkflowsSchema({
+    filter: {
+      type: EVENT_TYPE,
+    },
+    optionFilter({ config }) {
+      return config.type === CONTEXT_TYPE.GLOBAL;
+    },
+    usingContext: false,
+  })(ctx);
+  return {
+    ...baseSchema,
+    contextData: {
+      type: 'string',
+      title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': ContextDataJsonInput,
+    },
+  };
+}
+
+async function globalTriggerWorkflowHandler(ctx, params) {
+  let values;
+  if (params.contextData) {
+    try {
+      values = await resolveExpressions(params.contextData, ctx);
+    } catch (e) {
+      // resolution error, ignore
+    }
+  }
+  try {
+    await ctx.api.request({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: params.group?.length
+          ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
+      },
+      data: { values },
+    });
+    ctx.message.success(ctx.t('Operation succeeded'));
+  } catch (error) {
+    console.error('Error triggering workflows:', error);
+  }
+}
 
 CollectionGlobalTriggerWorkflowActionModel.registerFlow({
   key: 'customCollectionGlobalTriggerWorkflowsActionSettings',
@@ -340,52 +398,25 @@ CollectionGlobalTriggerWorkflowActionModel.registerFlow({
       use: 'confirm',
     },
     triggerWorkflows: {
-      title: `{{t('Custom action event', { ns: '${NAMESPACE}' })}}`,
-      uiSchema: (ctx) => {
-        const baseSchema = createTriggerWorkflowsSchema({
-          filter: {
-            type: EVENT_TYPE,
-          },
-          optionFilter({ config }) {
-            return config.type === CONTEXT_TYPE.GLOBAL;
-          },
-          usingContext: false,
-        })(ctx);
-        return {
-          ...baseSchema,
-          contextData: {
-            type: 'string',
-            title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
-            'x-decorator': 'FormItem',
-            'x-component': ContextDataJsonInput,
-          },
-        };
-      },
-      async handler(ctx, params) {
-        let values;
-        if (params.contextData) {
-          try {
-            values = await resolveExpressions(params.contextData, ctx);
-          } catch (e) {
-            // resolution error, ignore
-          }
-        }
-        try {
-          await ctx.api.request({
-            url: 'workflows:trigger',
-            method: 'post',
-            params: {
-              triggerWorkflows: params.group?.length
-                ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                : undefined,
-            },
-            data: { values },
-          });
-          ctx.message.success(ctx.t('Workflow triggered on selected records successfully'));
-        } catch (error) {
-          console.error('Error triggering workflows:', error);
-        }
-      },
+      title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
+      uiSchema: globalTriggerWorkflowUiSchema,
+      handler: globalTriggerWorkflowHandler,
+    },
+  },
+});
+
+WorkbenchTriggerWorkflowActionModel.registerFlow({
+  key: 'workbenchTriggerWorkflowsActionSettings',
+  on: 'click',
+  title: `{{t('Workflow', { ns: 'workflow' })}}`,
+  steps: {
+    confirm: {
+      use: 'confirm',
+    },
+    triggerWorkflows: {
+      title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
+      uiSchema: globalTriggerWorkflowUiSchema,
+      handler: globalTriggerWorkflowHandler,
     },
   },
 });
