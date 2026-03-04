@@ -29,6 +29,30 @@ import { getLabelFormatValue, useLabelUiSchema } from './util';
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
 
+const recordPickerVisibleCache = new Map<string, boolean>();
+
+export function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
+  return field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
+}
+
+export function getRecordPickerVisibleFromCache(key?: string) {
+  if (!key) {
+    return false;
+  }
+  return !!recordPickerVisibleCache.get(key);
+}
+
+export function setRecordPickerVisibleToCache(key: string, visible: boolean) {
+  if (!key) {
+    return;
+  }
+  if (visible) {
+    recordPickerVisibleCache.set(key, true);
+    return;
+  }
+  recordPickerVisibleCache.delete(key);
+}
+
 function flatData(data) {
   const newArr = [];
   for (let i = 0; i < data.length; i++) {
@@ -122,15 +146,29 @@ interface IRecordPickerProps {
 
 export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   const { value, multiple, onChange, quickUpload, selectFile, ...others } = props;
-  const fieldNames = useFieldNames(props);
-  const [visible, setVisible] = useState(false);
+  const field = useField();
   const fieldSchema = useFieldSchema();
+  const visibleCacheKey = getRecordPickerVisibleCacheKey(field, fieldSchema);
+  const fieldNames = useFieldNames(props);
+  const [visible, setVisible] = useState(() => getRecordPickerVisibleFromCache(visibleCacheKey));
   const collectionField = useAssociation(props);
   const compile = useCompile();
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
   const showFilePicker = isShowFilePicker(labelUiSchema);
   const [selectedRows, setSelectedRows] = useState([]);
   const [options, setOptions] = useState([]);
+
+  const setVisibleWithCache = (nextVisible: React.SetStateAction<boolean>) => {
+    setVisible((prevVisible) => {
+      const visibleValue = typeof nextVisible === 'function' ? nextVisible(prevVisible) : nextVisible;
+      setRecordPickerVisibleToCache(visibleCacheKey, visibleValue);
+      return visibleValue;
+    });
+  };
+
+  useEffect(() => {
+    setVisible(getRecordPickerVisibleFromCache(visibleCacheKey));
+  }, [visibleCacheKey]);
 
   useEffect(() => {
     if (value) {
@@ -147,7 +185,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
       setOptions([]);
       setSelectedRows([]);
     }
-  }, [value, fieldNames?.label]);
+  }, [value, fieldNames?.label, compile, labelUiSchema]);
 
   const getValue = () => {
     if (multiple == null) return null;
@@ -190,7 +228,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
           fieldNames={fieldNames}
           popupMatchSelectWidth={false}
           onDropdownVisibleChange={(open) => {
-            setVisible(true);
+            setVisibleWithCache(true);
           }}
           allowClear
           onChange={(changed: any) => {
@@ -223,7 +261,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
         setSelectedRows,
         collectionField,
         visible,
-        setVisible,
+        setVisible: setVisibleWithCache,
         fieldSchema,
         options,
       })}
