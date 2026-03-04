@@ -41,17 +41,26 @@ export async function setupRunJSContexts() {
     import('./contexts/JSCollectionActionRunJSContext'),
   ]);
 
-  const v1 = 'v1';
-  RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
-  RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
-  RunJSContextRegistry.register(v1, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
-  RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
-  RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
-  RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
-  RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
-  RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext, { scenes: ['table'] });
-  await applyRunJSContextContributions(v1);
+  const registerBuiltins = (version: 'v1' | 'v2') => {
+    RunJSContextRegistry.register(version, '*', FlowRunJSContext);
+    RunJSContextRegistry.register(version, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
+    RunJSContextRegistry.register(version, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
+    RunJSContextRegistry.register(version, 'JSEditableFieldModel', JSEditableFieldRunJSContext, { scenes: ['form'] });
+    RunJSContextRegistry.register(version, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
+    RunJSContextRegistry.register(version, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
+    RunJSContextRegistry.register(version, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
+    RunJSContextRegistry.register(version, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
+    RunJSContextRegistry.register(version, 'JSCollectionActionModel', JSCollectionActionRunJSContext, {
+      scenes: ['table'],
+    });
+  };
+
+  const versions: Array<'v1' | 'v2'> = ['v1', 'v2'];
+  for (const version of versions) {
+    registerBuiltins(version);
+    await applyRunJSContextContributions(version);
+    markRunJSContextsSetupDone(version);
+  }
+
   done = true;
-  markRunJSContextsSetupDone(v1);
 }

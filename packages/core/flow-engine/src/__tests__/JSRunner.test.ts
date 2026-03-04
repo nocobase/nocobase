@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { JSRunner } from '../JSRunner';
+import { JSRunner, shouldPreprocessRunJSTemplates } from '../JSRunner';
 import { createSafeWindow } from '../utils';
 
 describe('JSRunner', () => {
@@ -28,6 +28,18 @@ describe('JSRunner', () => {
       // ignore
     }
     vi.restoreAllMocks();
+  });
+
+  it('shouldPreprocessRunJSTemplates: explicit option has highest priority', () => {
+    expect(shouldPreprocessRunJSTemplates({ version: 'v2', preprocessTemplates: true })).toBe(true);
+    expect(shouldPreprocessRunJSTemplates({ version: 'v1', preprocessTemplates: false })).toBe(false);
+  });
+
+  it('shouldPreprocessRunJSTemplates: falls back to version policy', () => {
+    expect(shouldPreprocessRunJSTemplates({ version: 'v1' })).toBe(true);
+    expect(shouldPreprocessRunJSTemplates({ version: 'v2' })).toBe(false);
+    expect(shouldPreprocessRunJSTemplates({})).toBe(true);
+    expect(shouldPreprocessRunJSTemplates()).toBe(true);
   });
 
   it('executes simple code and returns value', async () => {

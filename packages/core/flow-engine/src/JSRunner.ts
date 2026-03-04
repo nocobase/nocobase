@@ -16,10 +16,27 @@ export interface JSRunnerOptions {
   version?: string;
   /**
    * Enable RunJS template compatibility preprocessing for `{{ ... }}`.
-   * When enabled via `ctx.runjs(code, vars, { preprocessTemplates: true })` (default),
+   * When enabled (or falling back to version default),
    * the code will be rewritten to call `ctx.resolveJsonTemplate(...)` at runtime.
    */
   preprocessTemplates?: boolean;
+}
+
+/**
+ * Decide whether RunJS `{{ ... }}` compatibility preprocessing should run.
+ *
+ * Priority:
+ * 1. Explicit `preprocessTemplates` option always wins.
+ * 2. Otherwise, `version === 'v2'` disables preprocessing.
+ * 3. Fallback keeps v1-compatible behavior (enabled).
+ */
+export function shouldPreprocessRunJSTemplates(
+  options?: Pick<JSRunnerOptions, 'preprocessTemplates' | 'version'>,
+): boolean {
+  if (typeof options?.preprocessTemplates === 'boolean') {
+    return options.preprocessTemplates;
+  }
+  return options?.version !== 'v2';
 }
 
 export class JSRunner {

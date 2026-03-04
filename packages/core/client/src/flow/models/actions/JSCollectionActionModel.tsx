@@ -65,7 +65,7 @@ JSCollectionActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: 'v1',
+          version: 'v2',
           code: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (!rows.length) {
