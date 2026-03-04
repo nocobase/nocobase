@@ -57,7 +57,7 @@ function setNativeInputValue(input, value) {
  * Inserts {{ ctx.xxx }} expressions; resolved via resolveExpressions at trigger time.
  */
 export function ContextDataJsonInput({ value, onChange, ...props }) {
-  const inputRef = useRef<any>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const flowCtx = useFlowContext() as any;
 
   const metaTree = useCallback(async () => {
@@ -65,8 +65,8 @@ export function ContextDataJsonInput({ value, onChange, ...props }) {
   }, [flowCtx]);
 
   const handleVariableInsert = useCallback((variableExpr: string) => {
-    if (!inputRef.current) return;
-    const textArea = inputRef.current.resizableTextArea?.textArea;
+    if (!wrapperRef.current) return;
+    const textArea = wrapperRef.current.querySelector<HTMLTextAreaElement>('textarea');
     if (!textArea) return;
     const start = textArea.selectionStart ?? 0;
     const end = textArea.selectionEnd ?? 0;
@@ -79,6 +79,7 @@ export function ContextDataJsonInput({ value, onChange, ...props }) {
 
   return (
     <div
+      ref={wrapperRef}
       className={css`
         position: relative;
         .ant-input {
@@ -86,7 +87,7 @@ export function ContextDataJsonInput({ value, onChange, ...props }) {
         }
       `}
     >
-      <ClientInput.JSON autoSize={{ minRows: 5 }} {...props} ref={inputRef} value={value} onChange={onChange} />
+      <ClientInput.JSON autoSize={{ minRows: 5 }} {...props} value={value} onChange={onChange} />
       <div
         className={css`
           position: absolute;
