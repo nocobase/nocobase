@@ -86,6 +86,9 @@ LinkActionModel.registerFlow({
             router: ctx.router,
             isExternalLink: isURL(link),
           });
+          if (ctx.view) {
+            ctx.view.destroy();
+          }
         } else {
           console.error('link should be a string');
         }
