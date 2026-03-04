@@ -91,7 +91,6 @@ export class Gateway extends EventEmitter {
   private port: number = process.env.APP_PORT ? parseInt(process.env.APP_PORT) : null;
   private host = '0.0.0.0';
   private socketPath = resolve(process.cwd(), 'storage', 'gateway.sock');
-  private packageVersionCache = new Map<string, string>();
   private v2IndexTemplateCache: { file: string; mtimeMs: number; html: string } | null = null;
   private terminating = false;
 
@@ -285,47 +284,6 @@ export class Gateway extends EventEmitter {
     return !extname(pathname);
   }
 
-  private getPackageVersion(packageName: string, fallbackVersion: string) {
-    const cachedVersion = this.packageVersionCache.get(packageName);
-    if (cachedVersion) {
-      return cachedVersion;
-    }
-
-    try {
-      const packageJsonPath = require.resolve(`${packageName}/package.json`, { paths: [process.cwd()] });
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-      const version = packageJson?.version || fallbackVersion;
-      this.packageVersionCache.set(packageName, version);
-      return version;
-    } catch (error) {
-      return fallbackVersion;
-    }
-  }
-
-  private getCdnUrl(packagePath: string, query = '') {
-    const base = (process.env.ESM_CDN_BASE_URL || 'https://esm.sh').replace(/\/+$/, '');
-    const suffix = process.env.ESM_CDN_SUFFIX || '';
-    const [pathname, urlQuery = ''] = packagePath.split('?');
-    const mergedQuery = [urlQuery, query].filter(Boolean).join('&');
-    return `${base}/${pathname.replace(/^\/+/, '')}${suffix}${mergedQuery ? `?${mergedQuery}` : ''}`;
-  }
-
-  private getV2ImportMapScript() {
-    const reactVersion = this.getPackageVersion('react', '18.3.1');
-    const reactDomVersion = this.getPackageVersion('react-dom', reactVersion);
-    const antdVersion = this.getPackageVersion('antd', '5.24.2');
-    const antdIconsVersion = this.getPackageVersion('@ant-design/icons', '5.6.1');
-    const imports = {
-      react: this.getCdnUrl(`react@${reactVersion}`),
-      'react/jsx-runtime': this.getCdnUrl(`react@${reactVersion}/jsx-runtime`),
-      'react-dom': this.getCdnUrl(`react-dom@${reactDomVersion}`),
-      'react-dom/client': this.getCdnUrl(`react-dom@${reactDomVersion}/client`),
-      antd: this.getCdnUrl(`antd@${antdVersion}`, `bundle=1&deps=react@${reactVersion},react-dom@${reactDomVersion}`),
-      '@ant-design/icons': this.getCdnUrl(`@ant-design/icons@${antdIconsVersion}`),
-    };
-    return `<script type="importmap">${JSON.stringify({ imports })}</script>`;
-  }
-
   private getV2RuntimeConfigScript() {
     const runtimeConfig = {
       __nocobase_public_path__: this.getV2PublicPath(),
@@ -373,7 +331,7 @@ export class Gateway extends EventEmitter {
     if (!html) {
       return null;
     }
-    const injectScripts = `${this.getV2RuntimeConfigScript()}\n${this.getV2ImportMapScript()}`;
+    const injectScripts = this.getV2RuntimeConfigScript();
     const moduleScriptMatch = html.match(/<script\b[^>]*type=["']module["'][^>]*>/i);
 
     if (moduleScriptMatch?.[0]) {

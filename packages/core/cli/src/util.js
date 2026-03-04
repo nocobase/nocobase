@@ -289,19 +289,6 @@ function resolveV2PublicPath(appPublicPath = '/') {
   return `${withTrailingSlash.replace(/\/$/, '')}/v2/`;
 }
 
-function verifyV2PublicPathCases() {
-  const cases = {
-    '/': '/v2/',
-    '/nocobase/': '/nocobase/v2/',
-  };
-  for (const [input, expected] of Object.entries(cases)) {
-    const actual = resolveV2PublicPath(input);
-    if (actual !== expected) {
-      throw new Error(`Invalid V2 public path resolve result: ${input} -> ${actual}, expected ${expected}`);
-    }
-  }
-}
-
 exports.resolveV2PublicPath = resolveV2PublicPath;
 
 function buildIndexHtml(force = false) {
@@ -462,8 +449,6 @@ exports.initEnv = function initEnv() {
       process.env[key] = env[key];
     }
   }
-
-  verifyV2PublicPathCases();
 
   if (!process.env.__env_modified__ && process.env.APP_PUBLIC_PATH) {
     const publicPath = process.env.APP_PUBLIC_PATH.replace(/\/$/g, '');

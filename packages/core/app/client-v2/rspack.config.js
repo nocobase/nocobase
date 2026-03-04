@@ -11,8 +11,6 @@ const fs = require('fs');
 const path = require('path');
 const { rspack } = require('@rspack/core');
 
-const PROD_EXTERNALS = ['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', 'antd', '@ant-design/icons'];
-
 function ensurePublicPath(value) {
   let normalized = value || '/v2/';
   if (!normalized.startsWith('/')) {
@@ -76,13 +74,6 @@ function createTemplateParameters(v2PublicPath) {
     ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
     ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
   };
-}
-
-function createProdExternals() {
-  return PROD_EXTERNALS.reduce((memo, item) => {
-    memo[item] = item;
-    return memo;
-  }, {});
 }
 
 module.exports = (_env, argv = {}) => {
@@ -220,8 +211,6 @@ module.exports = (_env, argv = {}) => {
         templateParameters: createTemplateParameters(v2PublicPath),
       }),
     ],
-    externalsType: isBuild ? 'module' : undefined,
-    externals: isBuild ? createProdExternals() : undefined,
     optimization: isBuild
       ? {
           splitChunks: {
