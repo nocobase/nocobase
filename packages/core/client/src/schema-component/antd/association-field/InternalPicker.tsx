@@ -43,6 +43,30 @@ import { useSchemaOptionsContext } from '../../../schema-component';
 import Radio from '../radio/Radio';
 import Checkbox from '../checkbox/Checkbox';
 
+const recordPickerVisibleCache = new Map<string, boolean>();
+
+function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
+  return field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
+}
+
+function getRecordPickerVisibleFromCache(key?: string) {
+  if (!key) {
+    return false;
+  }
+  return !!recordPickerVisibleCache.get(key);
+}
+
+function setRecordPickerVisibleToCache(key: string, visible: boolean) {
+  if (!key) {
+    return;
+  }
+  if (visible) {
+    recordPickerVisibleCache.set(key, true);
+    return;
+  }
+  recordPickerVisibleCache.delete(key);
+}
+
 export const useTableSelectorProps = () => {
   const field: any = useField();
   const {
@@ -86,9 +110,10 @@ export const InternalPicker = observer(
   (props: any) => {
     const { value, multiple, openSize, onChange, quickUpload, selectFile, shouldMountElement, ...others } = props;
     const field: any = useField();
-    const fieldNames = useFieldNames(props);
-    const [visibleSelector, setVisibleSelector] = useState(false);
     const fieldSchema = useFieldSchema();
+    const visibleCacheKey = getRecordPickerVisibleCacheKey(field, fieldSchema);
+    const fieldNames = useFieldNames(props);
+    const [visibleSelector, setVisibleSelector] = useState(() => getRecordPickerVisibleFromCache(visibleCacheKey));
     const insertSelector = useInsertSchema('Selector');
     const { options: collectionField } = useAssociationFieldContext();
     const { collectionName } = useFormBlockContext();
@@ -109,7 +134,7 @@ export const InternalPicker = observer(
         return opts;
       }
       return [];
-    }, [value?.length, fieldNames.label]);
+    }, [value, fieldNames.label, compile, labelUiSchema]);
     const pickerProps = {
       size: 'small',
       fieldNames,
@@ -150,6 +175,16 @@ export const InternalPicker = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+    const setVisibleSelectorWithCache = (nextVisible: React.SetStateAction<boolean>) => {
+      setVisibleSelector((prevVisible) => {
+        const visibleValue = typeof nextVisible === 'function' ? nextVisible(prevVisible) : nextVisible;
+        setRecordPickerVisibleToCache(visibleCacheKey, visibleValue);
+        return visibleValue;
+      });
+    };
+    useEffect(() => {
+      setVisibleSelector(getRecordPickerVisibleFromCache(visibleCacheKey));
+    }, [visibleCacheKey]);
     useEffect(() => {
       if (!value) {
         setSelectedRows([]);
@@ -205,7 +240,7 @@ export const InternalPicker = observer(
               fieldNames={fieldNames}
               onDropdownVisibleChange={(open) => {
                 insertSelector(schema.Selector);
-                setVisibleSelector(true);
+                setVisibleSelectorWithCache(true);
               }}
               allowClear
               onChange={(changed: any) => {
@@ -250,7 +285,7 @@ export const InternalPicker = observer(
             openSize: fieldSchema['x-component-props']?.['openSize'] || openSize,
             openMode: 'drawer',
             visible: visibleSelector,
-            setVisible: setVisibleSelector,
+            setVisible: setVisibleSelectorWithCache,
           }}
         >
           <RecordPickerProvider {...pickerProps}>
