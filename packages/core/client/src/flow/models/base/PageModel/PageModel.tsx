@@ -41,7 +41,7 @@ type PageModelStructure = {
 
 const TABS_BASE_ROOT_CLASS_NAME = css`
   > .ant-tabs-nav .ant-tabs-nav-list {
-    padding-left: 16px;
+    padding-inline-start: var(--nb-flow-page-tabs-nav-padding-inline-start, 16px);
   }
 `;
 
@@ -303,13 +303,20 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   renderTabs() {
+    const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
+    const tabNavPaddingInlineStartValue =
+      typeof tabNavPaddingInlineStart === 'number' ? `${tabNavPaddingInlineStart}px` : tabNavPaddingInlineStart;
     const rootClassName = this.context.flowSettingsEnabled
       ? `${TABS_BASE_ROOT_CLASS_NAME} ${TABS_DESIGN_MODE_ROOT_CLASS_NAME}`
       : TABS_BASE_ROOT_CLASS_NAME;
+    const tabsStyle = {
+      '--nb-flow-page-tabs-nav-padding-inline-start': tabNavPaddingInlineStartValue,
+    } as React.CSSProperties;
 
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
+          style={tabsStyle}
           rootClassName={rootClassName}
           activeKey={
             this.context.view?.navigation?.viewParams
