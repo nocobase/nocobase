@@ -217,10 +217,6 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     data: getParsedValue(toJSON(data), variables),
   };
 
-  console.log('custom-request:send - axiosRequestConfig', {
-    ...axiosRequestConfig,
-  });
-
   const requestUrl = axios.getUri(axiosRequestConfig);
   this.logger.info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
   this.logger.info(
