@@ -11,7 +11,7 @@ import {
   getRecordPickerVisibleCacheKey,
   getRecordPickerVisibleFromCache,
   setRecordPickerVisibleToCache,
-} from '../InputRecordPicker';
+} from '../visibleCache';
 
 describe('record picker visible cache', () => {
   test('should prefer field path as cache key', () => {

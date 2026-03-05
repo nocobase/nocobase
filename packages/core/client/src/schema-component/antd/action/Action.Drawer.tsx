@@ -56,6 +56,7 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any;
 
     useEffect(() => {
       if (!deferRender) {
+        setDeferredVisible(true);
         return;
       }
       startTransition(() => {

@@ -12,7 +12,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import { toArr } from '@formily/shared';
 import { Select } from 'antd';
 import { differenceBy, unionBy } from 'lodash';
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
   TableSelectorParamsProvider,
   useTableSelectorProps as useTsp,
@@ -25,33 +25,14 @@ import { ActionContextProvider, useActionContext } from '../action';
 import { Upload } from '../upload';
 import { useFieldNames } from './useFieldNames';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import {
+  getRecordPickerVisibleCacheKey,
+  getRecordPickerVisibleFromCache,
+  setRecordPickerVisibleToCache,
+} from './visibleCache';
 
 export const RecordPickerContext = createContext(null);
 RecordPickerContext.displayName = 'RecordPickerContext';
-
-const recordPickerVisibleCache = new Map<string, boolean>();
-
-export function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
-  return field?.path?.entire || field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
-}
-
-export function getRecordPickerVisibleFromCache(key?: string) {
-  if (!key) {
-    return false;
-  }
-  return !!recordPickerVisibleCache.get(key);
-}
-
-export function setRecordPickerVisibleToCache(key: string, visible: boolean) {
-  if (!key) {
-    return;
-  }
-  if (visible) {
-    recordPickerVisibleCache.set(key, true);
-    return;
-  }
-  recordPickerVisibleCache.delete(key);
-}
 
 function flatData(data) {
   const newArr = [];
@@ -153,6 +134,8 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
   const [visible, setVisible] = useState(() => getRecordPickerVisibleFromCache(visibleCacheKey));
   const collectionField = useAssociation(props);
   const compile = useCompile();
+  const compileRef = useRef(compile);
+  compileRef.current = compile;
   const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
   const showFilePicker = isShowFilePicker(labelUiSchema);
   const [selectedRows, setSelectedRows] = useState([]);
@@ -176,7 +159,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
         const label = option[fieldNames.label];
         return {
           ...option,
-          [fieldNames.label]: getLabelFormatValue(labelUiSchema, compile(label)),
+          [fieldNames.label]: getLabelFormatValue(labelUiSchema, compileRef.current(label)),
         };
       });
       setOptions(opts);
@@ -185,7 +168,7 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
       setOptions([]);
       setSelectedRows([]);
     }
-  }, [value, fieldNames?.label, compile, labelUiSchema]);
+  }, [value, fieldNames?.label, labelUiSchema]);
 
   const getValue = () => {
     if (multiple == null) return null;

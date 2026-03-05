@@ -42,30 +42,11 @@ import { CollectionField } from '../../../data-source/collection-field/Collectio
 import { useSchemaOptionsContext } from '../../../schema-component';
 import Radio from '../radio/Radio';
 import Checkbox from '../checkbox/Checkbox';
-
-const recordPickerVisibleCache = new Map<string, boolean>();
-
-function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
-  return field?.path?.entire || field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
-}
-
-function getRecordPickerVisibleFromCache(key?: string) {
-  if (!key) {
-    return false;
-  }
-  return !!recordPickerVisibleCache.get(key);
-}
-
-function setRecordPickerVisibleToCache(key: string, visible: boolean) {
-  if (!key) {
-    return;
-  }
-  if (visible) {
-    recordPickerVisibleCache.set(key, true);
-    return;
-  }
-  recordPickerVisibleCache.delete(key);
-}
+import {
+  getRecordPickerVisibleCacheKey,
+  getRecordPickerVisibleFromCache,
+  setRecordPickerVisibleToCache,
+} from '../record-picker/visibleCache';
 
 export const useTableSelectorProps = () => {
   const field: any = useField();
