@@ -248,6 +248,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
                 if (!field.targetCollection) {
                   return null;
                 }
+                if (field.type === 'belongsToArray') {
+                  return null;
+                }
                 if (!this.filterCollection(field.targetCollection)) {
                   return null;
                 }
@@ -297,6 +300,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
             .getAssociationFields(this._getScene())
             .map((field) => {
               if (!field.targetCollection) {
+                return null;
+              }
+              if (field.type === 'belongsToArray') {
                 return null;
               }
               if (!this.filterCollection(field.targetCollection)) {

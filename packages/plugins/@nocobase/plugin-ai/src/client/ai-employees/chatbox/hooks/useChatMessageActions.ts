@@ -159,6 +159,24 @@ export const useChatMessageActions = () => {
             if (data.type === 'stream_end') {
               console.log('stream_end', sessionId);
             }
+            if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
+              // [AI_DEBUG] stream_reasoning
+              aiDebugLogger.log(sessionId, 'stream_reasoning', {
+                phase: 'delta',
+                preview: data.body.content?.slice?.(0, 120) || '',
+              });
+              updateLastMessage((last) => ({
+                ...last,
+                content: {
+                  ...last.content,
+                  reasoning: {
+                    status: data.body.status,
+                    content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
+                  },
+                },
+                loading: false,
+              }));
+            }
             if (data.type === 'content' && data.body && typeof data.body === 'string') {
               // [AI_DEBUG] stream_text
               aiDebugLogger.log(sessionId, 'stream_text', {
