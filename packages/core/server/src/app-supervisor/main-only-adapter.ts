@@ -98,6 +98,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       return;
     }
     await this.app.runCommand('destroy');
+    this.app = null;
   }
 
   async upgradeApp(appName: string) {
