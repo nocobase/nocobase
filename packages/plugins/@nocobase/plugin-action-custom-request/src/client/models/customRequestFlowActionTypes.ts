@@ -21,5 +21,6 @@ export type CustomRequestStepParams = {
   data?: unknown;
   timeout?: number;
   responseType?: 'json' | 'stream';
+  variablePaths?: string[];
   roles?: string[];
 };

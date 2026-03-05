@@ -13,6 +13,8 @@ import { customRequestFlowActionUiSchema } from './customRequestFlowActionUiSche
 import { CustomRequestStepParams } from './customRequestFlowActionTypes';
 import { makeRequestKey, normalizeNameValueArray, parseJsonString } from './utils';
 
+const VARIABLE_EXPR_REGEXP = /\{\{\s*([^{}]+?)\s*\}\}/g;
+
 const normalizeRoleNames = (roles: unknown): string[] => {
   if (!Array.isArray(roles)) {
     return [];
@@ -83,38 +85,75 @@ const getDownloadFilename = (contentDisposition: string): string | undefined => 
   }
 };
 
-const buildRuntimeOptionsFromParams = (params: CustomRequestStepParams) => {
-  return {
-    url: params?.url,
-    headers: normalizeNameValueArray(params?.headers),
-    params: normalizeNameValueArray(params?.params),
-    data: normalizeBodyData(params?.data),
-  };
+const walkAndCollectVariablePaths = (input: unknown, output: Set<string>) => {
+  if (typeof input === 'string') {
+    const matches = input.matchAll(VARIABLE_EXPR_REGEXP);
+    for (const matched of matches) {
+      const expr = matched?.[1]?.trim();
+      if (!expr || !expr.startsWith('ctx.')) {
+        continue;
+      }
+      output.add(expr);
+    }
+    return;
+  }
+
+  if (Array.isArray(input)) {
+    input.forEach((item) => walkAndCollectVariablePaths(item, output));
+    return;
+  }
+
+  if (input && typeof input === 'object') {
+    Object.values(input as Record<string, unknown>).forEach((value) => walkAndCollectVariablePaths(value, output));
+  }
 };
 
-const resolveRuntimeOptions = async (ctx: any, params: CustomRequestStepParams) => {
-  const rawOptions = buildRuntimeOptionsFromParams(params);
-  if (typeof ctx?.resolveJsonTemplate !== 'function') {
-    return rawOptions;
+const extractVariablePaths = (params: CustomRequestStepParams): string[] => {
+  const sources = [params?.url, params?.headers, params?.params, params?.data];
+
+  const variablePaths = new Set<string>();
+  sources.forEach((source) => walkAndCollectVariablePaths(source, variablePaths));
+  return Array.from(variablePaths);
+};
+
+const buildVarsTemplate = (variablePaths: string[]) => {
+  return variablePaths.reduce(
+    (acc, path) => {
+      acc[path] = `{{${path}}}`;
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+};
+
+const resolveVars = async (ctx: any, variablePaths?: string[]) => {
+  if (!Array.isArray(variablePaths) || !variablePaths.length || typeof ctx?.resolveJsonTemplate !== 'function') {
+    return undefined;
   }
 
   try {
-    const resolved = await ctx.resolveJsonTemplate(rawOptions);
+    const template = buildVarsTemplate(variablePaths);
+    const resolved = await ctx.resolveJsonTemplate(template);
     if (!resolved || typeof resolved !== 'object') {
-      return rawOptions;
+      return undefined;
     }
-    return Object.keys(resolved).reduce(
-      (acc, key) => {
-        const value = (resolved as Record<string, any>)[key];
-        if (typeof value !== 'undefined') {
-          acc[key] = value;
+
+    return variablePaths.reduce(
+      (acc, path) => {
+        const value = (resolved as Record<string, unknown>)[path];
+        if (typeof value === 'undefined') {
+          return acc;
         }
+        if (typeof value === 'string' && value.trim() === `{{${path}}}`) {
+          return acc;
+        }
+        acc[path] = value;
         return acc;
       },
-      {} as Record<string, any>,
+      {} as Record<string, unknown>,
     );
   } catch (error) {
-    return rawOptions;
+    return undefined;
   }
 };
 
@@ -142,6 +181,7 @@ export const customRequestFlowAction = defineAction({
       ctx.collection?.name || ctx.collectionField?.collectionName || ctx.resource?.name || ctx.resourceName;
     const optionsDataSourceKey =
       ctx.collection?.dataSourceKey || ctx.dataSource?.key || ctx.resource?.getDataSourceKey?.();
+
     const options = {
       method: params?.method || 'POST',
       url: params?.url,
@@ -153,6 +193,7 @@ export const customRequestFlowAction = defineAction({
       ...(collectionName ? { collectionName } : {}),
       ...(optionsDataSourceKey ? { dataSourceKey: optionsDataSourceKey } : {}),
     };
+    const variablePaths = extractVariablePaths(params);
 
     await ctx.api.resource('customRequests').updateOrCreate({
       filterKeys: ['key'],
@@ -163,7 +204,15 @@ export const customRequestFlowAction = defineAction({
       },
     });
 
+    Object.keys(params || {}).forEach((fieldKey) => {
+      if (!['key', 'variablePaths', 'responseType'].includes(fieldKey)) {
+        delete (params as Record<string, any>)[fieldKey];
+      }
+    });
+
     params.key = nextKey;
+    params.variablePaths = variablePaths;
+    params.responseType = params?.responseType || 'json';
   },
   handler: async (ctx, params: CustomRequestStepParams) => {
     const requestKey = params?.key;
@@ -176,48 +225,15 @@ export const customRequestFlowAction = defineAction({
         },
       };
     }
-
-    let responseType: 'json' | 'stream' = params?.responseType || 'json';
-    try {
-      const currentConfig = await ctx.request({
-        url: `/customRequests:get/${requestKey}`,
-        method: 'GET',
-      });
-      const dbResponseType = currentConfig?.data?.data?.options?.responseType;
-      if (dbResponseType === 'stream') {
-        responseType = 'stream';
-      }
-    } catch (error) {
-      // ignore and fallback to step params
-    }
-
-    const inputCurrentRecord = ctx.inputArgs?.currentRecord || ctx.currentRecord;
-    const record = inputCurrentRecord?.data || ctx.record;
-    const formValues = resolveFormValues(ctx);
-    const requestRecordData =
-      formValues && typeof formValues === 'object' && Object.keys(formValues as Record<string, any>).length > 0
-        ? formValues
-        : record;
-    const dataSourceKey =
-      inputCurrentRecord?.dataSourceKey || ctx.collection?.dataSourceKey || ctx.resource?.getDataSourceKey?.();
-    const selectedRecord = getSelectedRecord(ctx);
-    const runtimeOptions = await resolveRuntimeOptions(ctx, params);
-
+    const responseType: 'json' | 'stream' = params?.responseType || 'json';
+    const vars = await resolveVars(ctx, params?.variablePaths);
     try {
       const response = await ctx.request({
         url: `/customRequests:send/${requestKey}`,
         method: 'POST',
         responseType: responseType === 'stream' ? 'blob' : 'json',
         data: {
-          currentRecord: {
-            // id: inputCurrentRecord?.id ?? (requestRecordData as any)?.id ?? record?.id,
-            // appends: inputCurrentRecord?.appends || [],
-            dataSourceKey,
-            data: requestRecordData,
-          },
-          $nForm: formValues,
-          $nSelectedRecord: selectedRecord,
-          options: runtimeOptions,
+          vars,
         },
       });
 

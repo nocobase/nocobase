@@ -13,7 +13,29 @@ import { parse } from '@nocobase/utils';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import Application from '@nocobase/server';
 import axios from 'axios';
+import set from 'lodash/set';
 import CustomRequestPlugin from '../plugin';
+
+const UnsafePathSegments = new Set(['__proto__', 'prototype', 'constructor']);
+
+const hasUnsafePathSegment = (path: string) => {
+  return path
+    .split(/[.[\]]+/)
+    .filter(Boolean)
+    .some((segment) => UnsafePathSegments.has(segment));
+};
+
+const applyVarsToVariables = (variables: Record<string, any>, vars: unknown) => {
+  if (!vars || typeof vars !== 'object' || Array.isArray(vars)) {
+    return;
+  }
+  for (const [key, value] of Object.entries(vars as Record<string, any>)) {
+    if (!key || typeof key !== 'string' || hasUnsafePathSegment(key)) {
+      continue;
+    }
+    set(variables, key, value);
+  }
+};
 
 function toJSON(value) {
   if (typeof value === 'string') {
@@ -51,7 +73,7 @@ const omitNullAndUndefined = (obj: any) => {
   }, {});
 };
 
-const CurrentUserVariableRegExp = /{{\s*(currentUser[^}]+)\s*}}/g;
+const CurrentUserVariableRegExp = /{{\s*(?:ctx\.)?(currentUser[^}]+)\s*}}/g;
 
 const getCurrentUserAppends = (str: string, user) => {
   const matched = str.matchAll(CurrentUserVariableRegExp);
@@ -85,6 +107,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     },
     $nForm,
     $nSelectedRecord,
+    vars,
     options: runtimeOptions,
   } = values;
 
@@ -179,6 +202,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $env: ctx.app.environment.getVariables(),
     $nSelectedRecord,
   };
+  applyVarsToVariables(variables, vars);
 
   const axiosRequestConfig = {
     baseURL: ctx.origin,
@@ -192,6 +216,10 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     params: getParsedValue(arrayToObject(params), variables),
     data: getParsedValue(toJSON(data), variables),
   };
+
+  console.log('custom-request:send - axiosRequestConfig', {
+    ...axiosRequestConfig,
+  });
 
   const requestUrl = axios.getUri(axiosRequestConfig);
   this.logger.info(`custom-request:send:${filterByTk} request url ${requestUrl}`);
