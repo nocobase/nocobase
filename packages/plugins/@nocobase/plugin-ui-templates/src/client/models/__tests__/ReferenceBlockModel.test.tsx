@@ -30,6 +30,9 @@ class MockFormBlockModel extends FlowModel {
   }
 }
 
+class DetailsBlockModel extends FlowModel {}
+class EditFormModel extends FlowModel {}
+
 const TEST_TIMEOUT = 10_000;
 
 describe('ReferenceBlockModel', () => {
@@ -129,11 +132,15 @@ describe('ReferenceBlockModel', () => {
     engine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      DetailsBlockModel,
+      EditFormModel,
       ReferenceBlockModel,
     });
     scopedEngine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      DetailsBlockModel,
+      EditFormModel,
       ReferenceBlockModel,
     });
 
@@ -397,6 +404,168 @@ describe('ReferenceBlockModel', () => {
       expect(opts[0].disabled).toBe(true);
       expect(String(opts[0].disabledReason || '')).toContain('Template association mismatch');
     });
+  });
+
+  describe('Template fallback (filterByTk mismatch → list)', () => {
+    it(
+      'reference + template + collection mismatch: patches target getStepParams(resourceSettings.init) to omit filterByTk',
+      async () => {
+        store['details-block-uid'] = {
+          uid: 'details-block-uid',
+          use: 'DetailsBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+              target: {
+                targetUid: 'details-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        referenceBlockModel.context.defineProperty('view', {
+          value: { inputArgs: { dataSourceKey: 'main', collectionName: 'B', filterByTk: 1 } },
+        });
+
+        await referenceBlockModel.onDispatchEventStart('beforeRender');
+
+        const targetModel = (referenceBlockModel as any)._targetModel as FlowModel;
+        expect(targetModel).toBeDefined();
+        const init = targetModel.getStepParams('resourceSettings', 'init') as any;
+        expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(false);
+        // StepParams 本身不应被修改
+        expect((targetModel as any)?.stepParams?.resourceSettings?.init).toHaveProperty('filterByTk');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'reference + non-template: does not patch init (filterByTk stays)',
+      async () => {
+        store['details-block-uid'] = {
+          uid: 'details-block-uid',
+          use: 'DetailsBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'details-block-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        referenceBlockModel.context.defineProperty('view', {
+          value: { inputArgs: { dataSourceKey: 'main', collectionName: 'B', filterByTk: 1 } },
+        });
+
+        await referenceBlockModel.onDispatchEventStart('beforeRender');
+
+        const targetModel = (referenceBlockModel as any)._targetModel as FlowModel;
+        const init = targetModel.getStepParams('resourceSettings', 'init') as any;
+        expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(true);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'copy + template + mismatch: deletes duplicated.stepParams.resourceSettings.init.filterByTk before createModel',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        referenceBlockModel.context.defineProperty('view', {
+          value: { inputArgs: { dataSourceKey: 'main', collectionName: 'B', filterByTk: 1 } },
+        });
+
+        const duplicated = {
+          uid: 'details-copy-uid',
+          use: 'DetailsBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+              },
+            },
+          },
+        } as any;
+
+        vi.spyOn(engine, 'duplicateModel').mockResolvedValue(duplicated);
+        vi.spyOn(engine, 'createModel').mockImplementation(((options: any) => {
+          const init = options?.stepParams?.resourceSettings?.init;
+          expect(init).toBeDefined();
+          expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(false);
+          throw new Error('STOP');
+        }) as any);
+
+        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
+        const step: any = flow?.steps?.target;
+        expect(typeof step?.beforeParamsSave).toBe('function');
+
+        await expect(
+          step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
+            targetUid: 'details-origin-uid',
+            mode: 'copy',
+            templateUid: 'tpl-1',
+          }),
+        ).rejects.toThrow('STOP');
+      },
+      TEST_TIMEOUT,
+    );
   });
 
   describe('Reference block basics', () => {
