@@ -28,6 +28,21 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
           '.ant-drawer-content': {
             backgroundColor: token.colorBgLayout,
           },
+          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-appear': {
+            animation: 'none',
+            transition: 'none',
+            transform: 'none',
+          },
+          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-enter': {
+            animation: 'none',
+            transition: 'none',
+            transform: 'none',
+          },
+          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-leave': {
+            animation: 'none',
+            transition: 'none',
+            transform: 'none',
+          },
           '.nb-block-item': {
             marginBottom: token.marginBlock,
             '.general-schema-designer': {
