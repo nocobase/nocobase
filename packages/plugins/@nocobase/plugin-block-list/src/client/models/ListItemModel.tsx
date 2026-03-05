@@ -57,6 +57,19 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
     const grid = this.subModels.grid.createFork({}, `grid-${index}`) as any;
 
     grid.gridContainerRef = React.createRef<HTMLDivElement>();
+    const gridRecordMeta: PropertyMetaFactory = createRecordMetaFactory(
+      () => grid.context.collection,
+      grid.context.t('Current record'),
+      (ctx) => {
+        const coll = ctx.collection;
+        const rec = ctx.record;
+        const name = coll?.name;
+        const dataSourceKey = coll?.dataSourceKey;
+        const filterByTk = coll?.getFilterByTK?.(rec);
+        if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+        return { collection: name, dataSourceKey, filterByTk };
+      },
+    );
     grid.context.defineProperty('fieldIndex', {
       get: () => index,
       cache: false,
@@ -64,6 +77,8 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
     grid.context.defineProperty('record', {
       get: () => record,
       cache: false,
+      resolveOnServer: true,
+      meta: gridRecordMeta,
     });
     grid.context.defineProperty('fieldKey', {
       get: () => index,
