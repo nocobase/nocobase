@@ -28,20 +28,32 @@ export const useStyles = genStyleHook('nb-action-drawer', (token) => {
           '.ant-drawer-content': {
             backgroundColor: token.colorBgLayout,
           },
-          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-appear': {
+          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-appear, .ant-drawer-content-wrapper.ant-drawer-panel-motion-right-appear-active, .ant-drawer-content-wrapper.ant-drawer-panel-motion-right-enter, .ant-drawer-content-wrapper.ant-drawer-panel-motion-right-enter-active':
+            {
+              animation: 'none',
+              transition: 'none',
+              transform: 'none',
+              opacity: 1,
+            },
+          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-leave, .ant-drawer-content-wrapper.ant-drawer-panel-motion-right-leave-active':
+            {
+              animation: 'none',
+              transition: 'none',
+              transform: 'none',
+              opacity: 0,
+              pointerEvents: 'none',
+            },
+          '.ant-drawer-mask.ant-drawer-mask-motion-appear, .ant-drawer-mask.ant-drawer-mask-motion-appear-active, .ant-drawer-mask.ant-drawer-mask-motion-enter, .ant-drawer-mask.ant-drawer-mask-motion-enter-active':
+            {
+              animation: 'none',
+              transition: 'none',
+              opacity: 1,
+            },
+          '.ant-drawer-mask.ant-drawer-mask-motion-leave, .ant-drawer-mask.ant-drawer-mask-motion-leave-active': {
             animation: 'none',
             transition: 'none',
-            transform: 'none',
-          },
-          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-enter': {
-            animation: 'none',
-            transition: 'none',
-            transform: 'none',
-          },
-          '.ant-drawer-content-wrapper.ant-drawer-panel-motion-right-leave': {
-            animation: 'none',
-            transition: 'none',
-            transform: 'none',
+            opacity: 0,
+            pointerEvents: 'none',
           },
           '.nb-block-item': {
             marginBottom: token.marginBlock,

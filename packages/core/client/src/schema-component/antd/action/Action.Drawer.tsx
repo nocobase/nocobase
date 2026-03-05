@@ -43,10 +43,10 @@ const openSizeWidthMap = new Map<OpenSize, string>([
   ['large', '70%'],
 ]);
 
-const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any }> = React.memo(
-  ({ footerNodeName, field, schema }) => {
+const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any; deferRender?: boolean }> = React.memo(
+  ({ footerNodeName, field, schema, deferRender = true }) => {
     // Improve the speed of opening the drawer
-    const [deferredVisible, setDeferredVisible] = useState(false);
+    const [deferredVisible, setDeferredVisible] = useState(() => !deferRender);
     const filterOutFooterNode = useCallback(
       (s) => {
         return s['x-component'] !== footerNodeName;
@@ -55,10 +55,13 @@ const ActionDrawerContent: FC<{ footerNodeName: string; field: any; schema: any 
     );
 
     useEffect(() => {
+      if (!deferRender) {
+        return;
+      }
       startTransition(() => {
         setDeferredVisible(true);
       });
-    }, []);
+    }, [deferRender]);
 
     if (!deferredVisible) {
       return null;
@@ -101,6 +104,10 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
         display: hidden ? 'none' : 'block',
       };
     }, [hidden, drawerProps?.style, others?.style]);
+    const shouldDeferRender = useMemo(() => {
+      const className = `${drawerProps?.className || ''} ${others?.className || ''}`;
+      return !className.split(/\s+/).includes('nb-record-picker-selector');
+    }, [drawerProps?.className, others?.className]);
 
     const container = React.useMemo(() => {
       return document.querySelector('#nocobase-app-container');
@@ -154,7 +161,12 @@ export const InternalActionDrawer: React.FC<ActionDrawerProps> = observer(
                 )
               }
             >
-              <ActionDrawerContent footerNodeName={footerNodeName} field={field} schema={schema} />
+              <ActionDrawerContent
+                footerNodeName={footerNodeName}
+                field={field}
+                schema={schema}
+                deferRender={shouldDeferRender}
+              />
             </Drawer>
           </TabsContextProvider>
         </zIndexContext.Provider>

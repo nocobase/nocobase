@@ -46,7 +46,7 @@ import Checkbox from '../checkbox/Checkbox';
 const recordPickerVisibleCache = new Map<string, boolean>();
 
 function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
-  return field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
+  return field?.path?.entire || field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
 }
 
 function getRecordPickerVisibleFromCache(key?: string) {

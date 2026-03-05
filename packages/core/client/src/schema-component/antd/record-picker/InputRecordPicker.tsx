@@ -32,7 +32,7 @@ RecordPickerContext.displayName = 'RecordPickerContext';
 const recordPickerVisibleCache = new Map<string, boolean>();
 
 export function getRecordPickerVisibleCacheKey(field: any, fieldSchema: any) {
-  return field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
+  return field?.path?.entire || field?.address?.toString?.() || fieldSchema?.['x-uid'] || fieldSchema?.name;
 }
 
 export function getRecordPickerVisibleFromCache(key?: string) {
