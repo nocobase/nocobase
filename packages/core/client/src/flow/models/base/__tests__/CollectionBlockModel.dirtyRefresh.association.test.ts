@@ -28,7 +28,7 @@ class DummyAssociationTableBlockModel extends CollectionBlockModel {
 
 function setupEngineAndModel() {
   const engine = new FlowEngine();
-  engine.context.location = { search: '' } as any;
+  engine.context.defineProperty('location', { value: { search: '' } as any });
 
   engine.registerModels({ DummyAssociationTableBlockModel });
 
@@ -71,8 +71,8 @@ function setupEngineAndModel() {
     },
   });
 
-  // Ensure `previousBeforeRenderHash` is initialized to avoid early return in onActive.
-  (model as any).onMount();
+  // Avoid early return in onActive when qs changes.
+  (model as any).previousBeforeRenderHash = '';
 
   const resource = model.context.resource as unknown as DummyMultiRecordResource;
   return { engine, model, resource };
