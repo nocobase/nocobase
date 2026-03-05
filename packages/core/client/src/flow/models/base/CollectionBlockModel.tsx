@@ -44,6 +44,25 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     this.previousBeforeRenderHash = this.context.location.search;
   }
 
+  private getDirtyTrackingVersion(
+    engine: FlowEngine,
+    dataSourceKey: string,
+    resource: BaseRecordResource | undefined,
+    params: ResourceSettingsInitParams,
+  ): number {
+    const names = new Set<string>();
+    const primary = resource?.getResourceName?.() || params.associationName || params.collectionName;
+    if (primary) names.add(String(primary));
+    if (params.associationName) names.add(String(params.associationName));
+    if (params.collectionName) names.add(String(params.collectionName));
+
+    let version = 0;
+    for (const name of names) {
+      version += engine.getDataSourceDirtyVersion(dataSourceKey, name);
+    }
+    return version;
+  }
+
   onActive(forceRefresh = false) {
     if (!this.hidden && this.previousBeforeRenderHash !== this.context.location.search) {
       this.rerender();
@@ -59,10 +78,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
     const params = this.getResourceSettingsInitParams();
     const dataSourceKey = resource.getDataSourceKey() || params.dataSourceKey || 'main';
-    const resourceName = resource.getResourceName() || params.associationName || params.collectionName;
-
     const engine = this.context.engine as FlowEngine;
-    const currentVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+    const currentVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
 
     if (forceRefresh) {
       if (this.dirtyRefreshing) return;
@@ -70,7 +87,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       void resource
         .refresh()
         .then(() => {
-          this.lastSeenDirtyVersion = currentVersion;
+          this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
         })
         .catch(() => {
           // keep lastSeenDirtyVersion unchanged so next activate can retry
@@ -92,7 +109,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     void resource
       .refresh()
       .then(() => {
-        this.lastSeenDirtyVersion = currentVersion;
+        this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
       })
       .catch(() => {
         // keep lastSeenDirtyVersion unchanged so next activate can retry
@@ -248,6 +265,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
                 if (!field.targetCollection) {
                   return null;
                 }
+                if (field.type === 'belongsToArray') {
+                  return null;
+                }
                 if (!this.filterCollection(field.targetCollection)) {
                   return null;
                 }
@@ -297,6 +317,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
             .getAssociationFields(this._getScene())
             .map((field) => {
               if (!field.targetCollection) {
+                return null;
+              }
+              if (field.type === 'belongsToArray') {
                 return null;
               }
               if (!this.filterCollection(field.targetCollection)) {
@@ -450,9 +473,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
           const engine = this.context.engine as FlowEngine | undefined;
           if (!engine?.getDataSourceDirtyVersion) return;
           const dataSourceKey = resource.getDataSourceKey?.() || params.dataSourceKey || 'main';
-          const resourceName = resource.getResourceName?.() || params.associationName || params.collectionName;
-          if (!resourceName) return;
-          this.lastSeenDirtyVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+          this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
         };
 
         syncDirtyVersion();

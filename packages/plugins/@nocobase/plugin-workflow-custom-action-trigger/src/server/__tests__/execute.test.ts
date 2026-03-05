@@ -189,9 +189,17 @@ describe('workflow: custom action trigger > manually execute', () => {
         config: {},
       });
 
+      const payload = {
+        message: 'hello',
+        nested: {
+          count: 1,
+        },
+      };
+
       const res1 = await rootAgent.resource('workflows').execute({
         filterByTk: w1.id,
         values: {
+          data: payload,
           userId: users[0].id,
           roleName: 'admin',
         },
@@ -202,6 +210,7 @@ describe('workflow: custom action trigger > manually execute', () => {
       const [e1] = await w1.getExecutions();
       expect(e1).toBeDefined();
       expect(e1.id).toBe(res1.body.data.execution.id);
+      expect(e1.context.data).toMatchObject(payload);
     });
 
     it('multiple records', async () => {
