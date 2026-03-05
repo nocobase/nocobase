@@ -12,6 +12,13 @@ import { Mutex, MutexInterface, E_CANCELED, withTimeout } from 'async-mutex';
 
 export type Releaser = () => void | Promise<void>;
 
+/**
+ * A lock handle returned by {@link ILockAdapter.tryAcquire}.
+ *
+ * **Important**: the underlying mutex is already held when this object is
+ * returned.  The caller MUST invoke either `acquire()` or `runExclusive()`
+ * promptly; if neither is called the lock will be held indefinitely.
+ */
 export interface ILock {
   acquire(ttl: number): Releaser | Promise<Releaser>;
   runExclusive<T>(fn: () => Promise<T>, ttl: number): Promise<T>;
@@ -115,11 +122,18 @@ class LocalLockAdapter implements ILockAdapter {
     let preAcquiredConsumed = false;
 
     const getRelease = async (): Promise<Releaser> => {
-      if (!preAcquiredConsumed) {
-        preAcquiredConsumed = true;
-        return preAcquiredRelease;
-      }
-      return (await mutex.acquire()) as Releaser;
+      const rawRelease: Releaser = !preAcquiredConsumed
+        ? ((preAcquiredConsumed = true), preAcquiredRelease)
+        : ((await mutex.acquire()) as Releaser);
+      // Idempotency guard: prevents double-release when both the TTL auto-
+      // release timer and the caller-facing releaser (or finally block) fire.
+      let released = false;
+      return () => {
+        if (!released) {
+          released = true;
+          return (rawRelease as () => void | Promise<void>)();
+        }
+      };
     };
 
     return {
