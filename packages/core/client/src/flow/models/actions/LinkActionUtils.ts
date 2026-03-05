@@ -46,3 +46,20 @@ export function handleLinkNavigation(options: {
   // 在弹窗上下文中，错误的关闭时机会把新路由回滚为原页面。
   router.navigate(link, { replace: true });
 }
+
+/**
+ * 判断 Link 导航后是否需要销毁当前视图
+ * @param options 判定参数
+ * @param options.openInNewWindow 是否新窗口打开
+ * @param options.isExternalLink 是否外部链接
+ * @param options.viewType 当前视图类型
+ * @returns 是否应销毁当前视图
+ */
+export function shouldDestroyViewAfterLinkNavigation(options: {
+  openInNewWindow?: boolean;
+  isExternalLink: boolean;
+  viewType?: string;
+}) {
+  const { openInNewWindow, isExternalLink, viewType } = options;
+  return !openInNewWindow && !isExternalLink && viewType !== 'embed';
+}

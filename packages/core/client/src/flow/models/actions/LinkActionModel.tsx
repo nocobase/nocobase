@@ -13,7 +13,7 @@ import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
 import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
 import { ActionModel, ActionSceneEnum } from '../base';
-import { handleLinkNavigation } from './LinkActionUtils';
+import { handleLinkNavigation, shouldDestroyViewAfterLinkNavigation } from './LinkActionUtils';
 
 export function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
   if (!params?.length) return url;
@@ -87,8 +87,15 @@ LinkActionModel.registerFlow({
             router: ctx.router,
             isExternalLink,
           });
-          // 仅在站内同窗口导航后销毁弹窗，避免外链/新窗口场景出现行为回归。
-          if (ctx.view && !openInNewWindow && !isExternalLink) {
+          // embed 是页面容器，不应销毁；仅弹窗视图在站内同窗口跳转后销毁。
+          if (
+            ctx.view &&
+            shouldDestroyViewAfterLinkNavigation({
+              openInNewWindow,
+              isExternalLink,
+              viewType: ctx.view.type,
+            })
+          ) {
             ctx.view.destroy();
           }
         } else {

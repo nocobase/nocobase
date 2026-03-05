@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { handleLinkNavigation } from '../LinkActionUtils';
+import { handleLinkNavigation, shouldDestroyViewAfterLinkNavigation } from '../LinkActionUtils';
 
 describe('handleLinkNavigation', () => {
   it('should navigate relative link without closing popup view implicitly', () => {
@@ -57,5 +57,27 @@ describe('handleLinkNavigation', () => {
     expect(openWindow).toHaveBeenCalledWith(`${window.location.origin}/target-page`, '_blank');
     expect(navigate).not.toHaveBeenCalled();
     expect(setLocationHref).not.toHaveBeenCalled();
+  });
+});
+
+describe('shouldDestroyViewAfterLinkNavigation', () => {
+  it('should not destroy embed view for internal same-window link', () => {
+    expect(
+      shouldDestroyViewAfterLinkNavigation({
+        openInNewWindow: false,
+        isExternalLink: false,
+        viewType: 'embed',
+      }),
+    ).toBe(false);
+  });
+
+  it('should destroy popup view for internal same-window link', () => {
+    expect(
+      shouldDestroyViewAfterLinkNavigation({
+        openInNewWindow: false,
+        isExternalLink: false,
+        viewType: 'drawer',
+      }),
+    ).toBe(true);
   });
 });
