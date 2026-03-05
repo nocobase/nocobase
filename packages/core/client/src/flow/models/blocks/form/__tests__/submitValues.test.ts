@@ -11,7 +11,7 @@ import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
 import { FormBlockModel } from '../../../..';
-import { omitHiddenModelValuesFromSubmit } from '../submitValues';
+import { getValidationNamePathsExcludingHiddenModels, omitHiddenModelValuesFromSubmit } from '../submitValues';
 
 class TestFormModel extends FormBlockModel {
   createResource(ctx: any, _params: any) {
@@ -121,5 +121,45 @@ describe('omitHiddenModelValuesFromSubmit', () => {
     createFieldModel(engine, 'field-ab', blockModel, { hidden: true, stepFieldPath: 'a.b' });
 
     expect(omitHiddenModelValuesFromSubmit({ a: { b: 1 } }, blockModel)).toEqual({});
+  });
+});
+
+describe('getValidationNamePathsExcludingHiddenModels', () => {
+  it('excludes hidden field paths from validation name list', () => {
+    const engine = createEngine();
+    const blockModel = createFormBlock(engine, 'block-1');
+    createFieldModel(engine, 'field-b', blockModel, { hidden: true, fieldPathArray: ['b'] });
+    (blockModel.context as any).defineProperty('form', {
+      value: {
+        getFieldsError: () => [{ name: ['a'] }, { name: ['b'] }],
+      },
+    });
+
+    expect(getValidationNamePathsExcludingHiddenModels(blockModel)).toEqual([['a']]);
+  });
+
+  it('keeps validation names when field uses hidden reserved value semantics', () => {
+    const engine = createEngine();
+    const blockModel = createFormBlock(engine, 'block-1');
+    createFieldModel(engine, 'field-b', blockModel, { hidden: false, fieldPathArray: ['b'], props: { hidden: true } });
+    (blockModel.context as any).defineProperty('form', {
+      value: {
+        getFieldsError: () => [{ name: ['a'] }, { name: ['b'] }],
+      },
+    });
+
+    expect(getValidationNamePathsExcludingHiddenModels(blockModel)).toEqual([['a'], ['b']]);
+  });
+
+  it('returns null when no registered field names are available', () => {
+    const engine = createEngine();
+    const blockModel = createFormBlock(engine, 'block-1');
+    (blockModel.context as any).defineProperty('form', {
+      value: {
+        getFieldsError: () => [],
+      },
+    });
+
+    expect(getValidationNamePathsExcludingHiddenModels(blockModel)).toBeNull();
   });
 });
