@@ -16,7 +16,7 @@ import { registerPopupVariable } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } from './viewEvents';
-import { FlowEngineProvider } from '../provider';
+import { FlowEngineProvider } from '../engineContext';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 

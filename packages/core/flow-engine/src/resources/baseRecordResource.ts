@@ -8,7 +8,7 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import _ from 'lodash';
+import { mergeWith, omit } from 'lodash-es';
 import { APIResource } from './apiResource';
 import { FilterItem } from './filterItem';
 import { ResourceError } from './flowResource';
@@ -66,7 +66,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
       }
     };
 
-    return args.reduce((acc, cur) => _.mergeWith(acc, cur, customizer), base);
+    return args.reduce((acc, cur) => mergeWith(acc, cur, customizer), base);
   }
 
   setRunActionOptions(action: string, options: AxiosRequestConfig) {
@@ -98,7 +98,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
     const { rawResponse, ...rest } = options;
     const config = this.mergeRequestConfig(
-      _.omit(this.request, ['params', 'data', 'method']),
+      omit(this.request, ['params', 'data', 'method']),
       {
         method: 'post',
         url: this.buildURL(action),

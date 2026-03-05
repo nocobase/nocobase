@@ -9,7 +9,7 @@
 
 import { observable } from '@formily/reactive';
 import { AxiosRequestConfig } from 'axios';
-import _ from 'lodash';
+import { castArray } from 'lodash-es';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDataItem[]> {
@@ -175,7 +175,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     await this.runAction('destroy', config);
     this.markDataSourceDirty();
     const currentPage = this.getPage();
-    const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
+    const lastPage = Math.ceil((this.getCount() - castArray(filterByTk).length) / this.getPageSize());
     if (currentPage > lastPage) {
       this.setPage(lastPage || 1);
     }

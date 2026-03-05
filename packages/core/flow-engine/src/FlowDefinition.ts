@@ -8,7 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
-import _ from 'lodash';
+import { omit } from 'lodash-es';
 import type { FlowDefinitionOptions, StepDefinition } from './types';
 import { IFlowRepository } from './flow-registry/BaseFlowRegistry';
 
@@ -20,7 +20,7 @@ export class FlowDefinition {
     options: FlowDefinitionOptions,
     protected flowRegistry: IFlowRepository,
   ) {
-    this.options = observable.shallow(_.omit(options, ['steps']));
+    this.options = observable.shallow(omit(options, ['steps']));
     // 初始化步骤
     for (const [stepKey, step] of Object.entries(options.steps || {})) {
       this.addStep(stepKey, step);

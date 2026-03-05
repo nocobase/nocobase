@@ -9,7 +9,7 @@
 
 import { Select } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
-import { useFlowEngineContext } from '../../../../provider';
+import { useFlowEngineContext } from '../../../../engineContext';
 
 export interface SelectWithTitleProps {
   title?: any;

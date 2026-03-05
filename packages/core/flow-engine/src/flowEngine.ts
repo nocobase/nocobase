@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { observable } from '@formily/reactive';
-import _ from 'lodash';
+import { omit } from 'lodash-es';
 import pino from 'pino';
 import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
 import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
@@ -1128,7 +1128,7 @@ export class FlowEngine {
 
     // 3. 合并用户选项和关键属性
     const newOptions = {
-      ..._.omit(currentOptions, ['subModels']),
+      ...omit(currentOptions, ['subModels']),
       ...userOptions,
     } as CreateModelOptions;
 

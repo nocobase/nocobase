@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DragOutlined } from '@ant-design/icons';
+import DragOutlined from '@ant-design/icons/es/icons/DragOutlined';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import React, { FC, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
-import { useFlowEngine } from '../../provider';
+import { useFlowEngine } from '../../engineContext';
 import { PersistOptions } from '../../types';
 
 export * from './findModelUidPosition';

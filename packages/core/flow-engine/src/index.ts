@@ -23,7 +23,8 @@ export * from './resources';
 export * from './flowEngine';
 export * from './hooks';
 export * from './models';
-export * from './provider';
+export * from './engineContext';
+export { FlowEngineGlobalsContextProvider } from './provider';
 
 export * from './reactive';
 export * from './components';

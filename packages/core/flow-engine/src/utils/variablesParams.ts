@@ -17,7 +17,7 @@ import { buildServerContextParams, type RecordRef, type ServerContextParams } fr
 import { createCollectionContextMeta } from './createCollectionContextMeta';
 import { createAssociationSubpathResolver } from './associationObjectVariable';
 import type { JSONValue } from './params-resolvers';
-import _ from 'lodash';
+import { cloneDeep } from 'lodash-es';
 
 // 从 FlowContext 中推断当前记录的 context params 信息
 export function inferRecordRef(ctx: FlowContext): RecordRef | undefined {
@@ -68,7 +68,7 @@ export function getViewRecordFromParent(flowContext: FlowContext, viewContext: F
   if (viewFilterByTk == null || recordFilterByTk == null) return undefined;
   if (viewFilterByTk !== recordFilterByTk) return undefined;
 
-  return _.cloneDeep(parentRecord);
+  return cloneDeep(parentRecord);
 }
 
 // 针对视图场景（Page/Dialog/Drawer），创建用于 view.resolveOnServer 的判定函数

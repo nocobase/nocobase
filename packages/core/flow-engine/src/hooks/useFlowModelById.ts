@@ -9,7 +9,7 @@
 
 import { useMemo } from 'react';
 import { FlowModel } from '../models';
-import { useFlowEngine } from '../provider';
+import { useFlowEngine } from '../engineContext';
 import { StepParams } from '../types';
 
 export function useFlowModelById<T extends FlowModel = FlowModel>(
