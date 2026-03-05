@@ -10,7 +10,7 @@
 import { useRequest } from 'ahooks';
 import { useMemo } from 'react';
 import { FlowModel } from '../models';
-import { useFlowEngine } from '../engineContext';
+import { useFlowEngine } from '../provider';
 
 /**
  * Hook for applying auto-apply flows on a FlowModel

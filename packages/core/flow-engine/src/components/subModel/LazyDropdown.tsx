@@ -10,7 +10,7 @@
 import { css } from '@emotion/css';
 import { Dropdown, DropdownProps, Empty, Input, InputProps, Spin } from 'antd';
 import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useFlowEngine } from '../../engineContext';
+import { useFlowEngine } from '../../provider';
 
 // ==================== Types ====================
 

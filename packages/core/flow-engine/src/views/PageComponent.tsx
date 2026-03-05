@@ -10,7 +10,7 @@
 import CloseOutlined from '@ant-design/icons/es/icons/CloseOutlined';
 import { Button } from 'antd';
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useFlowEngine } from '../engineContext';
+import { useFlowEngine } from '../provider';
 
 export const PageComponent = forwardRef((props: any, ref) => {
   const [newConfig, setNewConfig] = React.useState<any>({});

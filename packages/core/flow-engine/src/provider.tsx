@@ -8,10 +8,33 @@
  */
 
 import { App, ConfigProvider, theme } from 'antd';
-import React, { useContext, useEffect } from 'react';
-import { useFlowEngine } from './engineContext';
+import React, { createContext, useContext, useEffect } from 'react';
+import { FlowEngineContext } from './flowContext';
+import { FlowContextProvider } from './FlowContextProvider';
+import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 import { FlowViewer } from './views/FlowView';
+
+interface FlowEngineProviderProps {
+  engine: FlowEngine;
+  children: React.ReactNode;
+}
+
+const FlowEngineReactContext = createContext<FlowEngine | null>(null);
+
+export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = React.memo((props) => {
+  const { engine, children } = props;
+  if (!engine) {
+    throw new Error('FlowEngineProvider must be supplied with an engine.');
+  }
+  return (
+    <FlowEngineReactContext.Provider value={engine}>
+      <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
+    </FlowEngineReactContext.Provider>
+  );
+});
+
+FlowEngineProvider.displayName = 'FlowEngineProvider';
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
@@ -62,5 +85,21 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
     </ConfigProvider>
   );
 };
+// 不 throw Error 怎么处理？
+export const useFlowEngine = ({ throwError = true } = {}): FlowEngine => {
+  const context = useContext(FlowEngineReactContext);
+  if (!context && throwError) {
+    // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
+    // and always supplied with an engine.
+    console.warn(
+      'useFlowEngine must be used within a FlowEngineProvider, and FlowEngineProvider must be supplied with an engine.',
+    );
+    return;
+  }
+  return context;
+};
 
-export { FlowEngineProvider, useFlowEngine, useFlowEngineContext } from './engineContext';
+export const useFlowEngineContext = (): FlowEngineContext => {
+  const engine = useFlowEngine();
+  return engine.context as FlowEngineContext;
+};

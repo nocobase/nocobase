@@ -9,7 +9,7 @@
 
 import { Switch } from 'antd';
 import React, { FC, useEffect, useState } from 'react';
-import { useFlowEngineContext } from '../../../../engineContext';
+import { useFlowEngineContext } from '../../../../provider';
 import { observer } from '../../../../reactive';
 
 const ml32 = { marginLeft: 32 };

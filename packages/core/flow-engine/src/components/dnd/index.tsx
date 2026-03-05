@@ -12,7 +12,7 @@ import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } 
 import React, { FC, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { FlowModel } from '../../models';
-import { useFlowEngine } from '../../engineContext';
+import { useFlowEngine } from '../../provider';
 import { PersistOptions } from '../../types';
 
 export * from './findModelUidPosition';

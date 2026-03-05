@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { useFlowEngine } from '../engineContext';
+import { useFlowEngine } from '../provider';
 
 export const FieldSkeleton: React.FC = () => {
   const flowEngine = useFlowEngine();
