@@ -116,8 +116,10 @@ export class MockServer extends Application {
   }
 
   async destroy(options: any = {}): Promise<void> {
-    await AppSupervisor.getInstance().destroy();
+    await super.destroy(options);
+
     Gateway.getInstance().destroy();
+    await AppSupervisor.getInstance().destroy();
   }
 
   agent(callback?): ExtendedAgent {
