@@ -54,19 +54,17 @@ export const required = defineAction({
     // 检查 collectionField.validation 是否已有 required
     const hasRequiredInCollection = joiRules.some((rule) => rule.name === 'required');
     rules = rules.filter((rule) => !rule.required);
-    // 全局已设置必填不可覆盖
-    if (params.required && !hasRequiredInCollection) {
+    // collection validation 已内置 required 时，不再额外注入 required 规则，避免重复报错
+    if (hasRequiredInCollection) {
+      ctx.model.setProps({ rules, required: true });
+      return;
+    }
+    if (params.required) {
       rules.push({
         required: true,
         message: ctx.t('The field value is required'),
       });
     }
-    if (hasRequiredInCollection && !rules.some((v) => v.required)) {
-      rules.push({
-        required: true,
-        message: ctx.t('The field value is required'),
-      });
-    }
-    ctx.model.setProps({ rules, required: params.required || hasRequiredInCollection });
+    ctx.model.setProps({ rules, required: params.required });
   },
 });

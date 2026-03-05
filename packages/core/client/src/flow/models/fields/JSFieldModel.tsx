@@ -156,7 +156,7 @@ JSFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: 'v1',
+          version: 'v2',
           code: DEFAULT_CODE,
         };
       },

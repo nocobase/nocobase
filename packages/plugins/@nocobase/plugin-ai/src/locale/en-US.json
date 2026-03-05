@@ -280,5 +280,7 @@
   "Add model": "Add model",
   "No LLM services enabled yet": "No LLM services enabled yet",
   "No model available": "No model available",
-  "Please contact the administrator to configure models": "Please contact the administrator to configure models"
+  "Please contact the administrator to configure models": "Please contact the administrator to configure models",
+  "Thinking in progress": "Thinking in progress",
+  "Thinking completed": "Thinking completed"
 }

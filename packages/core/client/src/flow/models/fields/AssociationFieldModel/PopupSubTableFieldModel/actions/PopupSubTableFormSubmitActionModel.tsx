@@ -10,7 +10,10 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionGroupModel, ActionModel } from '../../../../base';
-import { omitHiddenModelValuesFromSubmit } from '../../../../blocks/form/submitValues';
+import {
+  getValidationNamePathsExcludingHiddenModels,
+  omitHiddenModelValuesFromSubmit,
+} from '../../../../blocks/form/submitValues';
 
 function matchPath(paths: string[], key: string) {
   return paths.find((p) => p === key || p.endsWith(`.${key}`)) ?? key;
@@ -42,7 +45,16 @@ PopupSubTableFormSubmitActionModel.registerFlow({
       async handler(ctx, params) {
         if (params.enable) {
           try {
-            await ctx.form.validateFields();
+            const validateNamePaths = ctx?.flowSettingsEnabled
+              ? getValidationNamePathsExcludingHiddenModels(ctx.blockModel)
+              : null;
+            if (Array.isArray(validateNamePaths)) {
+              if (validateNamePaths.length) {
+                await ctx.form.validateFields(validateNamePaths as any);
+              }
+            } else {
+              await ctx.form.validateFields();
+            }
             const confirmed = await ctx.modal.confirm({
               title: ctx.t(params.title, { ns: 'lm-flow-engine' }),
               content: ctx.t(params.content, { ns: 'lm-flow-engine' }),
@@ -70,7 +82,16 @@ PopupSubTableFormSubmitActionModel.registerFlow({
         const parentUpdateAssociations = parentResource.getUpdateAssociationValues();
         const prefixPath = matchPath(parentUpdateAssociations, associationName);
         try {
-          await blockModel.form.validateFields();
+          const validateNamePaths = ctx?.flowSettingsEnabled
+            ? getValidationNamePathsExcludingHiddenModels(blockModel)
+            : null;
+          if (Array.isArray(validateNamePaths)) {
+            if (validateNamePaths.length) {
+              await blockModel.form.validateFields(validateNamePaths as any);
+            }
+          } else {
+            await blockModel.form.validateFields();
+          }
           const rawValues = blockModel.form.getFieldsValue(true);
           const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
           subTableModel.dispatchEvent('updateRow', {
