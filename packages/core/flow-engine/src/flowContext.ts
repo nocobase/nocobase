@@ -27,7 +27,7 @@ import { ContextPathProxy } from './ContextPathProxy';
 import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
-import { JSRunner, JSRunnerOptions } from './JSRunner';
+import { JSRunner, JSRunnerOptions, shouldPreprocessRunJSTemplates } from './JSRunner';
 import type { FlowModel } from './models/flowModel';
 import type { ForkFlowModel } from './models/forkFlowModel';
 import { FlowResource, FlowSQLRepository } from './resources';
@@ -3035,8 +3035,10 @@ class BaseFlowEngineContext extends FlowContext {
           ...(runnerOptions || {}),
           globals: mergedGlobals,
         });
-        // Enable by default; use `preprocessTemplates: false` to explicitly disable.
-        const shouldPreprocessTemplates = preprocessTemplates !== false;
+        const shouldPreprocessTemplates = shouldPreprocessRunJSTemplates({
+          version: runnerOptions?.version,
+          preprocessTemplates,
+        });
         const jsCode = await prepareRunJsCode(String(code ?? ''), { preprocessTemplates: shouldPreprocessTemplates });
         return runner.run(jsCode);
       },

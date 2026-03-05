@@ -66,7 +66,7 @@ JSRecordActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: 'v1',
+          version: 'v2',
           code: `
 if (!ctx.record) {
   ctx.message.error('No record');

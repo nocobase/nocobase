@@ -93,4 +93,67 @@ describe('CollectionBlockModel defineChildren - new scene associated records vis
     const hasAssociated = children.some((item) => String(item?.key).includes('associated'));
     expect(hasAssociated).toBe(true);
   });
+
+  it('filters out belongsToArray fields in "Associated records" children', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ NewSceneCollectionBlockModel });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'orders',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'user_id', type: 'integer', interface: 'number' },
+      ],
+    });
+    ds.addCollection({
+      name: 'orgs',
+      filterTargetKey: 'id',
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+    ds.addCollection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        {
+          name: 'orders',
+          title: 'Orders',
+          type: 'hasMany',
+          target: 'orders',
+          interface: 'o2m',
+          foreignKey: 'user_id',
+        },
+        {
+          name: 'orgs',
+          title: 'Orgs',
+          type: 'belongsToMany',
+          target: 'orgs',
+          interface: 'm2m',
+        },
+        {
+          name: 'org_m2marray',
+          title: 'Org M2M Array',
+          type: 'belongsToArray',
+          target: 'orgs',
+          interface: 'm2mArray',
+        },
+      ],
+    });
+
+    const designerCtx = {
+      dataSourceManager: engine.dataSourceManager,
+      view: { inputArgs: { dataSourceKey: 'main', collectionName: 'users', filterByTk: 1 } },
+    } as any;
+
+    const children = (await NewSceneCollectionBlockModel.defineChildren(designerCtx)) as any[];
+    const associated = children.find((item) => String(item?.key).includes('associated'));
+    expect(associated).toBeTruthy();
+
+    const associatedChildren = (associated.children?.() || []) as any[];
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-orders'))).toBe(true);
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-orgs'))).toBe(true);
+    expect(associatedChildren.some((item) => String(item?.key).includes('associated-org_m2marray'))).toBe(false);
+  });
 });

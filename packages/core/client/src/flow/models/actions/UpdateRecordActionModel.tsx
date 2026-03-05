@@ -178,6 +178,7 @@ UpdateRecordActionModel.registerFlow({
         // 跨视图栈按 uid 定位到设置面板中的真实 AssignForm 实例
         const form: AssignFormModel = m?.assignFormUid && ctx.engine.getModel?.(m.assignFormUid, true);
         if (!form) return;
+        await form?.form?.validateFields?.();
         const assignedValues = form?.getAssignedValues?.() || {};
         const grid = form?.subModels?.grid;
         const items = grid?.subModels?.items || [];

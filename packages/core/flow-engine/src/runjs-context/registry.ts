@@ -10,7 +10,7 @@
 // 为避免在模块初始化阶段引入 FlowContext（从而触发循环依赖），不要在顶层导入各类 RunJSContext。
 // 在需要默认映射时（首次 resolve）再使用 createRequire 同步加载对应模块。
 
-export type RunJSVersion = 'v1' | (string & {});
+export type RunJSVersion = 'v1' | 'v2' | (string & {});
 export type RunJSContextCtor = new (delegate: any) => any;
 export type RunJSContextMeta = {
   scenes?: string[];

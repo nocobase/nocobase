@@ -19,9 +19,9 @@ export const CONTEXT_TYPE = {
 
 export const CONTEXT_TYPE_OPTIONS = [
   {
-    label: `{{t('None', { ns: "${NAMESPACE}" })}}`,
+    label: `{{t('Custom context', { ns: "${NAMESPACE}" })}}`,
     value: CONTEXT_TYPE.GLOBAL,
-    tooltip: `{{t('Could be used on non-record related action buttons. Such as buttons in workbench panel or in table blocks.', { ns: "${NAMESPACE}" })}}`,
+    tooltip: `{{t('Could be used on non-record related action buttons. You can provide custom JSON as trigger data.', { ns: "${NAMESPACE}" })}}`,
   },
   {
     label: `{{t('Single collection record', { ns: "${NAMESPACE}" })}}`,
