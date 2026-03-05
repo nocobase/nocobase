@@ -30,6 +30,9 @@ import {
 } from './referenceShared';
 
 const TARGET_CONTEXT_BRIDGE_MARKER = Symbol.for('nocobase.referenceBlockTargetContextBridge');
+const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
+  'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
+);
 
 /**
  * ReferenceBlockModel（插件版）
@@ -135,6 +138,83 @@ export class ReferenceBlockModel extends BlockModel {
   private _localProps?: Record<string, any>;
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
+
+  private _restoreTemplateFallbackPatch(target?: FlowModel) {
+    if (!target) return;
+    const original = (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] as
+      | FlowModel['getStepParams']
+      | undefined;
+    if (!original) return;
+    (target as any).getStepParams = original;
+    delete (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS];
+    try {
+      target.context?.removeCache?.('resource');
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
+    const viewArgs = (this as any)?.context?.view?.inputArgs || {};
+    const filterByTk = viewArgs?.filterByTk;
+    const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+    if (missingFilterByTk) {
+      return true;
+    }
+    const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+    if (collectionMismatch) {
+      return true;
+    }
+    const viewDataSourceKey = viewArgs?.dataSourceKey;
+    const hasViewDataSourceKey =
+      viewDataSourceKey !== undefined && viewDataSourceKey !== null && String(viewDataSourceKey).trim() !== '';
+    const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+    return !!dataSourceMismatch;
+  }
+
+  private _applyTemplateFallbackPatchState(target?: FlowModel) {
+    if (!target) return;
+    const useTemplate = this.getStepParams('referenceSettings', 'useTemplate') || {};
+    const templateUid = String(useTemplate?.templateUid || '').trim();
+    const mode = useTemplate?.mode || (this.getStepParams('referenceSettings', 'target') || {})?.mode || 'reference';
+    const isTemplateReference = !!templateUid && mode !== 'copy';
+    const targetName = target?.constructor?.name;
+    const isSupportedTarget = targetName === 'DetailsBlockModel' || targetName === 'EditFormModel';
+
+    if (!isTemplateReference || !isSupportedTarget) {
+      this._restoreTemplateFallbackPatch(target);
+      return;
+    }
+
+    // Avoid double patch
+    if ((target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
+      return;
+    }
+
+    const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
+    (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
+
+    const ref = this;
+    (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
+      const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
+      if (flowKey === 'resourceSettings' && stepKey === 'init') {
+        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
+          if (ref._shouldTemplateFallbackToList(res as any)) {
+            const next = { ...(res as any) };
+            delete (next as any).filterByTk;
+            return next;
+          }
+        }
+      }
+      return res;
+    };
+
+    try {
+      target.context?.removeCache?.('resource');
+    } catch (_) {
+      // ignore
+    }
+  }
 
   private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {
     if (!target?.context || !this.context) {
@@ -269,6 +349,7 @@ export class ReferenceBlockModel extends BlockModel {
       this._syncExtraTitle(false);
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
       }
@@ -286,6 +367,7 @@ export class ReferenceBlockModel extends BlockModel {
     this._syncExtraTitle(true);
     if (this._resolvedTargetUid === targetUid && this._targetModel) {
       this._invalidTargetUid = undefined;
+      this._applyTemplateFallbackPatchState(this._targetModel);
       // 目标未变化：确保 props 仍指向目标模型（避免 target.setProps 替换对象后指针失效）
       this.props = this._targetModel.props;
       return;
@@ -306,6 +388,7 @@ export class ReferenceBlockModel extends BlockModel {
     if (!target) {
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
       }
@@ -326,6 +409,10 @@ export class ReferenceBlockModel extends BlockModel {
     this._bridgeTargetContext(target, scopedEngine);
     const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
     if (oldTarget?.uid !== target.uid) {
+      if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
+      }
+      this._applyTemplateFallbackPatchState(target);
       this.setSubModel('target', target);
       if (oldTarget) {
         this._scopedEngine?.removeModel(oldTarget.uid);
@@ -333,6 +420,7 @@ export class ReferenceBlockModel extends BlockModel {
     } else {
       (this.subModels as any)['target'] = target;
       (this as any).emitter?.emit?.('onSubModelReplaced', { oldModel: oldTarget, newModel: target });
+      this._applyTemplateFallbackPatchState(target);
     }
 
     this._targetModel = target;
@@ -346,6 +434,7 @@ export class ReferenceBlockModel extends BlockModel {
 
   async destroy(): Promise<boolean> {
     try {
+      this._restoreTemplateFallbackPatch(this._targetModel);
       unlinkScopedEngine(this._scopedEngine);
     } finally {
       this._scopedEngine = undefined;
@@ -608,7 +697,7 @@ ReferenceBlockModel.registerFlow({
           const flow = (ctx.model.constructor as typeof FlowModel).globalFlowRegistry.getFlow('referenceSettings');
           const targetStepDef = flow?.steps?.target as any;
           if (targetStepDef?.beforeParamsSave) {
-            await targetStepDef.beforeParamsSave(ctx, { targetUid, mode: 'copy' });
+            await targetStepDef.beforeParamsSave(ctx, { targetUid, mode: 'copy', templateUid });
           }
           return;
         }
@@ -752,10 +841,35 @@ ReferenceBlockModel.registerFlow({
         const v = (params?.targetUid || '').trim();
         const mode = params?.mode || 'reference';
         if (mode !== 'copy' || !v) return;
+        const templateUid = (params?.templateUid || '').trim();
         const engine = ctx.engine;
         // 1) 先在服务端复制目标模型，得到新的根节点 JSON（含新 uid）
         const duplicated = await engine.duplicateModel(v);
         if (!duplicated) return;
+
+        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
+        if (templateUid) {
+          const use = String((duplicated as any)?.use || '');
+          const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
+          if (isSupported) {
+            const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
+            if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
+              const filterByTk = viewArgs?.filterByTk;
+              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+              const viewDataSourceKey = viewArgs?.dataSourceKey;
+              const hasViewDataSourceKey =
+                viewDataSourceKey !== undefined &&
+                viewDataSourceKey !== null &&
+                String(viewDataSourceKey).trim() !== '';
+              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+                delete (init as any).filterByTk;
+              }
+            }
+          }
+        }
 
         // 2) 计算父模型与原位置
         const oldModel = ctx.model as FlowModel;
