@@ -42,7 +42,7 @@ export function handleLinkNavigation(options: {
     return;
   }
 
-  // Link 按钮只负责导航，不应在导航后主动关闭当前弹窗视图；
-  // 否则在弹窗上下文中会把新路由回滚为关闭弹窗后的原页面。
+  // 该辅助方法仅负责导航，是否关闭弹窗由调用方按场景决定；
+  // 在弹窗上下文中，错误的关闭时机会把新路由回滚为原页面。
   router.navigate(link, { replace: true });
 }

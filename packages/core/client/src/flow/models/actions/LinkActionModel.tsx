@@ -80,13 +80,15 @@ LinkActionModel.registerFlow({
         const link = joinUrlSearch(url, searchParams);
 
         if (link) {
+          const isExternalLink = isURL(link);
           handleLinkNavigation({
             link,
             openInNewWindow,
             router: ctx.router,
-            isExternalLink: isURL(link),
+            isExternalLink,
           });
-          if (ctx.view) {
+          // 仅在站内同窗口导航后销毁弹窗，避免外链/新窗口场景出现行为回归。
+          if (ctx.view && !openInNewWindow && !isExternalLink) {
             ctx.view.destroy();
           }
         } else {

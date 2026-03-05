@@ -10,7 +10,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { handleLinkNavigation } from '../LinkActionUtils';
 
-describe('LinkActionModel', () => {
+describe('handleLinkNavigation', () => {
   it('should navigate relative link without closing popup view implicitly', () => {
     const navigate = vi.fn();
 
@@ -38,5 +38,24 @@ describe('LinkActionModel', () => {
 
     expect(setLocationHref).toHaveBeenCalledWith('https://www.nocobase.com/docs');
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('should open link in new window when openInNewWindow is true', () => {
+    const navigate = vi.fn();
+    const setLocationHref = vi.fn();
+    const openWindow = vi.fn();
+
+    handleLinkNavigation({
+      link: '/target-page',
+      openInNewWindow: true,
+      router: { navigate },
+      isExternalLink: false,
+      setLocationHref,
+      openWindow,
+    });
+
+    expect(openWindow).toHaveBeenCalledWith(`${window.location.origin}/target-page`, '_blank');
+    expect(navigate).not.toHaveBeenCalled();
+    expect(setLocationHref).not.toHaveBeenCalled();
   });
 });
