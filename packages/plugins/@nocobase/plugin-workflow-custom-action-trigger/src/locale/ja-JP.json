@@ -21,5 +21,9 @@
   "User acted": "操作者",
   "When the \"Trigger Workflow\" button is clicked, the event is triggered based on different context where the button is located. For complex data processing that cannot be handled simply by built-in operations (CRUD) of NocoBase, you can define a series of operations through a workflow and trigger it with the \"Trigger Workflow\" button.": "「ワークフロートリガー」ボタンクリック時、ボタンの配置コンテキストに基づきイベントが発生します。NocoBaseの標準CRUD操作では処理困難な複雑なデータ処理を、ワークフローで定義し本ボタンで実行可能です。",
   "When the \"Trigger Workflow\" button is clicked, the event is triggered based on the single record where the button is located. Suitable for when the data processing is complex and cannot be simply processed by built-in operations (CRUD) of NocoBase, a series of operations can be defined through workflow and triggered through the \"Trigger Workflow\" button.": "「ワークフロートリガー」ボタンクリック時、該当単一レコードをコンテキストとしてイベントが発生します。NocoBaseの標準CRUD操作では処理困難な複雑なデータ処理を、ワークフローで定義し本ボタンで実行可能です。",
-  "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "ボタンクリック後、データ保存なしで直接ワークフローがトリガーされます。「カスタムアクションイベント」とのみ連携可能です。"
+  "Workflow will be triggered directly once the button clicked, without data saving. Only supports to be bound with \"Custom action event\".": "ボタンクリック後、データ保存なしで直接ワークフローがトリガーされます。「カスタムアクションイベント」とのみ連携可能です。",
+  "Custom context": "カスタムコンテキスト",
+  "Only support custom action workflow with context type set to \"Custom context\".": "コンテキストタイプ「カスタムコンテキスト」が設定されたカスタムアクションワークフローのみサポートされます。",
+  "Context data": "コンテキストデータ",
+  "Input JSON as context data passed into the workflow. Frontend variables are supported.": "ワークフローに渡されるコンテキストデータとしてJSONを入力してください。フロントエンド変数がサポートされています。"
 }
