@@ -40,7 +40,13 @@ type PageModelStructure = {
 };
 
 export class PageModel extends FlowModel<PageModelStructure> {
-  private tabsRootClassName = css`
+  private tabsBaseRootClassName = css`
+    .ant-tabs-nav-list {
+      padding-left: 16px;
+    }
+  `;
+
+  private tabsDesignModeRootClassName = css`
     .ant-tabs-tab {
       min-width: 54px;
     }
@@ -297,10 +303,14 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   renderTabs() {
+    const rootClassName = this.context.flowSettingsEnabled
+      ? `${this.tabsBaseRootClassName} ${this.tabsDesignModeRootClassName}`
+      : this.tabsBaseRootClassName;
+
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          rootClassName={this.context.flowSettingsEnabled ? this.tabsRootClassName : undefined}
+          rootClassName={rootClassName}
           activeKey={
             this.context.view?.navigation?.viewParams
               ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid

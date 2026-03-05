@@ -194,9 +194,10 @@ describe('PageModel', () => {
 
       expect(typeof tabsElement.props.rootClassName).toBe('string');
       expect(tabsElement.props.rootClassName.length).toBeGreaterThan(0);
+      expect(tabsElement.props.rootClassName).toContain(' ');
     });
 
-    it('should not apply tabs root className in normal mode', () => {
+    it('should apply only base tabs root className in normal mode', () => {
       // @ts-ignore
       pageModel.context = {
         t: (str: string) => str,
@@ -207,7 +208,8 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(tabsElement.props.rootClassName).toBeUndefined();
+      expect(typeof tabsElement.props.rootClassName).toBe('string');
+      expect(tabsElement.props.rootClassName).not.toContain(' ');
     });
   });
 
