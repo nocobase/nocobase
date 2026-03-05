@@ -120,7 +120,7 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   const acl = ctx.acl;
   for (const role of roles) {
     const aclRole = acl.getRole(role);
-    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
+    if (aclRole?.snippetAllowed(`${resourceName}:${actionName}`)) {
       return next();
     }
   }
