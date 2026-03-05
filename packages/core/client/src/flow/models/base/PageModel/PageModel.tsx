@@ -39,19 +39,19 @@ type PageModelStructure = {
   };
 };
 
+const TABS_BASE_ROOT_CLASS_NAME = css`
+  > .ant-tabs-nav .ant-tabs-nav-list {
+    padding-left: 16px;
+  }
+`;
+
+const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
+  > .ant-tabs-nav .ant-tabs-tab {
+    min-width: 54px;
+  }
+`;
+
 export class PageModel extends FlowModel<PageModelStructure> {
-  private tabsBaseRootClassName = css`
-    .ant-tabs-nav-list {
-      padding-left: 16px;
-    }
-  `;
-
-  private tabsDesignModeRootClassName = css`
-    .ant-tabs-tab {
-      min-width: 54px;
-    }
-  `;
-
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
   private dataSourceDirtyListener?: (_payload?: unknown) => void;
@@ -304,8 +304,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   renderTabs() {
     const rootClassName = this.context.flowSettingsEnabled
-      ? `${this.tabsBaseRootClassName} ${this.tabsDesignModeRootClassName}`
-      : this.tabsBaseRootClassName;
+      ? `${TABS_BASE_ROOT_CLASS_NAME} ${TABS_DESIGN_MODE_ROOT_CLASS_NAME}`
+      : TABS_BASE_ROOT_CLASS_NAME;
 
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
