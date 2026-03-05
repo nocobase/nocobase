@@ -14,7 +14,7 @@ import type { AppSupervisor } from './index';
 /** Minimal single-process adapter only for booting the main application. */
 export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   readonly name: string;
-  app: Application;
+  apps: Record<string, Application> = {};
   status: AppStatus;
   appErrors: Record<string, Error> = {};
 
@@ -30,11 +30,11 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     if (!options.withOutBootStrap) {
       await this.bootstrapApp(appName);
     }
-    return this.app;
+    return this.apps[appName];
   }
 
   async bootstrapApp(appName: string) {
-    if (appName !== 'main' || !this.app) {
+    if (appName !== 'main' || !this.apps[appName]) {
       this.setAppStatus(appName, 'not_found');
       return;
     }
@@ -51,10 +51,10 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'addApp' });
       return;
     }
-    if (this.app) {
+    if (this.apps[app.name]) {
       throw new Error(`app ${app.name} already exists`);
     }
-    this.app = app;
+    this.apps[app.name] = app;
     if (!this.status || this.status === 'not_found') {
       this.setAppStatus(app.name, 'preparing');
     }
@@ -62,14 +62,14 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   getApps() {
-    return [this.app];
+    return Object.values(this.apps);
   }
 
   hasApp(appName: string) {
     if (appName !== 'main') {
       return false;
     }
-    return !!this.app;
+    return !!this.apps[appName];
   }
 
   async startApp(appName: string) {
@@ -86,7 +86,10 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'stopApp' });
       return;
     }
-    await this.app.runCommand('stop');
+    if (!this.apps[appName]) {
+      return;
+    }
+    await this.apps[appName]?.runCommand('stop');
   }
 
   async removeApp(appName: string) {
@@ -94,10 +97,11 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'removeApp' });
       return;
     }
-    if (!this.app) {
+    if (!this.apps[appName]) {
       return;
     }
-    await this.app.runCommand('destroy');
+    await this.apps[appName].runCommand('destroy');
+    this.apps[appName] = null;
   }
 
   async upgradeApp(appName: string) {
@@ -105,10 +109,10 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'upgrade' });
       return;
     }
-    if (!this.app) {
+    if (!this.apps[appName]) {
       return;
     }
-    await this.app.runCommand('upgrade');
+    await this.apps[appName].runCommand('upgrade');
   }
 
   async removeAllApps() {
