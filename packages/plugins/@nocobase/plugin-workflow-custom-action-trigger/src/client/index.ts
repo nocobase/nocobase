@@ -23,6 +23,7 @@ import {
   RecordTriggerWorkflowActionModel,
   FormTriggerWorkflowActionModel,
   CollectionTriggerWorkflowActionModel,
+  WorkbenchTriggerWorkflowActionModel,
 } from './flows';
 import CustomActionTrigger from './CustomActionTrigger';
 import {
@@ -75,6 +76,11 @@ class CustomActionTigger extends Plugin {
       this.app.schemaInitializerManager.addItem('workbench:configureActions', 'customize.triggerWorkflow', {
         Component: WorkbenchTriggerWorkflowActionSchemaInitializerItem,
       });
+
+      const ActionPanelGroupActionModel = this.flowEngine.getModelClass('ActionPanelGroupActionModel') as any;
+      if (ActionPanelGroupActionModel) {
+        ActionPanelGroupActionModel.registerActionModels({ WorkbenchTriggerWorkflowActionModel });
+      }
     });
   }
 
@@ -154,6 +160,7 @@ class CustomActionTigger extends Plugin {
       FormTriggerWorkflowActionModel,
       RecordTriggerWorkflowActionModel,
       CollectionTriggerWorkflowActionModel,
+      WorkbenchTriggerWorkflowActionModel,
       // CollectionGlobalTriggerWorkflowActionModel,
     });
   }
