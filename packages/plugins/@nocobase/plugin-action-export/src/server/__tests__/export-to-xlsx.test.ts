@@ -1472,3 +1472,112 @@ describe('export to xlsx', () => {
     expect(buffer).exist;
   });
 });
+
+describe('export to xlsx with belongsToArray field', () => {
+  let app: MockServer;
+  let db: any;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['nocobase', 'field-m2m-array'],
+    });
+    db = app.db;
+  });
+
+  afterEach(async () => {
+    await app.destroy();
+  });
+
+  it('should export with belongsToArray virtual field', async () => {
+    // Create target collection
+    await db.getRepository('collections').create({
+      values: {
+        name: 'test_tags',
+        fields: [
+          { type: 'string', name: 'code', unique: true },
+          { type: 'string', name: 'title' },
+        ],
+      },
+    });
+
+    // Create source collection with belongsToArray field
+    await db.getRepository('collections').create({
+      values: {
+        name: 'test_users',
+        fields: [
+          { type: 'string', name: 'name' },
+          {
+            type: 'belongsToArray',
+            name: 'tags',
+            foreignKey: 'tag_ids',
+            target: 'test_tags',
+            targetKey: 'code',
+          },
+        ],
+      },
+    });
+
+    // Load collections and sync
+    await db.getRepository('collections').load();
+    await db.sync();
+
+    // Create test data
+    await db.getRepository('test_tags').create({
+      values: [
+        { code: 'a', title: 'Tag A' },
+        { code: 'b', title: 'Tag B' },
+        { code: 'c', title: 'Tag C' },
+      ],
+    });
+
+    await db.getRepository('test_users').create({
+      values: [
+        { name: 'User 1', tag_ids: ['a', 'b'] },
+        { name: 'User 2', tag_ids: ['b', 'c'] },
+      ],
+    });
+
+    const User = db.getCollection('test_users');
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['name'], defaultTitle: 'Name' },
+        { dataIndex: ['tags', 'title'], defaultTitle: 'Tags' },
+      ],
+      outputPath: xlsxFilePath,
+    });
+
+    await exporter.run();
+
+    try {
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const sheetData = worksheet
+        .getSheetValues()
+        .slice(1)
+        .map((row: any[]) => row?.slice(1));
+
+      expect(sheetData.length).toBe(3); // 2 users + 1 header
+
+      const header = sheetData[0];
+      expect(header).toEqual(['Name', 'Tags']);
+
+      // Check that tags are properly loaded and exported
+      const firstUser = sheetData[1];
+      expect(firstUser[0]).toEqual('User 1');
+      expect(firstUser[1]).toContain('Tag A');
+      expect(firstUser[1]).toContain('Tag B');
+
+      const secondUser = sheetData[2];
+      expect(secondUser[0]).toEqual('User 2');
+      expect(secondUser[1]).toContain('Tag B');
+      expect(secondUser[1]).toContain('Tag C');
+    } finally {
+      exporter.cleanOutputFile();
+    }
+  });
+});
