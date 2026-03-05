@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MetaTreeNode } from '@nocobase/flow-engine';
-import { mergeExtraMetaTreeWithBase } from '../LinkageFilterItem';
+import { enhanceMetaTreeWithFilterableChildren, mergeExtraMetaTreeWithBase } from '../LinkageFilterItem';
 
 describe('LinkageFilterItem meta tree merge', () => {
   it('merges extra item into base item and keeps one root item node', () => {
@@ -78,5 +78,90 @@ describe('LinkageFilterItem meta tree merge', () => {
 
     const merged = mergeExtraMetaTreeWithBase(base, extra);
     expect(merged.map((node) => node.name)).toEqual(['foo', 'record']);
+  });
+
+  it('injects filterable children for attachment-like field nodes', async () => {
+    const base: MetaTreeNode[] = [
+      {
+        name: 'formValues',
+        title: 'Current form',
+        type: 'object',
+        paths: ['formValues'],
+        children: [
+          {
+            name: 'attachment',
+            title: 'Attachment',
+            type: 'array',
+            interface: 'attachment',
+            paths: ['formValues', 'attachment'],
+          },
+        ],
+      },
+    ];
+
+    const getFieldInterface = vi.fn((name: string) => {
+      if (name !== 'attachment') return undefined;
+      return {
+        filterable: {
+          children: [
+            {
+              name: 'id',
+              title: 'Exists',
+              schema: { type: 'string', 'x-component': 'Input' },
+              operators: [{ value: '$exists', label: 'exists', noValue: true }],
+            },
+            {
+              name: 'filename',
+              title: 'Filename',
+              schema: { type: 'string', 'x-component': 'Input' },
+              operators: [{ value: '$includes', label: 'contains' }],
+            },
+          ],
+        },
+      };
+    });
+
+    const enhanced = await enhanceMetaTreeWithFilterableChildren(base, getFieldInterface);
+    const attachmentNode = ((enhanced[0].children as MetaTreeNode[]) || []).find((node) => node.name === 'attachment');
+    expect(attachmentNode).toBeTruthy();
+    expect((attachmentNode?.children as MetaTreeNode[]).map((node) => node.name)).toEqual(['id', 'filename']);
+    expect((attachmentNode?.children as MetaTreeNode[])[0].uiSchema?.['x-filter-operators']).toBeTruthy();
+  });
+
+  it('keeps lazy children and enhances loaded nodes recursively', async () => {
+    const base: MetaTreeNode[] = [
+      {
+        name: 'formValues',
+        title: 'Current form',
+        type: 'object',
+        paths: ['formValues'],
+        children: async () => [
+          {
+            name: 'attachment',
+            title: 'Attachment',
+            type: 'array',
+            interface: 'attachment',
+            paths: ['formValues', 'attachment'],
+          },
+        ],
+      },
+    ];
+
+    const getFieldInterface = vi.fn((name: string) => {
+      if (name !== 'attachment') return undefined;
+      return {
+        filterable: {
+          children: [{ name: 'id', title: 'Exists', schema: { type: 'string', 'x-component': 'Input' } }],
+        },
+      };
+    });
+
+    const enhanced = await enhanceMetaTreeWithFilterableChildren(base, getFieldInterface);
+    expect(typeof enhanced[0].children).toBe('function');
+
+    const loadedChildren = await (enhanced[0].children as () => Promise<MetaTreeNode[]>)();
+    const attachmentNode = loadedChildren.find((node) => node.name === 'attachment');
+    expect(attachmentNode).toBeTruthy();
+    expect((attachmentNode?.children as MetaTreeNode[]).map((node) => node.name)).toEqual(['id']);
   });
 });
