@@ -10,6 +10,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const CORE_CLIENT_PACKAGES = ['sdk', 'client', 'client-v2', 'flow-engine'];
+// 按路径填写要跳过服务端测试的插件目录（相对仓库根目录）
+const skipPluginPaths = [
+  'packages/plugins/@nocobase/plugin-audit-logs',
+  'packages/plugins/@nocobase/plugin-backup-restore',
+  'packages/plugins/@nocobase/plugin-multi-app-share-collections',
+];
 
 const relativePathToAbsolute = (relativePath) => {
   return path.resolve(process.cwd(), relativePath);
@@ -112,15 +118,23 @@ function getExclude(isServer) {
   ];
 }
 
+function getSkipPluginExcludes(isServer) {
+  if (!isServer) return [];
+  return skipPluginPaths
+    .map((p) => p.replace(/\\/g, '/').replace(/\/$/, ''))
+    .filter(Boolean)
+    .map((p) => `${p}/src/server/**`);
+}
+
 const defineServerConfig = () => {
   return vitestConfig({
     test: {
       setupFiles: resolve(__dirname, './setup/server.ts'),
-      exclude: getExclude(true),
+      exclude: [...getExclude(true), ...getSkipPluginExcludes(true)],
       retry: process.env.CI ? 2 : 0,
     },
     coverage: {
-      exclude: getExclude(true),
+      exclude: [...getExclude(true), ...getSkipPluginExcludes(true)],
     },
   });
 };
