@@ -211,13 +211,33 @@ module.exports = (_env, argv = {}) => {
         templateParameters: createTemplateParameters(v2PublicPath),
       }),
     ],
-    optimization: isBuild
-      ? {
-          splitChunks: {
+    optimization: {
+      // Keep one shared runtime when splitChunks is enabled in dev/prod.
+      // Without this, entry may wait for vendor chunks that are loaded as separate module scripts
+      // but not marked as fulfilled in the same runtime state, causing a blank page.
+      runtimeChunk: 'single',
+      splitChunks: {
+        chunks: 'all',
+        cacheGroups: {
+          antdIcons: {
+            test: /[\\/]node_modules[\\/]@ant-design[\\/]icons[\\/]/,
+            name: 'vendor-antd-icons',
             chunks: 'all',
+            priority: 40,
+            enforce: true,
+            minSize: 0,
           },
-        }
-      : undefined,
+          antd: {
+            test: /[\\/]node_modules[\\/]antd[\\/]/,
+            name: 'vendor-antd',
+            chunks: 'all',
+            priority: 30,
+            enforce: true,
+            minSize: 0,
+          },
+        },
+      },
+    },
     devServer: isBuild
       ? undefined
       : {
