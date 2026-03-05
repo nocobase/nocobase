@@ -73,10 +73,14 @@ export abstract class StorageType {
   }
 
   getFileURL(file: AttachmentModel, preview?: boolean): string | Promise<string> {
+    const { thumbnailRule } = this.storage.options;
     // 兼容历史数据
     if (file.url && isURL(file.url)) {
-      if (preview && this.storage.options.thumbnailRule) {
-        return encodeURL(file.url) + this.storage.options.thumbnailRule;
+      if (preview && thumbnailRule) {
+        if (file.url.includes(thumbnailRule)) {
+          return encodeURL(file.url);
+        }
+        return encodeURL(file.url) + thumbnailRule;
       }
       return encodeURL(file.url);
     }
@@ -84,9 +88,13 @@ export abstract class StorageType {
       this.storage.baseUrl,
       file.path && encodeURI(file.path),
       ensureUrlEncoded(file.filename),
-      preview && this.storage.options.thumbnailRule,
+      preview && thumbnailRule,
     ].filter(Boolean);
-    return urlJoin(keys);
+    const url = urlJoin(keys);
+    if (preview && thumbnailRule && url.split(thumbnailRule).length > 2) {
+      return url.substring(0, url.lastIndexOf(thumbnailRule));
+    }
+    return url;
   }
 
   async getFileStream(file: AttachmentModel): Promise<{ stream: Readable; contentType?: string }> {
