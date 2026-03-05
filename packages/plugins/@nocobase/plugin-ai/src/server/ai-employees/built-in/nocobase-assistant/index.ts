@@ -14,6 +14,7 @@ export default {
   description: 'NocoBase Assistant',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [],
   },
 };

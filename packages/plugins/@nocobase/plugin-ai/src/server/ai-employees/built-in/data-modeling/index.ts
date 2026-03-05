@@ -14,27 +14,7 @@ export default {
   description: 'AI employee for data modeling',
   profile,
   skillSettings: {
-    skills: [
-      {
-        name: 'intentRouter',
-        autoCall: true,
-      },
-      {
-        name: 'getDataSources',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionMetadata',
-        autoCall: true,
-      },
-      {
-        name: 'defineCollections',
-        autoCall: false,
-      },
-    ],
+    _skills: ['data-modeling'],
+    skills: [],
   },
 };

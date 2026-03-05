@@ -14,6 +14,7 @@ export default {
   description: 'Data visualization specialist',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [
       // 可视化工具：模式切换 + 运行查询
       { name: 'viz-switchModes', autoCall: true },

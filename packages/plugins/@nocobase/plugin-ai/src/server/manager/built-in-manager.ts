@@ -127,6 +127,7 @@ export class BuiltInManager {
         await aiEmployeesRepo.update({
           values: {
             skillSettings: {
+              _skills: [...skillSettings._skills],
               skills: [...mergedSkills],
             },
             builtIn: true,

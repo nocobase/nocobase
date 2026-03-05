@@ -637,6 +637,8 @@ export class AIEmployee {
           });
     }
 
+    const availableSkills = await this.getAvailableSkills();
+
     const systemPrompt = getSystemPrompt({
       aiEmployee: {
         nickname: this.employee.nickname,
@@ -652,6 +654,7 @@ export class AIEmployee {
         locale: this.ctx.getCurrentLocale() || 'en-US',
       },
       knowledgeBase,
+      availableSkills,
     });
 
     const { important } = this.ctx.action.params.values || {};

@@ -14,6 +14,7 @@ export default {
   description: 'Email expert',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [],
   },
 };

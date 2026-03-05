@@ -13,7 +13,10 @@ import { z } from 'zod';
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
-  silence: true,
+  introduction: {
+    title: '{{t("Load specific SKILLS")}}',
+    about: '{{t("Loading content of the specific SKILLS")}}',
+  },
   definition: {
     name: 'getSkill',
     description: 'Get the content and related tools for a specified skill.',
@@ -22,7 +25,7 @@ export default defineTools({
     }),
   },
   invoke: async (ctx, args, id) => {
-    const target = await ctx.app.aiManager.skillsManager.getSkills(ctx, id);
+    const target = await ctx.app.aiManager.skillsManager.getSkills(args.skillName);
     if (!target) {
       return {
         status: 'error',

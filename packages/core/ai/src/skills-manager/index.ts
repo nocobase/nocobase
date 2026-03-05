@@ -10,9 +10,12 @@
 import { Op } from '@nocobase/database';
 import { SkillsEntry, SkillsManager, SkillsOptions, SkillsFilter } from './types';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { Registry } from '@nocobase/utils';
 import _ from 'lodash';
 
 export class DefaultSkillsManager implements SkillsManager {
+  private readonly skills = new Registry<SkillsEntry>();
+
   constructor(private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager }) {}
 
   getSkills(name: string[]): Promise<SkillsEntry[]>;
@@ -39,6 +42,10 @@ export class DefaultSkillsManager implements SkillsManager {
   }
 
   async registerSkills(options: SkillsOptions): Promise<void> {
+    if (!this.aiSkillsModel) {
+      return this.registerSkillsInMemory(options);
+    }
+
     await this.sequelize.transaction(async (transaction) => {
       const existed = await this.aiSkillsModel.findOne({ where: { name: options.name }, transaction });
       if (existed) {
@@ -71,8 +78,20 @@ export class DefaultSkillsManager implements SkillsManager {
     });
   }
 
+  private registerSkillsInMemory(options: SkillsOptions): void {
+    const skillsEntry: SkillsEntry = { ...options };
+    this.skills.register(options.name, skillsEntry);
+  }
+
+  async persistence(): Promise<void> {
+    const skillsList = [...this.skills.getValues()];
+    for (const skill of skillsList) {
+      await this.registerSkills(skill);
+    }
+  }
+
   private get aiSkillsModel() {
-    return this.collectionManager.getCollection('aiSkills').model;
+    return this.collectionManager.getCollection('aiSkills')?.model;
   }
 
   private get sequelize() {

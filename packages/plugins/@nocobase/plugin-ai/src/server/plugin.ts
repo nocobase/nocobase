@@ -81,6 +81,7 @@ export class PluginAIServer extends Plugin {
     this.setPermissions();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
+    await this.ai.skillsManager.persistence();
   }
 
   async setupBuiltIn() {

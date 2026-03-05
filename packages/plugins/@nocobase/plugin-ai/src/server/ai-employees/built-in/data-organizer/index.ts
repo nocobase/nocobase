@@ -14,6 +14,7 @@ export default {
   description: 'AI employee for extract and structure data from text, and can fill forms automatically.',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [
       {
         name: 'getDataSources',

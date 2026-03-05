@@ -14,6 +14,7 @@ export default {
   description: 'Translator',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [
       {
         name: 'frontend-formFiller',

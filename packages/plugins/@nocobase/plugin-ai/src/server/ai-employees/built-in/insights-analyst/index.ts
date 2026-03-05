@@ -14,6 +14,7 @@ export default {
   description: 'Insights analyst',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [
       {
         name: 'getDataSources',

@@ -14,6 +14,7 @@ export default {
   description: 'AI employee for coding',
   profile,
   skillSettings: {
+    _skills: [],
     skills: [
       {
         name: 'getDataSources',
