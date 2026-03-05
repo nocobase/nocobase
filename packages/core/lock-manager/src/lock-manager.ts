@@ -8,7 +8,7 @@
  */
 
 import { Registry } from '@nocobase/utils';
-import { Mutex, MutexInterface, E_CANCELED } from 'async-mutex';
+import { Mutex, MutexInterface, E_CANCELED, withTimeout } from 'async-mutex';
 
 export type Releaser = () => void | Promise<void>;
 
@@ -87,30 +87,34 @@ class LocalLockAdapter implements ILockAdapter {
     }
   }
 
-  async tryAcquire(key: string, timeout = 5000) {
+  async tryAcquire(key: string, timeout = 0) {
     const mutex = this.getLock(key);
-    if (mutex.isLocked()) {
-      throw new LockAcquireError('lock is locked');
+    let preAcquiredRelease: Releaser;
+
+    if (timeout === 0) {
+      // Non-blocking: throw immediately if the lock is already held.
+      // mutex.acquire() is called synchronously (before any await boundary) so
+      // that _locked=true is set atomically within the current JS execution
+      // slice, preventing TOCTOU races in single-process cluster simulations
+      // (e.g. tests using createMockCluster).
+      if (mutex.isLocked()) {
+        throw new LockAcquireError('lock is locked');
+      }
+      preAcquiredRelease = (await mutex.acquire()) as Releaser;
+    } else {
+      // Blocking with timeout: wait up to `timeout` ms for the lock, then
+      // throw. withTimeout() from async-mutex handles queue cleanup properly
+      // when the timeout fires before the lock is acquired.
+      try {
+        preAcquiredRelease = (await withTimeout(mutex, timeout).acquire()) as Releaser;
+      } catch (e) {
+        throw new LockAcquireError('lock acquire timed out', { cause: e });
+      }
     }
-    // Call mutex.acquire() synchronously (before any await boundary) so that
-    // _locked=true is set atomically within the current JS execution slice.
-    // This prevents TOCTOU races when simulating a multi-node cluster in a
-    // single process (e.g. tests using createMockCluster).
-    const releasePromise = mutex.acquire();
-    const preAcquiredRelease = (await releasePromise) as Releaser;
+
     let preAcquiredConsumed = false;
 
-    // Safety guard: auto-release the pre-acquired lock if the caller never
-    // calls acquire() or runExclusive(), preventing a silent deadlock.
-    const safetyTimer: ReturnType<typeof setTimeout> = setTimeout(() => {
-      if (!preAcquiredConsumed && mutex.isLocked()) {
-        preAcquiredConsumed = true;
-        preAcquiredRelease();
-      }
-    }, timeout);
-
     const getRelease = async (): Promise<Releaser> => {
-      clearTimeout(safetyTimer);
       if (!preAcquiredConsumed) {
         preAcquiredConsumed = true;
         return preAcquiredRelease;
@@ -213,7 +217,7 @@ export class LockManager {
     return client.runExclusive(key, fn, ttl);
   }
 
-  public async tryAcquire(key: string, timeout?: number) {
+  public async tryAcquire(key: string, timeout = 0) {
     const client = await this.getAdapter();
     return client.tryAcquire(key, timeout);
   }

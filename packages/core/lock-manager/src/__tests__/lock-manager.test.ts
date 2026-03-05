@@ -190,18 +190,23 @@ describe('lock manager', () => {
       expect(results.filter((r) => r === 'skipped').length).toBe(1);
     });
 
-    it('tryAcquire: lock is released after safety timeout when acquire() is never called', async () => {
-      // Safety timeout: pre-acquired mutex should be auto-released if the caller
-      // discards the lock object without calling acquire() or runExclusive().
-      const safetyTimeout = 100;
-      await lockManager.tryAcquire('safety-test', safetyTimeout);
-      // Lock is held by the discarded lock object — a new tryAcquire should fail now
-      await expect(lockManager.tryAcquire('safety-test', safetyTimeout)).rejects.toThrowError(LockAcquireError);
-      // After the safety timeout, the lock should be auto-released
-      await sleep(safetyTimeout + 50);
-      const lock = await lockManager.tryAcquire('safety-test', safetyTimeout);
+    it('tryAcquire: waits up to timeout ms before throwing when lock is held', async () => {
+      // Acquire the lock manually so it is held during the tryAcquire call.
+      const holdRelease = await lockManager.acquire('wait-test');
+
+      // Release the lock after 100 ms — tryAcquire with timeout=200 should
+      // succeed because the lock becomes available within the window.
+      setTimeout(() => holdRelease(), 100);
+      const lock = await lockManager.tryAcquire('wait-test', 200);
       const release = await lock.acquire(1000);
       await release();
+    });
+
+    it('tryAcquire: throws LockAcquireError when timeout expires before lock is released', async () => {
+      const holdRelease = await lockManager.acquire('timeout-test');
+      // Lock is held; tryAcquire with a very short timeout should fail.
+      await expect(lockManager.tryAcquire('timeout-test', 50)).rejects.toThrowError(LockAcquireError);
+      await holdRelease();
     });
 
     it('tryAcquire: subsequent call succeeds after previous lock is released', async () => {
