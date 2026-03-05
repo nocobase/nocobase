@@ -880,7 +880,12 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
         const values = asyncGetInitialValues ? await asyncGetInitialValues() : initialValues;
         const schema = _.isFunction(props.schema) ? props.schema() : props.schema;
         FormDialog(
-          { title: schema.title || title, width, rootClassName: dialogRootClassName },
+          {
+            title: schema.title || title,
+            width,
+            rootClassName: dialogRootClassName,
+            getContainer: () => document.body,
+          },
           () => {
             return (
               <VariableScopeContext.Provider value={variableScopeContext}>

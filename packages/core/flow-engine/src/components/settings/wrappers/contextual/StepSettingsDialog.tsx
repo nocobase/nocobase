@@ -134,6 +134,9 @@ const openStepSettingsDialog = async ({
   };
 
   const openView = model.context.viewer[mode].bind(model.context.viewer);
+  const resolvedUiModeProps = toJS(uiModeProps) || {};
+  const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
+  const mergedZIndex = Math.max(5000, Number(uiModeZIndex) || 0);
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -152,7 +155,8 @@ const openStepSettingsDialog = async ({
     title: dialogTitle || t(title),
     width: dialogWidth,
     destroyOnClose: true,
-    ...toJS(uiModeProps),
+    ...restUiModeProps,
+    zIndex: mergedZIndex,
     // 透传 navigation，便于变量元信息根据真实视图栈推断父级弹窗
     inputArgs,
     onClose: () => {
