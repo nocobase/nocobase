@@ -89,19 +89,9 @@ function forEachModelIncludingForks(engine: any, visitor: (model: any) => void) 
   });
 }
 
-/**
- * 提交前过滤：移除当前表单 block 中被「联动规则隐藏」的字段值（`model.hidden === true`）。
- *
- * 说明：
- * - 仅对 “隐藏 / Hidden” 生效（对应 `model.hidden=true`）。
- * - “隐藏并保留值 / Hidden (reserved value)” 在实现上是 `props.hidden=true` 但 `model.hidden=false`，
- *   因此仍会提交（保持现有语义）。
- * - 不会清空 antd Form 的内部 store，只影响本次提交 payload。
- */
-export function omitHiddenModelValuesFromSubmit<T = any>(values: T, blockModel: FormBlockModel): T {
-  if (!values || typeof values !== 'object') return values;
+function collectHiddenModelNamePaths(blockModel: FormBlockModel): NamePath[] {
   const engine = blockModel?.flowEngine;
-  if (!engine?.forEachModel) return values;
+  if (!engine?.forEachModel) return [];
 
   const paths: NamePath[] = [];
   const seen = new Set<string>();
@@ -119,6 +109,74 @@ export function omitHiddenModelValuesFromSubmit<T = any>(values: T, blockModel: 
     seen.add(key);
     paths.push(namePath);
   });
+
+  return paths;
+}
+
+function normalizeFormNamePath(name: any): NamePath | null {
+  if (typeof name === 'string') {
+    return name ? [name] : null;
+  }
+  if (Array.isArray(name)) {
+    return normalizeResolvedNamePath(name as NamePath);
+  }
+  return null;
+}
+
+function isNamePathPrefix(prefix: NamePath, target: NamePath): boolean {
+  if (!Array.isArray(prefix) || !Array.isArray(target)) return false;
+  if (prefix.length > target.length) return false;
+  for (let i = 0; i < prefix.length; i++) {
+    if (prefix[i] !== target[i]) return false;
+  }
+  return true;
+}
+
+/**
+ * 生成提交前的校验字段列表：
+ * - 在配置态下可用于绕开“联动隐藏字段”的必填校验；
+ * - 仅排除 `model.hidden=true` 的字段路径；
+ * - 返回 null 表示无法安全推断，调用方应回退到 `validateFields()` 全量校验。
+ */
+export function getValidationNamePathsExcludingHiddenModels(blockModel: FormBlockModel): NamePath[] | null {
+  const form = blockModel?.form as any;
+  if (!form || typeof form.getFieldsError !== 'function') return null;
+
+  const fieldErrors = form.getFieldsError();
+  if (!Array.isArray(fieldErrors)) return null;
+
+  const names: NamePath[] = [];
+  const seen = new Set<string>();
+  for (const item of fieldErrors) {
+    const namePath = normalizeFormNamePath(item?.name);
+    if (!namePath) continue;
+    const key = JSON.stringify(namePath);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    names.push(namePath);
+  }
+
+  // 无法可靠获取已注册字段时，回退到调用方全量校验，避免误跳过可见字段。
+  if (!names.length) return null;
+
+  const hiddenPaths = collectHiddenModelNamePaths(blockModel);
+  if (!hiddenPaths.length) return names;
+
+  return names.filter((namePath) => !hiddenPaths.some((hiddenPath) => isNamePathPrefix(hiddenPath, namePath)));
+}
+
+/**
+ * 提交前过滤：移除当前表单 block 中被「联动规则隐藏」的字段值（`model.hidden === true`）。
+ *
+ * 说明：
+ * - 仅对 “隐藏 / Hidden” 生效（对应 `model.hidden=true`）。
+ * - “隐藏并保留值 / Hidden (reserved value)” 在实现上是 `props.hidden=true` 但 `model.hidden=false`，
+ *   因此仍会提交（保持现有语义）。
+ * - 不会清空 antd Form 的内部 store，只影响本次提交 payload。
+ */
+export function omitHiddenModelValuesFromSubmit<T = any>(values: T, blockModel: FormBlockModel): T {
+  if (!values || typeof values !== 'object') return values;
+  const paths = collectHiddenModelNamePaths(blockModel);
 
   if (!paths.length) return values;
 
