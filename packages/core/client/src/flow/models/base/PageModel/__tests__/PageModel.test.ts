@@ -180,6 +180,37 @@ describe('PageModel', () => {
       const tabsElement = result.props.children;
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
+
+    it('should apply tabs root className in flow settings mode', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: true,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(typeof tabsElement.props.rootClassName).toBe('string');
+      expect(tabsElement.props.rootClassName.length).toBeGreaterThan(0);
+      expect(tabsElement.props.rootClassName).toContain(' ');
+    });
+
+    it('should apply only base tabs root className in normal mode', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(typeof tabsElement.props.rootClassName).toBe('string');
+      expect(tabsElement.props.rootClassName).not.toContain(' ');
+    });
   });
 
   describe('render header spacing with tabs', () => {
