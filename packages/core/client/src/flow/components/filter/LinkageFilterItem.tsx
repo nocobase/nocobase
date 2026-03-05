@@ -232,6 +232,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
           ? schemaOperators
           : fieldInterface?.filterable?.operators) || fallbackStringOperators;
       const visibleOperators = operatorList.filter(
+        // @ts-ignore
         (operatorItem) => !operatorItem.visible || operatorItem.visible(leftFieldMeta),
       );
       const mappedList = visibleOperators.map((operatorItem) => ({
