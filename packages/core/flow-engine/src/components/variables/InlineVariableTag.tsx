@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tag } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import CloseOutlined from '@ant-design/icons/es/icons/CloseOutlined';
 import { parseValueToPath } from './utils';
 import type { MetaTreeNode } from '../../flowContext';
 import { useResolvedMetaTree } from './useResolvedMetaTree';

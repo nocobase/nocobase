@@ -8,7 +8,7 @@
  */
 
 import { getValuesByPath } from '@nocobase/shared';
-import _ from 'lodash';
+import { isPlainObject, sortBy } from 'lodash-es';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 import type { ServerContextParams } from './serverContextParams';
@@ -104,9 +104,9 @@ const BATCH_FLUSH_DELAY_MS = 10;
 // 使用 lodash 对象操作，按键名递归排序，便于稳定 stringify
 function sortKeysDeep(input: any): any {
   if (Array.isArray(input)) return input.map(sortKeysDeep);
-  if (_.isPlainObject(input)) {
+  if (isPlainObject(input)) {
     const entries = Object.entries(input).map(([k, v]) => [k, sortKeysDeep(v)] as [string, unknown]);
-    const sortedEntries = _.sortBy(entries, ([k]) => k);
+    const sortedEntries = sortBy(entries, ([k]) => k);
     return Object.fromEntries(sortedEntries);
   }
   return input;

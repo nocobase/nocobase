@@ -11,7 +11,7 @@ import { App, ConfigProvider } from 'antd';
 import React from 'react';
 import { Root, RootOptions, createRoot } from 'react-dom/client';
 import { FlowEngine } from './flowEngine';
-import { FlowEngineProvider } from './provider';
+import { FlowEngineProvider } from './engineContext';
 
 function Provider({ config, engine, children }) {
   return (

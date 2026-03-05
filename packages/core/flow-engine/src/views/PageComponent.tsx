@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined } from '@ant-design/icons';
+import CloseOutlined from '@ant-design/icons/es/icons/CloseOutlined';
 import { Button } from 'antd';
 import React, { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useFlowEngine } from '../provider';
+import { useFlowEngine } from '../engineContext';
 
 export const PageComponent = forwardRef((props: any, ref) => {
   const [newConfig, setNewConfig] = React.useState<any>({});

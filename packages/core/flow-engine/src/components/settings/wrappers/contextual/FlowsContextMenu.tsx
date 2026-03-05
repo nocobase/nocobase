@@ -7,7 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, ExclamationCircleOutlined, QuestionCircleOutlined, SettingOutlined } from '@ant-design/icons';
+import DeleteOutlined from '@ant-design/icons/es/icons/DeleteOutlined';
+import ExclamationCircleOutlined from '@ant-design/icons/es/icons/ExclamationCircleOutlined';
+import QuestionCircleOutlined from '@ant-design/icons/es/icons/QuestionCircleOutlined';
+import SettingOutlined from '@ant-design/icons/es/icons/SettingOutlined';
 import type { MenuProps } from 'antd';
 import { Alert, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';

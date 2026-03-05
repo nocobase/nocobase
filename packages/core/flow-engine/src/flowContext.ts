@@ -15,7 +15,7 @@ import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
-import _ from 'lodash';
+import { get } from 'lodash-es';
 import pino from 'pino';
 import qs from 'qs';
 import React, { createRef } from 'react';
@@ -2622,11 +2622,11 @@ export class FlowContext {
 
     let current = meta;
     for (const key of path) {
-      const properties = _.get(current, 'properties');
+      const properties = get(current, 'properties');
       if (!properties || typeof properties === 'function') {
         return null; // 无法同步解析异步 properties
       }
-      current = _.get(properties, key);
+      current = get(properties, key);
       if (!current) {
         return null;
       }
@@ -2646,7 +2646,7 @@ export class FlowContext {
 
     let current: PropertyMeta = meta;
     for (const key of path) {
-      let properties = _.get(current, 'properties');
+      let properties = get(current, 'properties');
 
       if (!properties) {
         throw new Error(`Property path not found: ${path.join('.')}`);
@@ -3799,7 +3799,7 @@ export class FlowRuntimeContext<
       return model.setStepParams(flowKey, stepKey, params);
     });
     this.defineMethod('getStepResults', (stepKey: string) => {
-      return _.get(this.steps, [stepKey, 'result']);
+      return get(this.steps, [stepKey, 'result']);
     });
     this.defineMethod(
       'initResource',

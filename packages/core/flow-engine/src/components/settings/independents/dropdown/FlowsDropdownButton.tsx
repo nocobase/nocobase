@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DownOutlined, SettingOutlined } from '@ant-design/icons';
+import DownOutlined from '@ant-design/icons/es/icons/DownOutlined';
+import SettingOutlined from '@ant-design/icons/es/icons/SettingOutlined';
 import { Alert, Button, Dropdown, Space } from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useFlowModelById } from '../../../../hooks';

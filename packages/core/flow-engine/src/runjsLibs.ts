@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import * as antdIcons from '@ant-design/icons';
 import { autorun } from '@formily/reactive';
 import type { FlowContext } from './flowContext';
 
@@ -159,7 +158,11 @@ const DEFAULT_RUNJS_LIBS: Array<{ name: string; cache: RunJSLibCache; loader: Ru
   { name: 'ReactDOM', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'ReactDOM') },
   { name: 'antd', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'antd') },
   { name: 'dayjs', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'dayjs') },
-  { name: 'antdIcons', cache: 'global', loader: () => antdIcons },
+  {
+    name: 'antdIcons',
+    cache: 'global',
+    loader: () => import('@ant-design/icons').then((m) => m.default || m),
+  },
   { name: 'lodash', cache: 'global', loader: () => import('lodash').then((m) => m.default || m) },
   { name: 'formula', cache: 'global', loader: () => import('@formulajs/formulajs').then((m) => m.default || m) },
   { name: 'math', cache: 'global', loader: () => import('mathjs').then((m) => m) },
