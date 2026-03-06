@@ -32,7 +32,7 @@ export * from './decorators';
 export * from './ElementProxy';
 export * from './flowContext';
 export * from './FlowContextProvider';
-export * from './JSRunner';
+export { JSRunner, shouldPreprocessRunJSTemplates } from './JSRunner';
 export {
   getRunJSDocFor,
   createJSRunnerWithVersion,

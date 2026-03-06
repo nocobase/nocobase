@@ -43,7 +43,7 @@ async function runApp(dir, index = 0) {
   await client.query(`DROP DATABASE IF EXISTS "${database}"`);
   await client.query(`CREATE DATABASE "${database}";`);
   await client.end();
-  return execa('yarn', ['nocobase', 'e2e', 'test', dir], {
+  return execa('pnpm', ['nocobase', 'e2e', 'test', dir], {
     shell: true,
     stdio: 'inherit',
     env: {
