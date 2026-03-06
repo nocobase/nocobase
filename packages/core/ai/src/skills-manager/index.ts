@@ -46,6 +46,10 @@ export class DefaultSkillsManager implements SkillsManager {
       return this.registerSkillsInMemory(options);
     }
 
+    const title = options.introduction?.title;
+    const about = options.introduction?.about;
+    const from = options.from || 'loader';
+
     await this.sequelize.transaction(async (transaction) => {
       const existed = await this.aiSkillsModel.findOne({ where: { name: options.name }, transaction });
       if (existed) {
@@ -55,6 +59,9 @@ export class DefaultSkillsManager implements SkillsManager {
             description: options.description,
             content: options.content,
             tools: options.tools,
+            title,
+            about,
+            from,
           },
           {
             where: { name: options.name },
@@ -69,6 +76,9 @@ export class DefaultSkillsManager implements SkillsManager {
             description: options.description,
             content: options.content,
             tools: options.tools,
+            title,
+            about,
+            from,
           },
           {
             transaction,

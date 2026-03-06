@@ -62,6 +62,7 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
             entry.name = data['name'];
             entry.description = data['description'];
             entry.content = content;
+            entry.introduction = data['introduction'];
           } catch (e) {
             this.log?.error(`skills [${name}] load fail: error occur when reading SKILLS.md at ${skillsFile.path}`, e);
             return null;
@@ -98,6 +99,7 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
           description: descriptor.description,
           content: descriptor.content,
           tools: descriptor.tools,
+          introduction: descriptor.introduction,
         });
       }),
     );
@@ -111,4 +113,8 @@ export type SkillsDescriptor = {
   skillsFile: FileDescriptor;
   skillsDir: FileDescriptor;
   tools?: string[];
+  introduction?: {
+    title: string;
+    about?: string;
+  };
 };

@@ -36,5 +36,17 @@ export default defineCollection({
       name: 'tools',
       type: 'jsonb',
     },
+    {
+      name: 'title',
+      type: 'string',
+    },
+    {
+      name: 'about',
+      type: 'text',
+    },
+    {
+      name: 'from',
+      type: 'string',
+    },
   ],
 });

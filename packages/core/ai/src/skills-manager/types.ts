@@ -21,6 +21,11 @@ export type SkillsOptions = {
   description: string;
   content: string;
   tools?: string[];
+  introduction?: {
+    title: string;
+    about?: string;
+  };
+  from?: string;
 };
 
 export type SkillsEntry = SkillsOptions;
