@@ -48,7 +48,7 @@ export const normalizeCapabilityActionName = (actionName?: string | null) => {
  */
 const getExplicitCapabilityNames = (ModelClass: CapabilityModelClass, keys: string[]) => {
   for (const key of keys) {
-    if (!Object.prototype.hasOwnProperty.call(ModelClass, key)) {
+    if (!(key in ModelClass)) {
       continue;
     }
 
