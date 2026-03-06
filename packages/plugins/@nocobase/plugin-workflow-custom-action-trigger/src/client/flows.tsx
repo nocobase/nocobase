@@ -302,7 +302,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             ctx.exit();
             return;
           }
-        } else if (type === CONTEXT_TYPE.GLOBAL) {
+        } else if (!type) {
           let values;
           if (contextData) {
             try {
@@ -370,7 +370,7 @@ function globalTriggerWorkflowUiSchema(ctx) {
       type: EVENT_TYPE,
     },
     optionFilter({ config }) {
-      return config.type === CONTEXT_TYPE.GLOBAL;
+      return !config.type;
     },
     usingContext: false,
   })(ctx);
