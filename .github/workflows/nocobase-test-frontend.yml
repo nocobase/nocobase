@@ -40,10 +40,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: pnpm/action-setup@v4
+
       - name: Use Node.js ${{ matrix.node_version }}
-        - uses: pnpm/action-setup@v4
-          with:
-            version: 10
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
