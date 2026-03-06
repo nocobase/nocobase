@@ -9,7 +9,7 @@ import {
   Form,
   SchemaComponent,
   SchemaComponentProvider,
-} from '@nocobase/client';
+} from '../../index';
 import React from 'react';
 
 export default observer(() => {

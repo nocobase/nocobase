@@ -17,7 +17,7 @@ import {
   SchemaComponent,
   SchemaComponentProvider,
   useCollectionField,
-} from '@nocobase/client';
+} from '../../../index';
 import { render, screen } from '@nocobase/test/client';
 import React from 'react';
 import collections from '../collections.json';

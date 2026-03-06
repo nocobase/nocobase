@@ -4,7 +4,7 @@
  * title: ColorPicker
  */
 import { FormItem } from '@formily/antd-v5';
-import { ColorPicker, Input, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { ColorPicker, Input, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import React from 'react';
 
 const schema = {

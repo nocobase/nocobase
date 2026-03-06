@@ -11,7 +11,7 @@ import {
   Table,
   useRecord,
   useRequest,
-} from '@nocobase/client';
+} from '../../../../index';
 import React, { createContext, useContext, useState } from 'react';
 
 const DataSourceContext = createContext(null);

@@ -5,7 +5,7 @@
  */
 import { FormItem } from '@formily/antd-v5';
 import { ISchema } from '@formily/react';
-import { SchemaComponent, SchemaComponentProvider, Select } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentProvider, Select } from '../../../../index';
 import React from 'react';
 
 const options = [

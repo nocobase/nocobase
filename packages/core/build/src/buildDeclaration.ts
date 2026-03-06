@@ -50,7 +50,6 @@ function loadCompilerOptions(): ts.CompilerOptions {
   const options: ts.CompilerOptions = {
     ...parsedConfig.options,
   };
-  delete options.paths;
   return options;
 }
 

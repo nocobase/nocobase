@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input } from '@nocobase/client';
+import { DocumentTitleProvider, Form, FormItem, Grid, IconPicker, Input } from '../../../../index';
 import { renderAppOptions, screen, userEvent, waitFor } from '@nocobase/test/client';
 import { isTabPage, navigateToTab, Page } from '../Page';
 

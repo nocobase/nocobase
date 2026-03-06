@@ -2,7 +2,7 @@
 
 import { Field } from '@formily/core';
 import { ISchema, observer, useField, useFieldSchema } from '@formily/react';
-import { Action, SchemaComponent, SchemaComponentProvider, useActionContext } from '@nocobase/client';
+import { Action, SchemaComponent, SchemaComponentProvider, useActionContext } from '../../../../index';
 import { Radio } from 'antd';
 import _ from 'lodash';
 import React, { useRef } from 'react';

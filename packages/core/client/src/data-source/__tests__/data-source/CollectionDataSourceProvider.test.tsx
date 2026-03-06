@@ -10,7 +10,7 @@
 import React from 'react';
 import { render, screen } from '@nocobase/test/client';
 
-import { Application } from '@nocobase/client';
+import { Application } from '../../../index';
 import { DataSourceApplicationProvider } from '../../components/DataSourceApplicationProvider';
 import { DataSourceProvider, useDataSourceKey } from '../../data-source/DataSourceProvider';
 

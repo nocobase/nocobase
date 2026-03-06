@@ -12,7 +12,7 @@ import {
   useSchemaComponentContext,
   useSchemaInitializer,
   useSchemaInitializerItem,
-} from '@nocobase/client';
+} from '../../index';
 import { Button } from 'antd';
 import React from 'react';
 

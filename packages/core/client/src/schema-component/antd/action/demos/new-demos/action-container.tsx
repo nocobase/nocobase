@@ -1,4 +1,4 @@
-import { SchemaComponent, useActionContext, Plugin, ISchema } from '@nocobase/client';
+import { SchemaComponent, useActionContext, Plugin, ISchema } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

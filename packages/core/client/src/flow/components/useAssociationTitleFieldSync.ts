@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useDataSourceManager } from '@nocobase/client';
+import { useAPIClient, useDataSourceManager } from '../../index';
 import { message } from 'antd';
 import React from 'react';
 import type { SyncAssociationTitleFieldParams } from './FieldAssignRulesEditor';

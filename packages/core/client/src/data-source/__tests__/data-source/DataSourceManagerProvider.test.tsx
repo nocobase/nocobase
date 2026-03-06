@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import { Application, DataSourceManagerProvider, useDataSourceManager } from '@nocobase/client';
+import { Application, DataSourceManagerProvider, useDataSourceManager } from '../../../index';
 
 describe('DataSourceManagerProvider', () => {
   test('should render children', () => {

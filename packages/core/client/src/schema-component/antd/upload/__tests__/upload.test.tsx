@@ -12,7 +12,7 @@ import React from 'react';
 import App1 from '../demos/demo1';
 import App2 from '../demos/demo2';
 
-import { BlockSchemaComponentPlugin } from '@nocobase/client';
+import { BlockSchemaComponentPlugin } from '../../../../index';
 import { screen, renderAppOptions, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('Upload', () => {
