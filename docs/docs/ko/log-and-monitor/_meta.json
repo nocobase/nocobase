@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "로그",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "서버 로그",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "서버 로그, 감사 로그, 레코드 기록",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "텔레메트리",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "사용 설명서",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "익스포터",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

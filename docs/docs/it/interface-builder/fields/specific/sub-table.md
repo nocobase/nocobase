@@ -1,34 +1,34 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/fields/specific/sub-table).
 :::
 
-# Sottotabella
+# Sottotabella (modifica in riga)
 
 ## Introduzione
 
-La sottotabella è adatta per gestire campi di relazione "uno a molti". Supporta la creazione e l'associazione in blocco di nuovi dati nella collezione di destinazione, oppure la selezione e l'associazione di dati esistenti.
+La sottotabella è adatta per gestire campi di relazione a molti, supporta la creazione in blocco di nuovi dati nella collezione di destinazione per l'associazione o la selezione di dati esistenti da associare.
 
 ## Istruzioni per l'uso
 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
-Nella sottotabella, i diversi tipi di campi mostrano componenti di campo differenti. I campi di grandi dimensioni (come Testo RTF, JSON, Testo lungo) vengono modificati tramite una finestra modale a comparsa.
+Nella sottotabella, diversi tipi di campi mostrano diversi componenti di campo; i campi grandi (testo ricco, JSON, testo su più righe, ecc.) vengono modificati tramite una finestra a comparsa.
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 Campi di relazione nella sottotabella.
 
-Ordini (Uno a Molti) > Prodotti Ordine (Uno a Uno) > Opportunità
+Ordini (uno-a-molti) > Order Products (uno-a-uno) > Opportunity
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
-Il componente predefinito per un campo di relazione è il selettore a discesa (supporta Selettore a discesa/Selettore dati).
+Il componente del campo di relazione predefinito è il selettore a discesa (supporta selettore a discesa/selettore dati).
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
 
 ## Opzioni di configurazione del campo
 
-### Consenti la selezione di dati esistenti (disabilitato per impostazione predefinita)
+### Consenti la selezione di dati esistenti (abilitato per impostazione predefinita)
 
 Supporta la selezione e l'associazione di dati esistenti.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
@@ -37,10 +37,10 @@ Supporta la selezione e l'associazione di dati esistenti.
 
 ### Componente del campo
 
-[Componente del campo](/interface-builder/fields/association-field): Passi ad altri componenti di campo di relazione, come il selettore a discesa, il selettore dati, ecc.
+[Componente del campo](/interface-builder/fields/association-field): Passi ad altri componenti di campo di relazione, come il selettore a discesa, il selettore dati, ecc.;
 
-### Consenti di scollegare i dati esistenti
+### Consenti di scollegare l'associazione di dati esistenti
 
-> Permette di scollegare i dati esistenti per il campo di relazione nel modulo di modifica.
+> Indica se consentire lo scollegamento dell'associazione dei dati esistenti per i campi di relazione nel modulo di modifica
 
 ![20251028153425](https://static-docs.nocobase.com/20251028153425.gif)

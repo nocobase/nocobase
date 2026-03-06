@@ -1,5 +1,5 @@
 ---
-displayName: "File storage: S3(Pro)"
+displayName: "File storage: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# File storage: S3(Pro)
+# File storage: S3 (Pro)

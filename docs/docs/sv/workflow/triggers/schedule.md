@@ -74,6 +74,6 @@ Skapa ett arbetsflöde baserat på en schemalagd uppgift. I utlösarkonfiguratio
 
 Konfigurera sedan andra noder enligt processlogiken för att uppdatera statusen för ordern med utlösningsdata-ID och statusen "obetald" till annullerad:
 
-![Schemalagd uppgift_Utlösarkonfiguration_Tidsfält i samling-läge_Uppdateringsnod](https://static-docs.nocobase.com/491dde9df773f5b14a4fd8ceac9d3e.png)
+![Schemalagd uppgift_Utlösarkonfiguration_Tidsfält i samling-läge_Uppdateringsnod](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
 Till skillnad från läget Anpassad tid behöver ni här inte beräkna tiden för 30 minuter sedan, eftersom arbetsflödets utlösningsdata-kontext redan innehåller den datarad som uppfyller tidskriteriet. Därför kan ni direkt uppdatera statusen för den motsvarande ordern.

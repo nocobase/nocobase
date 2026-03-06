@@ -1,12 +1,16 @@
 ---
-displayName: "File manager"
+displayName: "Bestandsbeheer"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides files storage services with files collection template and attachment field.
+  Biedt bestandsopslagdiensten met een bestandscollectie-sjabloon en bijlageveld.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-file-manager/index) voor nauwkeurige informatie.
+:::
+
+# Bestandsbeheer

@@ -10,7 +10,7 @@
   },
   {
     "type": "custom-link",
-    "label": "क्विक स्टार्ट",
+    "label": "शुरू करना",
     "link": "/workflow/getting-started"
   },
   {
@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "डेटा टेबल इवेंट",
+        "label": "संग्रह इवेंट",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -76,7 +76,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "लार्ज लैंग्वेज मॉडल",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "प्रोसेस आउटपुट",
+            "label": "आउटपुट",
             "link": "/workflow/nodes/output"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "डेटा जोड़ें",
+            "label": "डेटा बनाएँ",
             "link": "/workflow/nodes/create"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "एक्सटेंशन प्रकार",
+        "label": "विस्तारित प्रकार",
         "items": [
           {
             "type": "custom-link",
@@ -221,13 +221,13 @@
           },
           {
             "type": "custom-link",
-            "label": "JavaScript स्क्रिप्ट",
+            "label": "JavaScript",
             "link": "/workflow/nodes/javascript"
           },
           {
             "type": "custom-link",
             "label": "सूचना",
-            "link": "/notification-manager/"
+            "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "निष्पादन रिकॉर्ड",
-    "link": "/workflow/advanced/execution"
+    "label": "निष्पादन इतिहास",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -279,12 +279,12 @@
       },
       {
         "type": "custom-link",
-        "label": "ट्रिगर प्रकार का विस्तार करें",
+        "label": "ट्रिगर प्रकारों का विस्तार करना",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "नोड प्रकार का विस्तार करें",
+        "label": "नोड प्रकारों का विस्तार करना",
         "link": "/workflow/development/node"
       },
       {

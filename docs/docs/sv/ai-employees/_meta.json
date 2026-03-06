@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Snabbstart",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Funktioner",
     "items": [
       {
         "type": "custom-link",
         "label": "Konfigurera LLM-tjänst",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Skapa AI-medarbetare",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "Aktivera AI-medarbetare",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
         "label": "Samarbeta med AI-medarbetare",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Inbyggda AI-medarbetare",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Översikt",
-        "link": "/ai-employees/built-in/index"
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Insiktsanalytiker",
-        "link": "/ai-employees/built-in/viz"
+        "label": "Lägg till kontext - Block",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
-        "label": "Orin: Datamodelleringsexpert",
-        "link": "/ai-employees/built-in/data-modeling"
+        "label": "Webbsökning",
+        "link": "/ai-employees/features/web-search"
       },
       {
         "type": "custom-link",
-        "label": "Dex: Datarensningsexpert",
-        "link": "/ai-employees/built-in/data-organizer"
+        "label": "Använd färdigheter",
+        "link": "/ai-employees/features/tool"
       },
       {
         "type": "custom-link",
-        "label": "Nathan: Frontend-utvecklare",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Avancerat",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Välj block",
-        "link": "/ai-employees/advanced/pick-block"
+        "label": "Genvägsuppgifter",
+        "link": "/ai-employees/features/task"
       },
       {
         "type": "custom-link",
-        "label": "Datakällor",
-        "link": "/ai-employees/advanced/datasource"
+        "label": "Inbyggda AI-medarbetare",
+        "link": "/ai-employees/features/built-in-employee"
       },
       {
         "type": "custom-link",
-        "label": "Färdigheter",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Uppgifter",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "Internetsökning",
-        "link": "/ai-employees/advanced/web-search"
+        "label": "Skapa ny AI-medarbetare",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "Filhantering",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Arbetsflöden",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM-nod",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Textkonversation",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Multimodal konversation",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Strukturerad output",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Applikationsdokument",
+    "label": "Arbetsflöde",
     "items": [
       {
         "type": "custom-link",
-        "label": "Scenarier",
+        "label": "LLM-noder",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: CRM-scenariokonfiguration",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Konfiguration",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Administratörskonfiguration",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Textkonversation",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Promptguide",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Multimodal konversation",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Strukturerad utdata",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Tillämpningspraxis",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: CRM-scenariokonfiguration",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Promptguide",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

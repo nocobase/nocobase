@@ -20,7 +20,7 @@ Bij de initiële installatie van de applicatie zijn twee rollen ingebouwd: "Admi
 
 De rol-identificatie (een unieke systeem-identificatie) stelt u in staat om standaardrollen aan te passen. De vooraf gedefinieerde systeemrollen kunnen echter niet worden verwijderd.
 
-![](https://static-docs.nocobase.com/35f323b6db4f9f12f9bee4dea63302.png)
+![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
 ### De standaardrol instellen
 

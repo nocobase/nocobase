@@ -1,31 +1,31 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/template-print/syntax/formatters/number-formatting).
 :::
 
-### Formato de Números
+### Formateo de números
 
 #### 1. :formatN(precision)
 
 ##### Explicación de la sintaxis
-Formatea un número según la configuración de localización.
-Parámetro:
-- `precision`: El número de decimales.
-  Para los formatos ODS/XLSX, el número de decimales mostrados lo determina el editor de texto; para otros formatos, se utiliza este parámetro.
+Formatea el número según la configuración de localización.  
+Parámetros:
+- precision: número de decimales  
+  Para los formatos ODS/XLSX, el número de decimales mostrados lo determina el editor de texto; otros formatos dependen de este parámetro.
 
 ##### Ejemplo
 ```
-// Ejemplo de entorno: Opciones de API { "lang": "en-us" }
 '10':formatN()         // Salida "10.000"
 '1000.456':formatN()   // Salida "1,000.456"
 ```
 
 ##### Resultado
-El número se muestra según la precisión especificada y el formato de localización.
+El número se emite según la precisión especificada y el formato de localización.
+
 
 #### 2. :round(precision)
 
 ##### Explicación de la sintaxis
-Redondea el número a la cantidad de decimales especificada.
+Realiza un redondeo del número; el parámetro especifica el número de decimales.
 
 ##### Ejemplo
 ```
@@ -34,14 +34,15 @@ Redondea el número a la cantidad de decimales especificada.
 ```
 
 ##### Resultado
-La salida es el número redondeado con la precisión indicada.
+La salida es el valor tras el redondeo.
+
 
 #### 3. :add(value)
 
 ##### Explicación de la sintaxis
-Suma el valor especificado al número actual.
-Parámetro:
-- `value`: El número a sumar.
+Suma el valor especificado al número actual.  
+Parámetros:
+- value: el número a sumar
 
 ##### Ejemplo
 ```
@@ -50,14 +51,15 @@ Parámetro:
 ```
 
 ##### Resultado
-La salida es la suma del número actual y el valor especificado.
+La salida es el valor tras la suma.
+
 
 #### 4. :sub(value)
 
 ##### Explicación de la sintaxis
-Resta el valor especificado al número actual.
-Parámetro:
-- `value`: El número a restar.
+Resta el valor especificado al número actual.  
+Parámetros:
+- value: el sustraendo
 
 ##### Ejemplo
 ```
@@ -66,14 +68,15 @@ Parámetro:
 ```
 
 ##### Resultado
-La salida es el número actual menos el valor especificado.
+La salida es el valor tras la resta.
+
 
 #### 5. :mul(value)
 
 ##### Explicación de la sintaxis
-Multiplica el número actual por el valor especificado.
-Parámetro:
-- `value`: El multiplicador.
+Multiplica el número actual por el valor especificado.  
+Parámetros:
+- value: el multiplicador
 
 ##### Ejemplo
 ```
@@ -82,14 +85,15 @@ Parámetro:
 ```
 
 ##### Resultado
-La salida es el producto del número actual y el valor especificado.
+La salida es el valor tras la multiplicación.
+
 
 #### 6. :div(value)
 
 ##### Explicación de la sintaxis
-Divide el número actual por el valor especificado.
-Parámetro:
-- `value`: El divisor.
+Divide el número actual por el valor especificado.  
+Parámetros:
+- value: el divisor
 
 ##### Ejemplo
 ```
@@ -98,14 +102,15 @@ Parámetro:
 ```
 
 ##### Resultado
-La salida es el resultado de la división.
+La salida es el valor tras la división.
+
 
 #### 7. :mod(value)
 
 ##### Explicación de la sintaxis
-Calcula el módulo (resto) del número actual dividido por el valor especificado.
-Parámetro:
-- `value`: El divisor del módulo.
+Calcula el módulo (resto) del número actual respecto al valor especificado.  
+Parámetros:
+- value: el módulo
 
 ##### Ejemplo
 ```
@@ -115,6 +120,7 @@ Parámetro:
 
 ##### Resultado
 La salida es el resultado de la operación de módulo.
+
 
 #### 8. :abs
 
@@ -132,10 +138,11 @@ Devuelve el valor absoluto del número.
 ##### Resultado
 La salida es el valor absoluto.
 
+
 #### 9. :ceil
 
 ##### Explicación de la sintaxis
-Redondea el número hacia arriba, es decir, devuelve el entero más pequeño que es mayor o igual que el número actual.
+Redondea hacia arriba, es decir, devuelve el entero mínimo que es mayor o igual al número actual.
 
 ##### Ejemplo
 ```
@@ -145,12 +152,13 @@ Redondea el número hacia arriba, es decir, devuelve el entero más pequeño que
 ```
 
 ##### Resultado
-La salida es el entero redondeado hacia arriba.
+La salida es el entero tras el redondeo.
+
 
 #### 10. :floor
 
 ##### Explicación de la sintaxis
-Redondea el número hacia abajo, es decir, devuelve el entero más grande que es menor o igual que el número actual.
+Redondea hacia abajo, es decir, devuelve el entero máximo que es menor o igual al número actual.
 
 ##### Ejemplo
 ```
@@ -160,36 +168,40 @@ Redondea el número hacia abajo, es decir, devuelve el entero más grande que es
 ```
 
 ##### Resultado
-La salida es el entero redondeado hacia abajo.
+La salida es el entero tras el redondeo.
+
 
 #### 11. :int
 
 ##### Explicación de la sintaxis
-Convierte el número a un entero (no se recomienda su uso).
+Convierte el número en un entero (no se recomienda su uso).
 
 ##### Ejemplo y resultado
-Depende del caso de conversión específico.
+Según el caso específico de conversión.
+
 
 #### 12. :toEN
 
 ##### Explicación de la sintaxis
-Convierte el número a formato inglés (usando `.` como separador decimal). No se recomienda su uso.
+Convierte el número al formato inglés (el punto decimal es '.'), no se recomienda su uso.
 
 ##### Ejemplo y resultado
-Depende del caso de conversión específico.
+Según el caso específico de conversión.
+
 
 #### 13. :toFixed
 
 ##### Explicación de la sintaxis
-Convierte el número a una cadena de texto, manteniendo solo el número especificado de decimales. No se recomienda su uso.
+Convierte el número en una cadena de texto, conservando solo el número especificado de decimales; no se recomienda su uso.
 
 ##### Ejemplo y resultado
-Depende del caso de conversión específico.
+Según el caso específico de conversión.
+
 
 #### 14. :toFR
 
 ##### Explicación de la sintaxis
-Convierte el número a formato francés (usando `,` como separador decimal). No se recomienda su uso.
+Convierte el número al formato francés (el punto decimal es ','), no se recomienda su uso.
 
 ##### Ejemplo y resultado
-Depende del caso de conversión específico.
+Según el caso específico de conversión.

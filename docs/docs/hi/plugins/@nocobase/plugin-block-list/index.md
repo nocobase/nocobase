@@ -1,12 +1,16 @@
 ---
-displayName: "Block: List"
+displayName: "ब्लॉक: सूची"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Display data in a list with pagination support.
+  डेटा को सूची के रूप में प्रदर्शित करें, पेजिनेशन समर्थन के साथ।
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: List
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-block-list/index) देखें।
+:::
+
+# ब्लॉक: सूची

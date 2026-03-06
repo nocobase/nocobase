@@ -1,74 +1,74 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/interface-builder/fields/specific/js-field).
 :::
 
-# Pole JS
+# JS Field
 
 ## Wprowadzenie
 
-Pole JS służy do niestandardowego renderowania treści w miejscu pola za pomocą JavaScript. Jest powszechnie używane w blokach szczegółów, elementach tylko do odczytu w formularzach lub jako „Inne niestandardowe elementy” w kolumnach tabel. Nadaje się do spersonalizowanych wyświetlaczy, łączenia informacji pochodnych, renderowania plakietek statusu, tekstu sformatowanego lub wykresów.
+JS Field służy do niestandardowego renderowania treści w miejscu pola za pomocą JavaScript. Jest powszechnie stosowany w blokach szczegółów, elementach formularzy tylko do odczytu lub jako „Inne niestandardowe elementy” w kolumnach tabeli. Nadaje się do spersonalizowanej prezentacji, łączenia informacji pochodnych, odznak statusu, tekstu sformatowanego lub wykresów.
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
 ## Typy
 
-- Tylko do odczytu: Służy do wyświetlania treści, której nie można edytować. Odczytuje `ctx.value` w celu renderowania danych wyjściowych.
-- Edytowalny: Służy do niestandardowych interakcji wejściowych. Udostępnia `ctx.getValue()`/`ctx.setValue(v)` oraz zdarzenie kontenera `js-field:value-change`, aby ułatwić dwukierunkową synchronizację z wartościami formularza.
+- Typ tylko do odczytu: Służy do nieedytowalnego wyświetlania, odczytuje `ctx.value` do renderowania danych wyjściowych.
+- Typ edytowalny: Służy do niestandardowych interakcji wejściowych, udostępnia `ctx.getValue()`/`ctx.setValue(v)` oraz zdarzenie kontenera `js-field:value-change`, ułatwiając dwukierunkową synchronizację z wartościami formularza.
 
 ## Scenariusze użycia
 
-- Tylko do odczytu
-  - Blok szczegółów: Wyświetlanie treści tylko do odczytu, takich jak wyniki obliczeń, plakietki statusu, fragmenty tekstu sformatowanego, wykresy itp.
-  - Blok tabeli: Używany jako „Inna niestandardowa kolumna > Pole JS” do wyświetlania tylko do odczytu (jeśli potrzebują Państwo kolumny niepowiązanej z polem, proszę użyć Kolumny JS).
+- Typ tylko do odczytu
+  - Blok szczegółów: Wyświetlanie wyników obliczeń, odznak statusu, fragmentów tekstu sformatowanego, wykresów i innych treści tylko do odczytu;
+  - Blok tabeli: Używany jako „Inna niestandardowa kolumna > JS Field” do wyświetlania tylko do odczytu (jeśli potrzebują Państwo kolumny niepowiązanej z polem, proszę użyć JS Column);
 
-- Edytowalny
-  - Blok formularza (CreateForm/EditForm): Używany do niestandardowych kontrolek wejściowych lub złożonych danych wejściowych, które są walidowane i przesyłane wraz z formularzem.
-  - Nadaje się do scenariuszy takich jak: komponenty wejściowe z zewnętrznych bibliotek, edytory tekstu sformatowanego/kodu, złożone komponenty dynamiczne itp.
+- Typ edytowalny
+  - Blok formularza (CreateForm/EditForm): Używany do niestandardowych kontrolek wejściowych lub złożonych danych wejściowych, walidowanych i przesyłanych wraz z formularzem;
+  - Odpowiednie scenariusze: komponenty wejściowe z zewnętrznych bibliotek, edytory tekstu sformatowanego/kodu, złożone komponenty dynamiczne itp.;
 
 ## API kontekstu środowiska uruchomieniowego
 
-Kod środowiska uruchomieniowego Pola JS może bezpośrednio korzystać z następujących możliwości kontekstu:
+Kod środowiska uruchomieniowego JS Field może bezpośrednio korzystać z następujących możliwości kontekstu:
 
-- `ctx.element`: Kontener DOM pola (ElementProxy), obsługujący `innerHTML`, `querySelector`, `addEventListener` itp.
-- `ctx.value`: Bieżąca wartość pola (tylko do odczytu).
-- `ctx.record`: Bieżący obiekt rekordu (tylko do odczytu).
-- `ctx.collection`: Metadane kolekcji, do której należy pole (tylko do odczytu).
-- `ctx.requireAsync(url)`: Asynchroniczne ładowanie biblioteki AMD/UMD za pomocą adresu URL.
-- `ctx.importAsync(url)`: Dynamiczne importowanie modułu ESM za pomocą adresu URL.
-- `ctx.openView(options)`: Otwieranie skonfigurowanego widoku (okna podręcznego/szuflady/strony).
-- `ctx.i18n.t()` / `ctx.t()`: Internacjonalizacja.
-- `ctx.onRefReady(ctx.ref, cb)`: Renderowanie po przygotowaniu kontenera.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Wbudowane biblioteki React, ReactDOM, Ant Design, ikon Ant Design i dayjs do renderowania JSX i narzędzi do obsługi daty/czasu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` są zachowane dla kompatybilności.)
-- `ctx.render(vnode)`: Renderuje element React, ciąg HTML lub węzeł DOM do domyślnego kontenera `ctx.element`. Wielokrotne renderowanie spowoduje ponowne użycie Roota i nadpisanie istniejącej zawartości kontenera.
+- `ctx.element`: Kontener DOM pola (ElementProxy), obsługuje `innerHTML`, `querySelector`, `addEventListener` itp.;
+- `ctx.value`: Bieżąca wartość pola (tylko do odczytu);
+- `ctx.record`: Bieżący obiekt rekordu (tylko do odczytu);
+- `ctx.collection`: Metadane kolekcji, do której należy pole (tylko do odczytu);
+- `ctx.requireAsync(url)`: Asynchroniczne ładowanie bibliotek AMD/UMD za pomocą adresu URL;
+- `ctx.importAsync(url)`: Dynamiczne importowanie modułów ESM za pomocą adresu URL;
+- `ctx.openView(options)`: Otwieranie skonfigurowanego widoku (okno podręczne/szuflada/strona);
+- `ctx.i18n.t()` / `ctx.t()`: Internacjonalizacja;
+- `ctx.onRefReady(ctx.ref, cb)`: Renderowanie po przygotowaniu kontenera;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Wbudowane biblioteki React / ReactDOM / Ant Design / Ikony Ant Design / dayjs / lodash / math.js / formula.js i inne uniwersalne biblioteki, używane do renderowania JSX, obsługi czasu, operacji na danych i obliczeń matematycznych. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` są nadal zachowane dla kompatybilności.)
+- `ctx.render(vnode)`: Renderuje element React, ciąg HTML lub węzeł DOM do domyślnego kontenera `ctx.element`; powtarzające się renderowanie spowoduje ponowne użycie Roota i nadpisanie istniejącej zawartości kontenera.
 
 Specyficzne dla typu edytowalnego (JSEditableField):
 
-- `ctx.getValue()`: Pobieranie bieżącej wartości formularza (priorytet ma stan formularza, następnie właściwości pola).
-- `ctx.setValue(v)`: Ustawianie wartości formularza i właściwości pola, utrzymując dwukierunkową synchronizację.
-- Zdarzenie kontenera `js-field:value-change`: Wywoływane, gdy zmienia się wartość zewnętrzna, co ułatwia skryptowi aktualizację wyświetlania danych wejściowych.
+- `ctx.getValue()`: Pobiera bieżącą wartość formularza (priorytetowo traktuje stan formularza, a następnie właściwości pola).
+- `ctx.setValue(v)`: Ustawia wartość formularza i właściwości pola, zachowując dwukierunkową synchronizację.
+- Zdarzenie kontenera `js-field:value-change`: Wyzwalane, gdy zmienia się wartość zewnętrzna, ułatwiając skryptowi aktualizację wyświetlania danych wejściowych.
 
 ## Edytor i fragmenty kodu
 
-Edytor skryptów Pola JS obsługuje podświetlanie składni, podpowiedzi błędów i wbudowane fragmenty kodu (Snippets).
+Edytor skryptów JS Field obsługuje podświetlanie składni, podpowiedzi błędów i wbudowane fragmenty kodu (Snippets).
 
-- `Snippets`: Otwiera listę wbudowanych fragmentów kodu, które można wyszukać i wstawić w bieżącej pozycji kursora jednym kliknięciem.
-- `Run`: Bezpośrednio wykonuje bieżący kod. Dziennik wykonania jest wyświetlany w panelu `Logs` na dole, obsługując `console.log/info/warn/error` oraz podświetlanie błędów dla łatwej lokalizacji.
+- `Snippets`: Otwiera listę wbudowanych fragmentów kodu, które można wyszukiwać i wstawiać w bieżącej pozycji kursora jednym kliknięciem.
+- `Run`: Bezpośrednio uruchamia bieżący kod, dzienniki uruchamiania są wyprowadzane do panelu `Logs` na dole, obsługuje `console.log/info/warn/error` oraz lokalizację błędów poprzez podświetlanie.
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-Mogą Państwo również generować kod za pomocą Pracownika AI:
+Można połączyć z Pracownikiem AI w celu generowania kodu:
 
-- [Pracownik AI · Nathan: Inżynier Frontend](/ai-employees/built-in/ai-coding)
+- [Pracownik AI · Nathan: Inżynier Frontend](/ai-employees/features/built-in-employee)
 
 ## Częste zastosowania
 
-### 1) Podstawowe renderowanie (odczytywanie wartości pola)
+### 1) Podstawowe renderowanie (odczyt wartości pola)
 
 ```js
 ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ```
 
-### 2) Używanie JSX do renderowania komponentu React
+### 2) Użycie JSX do renderowania komponentu React
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -134,6 +134,6 @@ ctx.render(<InputView />);
 
 ## Uwagi
 
-- Zaleca się używanie zaufanych sieci CDN do ładowania bibliotek zewnętrznych oraz zapewnienie mechanizmów awaryjnych w przypadku niepowodzeń (np. `if (!lib) return;`).
-- Zaleca się używanie selektorów `class` lub `[name=...]` i unikanie stałych `id`, aby zapobiec duplikowaniu `id` w wielu blokach lub oknach podręcznych.
-- Czyszczenie zdarzeń: Pole może być wielokrotnie renderowane ponownie z powodu zmian danych lub przełączania widoków. Przed powiązaniem zdarzenia należy je wyczyścić lub usunąć duplikaty, aby uniknąć wielokrotnego wyzwalania. Można zastosować zasadę „najpierw usuń, potem dodaj”.
+- Do ładowania bibliotek zewnętrznych zaleca się korzystanie z zaufanych sieci CDN i przygotowanie mechanizmów awaryjnych (np. `if (!lib) return;`).
+- W przypadku selektorów zaleca się priorytetowe traktowanie `class` lub `[name=...]` i unikanie stałych `id`, aby zapobiec powielaniu `id` w wielu blokach lub oknach podręcznych.
+- Czyszczenie zdarzeń: Pole może być wielokrotnie renderowane z powodu zmian danych lub przełączania widoków. Przed powiązaniem zdarzeń należy je wyczyścić lub usunąć duplikaty, aby uniknąć wielokrotnego wyzwalania. Można zastosować zasadę „najpierw remove, potem add”.

@@ -30,7 +30,7 @@ Om pluginet aktiveras av en underapplikation sparas nyckeln som standard i katal
 
 Vi använder kuvertkryptering.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Process för nyckelskapande
 1. Första gången ett krypterat fält skapas genererar systemet automatiskt en 32-bitars `applikationsnyckel` som sparas i standardlagringskatalogen, Base64-kodad.

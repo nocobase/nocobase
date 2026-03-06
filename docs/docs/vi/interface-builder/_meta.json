@@ -69,18 +69,13 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Bảng điều khiển",
+            "label": "Bảng thao tác",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Khối tham chiếu",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -106,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Phương thức tải dữ liệu",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Bố cục",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
@@ -126,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Sắp xếp kéo thả",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Xóa khối",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Tiêu đề khối",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Chiều cao khối",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bản nháp biểu mẫu",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bộ chọn dropdown",
+            "label": "Bộ chọn thả xuống",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Bảng con",
+            "label": "Bảng con (chỉnh sửa nội dòng)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bảng con (chỉnh sửa popup)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -263,7 +283,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Gợi ý trường",
+            "label": "Thông tin gợi ý trường",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -326,12 +346,12 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Nút sửa",
+            "label": "Nút chỉnh sửa",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
             "type": "custom-link",
-            "label": "Xác nhận lại",
+            "label": "Xác nhận lần hai",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
@@ -346,7 +366,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Popup sửa",
+            "label": "Popup chỉnh sửa",
             "link": "/interface-builder/actions/action-settings/edit-popup"
           },
           {
@@ -378,8 +398,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Sửa",
+            "label": "Chỉnh sửa",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sao chép",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -448,6 +473,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Chỉnh sửa hàng loạt",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Thêm bản ghi con",
             "link": "/interface-builder/actions/types/add-child"
           },
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mẫu UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

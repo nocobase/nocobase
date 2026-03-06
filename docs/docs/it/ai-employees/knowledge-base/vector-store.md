@@ -1,5 +1,5 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Archivio Vettoriale
@@ -20,7 +20,7 @@ Clicchi sul pulsante `Add new` nell'angolo in alto a destra per aggiungere un nu
 
 - Nel campo `Name`, inserisca il nome dell'archivio vettoriale;
 - In `Vector store`, selezioni un database vettoriale già configurato. Si riferisca a: [Database Vettoriale](/ai-employees/knowledge-base/vector-database);
-- In `LLM service`, selezioni un servizio LLM già configurato. Si riferisca a: [Gestione del Servizio LLM](/ai-employees/quick-start/llm-service);
+- In `LLM service`, selezioni un servizio LLM già configurato. Si riferisca a: [Gestione del Servizio LLM](/ai-employees/features/llm-service);
 - Nel campo `Embedding model`, inserisca il nome del modello `Embedding` da utilizzare;
 
 Clicchi sul pulsante `Submit` per salvare le informazioni dell'archivio vettoriale.

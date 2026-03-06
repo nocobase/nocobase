@@ -1,5 +1,5 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/file-manager/development/index).
 :::
 
 # Développement d'extensions
@@ -174,4 +174,3 @@ Les props d'entrée sont :
 * `file` : l'objet du fichier courant (peut être une URL de type chaîne ou un objet contenant `url`/`preview`)
 * `index` : l'index du fichier dans la liste
 * `list` : la liste des fichiers
-

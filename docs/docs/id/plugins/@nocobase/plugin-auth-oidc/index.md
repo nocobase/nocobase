@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: OIDC"
+displayName: "Autentikasi: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  OIDC (OpenID Connect) authentication.
+  Autentikasi identitas melalui protokol OIDC (OpenID Connect).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Auth: OIDC
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-auth-oidc/index).
+:::
+
+# Autentikasi: OIDC

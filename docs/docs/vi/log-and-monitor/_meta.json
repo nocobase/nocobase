@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Nhật ký",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Nhật ký máy chủ",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nhật ký máy chủ, Nhật ký kiểm tra, Lịch sử bản ghi",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Đo lường từ xa",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Hướng dẫn sử dụng",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bộ xuất dữ liệu",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

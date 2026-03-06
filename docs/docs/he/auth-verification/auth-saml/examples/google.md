@@ -18,7 +18,7 @@
 
 הגדרות תוסף - אימות משתמשים - הוספה - SAML
 
-![](https://static-docs.nocobase.com/5bc18c795b8f15828e26bb07251a335.png)
+![](https://static-docs.nocobase.com/5bc18c7952b8f15828e26bb07251a335.png)
 
 מלאו את הפרטים שהעתקתם זה עתה, לפי הסדר:
 
@@ -33,9 +33,9 @@
 
 חזרו למסוף הניהול של Google, ובדף **פרטי ספק השירות (Service Provider Details)**, הזינו את כתובת ה-ACS ומזהה הישות שהעתקתם קודם לכן, וסמנו את האפשרות **תגובה חתומה (Signed Response)**.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc2384317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
-![](https://static-docs.nocobase.com/c7de1f8b84f335de110e5a7c96255c4.png)
+![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 
 תחת **מיפוי מאפיינים (Attribute Mapping)**, הוסיפו מיפויים עבור המאפיינים המתאימים.
 

@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "بدء سريع",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "مقدمة الميزات",
     "items": [
       {
         "type": "custom-link",
         "label": "إعداد خدمة LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "إنشاء موظف AI",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "تمكين موظفي AI",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "التعاون مع موظف AI",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "موظفو AI المدمجون",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "نظرة عامة",
-        "link": "/ai-employees/built-in/index"
+        "label": "التعاون مع موظفي AI",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: محلل الرؤى",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: خبير نمذجة البيانات",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: خبير تنظيم البيانات",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: مهندس الواجهة الأمامية",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "متقدم",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "تحديد قالب",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "مصدر البيانات",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "المهارات",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "المهام",
-        "link": "/ai-employees/advanced/task"
+        "label": "إضافة سياق - الكتل",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "البحث عبر الإنترنت",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "استخدام المهارات",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "المهام السريعة",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "موظفو AI المدمجون",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "إنشاء موظف AI جديد",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "إدارة الملفات",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "سير العمل",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "عقدة LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "محادثة نصية",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "محادثة متعددة الأنماط",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "إخراج منظم",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "وثائق التطبيق",
+    "label": "سير العمل",
     "items": [
       {
         "type": "custom-link",
-        "label": "السيناريوهات",
+        "label": "عقد LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: إعداد سيناريو CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "الإعدادات",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "إعدادات المسؤول",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "محادثة نصية",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "دليل المطالبات",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "محادثة متعددة الأنماط",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "إخراج منظم",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "الممارسات التطبيقية",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: إعداد سيناريو CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "دليل المطالبات",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

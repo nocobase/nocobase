@@ -24,7 +24,7 @@ pkg: '@nocobase/plugin-auth'
 
 כאשר הרשמה אינה מאופשרת, עמוד ההתחברות לא יציג קישור ליצירת חשבון.
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a3745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 כאשר הרשמה אינה מאופשרת, לא ניתן לגשת לעמוד ההרשמה.
 

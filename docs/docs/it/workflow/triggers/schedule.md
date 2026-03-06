@@ -74,6 +74,6 @@ Crea un flusso di lavoro basato su attività pianificata. Nella configurazione d
 
 Successivamente, configuri gli altri nodi secondo la logica del processo per aggiornare lo stato dell'ordine con l'ID dei dati di attivazione e lo stato "non pagato" a "annullato":
 
-![Attività pianificata_Configurazione trigger_Modalità campo ora della collezione_Nodo di aggiornamento](https://static-docs.nocobase.com/491dde9df773f5b14a4fd8ceac9d3e.png)
+![Attività pianificata_Configurazione trigger_Modalità campo ora della collezione_Nodo di aggiornamento](https://static-docs.nocobase.com/491dde9df8f773f5b14a4fd8ceac9d3e.png)
 
 A differenza della modalità tempo personalizzato, qui non è necessario calcolare l'ora di 30 minuti fa, poiché il contesto dei dati di attivazione del flusso di lavoro contiene già la riga di dati che soddisfa la condizione temporale, quindi può aggiornare direttamente lo stato dell'ordine corrispondente.

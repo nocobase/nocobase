@@ -10,11 +10,11 @@ Met het Berekeningsknooppunt kunt u een uitdrukking evalueren. Het resultaat wor
 
 In de **workflow**-configuratie-interface klikt u op de plusknop ('+') in de flow om een 'Berekening'-knooppunt toe te voegen:
 
-![计算节点_添加](https://static-docs.nocobase.com/58a466540d26945251cd143eb4b16579.png)
+![计算节点_添加](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## Knooppuntconfiguratie
 
-![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f8d3cd1881b2d9c33874.png)
+![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Berekeningsengine
 

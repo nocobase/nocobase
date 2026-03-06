@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Bloc de filtre",
+        "label": "Blocs de filtrage",
         "collapsed": true,
         "items": [
           {
@@ -69,18 +69,13 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Panneau de configuration",
+            "label": "Panneau d'action",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Bloc de référence",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -106,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Méthode de chargement des données",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Mise en page",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
@@ -126,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Tri par glisser-déposer",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Suppression du bloc",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Titre du bloc",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hauteur du bloc",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Brouillons de formulaire",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,7 +155,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Champ",
+    "label": "Champs",
     "items": [
       {
         "type": "custom-link",
@@ -164,7 +179,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Champs du formulaire de filtre",
+            "label": "Champs du formulaire de filtrage",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Liste déroulante",
+            "label": "Sélecteur déroulant",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Sous-tableau",
+            "label": "Sous-tableau (édition en ligne)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sous-tableau (édition en modale)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -305,14 +325,14 @@
       },
       {
         "type": "custom-link",
-        "label": "Composant de champ relationnel",
+        "label": "Composant de champ de relation",
         "link": "/interface-builder/fields/association-field"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Action",
+    "label": "Actions",
     "items": [
       {
         "type": "custom-link",
@@ -326,22 +346,22 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Bouton Modifier",
+            "label": "Bouton modifier",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
             "type": "custom-link",
-            "label": "Confirmation requise",
+            "label": "Confirmation secondaire",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Assignation de champ",
+            "label": "Assignation de valeurs",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "Lier un workflow",
+            "label": "Lier un flux de travail",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
@@ -358,7 +378,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Type d'action",
+        "label": "Types d'action",
         "collapsed": true,
         "items": [
           {
@@ -383,6 +403,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Dupliquer",
+            "link": "/interface-builder/actions/types/duplicate"
+          },
+          {
+            "type": "custom-link",
             "label": "Importer",
             "link": "/interface-builder/actions/types/import"
           },
@@ -403,7 +428,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Exporter la pièce jointe",
+            "label": "Exporter les pièces jointes",
             "link": "/interface-builder/actions/types/export-attachments"
           },
           {
@@ -433,7 +458,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Déclencher un workflow",
+            "label": "Déclencher un flux de travail",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -445,6 +470,11 @@
             "type": "custom-link",
             "label": "Mise à jour par lot",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Modification par lot",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Variable",
+        "label": "Variables",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modèles d'interface utilisateur",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

@@ -12,7 +12,7 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 
 Setelah mengatur aplikasi, salin **URL SSO**, **ID Entitas**, dan **Sertifikat**.
 
-![](https://static-docs.nocobase.com/aafd20a7930e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## Menambahkan Autentikator Baru di NocoBase
 
@@ -33,7 +33,7 @@ Kemudian salin SP Issuer/EntityID dan URL ACS dari bagian Penggunaan.
 
 Kembali ke Konsol Google, pada halaman **Detail Penyedia Layanan**, masukkan URL ACS dan ID Entitas yang telah disalin sebelumnya, lalu centang **Respons yang Ditandatangani**.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc7384317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
 ![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 

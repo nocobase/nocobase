@@ -1,14 +1,18 @@
 ---
-displayName: "AI: Knowledge base"
+displayName: "الذكاء الاصطناعي: قاعدة المعرفة"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
+  يدعم التكامل مع قواعد البيانات المتجهة لتحويل المستندات إلى متجهات، مما يوفر لموظفي الذكاء الاصطناعي إمكانيات البحث الذكي ودعم المعرفة.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Knowledge base
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-ai-knowledge-base/index).
+:::
+
+# الذكاء الاصطناعي: قاعدة المعرفة

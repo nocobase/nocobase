@@ -1,93 +1,152 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/workflow/triggers/approval).
 :::
 
 # Schvalování
 
-## Úvod
+## Představení
 
-Schvalování je typ **pracovního postupu** speciálně navržený pro úkoly, které jsou iniciovány a zpracovávány lidmi za účelem rozhodnutí o stavu souvisejících dat. Běžně se používá pro automatizaci kancelářských procesů nebo jiné procesy řízení manuálních rozhodnutí, například pro vytváření a správu manuálních **pracovních postupů** pro scénáře jako „žádosti o dovolenou“, „schvalování náhrad výdajů“ a „schvalování nákupu surovin“.
+Schvalování je forma procesu určená speciálně pro úkoly iniciované a zpracovávané lidmi za účelem rozhodnutí o stavu souvisejících dat. Obvykle se používá pro automatizaci kancelářských procesů (OA) nebo jiné záležitosti vyžadující lidské rozhodování. Lze jej využít například k vytváření a správě manuálních procesů pro scénáře jako „žádost o dovolenou“, „schvalování výdajů“ nebo „schvalování nákupu surovin“.
 
-**Plugin** Schvalování poskytuje specializovaný typ **pracovního postupu** (spouštěč) „Schvalování (událost)“ a dedikovaný uzel „Schvalování“ pro tento proces. V kombinaci s unikátními vlastními **kolekcemi** a vlastními bloky NocoBase můžete rychle a flexibilně vytvářet a spravovat různé scénáře schvalování.
+Plugin Schvalování poskytuje specializovaný typ pracovního postupu (spouštěč) „Schvalování (událost)“ a uzel „Schvalování“ určený pro tento proces. V kombinaci s unikátními vlastními kolekcemi a vlastními bloky NocoBase můžete rychle a flexibilně vytvářet a spravovat různé scénáře schvalování.
 
-## Vytvoření pracovního postupu
+## Vytvoření procesu
 
-Při vytváření **pracovního postupu** vyberte typ „Schvalování“ a vytvoříte tak schvalovací **pracovní postup**:
+Při vytváření pracovního postupu vyberte typ „Schvalování“, čímž vytvoříte schvalovací proces:
 
-![Spouštěč schvalování_Vytvoření schvalovacího pracovního postupu](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Spouštěč schvalování_Vytvoření schvalovacího procesu](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
-Poté v konfiguračním rozhraní **pracovního postupu** klikněte na spouštěč, čímž otevřete dialogové okno pro další konfiguraci.
+Poté v konfiguračním rozhraní pracovního postupu klikněte na spouštěč, čímž otevřete vyskakovací okno pro další konfiguraci.
 
 ## Konfigurace spouštěče
 
-### Propojení s kolekcí
+![20251226102619](https://static-docs.nocobase.com/20251226102619.png)
 
-**Plugin** Schvalování v NocoBase je navržen s ohledem na flexibilitu a lze jej použít s jakoukoli vlastní **kolekcí**. To znamená, že konfigurace schvalování nevyžaduje opětovnou konfiguraci datového modelu, ale přímo využívá již existující **kolekci**. Proto po vstupu do konfigurace spouštěče musíte nejprve vybrat **kolekci**, abyste určili, při vytvoření nebo aktualizaci dat které **kolekce** se tento **pracovní postup** spustí:
+### Vazba na kolekci
 
-![Spouštěč schvalování_Konfigurace spouštěče_Výběr kolekce](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
+Plugin Schvalování NocoBase je navržen s ohledem na flexibilitu a lze jej použít s jakoukoli vlastní kolekcí. Konfigurace schvalování tedy nevyžaduje opakované nastavování datového modelu, ale přímo využívá již vytvořené kolekce. Po vstupu do konfigurace spouštěče je proto nejprve nutné vybrat kolekci, aby se určilo, pro která data bude tento proces určen:
 
-Poté ve formuláři pro vytváření (nebo úpravu) dat pro příslušnou **kolekci** propojte tento **pracovní postup** s tlačítkem pro odeslání:
+![Spouštěč schvalování_Konfigurace spouštěče_Výběr kolekce](https://static-docs.nocobase.com/20251226103223.png)
 
-![Zahájení schvalování_Propojení pracovního postupu](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+### Způsob spuštění
 
-Poté, co uživatel odešle tento formulář, spustí se odpovídající schvalovací **pracovní postup**. Odeslaná data se nejen uloží do příslušné **kolekce**, ale také se zaznamenají do schvalovacího toku pro pozdější kontrolu a použití schvalovateli.
+Při zahájení schvalování pro obchodní data můžete zvolit jeden ze dvou následujících způsobů spuštění:
 
-### Zrušení
+*   **Před uložením dat**
 
-Pokud schvalovací **pracovní postup** umožňuje iniciátorovi zrušit žádost, je třeba v konfiguraci rozhraní iniciátora povolit tlačítko „Zrušit“:
+    Schvalování se spustí před uložením odeslaných dat. To je vhodné pro scénáře, kde mají být data uložena až po schválení. V tomto režimu jsou data při zahájení schvalování pouze dočasná a do příslušné kolekce budou oficiálně uložena až po schválení.
 
-![Spouštěč schvalování_Konfigurace spouštěče_Povolit zrušení](https://static-docs.nocobase.com/20251029232544.png)
+*   **Po uložení dat**
 
-Po povolení může být schválení iniciované tímto **pracovním postupem** zrušeno iniciátorem předtím, než jej zpracuje jakýkoli schvalovatel. Nicméně, jakmile jej zpracuje jakýkoli schvalovatel v následném schvalovacím uzlu, již jej nebude možné zrušit.
+    Schvalování se spustí po uložení odeslaných dat. To je vhodné pro scénáře, kde lze data nejprve uložit a poté schválit. V tomto režimu jsou data při zahájení schvalování již uložena v příslušné kolekci a veškeré změny provedené během schvalovacího procesu budou rovněž uloženy.
 
-:::info{title=Poznámka}
-Po povolení nebo odstranění tlačítka pro zrušení je nutné v dialogovém okně konfigurace spouštěče kliknout na „Uložit a odeslat“, aby se změny projevily.
+### Místo zahájení schvalování
+
+Můžete si vybrat, kde v systému lze schvalování zahájit:
+
+*   **Pouze v datových blocích**
+
+    K tomuto pracovnímu postupu můžete připojit akci libovolného formulářového bloku dané kolekce pro zahájení schvalování. Proces schvalování pak lze zpracovávat a sledovat v bloku schvalování u jednotlivých záznamů. To je obvykle vhodné pro obchodní data.
+
+*   **V datových blocích i v centru úkolů**
+
+    Kromě datových bloků lze schvalování zahajovat a zpracovávat také v globálním centru úkolů. To je obvykle vhodné pro administrativní data.
+
+### Kdo může zahájit schvalování
+
+Můžete nakonfigurovat oprávnění na základě rozsahu uživatelů a určit, kteří uživatelé mohou toto schvalování zahájit:
+
+*   **Všichni uživatelé**
+
+    Schvalování mohou zahájit všichni uživatelé v systému.
+
+*   **Pouze vybraní uživatelé**
+
+    Schvalování mohou zahájit pouze uživatelé v určeném rozsahu. Lze vybrat více uživatelů.
+
+    ![20251226114623](https://static-docs.nocobase.com/20251226114623.png)
+
+### Konfigurace rozhraní formuláře iniciátora
+
+Nakonec je třeba nakonfigurovat rozhraní formuláře pro iniciátora. Toto rozhraní bude použito pro odesílání při zahájení z bloku centra schvalování a pro opětovné odeslání poté, co iniciátor schvalování stáhne zpět. Kliknutím na tlačítko konfigurace otevřete vyskakovací okno:
+
+![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora](https://static-docs.nocobase.com/20251226130239.png)
+
+Do rozhraní iniciátora můžete přidat formulář pro vyplnění založený na propojené kolekci nebo popisný text (Markdown) pro nápovědu a instrukce. Přidání bloku formuláře je povinné, jinak iniciátor nebude moci po vstupu do tohoto rozhraní provádět žádné operace.
+
+Po přidání bloku formuláře můžete, stejně jako v běžném konfiguračním rozhraní formuláře, přidávat komponenty polí z odpovídající kolekce a libovolně je uspořádat, abyste zorganizovali obsah, který je třeba vyplnit:
+
+![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora_Konfigurace polí](https://static-docs.nocobase.com/20251226130339.png)
+
+Kromě tlačítka pro přímé odeslání můžete přidat také tlačítko „Uložit koncept“ pro podporu procesů dočasného uložení:
+
+![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora_Konfigurace akcí_Uložit](https://static-docs.nocobase.com/20251226130512.png)
+
+Pokud schvalovací proces umožňuje iniciátorovi vzít žádost zpět, musíte v konfiguraci rozhraní iniciátora povolit tlačítko „Stáhnout zpět“:
+
+![Spouštěč schvalování_Konfigurace spouštěče_Povolit stažení zpět](https://static-docs.nocobase.com/20251226130637.png)
+
+Po povolení může iniciátor vzít schvalování zahájené tímto procesem zpět, dokud jej nezpracuje žádný ze schvalovatelů. Jakmile však dojde ke zpracování v jakémkoli následném schvalovacím uzlu, stažení zpět již nebude možné.
+
+:::info{title=Tip}
+Po povolení nebo odstranění tlačítka pro stažení zpět je nutné ve vyskakovacím okně konfigurace spouštěče kliknout na tlačítko uložit, aby se změny projevily.
 :::
 
-### Konfigurace formulářového rozhraní pro zahájení schvalování
+### Karta „Moje žádosti“ <Badge>2.0+</Badge>
 
-Nakonec je třeba nakonfigurovat formulářové rozhraní iniciátora. Toto rozhraní bude použito pro odesílání akcí při zahájení z bloku centra schvalování a při opětovném zahájení po zrušení. Klikněte na tlačítko „Konfigurovat“ pro otevření dialogového okna:
+Slouží ke konfiguraci karet úkolů v seznamu „Moje žádosti“ v centru úkolů.
 
-![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![20260213005957](https://static-docs.nocobase.com/20260213005957.png)
 
-Do rozhraní iniciátora můžete přidat formulář pro vyplnění na základě propojené **kolekce** nebo popisný text (Markdown) pro nápovědu a navádění. Formulář je povinný; v opačném případě nebude iniciátor po vstupu do tohoto rozhraní schopen provádět žádné akce.
+Na kartě můžete libovolně konfigurovat obchodní pole (kromě polí vazeb), která chcete zobrazit, nebo informace související se schvalováním.
 
-Po přidání bloku formuláře můžete, stejně jako v běžném konfiguračním rozhraní formuláře, přidávat komponenty polí z odpovídající **kolekce** a libovolně je uspořádat tak, aby se organizoval obsah, který je třeba ve formuláři vyplnit:
+Po vytvoření žádosti o schválení uvidíte v seznamu centra úkolů vlastní kartu úkolu:
 
-![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora_Konfigurace polí](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![20260213010228](https://static-docs.nocobase.com/20260213010228.png)
 
-Kromě tlačítka pro přímé odeslání můžete také přidat akční tlačítko „Uložit jako koncept“, které podporuje proces dočasného uložení:
+### Režim zobrazení záznamu v procesu
 
-![Spouštěč schvalování_Konfigurace spouštěče_Formulář iniciátora_Konfigurace akcí](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+*   **Snímek (Snapshot)**
+
+    V průběhu schvalování vidí žadatel a schvalovatelé stav záznamu v momentě vstupu do procesu. Po odeslání uvidí pouze záznamy, které sami upravili – neuvidí aktualizace provedené ostatními později.
+
+*   **Nejnovější (Latest)**
+
+    Žadatel a schvalovatelé vidí v průběhu celého procesu vždy nejnovější verzi záznamu bez ohledu na to, v jakém stavu byl záznam před jejich operací. Po skončení procesu uvidí finální verzi záznamu.
 
 ## Uzel schvalování
 
-Ve schvalovacím **pracovním postupu** je třeba použít dedikovaný uzel „Schvalování“ pro konfiguraci operační logiky pro schvalovatele, aby mohli zpracovat (schválit, zamítnout nebo vrátit) zahájené schválení. Uzel „Schvalování“ lze použít pouze ve schvalovacích **pracovních postupech**. Podrobnosti naleznete v [Uzlu schvalování](../nodes/approval.md).
+V pracovním postupu schvalování je nutné použít specializovaný uzel „Schvalování“ ke konfiguraci operační logiky pro schvalovatele (schválení, zamítnutí nebo vrácení). Uzel „Schvalování“ lze použít pouze v procesech typu schvalování. Podrobnosti naleznete v části [Uzel schvalování](../nodes/approval.md).
+
+:::info{title=Tip}
+Pokud schvalovací proces neobsahuje žádný uzel „Schvalování“, bude proces automaticky schválen.
+:::
 
 ## Konfigurace zahájení schvalování
 
-Po nakonfigurování a povolení schvalovacího **pracovního postupu** jej můžete propojit s tlačítkem pro odeslání formuláře příslušné **kolekce**, což uživatelům umožní zahájit schvalování při odeslání:
+Po nakonfigurování a povolení schvalovacího pracovního postupu jej můžete propojit s tlačítkem pro odeslání formuláře příslušné kolekce, aby uživatelé mohli při odesílání zahájit schvalování:
 
-![Zahájení schvalování_Propojení pracovního postupu](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+![Zahájení schvalování_Vazba na pracovní postup](https://static-docs.nocobase.com/20251226110710.png)
 
-Po propojení **pracovního postupu** uživatel zahájí schvalování odesláním aktuálního formuláře.
+Poté odeslání tohoto formuláře uživatelem spustí odpovídající schvalovací pracovní postup. Odeslaná data budou kromě uložení do příslušné kolekce také zaznamenána jako snímek do schvalovacího toku pro potřeby následných schvalovatelů.
 
-:::info{title=Poznámka}
-Tlačítko pro zahájení schvalování v současné době podporuje pouze tlačítko „Odeslat“ (nebo „Uložit“) ve formuláři pro vytvoření nebo aktualizaci. Nepodporuje tlačítko „Odeslat do **pracovního postupu**“ (které lze propojit pouze s „Událostí po akci“).
+:::info{title=Tip}
+Tlačítko pro zahájení schvalování aktuálně podporuje pouze tlačítko „Odeslat“ (nebo „Uložit“) ve formulářích pro vytvoření nebo aktualizaci. Nepodporuje tlačítko „Spustit pracovní postup“ (toto tlačítko lze propojit pouze s „vlastními událostmi akcí“).
 :::
 
 ## Centrum úkolů
 
-Centrum úkolů poskytuje jednotný vstupní bod pro uživatele k prohlížení a zpracování jejich úkolů. Schválení iniciovaná aktuálním uživatelem a jeho čekající úkoly jsou přístupné přes Centrum úkolů v horním panelu nástrojů a různé typy úkolů lze prohlížet pomocí levé navigační lišty.
+Centrum úkolů poskytuje jednotný vstupní bod, který uživatelům usnadňuje prohlížení a zpracování úkolů. K schvalováním zahájeným aktuálním uživatelem i k čekajícím úkolům lze přistupovat přes centrum úkolů v horním panelu nástrojů a pomocí navigace vlevo lze prohlížet různé typy úkolů.
 
 ![20250310161203](https://static-docs.nocobase.com/20250310161203.png)
 
-### Moje podání
+### Moje žádosti
 
-#### Zobrazení odeslaných schválení
+#### Zobrazení zahájených schvalování
 
 ![20250310161609](https://static-docs.nocobase.com/20250310161609.png)
 
@@ -101,7 +160,7 @@ Centrum úkolů poskytuje jednotný vstupní bod pro uživatele k prohlížení 
 
 ![20250310161934](https://static-docs.nocobase.com/20250310161934.png)
 
-#### Podrobnosti úkolu
+#### Detail úkolu
 
 ![20250310162111](https://static-docs.nocobase.com/20250310162111.png)
 
@@ -111,7 +170,7 @@ Centrum úkolů poskytuje jednotný vstupní bod pro uživatele k prohlížení 
 
 #### Zahájení z kolekce
 
-Pro zahájení z datového bloku můžete provést volání takto (například s použitím tlačítka pro vytvoření **kolekce** `posts`):
+Při zahájení z datového bloku můžete volat rozhraní následovně (příklad pro tlačítko vytvoření v kolekci `posts`):
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -122,17 +181,17 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
 ```
 
-Zde je parametr URL `triggerWorkflows` klíčem **pracovního postupu**; více klíčů **pracovních postupů** je odděleno čárkami. Tento klíč lze získat najetím myši na název **pracovního postupu** v horní části plátna **pracovního postupu**:
+Parametr URL `triggerWorkflows` je klíč pracovního postupu, více klíčů se odděluje čárkou. Klíč získáte najetím myši na název pracovního postupu v horní části plátna editoru:
 
-![Pracovní postup_klíč_Způsob zobrazení](https://static-docs.nocobase.com/20240426135108.png)
+![Pracovní postup_klíč_způsob zobrazení](https://static-docs.nocobase.com/20240426135108.png)
 
-Po úspěšném volání se spustí schvalovací **pracovní postup** pro odpovídající **kolekci** `posts`.
+Po úspěšném volání se spustí schvalovací pracovní postup pro odpovídající kolekci `posts`.
 
-:::info{title="Poznámka"}
-Jelikož externí volání také vyžadují ověření identity uživatele, při volání přes HTTP API je nutné, stejně jako u požadavků odesílaných z běžného rozhraní, poskytnout ověřovací informace, včetně hlavičky požadavku `Authorization` nebo parametru `token` (token získaný po přihlášení) a hlavičky požadavku `X-Role` (aktuální název role uživatele).
+:::info{title="Tip"}
+Protože externí volání musí být také založena na identitě uživatele, musí požadavky přes HTTP API obsahovat autentizační informace, stejně jako požadavky z běžného rozhraní. To zahrnuje hlavičku `Authorization` nebo parametr `token` a hlavičku `X-Role` (název aktuální role uživatele).
 :::
 
-Pokud potřebujete spustit událost pro data s vazbou jedna k jedné (vazba jedna k mnoha zatím není podporována) v této akci, můžete v parametru použít `!` k určení spouštěcích dat pro pole vazby:
+Pokud potřebujete v rámci této akce spustit událost pro data ve vztahu 1:1 (vztahy 1:N nejsou zatím podporovány), můžete v parametrech použít `!` k určení spouštěcích dat pole vazby:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -146,13 +205,13 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey!category"
 ```
 
-Po úspěšném volání se spustí událost schvalování pro odpovídající **kolekci** `categories`.
+Po úspěšném volání se spustí událost schvalování pro odpovídající kolekci `categories`.
 
-:::info{title="Poznámka"}
-Při spouštění události po akci prostřednictvím HTTP API je také třeba věnovat pozornost stavu povolení **pracovního postupu** a tomu, zda konfigurace **kolekce** odpovídá; v opačném případě volání nemusí být úspěšné nebo může dojít k chybě.
+:::info{title="Tip"}
+Při spouštění událostí po akci přes HTTP API dbejte na to, aby byl pracovní postup povolen a konfigurace kolekce odpovídala, jinak volání nemusí být úspěšné nebo může dojít k chybě.
 :::
 
-#### Zahájení z Centra schvalování
+#### Zahájení z centra schvalování
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -167,16 +226,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametry**
 
-*   `collectionName`: Název cílové **kolekce** pro zahájení schvalování. Povinné.
-*   `workflowId`: ID **pracovního postupu** použitého k zahájení schvalování. Povinné.
-*   `data`: Pole záznamu **kolekce** vytvořeného při zahájení schvalování. Povinné.
-*   `status`: Stav záznamu vytvořeného při zahájení schvalování. Povinné. Možné hodnoty zahrnují:
-    *   `0`: Koncept, znamená uložení bez odeslání ke schválení.
-    *   `1`: Odeslat ke schválení, znamená, že iniciátor odešle žádost o schválení, čímž vstoupí do schvalovacího procesu.
+* `collectionName`: Název cílové kolekce pro zahájení schvalování, povinné.
+* `workflowId`: ID pracovního postupu použitého pro zahájení, povinné.
+* `data`: Pole záznamu kolekce vytvořeného při zahájení, povinné.
+* `status`: Stav vytvořeného záznamu při zahájení, povinné. Možné hodnoty:
+  * `0`: Koncept, znamená uložení bez odeslání ke schválení.
+  * `2`: Odeslání ke schválení, znamená, že iniciátor odesílá žádost a vstupuje do procesu.
 
 #### Uložení a odeslání
 
-Pokud je zahájené (nebo zrušené) schválení ve stavu konceptu, můžete jej znovu uložit nebo odeslat pomocí následujícího API:
+Pokud je zahájené (nebo stažené) schvalování ve stavu konceptu, můžete jej znovu uložit nebo odeslat přes následující rozhraní:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -187,16 +246,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
   "http://localhost:3000/api/approvals:update/<approval id>"
 ```
 
-#### Získání seznamu odeslaných schválení
+#### Získání seznamu vlastních zahájených schvalování
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
   "http://localhost:3000/api/approvals:listMine"
 ```
 
-#### Zrušení
+#### Stažení zpět
 
-Iniciátor může zrušit záznam, který je aktuálně ve schvalovacím procesu, pomocí následujícího API:
+Iniciátor může stáhnout záznam aktuálně v procesu schvalování zpět přes následující rozhraní:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
@@ -205,24 +264,24 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 **Parametry**
 
-*   `<approval id>`: ID záznamu schválení, který má být zrušen. Povinné.
+* `<approval id>`: ID záznamu schvalování ke stažení, povinné.
 
 ### Schvalovatel
 
-Poté, co schvalovací **pracovní postup** vstoupí do schvalovacího uzlu, je pro aktuálního schvalovatele vytvořen úkol. Schvalovatel může dokončit úkol prostřednictvím rozhraní nebo voláním HTTP API.
+Jakmile proces vstoupí do uzlu schvalování, vytvoří se pro aktuálního schvalovatele úkol. Schvalovatel může úkol dokončit přes rozhraní nebo pomocí HTTP API.
 
-#### Získání záznamů o zpracování schválení
+#### Získání záznamů o zpracování schvalování
 
-Úkoly jsou záznamy o zpracování schválení. Všechny záznamy o zpracování schválení aktuálního uživatele můžete získat pomocí následujícího API:
+Úkoly jsou záznamy o zpracování schvalování. Všechny záznamy o zpracování aktuálního uživatele lze získat přes:
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
   "http://localhost:3000/api/approvalRecords:listMine"
 ```
 
-Zde je `approvalRecords` **kolekce** zdrojů, takže můžete použít běžné podmínky dotazu, jako jsou `filter`, `sort`, `pageSize` a `page`.
+Jelikož `approvalRecords` funguje jako zdroj kolekce, lze použít běžné parametry dotazů jako `filter`, `sort`, `pageSize` a `page`.
 
-#### Získání jednoho záznamu o zpracování schválení
+#### Získání jednoho záznamu o zpracování schvalování
 
 ```bash
 curl -X GET -H 'Authorization: Bearer <your token>' \
@@ -243,16 +302,16 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametry**
 
-*   `<record id>`: ID záznamu, který má být schválen. Povinné.
-*   `status`: Stav procesu schvalování. `2` znamená „Schválit“, `-1` znamená „Zamítnout“. Povinné.
-*   `comment`: Poznámky k procesu schvalování. Volitelné.
-*   `data`: Úpravy záznamu **kolekce** v aktuálním schvalovacím uzlu po schválení. Volitelné (účinné pouze při schválení).
+* `<record id>`: ID záznamu ke zpracování, povinné.
+* `status`: Stav zpracování, `2` znamená „Schválit“, `-1` znamená „Zamítnout“, povinné.
+* `comment`: Poznámka ke zpracování, volitelné.
+* `data`: Změny provedené v záznamu kolekce v aktuálním uzlu po schválení, volitelné (platí pouze při schválení).
 
 #### Vrácení <Badge>v1.9.0+</Badge>
 
-Před verzí v1.9.0 se pro vrácení používalo stejné API jako pro „Schválit“ a „Zamítnout“, přičemž `"status": 1` představovalo vrácení.
+Před verzí v1.9.0 se pro vrácení používalo stejné rozhraní jako pro schválení/zamítnutí s hodnotou `"status": 1`.
 
-Od verze v1.9.0 má vrácení samostatné API:
+Od verze v1.9.0 má vrácení samostatné rozhraní:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -264,10 +323,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametry**
 
-*   `<record id>`: ID záznamu, který má být schválen. Povinné.
-*   `returnToNodeKey`: Klíč cílového uzlu, na který se má vrátit. Volitelné. Pokud je v uzlu nakonfigurován rozsah vratných uzlů, lze tento parametr použít k určení, na který uzel se má vrátit. Pokud není nakonfigurován, tento parametr není třeba předávat a ve výchozím nastavení se vrátí na počáteční bod, aby jej iniciátor mohl znovu odeslat.
+* `<record id>`: ID záznamu ke zpracování, povinné.
+* `returnToNodeKey`: Klíč cílového uzlu pro vrácení, volitelné. Pokud je v uzlu nakonfigurován rozsah uzlů pro vrácení, lze tímto parametrem určit konkrétní uzel. Pokud není nakonfigurováno, parametr není nutný a systém se vrátí na začátek k iniciátorovi pro opětovné odeslání.
 
-#### Delegování
+#### Delegování (předání)
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -279,10 +338,10 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametry**
 
-*   `<record id>`: ID záznamu, který má být schválen. Povinné.
-*   `assignee`: ID uživatele, na kterého se má delegovat. Povinné.
+* `<record id>`: ID záznamu ke zpracování, povinné.
+* `assignee`: ID uživatele, kterému se úkol deleguje, povinné.
 
-#### Přidání schvalovatele
+#### Přidání schvalovatele (připodepsání)
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -d \
@@ -295,6 +354,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -d \
 
 **Parametry**
 
-*   `<record id>`: ID záznamu, který má být schválen. Povinné.
-*   `assignees`: Seznam ID uživatelů, kteří mají být přidáni jako schvalovatelé. Povinné.
-*   `order`: Pořadí přidaného schvalovatele. `-1` znamená před „mnou“, `1` znamená po „mně“.
+* `<record id>`: ID záznamu ke zpracování, povinné.
+* `assignees`: Seznam ID uživatelů k přidání, povinné.
+* `order`: Pořadí přidání, `-1` znamená před „mnou“, `1` znamená po „mně“.

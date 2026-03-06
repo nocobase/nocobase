@@ -28,7 +28,7 @@ pkg: '@nocobase/plugin-workflow-request-interceptor'
 
 בטריגר של תהליך עבודה מיירט, הדבר הראשון שיש להגדיר הוא ה אוסף המתאים לפעולה:
 
-![Interceptor Event Configuration_Collection](https://static-docs.nocobase.com/8f712caca8159d334cf776b838d53d6.png)
+![Interceptor Event Configuration_Collection](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 לאחר מכן, בחרו את מצב היירוט. אתם יכולים לבחור ליירט רק את כפתור הפעולה המקושר ל תהליך עבודה זה, או ליירט את כל הפעולות הנבחרות עבור אוסף זה (ללא קשר לטופס שממנו הן מגיעות, וללא צורך לקשר את תהליך העבודה המתאים).
 
@@ -91,7 +91,7 @@ pkg: '@nocobase/plugin-workflow-request-interceptor'
 
 אם צומת 'סיום תהליך עבודה' מוגדר לצאת עם סטטוס 'הצלחה', בקשת הפעולה עדיין תיוּרט כאשר צומת זה מבוצע, אך הודעת התגובה שתחזור תוצג עם סטטוס 'הצלחה' (במקום 'שגיאה'):
 
-![Success Status Response Message](https://static-docs.nocobase.com/9599bbf5451294b18c790e.png)
+![Success Status Response Message](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## דוגמה
 

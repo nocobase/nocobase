@@ -1,12 +1,16 @@
 ---
-displayName: "Localization"
+displayName: "Lokalizace"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Allows to manage localization resources of the application.
+  Podporuje správu lokalizačních zdrojů aplikace.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Localization
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-localization/index).
+:::
+
+# Lokalizace

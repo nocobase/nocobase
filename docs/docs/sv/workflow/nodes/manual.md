@@ -84,7 +84,7 @@ Formulärets skicka-knappar kan konfigureras i tre typer:
 - Skicka och avsluta arbetsflödet
 - Spara endast formulärvärden
 
-![人工节点_节点配置_界面配置_表单按钮](https://static-docs.nocobase.com/6b4599b14152e832a265405492104a8.png)
+![人工节点_节点配置_界面配置_表单按钮](https://static-docs.nocobase.com/6b45995b14152e85a821dff6f6e3189a.png)
 
 De tre knapparna representerar tre nodstatusar i arbetsflödesprocessen. Efter inlämning ändras nodens status till "Slutförd", "Avvisad" eller förblir i ett "Väntande" tillstånd. Ett formulär måste ha minst en av de två första konfigurerade för att bestämma det efterföljande flödet för hela arbetsflödet.
 
@@ -104,11 +104,11 @@ För manuell hantering behöver ni också lägga till en att-göra-lista på en 
 
 Ni kan välja "Arbetsflöde Att-göra" från blocken på en sida för att lägga till ett block för att-göra-listan:
 
-![人工节点_添加待办区块](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![人工节点_添加待办区块](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Exempel på att-göra-listblock:
 
-![人工节点_待办列表](https://static-docs.nocobase.com/cfefb053c9dfa550d6b220f34.png)
+![人工节点_待办列表](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Att-göra-detaljer
 

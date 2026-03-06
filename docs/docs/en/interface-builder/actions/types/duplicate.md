@@ -8,88 +8,88 @@ pkg: '@nocobase/plugin-action-duplicate'
 
 ## Introduction
 
-The Duplicate action allows users to quickly create new records based on existing data. Two duplication modes are supported: **Direct duplicate** and **Copy into the form and continue to fill in**.
+The Duplicate action allows users to quickly create new records based on existing data. It supports two duplication modes: **Direct duplicate** and **Duplicate to form and continue filling**.
 
 ## Installation
 
-Built-in plugin, no separate installation required.
+This is a built-in plugin, no additional installation is required.
 
-## Duplication Modes
+## Duplication Mode
 
 ![20260209224344](https://static-docs.nocobase.com/20260209224344.png)
 
-### Direct Duplicate
+### Direct duplicate
 
 ![20260209224506](https://static-docs.nocobase.com/20260209224506.png)
 
 - Executes as "Direct duplicate" by default;
-- **Template fields**: Specify the fields to duplicate. At least one field must be selected.
+- **Template fields**: Specify the fields to be duplicated. "Select all" is supported. This is a required configuration.
 
 ![20260209225910](https://static-docs.nocobase.com/20260209225910.gif)
 
-Click the button to duplicate the data after configuration.
+Once configured, click the button to duplicate the data.
 
-### Copy into the Form and Continue to Fill in
+### Duplicate to form and continue filling
 
-The configured template fields are populated into the form as **default values**, allowing users to modify and submit to complete the duplication.
+The configured template fields will be populated into the form as **default values**. Users can modify these values before submitting to complete the duplication.
 
 ![20260209224704](https://static-docs.nocobase.com/20260209224704.png)
 
-**Configure template fields**: Only selected fields will be carried over as default values.
+**Configure template fields**: Only the selected fields will be carried over as default values.
 
 ![20260209225148](https://static-docs.nocobase.com/20260209225148.png)
 
-#### Sync from Form Fields
+#### Sync form fields
 
-- Automatically parses the fields configured in the current form block as template fields;
-- If the form block fields are modified later (e.g., association field component changes), you need to reopen the template configuration and click **Sync from form fields** to ensure consistency.
+- Automatically parses the fields already configured in the current form block as template fields;
+- If form block fields are modified later (e.g., adjusting association field components), you need to reopen the template configuration and click **Sync form fields** to ensure consistency.
 
 ![20260209225450](https://static-docs.nocobase.com/20260209225450.gif)
 
-Template data is populated as form default values. Users can modify and submit to complete the duplication.
+The template data will be filled as form defaults, and users can submit after modification to complete the duplication.
 
-### Additional Notes
+### Supplementary Notes
 
-#### Copy, Reference, and Preload
+#### Duplicate, Reference, Preload
 
-Different fields (association types) have different processing logic: **Copy / Reference / Preload**. The **field component** of association fields also affects the processing logic:
+Different field types (association types) have different processing logic: **Duplicate / Reference / Preload**. The **field component** of an association field also affects this logic:
 
 - Select / Record picker: Used for **Reference**
-- Sub-form / Sub-table: Used for **Copy**
+- Sub-form / Sub-table: Used for **Duplicate**
 
-**Copy**
+**Duplicate**
 
-- Regular fields are copied;
-- hasOne / hasMany can only be copied (these associations should not use select-type field components like dropdown select or record picker; use sub-form or sub-table components instead);
-- Component changes for hasOne / hasMany **will not** change the processing logic (remains as copy);
-- For copied association fields, all sub-fields can be selected.
+- Regular fields are duplicated;
+- `hasOne` / `hasMany` can only be duplicated (these relationships should not use selection components like Single select or Record picker; instead, use Sub-form or Sub-table components);
+- Changing the component for `hasOne` / `hasMany` **will not** change the processing logic (it remains Duplicate);
+- For duplicated association fields, all sub-fields can be selected.
 
 **Reference**
 
-- belongsTo / belongsToMany use reference;
-- If the field component is changed from "Dropdown select" to "Sub-form", the association changes from **reference to copy** (once changed to copy, all sub-fields become selectable).
+- `belongsTo` / `belongsToMany` are treated as Reference;
+- If the field component is changed from "Single select" to "Sub-form", the relationship changes from **Reference to Duplicate** (once it becomes Duplicate, all sub-fields become selectable).
 
 **Preload**
 
-- Association fields under a referenced field use preload;
-- Preloaded fields may change to reference or copy after component changes.
+- Association fields under a Reference field are treated as Preload;
+- Preload fields may become Reference or Duplicate after a component change.
 
 #### Select All
 
-- Selects all **copy fields** and **reference fields**.
+- Selects all **Duplicate fields** and **Reference fields**.
 
-#### Fields Filtered from Template Records
+#### The following fields will be filtered out from the record selected as the data template:
 
-- Primary keys of copied association data are filtered; primary keys for reference and preload are not filtered;
+- Primary keys of duplicated association data are filtered; primary keys for Reference and Preload are not filtered;
 - Foreign keys;
-- Fields that do not allow duplicates;
+- Fields that do not allow duplicates (Unique);
 - Sort fields;
-- Auto-encoding fields;
+- Sequence fields;
 - Password;
-- Created by, Created date;
-- Last updated by, Last updated date.
+- Created by, Created at;
+- Last updated by, Updated at.
 
-#### Sync from Form Fields
+#### Sync form fields
 
-- Automatically parses the fields configured in the current form block as template fields;
-- After modifying form block fields (e.g., association field component changes), re-sync is required to ensure consistency.
+- Automatically parses the fields configured in the current form block into template fields;
+- After modifying form block fields (e.g., adjusting association field components), you must sync again to ensure consistency.

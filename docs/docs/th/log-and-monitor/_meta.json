@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "บันทึกเหตุการณ์",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "บันทึกเหตุการณ์ฝั่งเซิร์ฟเวอร์",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "บันทึกเหตุการณ์ฝั่งเซิร์ฟเวอร์, บันทึกการตรวจสอบ, ประวัติข้อมูล",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "เทเลเมทรี",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "คู่มือการใช้งาน",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "ตัวส่งออกข้อมูล",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

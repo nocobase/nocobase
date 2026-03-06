@@ -1,58 +1,94 @@
-
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/flow-engine/flow-context).
 :::
 
+# Información general del sistema de contexto
 
-# Descripción general del sistema de contexto
+El sistema de contexto del motor de flujo de NocoBase se divide en tres capas, que corresponden a diferentes ámbitos. El uso adecuado permite lograr un intercambio y aislamiento flexible de servicios, configuraciones y datos, mejorando la mantenibilidad y escalabilidad del negocio.
 
-El sistema de contexto del motor de flujo de NocoBase se divide en tres capas, cada una con un ámbito diferente. Su uso adecuado permite compartir y aislar de forma flexible servicios, configuraciones y datos, lo que mejora la mantenibilidad y escalabilidad del negocio.
+- **FlowEngineContext (Contexto global)**: Único a nivel global, accesible por todos los modelos y flujos, adecuado para registrar servicios globales, configuraciones, etc.
+- **FlowModelContext (Contexto del modelo)**: Se utiliza para compartir el contexto dentro del árbol de modelos. Los submodelos delegan automáticamente en el contexto del modelo padre, admitiendo la sobrescritura por nombre; adecuado para el aislamiento de lógica y datos a nivel de modelo.
+- **FlowRuntimeContext (Contexto de ejecución del flujo)**: Se crea en cada ejecución del flujo y abarca todo el ciclo de ejecución. Adecuado para la transferencia de datos, almacenamiento de variables y registro del estado de ejecución dentro del flujo. Admite dos modos: `mode: 'runtime' | 'settings'`, que corresponden al estado de ejecución y al estado de configuración respectivamente.
 
-- **FlowEngineContext (Contexto Global)**: Es único a nivel global y accesible por todos los modelos y **flujos de trabajo**. Es ideal para registrar servicios globales, configuraciones, etc.
-- **FlowModelContext (Contexto del Modelo)**: Se utiliza para compartir contexto dentro de un árbol de modelos. Los submodelos delegan automáticamente en el contexto del modelo padre, lo que permite sobrescribir elementos con el mismo nombre. Es adecuado para el aislamiento de lógica y datos a nivel de modelo.
-- **FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)**: Se crea cada vez que se ejecuta un **flujo de trabajo** y persiste durante todo su ciclo de ejecución. Es útil para la transferencia de datos, el almacenamiento de variables y el registro del estado de ejecución dentro del **flujo de trabajo**. Admite dos modos: `mode: 'runtime' | 'settings'`, que corresponden al modo de ejecución y al modo de configuración, respectivamente.
-
-Todos los `FlowEngineContext` (Contexto Global), `FlowModelContext` (Contexto del Modelo), `FlowRuntimeContext` (Contexto de Ejecución del Flujo de Trabajo), etc., son subclases o instancias de `FlowContext`.
+Todos los `FlowEngineContext` (contexto global), `FlowModelContext` (contexto del modelo), `FlowRuntimeContext` (contexto de ejecución del flujo), etc., son subclases o instancias de `FlowContext`.
 
 ---
 
 ## 🗂️ Diagrama de jerarquía
 
 ```text
-FlowEngineContext (Contexto Global)
+FlowEngineContext (Contexto global)
 │
-├── FlowModelContext (Contexto del Modelo)
+├── FlowModelContext (Contexto del modelo)
 │     ├── Sub FlowModelContext (Submodelo)
-│     │     ├── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
-│     │     └── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
-│     └── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
+│     │     ├── FlowRuntimeContext (Contexto de ejecución del flujo)
+│     │     └── FlowRuntimeContext (Contexto de ejecución del flujo)
+│     └── FlowRuntimeContext (Contexto de ejecución del flujo)
 │
-├── FlowModelContext (Contexto del Modelo)
-│     └── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
+├── FlowModelContext (Contexto del modelo)
+│     └── FlowRuntimeContext (Contexto de ejecución del flujo)
 │
-└── FlowModelContext (Contexto del Modelo)
+└── FlowModelContext (Contexto del modelo)
       ├── Sub FlowModelContext (Submodelo)
-      │     └── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
-      └── FlowRuntimeContext (Contexto de Ejecución del Flujo de Trabajo)
+      │     └── FlowRuntimeContext (Contexto de ejecución del flujo)
+      └── FlowRuntimeContext (Contexto de ejecución del flujo)
 ```
 
-- `FlowModelContext` puede acceder a las propiedades y métodos de `FlowEngineContext` mediante un mecanismo de delegación, lo que permite compartir capacidades globales.
-- El `FlowModelContext` de un submodelo puede acceder al contexto del modelo padre (relación síncrona) a través de un mecanismo de delegación, lo que permite sobrescribir elementos con el mismo nombre.
-- Los modelos padre-hijo asíncronos no establecen una relación de delegación para evitar la contaminación del estado.
-- `FlowRuntimeContext` siempre accede a su `FlowModelContext` correspondiente mediante un mecanismo de delegación, pero no propaga los cambios hacia arriba.
+- `FlowModelContext` puede acceder a las propiedades y métodos de `FlowEngineContext` a través del mecanismo de delegación (delegate), logrando el intercambio de capacidades globales.
+- El `FlowModelContext` de los submodelos puede acceder al contexto del modelo padre (relación síncrona) a través del mecanismo de delegación (delegate), admitiendo la sobrescritura por nombre.
+- Los modelos padre-hijo asíncronos no establecen una relación de delegación (delegate) para evitar la contaminación del estado.
+- `FlowRuntimeContext` siempre accede a su `FlowModelContext` correspondiente a través del mecanismo de delegación (delegate), pero no se transmite hacia arriba.
 
-## 🧭 Modo de ejecución y modo de configuración (mode)
+---
 
-`FlowRuntimeContext` admite dos modos, que se distinguen por el parámetro `mode`:
+## 🧭 Estado de ejecución y estado de configuración (mode)
 
-- `mode: 'runtime'` (Modo de ejecución): Se utiliza durante la fase de ejecución real del **flujo de trabajo**. Las propiedades y los métodos devuelven datos reales. Por ejemplo:
+`FlowRuntimeContext` admite dos modos, diferenciados por el parámetro `mode`:
+
+- `mode: 'runtime'` (Estado de ejecución): Se utiliza en la fase de ejecución real del flujo; las propiedades y métodos devuelven datos reales. Por ejemplo:
   ```js
   console.log(runtimeCtx.steps.step1.result); // 42
   ```
 
-- `mode: 'settings'` (Modo de configuración): Se utiliza durante la fase de diseño y configuración del **flujo de trabajo**. El acceso a las propiedades devuelve una cadena de plantilla de variable, lo que facilita la selección de expresiones y variables. Por ejemplo:
+- `mode: 'settings'` (Estado de configuración): Se utiliza en la fase de diseño y configuración del flujo; el acceso a las propiedades devuelve cadenas de plantilla de variables, facilitando la selección de expresiones y variables. Por ejemplo:
   ```js
   console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
   ```
 
-Este diseño de doble modo garantiza la disponibilidad de los datos en tiempo de ejecución y facilita la referencia de variables y la generación de expresiones durante la configuración, lo que mejora la flexibilidad y la usabilidad del motor de flujo.
+Este diseño de modo dual garantiza la disponibilidad de los datos en tiempo de ejecución y facilita la referencia de variables y la generación de expresiones durante la configuración, mejorando la flexibilidad y facilidad de uso del motor de flujo.
+
+---
+
+## 🤖 Información de contexto orientada a herramientas/LLM
+
+En ciertos escenarios (como la edición de código RunJS en JS*Model o AI coding), es necesario que el "llamador" comprenda lo siguiente sin ejecutar el código:
+
+- Qué **capacidades estáticas** existen bajo el `ctx` actual (documentación de API, parámetros, ejemplos, enlaces de documentación, etc.).
+- Qué **variables opcionales** existen en la interfaz/estado de ejecución actual (por ejemplo, estructuras dinámicas como "registro actual", "registro de ventana emergente actual", etc.).
+- Una **instantánea de pequeño volumen** del entorno de ejecución actual (utilizada para prompts).
+
+### 1) `await ctx.getApiInfos(options?)` (Información estática de la API)
+
+### 2) `await ctx.getVarInfos(options?)` (Información de la estructura de variables)
+
+- Construido basado en `defineProperty(...).meta` (incluyendo meta factory).
+- Admite el recorte por `path` y el control de profundidad con `maxDepth`.
+- Solo se expande hacia abajo cuando es necesario.
+
+Parámetros comunes:
+
+- `maxDepth`: Nivel máximo de expansión (por defecto 3).
+- `path: string | string[]`: Recorte, solo genera el subárbol de la ruta especificada.
+
+### 3) `await ctx.getEnvInfos()` (Instantánea del entorno de ejecución)
+
+Estructura del nodo (simplificada):
+
+```ts
+type EnvNode = {
+  description?: string;
+  getVar?: string; // Puede usarse directamente para await ctx.getVar(getVar), comenzando con "ctx."
+  value?: any; // Valor estático resuelto/serializable
+  properties?: Record<string, EnvNode>;
+};
+```

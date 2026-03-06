@@ -1,45 +1,48 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/template-print/syntax/formatters/date-formatting).
 :::
-
 
 ### Formátování data
 
 #### 1. :formatD(patternOut, patternIn)
 
 ##### Vysvětlení syntaxe
-Formátuje datum. Přijímá výstupní formát `patternOut` a volitelný vstupní formát `patternIn` (výchozí je ISO 8601). Časové pásmo a jazyk lze upravit pomocí `options.timezone` a `options.lang`.
+Formátuje datum, přijímá vzor výstupního formátu `patternOut` a vzor vstupního formátu `patternIn` (výchozí je ISO 8601).
 
-##### Příklad
+##### Časté příklady
 ```
-// Příklad prostředí: Možnosti API { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Výstup 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Výstup 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Výstup 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Výstup 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Výstup 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Výstup 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Výstup 2024年1月15日 星期一
+```
+
+##### Další příklady formátů
+```
 '20160131':formatD(L)      // Výstup 01/31/2016
 '20160131':formatD(LL)     // Výstup January 31, 2016
 '20160131':formatD(LLLL)   // Výstup Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Výstup Sunday
-
-// Příklad ve francouzštině:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Výstup mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Výstup dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Výstup dimanche 14 septembre 2014 19:27
 ```
 
 ##### Výsledek
-Výstupem je datum naformátované podle specifikace.
+Výstupem je řetězec data v určeném formátu.
 
 
 #### 2. :addD(amount, unit, patternIn)
 
 ##### Vysvětlení syntaxe
-Přidá k datu specifikované množství času. Podporované jednotky zahrnují: day, week, month, quarter, year, hour, minute, second, millisecond.
+Přidá k datu určené množství času. Podporované jednotky: day, week, month, quarter, year, hour, minute, second, millisecond.  
 Parametry:
-- **amount:** Množství k přidání.
-- **unit:** Časová jednotka (nerozlišuje velká a malá písmena).
-- **patternIn:** Volitelný vstupní formát (výchozí je ISO8601).
+- amount: Přidané množství
+- unit: Časová jednotka (nerozlišuje velká a malá písmena)
+- patternIn: Volitelné, vstupní formát, výchozí je ISO8601
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Výstup "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Výstup "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Výstup "2016-02-03T00:00:00.000Z"
@@ -48,17 +51,16 @@ Parametry:
 ```
 
 ##### Výsledek
-Výstupem je nové datum po přidání specifikovaného času.
+Výstupem je nové datum po přidání času.
 
 
 #### 3. :subD(amount, unit, patternIn)
 
 ##### Vysvětlení syntaxe
-Odečte od data specifikované množství času. Parametry jsou stejné jako u `addD`.
+Odečte od data určené množství času. Parametry jsou stejné jako u `addD`.
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Výstup "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Výstup "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Výstup "2016-01-28T00:00:00.000Z"
@@ -67,20 +69,19 @@ Odečte od data specifikované množství času. Parametry jsou stejné jako u `
 ```
 
 ##### Výsledek
-Výstupem je nové datum po odečtení specifikovaného času.
+Výstupem je nové datum po odečtení času.
 
 
 #### 4. :startOfD(unit, patternIn)
 
 ##### Vysvětlení syntaxe
-Nastaví datum na začátek specifikované časové jednotky.
+Nastaví datum na počáteční okamžik určené časové jednotky.  
 Parametry:
-- **unit:** Časová jednotka.
-- **patternIn:** Volitelný vstupní formát.
+- unit: Časová jednotka
+- patternIn: Volitelné, vstupní formát
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Výstup "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Výstup "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Výstup "2016-01-31T00:00:00.000Z"
@@ -89,17 +90,17 @@ Parametry:
 ```
 
 ##### Výsledek
-Výstupem je datum nastavené na začátek specifikované jednotky.
+Výstupem je řetězec data počátečního okamžiku.
 
 
 #### 5. :endOfD(unit, patternIn)
 
 ##### Vysvětlení syntaxe
-Nastaví datum na konec specifikované časové jednotky. Parametry jsou stejné jako u `startOfD`.
+Nastaví datum na koncový okamžik určené časové jednotky.  
+Parametry jsou stejné jako výše.
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Výstup "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Výstup "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Výstup "2016-01-31T23:59:59.999Z"
@@ -108,13 +109,13 @@ Nastaví datum na konec specifikované časové jednotky. Parametry jsou stejné
 ```
 
 ##### Výsledek
-Výstupem je datum nastavené na konec specifikované jednotky.
+Výstupem je řetězec data koncového okamžiku.
 
 
 #### 6. :diffD(toDate, unit, patternFromDate, patternToDate)
 
 ##### Vysvětlení syntaxe
-Vypočítá rozdíl mezi dvěma daty a vrátí jej ve specifikované jednotce. Podporované jednotky zahrnují:
+Vypočítá rozdíl mezi dvěma daty a vypíše jej v určené jednotce. Podporované výstupní jednotky zahrnují:
 - `day(s)` nebo `d`
 - `week(s)` nebo `w`
 - `quarter(s)` nebo `Q`
@@ -126,10 +127,10 @@ Vypočítá rozdíl mezi dvěma daty a vrátí jej ve specifikované jednotce. P
 - `millisecond(s)` nebo `ms` (výchozí jednotka)
 
 Parametry:
-- **toDate:** Cílové datum.
-- **unit:** Výstupní jednotka.
-- **patternFromDate:** Volitelný formát počátečního data.
-- **patternToDate:** Volitelný formát cílového data.
+- toDate: Cílové datum
+- unit: Výstupní jednotka
+- patternFromDate: Volitelné, formát počátečního data
+- patternToDate: Volitelné, formát cílového data
 
 ##### Příklad
 ```
@@ -142,52 +143,3 @@ Parametry:
 '20101001':diffD('20101201', 'days')        // Výstup 61
 '2010+10+01':diffD('2010=12=01', 'ms', 'YYYY+MM+DD', 'YYYY=MM=DD')  // Výstup 5270400000
 ```
-
-##### Výsledek
-Výstupem je časový rozdíl mezi dvěma daty, převedený na specifikovanou jednotku.
-
-
-#### 7. :convDate(patternIn, patternOut)
-
-##### Vysvětlení syntaxe
-Převede datum z jednoho formátu na jiný (nedoporučuje se používat).
-Parametry:
-- **patternIn:** Vstupní formát data.
-- **patternOut:** Výstupní formát data.
-
-##### Příklad
-```
-// Příklad prostředí: Možnosti API { "lang": "en", "timezone": "Europe/Paris" }
-'20160131':convDate('YYYYMMDD', 'L')      // Výstup "01/31/2016"
-'20160131':convDate('YYYYMMDD', 'LL')     // Výstup "January 31, 2016"
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Výstup "Sunday, January 31, 2016 12:00 AM"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Výstup "Sunday"
-1410715640:convDate('X', 'LLLL')          // Výstup "Sunday, September 14, 2014 7:27 PM"
-// Příklad ve francouzštině:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Výstup "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Výstup "dimanche"
-```
-
-##### Výsledek
-Výstupem je datum převedené do specifikovaného formátu.
-
-
-#### 8. Vzory formátování data
-Běžné symboly pro formátování data (viz dokumentace DayJS):
-- `X`: Unix časové razítko (v sekundách), např. 1360013296
-- `x`: Unix časové razítko v milisekundách, např. 1360013296123
-- `YY`: Dvoumístný rok, např. 18
-- `YYYY`: Čtyřmístný rok, např. 2018
-- `M`, `MM`, `MMM`, `MMMM`: Měsíc (číslo, dvoumístné, zkrácené, plný název)
-- `D`, `DD`: Den (číslo, dvoumístné)
-- `d`, `dd`, `ddd`, `dddd`: Den v týdnu (číslo, minimální, zkrácené, plný název)
-- `H`, `HH`, `h`, `hh`: Hodina (24hodinový nebo 12hodinový formát)
-- `m`, `mm`: Minuta
-- `s`, `ss`: Sekunda
-- `SSS`: Milisekunda (3 číslice)
-- `Z`, `ZZ`: UTC offset (posun), např. +05:00 nebo +0500
-- `A`, `a`: AM/PM
-- `Q`: Čtvrtletí (1-4)
-- `Do`: Den v měsíci s řadovou číslovkou, např. 1., 2., …
-- Další formáty naleznete v kompletní dokumentaci.
-  Kromě toho existují lokalizované formáty závislé na jazyce, jako jsou `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL` atd.

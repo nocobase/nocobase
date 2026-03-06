@@ -16,6 +16,7 @@
   {
     "type": "custom-link",
     "label": "Triggers",
+    "collapsed": true,
     "items": [
       {
         "type": "custom-link",
@@ -62,6 +63,7 @@
   {
     "type": "custom-link",
     "label": "Nodes",
+    "collapsed": true,
     "items": [
       {
         "type": "custom-link",
@@ -90,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Multi-conditions",
+            "label": "Multi-condition Branch",
             "link": "/workflow/nodes/multi-conditions"
           },
           {

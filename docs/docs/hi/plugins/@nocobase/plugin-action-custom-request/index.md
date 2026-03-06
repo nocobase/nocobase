@@ -1,14 +1,18 @@
 ---
-displayName: "Action: Custom request"
+displayName: "Action: कस्टम अनुरोध"
 packageName: '@nocobase/plugin-action-custom-request'
 supportedVersions:
   - 1.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  किसी भी HTTP सेवा को अनुरोध भेजें, यह लक्ष्य सेवा को संदर्भ डेटा भेजने का समर्थन करता है।
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Custom request
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-action-custom-request/index) देखें।
+:::
+
+# Action: कस्टम अनुरोध

@@ -1,15 +1,19 @@
 ---
-displayName: "RabbitMQ queue adapter"
+displayName: "Adaptér fronty RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with RabbitMQ.
+  Slouží ke zpracování front zpráv aplikace pomocí RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# RabbitMQ queue adapter
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-queue-adapter-rabbitmq/index).
+:::
+
+# Adaptér fronty RabbitMQ

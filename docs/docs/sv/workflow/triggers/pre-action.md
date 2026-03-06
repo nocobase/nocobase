@@ -28,7 +28,7 @@ När ni skapar ett arbetsflöde, välj typen "Före åtgärd-händelse":
 
 I triggaren för ett avlyssnande arbetsflöde är det första ni behöver konfigurera den samling som motsvarar åtgärden:
 
-![Avlyssningshändelsekonfiguration_Samling](https://static-docs.nocobase.com/8f7122caca1f5425e2b472053f89baba.png)
+![Avlyssningshändelsekonfiguration_Samling](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 Välj sedan avlyssningsläge. Ni kan välja att endast avlyssna åtgärdsknappen som är kopplad till detta arbetsflöde, eller att avlyssna alla valda åtgärder för denna samling (oavsett vilket formulär de kommer ifrån, och utan att behöva koppla till ett specifikt arbetsflöde):
 

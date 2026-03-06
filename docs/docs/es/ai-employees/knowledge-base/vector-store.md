@@ -1,5 +1,5 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Almacén de Vectores
@@ -20,7 +20,7 @@ Haga clic en el botón `Add new` (Añadir nuevo) en la esquina superior derecha 
 
 - En el campo `Name`, introduzca el nombre del almacén de vectores.
 - En `Vector store`, seleccione una base de datos vectorial ya configurada. Consulte: [Base de Datos Vectorial](/ai-employees/knowledge-base/vector-database).
-- En `LLM service`, seleccione un servicio LLM ya configurado. Consulte: [Gestión de Servicios LLM](/ai-employees/quick-start/llm-service).
+- En `LLM service`, seleccione un servicio LLM ya configurado. Consulte: [Gestión de Servicios LLM](/ai-employees/features/llm-service).
 - En el campo `Embedding model`, introduzca el nombre del modelo `Embedding` que desea utilizar.
 
 Haga clic en el botón `Submit` (Enviar) para guardar la información del almacén de vectores.

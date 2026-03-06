@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "זרימת עבודה"
+    "label": "תהליך עבודה"
   },
   {
     "type": "custom-link",
@@ -15,7 +15,7 @@
   },
   {
     "type": "custom-link",
-    "label": "טריגר",
+    "label": "טריגרים",
     "collapsed": true,
     "items": [
       {
@@ -25,12 +25,12 @@
       },
       {
         "type": "custom-link",
-        "label": "אירועי טבלת נתונים",
+        "label": "אירוע אוסף",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "משימות מתוזמנות",
+        "label": "משימה מתוזמנת",
         "link": "/workflow/triggers/schedule"
       },
       {
@@ -62,7 +62,7 @@
   },
   {
     "type": "custom-link",
-    "label": "צומת",
+    "label": "צמתים",
     "collapsed": true,
     "items": [
       {
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "בינה מלאכותית",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "מודל שפה גדול",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -92,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ענף רב-תנאי",
+            "label": "ענף רב-תנאים",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -102,7 +102,7 @@
           },
           {
             "type": "custom-link",
-            "label": "משתנה",
+            "label": "משתנים",
             "link": "/workflow/nodes/variable"
           },
           {
@@ -112,12 +112,12 @@
           },
           {
             "type": "custom-link",
-            "label": "קריאה ל-Workflow",
+            "label": "קריאה לתהליך עבודה",
             "link": "/workflow/nodes/subflow"
           },
           {
             "type": "custom-link",
-            "label": "פלט זרימה",
+            "label": "פלט תהליך",
             "link": "/workflow/nodes/output"
           },
           {
@@ -160,11 +160,11 @@
       },
       {
         "type": "section-header",
-        "label": "פעולת נתונים",
+        "label": "פעולות נתונים",
         "items": [
           {
             "type": "custom-link",
-            "label": "הוספת נתונים",
+            "label": "יצירת נתונים",
             "link": "/workflow/nodes/create"
           },
           {
@@ -191,11 +191,11 @@
       },
       {
         "type": "custom-link",
-        "label": "טיפול ידני",
+        "label": "עיבוד ידני",
         "items": [
           {
             "type": "custom-link",
-            "label": "טיפול ידני",
+            "label": "עיבוד ידני",
             "link": "/workflow/nodes/manual"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "סוג הרחבה",
+        "label": "סוגים מורחבים",
         "items": [
           {
             "type": "custom-link",
@@ -227,11 +227,11 @@
           {
             "type": "custom-link",
             "label": "התראה",
-            "link": "/notification-manager/"
+            "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
-            "label": "שליחת דוא'ל",
+            "label": "שליחת דוא\"ל",
             "link": "/workflow/nodes/mailer"
           },
           {
@@ -250,13 +250,13 @@
   },
   {
     "type": "custom-link",
-    "label": "משתנה",
+    "label": "משתנים",
     "link": "/workflow/advanced/variables"
   },
   {
     "type": "custom-link",
-    "label": "יומן ביצוע",
-    "link": "/workflow/advanced/execution"
+    "label": "היסטוריית ביצוע",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

@@ -1,46 +1,40 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/template-print/syntax/formatters/time-interval-formatting).
 :::
 
-### Formattazione degli Intervalli
+### Formattazione dell'intervallo di tempo
 
 #### 1. :formatI(patternOut, patternIn)
 
-##### Spiegazione della Sintassi
-Permette di formattare una durata o un intervallo. I formati di output supportati includono:
-- `human+` o `human` (ideali per una visualizzazione più leggibile e "umana")
-- Unità come `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` (o le loro abbreviazioni).
+##### Spiegazione della sintassi
+Formatta la durata o l'intervallo, i formati di output supportati includono:
+- `human+`, `human` (adatti per una visualizzazione leggibile)
+- e unità come `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` (o le loro abbreviazioni).
 
 Parametri:
-- **patternOut:** Il formato di output (ad esempio, `'second'` o `'human+'`).
-- **patternIn:** Opzionale, l'unità di input (ad esempio, `'milliseconds'` o `'s'`).
+- patternOut: formato di output (ad esempio `'second'`, `'human+'`, ecc.)
+- patternIn: opzionale, unità di input (ad esempio `'milliseconds'`, `'s'`, ecc.)
 
 ##### Esempio
 ```
-// Ambiente di esempio: opzioni API { "lang": "en", "timezone": "Europe/Paris" }
-2000:formatI('second')       // Outputs 2
-2000:formatI('seconds')      // Outputs 2
-2000:formatI('s')            // Outputs 2
-3600000:formatI('minute')    // Outputs 60
-3600000:formatI('hour')      // Outputs 1
-2419200000:formatI('days')   // Outputs 28
+2000:formatI('second')       // Output 2
+2000:formatI('seconds')      // Output 2
+2000:formatI('s')            // Output 2
+3600000:formatI('minute')    // Output 60
+3600000:formatI('hour')      // Output 1
+2419200000:formatI('days')   // Output 28
 
-// Esempio in francese:
-2000:formatI('human')        // Outputs "quelques secondes"
-2000:formatI('human+')       // Outputs "dans quelques secondes"
--2000:formatI('human+')      // Outputs "il y a quelques secondes"
+// Visualizzazione leggibile:
+2000:formatI('human')        // Output "a few seconds"
+2000:formatI('human+')       // Output "in a few seconds"
+-2000:formatI('human+')      // Output "a few seconds ago"
 
-// Esempio in inglese:
-2000:formatI('human')        // Outputs "a few seconds"
-2000:formatI('human+')       // Outputs "in a few seconds"
--2000:formatI('human+')      // Outputs "a few seconds ago"
-
-// Esempio di conversione unità:
-60:formatI('ms', 'minute')   // Outputs 3600000
-4:formatI('ms', 'weeks')      // Outputs 2419200000
-'P1M':formatI('ms')          // Outputs 2628000000
-'P1Y2M3DT4H5M6S':formatI('hour')  // Outputs 10296.085
+// Esempio di conversione delle unità:
+60:formatI('ms', 'minute')   // Output 3600000
+4:formatI('ms', 'weeks')      // Output 2419200000
+'P1M':formatI('ms')          // Output 2628000000
+'P1Y2M3DT4H5M6S':formatI('hour')  // Output 10296.085
 ```
 
 ##### Risultato
-Il risultato dell'output viene visualizzato come la durata o l'intervallo corrispondente, basandosi sul valore di input e sulla conversione dell'unità.
+Il risultato dell'output viene visualizzato come la durata o l'intervallo corrispondente in base al valore di input e alla conversione dell'unità.

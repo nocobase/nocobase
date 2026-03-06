@@ -27,7 +27,7 @@ pkg: '@nocobase/plugin-departments'
 
 ![](https://static-docs.nocobase.com/a147319577e5cc36b5862c1e511f6722.png)
 
-![](https://static-docs.nocobase.com/f206f866757cf30ac78aadf4f76bad32.png)
+![](https://static-docs.nocobase.com/f206f866753cf30ac78aadf4f76bad32.png)
 
 ### Зміна вищого відділу
 

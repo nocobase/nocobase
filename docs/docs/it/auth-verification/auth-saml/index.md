@@ -28,7 +28,7 @@ Aggiungi - SAML
 
 ## Configurazione
 
-![](https://static-docs.nocobase.com/976b63e589973c322d81dcddd22c6146.png)
+![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
 
 - SSO URL - Fornito dall'IdP, utilizzato per il Single Sign-On (SSO).
 - Certificato Pubblico - Fornito dall'IdP.

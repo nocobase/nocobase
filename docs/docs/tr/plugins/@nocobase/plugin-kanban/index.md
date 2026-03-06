@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Kanban"
+displayName: "Blok: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |
-  Provides kanban block.
+  Kanban bloğu sağlar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Kanban
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-kanban/index) bakın.
+:::
+
+# Blok: Kanban

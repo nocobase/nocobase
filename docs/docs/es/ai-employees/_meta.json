@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Inicio rápido",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Introducción de funciones",
     "items": [
       {
         "type": "custom-link",
-        "label": "Configurar servicio LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "label": "Configurar el servicio LLM",
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Crear empleado de IA",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "Habilitar empleados de IA",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
         "label": "Colaborar con empleados de IA",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Empleados de IA incorporados",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Visión general",
-        "link": "/ai-employees/built-in/index"
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Analista de insights",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: Experto en modelado de datos",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: Experto en preparación de datos",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Ingeniero de frontend",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Avanzado",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Seleccionar bloque",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Fuentes de datos",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Habilidades",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Tareas",
-        "link": "/ai-employees/advanced/task"
+        "label": "Agregar contexto - Bloques",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "Búsqueda web",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "Uso de habilidades",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tareas rápidas",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Empleados de IA incorporados",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Crear nuevo empleado de IA",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -99,34 +72,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Flujo de trabajo",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Nodo LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Conversación de texto",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Conversación multimodal",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Salida estructurada",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Base de conocimiento de IA",
+    "label": "Base de conocimientos de IA",
     "items": [
       {
         "type": "custom-link",
@@ -145,7 +91,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Base de conocimiento",
+        "label": "Base de conocimientos",
         "link": "/ai-employees/knowledge-base/knowledge-base"
       },
       {
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Documentos de la aplicación",
+    "label": "Flujo de trabajo",
     "items": [
       {
         "type": "custom-link",
-        "label": "Escenarios",
+        "label": "Nodos LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: Configuración de escenario CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Configuración",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Configuración de administrador",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Chat de texto",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Guía de prompts",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Chat multimodal",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Salida estructurada",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Prácticas de aplicación",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: Configuración de escenario CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Guía de prompts",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

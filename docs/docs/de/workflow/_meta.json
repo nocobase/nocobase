@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Tabellen-Events",
+        "label": "Collection-Ereignisse",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Daten erstellen",
+            "label": "Daten hinzufügen",
             "link": "/workflow/nodes/create"
           },
           {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Ausführungsprotokoll",
-    "link": "/workflow/advanced/execution"
+    "label": "Ausführungshistorie",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

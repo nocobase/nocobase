@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Ringkasan Solusi Tiket
 
-## 1. Background (Why)
+> **Catatan**: Ini adalah versi pratinjau awal. Fitur masih terus ditingkatkan dan kami terus berupaya melakukan penyempurnaan. Masukan Anda sangat kami harapkan!
 
-### Industry/Role/Management Problems Solved
+## 1. Latar Belakang (Mengapa)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Masalah Industri / Peran / Manajemen yang Diselesaikan
 
-**Typical Business Scenarios:**
+Perusahaan menghadapi berbagai jenis permintaan layanan dalam operasional sehari-hari: perbaikan peralatan, dukungan IT, keluhan pelanggan, konsultasi, dll. Sumber permintaan ini tersebar (sistem CRM, teknisi lapangan, email, formulir publik, dll.), memiliki alur kerja pemrosesan yang berbeda, dan kurang memiliki mekanisme pelacakan serta manajemen yang terpadu.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Contoh Skenario Bisnis Tipikal:**
 
-### Target User Profile
+- **Perbaikan Peralatan**: Tim purna jual menangani permintaan perbaikan peralatan, perlu mencatat informasi spesifik perangkat seperti nomor seri, kode kerusakan, suku cadang.
+- **Dukungan IT**: Departemen IT menangani permintaan karyawan internal untuk pengaturan ulang kata sandi, instalasi perangkat lunak, masalah jaringan.
+- **Keluhan Pelanggan**: Tim layanan pelanggan menangani keluhan dari berbagai saluran, beberapa pelanggan yang emosional memerlukan penanganan prioritas.
+- **Layanan Mandiri Pelanggan**: Pelanggan akhir ingin mengirimkan permintaan layanan dengan mudah dan melacak progres pemrosesan.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### Profil Target Pengguna
 
-### Pain Points of Current Mainstream Solutions
+| Dimensi | Deskripsi |
+|------|------|
+| Ukuran Perusahaan | UMKM hingga perusahaan menengah-besar dengan kebutuhan layanan pelanggan yang signifikan |
+| Struktur Peran | Tim layanan pelanggan, dukungan IT, tim purna jual, manajemen operasional |
+| Kematangan Digital | Pemula hingga menengah, sedang berupaya meningkatkan dari manajemen Excel/email ke manajemen sistematis |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### Masalah pada Solusi Utama Saat Ini
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Biaya Tinggi / Kustomisasi Lambat**: Sistem tiket SaaS mahal, siklus pengembangan kustom lama.
+- **Fragmentasi Sistem, Silo Data**: Berbagai data bisnis tersebar di sistem yang berbeda, sulit untuk menyatukan analisis dan pengambilan keputusan.
+- **Perubahan Bisnis Cepat, Sistem Sulit Berevolusi**: Saat kebutuhan bisnis berubah, sistem sulit disesuaikan dengan cepat.
+- **Respons Layanan Lambat**: Permintaan yang mengalir di antara sistem yang berbeda tidak dapat didisposisikan dengan segera.
+- **Proses Tidak Transparan**: Pelanggan tidak dapat melacak progres tiket, pertanyaan yang sering muncul meningkatkan beban layanan pelanggan.
+- **Kualitas Sulit Dijamin**: Kurangnya pemantauan SLA, batas waktu yang terlampaui dan umpan balik negatif tidak dapat diperingatkan tepat waktu.
 
 ---
 
-## 3. Design Principles
+## 2. Tolok Ukur Produk (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Produk Utama di Pasar
+
+- **SaaS**: Seperti Salesforce, Zendesk, Odoo, dll.
+- **Sistem Kustom / Sistem Internal**
+
+### Dimensi Tolok Ukur
+
+- Cakupan Fitur
+- Fleksibilitas
+- Ekstensibilitas
+- Pendekatan Penggunaan AI
+
+### Keunggulan Solusi NocoBase
+
+**Keunggulan Tingkat Platform:**
+
+- **Prioritas Konfigurasi**: Dari tabel data dasar hingga jenis bisnis, SLA, perutean keahlian, semuanya dikelola melalui konfigurasi.
+- **Pengembangan Cepat Low-Code**: Lebih cepat daripada pengembangan kustom, lebih fleksibel daripada SaaS.
+
+**Hal yang Tidak Bisa Dilakukan Sistem Tradisional atau Membutuhkan Biaya Sangat Tinggi:**
+
+- **Integrasi AI Native**: Memanfaatkan plugin AI NocoBase untuk klasifikasi cerdas, bantuan pengisian formulir, rekomendasi pengetahuan.
+- **Semua Desain Dapat Direplikasi oleh Pengguna**: Pengguna dapat melakukan pengembangan mandiri berdasarkan templat.
+- **Arsitektur Data Berbentuk T**: Tabel utama + tabel ekstensi bisnis, menambahkan jenis bisnis baru hanya memerlukan penambahan tabel ekstensi.
 
 ---
 
-## 4. Solution Overview
+## 3. Prinsip Desain (Principles)
 
-### Summary Introduction
+- **Biaya Kognitif Rendah**
+- **Bisnis Mendahului Teknologi**
+- **Dapat Berevolusi, Bukan Penyelesaian Sekali Jalan**
+- **Konfigurasi Diutamakan, Kode Sebagai Cadangan**
+- **Kolaborasi Manusia-AI, Bukan AI Menggantikan Manusia**
+- **Semua Desain Harus Dapat Direplikasi oleh Pengguna**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Ringkasan Solusi (Solution Overview)
 
-### Ticket Processing Flow
+### Pengenalan Singkat
+
+Pusat tiket universal yang dibangun di atas platform low-code NocoBase, mencapai:
+
+- **Pintu Masuk Terpadu**: Integrasi multi-sumber, pemrosesan standar.
+- **Distribusi Cerdas**: Klasifikasi berbantuan AI, penugasan dengan penyeimbangan beban.
+- **Bisnis Polimorfik**: Tabel utama inti + tabel ekstensi bisnis, ekstensi yang fleksibel.
+- **Umpan Balik Loop Tertutup**: Pemantauan SLA, penilaian pelanggan, tindak lanjut umpan balik negatif.
+
+### Alur Pemrosesan Tiket
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Input Multi-Sumber → Pra-pemrosesan/Analisis AI → Penugasan Cerdas → Eksekusi Manual → Loop Umpan Balik
+        ↓                       ↓                        ↓                  ↓                ↓
+ Pemeriksaan Duplikasi     Pengenalan Niat          Pencocokan Keahlian  Alur Status      Penilaian Kepuasan
+                           Analisis Sentimen        Penyeimbangan Beban  Pemantauan SLA   Tindak Lanjut Umpan Balik Negatif
+                           Balasan Otomatis         Manajemen Antrean    Komunikasi Komentar  Pengarsipan Data
 ```
 
-### Core Module List
+### Daftar Modul Inti
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Modul | Deskripsi |
+|------|------|
+| Penerimaan Tiket | Formulir publik, portal pelanggan, dibuat oleh agen, API/Webhook, penguraian email |
+| Manajemen Tiket | CRUD tiket, alur status, penugasan/pengalihan, komunikasi komentar, log operasi |
+| Ekstensi Bisnis | Perbaikan peralatan, dukungan IT, keluhan pelanggan, dan tabel ekstensi bisnis lainnya |
+| Manajemen SLA | Konfigurasi SLA, peringatan batas waktu, eskalasi batas waktu |
+| Manajemen Pelanggan | Tabel utama pelanggan, manajemen kontak, portal pelanggan |
+| Sistem Penilaian | Penilaian multi-dimensi, tag cepat, NPS, peringatan umpan balik negatif |
+| Bantuan AI | Klasifikasi niat, analisis sentimen, rekomendasi pengetahuan, bantuan balasan, pemolesan nada bicara |
 
-### Core Interface Display
+### Tampilan Antarmuka Inti
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. Karyawan AI (AI Employee)
 
-### AI Employee Types and Scenarios
+### Tipe dan Skenario Karyawan AI
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Asisten Layanan Pelanggan**, **Asisten Penjualan**, **Analis Data**, **Auditor**
+- Membantu manusia, bukan menggantikannya
 
-### AI Employee Value Quantification
+### Kuantifikasi Nilai Karyawan AI
 
-In this solution, AI employees can:
+Dalam solusi ini, karyawan AI dapat:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Dimensi Nilai | Efek Spesifik |
+|----------|----------|
+| Meningkatkan Efisiensi | Klasifikasi otomatis mengurangi waktu pemilahan manual sebesar 50%+; rekomendasi pengetahuan mempercepat penyelesaian masalah |
+| Mengurangi Biaya | Pertanyaan sederhana dijawab otomatis, mengurangi beban kerja layanan pelanggan manual |
+| Memberdayakan Karyawan Manusia | Peringatan emosi membantu layanan pelanggan bersiap lebih awal; pemolesan balasan meningkatkan kualitas komunikasi |
+| Meningkatkan Kepuasan Pelanggan | Respons lebih cepat, penugasan lebih akurat, balasan lebih profesional |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Sorotan Utama (Highlights)
 
-### How to Install and Use
+### 1. Arsitektur Data Berbentuk T
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Semua tiket berbagi tabel utama dengan logika alur yang terpadu.
+- Tabel ekstensi bisnis membawa bidang khusus tipe, ekstensi fleksibel.
+- Menambahkan jenis bisnis baru hanya memerlukan penambahan tabel ekstensi, tanpa memengaruhi alur utama.
+
+### 2. Siklus Hidup Tiket Lengkap
+
+- Baru → Ditugaskan → Diproses → Ditunda → Diselesaikan → Ditutup
+- Mendukung skenario kompleks seperti pengalihan, pengembalian, pembukaan kembali.
+- Penghitungan waktu SLA akurat hingga jeda penundaan.
+
+### 3. Integrasi Terpadu Multi-Saluran
+
+- Formulir publik, portal pelanggan, API, email, dibuat oleh agen.
+- Pemeriksaan idempotensi mencegah pembuatan duplikat.
+
+### 4. Integrasi AI Native
+
+- Bukan sekadar "menambahkan tombol AI", tetapi terintegrasi ke dalam setiap langkah.
+- Pengenalan niat, analisis sentimen, rekomendasi pengetahuan, pemolesan balasan.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Roadmap (Terus Diperbarui)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **Penyematan Sistem**: Mendukung penyematan modul tiket ke dalam berbagai sistem bisnis seperti ERP, CRM, dll.
+- **Interkoneksi Tiket**: Integrasi tiket sistem hulu/hilir dan callback status untuk kolaborasi tiket lintas sistem.
+- **Otomatisasi AI**: Karyawan AI yang tertanam dalam alur kerja, mendukung eksekusi otomatis di latar belakang untuk pemrosesan tanpa pengawasan.
+- **Dukungan Multi-Tenant**: Penskalaan horizontal melalui arsitektur multi-ruang/multi-aplikasi, memungkinkan distribusi ke tim layanan yang berbeda untuk operasional mandiri.
+- **RAG Basis Pengetahuan**: Vektorisasi otomatis dari semua data (tiket, pelanggan, produk, dll.) untuk pencarian cerdas dan rekomendasi pengetahuan.
+- **Dukungan Multi-Bahasa**: Antarmuka dan konten mendukung berbagai bahasa, memungkinkan kolaborasi tim lintas batas/wilayah.

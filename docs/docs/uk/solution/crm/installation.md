@@ -1,130 +1,137 @@
-# Installation Guide
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/solution/crm/installation).
+:::
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Як встановити
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> Поточна версія розгортається за допомогою **резервного копіювання та відновлення**. У наступних версіях ми можемо перейти на форму **інкрементальної міграції**, щоб полегшити інтеграцію рішення у ваші існуючі системи.
 
-Before you begin, please ensure:
+Щоб ви могли швидко та безперешкодно розгорнути рішення CRM 2.0 у вашому власному середовищі NocoBase, ми пропонуємо два способи відновлення. Будь ласка, оберіть найбільш підходящий для вас залежно від вашої версії користувача та технічного досвіду.
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+Перед початком переконайтеся, що:
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+- Ви вже маєте базове середовище виконання NocoBase. Щодо встановлення основної системи, будь ласка, зверніться до детальної [офіційної документації зі встановлення](https://docs-cn.nocobase.com/welcome/getting-started/installation).
+- Версія NocoBase **v2.1.0-beta.2 та вище**
+- Ви вже завантажили відповідні файли системи CRM:
+  - **Файл резервної копії**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - підходить для способу 1
+  - **SQL-файл**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - підходить для способу 2
+
+**Важливі зауваження**:
+- Це рішення створено на базі бази даних **PostgreSQL 16**, будь ласка, переконайтеся, що ваше середовище використовує PostgreSQL 16.
+- **DB_UNDERSCORED не може бути true**: будь ласка, перевірте ваш файл `docker-compose.yml` і переконайтеся, що змінна середовища `DB_UNDERSCORED` не встановлена в `true`, інакше це призведе до конфлікту з резервною копією рішення та збою відновлення.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Спосіб 1: Відновлення за допомогою менеджера резервного копіювання (рекомендовано для користувачів версій Pro/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+Цей спосіб здійснюється через вбудований у NocoBase плагін "[Менеджер резервного копіювання](https://docs-cn.nocobase.com/handbook/backups)" (версія Pro/Enterprise) для відновлення в один клік, що є найпростішою операцією. Але він має певні вимоги до середовища та версії користувача.
 
-### Key Characteristics
+### Основні характеристики
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **Переваги**:
+  1. **Зручність у роботі**: можна виконати в інтерфейсі користувача (UI), дозволяє повністю відновити всі конфігурації, включаючи плагіни.
+  2. **Повне відновлення**: **можливість відновити всі системні файли**, включаючи файли шаблонів друку, файли, завантажені в поля файлів у колекціях тощо, забезпечуючи цілісність функціоналу.
+* **Обмеження**:
+  1. **Тільки для версій Pro/Enterprise**: "Менеджер резервного копіювання" — це плагін корпоративного рівня, доступний лише для користувачів Pro/Enterprise.
+  2. **Суворі вимоги до середовища**: вимагає, щоб середовище вашої бази даних (версія, налаштування чутливості до регістру тощо) було високосумісним із середовищем, у якому ми створювали резервну копію.
+  3. **Залежність від плагінів**: якщо рішення містить комерційні плагіни, яких немає у вашому локальному середовищі, відновлення не вдасться.
 
-### Steps
+### Кроки операції
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**Крок 1: 【Наполегливо рекомендується】 Використовуйте образ `full` для запуску програми**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+Щоб уникнути збоїв відновлення через відсутність клієнта бази даних, ми наполегливо рекомендуємо використовувати версію Docker-образу `full`. Він містить усі необхідні супутні програми, тому вам не потрібно виконувати додаткові налаштування.
+
+Приклад команди для отримання образу:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+Потім використовуйте цей образ для запуску вашого сервісу NocoBase.
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **Примітка**: якщо ви не використовуєте образ `full`, вам може знадобитися вручну встановити клієнт бази даних `pg_dump` всередині контейнера, що є складним і нестабільним процесом.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Крок 2: Увімкніть плагін "Менеджер резервного копіювання"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Увійдіть у вашу систему NocoBase.
+2. Перейдіть у **`Керування плагінами`**.
+3. Знайдіть та увімкніть плагін **`Менеджер резервного копіювання`**.
 
-**Step 3: Restore from local backup file**
+**Крок 3: Відновлення з локального файлу резервної копії**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. Після ввімкнення плагіна оновіть сторінку.
+2. Перейдіть у ліве меню **`Керування системою`** -> **`Менеджер резервного копіювання`**.
+3. Натисніть кнопку **`Відновити з локальної резервної копії`** у верхньому правому куті.
+4. Перетягніть завантажений файл резервної копії в область завантаження.
+5. Натисніть **`Надіслати`**, і терпляче зачекайте, поки система завершить відновлення; цей процес може тривати від кількох десятків секунд до кількох хвилин.
 
-### Notes
+### Зауваження
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **Сумісність бази даних**: це найважливіший момент цього методу. **Версія, кодування символів та налаштування чутливості до регістру** вашої бази даних PostgreSQL повинні відповідати вихідному файлу резервної копії. Зокрема, назва `schema` повинна збігатися.
+* **Відповідність комерційних плагінів**: будь ласка, переконайтеся, що ви вже маєте та ввімкнули всі комерційні плагіни, необхідні для рішення, інакше відновлення буде перервано.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
+## Спосіб 2: Прямий імпорт SQL-файлу (універсальний, більше підходить для версії Community)
 
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
+Цей спосіб відновлює дані шляхом безпосередньої роботи з базою даних, минаючи плагін "Менеджер резервного копіювання", тому він не має обмежень версій Pro/Enterprise.
 
-### Key Characteristics
+### Основні характеристики
 
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+* **Переваги**:
+  1. **Без обмежень версій**: підходить для всіх користувачів NocoBase, включаючи версію Community.
+  2. **Висока сумісність**: не залежить від інструменту `dump` всередині програми; поки є можливість підключитися до бази даних, можна виконувати операції.
+  3. **Висока відмовостійкість**: якщо рішення містить комерційні плагіни, яких у вас немає, відповідні функції не будуть активовані, але це не вплине на нормальне використання інших функцій, і програма зможе успішно запуститися.
+* **Обмеження**:
+  1. **Потребує навичок роботи з базою даних**: користувач повинен мати базові навички роботи з базою даних, наприклад, знати, як виконати файл `.sql`.
+  2. **Втрата системних файлів**: **цей метод призведе до втрати всіх системних файлів**, включаючи файли шаблонів друку, файли, завантажені в поля файлів у колекціях тощо.
 
-### Steps
+### Кроки операції
 
-**Step 1: Prepare a clean database**
+**Крок 1: Підготуйте чисту базу даних**
 
-Create a brand new, empty database for the data you're about to import.
+Підготуйте абсолютно нову, порожню базу даних для даних, які ви збираєтеся імпортувати.
 
-**Step 2: Import the `.sql` file into the database**
+**Крок 2: Імпортуйте файл `.sql` у базу даних**
 
-* **Option A: Via server command line (Docker example)**
+Отримайте завантажений файл бази даних (зазвичай у форматі `.sql`) та імпортуйте його вміст у базу даних, підготовлену на попередньому кроці. Спосіб виконання залежить від вашого середовища:
+
+* **Варіант А: Через командний рядок сервера (на прикладі Docker)**
+  Якщо ви використовуєте Docker для встановлення NocoBase та бази даних, ви можете завантажити файл `.sql` на сервер, а потім скористатися командою `docker exec` для виконання імпорту. Припустимо, ваш контейнер PostgreSQL називається `my-nocobase-db`, а ім'я файлу — `nocobase_crm_v2_sql_260223.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Скопіюйте sql файл у контейнер
   docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
+  # Увійдіть у контейнер для виконання команди імпорту
   docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
   ```
+* **Варіант Б: Через віддалений клієнт бази даних (Navicat тощо)**
+  Якщо порт вашої бази даних відкритий, ви можете використовувати будь-який графічний клієнт бази даних (наприклад, Navicat, DBeaver, pgAdmin тощо) для підключення до бази даних, а потім:
+  1. Клацніть правою кнопкою миші на цільову базу даних
+  2. Оберіть "Запустити SQL-файл" або "Виконати SQL-скрипт"
+  3. Оберіть завантажений файл `.sql` та виконайте його
 
-* **Option B: Via a remote database client (Navicat, etc.)**
+**Крок 3: Підключіться до бази даних та запустіть програму**
 
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
+Налаштуйте параметри запуску вашого NocoBase (такі як змінні середовища `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` тощо), щоб вони вказували на базу даних, у яку ви щойно імпортували дані. Потім запустіть сервіс NocoBase у звичайному режимі.
 
-**Step 3: Connect to the database and start the application**
+### Зауваження
 
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
+* **Права доступу до бази даних**: цей метод вимагає наявності облікового запису та пароля, які дозволяють безпосередньо керувати базою даних.
+* **Статус плагінів**: після успішного імпорту дані комерційних плагінів, що містяться в системі, будуть присутні, але якщо ви не встановили та не ввімкнули відповідні плагіни локально, пов'язані функції не будуть відображатися або використовуватися, проте це не призведе до збою програми.
 
 ---
 
-## Summary & Comparison
+## Підсумок та порівняння
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
+| Характеристика | Спосіб 1: Менеджер резервного копіювання | Спосіб 2: Прямий імпорт SQL |
+| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **Цільові користувачі** | Користувачі версій **Pro/Enterprise** | **Усі користувачі** (включаючи Community) |
+| **Складність операції** | ⭐⭐⭐⭐⭐ (Дуже просто, операції в UI) | ⭐⭐⭐ (Потребує базових знань баз даних) |
+| **Вимоги до середовища** | **Суворі**, версії бази даних та системи мають бути високосумісними | **Звичайні**, потрібна сумісність бази даних |
+| **Залежність від плагінів** | **Сильна залежність**, під час відновлення перевіряються плагіни, відсутність будь-якого плагіна призведе до **збою відновлення**. | **Функції сильно залежать від плагінів**. Дані можна імпортувати незалежно, система матиме базові функції. Але якщо відповідні плагіни відсутні, пов'язані функції будуть **повністю недоступні**. |
+| **Системні файли** | **Повністю зберігаються** (шаблони друку, завантажені файли тощо) | **Будуть втрачені** (шаблони друку, завантажені файли тощо) |
+| **Рекомендовані сценарії** | Корпоративні користувачі з контрольованим та узгодженим середовищем, яким потрібен повний функціонал | Відсутність деяких плагінів, прагнення до високої сумісності та гнучкості, користувачі версій, відмінних від Pro/Enterprise, готовність до відсутності функцій роботи з файлами |
 
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+Сподіваємося, цей посібник допоможе вам успішно розгорнути систему CRM 2.0. Якщо у вас виникнуть запитання під час процесу, будь ласка, звертайтеся до нас у будь-який час!

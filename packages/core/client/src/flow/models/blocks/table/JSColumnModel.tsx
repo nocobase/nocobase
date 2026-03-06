@@ -228,7 +228,7 @@ JSColumnModel.registerFlow({
       },
       defaultParams() {
         return {
-          version: 'v1',
+          version: 'v2',
           code: `ctx.render('<span class="nb-js-column">JS column</span>');`,
         };
       },

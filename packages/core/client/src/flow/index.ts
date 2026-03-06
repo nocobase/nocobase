@@ -63,16 +63,19 @@ export class PluginFlowEngine extends Plugin {
 
     this.flowEngine.context.defineMethod(
       'previewRunJS',
-      async function (this: any, code: string): Promise<PreviewRunJSResult> {
+      async function (this: any, code: string, version?: string): Promise<PreviewRunJSResult> {
         const mod = await import('./components/code-editor/runjsDiagnostics');
-        return await mod.previewRunJS(String(code ?? ''), this);
+        return await mod.previewRunJS(String(code ?? ''), this, { version });
       },
       {
         description: 'Preview/diagnose a RunJS snippet (lint + sandbox execution).',
-        detail: '(code: string) => Promise<{ success: boolean; message: string }>',
-        params: [{ name: 'code', type: 'string', description: 'RunJS code to preview.' }],
+        detail: '(code: string, version?: string) => Promise<{ success: boolean; message: string }>',
+        params: [
+          { name: 'code', type: 'string', description: 'RunJS code to preview.' },
+          { name: 'version', type: 'string', description: 'RunJS version override (e.g. v1/v2).' },
+        ],
         returns: { type: 'Promise<PreviewRunJSResult>', description: 'Preview result.' },
-        completion: { insertText: "await ctx.previewRunJS('console.log(1)')" },
+        completion: { insertText: "await ctx.previewRunJS('console.log(1)', 'v2')" },
       },
     );
   }

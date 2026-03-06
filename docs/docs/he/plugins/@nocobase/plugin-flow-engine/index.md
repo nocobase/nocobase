@@ -1,5 +1,5 @@
 ---
-displayName: "Flow engine"
+displayName: "FlowEngine פרונט-אנד"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flow engine
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-flow-engine/index).
+:::
+
+# FlowEngine פרונט-אנד

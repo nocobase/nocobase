@@ -91,7 +91,7 @@ Pada titik ini, konfigurasi alur kerja yang sesuai telah selesai. Anda sekarang 
 
 Jika node "Akhiri alur kerja" dikonfigurasi untuk keluar dengan status "Berhasil", permintaan aksi akan tetap diinterupsi saat node ini dieksekusi, tetapi pesan respons yang dikembalikan akan ditampilkan dengan status "Berhasil" (bukan "Kesalahan"):
 
-![Pesan Respons Status Berhasil](https://static-docs.nocobase.com/9559bbf5607144759451294b18c790e.png)
+![Pesan Respons Status Berhasil](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## Contoh
 

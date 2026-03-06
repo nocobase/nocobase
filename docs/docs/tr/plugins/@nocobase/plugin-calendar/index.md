@@ -1,12 +1,16 @@
 ---
-displayName: "Calendar"
+displayName: "Takvim"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  Tarih verilerini yönetmek için takvim Collection şablonu ve bloğu sağlar; genellikle etkinlikler, randevular, görevler gibi tarih/saat ile ilgili bilgiler için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Calendar
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-calendar/index) bakın.
+:::
+
+# Takvim

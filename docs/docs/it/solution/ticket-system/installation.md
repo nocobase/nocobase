@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/solution/ticket-system/installation).
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Come installare
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> L'attuale versione adotta la forma di **backup e ripristino** per la distribuzione. Nelle versioni successive, potremmo passare alla forma di **migrazione incrementale**, al fine di agevolare l'integrazione della soluzione nei Suoi sistemi esistenti.
 
-Before you begin, please ensure:
+Per consentirLe di distribuire la soluzione per i ticket nel Suo ambiente NocoBase in modo rapido e fluido, forniamo due metodi di ripristino. Scelga quello più adatto a Lei in base alla Sua versione utente e al Suo background tecnico.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+Prima di iniziare, si assicuri che:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- Disponga già di un ambiente di esecuzione NocoBase di base. Per l'installazione del sistema principale, consulti la [documentazione ufficiale di installazione](https://docs-cn.nocobase.com/welcome/getting-started/installation) più dettagliata.
+- La versione di NocoBase sia **2.0.0-beta.5 o superiore**.
+- Abbia già scaricato i file corrispondenti al sistema ticket:
+  - **File di backup**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - Applicabile al Metodo 1
+  - **File SQL**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - Applicabile al Metodo 2
+
+**Nota importante**:
+- Questa soluzione è realizzata sulla base del database **PostgreSQL 16**; si assicuri che il Suo ambiente utilizzi PostgreSQL 16.
+- **DB_UNDERSCORED non può essere true**: controlli il Suo file `docker-compose.yml` e si assicuri che la variabile d'ambiente `DB_UNDERSCORED` non sia impostata su `true`, altrimenti entrerà in conflitto con il backup della soluzione causando il fallimento del ripristino.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Metodo 1: Ripristino tramite il Gestore backup (consigliato per utenti Pro/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+Questo metodo utilizza il plugin integrato di NocoBase "[Gestore backup](https://docs-cn.nocobase.com/handbook/backups)" (versione Pro/Enterprise) per eseguire un ripristino con un clic; è l'operazione più semplice. Tuttavia, presenta requisiti specifici per l'ambiente e la versione utente.
 
-### Key Features
+### Caratteristiche principali
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **Vantaggi**:
+  1. **Operazione comoda**: può essere completata tramite l'interfaccia UI e consente di ripristinare integralmente tutte le configurazioni, inclusi i plugin.
+  2. **Ripristino completo**: **in grado di ripristinare tutti i file di sistema**, inclusi i file dei modelli di stampa, i file caricati nei campi file delle tabelle, ecc., garantendo l'integrità funzionale.
+* **Limitazioni**:
+  1. **Esclusivo per Pro/Enterprise**: il "Gestore backup" è un plugin di livello aziendale, disponibile solo per gli utenti delle versioni Pro/Enterprise.
+  2. **Requisiti ambientali rigorosi**: richiede che l'ambiente del Suo database (versione, impostazioni di distinzione tra maiuscole e minuscole, ecc.) sia altamente compatibile con l'ambiente in cui è stato creato il backup.
+  3. **Dipendenza dai plugin**: se la soluzione include plugin commerciali non presenti nel Suo ambiente locale, il ripristino fallirà.
 
-### Steps
+### Passaggi operativi
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**Passaggio 1: [Fortemente consigliato] Avviare l'applicazione utilizzando l'immagine `full`**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+Per evitare fallimenti nel ripristino dovuti alla mancanza di client del database, Le consigliamo vivamente di utilizzare la versione `full` dell'immagine Docker. Essa include tutti i programmi di supporto necessari, evitandole configurazioni aggiuntive.
 
-Example command to pull the image:
+Esempio di comando per scaricare l'immagine:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+Quindi utilizzi questa immagine per avviare il Suo servizio NocoBase.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **Nota**: se non utilizza l'immagine `full`, potrebbe dover installare manualmente il client del database `pg_dump` all'interno del container, un processo macchinoso e instabile.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Passaggio 2: Attivare il plugin "Gestore backup"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Acceda al Suo sistema NocoBase.
+2. Entri in **`Gestione plugin`**.
+3. Trovi e attivi il plugin **`Gestore backup`**.
 
-**Step 3: Restore from local backup file**
+**Passaggio 3: Ripristino dal file di backup locale**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. Dopo aver attivato il plugin, aggiorni la pagina.
+2. Acceda al menu a sinistra **`Amministrazione del sistema`** -> **`Gestore backup`**.
+3. Clicchi sul pulsante **`Ripristina da backup locale`** in alto a destra.
+4. Trascini il file di backup scaricato nell'area di caricamento.
+5. Clicchi su **`Invia`** e attenda pazientemente che il sistema completi il ripristino; questo processo può richiedere da poche decine di secondi a diversi minuti.
 
-### Notes
+### Note
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **Compatibilità del database**: questo è il punto più critico di questo metodo. La **versione, il set di caratteri e le impostazioni di distinzione tra maiuscole e minuscole** del Suo database PostgreSQL devono corrispondere al file sorgente del backup. In particolare, il nome dello `schema` deve essere coerente.
+* **Corrispondenza dei plugin commerciali**: si assicuri di possedere e aver attivato tutti i plugin commerciali richiesti dalla soluzione, altrimenti il ripristino verrà interrotto.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## Metodo 2: Importazione diretta del file SQL (universale, più adatto alla Community Edition)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+Questo metodo ripristina i dati operando direttamente sul database, bypassando il plugin "Gestore backup", pertanto non presenta le restrizioni dei plugin Pro/Enterprise.
 
-### Key Features
+### Caratteristiche principali
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **Vantaggi**:
+  1. **Nessuna restrizione di versione**: applicabile a tutti gli utenti NocoBase, inclusa la Community Edition.
+  2. **Alta compatibilità**: non dipende dallo strumento di `dump` interno all'applicazione; è sufficiente potersi connettere al database per operare.
+  3. **Alta tolleranza ai guasti**: se la soluzione include plugin commerciali che non possiede, le relative funzioni non verranno attivate, ma ciò non influirà sul normale utilizzo delle altre funzioni e l'applicazione potrà avviarsi correttamente.
+* **Limitazioni**:
+  1. **Richiede competenze operative sul database**: l'utente deve possedere competenze di base nel funzionamento del database, come ad esempio saper eseguire un file `.sql`.
+  2. **Perdita dei file di sistema**: **questo metodo comporterà la perdita di tutti i file di sistema**, inclusi i file dei modelli di stampa, i file caricati nei campi file delle tabelle, ecc.
 
-### Steps
+### Passaggi operativi
 
-**Step 1: Prepare a clean database**
+**Passaggio 1: Preparare un database pulito**
 
-Prepare a brand new, empty database for the data you're about to import.
+Prepari un database nuovo di zecca e vuoto per i dati che sta per importare.
 
-**Step 2: Import the `.sql` file into the database**
+**Passaggio 2: Importare il file `.sql` nel database**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+Ottenga il file del database scaricato (solitamente in formato `.sql`) e importi il suo contenuto nel database preparato al passaggio precedente. Esistono diversi modi per farlo, a seconda del Suo ambiente:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **Opzione A: Tramite riga di comando del server (esempio con Docker)**
+  Se utilizza Docker per installare NocoBase e il database, può caricare il file `.sql` sul server e quindi utilizzare il comando `docker exec` per eseguire l'importazione. Supponendo che il Suo container PostgreSQL si chiami `my-nocobase-db` e il nome del file sia `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Copiare il file sql all'interno del container
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # Entrare nel container ed eseguire il comando di importazione
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **Opzione B: Tramite client di database remoto**
+  Se il Suo database espone una porta, può utilizzare qualsiasi client grafico per database (come DBeaver, Navicat, pgAdmin, ecc.) per connettersi al database, aprire una nuova finestra di query, incollare l'intero contenuto del file `.sql` ed eseguirlo.
 
-**Step 3: Connect to the database and start the application**
+**Passaggio 3: Connettere il database e avviare l'applicazione**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+Configuri i parametri di avvio di NocoBase (come le variabili d'ambiente `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, ecc.) affinché puntino al database in cui ha appena importato i dati. Quindi, avvii normalmente il servizio NocoBase.
 
-### Notes
+### Note
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **Permessi del database**: questo metodo richiede di disporre di un account e di una password che possano operare direttamente sul database.
+* **Stato dei plugin**: dopo l'importazione riuscita, sebbene i dati dei plugin commerciali siano presenti nel sistema, se non ha installato e attivato localmente i plugin corrispondenti, le relative funzioni non verranno visualizzate né saranno utilizzabili, ma ciò non causerà il crash dell'applicazione.
 
 ---
 
-## Summary and Comparison
+## Riepilogo e confronto
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| Caratteristica | Metodo 1: Gestore backup | Metodo 2: Importazione diretta SQL |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **Utenti destinatari** | Utenti **Pro/Enterprise** | **Tutti gli utenti** (inclusa Community Edition) |
+| **Semplicità operativa** | ⭐⭐⭐⭐⭐ (Molto semplice, operazione UI) | ⭐⭐⭐ (Richiede conoscenze di base del database) |
+| **Requisiti ambientali** | **Rigorosi**, database e versioni di sistema devono essere altamente compatibili | **Generali**, richiede compatibilità del database |
+| **Dipendenza dai plugin** | **Forte dipendenza**, i plugin vengono verificati durante il ripristino; la mancanza di qualsiasi plugin causerà il **fallimento del ripristino**. | **Le funzioni dipendono fortemente dai plugin**. I dati possono essere importati indipendentemente e il sistema dispone delle funzioni di base. Tuttavia, se mancano i plugin corrispondenti, le relative funzioni saranno **completamente inutilizzabili**. |
+| **File di sistema** | **Integralmente conservati** (modelli di stampa, file caricati, ecc.) | **Andranno persi** (modelli di stampa, file caricati, ecc.) |
+| **Scenari consigliati** | Utenti aziendali con ambiente controllato e coerente, che necessitano di funzionalità complete | Mancanza di alcuni plugin, ricerca di alta compatibilità e flessibilità, utenti non Pro/Enterprise, accettazione della mancanza delle funzioni file |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+Speriamo che questo tutorial possa aiutarLa a distribuire correttamente il sistema ticket. Se riscontra problemi durante l'operazione, non esiti a contattarci in qualsiasi momento!

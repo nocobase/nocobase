@@ -1,12 +1,16 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "Mobil (kullanımdan kaldırıldı)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  2.0 sürümünden itibaren mobil eklentisi, henüz geliştirme aşamasında olan yeni ui-layout eklentisi ile değiştirilmiştir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-mobile/index) bakın.
+:::
+
+# Mobil (kullanımdan kaldırıldı)

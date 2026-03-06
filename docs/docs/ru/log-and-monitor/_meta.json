@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Логирование",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Серверные логи",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Серверные логи, логи аудита, история записей",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Телеметрия",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Инструкция по использованию",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "Экспортеры",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

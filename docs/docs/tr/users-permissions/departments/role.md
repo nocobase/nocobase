@@ -20,7 +20,7 @@ Departmanlara rol atamanın iki yolu vardır.
 
 İkinci yöntem ise rol yönetimi içinde, ilgili rollere departman eklemektir.
 
-![](https://static-docs.nocobase.com/70f77bb89aa1fb415c152a51a51cc23b.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 Bu role zaten sahip olan departmanlar seçilemez.
 

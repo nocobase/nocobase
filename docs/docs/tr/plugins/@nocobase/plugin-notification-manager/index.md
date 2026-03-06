@@ -1,12 +1,16 @@
 ---
-displayName: "Notification manager"
+displayName: "Bildirim yönetimi"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
+  Kanal yapılandırması, günlük kaydı ve diğer özellikleri içeren, uygulama içi mesaj ve e-posta dahil olmak üzere çeşitli bildirim kanallarının yapılandırılmasını destekleyen birleşik bir yönetim hizmeti sunar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification manager
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-notification-manager/index) bakın.
+:::
+
+# Bildirim yönetimi

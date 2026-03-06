@@ -1,25 +1,23 @@
-
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/flow-engine/flow-context) bakın.
 :::
-
 
 # Bağlam Sistemi Genel Bakış
 
-NocoBase İş Akışı motorunun bağlam sistemi, her biri farklı bir kapsama alanına karşılık gelen üç katmana ayrılmıştır. Bu sistemi doğru kullanarak hizmetlerin, yapılandırmaların ve verilerin esnek bir şekilde paylaşılmasını ve yalıtılmasını sağlayabilir, böylece iş sürdürülebilirliğini ve ölçeklenebilirliğini artırabilirsiniz.
+NocoBase iş akışı motorunun bağlam sistemi, farklı kapsamlara karşılık gelen üç katmana ayrılır; makul kullanım, hizmetlerin, yapılandırmaların ve verilerin esnek paylaşımını ve izolasyonunu sağlayarak iş sürdürülebilirliğini ve ölçeklenebilirliğini artırır.
 
-- **FlowEngineContext (Genel Bağlam)**: Küresel olarak benzersizdir ve tüm modeller ile iş akışları tarafından erişilebilir. Genel hizmetleri, yapılandırmaları vb. kaydetmek için uygundur.
-- **FlowModelContext (Model Bağlamı)**: Bir model ağacı içinde bağlam paylaşımı için kullanılır. Alt modeller, üst modelin bağlamını otomatik olarak devralır ve aynı ada sahip öğelerin üzerine yazmayı destekler. Model düzeyinde mantık ve veri yalıtımı için uygundur.
-- **FlowRuntimeContext (İş Akışı Çalışma Zamanı Bağlamı)**: Her iş akışı yürütüldüğünde oluşturulur ve tüm iş akışı yürütme döngüsü boyunca devam eder. İş akışı içindeki veri aktarımı, değişken depolama ve çalışma zamanı durumu kaydı için uygundur. `mode: 'runtime' | 'settings'` olmak üzere iki modu destekler; bunlar sırasıyla çalışma zamanı modu ve ayarlar moduna karşılık gelir.
+- **FlowEngineContext (Küresel Bağlam)**: Küresel olarak tektir, tüm modeller ve iş akışları erişebilir, küresel hizmetlerin ve yapılandırmaların vb. kaydedilmesi için uygundur.
+- **FlowModelContext (Model Bağlamı)**: Model ağacı içinde bağlam paylaşımı için kullanılır, alt modeller otomatik olarak üst model bağlamına vekillik eder, aynı isimli geçersiz kılmaları destekler, model düzeyinde mantık ve veri izolasyonu için uygundur.
+- **FlowRuntimeContext (İş Akışı Çalışma Zamanı Bağlamı)**: Her iş akışı yürütmesinde oluşturulur, tüm iş akışı yürütme döngüsü boyunca sürer, iş akışı içindeki veri aktarımı, değişken depolama ve çalışma durumu kaydı için uygundur. `mode: 'runtime' | 'settings'` olmak üzere iki modu destekler, bunlar sırasıyla çalışma zamanı ve yapılandırma moduna karşılık gelir.
 
-Tüm `FlowEngineContext` (Genel Bağlam), `FlowModelContext` (Model Bağlamı), `FlowRuntimeContext` (İş Akışı Çalışma Zamanı Bağlamı) gibi yapılar, `FlowContext` sınıfının alt sınıfları veya örnekleridir.
+Tüm `FlowEngineContext` (Küresel Bağlam), `FlowModelContext` (Model Bağlamı), `FlowRuntimeContext` (İş Akışı Çalışma Zamanı Bağlamı) vb., `FlowContext`'in alt sınıfları veya örnekleridir.
 
 ---
 
 ## 🗂️ Hiyerarşi Şeması
 
 ```text
-FlowEngineContext (Genel Bağlam)
+FlowEngineContext (Küresel Bağlam)
 │
 ├── FlowModelContext (Model Bağlamı)
 │     ├── Alt FlowModelContext (Alt model)
@@ -36,23 +34,61 @@ FlowEngineContext (Genel Bağlam)
       └── FlowRuntimeContext (İş Akışı Çalışma Zamanı Bağlamı)
 ```
 
-- `FlowModelContext`, `FlowEngineContext`'in özelliklerine ve metotlarına bir vekil (delegate) mekanizması aracılığıyla erişebilir ve böylece genel yeteneklerin paylaşımını sağlar.
-- Bir alt modelin `FlowModelContext`'i, bir vekil (delegate) mekanizması aracılığıyla üst modelin bağlamına (senkron ilişki) erişebilir ve aynı ada sahip öğelerin üzerine yazmayı destekler.
-- Asenkron üst-alt modeller, durum kirliliğini önlemek için bir vekil (delegate) ilişkisi kurmaz.
-- `FlowRuntimeContext` her zaman ilgili `FlowModelContext`'ine bir vekil (delegate) mekanizması aracılığıyla erişir, ancak değişiklikleri yukarı doğru yaymaz.
+- `FlowModelContext`, bir vekillik (delegate) mekanizması aracılığıyla `FlowEngineContext` özelliklerine ve yöntemlerine erişebilir, böylece küresel yetenek paylaşımı sağlanır.
+- Alt modellerin `FlowModelContext`'i, bir vekillik (delegate) mekanizması aracılığıyla üst modelin bağlamına erişebilir (senkron ilişki) ve aynı isimli geçersiz kılmaları destekler.
+- Asenkron üst-alt modeller, durum kirliliğini önlemek için bir vekillik (delegate) ilişkisi kurmaz.
+- `FlowRuntimeContext` her zaman ilgili `FlowModelContext`'ine bir vekillik (delegate) mekanizması aracılığıyla erişir, ancak yukarıya geri gönderim yapmaz.
 
-## 🧭 Çalışma Zamanı ve Ayarlar Modu (mode)
+---
+
+## 🧭 Çalışma Zamanı ve Yapılandırma Modu (mode)
 
 `FlowRuntimeContext`, `mode` parametresiyle ayrılan iki modu destekler:
 
-- `mode: 'runtime'` (Çalışma zamanı modu): İş akışının fiili yürütme aşamasında kullanılır. Özellikler ve metotlar gerçek verileri döndürür. Örneğin:
+- `mode: 'runtime'` (Çalışma zamanı): İş akışının gerçek yürütme aşaması için kullanılır, özellikler ve yöntemler gerçek verileri döndürür. Örneğin:
   ```js
   console.log(runtimeCtx.steps.step1.result); // 42
   ```
 
-- `mode: 'settings'` (Ayarlar modu): İş akışı tasarım ve yapılandırma aşamasında kullanılır. Özellik erişimi, ifade ve değişken seçimini kolaylaştıran bir değişken şablon dizesi döndürür. Örneğin:
+- `mode: 'settings'` (Yapılandırma modu): İş akışı tasarım ve yapılandırma aşaması için kullanılır, özellik erişimi değişken şablon dizeleri döndürür, ifade ve değişken seçimini kolaylaştırır. Örneğin:
   ```js
   console.log(settingsCtx.steps.step1.result); // '{{ ctx.steps.step1.result }}'
   ```
 
-Bu çift modlu tasarım, hem çalışma zamanında veri kullanılabilirliğini garanti eder hem de yapılandırma sırasında değişken referanslamayı ve ifade oluşturmayı kolaylaştırarak İş Akışı motorunun esnekliğini ve kullanılabilirliğini artırır.
+Bu çift modlu tasarım, hem çalışma zamanındaki veri kullanılabilirliğini garanti eder hem de yapılandırma sırasındaki değişken referanslarını ve ifade oluşturmayı kolaylaştırarak iş akışı motorunun esnekliğini ve kullanım kolaylığını artırır.
+
+---
+
+## 🤖 Araçlar/Büyük Modeller için Bağlam Bilgisi
+
+Belirli senaryolarda (örneğin JS*Model'in RunJS kod düzenlemesi, AI kodlama), "çağıran tarafın" kodu yürütmeden şunları anlaması gerekir:
+
+- Mevcut `ctx` altında hangi **statik yeteneklerin** (API belgeleri, parametreler, örnekler, belge bağlantıları vb.) olduğu
+- Mevcut arayüzde/çalışma zamanında hangi **isteğe bağlı değişkenlerin** (örneğin "mevcut kayıt", "mevcut açılır pencere kaydı" gibi dinamik yapılar) olduğu
+- Mevcut çalışma ortamının **küçük boyutlu anlık görüntüsü** (prompt için kullanılır)
+
+### 1) `await ctx.getApiInfos(options?)` (Statik API Bilgisi)
+
+### 2) `await ctx.getVarInfos(options?)` (Değişken Yapısı Bilgisi)
+
+- `defineProperty(...).meta` (meta factory dahil) temel alınarak değişken yapısı oluşturulur
+- `path` kırpma ve `maxDepth` derinlik kontrolünü destekler
+- Sadece ihtiyaç duyulduğunda aşağı doğru genişler
+
+Yaygın parametreler:
+
+- `maxDepth`: Maksimum genişleme derinliği (varsayılan 3)
+- `path: string | string[]`: Kırpma, sadece belirtilen yolun alt ağacını çıktı verir
+
+### 3) `await ctx.getEnvInfos()` (Çalışma Zamanı Ortam Anlık Görüntüsü)
+
+Düğüm yapısı (basitleştirilmiş):
+
+```ts
+type EnvNode = {
+  description?: string;
+  getVar?: string; // Doğrudan await ctx.getVar(getVar) için kullanılabilir, "ctx." ile başlar
+  value?: any; // Çözümlenmiş/serileştirilebilir statik değer
+  properties?: Record<string, EnvNode>;
+};
+```

@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "ภาพรวมของโซลูชัน"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "การออกแบบโดยละเอียด"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "วิธีการติดตั้ง"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "เนื้อหาเพิ่มเติม"
   }
 ]

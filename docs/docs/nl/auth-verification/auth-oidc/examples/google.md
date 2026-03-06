@@ -10,7 +10,7 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 
 [Google Cloud Console](https://console.cloud.google.com/apis/credentials) - Referenties maken - OAuth-client-ID
 
-![](https://static-docs.nocobase.com/0f2946c8643565ecc4ac1324988638c.png)
+![](https://static-docs.nocobase.com/0f2946c8643565ecc4ac13249882638c.png)
 
 Ga naar de configuratie-interface en vul de geautoriseerde omleidings-URL in. De omleidings-URL kunt u verkrijgen wanneer u een authenticator toevoegt in NocoBase. Meestal is dit `http(s)://host:port/api/oidc:redirect`. Zie het gedeelte [Gebruikershandleiding - Configuratie](../index.md#configuratie).
 

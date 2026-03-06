@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Uso compartido de Collections Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Uso compartido de Collections Multi-app
+
+> Nota: Este plugin está en desuso (deprecated).

@@ -41,6 +41,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTableBlockProps } from './useTableBlockProps';
 import { getSchemaUidByRouteId } from './utils';
+import { updateRoutesInBatch } from './utils/updateRoutesInBatch';
 
 const VariableTextArea = getVariableComponentWithScope(Variable.TextArea);
 
@@ -132,18 +133,32 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
               const { service } = useBlockRequestContext();
               const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
               const { updateRoute } = useNocoBaseRoutes(collectionName);
+              const [isBatchUpdating, setIsBatchUpdating] = useState(false);
               return {
+                loading: isBatchUpdating,
                 async onClick() {
+                  if (isBatchUpdating) {
+                    return;
+                  }
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: true,
-                  });
-                  tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
-                  service?.refresh?.();
-                  refreshMenu();
+                  setIsBatchUpdating(true);
+                  try {
+                    await updateRoutesInBatch(
+                      filterByTk,
+                      {
+                        hideInMenu: true,
+                      },
+                      updateRoute,
+                    );
+                    tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
+                    service?.refresh?.();
+                    refreshMenu();
+                  } finally {
+                    setIsBatchUpdating(false);
+                  }
                 },
               };
             },
@@ -162,18 +177,34 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
             'x-use-component-props': () => {
               const tableBlockContextBasicValue = useTableBlockContextBasicValue();
               const { service } = useBlockRequestContext();
+              const { refresh: refreshMenu } = useAllAccessDesktopRoutes();
               const { updateRoute } = useNocoBaseRoutes(collectionName);
+              const [isBatchUpdating, setIsBatchUpdating] = useState(false);
               return {
+                loading: isBatchUpdating,
                 async onClick() {
+                  if (isBatchUpdating) {
+                    return;
+                  }
                   const filterByTk = tableBlockContextBasicValue.field?.data?.selectedRowKeys;
                   if (!filterByTk?.length) {
                     return;
                   }
-                  await updateRoute(filterByTk, {
-                    hideInMenu: false,
-                  });
-                  tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
-                  service?.refresh?.();
+                  setIsBatchUpdating(true);
+                  try {
+                    await updateRoutesInBatch(
+                      filterByTk,
+                      {
+                        hideInMenu: false,
+                      },
+                      updateRoute,
+                    );
+                    tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
+                    service?.refresh?.();
+                    refreshMenu();
+                  } finally {
+                    setIsBatchUpdating(false);
+                  }
                 },
               };
             },

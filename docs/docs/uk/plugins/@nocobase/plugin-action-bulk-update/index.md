@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Batch update"
+displayName: "Action: Масове оновлення"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch update all records or selected records.
+  Масове оновлення всіх або вибраних записів.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch update
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-action-bulk-update/index).
+:::
+
+# Action: Масове оновлення

@@ -10,7 +10,7 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowEngine та плагіни",
+        "label": "Зв'язок FlowEngine та плагінів",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
@@ -51,7 +51,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Збереження FlowModel",
+        "label": "Персистентність FlowModel",
         "link": "/flow-engine/flow-model-repository"
       },
       {
@@ -71,8 +71,13 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
+        "label": "FlowModel проти React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "Точки розширення плагіна RunJS",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

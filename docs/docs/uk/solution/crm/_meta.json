@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Огляд рішення"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Детальний дизайн"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Як встановити"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "Застаріла CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Більше вмісту"
   }
 ]

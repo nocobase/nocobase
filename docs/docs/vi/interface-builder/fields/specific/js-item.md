@@ -1,43 +1,42 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/interface-builder/fields/specific/js-item).
 :::
-
 
 # JS Item
 
 ## Giới thiệu
 
-JS Item được dùng cho các "mục tùy chỉnh" (không liên kết với trường dữ liệu) trong biểu mẫu. Bạn có thể sử dụng JavaScript/JSX để hiển thị bất kỳ nội dung nào (như gợi ý, thống kê, xem trước, nút bấm, v.v.) và tương tác với biểu mẫu cũng như ngữ cảnh bản ghi. Nó phù hợp cho các trường hợp như xem trước theo thời gian thực, hướng dẫn, và các thành phần tương tác nhỏ.
+JS Item được sử dụng cho "mục tùy chỉnh" trong biểu mẫu (không ràng buộc trường). Bạn có thể sử dụng JavaScript/JSX để hiển thị bất kỳ nội dung nào (gợi ý, thống kê, xem trước, nút bấm, v.v.) và tương tác với biểu mẫu, ngữ cảnh bản ghi, phù hợp cho các kịch bản như xem trước thời gian thực, thông báo hướng dẫn, các thành phần tương tác nhỏ, v.v.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## API Ngữ cảnh Thời gian chạy (Thường dùng)
 
-- `ctx.element`: Bộ chứa DOM (ElementProxy) của mục hiện tại, hỗ trợ `innerHTML`, `querySelector`, `addEventListener`, v.v.
-- `ctx.form`: Thể hiện AntD Form, cho phép các thao tác như `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, v.v.
-- `ctx.blockModel`: Mô hình của khối biểu mẫu chứa nó, có thể lắng nghe sự kiện `formValuesChange` để thực hiện liên kết.
-- `ctx.record` / `ctx.collection`: Bản ghi hiện tại và siêu thông tin của **bộ sưu tập** (có sẵn trong một số trường hợp).
-- `ctx.requireAsync(url)`: Tải thư viện AMD/UMD bất đồng bộ theo URL.
-- `ctx.importAsync(url)`: Nhập module ESM động theo URL.
-- `ctx.openView(viewUid, options)`: Mở một chế độ xem đã cấu hình (ngăn kéo/hộp thoại/trang).
-- `ctx.message` / `ctx.notification`: Thông báo và cảnh báo toàn cục.
-- `ctx.t()` / `ctx.i18n.t()`: Hỗ trợ đa ngôn ngữ (Internationalization).
-- `ctx.onRefReady(ctx.ref, cb)`: Hiển thị sau khi bộ chứa sẵn sàng.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Các thư viện chung tích hợp sẵn như React, ReactDOM, Ant Design, biểu tượng Ant Design và dayjs, được dùng để hiển thị JSX và xử lý thời gian. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` vẫn được giữ lại để tương thích.)
-- `ctx.render(vnode)`: Hiển thị phần tử React/HTML/DOM vào bộ chứa mặc định `ctx.element`. Nhiều lần hiển thị sẽ tái sử dụng Root và ghi đè nội dung hiện có của bộ chứa.
+- `ctx.element`: Container DOM (ElementProxy) của mục hiện tại, hỗ trợ `innerHTML`, `querySelector`, `addEventListener`, v.v.;
+- `ctx.form`: Instance AntD Form, có thể `getFieldValue / getFieldsValue / setFieldsValue / validateFields`, v.v.;
+- `ctx.blockModel`: Model của khối biểu mẫu hiện tại, có thể lắng nghe `formValuesChange` để thực hiện liên kết;
+- `ctx.record` / `ctx.collection`: Bản ghi hiện tại và thông tin meta của **bộ sưu tập** (có sẵn trong một số kịch bản);
+- `ctx.requireAsync(url)`: Tải thư viện AMD/UMD bất đồng bộ theo URL;
+- `ctx.importAsync(url)`: Import động module ESM theo URL;
+- `ctx.openView(viewUid, options)`: Mở chế độ xem đã cấu hình (ngăn kéo/hộp thoại/trang);
+- `ctx.message` / `ctx.notification`: Gợi ý và thông báo toàn cục;
+- `ctx.t()` / `ctx.i18n.t()`: Quốc tế hóa;
+- `ctx.onRefReady(ctx.ref, cb)`: Hiển thị sau khi container đã sẵn sàng;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Các thư viện phổ biến tích hợp sẵn như React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js, dùng cho hiển thị JSX, xử lý thời gian, thao tác dữ liệu và tính toán toán học. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` vẫn được giữ lại để tương thích.)
+- `ctx.render(vnode)`: Hiển thị phần tử React/HTML/DOM vào container mặc định `ctx.element`; việc hiển thị nhiều lần sẽ tái sử dụng Root và ghi đè nội dung hiện có của container.
 
 ## Trình chỉnh sửa và Đoạn mã
 
-- `Snippets`: Mở danh sách các đoạn mã tích hợp sẵn, cho phép bạn tìm kiếm và chèn vào vị trí con trỏ hiện tại chỉ với một cú nhấp chuột.
-- `Run`: Chạy trực tiếp mã hiện tại và xuất nhật ký thực thi ra bảng `Logs` ở phía dưới. Nó hỗ trợ `console.log/info/warn/error` và làm nổi bật vị trí lỗi.
+- `Snippets`: Mở danh sách đoạn mã tích hợp sẵn, có thể tìm kiếm và chèn vào vị trí con trỏ hiện tại bằng một cú nhấp chuột.
+- `Run`: Chạy trực tiếp mã hiện tại và xuất nhật ký chạy ra bảng `Logs` ở phía dưới; hỗ trợ `console.log/info/warn/error` và định vị lỗi được làm nổi bật.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Có thể kết hợp với Nhân viên AI để tạo/chỉnh sửa script: [Nhân viên AI · Nathan: Kỹ sư Frontend](/ai-employees/built-in/ai-coding)
+- Có thể kết hợp với Nhân viên AI để tạo/chỉnh sửa script: [Nhân viên AI · Nathan: Kỹ sư Frontend](/ai-employees/features/built-in-employee)
 
-## Các trường hợp sử dụng phổ biến (Ví dụ đơn giản)
+## Cách dùng phổ biến (Ví dụ tinh gọn)
 
-### 1) Xem trước theo thời gian thực (Đọc giá trị biểu mẫu)
+### 1) Xem trước thời gian thực (Đọc giá trị biểu mẫu)
 
 ```js
 const render = () => {
@@ -54,7 +53,7 @@ render();
 ctx.blockModel?.on?.('formValuesChange', () => render());
 ```
 
-### 2) Mở một chế độ xem (Ngăn kéo)
+### 2) Mở chế độ xem (Ngăn kéo)
 
 ```js
 ctx.render(
@@ -67,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) Tải và hiển thị thư viện bên ngoài
+### 3) Tải thư viện bên ngoài và hiển thị
 
 ```js
 // AMD/UMD
@@ -81,9 +80,9 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Lưu ý
 
-- Nên sử dụng CDN đáng tin cậy để tải các thư viện bên ngoài và chuẩn bị phương án dự phòng cho các trường hợp thất bại (ví dụ: `if (!lib) return;`).
-- Nên ưu tiên sử dụng `class` hoặc `[name=...]` cho các bộ chọn và tránh sử dụng `id` cố định để ngăn chặn trùng lặp `id` trong nhiều khối/cửa sổ bật lên.
-- Dọn dẹp sự kiện: Giá trị biểu mẫu thay đổi thường xuyên sẽ kích hoạt nhiều lần hiển thị. Trước khi liên kết sự kiện, bạn nên dọn dẹp hoặc loại bỏ trùng lặp (ví dụ: `remove` trước khi `add`, hoặc sử dụng `{ once: true }`, hoặc đánh dấu bằng `dataset` để tránh trùng lặp).
+- Việc tải thư viện bên ngoài nên sử dụng CDN đáng tin cậy, cần chuẩn bị phương án dự phòng cho kịch bản thất bại (ví dụ: `if (!lib) return;`).
+- Bộ chọn nên ưu tiên sử dụng `class` hoặc `[name=...]`, tránh sử dụng `id` cố định để ngăn chặn trùng lặp `id` trong nhiều khối/cửa sổ bật lên.
+- Dọn dẹp sự kiện: Thay đổi giá trị biểu mẫu thường xuyên sẽ kích hoạt hiển thị nhiều lần, nên dọn dẹp hoặc loại bỏ trùng lặp trước khi ràng buộc sự kiện (ví dụ: `remove` trước rồi mới `add`, hoặc `{ once: true }`, hoặc sử dụng `dataset` để đánh dấu chống trùng lặp).
 
 ## Tài liệu liên quan
 

@@ -18,7 +18,7 @@ De eerste manier is om een rol te selecteren in het rolveld van het afdeling-bew
 
 De tweede manier is om in het rolbeheer afdelingen toe te voegen aan de betreffende rol.
 
-![](https://static-docs.nocobase.com/f2a7bec37cf2f179ce868a92b98416d.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 Afdelingen die deze rol al hebben, kunnen niet worden geselecteerd.
 

@@ -1,12 +1,16 @@
 ---
-displayName: "Calendar"
+displayName: "לוח שנה"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  מספק תבנית Collection ובלוק של לוח שנה לניהול נתוני תאריכים, המשמש בדרך כלל למידע הקשור לתאריך/זמן כגון אירועים, פגישות, משימות וכו'.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Calendar
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-calendar/index).
+:::
+
+# לוח שנה

@@ -1,3 +1,7 @@
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/solution/crm/index).
+:::
+
 # NocoBase CRM 2.0 Solution
 
 > A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
@@ -68,7 +72,7 @@ B2B sales, project-based sales, and cross-border trade teams at small-to-mid and
 | Customer Management | ✅ | Customer profiles, contacts, account hierarchy | Health scoring, churn alerts |
 | Opportunity Management | ✅ | Sales funnel, stage progression, activity log | Win probability, next-step suggestions |
 | Lead Management | — | Lead entry, status flow, conversion tracking | Smart scoring |
-| Quotation Management | — | Multi-currency, version control, approval workflow | — |
+| Quotation Management | — | Multi-currency, version management, approval workflow | — |
 | Order Management | — | Order creation, payment tracking | — |
 | Product Management | — | Product catalog, categories, tiered pricing | — |
 | Email Integration | — | Send/receive emails, CRM association | Sentiment analysis, summary generation |
@@ -125,7 +129,7 @@ The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages.
 
 Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
 
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
+**Ready out of the box:** Pre-built collections, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
 
 ---
 

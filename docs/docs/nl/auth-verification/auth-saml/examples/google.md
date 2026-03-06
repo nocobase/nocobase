@@ -33,7 +33,7 @@ Kopieer vervolgens de SP Issuer/Entiteits-ID en de ACS URL uit het gedeelte 'Usa
 
 Ga terug naar de Google Console en voer op de pagina **Service Provider Details** de zojuist gekopieerde ACS URL en Entiteits-ID in. Vink ook **Signed Response** aan.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc7234317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
 ![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 

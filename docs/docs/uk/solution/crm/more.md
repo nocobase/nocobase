@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Більше контенту
 
-Content coming soon...
+> Поточне CRM-рішення призначене лише для попереднього перегляду. Майбутні версії будуть повністю перебудовані на основі NocoBase 2.0. Тоді буде надана повніша документація.
+
+Контент незабаром...

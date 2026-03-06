@@ -178,7 +178,7 @@ Als de gebeurtenis is geconfigureerd in de globale modus, hoeft u de URL-paramet
 
 Zoals weergegeven in de onderstaande afbeelding:
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2267d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Verschil met **collectie**-gebeurtenis
 

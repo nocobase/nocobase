@@ -1,5 +1,5 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/template-print/syntax/formatters/time-interval-formatting)をご参照ください。
 :::
 
 ### 期間のフォーマット
@@ -17,29 +17,23 @@
 
 ##### 例
 ```
-// 実行環境の例：API オプション { "lang": "en", "timezone": "Europe/Paris" }
-2000:formatI('second')       // 出力: 2
-2000:formatI('seconds')      // 出力: 2
-2000:formatI('s')            // 出力: 2
-3600000:formatI('minute')    // 出力: 60
-3600000:formatI('hour')      // 出力: 1
-2419200000:formatI('days')   // 出力: 28
+2000:formatI('second')       // 出力 2
+2000:formatI('seconds')      // 出力 2
+2000:formatI('s')            // 出力 2
+3600000:formatI('minute')    // 出力 60
+3600000:formatI('hour')      // 出力 1
+2419200000:formatI('days')   // 出力 28
 
-// フランス語での例：
-2000:formatI('human')        // 出力: "quelques secondes"
-2000:formatI('human+')       // 出力: "dans quelques secondes"
--2000:formatI('human+')      // 出力: "il y a quelques secondes"
-
-// 英語での例：
-2000:formatI('human')        // 出力: "a few seconds"
-2000:formatI('human+')       // 出力: "in a few seconds"
--2000:formatI('human+')      // 出力: "a few seconds ago"
+// 人間が読みやすい表示：
+2000:formatI('human')        // 出力 "a few seconds"
+2000:formatI('human+')       // 出力 "in a few seconds"
+-2000:formatI('human+')      // 出力 "a few seconds ago"
 
 // 単位変換の例：
-60:formatI('ms', 'minute')   // 出力: 3600000
-4:formatI('ms', 'weeks')      // 出力: 2419200000
-'P1M':formatI('ms')          // 出力: 2628000000
-'P1Y2M3DT4H5M6S':formatI('hour')  // 出力: 10296.085
+60:formatI('ms', 'minute')   // 出力 3600000
+4:formatI('ms', 'weeks')      // 出力 2419200000
+'P1M':formatI('ms')          // 出力 2628000000
+'P1Y2M3DT4H5M6S':formatI('hour')  // 出力 10296.085
 ```
 
 ##### 結果

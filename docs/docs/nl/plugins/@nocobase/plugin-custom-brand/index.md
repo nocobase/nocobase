@@ -1,15 +1,19 @@
 ---
-displayName: "Custom brand"
+displayName: "Aangepaste merkstijl"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Customize the brand name and more brand-related information.
+  Pas de merknaam en meer merkgerelateerde informatie aan.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Custom brand
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-custom-brand/index) voor nauwkeurige informatie.
+:::
+
+# Aangepaste merkstijl

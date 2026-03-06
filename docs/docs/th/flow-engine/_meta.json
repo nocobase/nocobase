@@ -15,12 +15,12 @@
       },
       {
         "type": "custom-link",
-        "label": "เริ่มต้นใช้งาน",
+        "label": "เริ่มต้นใช้งานอย่างรวดเร็ว",
         "link": "/flow-engine/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "แผนการเรียนรู้",
+        "label": "แผนผังการเรียนรู้",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
@@ -31,27 +31,27 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "การลงทะเบียน FlowModel",
+        "label": "ลงทะเบียน FlowModel",
         "link": "/flow-engine/register-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "การสร้าง FlowModel",
+        "label": "สร้าง FlowModel",
         "link": "/flow-engine/create-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "การเรนเดอร์ FlowModel",
+        "label": "เรนเดอร์ FlowModel",
         "link": "/flow-engine/flow-model-renderer"
       },
       {
         "type": "custom-link",
-        "label": "โฟลว์เหตุการณ์และการกำหนดค่าของ FlowModel",
+        "label": "กระแสเหตุการณ์และการกำหนดค่าของ FlowModel",
         "link": "/flow-engine/flow-model-settings"
       },
       {
         "type": "custom-link",
-        "label": "การคงอยู่ของ FlowModel",
+        "label": "การทำให้ FlowModel คงอยู่ถาวร",
         "link": "/flow-engine/flow-model-repository"
       },
       {
@@ -73,6 +73,11 @@
         "type": "custom-link",
         "label": "FlowModel vs React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "จุดขยายปลั๊กอิน RunJS",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

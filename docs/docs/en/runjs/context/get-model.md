@@ -1,18 +1,18 @@
 # ctx.getModel()
 
-Returns a model instance (e.g. BlockModel, PageModel, ActionModel) from the current engine or view stack by its `uid`. Use in RunJS to access other models across blocks, pages, or popups.
+Retrieves a model instance (such as `BlockModel`, `PageModel`, `ActionModel`, etc.) from the current engine or view stack based on the model `uid`. This is used in RunJS to access other models across blocks, pages, or popups.
 
-If you only need the model or block for the current execution context, use `ctx.model` or `ctx.blockModel` instead of `ctx.getModel`.
+If you only need the model or block where the current execution context is located, prioritize using `ctx.model` or `ctx.blockModel` instead of `ctx.getModel`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSAction** | Get another block’s model by known `uid`; read/write its `resource`, `form`, `setProps`, etc. |
-| **RunJS inside popup** | Access a model on the page that opened the popup; pass `searchInPreviousEngines: true` |
-| **Custom actions** | Find a form or sub-model in the settings panel across the view stack by `uid` |
+|------|------|
+| **JSBlock / JSAction** | Get models of other blocks based on a known `uid` to read or write their `resource`, `form`, `setProps`, etc. |
+| **RunJS in Popups** | When needing to access a model on the page that opened the popup, pass `searchInPreviousEngines: true`. |
+| **Custom Actions** | Locate forms or sub-models in the configuration panel by `uid` across view stacks to read their configuration or state. |
 
-## Type
+## Type Definition
 
 ```ts
 getModel<T extends FlowModel = FlowModel>(
@@ -24,19 +24,19 @@ getModel<T extends FlowModel = FlowModel>(
 ## Parameters
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `uid` | `string` | Unique id of the target model (e.g. from config or creation) |
-| `searchInPreviousEngines` | `boolean` | Optional, default `false`. When `true`, search up the view stack from the current engine to find models in parent views (e.g. the page that opened the popup) |
+|------|------|------|
+| `uid` | `string` | The unique identifier of the target model instance, specified during configuration or creation (e.g., `ctx.model.uid`). |
+| `searchInPreviousEngines` | `boolean` | Optional, defaults to `false`. When `true`, searches from the current engine up to the root in the "view stack," allowing access to models in upper-level engines (e.g., the page that opened a popup). |
 
-## Return value
+## Return Value
 
-- Returns the corresponding `FlowModel` subclass (e.g. `BlockModel`, `FormBlockModel`, `ActionModel`) if found.
+- Returns the corresponding `FlowModel` subclass instance (e.g., `BlockModel`, `FormBlockModel`, `ActionModel`) if found.
 - Returns `undefined` if not found.
 
-## Search scope
+## Search Scope
 
-- **Default (`searchInPreviousEngines: false`)**: Search only in the **current engine** by `uid`. In popups or nested views, each view has its own engine; by default only the current view is searched.
-- **`searchInPreviousEngines: true`**: Search from the current engine along the `previousEngine` chain; returns the first match. Use when RunJS in a popup needs to access a model on the page that opened it.
+- **Default (`searchInPreviousEngines: false`)**: Searches only within the **current engine** by `uid`. In popups or multi-level views, each view has an independent engine; by default, it only searches for models within the current view.
+- **`searchInPreviousEngines: true`**: Searches upwards along the `previousEngine` chain starting from the current engine, returning the first match. This is useful for accessing a model on the page that opened the current popup.
 
 ## Examples
 
@@ -49,16 +49,17 @@ if (block?.resource) {
 }
 ```
 
-### Access page model from inside popup
+### Access a model on the page from a popup
 
 ```ts
+// Access a block on the page that opened the current popup
 const pageBlock = ctx.getModel('page-block-uid', true);
 if (pageBlock) {
   pageBlock.rerender?.();
 }
 ```
 
-### Cross-model update and rerender
+### Cross-model read/write and trigger rerender
 
 ```ts
 const target = ctx.getModel('other-block-uid');
@@ -68,17 +69,17 @@ if (target) {
 }
 ```
 
-### Null check
+### Safety check
 
 ```ts
 const model = ctx.getModel(someUid);
 if (!model) {
-  ctx.message.warning('Target model not found');
+  ctx.message.warning('Target model does not exist');
   return;
 }
 ```
 
 ## Related
 
-- [ctx.model](./model.md): model for current execution context
-- [ctx.blockModel](./block-model.md): parent block of current JS; often no need for `getModel`
+- [ctx.model](./model.md): The model where the current execution context is located.
+- [ctx.blockModel](./block-model.md): The parent block model where the current JS is located; usually accessible without needing `getModel`.

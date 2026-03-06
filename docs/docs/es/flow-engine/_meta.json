@@ -73,6 +73,11 @@
         "type": "custom-link",
         "label": "FlowModel vs React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "Puntos de extensión del plugin RunJS",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

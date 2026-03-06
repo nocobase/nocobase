@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: date calculation node"
+displayName: "Workflow: Tarih hesaplama Node'u"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
+  Workflow içinde toplama, çıkarma, karşılaştırma ve biçimlendirme gibi tarih işlemlerini gerçekleştirmek ve değerlendirmek için kullanılabilir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: date calculation node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-date-calculation/index) bakın.
+:::
+
+# Workflow: Tarih hesaplama Node'u

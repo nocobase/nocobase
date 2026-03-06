@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Overzicht van de oplossing"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Gedetailleerd ontwerp"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Installatie"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "Verouderde CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Meer inhoud"
   }
 ]

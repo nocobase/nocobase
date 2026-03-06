@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sequence"
+displayName: "Campo Collection: Sequence"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
-  Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.
+  Genera automaticamente codici basati su regole configurate, supportando combinazioni di date, numeri e testo.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sequence
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-field-sequence/index).
+:::
+
+# Campo Collection: Sequence

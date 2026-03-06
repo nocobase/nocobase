@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Approval"
+displayName: "Workflow: Zatwierdzanie"
 packageName: '@nocobase/plugin-workflow-approval'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  Wyzwalany, gdy wniosek o zatwierdzenie zostanie zainicjowany za pomocą przycisku akcji lub API. Dedykowany dla procesów zatwierdzania, posiada dedykowane węzły i bloki zatwierdzania do zarządzania dokumentami i śledzenia procesu przetwarzania.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Approval
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-workflow-approval/index).
+:::
+
+# Workflow: Zatwierdzanie

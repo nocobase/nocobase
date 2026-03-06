@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Aggregate node"
+displayName: "Workflow: Węzeł agregacji"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
+  Służy do wykonywania zapytań agregujących w bazie danych w ramach workflow, takich jak: zliczanie, suma, średnia itp.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Aggregate node
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-workflow-aggregate/index).
+:::
+
+# Workflow: Węzeł agregacji

@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/crm/more) bakın.
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Daha Fazla İçerik
 
-Content coming soon...
+> Mevcut CRM çözümü yalnızca önizleme amaçlıdır. Gelecek sürümler NocoBase 2.0 temel alınarak tamamen yeniden yapılandırılacaktır. Daha kapsamlı belgeler o zaman sunulacaktır.
+
+İçerik yakında eklenecektir...

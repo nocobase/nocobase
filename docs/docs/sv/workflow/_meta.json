@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "Arbetsflöden"
+    "label": "Arbetsflöde"
   },
   {
     "type": "custom-link",
@@ -25,27 +25,27 @@
       },
       {
         "type": "custom-link",
-        "label": "Datatabellhändelser",
+        "label": "Händelse i samling",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Schemalagda jobb",
+        "label": "Schemalagd uppgift",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Före-åtgärd-händelser",
+        "label": "Händelse före åtgärd",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Efter-åtgärd-händelser",
+        "label": "Händelse efter åtgärd",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Anpassade åtgärdshändelser",
+        "label": "Anpassad åtgärdshändelse",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -55,7 +55,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Webhooks",
+        "label": "Webhook",
         "link": "/workflow/triggers/webhook"
       }
     ]
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "Artificiell intelligens",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "Stor språkmodell",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Flödes-output",
+            "label": "Flödesutdata",
             "link": "/workflow/nodes/output"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Lägg till data",
+            "label": "Skapa data",
             "link": "/workflow/nodes/create"
           },
           {
@@ -184,7 +184,7 @@
           },
           {
             "type": "custom-link",
-            "label": "SQL-åtgärder",
+            "label": "SQL-åtgärd",
             "link": "/workflow/nodes/sql"
           }
         ]
@@ -216,7 +216,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "HTTP-förfrågningar",
+            "label": "HTTP-begäran",
             "link": "/workflow/nodes/request"
           },
           {
@@ -226,7 +226,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Notiser",
+            "label": "Avisering",
             "link": "/notification-manager/#工作流通知节点"
           },
           {
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "Exekveringshistorik",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

@@ -26,7 +26,7 @@ I arbetsflödets konfigurationsgränssnitt klickar du på plusknappen ("+") i fl
 
 ## Nodkonfiguration
 
-![Aggregerad fråga-nod_Nodkonfiguration](https://static-docs.nocobase.com/5732f747b999230567c6bb5e986fd2.png)
+![Aggregerad fråga-nod_Nodkonfiguration](https://static-docs.nocobase.com/57362f747b9992230567c6bb5e986fd2.png)
 
 ### Aggregeringsfunktion
 
@@ -64,7 +64,7 @@ Därefter skapar du ett arbetsflöde som utlöses av en samlingshändelse. Välj
 
 Lägg sedan till en aggregerad fråga-nod och konfigurera den enligt följande:
 
-![Aggregerad fråga-nod_Exempel_Nodkonfiguration](https://static-docs.nocobase.com/542272e636c6c0a567373d1b37ddda78.png)
+![Aggregerad fråga-nod_Exempel_Nodkonfiguration](https://static-docs.nocobase.com/542272e638c6c0a567373d1b37ddda78.png)
 
 På så sätt, efter att arbetsflödet har utlösts, kommer noden för aggregerad fråga att räkna antalet alla artiklar i kategorin för den nyligen tillagda artikeln och spara resultatet som nodens utdata.
 

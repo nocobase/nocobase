@@ -29,7 +29,7 @@ Eğer bir alt uygulama eklentiyi etkinleştirdiyse, anahtar varsayılan olarak `
 
 Zarf Şifreleme yöntemini kullanır.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Anahtar Oluşturma Süreci
 1. İlk kez şifreli bir alan oluşturulduğunda, sistem otomatik olarak 32 bitlik bir `uygulama anahtarı` oluşturur ve bunu Base64 kodlamasıyla varsayılan depolama dizinine kaydeder.

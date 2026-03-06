@@ -10,7 +10,7 @@
   },
   {
     "type": "custom-link",
-    "label": "بدء سريع",
+    "label": "البدء السريع",
     "link": "/workflow/getting-started"
   },
   {
@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "أحداث جدول البيانات",
+        "label": "أحداث مجموعة البيانات",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -35,17 +35,17 @@
       },
       {
         "type": "custom-link",
-        "label": "حدث ما قبل الإجراء",
+        "label": "أحداث ما قبل الإجراء",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "حدث ما بعد الإجراء",
+        "label": "أحداث ما بعد الإجراء",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "حدث الإجراء المخصص",
+        "label": "أحداث الإجراء المخصص",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -62,7 +62,7 @@
   },
   {
     "type": "custom-link",
-    "label": "العقدة",
+    "label": "العقد",
     "collapsed": true,
     "items": [
       {
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "الذكاء الاصطناعي",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "نموذج لغوي كبير",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -97,7 +97,7 @@
           },
           {
             "type": "custom-link",
-            "label": "التكرار",
+            "label": "حلقة",
             "link": "/workflow/nodes/loop"
           },
           {
@@ -107,7 +107,7 @@
           },
           {
             "type": "custom-link",
-            "label": "تفرع متوازي",
+            "label": "تفرع متوازٍ",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -122,7 +122,7 @@
           },
           {
             "type": "custom-link",
-            "label": "ربط متغيرات JSON",
+            "label": "تعيين متغيرات JSON",
             "link": "/workflow/nodes/json-variable-mapping"
           },
           {
@@ -139,7 +139,7 @@
       },
       {
         "type": "section-header",
-        "label": "حساب",
+        "label": "الحساب",
         "items": [
           {
             "type": "custom-link",
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "إضافة بيانات",
+            "label": "إنشاء بيانات",
             "link": "/workflow/nodes/create"
           },
           {
@@ -191,11 +191,11 @@
       },
       {
         "type": "custom-link",
-        "label": "معالجة يدوية",
+        "label": "المعالجة اليدوية",
         "items": [
           {
             "type": "custom-link",
-            "label": "معالجة يدوية",
+            "label": "المعالجة اليدوية",
             "link": "/workflow/nodes/manual"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "أنواع ممتدة",
+        "label": "الأنواع الممتدة",
         "items": [
           {
             "type": "custom-link",
@@ -221,13 +221,13 @@
           },
           {
             "type": "custom-link",
-            "label": "سكريبت JavaScript",
+            "label": "نص JavaScript البرمجي",
             "link": "/workflow/nodes/javascript"
           },
           {
             "type": "custom-link",
             "label": "إشعار",
-            "link": "/notification-manager/"
+            "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "سجل التنفيذ",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -270,7 +270,7 @@
   },
   {
     "type": "custom-link",
-    "label": "تطوير الإضافات",
+    "label": "تطوير الامتدادات",
     "items": [
       {
         "type": "custom-link",

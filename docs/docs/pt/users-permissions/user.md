@@ -20,7 +20,7 @@ Além disso, você também pode usar a **coleção** de **usuários** nas págin
 
 ## Adicionar Usuário
 
-![](https://static-docs.nocobase.com/4fef9ffc1c17f275b62b462f6385b19.png)
+![](https://static-docs.nocobase.com/4f8ef9ffc1c17f275b62b462f6385b19.png)
 
 ![](https://static-docs.nocobase.com/437828173950bd7c21b40a6243ffe150.png)
 

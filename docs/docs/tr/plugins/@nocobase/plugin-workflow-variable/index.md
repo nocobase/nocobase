@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Custom variable"
+displayName: "Workflow: Custom Variable Node"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
+  Workflow'da geçici verileri kaydetmek için custom variable'lar oluşturmak veya bunlara değer atamak için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Custom variable
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-variable/index) bakın.
+:::
+
+# Workflow: Custom Variable Node

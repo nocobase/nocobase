@@ -1,9 +1,8 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/interface-builder/fields/specific/sub-table) bakın.
 :::
 
-
-# Alt Tablo
+# Alt Tablo (Satır İçi Düzenleme)
 
 ## Giriş
 
@@ -13,23 +12,23 @@ Alt tablo, çoklu ilişki alanlarını yönetmek için idealdir. Hedef koleksiyo
 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
-Alt tablodaki farklı türdeki alanlar, farklı alan bileşenleri gösterir. Büyük alanlar (Zengin Metin, JSON, Çok Satırlı Metin gibi) ise açılır bir pencere aracılığıyla düzenlenir.
+Alt tablodaki farklı türdeki alanlar, farklı alan bileşenleri gösterir. Büyük alanlar (Rich Text, JSON, Long Text gibi) ise açılır bir pencere aracılığıyla düzenlenir.
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 Alt tablodaki ilişki alanları.
 
-Siparişler (Çoktan Bire) > Order Products (Bire Bir) > Opportunity
+Siparişler (One-to-Many) > Order Products (One-to-One) > Opportunity
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
-İlişki alanı bileşeni varsayılan olarak bir açılır menüdür (açılır menü/veri seçici destekler).
+İlişki alanı bileşeni varsayılan olarak bir Single select bileşenidir (Single select/Collection selector destekler).
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
 
 ## Alan Yapılandırma Seçenekleri
 
-### Mevcut Verileri Seçmeye İzin Ver (varsayılan olarak devre dışı)
+### Mevcut Verileri Seçmeye İzin Ver (varsayılan olarak etkindir)
 
 Mevcut verileri seçip ilişkilendirmeyi destekler.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
@@ -38,7 +37,7 @@ Mevcut verileri seçip ilişkilendirmeyi destekler.
 
 ### Alan Bileşeni
 
-[Alan Bileşeni](/interface-builder/fields/association-field): Açılır menü, veri seçici gibi diğer ilişki alanı bileşenlerine geçiş yapın;
+[Alan Bileşeni](/interface-builder/fields/association-field): Single select, Collection selector gibi diğer ilişki alanı bileşenlerine geçiş yapın;
 
 ### Mevcut Verilerin İlişiğini Kesmeye İzin Ver
 

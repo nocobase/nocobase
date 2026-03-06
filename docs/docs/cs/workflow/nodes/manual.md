@@ -31,7 +31,7 @@ Manuální uzel vyžaduje určení uživatele jako vykonavatele úkolu k vyříz
 
 Vyberte uživatele, nebo pomocí proměnné vyberte primární či cizí klíč uživatelských dat z kontextu.
 
-![Manual Node_Configure_Assignee_Select Variable](https://static-docs.nocobase.com/22fbca3b8e21fda3a825abb4b257df909.png)
+![Manual Node_Configure_Assignee_Select Variable](https://static-docs.nocobase.com/22fbca3b8e21fda3a831019037001445.png)
 
 :::info{title=Poznámka}
 V současné době možnost zodpovědné osoby pro manuální uzly nepodporuje zpracování více uživateli. Tato funkce bude přidána v budoucí verzi.
@@ -59,7 +59,7 @@ Datové bloky mohou zobrazovat data spouštěče nebo výsledky zpracování lib
 
 Bloky dat uzlů jsou podobné; můžete vybrat datový výsledek z předchozího uzlu pro zobrazení jako podrobnosti. Například výsledek předchozího výpočetního uzlu může sloužit jako kontextová referenční informace pro úkol zodpovědné osoby.
 
-![Manual Node_Node Configuration_Interface Configuration_Data Block_Node Data](https://static-docs.nocobase.com/a53e258a1a4f45db310a72c2d0a404c.png)
+![Manual Node_Node Configuration_Interface Configuration_Data Block_Node Data](https://static-docs.nocobase.com/a583e26e508e954b47e5ddff80d998c4.png)
 
 :::info{title=Poznámka}
 Vzhledem k tomu, že **pracovní postup** není během konfigurace rozhraní ve spuštěném stavu, v datových blocích se nezobrazují žádná konkrétní data. Relevantní data pro konkrétní instanci **pracovního postupu** uvidíte pouze v rozhraní vyskakovacího okna úkolu k vyřízení poté, co byl **pracovní postup** spuštěn a proveden.
@@ -103,11 +103,11 @@ Pro ruční zpracování je také třeba přidat na stránku seznam úkolů k vy
 
 Můžete vybrat „**Pracovní postup** k vyřízení“ z dostupných bloků na stránce a přidat tak blok seznamu úkolů k vyřízení:
 
-![Manual Node_Add To-do Block](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Manual Node_Add To-do Block](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Příklad bloku seznamu úkolů k vyřízení:
 
-![Manual Node_To-do List](https://static-docs.nocobase.com/cfefb033deebff6b3f6ef4408066e688.png)
+![Manual Node_To-do List](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Podrobnosti úkolu k vyřízení
 

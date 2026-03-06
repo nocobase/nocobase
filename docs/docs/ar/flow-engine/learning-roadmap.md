@@ -4,4 +4,4 @@
 
 # خريطة طريق التعلم
 
-![خريطة طريق التعلم](https://static-docs.nocobase.com/20250915220745.png)
+![خريطة طريق التعلم](https://static-docs.nocobase.com/20251102202401.png)

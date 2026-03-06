@@ -1,22 +1,22 @@
 ---
 pkg: '@nocobase/plugin-workflow-custom-action-trigger'
 ---
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/workflow/triggers/custom-action) voor nauwkeurige informatie.
 :::
 
-
-# Aangepaste Actie-gebeurtenis
+# Aangepaste actie-gebeurtenis
 
 ## Introductie
 
-NocoBase bevat ingebouwde standaard data-acties (toevoegen, verwijderen, bijwerken, bekijken, enz.). Wanneer deze acties niet volstaan voor complexe bedrijfsprocessen, kunt u aangepaste actie-gebeurtenissen gebruiken in een workflow. Door zo'n gebeurtenis te koppelen aan een "Workflow activeren"-knop in een pagina-blok, wordt een aangepaste actie-workflow geactiveerd wanneer een gebruiker erop klikt.
+NocoBase heeft ingebouwde algemene gegevensacties (toevoegen, verwijderen, bewerken, bekijken, enz.). Wanneer deze acties niet voldoen aan complexe zakelijke behoeften, kunt u de aangepaste actie-gebeurtenis in een workflow gebruiken en deze gebeurtenis koppelen aan de knop "Workflow activeren" in een paginablok. Wanneer een gebruiker hierop klikt, wordt een aangepaste actie-workflow geactiveerd.
 
-## Een workflow aanmaken
+## Workflow aanmaken
 
-Wanneer u een workflow aanmaakt, kiest u "Aangepaste Actie-gebeurtenis":
+Selecteer bij het aanmaken van een workflow "Aangepaste actie-gebeurtenis":
 
-![Workflow "Aangepaste Actie-gebeurtenis" aanmaken](https://static-docs.nocobase.com/20240509091820.png)
+![Workflow "Aangepaste actie-gebeurtenis" aanmaken](https://static-docs.nocobase.com/20240509091820.png)
 
 ## Triggerconfiguratie
 
@@ -26,9 +26,9 @@ Wanneer u een workflow aanmaakt, kiest u "Aangepaste Actie-gebeurtenis":
 
 Het contexttype bepaalt aan welke knoppen in blokken de workflow kan worden gekoppeld:
 
-*   Geen context: Dit is een globale gebeurtenis die kan worden gekoppeld aan actieknoppen in de actiebalk en datablokken.
-*   Enkele record: Kan worden gekoppeld aan actieknoppen in datablokken zoals tabelrijen, formulieren en detailweergaven.
-*   Meerdere records: Kan worden gekoppeld aan knoppen voor bulkacties in een tabel.
+* Geen context: een globale gebeurtenis die kan worden gekoppeld aan actieknoppen in actiepanelen en gegevensblokken;
+* Enkele record: kan worden gekoppeld aan actieknoppen in gegevensblokken zoals tabelrijen, formulieren en details;
+* Meerdere records: kan worden gekoppeld aan bulkactieknoppen in een tabel.
 
 ![Triggerconfiguratie_Contexttype](https://static-docs.nocobase.com/20250215135808.png)
 
@@ -52,25 +52,25 @@ De configuratie van actieknoppen in verschillende blokken verschilt afhankelijk 
 
 ### Geen context
 
-> v.1.6.0+
+> v1.6.0+
 
-In de actiebalk en andere datablokken kunt u een "Workflow activeren"-knop toevoegen:
+In het actiepaneel en andere gegevensblokken kunt u een "Workflow activeren"-knop toevoegen:
 
-![Blok actieknop toevoegen_Actiebalk](https://static-docs.nocobase.com/20250215221738.png)
+![Blok actieknop toevoegen_Actiepaneel](https://static-docs.nocobase.com/20250215221738.png)
 
 ![Blok actieknop toevoegen_Kalender](https://static-docs.nocobase.com/20250215221942.png)
 
 ![Blok actieknop toevoegen_Gantt-diagram](https://static-docs.nocobase.com/20250215221810.png)
 
-Nadat u de knop heeft toegevoegd, koppelt u de eerder aangemaakte workflow zonder context. Hier is een voorbeeld met een knop in de actiebalk:
+Nadat u de knop heeft toegevoegd, koppelt u de eerder aangemaakte workflow zonder context. Hier is een voorbeeld met een knop in het actiepaneel:
 
-![Workflow aan knop koppelen_Actiebalk](https://static-docs.nocobase.com/20250215222120.png)
+![Workflow aan knop koppelen_Actiepaneel](https://static-docs.nocobase.com/20250215222120.png)
 
 ![Workflow selecteren om te koppelen_Geen context](https://static-docs.nocobase.com/20250215222234.png)
 
 ### Enkele record
 
-In elk datablok kan een "Workflow activeren"-knop worden toegevoegd aan de actiebalk voor een enkele record, zoals in formulieren, tabelrijen, detailweergaven, enz.:
+In elk gegevensblok kan een "Workflow activeren"-knop worden toegevoegd aan de actiebalk voor een enkele record, zoals in formulieren, tabelrijen, details, enz.:
 
 ![Blok actieknop toevoegen_Formulier](https://static-docs.nocobase.com/20240509165428.png)
 
@@ -90,19 +90,19 @@ Daarna activeert u de aangepaste actie-gebeurtenis door op deze knop te klikken:
 
 ### Meerdere records
 
-> v.1.6.0+
+> v1.6.0+
 
 In de actiebalk van een tabelblok is er bij het toevoegen van een "Workflow activeren"-knop een extra optie om het contexttype te selecteren: "Geen context" of "Meerdere records":
 
 ![Blok actieknop toevoegen_Tabel](https://static-docs.nocobase.com/20250215222507.png)
 
-Wanneer "Geen context" is geselecteerd, is dit een globale gebeurtenis en kan deze alleen worden gekoppeld aan workflows van het type "Geen context".
+Wanneer "Geen context" is geselecteerd, is dit een globale gebeurtenis en kan deze alleen worden gekoppeld aan workflows zonder context.
 
-Wanneer "Meerdere records" is geselecteerd, kunt u een workflow van het type "Meerdere records" koppelen, die kan worden gebruikt voor bulkacties na het selecteren van meerdere records (momenteel alleen ondersteund door tabellen). De beschikbare workflows zijn dan beperkt tot de workflows die zijn geconfigureerd om overeen te komen met de collectie van het huidige datablok:
+Wanneer "Meerdere records" is geselecteerd, kunt u een workflow van het type "Meerdere records" koppelen, die kan worden gebruikt voor bulkacties na het selecteren van meerdere gegevens (momenteel alleen ondersteund door tabellen). De beschikbare workflows zijn beperkt tot de workflows die zijn geconfigureerd om overeen te komen met de collectie van het huidige gegevensblok:
 
 ![20250215224436](https://static-docs.nocobase.com/20250215224436.png)
 
-Wanneer u op de knop klikt om de workflow te activeren, moeten er eerst enkele datarijen in de tabel zijn aangevinkt; anders wordt de workflow niet geactiveerd:
+Wanneer u op de knop klikt om de workflow te activeren, moeten er eerst enkele gegevensrijen in de tabel zijn aangevinkt; anders wordt de workflow niet geactiveerd:
 
 ![20250215224736](https://static-docs.nocobase.com/20250215224736.png)
 
@@ -114,7 +114,7 @@ Maak eerst een "Monsters"-collectie en een "Inspectierecords"-collectie aan, en 
 
 ![Voorbeeld_Monsters collectie](https://static-docs.nocobase.com/20240509172234.png)
 
-Maak vervolgens een "Aangepaste Actie-gebeurtenis" workflow aan. Als u snelle feedback van het proces nodig heeft, kunt u de synchrone modus kiezen (in synchrone modus kunt u geen asynchrone knooppunten zoals handmatige verwerking gebruiken):
+Maak vervolgens een "Aangepaste actie-gebeurtenis" workflow aan. Als u snelle feedback van het proces nodig heeft, kunt u de synchrone modus kiezen (in synchrone modus kunt u geen asynchrone knooppunten zoals handmatige verwerking gebruiken):
 
 ![Voorbeeld_Workflow aanmaken](https://static-docs.nocobase.com/20240509173106.png)
 
@@ -158,7 +158,22 @@ Hiermee is een eenvoudige aangepaste actie-gebeurtenis voltooid. Op vergelijkbar
 
 Het activeren van aangepaste actie-gebeurtenissen is niet beperkt tot gebruikersinterface-acties; het kan ook worden geactiveerd via HTTP API-aanroepen. Specifiek bieden aangepaste actie-gebeurtenissen een nieuw actietype voor alle collectie-acties om workflows te activeren: `trigger`, dat kan worden aangeroepen met de standaard actie-API van NocoBase.
 
-Een workflow die, zoals in het voorbeeld, door een knop wordt geactiveerd, kan als volgt worden aangeroepen:
+:::info{title="Tip"}
+Aangezien externe aanroepen ook gebaseerd moeten zijn op de gebruikersidentiteit, moet u bij het aanroepen via HTTP API, net als bij verzoeken die vanuit de reguliere interface worden verzonden, authenticatie-informatie verstrekken. Dit omvat de `Authorization`-requestheader of `token`-parameter (de token verkregen bij het inloggen), en de `X-Role`-requestheader (de huidige rolnaam van de gebruiker).
+:::
+
+### Geen context
+
+Workflows zonder context moeten worden geactiveerd op de workflows-resource:
+
+```bash
+curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
+  "http://localhost:3000/api/workflows:trigger?triggerWorkflows=workflowKey"
+```
+
+### Enkele record
+
+Een workflow die door een knop wordt geactiveerd, zoals in het voorbeeld, kan als volgt worden aangeroepen:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
@@ -167,13 +182,13 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
 
 Aangezien deze actie betrekking heeft op een enkele record, moet u bij het aanroepen van bestaande data de ID van de datarij opgeven en het `<:id>`-gedeelte in de URL vervangen.
 
-Als het wordt aangeroepen voor een formulier (bijvoorbeeld voor het aanmaken of bijwerken), kunt u de ID weglaten voor een formulier dat nieuwe data aanmaakt, maar u moet wel de ingediende data doorgeven als de uitvoeringscontext:
+Als u een aanroep doet voor een formulier (zoals toevoegen of bijwerken), hoeft u voor een formulier voor nieuwe gegevens geen ID door te geven, maar moet u de ingediende gegevens doorgeven als contextgegevens voor de uitvoering:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger?triggerWorkflows=workflowKey"
 ```
@@ -184,7 +199,7 @@ Voor een updateformulier moet u zowel de ID van de datarij als de bijgewerkte da
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
@@ -202,18 +217,16 @@ Bovendien is de URL-parameter `triggerWorkflows` de sleutel van de workflow; mee
 Na een succesvolle aanroep wordt de aangepaste actie-gebeurtenis voor de corresponderende `samples`-collectie geactiveerd.
 
 :::info{title="Tip"}
-Aangezien externe aanroepen ook gebaseerd moeten zijn op de gebruikersidentiteit, moet u bij het aanroepen via HTTP API, net als bij verzoeken die vanuit de reguliere interface worden verzonden, authenticatie-informatie verstrekken. Dit omvat de `Authorization`-requestheader of `token`-parameter (de token verkregen bij het inloggen), en de `X-Role`-requestheader (de huidige rolnaam van de gebruiker).
+Wanneer u een actie-gebeurtenis activeert via een HTTP API-aanroep, moet u ook letten op de geactiveerde status van de workflow en of de collectieconfiguratie overeenkomt; anders kan de aanroep mislukken of een fout veroorzaken.
 :::
 
-Als u een gebeurtenis wilt activeren voor een één-op-één gerelateerde data (één-op-veel wordt momenteel niet ondersteund) binnen deze actie, kunt u `!` in de parameter gebruiken om de triggerdata van het gerelateerde veld te specificeren:
+### Meerdere records
+
+Vergelijkbaar met de aanroepmethode voor een enkele record, maar de doorgegeven gegevens hebben alleen meerdere primaire-sleutelparameters (`filterByTk[]`) nodig en er hoeft geen data-gedeelte te worden doorgegeven:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
-  "http://localhost:3000/api/posts:trigger/<:id>?triggerWorkflows=workflowKey!category"
+  "http://localhost:3000/api/samples:trigger?filterByTk[]=1&filterByTk[]=2&triggerWorkflows=workflowKey"
 ```
 
-Na een succesvolle aanroep wordt de aangepaste actie-gebeurtenis voor de corresponderende `categories`-collectie geactiveerd.
-
-:::info{title="Tip"}
-Wanneer u een actie-gebeurtenis activeert via een HTTP API-aanroep, moet u ook letten op de geactiveerde status van de workflow en of de collectieconfiguratie overeenkomt; anders kan de aanroep mislukken of een fout veroorzaken.
-:::
+Deze aanroep activeert de aangepaste actie-gebeurtenis in de modus voor meerdere records en gebruikt de gegevens met ID 1 en 2 als gegevens in de triggercontext.

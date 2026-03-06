@@ -1,142 +1,146 @@
-# NocoBase CRM 2.0 Solution
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/solution/crm/index).
+:::
 
-> A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
+# Solusi NocoBase CRM 2.0
 
-## 1. Background
+> Sistem manajemen penjualan modular berbasis platform low-code NocoBase, pengambilan keputusan dibantu karyawan AI
 
-### Challenges Sales Teams Face
+## 1. Latar Belakang
 
-Sales teams commonly encounter these problems: inconsistent lead quality makes fast screening difficult, opportunity follow-ups slip through the cracks, customer information is scattered across emails and multiple systems, sales forecasts rely on gut feeling, and quote approval processes are ad hoc.
+### Tantangan yang Dihadapi Tim Penjualan
 
-**Typical scenarios:** rapid lead evaluation and assignment, opportunity health monitoring, customer churn alerts, multi-level quote approvals, linking emails to customers and opportunities.
+Tim penjualan perusahaan dalam operasional sehari-hari sering menghadapi masalah ini: kualitas prospek yang tidak merata sehingga sulit disaring dengan cepat, tindak lanjut peluang bisnis yang mudah terlewat, informasi pelanggan yang tersebar di email dan berbagai sistem, prakiraan penjualan yang sepenuhnya bergantung pada pengalaman, serta proses persetujuan penawaran yang tidak baku.
 
-### Target Users
+**Skenario Khas:** Evaluasi dan alokasi prospek secara cepat, pemantauan kesehatan peluang bisnis, peringatan dini kehilangan pelanggan, persetujuan penawaran bertingkat, pengaitan email dengan pelanggan/peluang bisnis.
 
-B2B sales, project-based sales, and cross-border trade teams at small-to-mid and mid-to-large enterprises. These organizations are graduating from Excel/email management to systematic operations and have high requirements for customer data security.
+### Target Pengguna
 
-### Limitations of Existing Solutions
+Ditujukan untuk tim penjualan B2B, penjualan berbasis proyek, dan penjualan perdagangan luar negeri di perusahaan skala kecil-menengah hingga besar. Perusahaan-perusahaan ini sedang melakukan peningkatan dari manajemen Excel/email ke manajemen sistematis, serta memiliki persyaratan tinggi terhadap keamanan data pelanggan.
 
-- **High cost**: Salesforce/HubSpot charge per seat, which is unaffordable for most SMEs
-- **Feature overload**: Enterprise CRMs are bloated; less than 20% of features are actually used, yet learning costs are high
-- **Hard to customize**: SaaS systems cannot easily adapt to your own business processes — even changing a field requires a ticket
-- **Data security**: Customer data stored on third-party servers creates compliance and security risks
-- **Expensive to build in-house**: Custom development has long cycles and high maintenance costs; adapting to business changes is slow
+### Kekurangan Solusi Saat Ini
 
----
-
-## 2. Differentiated Advantages
-
-**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
-
-**Platform-level advantages:**
-
-- **Configuration-first**: Data models, page layouts, and business processes are all configurable via UI — no code required
-- **Low-code rapid deployment**: Faster than custom development, more flexible than SaaS
-- **Modular and decomposable**: Modules are independently designed and can be toggled as needed; minimum viable setup requires only Customer + Opportunity
-
-**What traditional CRMs can't do, or can only do at prohibitive cost:**
-
-- **Data sovereignty**: Self-hosted deployment — your customer data stays on your own servers, meeting compliance requirements
-- **Native AI employee integration**: AI employees are deeply embedded in business pages and automatically read data context — not just "an AI button"
-- **All designs are reproducible**: Users can extend the solution template independently, without vendor dependency
+- **Biaya tinggi**: Salesforce/HubSpot mengenakan biaya per pengguna, yang sulit ditanggung oleh UKM
+- **Fitur berlebihan**: CRM besar memiliki fitur yang terlalu banyak, biaya pembelajaran tinggi, dan fitur yang benar-benar digunakan kurang dari 20%
+- **Kustomisasi sulit**: Sistem SaaS sulit diadaptasi dengan proses bisnis perusahaan sendiri, bahkan mengubah satu bidang (field) pun harus melalui proses formal
+- **Keamanan data**: Data pelanggan disimpan di server pihak ketiga, menimbulkan risiko kepatuhan dan keamanan yang tinggi
+- **Biaya pengembangan mandiri tinggi**: Siklus pengembangan tradisional panjang, biaya pemeliharaan tinggi, dan sulit disesuaikan dengan cepat saat bisnis berubah
 
 ---
 
-## 3. Design Principles
+## 2. Keunggulan Diferensiasi
 
-- **Low cognitive load**: Clean interface, core features are immediately visible
-- **Business before technology**: Focus on sales scenarios, not technical showmanship
-- **Evolvable**: Supports phased rollout and incremental improvement
-- **Configuration over code**: If it can be configured, don't write code
-- **Human-AI collaboration**: AI employees assist decision-making; they don't replace salespeople's judgment
+**Produk arus utama di pasar:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, dll.
 
----
+**Keunggulan tingkat platform:**
 
-## 4. Solution Overview
+- **Prioritas konfigurasi**: Model data, tata letak halaman, dan proses bisnis semuanya dapat dikonfigurasi melalui UI tanpa perlu menulis kode
+- **Pembangunan cepat low-code**: Lebih cepat daripada pengembangan mandiri, lebih fleksibel daripada SaaS
+- **Modul dapat dibongkar-pasang**: Setiap modul dirancang secara independen dan dapat dikurangi sesuai kebutuhan; versi minimum yang dapat digunakan hanya memerlukan dua modul: Pelanggan + Peluang Bisnis
 
-### Core Capabilities
+**Hal yang tidak bisa dilakukan CRM tradisional atau dengan biaya yang sangat tinggi:**
 
-- **End-to-end pipeline**: Lead → Opportunity → Quotation → Order → Customer Success
-- **Modular**: Full version has 7 modules; minimum viable setup needs only 2 core modules
-- **Multi-currency**: CNY/USD/EUR/GBP/JPY with automatic conversion
-- **AI assistance**: Lead scoring, win probability prediction, next-best-action suggestions
-
-### Core Modules
-
-| Module | Required | Description | AI Assistance |
-|--------|:--------:|-------------|--------------|
-| Customer Management | ✅ | Customer profiles, contacts, account hierarchy | Health scoring, churn alerts |
-| Opportunity Management | ✅ | Sales funnel, stage progression, activity log | Win probability, next-step suggestions |
-| Lead Management | — | Lead entry, status flow, conversion tracking | Smart scoring |
-| Quotation Management | — | Multi-currency, version control, approval workflow | — |
-| Order Management | — | Order creation, payment tracking | — |
-| Product Management | — | Product catalog, categories, tiered pricing | — |
-| Email Integration | — | Send/receive emails, CRM association | Sentiment analysis, summary generation |
-
-### Solution Editions
-
-- **Enterprise** (all 7 modules): Full-process B2B sales teams
-- **Standard** (Customer + Opportunity + Quotation + Order + Product): SME sales management
-- **Lite** (Customer + Opportunity): Simple customer and opportunity tracking
-- **Trade** (Customer + Opportunity + Quotation + Email): Cross-border trade teams
+- **Kedaulatan data**: Penerapan mandiri (self-hosted), data pelanggan disimpan di server milik sendiri untuk memenuhi persyaratan kepatuhan
+- **Integrasi asli karyawan AI**: Karyawan AI tertanam secara mendalam di halaman bisnis, secara otomatis memahami konteks data, bukan sekadar "menambahkan tombol AI"
+- **Semua desain dapat direplikasi**: Pengguna dapat memperluas sendiri berdasarkan templat solusi, tidak bergantung pada vendor
 
 ---
 
-## 5. AI Employees
+## 3. Prinsip Desain
 
-The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages. Unlike generic AI chat tools, they automatically recognize the data you're currently viewing — whether a lead list, opportunity details, or email thread — no copy-pasting required.
-
-**How to use**: Click the AI floating button in the lower-right corner of any page, or click the AI icon next to a block to summon the corresponding employee. You can also pre-configure common tasks for each employee and trigger them with a single click next time.
-
-| Employee | Role | Typical Use in CRM |
-|----------|------|--------------------|
-| **Viz** | Insight Analyst | Lead channel analysis, sales trends, pipeline health |
-| **Ellis** | Email Expert | Draft follow-up emails, generate communication summaries |
-| **Lexi** | Translation Assistant | Multilingual emails, cross-border customer communication |
-| **Dara** | Visualization Expert | Configure report charts, build dashboards |
-| **Orin** | Task Planner | Daily priorities, next-step action suggestions |
-
-### Business Value of AI Employees
-
-| Value Dimension | Specific Impact |
-|-----------------|----------------|
-| Efficiency | Lead scoring done automatically, saving manual screening time; follow-up emails drafted in one click |
-| Empowerment | Sales data analysis always at your fingertips — no waiting for the data team |
-| Communication quality | Professional emails + AI polish; cross-border teams communicate fluently in multiple languages |
-| Decision support | Real-time win probability and next-step suggestions reduce deals lost to missed follow-ups |
+- **Biaya kognitif rendah**: Antarmuka sederhana, fitur inti jelas dalam sekejap
+- **Bisnis sebelum teknologi**: Fokus pada skenario penjualan, bukan pamer teknologi
+- **Dapat berevolusi**: Mendukung peluncuran bertahap dan penyempurnaan secara progresif
+- **Prioritas konfigurasi**: Selama bisa dikonfigurasi, jangan menulis kode
+- **Kolaborasi manusia dan AI**: Karyawan AI membantu pengambilan keputusan, bukan menggantikan penilaian personel penjualan
 
 ---
 
-## 6. Highlights
+## 4. Ikhtisar Solusi
 
-**Modular** — Each module is independently designed and can be toggled on or off. The minimum setup needs only Customer + Opportunity. Start lean, grow as needed.
+### Kemampuan Inti
 
-**Complete sales loop** — Lead → Opportunity → Quotation → Order → Payment → Customer Success. Full end-to-end data flow with no need to switch between systems.
+- **Manajemen alur lengkap**: Prospek → Peluang Bisnis → Penawaran → Pesanan → Kesuksesan Pelanggan
+- **Modul dapat dipangkas**: Versi lengkap memiliki 7 modul, versi minimum hanya memerlukan 2 modul inti
+- **Dukungan multi-mata uang**: Konversi otomatis CNY/USD/EUR/GBP/JPY
+- **Bantuan AI**: Penilaian prospek, prediksi tingkat kemenangan, saran tindakan selanjutnya
 
-**Native AI employee integration** — Not just "an AI button." 5 AI employees are embedded in every business page, automatically reading current data context and delivering analysis and suggestions with one click.
+### Modul Inti
 
-**Deep email integration** — Emails are automatically linked to customers, contacts, and opportunities. Supports Gmail and Outlook. Multiple English email templates cover common sales scenarios.
+| Modul | Wajib | Keterangan | Bantuan AI |
+|------|:----:|------|--------|
+| Manajemen Pelanggan | ✅ | Profil pelanggan, kontak, hierarki pelanggan | Evaluasi kesehatan, peringatan kehilangan |
+| Manajemen Peluang Bisnis | ✅ | Corong penjualan, kemajuan tahapan, catatan aktivitas | Prediksi tingkat kemenangan, saran langkah selanjutnya |
+| Manajemen Prospek | - | Input prospek, alur status, pelacakan konversi | Penilaian cerdas |
+| Manajemen Penawaran | - | Multi-mata uang, manajemen versi, alur kerja persetujuan | - |
+| Manajemen Pesanan | - | Pembuatan pesanan, pelacakan pembayaran | - |
+| Manajemen Produk | - | Katalog produk, kategori, harga bertingkat | - |
+| Integrasi Email | - | Kirim/terima email, pengaitan CRM | Analisis sentimen, pembuatan ringkasan |
 
-**Multi-currency trade support** — Supports CNY/USD/EUR/GBP/JPY with configurable exchange rate conversion, designed for cross-border and international sales teams.
+### Pemangkasan Solusi
 
----
-
-## 7. Getting Started
-
-Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
-
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
-
----
-
-## 8. Roadmap
-
-- **Opportunity automation**: Stage progression triggers notifications; stagnant opportunities auto-alert, reducing manual oversight
-- **Approval workflows**: Multi-level quote approval with mobile approval support
-- **AI automation**: AI employees embedded in workflows for unattended background execution — automated lead scoring and opportunity analysis
-- **Mobile-friendly**: Mobile-optimized interface for on-the-go customer follow-up
-- **Multi-tenant support**: Horizontal scaling across spaces/applications, distributing to independent sales teams
+- **Versi Lengkap** (seluruh 7 modul): Untuk tim penjualan B2B dengan proses yang lengkap
+- **Versi Standar** (Pelanggan + Peluang Bisnis + Penawaran + Pesanan + Produk): Untuk manajemen penjualan UKM
+- **Versi Ringan** (Pelanggan + Peluang Bisnis): Untuk pelacakan pelanggan dan peluang bisnis yang sederhana
+- **Versi Perdagangan Luar Negeri** (Pelanggan + Peluang Bisnis + Penawaran + Email): Untuk perusahaan tipe perdagangan luar negeri
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 5. Karyawan AI
+
+Sistem CRM telah menyediakan 5 karyawan AI yang tertanam secara mendalam di halaman bisnis. Berbeda dengan alat obrolan AI biasa, mereka dapat secara otomatis mengenali data yang sedang Anda lihat—baik itu daftar prospek, detail peluang bisnis, atau catatan email—tanpa perlu salin-tempel secara manual, dan langsung mulai bekerja.
+
+**Cara Penggunaan**: Klik bola melayang AI di pojok kanan bawah halaman, atau langsung klik ikon AI di samping blok untuk memanggil karyawan yang sesuai. Anda juga dapat mengatur tugas umum untuk setiap karyawan, sehingga lain kali cukup satu klik untuk memicu tugas tersebut.
+
+| Karyawan | Tanggung Jawab | Penggunaan Khas dalam CRM |
+|------|------|-----------------|
+| **Viz** | Analis Wawasan | Analisis saluran prospek, tren penjualan, kesehatan pipeline |
+| **Ellis** | Pakar Email | Menyusun draf email tindak lanjut, membuat ringkasan komunikasi |
+| **Lexi** | Asisten Terjemahan | Email multibahasa, komunikasi pelanggan luar negeri |
+| **Dara** | Pakar Visualisasi | Konfigurasi laporan dan grafik, pembangunan dasbor |
+| **Orin** | Perencana Tugas | Prioritas harian, saran tindakan selanjutnya |
+
+### Nilai Bisnis Karyawan AI
+
+| Dimensi Nilai | Efek Spesifik |
+|----------|----------|
+| Meningkatkan Efisiensi | Penilaian prospek selesai otomatis, menghemat penyaringan manual; draf email tindak lanjut disusun dengan satu klik |
+| Memberdayakan Karyawan | Analisis data penjualan selalu tersedia di ujung jari, tanpa perlu menunggu tim data membuat laporan |
+| Meningkatkan Kualitas Komunikasi | Email profesional + pemolesan AI, komunikasi multibahasa tanpa hambatan bagi tim perdagangan luar negeri |
+| Dukungan Keputusan | Penilaian tingkat kemenangan real-time dan saran langkah selanjutnya, mengurangi hilangnya peluang bisnis karena tindak lanjut yang terlewat |
+
+---
+
+## 6. Sorotan
+
+**Modul dapat dibongkar-pasang** — Setiap modul dirancang secara independen dan dapat diaktifkan/dinonaktifkan secara terpisah. Konfigurasi minimum hanya memerlukan dua modul inti: Pelanggan + Peluang Bisnis, cukup gunakan yang diperlukan tanpa paksaan untuk menggunakan semuanya.
+
+**Siklus penjualan lengkap** — Prospek → Peluang Bisnis → Penawaran → Pesanan → Pembayaran → Kesuksesan Pelanggan, data terintegrasi di seluruh rantai, tidak perlu berpindah antar sistem.
+
+**Integrasi asli karyawan AI** — Bukan sekadar "menambahkan tombol AI", melainkan 5 karyawan AI yang menyatu dalam setiap halaman bisnis, secara otomatis mendapatkan konteks data saat ini, dan memicu analisis serta saran dengan satu klik.
+
+**Integrasi email mendalam** — Email secara otomatis dikaitkan dengan pelanggan, kontak, dan peluang bisnis, mendukung Gmail dan Outlook, dengan berbagai templat email bahasa Inggris yang mencakup skenario penjualan umum.
+
+**Dukungan perdagangan luar negeri multi-mata uang** — Mendukung CNY/USD/EUR/GBP/JPY, konfigurasi konversi nilai tukar, cocok untuk tim penjualan perdagangan luar negeri dan lintas batas.
+
+---
+
+## 7. Instalasi dan Penggunaan
+
+Gunakan fitur manajemen migrasi NocoBase untuk memigrasikan paket aplikasi CRM ke lingkungan target dengan satu klik.
+
+**Siap pakai:** Menyediakan koleksi data, alur kerja, dan dasbor yang telah dikonfigurasi sebelumnya, tampilan multi-peran (Manajer Penjualan/Perwakilan Penjualan/Eksekutif), serta 37 templat email yang mencakup skenario penjualan umum.
+
+---
+
+## 8. Perencanaan Selanjutnya
+
+- **Otomatisasi Peluang Bisnis**: Perubahan tahapan memicu notifikasi, peringatan otomatis untuk peluang bisnis yang mandek, mengurangi pemantauan manual
+- **Alur Kerja Persetujuan**: Alur kerja persetujuan penawaran bertingkat, mendukung persetujuan melalui perangkat seluler
+- **Otomatisasi AI**: Karyawan AI tertanam dalam alur kerja, mendukung eksekusi otomatis di latar belakang untuk mencapai penilaian prospek dan analisis peluang bisnis tanpa pengawasan
+- **Adaptasi Perangkat Seluler**: Antarmuka ramah seluler, menindaklanjuti pelanggan kapan saja dan di mana saja
+- **Dukungan Multi-tenant**: Perluasan horizontal multi-ruang/multi-aplikasi, didistribusikan ke tim penjualan yang berbeda untuk operasional independen
+
+---
+
+*Versi Dokumen: v2.0 | Tanggal Pembaruan: 2026-02-06*

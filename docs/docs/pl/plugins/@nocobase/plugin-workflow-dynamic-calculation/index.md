@@ -1,8 +1,8 @@
 ---
-displayName: "Workflow: Dynamic calculation node"
+displayName: "Przepływ pracy: Węzeł obliczeniowy wyrażenia dynamicznego"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
+  Służy do dynamicznego obliczania wyrażeń na podstawie wierszy danych w przepływach pracy.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Workflow: Dynamic calculation node
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-workflow-dynamic-calculation/index).
+:::
 
-> Note: This plugin is deprecated.
+# Przepływ pracy: Węzeł obliczeniowy wyrażenia dynamicznego
+
+> Uwaga: Ta wtyczka została wycofana (deprecated).

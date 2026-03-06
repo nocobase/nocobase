@@ -1,12 +1,16 @@
 ---
-displayName: "Notification: In-app message"
+displayName: "通知：インアプリメッセージ"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |
-  It supports users in receiving real-time message notifications within the NocoBase application.
+  ユーザーが NocoBase アプリ内でリアルタイムに通知を受信できるようにします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification: In-app message
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-notification-in-app-message/index)をご参照ください。
+:::
+
+# 通知：インアプリメッセージ

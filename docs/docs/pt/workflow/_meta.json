@@ -1,51 +1,51 @@
 [
   {
     "type": "section-header",
-    "label": "Fluxo de Trabalho"
+    "label": "Fluxo de trabalho"
   },
   {
     "type": "custom-link",
-    "label": "Visão Geral",
+    "label": "Visão geral",
     "link": "/workflow/index"
   },
   {
     "type": "custom-link",
-    "label": "Início Rápido",
+    "label": "Início rápido",
     "link": "/workflow/getting-started"
   },
   {
     "type": "custom-link",
-    "label": "Gatilho",
+    "label": "Gatilhos",
     "collapsed": true,
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/workflow/triggers/index"
       },
       {
         "type": "custom-link",
-        "label": "Evento de tabela de dados",
+        "label": "Eventos de coleção",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Tarefa agendada",
+        "label": "Tarefas agendadas",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Evento antes da ação",
+        "label": "Eventos pré-ação",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento após a ação",
+        "label": "Eventos pós-ação",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Evento de ação personalizada",
+        "label": "Eventos de ação personalizada",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -62,21 +62,21 @@
   },
   {
     "type": "custom-link",
-    "label": "Nó",
+    "label": "Nós",
     "collapsed": true,
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/workflow/nodes/index"
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "Inteligência Artificial",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "Grande Modelo de Linguagem",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -112,7 +112,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Chamar workflow",
+            "label": "Chamar fluxo de trabalho",
             "link": "/workflow/nodes/subflow"
           },
           {
@@ -160,11 +160,11 @@
       },
       {
         "type": "section-header",
-        "label": "Operação de dados",
+        "label": "Operações de dados",
         "items": [
           {
             "type": "custom-link",
-            "label": "Adicionar dados",
+            "label": "Criar dados",
             "link": "/workflow/nodes/create"
           },
           {
@@ -205,18 +205,18 @@
           },
           {
             "type": "custom-link",
-            "label": "CC (Enviar cópia)",
+            "label": "CC",
             "link": "/workflow/nodes/cc"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Estender tipo",
+        "label": "Tipos de extensão",
         "items": [
           {
             "type": "custom-link",
-            "label": "Requisição HTTP",
+            "label": "Solicitação HTTP",
             "link": "/workflow/nodes/request"
           },
           {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Log de execução",
-    "link": "/workflow/advanced/execution"
+    "label": "Registros de execução",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -270,21 +270,21 @@
   },
   {
     "type": "custom-link",
-    "label": "Desenvolvimento de Extensões",
+    "label": "Desenvolvimento de extensões",
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/workflow/development/index"
       },
       {
         "type": "custom-link",
-        "label": "Estender tipo de gatilho",
+        "label": "Estender tipos de gatilho",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Estender tipo de nó",
+        "label": "Estender tipos de nó",
         "link": "/workflow/development/node"
       },
       {

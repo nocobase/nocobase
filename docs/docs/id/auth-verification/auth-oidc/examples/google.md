@@ -14,7 +14,7 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 
 Masuk ke antarmuka konfigurasi dan isi URL pengalihan yang diotorisasi. URL pengalihan dapat diperoleh saat menambahkan autentikator di NocoBase, biasanya adalah `http(s)://host:port/api/oidc:redirect`. Lihat bagian [Panduan Pengguna - Konfigurasi](../index.md#konfigurasi).
 
-![](https://static-docs.nocobase.com/2407bf52ec966a16334894cb3d9d126.png)
+![](https://static-docs.nocobase.com/24078bf52ec966a16334894cb3d9d126.png)
 
 ## Tambahkan Autentikator Baru di NocoBase
 

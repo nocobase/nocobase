@@ -20,7 +20,7 @@ ER-relation
 
 Fältkonfiguration
 
-![alt text](https://static-docs.nocobase.com/7665a87e094b4fb0c9426a108f87105.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
 ## En-till-en (Tillhör)
 
@@ -32,7 +32,7 @@ ER-relation
 
 Fältkonfiguration
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a34982da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## Parameterbeskrivningar
 

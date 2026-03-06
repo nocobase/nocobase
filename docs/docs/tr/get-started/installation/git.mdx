@@ -1,15 +1,14 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/get-started/installation/git) bakın.
 :::
 
-
-# Git Kaynağından Kurulum
+# Git Kaynak Kod Kurulumu
 
 :::tip Ön Koşullar
 
-- Git, Node.js 20+ ve Yarn 1.22.x kurulu olmalı.
-- Gerekli veritabanlarından biri (MySQL 8.0.17+, MariaDB 10.9+ veya PostgreSQL 10+) yapılandırılmış ve çalışır durumda olmalı.
-- Ağ ortamınızdan dolayı, yerel bir yansımaya geçmeniz önerilir (zorunlu değildir).
+- Git, Node.js 20+ ve Yarn 1.22.x yüklü olmalı
+- Gerekli veritabanlarından biri (MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+) yapılandırılmış ve başlatılmış olmalı
+- Ağ ortamı nedenlerinden dolayı, yerel bir yansıma kullanmanız önerilir (zorunlu değildir)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -18,9 +17,9 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. NocoBase'i Yerel Makinenize İndirin
+## 1. NocoBase'i yerel makineye indirin
 
-Bir NocoBase sürümü seçin ([Sürüm Karşılaştırması](../quickstart.md)) ve ilgili komutu çalıştırın.
+NocoBase sürümünü seçin ([Sürüm karşılaştırması](../quickstart.md)) ve ilgili komutu çalıştırın.
 
 <Tabs>
 <Tab label="Latest sürümü">
@@ -46,26 +45,26 @@ git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocob
 </Tab>
 </Tabs>
 
-## 2. Dizin Değiştirme
+## 2. Dizin değiştirin
 
 ```bash
 cd my-nocobase
 ```
 
-## 3. Bağımlılıkları Yükleme
+## 3. Bağımlılıkları yükleyin
 
-📢 Ağ ortamınız, sistem yapılandırmanız ve diğer faktörlere bağlı olarak bu adım on dakikadan fazla sürebilir.
+📢 Ağ ortamı, sistem yapılandırması ve diğer faktörlerin etkisiyle, bu adım on dakikadan fazla sürebilir.
 
 ```bash
 yarn install --frozen-lockfile
 ```
 
-## 4. Ortam Değişkenlerini Ayarlama
+## 4. Ortam değişkenlerini ayarlayın
 
-NocoBase için gerekli ortam değişkenleri kök dizindeki `.env` dosyasında saklanır. Ortam değişkenlerini kendi durumunuza göre düzenleyin.
+NocoBase için gerekli ortam değişkenleri kök dizindeki `.env` dosyasında saklanır, ortam değişkenlerini gerçek duruma göre düzenleyin.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=Europe/Istanbul
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432
@@ -74,43 +73,44 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-:::warning Ortam Değişkeni Açıklamaları
+:::warning Ortam değişkeni açıklamaları
 
-- `TZ`, uygulamanın saat dilimini ayarlamak için kullanılır ve varsayılan olarak işletim sisteminin saat dilimidir.
-- `APP_KEY`, uygulama için bir gizli anahtardır ve kullanıcı token'ları oluşturmak gibi işlemler için kullanılır (eğer `APP_KEY` değiştirilirse, eski token'lar da geçersiz hale gelir). Herhangi bir rastgele dize olabilir. Lütfen kendi gizli anahtarınızla değiştirin ve dışarıya sızdırmadığınızdan emin olun.
-- `DB_*` veritabanı ile ilgilidir. Eğer örnekteki varsayılan veritabanı hizmetini kullanmıyorsanız, lütfen kendi durumunuza göre düzenleyin.
+- `TZ`, uygulamanın saat dilimini ayarlamak için kullanılır, varsayılan olarak işletim sisteminin saat dilimidir;
+- `APP_KEY`, uygulamanın gizli anahtarıdır, kullanıcı token'ları vb. oluşturmak için kullanılır (eğer `APP_KEY` değiştirilirse, eski token'lar da geçersiz hale gelir). Herhangi bir rastgele dize olabilir. Lütfen kendi gizli anahtarınızla değiştirin ve dışarıya sızdırılmadığından emin olun;
+- `DB_*` veritabanı ile ilgilidir, eğer örnekteki varsayılan veritabanı hizmeti değilse, lütfen gerçek duruma göre düzenleyin.
 
 :::
 
-## 5. NocoBase Kurulumu
+## 5. NocoBase'i kurun
 
 ```bash
-yarn nocobase install --lang=zh-CN
+yarn nocobase install --lang=tr-TR
 ```
 
-## 6. NocoBase'i Başlatma
+## 6. NocoBase'i başlatın
 
-**Geliştirme Ortamı**
+
+**Geliştirme ortamı**
 
 ```bash
 yarn dev
 ```
 
-**Üretim Ortamı (Önerilmez)**
+**Üretim ortamı (önerilmez)**
 
-Üretim ortamında doğrudan kaynak koddan dağıtım yapılması önerilmez. Üretim için lütfen [Üretim Ortamında Dağıtım](../deployment/production.md) belgesine bakın.
+Üretim ortamında doğrudan kaynak koddan dağıtım yapılması önerilmez, üretim ortamı için lütfen [Üretim ortamı dağıtımı](../deployment/production.md) belgesine bakın.
 
 ```bash
 yarn build
 yarn start
 ```
 
-## 7. NocoBase'e Giriş Yapma
+## 7. NocoBase'e giriş yapın
 
-Tarayıcınızda [http://localhost:13000](http://localhost:13000) adresini açın. Başlangıçtaki hesap ve parola `admin@nocobase.com` ve `admin123`'tür.
+Tarayıcıyı kullanarak [http://localhost:13000](http://localhost:13000) adresini açın, başlangıç kullanıcı adı ve parolası `admin@nocobase.com` ve `admin123`'tür.
 
-:::warning Hesap Güvenliği Uyarısı
+:::warning Hesap güvenliği uyarısı
 
-İlk kez giriş yaptıktan sonra, sistem güvenliğini sağlamak için lütfen varsayılan parolayı hemen değiştirin.
+İlk kez giriş yaptıktan sonra, sistem güvenliğini sağlamak için lütfen varsayılan parolayı zamanında değiştirin.
 
 :::

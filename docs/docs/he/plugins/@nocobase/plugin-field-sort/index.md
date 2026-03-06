@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "שדה אוסף: מיון"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  משמש למיון הנתונים באוסף.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-field-sort/index).
+:::
+
+# שדה אוסף: מיון

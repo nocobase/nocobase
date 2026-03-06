@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "תרשימים (מיושן)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  תוסף זה מיושן, אנא השתמש בתוסף ויזואליזציית נתונים במקום זאת.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-charts/index).
+:::
 
-> Note: This plugin is deprecated.
+# תרשימים (מיושן)
+
+> הערה: תוסף זה מיושן (deprecated).

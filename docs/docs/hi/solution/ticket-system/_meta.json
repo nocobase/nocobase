@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "समाधान का अवलोकन"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "विस्तृत डिज़ाइन"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "इंस्टॉलेशन"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "अधिक सामग्री"
   }
 ]

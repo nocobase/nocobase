@@ -1,15 +1,19 @@
 ---
-displayName: "RabbitMQ queue adapter"
+displayName: "RabbitMQ-köadapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with RabbitMQ.
+  Används för att hantera applikationens meddelandeköer med RabbitMQ.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# RabbitMQ queue adapter
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-queue-adapter-rabbitmq/index).
+:::
+
+# RabbitMQ-köadapter

@@ -1,12 +1,16 @@
 ---
-displayName: "Theme editor"
+displayName: "محرر السمات"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
-  Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.
+  تخصيص ألوان واجهة المستخدم وأحجامها وما إلى ذلك، وحفظ النتيجة كسمة للتبديل بين سمات متعددة.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Theme editor
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-theme-editor/index).
+:::
+
+# محرر السمات

@@ -1,14 +1,18 @@
 ---
-displayName: "UI templates"
+displayName: "UI-sjablonen"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
 description: |
-  Provides block templates and popup templates for UI reuse.
+  Biedt de mogelijkheid om bloksjablonen en pop-upsjablonen te hergebruiken.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-ui-templates/index) voor nauwkeurige informatie.
+:::
+
+# UI-sjablonen

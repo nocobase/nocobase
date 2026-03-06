@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Batch update"
+displayName: "Akce: Hromadná aktualizace"
 packageName: '@nocobase/plugin-action-bulk-update'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Batch update all records or selected records.
+  Hromadná aktualizace všech nebo vybraných záznamů.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Batch update
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-action-bulk-update/index).
+:::
+
+# Akce: Hromadná aktualizace

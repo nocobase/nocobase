@@ -1,35 +1,73 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/ai-employees/index).
 :::
 
+# Översikt
 
-# AI-medarbetare · Kom igång
+![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
 
-I NocoBase är AI-medarbetare inte chattbotar eller isolerade agenter – de är intelligenta kollegor som är sömlöst integrerade i ert affärssystem, förstår affärskontext och direkt utför uppgifter.
+AI-medarbetare (`AI Employees`) är agent-förmågor som är djupt integrerade i NocoBase affärssystem.
 
-De dyker upp där ni behöver dem – bredvid tabeller och formulär – så att ni enkelt kan kalla på dem.
+De är inte bara "chattbotar", utan "digitala kollegor" som direkt kan förstå kontext och utföra åtgärder i affärsgränssnittet:
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+- **Förstår affärskontext**: Uppfattar aktuell sida, block, datastruktur och markerat innehåll.
+- **Kan utföra åtgärder direkt**: Kan anropa färdigheter för att slutföra uppgifter som sökning, analys, ifyllnad, konfiguration och generering.
+- **Rollbaserat samarbete**: Konfigurera olika medarbetare efter befattning och växla mellan modeller i konversationen för att samarbeta.
 
-Ni kan också kalla på dem från medarbetarlistan i sidans nedre högra hörn.
+## 5 minuters startväg
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+Se först [Snabbstart](/ai-employees/quick-start) och slutför den minsta användbara konfigurationen i följande ordning:
 
-De hämtar automatiskt data som kontext – till exempel hämtar **Viz** bredvid ett tabellblock automatiskt data från tabellen och anropar lämpliga verktyg för att bearbeta den. Detta innebär att ni inte längre behöver kopiera data till en chattbot.
+1. Konfigurera minst en [LLM-tjänst](/ai-employees/features/llm-service).
+2. Aktivera minst en [AI-medarbetare](/ai-employees/features/enable-ai-employee).
+3. Öppna en konversation och börja [samarbeta med AI-medarbetare](/ai-employees/features/collaborate).
+4. Aktivera [Webbsökning](/ai-employees/features/web-search) och [Snabbupgifter](/ai-employees/features/task) vid behov.
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.13.35-2025-11-02-12-13-46.mp4" type="video/mp4"></video>
+## Funktionskarta
 
-De kan också automatiskt förstå sidstrukturer som kontext – till exempel hämtar **Dex** bredvid ett formulärblock automatiskt formulärets fältstruktur och anropar rätt verktyg för att agera på sidan. Detta innebär att ni inte behöver kopiera tillbaka data från en chattbot.
+### A. Grundläggande konfiguration (Administratör)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.16.07-2025-11-02-12-16-21.mp4" type="video/mp4"></video>
+- [Konfigurera LLM-tjänst](/ai-employees/features/llm-service): Anslut Provider, konfigurera och hantera tillgängliga modeller.
+- [Aktivera AI-medarbetare](/ai-employees/features/enable-ai-employee): Aktivera/inaktivera inbyggda medarbetare, kontrollera tillgänglighetsområde.
+- [Skapa ny AI-medarbetare](/ai-employees/features/new-ai-employees): Definiera roll, rollinställning, välkomstmeddelande och förmågegränser.
+- [Använda färdigheter](/ai-employees/features/tool): Konfigurera färdighetsbehörigheter (`Ask` / `Allow`), kontrollera körningsrisker.
 
-Ni kan också direkt välja element på sidan och skicka dem till en AI-medarbetare, vilket gör att de automatiskt kan extrahera motsvarande data och struktur.
+### B. Dagligt samarbete (Affärsanvändare)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.17.25-2025-11-02-12-17-44.mp4" type="video/mp4"></video>
+- [Samarbeta med AI-medarbetare](/ai-employees/features/collaborate): Växla medarbetare och modeller i konversationen för kontinuerligt samarbete.
+- [Lägg till kontext - Block](/ai-employees/features/pick-block): Skicka sidblock som kontext till AI.
+- [Snabbupgifter](/ai-employees/features/task): Förinställ vanliga uppgifter på sidan/blocket och kör dem med ett klick.
+- [Webbsökning](/ai-employees/features/web-search): Aktivera sökförstärkta svar när ni behöver den senaste informationen.
 
-Ni kan förinställa uppgifter för varje AI-medarbetare på den aktuella platsen, så att användare kan utlösa dem med ett enda klick – utan att behöva skriva ett enda ord.
+### C. Avancerade förmågor (Tillägg)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
+- [Inbyggda AI-medarbetare](/ai-employees/features/built-in-employee): Förstå positionering och lämpliga scenarier för förinställda medarbetare.
+- [Behörighetskontroll](/ai-employees/permission): Kontrollera åtkomst till medarbetare, färdigheter och data enligt organisationens behörighetsmodell.
+- [AI-kunskapsbas](/ai-employees/knowledge-base/index): Importera företagskunskap för att förbättra svarens stabilitet och spårbarhet.
+- [Arbetsflöde: LLM-nod](/ai-employees/workflow/nodes/llm/chat): Orquestrera AI-förmågor i automatiserade flöden.
+
+## Kärnbegrepp (Rekommenderas att samordna först)
+
+Följande termer är konsekventa med ordlistan och rekommenderas för enhetlig användning inom teamet:
+
+- **AI-medarbetare (AI Employee)**: En körbar agent som består av rollinställning (Role setting) och färdigheter (Tool / Skill).
+- **LLM-tjänst (LLM Service)**: Enhet för modelltillgång och förmågekonfiguration, används för att hantera Provider och modellistor.
+- **Leverantör (Provider)**: Modellleverantören bakom en LLM-tjänst.
+- **Aktiverade modeller (Enabled Models)**: Uppsättningen modeller som den aktuella LLM-tjänsten tillåter att man väljer i konversationen.
+- **Medarbetarväxlare (AI Employee Switcher)**: Växla aktuell samarbetande medarbetare i konversationen.
+- **Modellväxlare (Model Switcher)**: Växla modell i konversationen och kom ihåg preferenser per medarbetare.
+- **Färdighet (Tool / Skill)**: En körbar förmågeenhet som AI kan anropa.
+- **Färdighetsbehörighet (Permission: Ask / Allow)**: Om mänsklig bekräftelse krävs innan en färdighet anropas.
+- **Kontext (Context)**: Information om affärsmiljön såsom sidor, block, datastrukturer etc.
+- **Konversation (Chat)**: En kontinuerlig interaktionsprocess mellan en användare och en AI-medarbetare.
+- **Webbsökning (Web Search)**: Förmågan att komplettera med realtidsinformation baserat på extern sökning.
+- **Kunskapsbas (Knowledge Base / RAG)**: Introduktion av företagskunskap via sökförstärkt generering.
+- **Vektorlagring (Vector Store)**: Vektoriserad lagring som ger semantisk sökförmåga för kunskapsbasen.
+
+## Installationsinstruktioner
+
+AI-medarbetare är en inbyggd plugin i NocoBase (`@nocobase/plugin-ai`), redo att användas direkt utan separat installation.

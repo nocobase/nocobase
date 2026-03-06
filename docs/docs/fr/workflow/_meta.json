@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "Workflows"
+    "label": "Workflow"
   },
   {
     "type": "custom-link",
@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Événement de table de données",
+        "label": "Événement de collection",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Journal d'exécution",
-    "link": "/workflow/advanced/execution"
+    "label": "Historique d'exécution",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

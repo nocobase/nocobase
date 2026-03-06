@@ -5,11 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  מופעל כאשר בקשת Approval מוגשת באמצעות לחצן Action או API. ייעודי לתהליכי Approval, עם Node ובלוק Approval ייעודיים לניהול מסמכים ומעקב אחר תהליך הטיפול.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-workflow-approval/index).
+:::
 
 # Workflow: Approval

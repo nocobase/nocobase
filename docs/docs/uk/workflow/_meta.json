@@ -15,7 +15,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Тригер",
+    "label": "Тригери",
     "collapsed": true,
     "items": [
       {
@@ -25,32 +25,32 @@
       },
       {
         "type": "custom-link",
-        "label": "Події таблиці даних",
+        "label": "Події колекції",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Завдання за розкладом",
+        "label": "Заплановані завдання",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "Подія перед дією",
+        "label": "Події перед дією",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Подія після дії",
+        "label": "Події після дії",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Користувацька подія дії",
+        "label": "Події користувацької дії",
         "link": "/workflow/triggers/custom-action"
       },
       {
         "type": "custom-link",
-        "label": "Затвердження",
+        "label": "Схвалення",
         "link": "/workflow/triggers/approval"
       },
       {
@@ -62,7 +62,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Вузол",
+    "label": "Вузли",
     "collapsed": true,
     "items": [
       {
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "Штучний інтелект (AI)",
+        "label": "Штучний інтелект",
         "items": [
           {
             "type": "custom-link",
-            "label": "Велика мовна модель (LLM)",
+            "label": "Велика мовна модель",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -92,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Розгалуження за умовами",
+            "label": "Гілка з кількома умовами",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -102,12 +102,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Змінна",
+            "label": "Змінні",
             "link": "/workflow/nodes/variable"
           },
           {
             "type": "custom-link",
-            "label": "Паралельне розгалуження",
+            "label": "Паралельна гілка",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Вивід потоку",
+            "label": "Вихід потоку",
             "link": "/workflow/nodes/output"
           },
           {
@@ -132,7 +132,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Завершення",
+            "label": "Кінець",
             "link": "/workflow/nodes/end"
           }
         ]
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Додавання даних",
+            "label": "Створення даних",
             "link": "/workflow/nodes/create"
           },
           {
@@ -200,7 +200,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Затвердження",
+            "label": "Схвалення",
             "link": "/workflow/nodes/approval"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Розширені типи",
+        "label": "Типи розширень",
         "items": [
           {
             "type": "custom-link",
@@ -241,7 +241,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Повідомлення-відповідь",
+            "label": "Повідомлення відповіді",
             "link": "/workflow/nodes/response-message"
           }
         ]
@@ -250,13 +250,13 @@
   },
   {
     "type": "custom-link",
-    "label": "Змінна",
+    "label": "Змінні",
     "link": "/workflow/advanced/variables"
   },
   {
     "type": "custom-link",
     "label": "Журнал виконання",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -265,7 +265,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Розширені налаштування",
+    "label": "Розширені параметри",
     "link": "/workflow/advanced/options"
   },
   {

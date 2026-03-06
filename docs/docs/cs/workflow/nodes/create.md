@@ -41,6 +41,6 @@ Například, když je záznam v kolekci „Příspěvky“ vytvořen nebo aktual
 
 ![Uzel Vytvořit záznam_Příklad_Konfigurace pracovního postupu](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
 
-![Uzel Vytvořit záznam_Příklad_Konfigurace uzlu](https://static-docs.nocobase.com/1a0972e66170be12a068da6503298868.png)
+![Uzel Vytvořit záznam_Příklad_Konfigurace uzlu](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
 
 Po povolení pracovního postupu s touto konfigurací, když se změní záznam v kolekci „Příspěvky“, automaticky se vytvoří záznam „Verze příspěvků“, který zaznamená historii změn příspěvku.

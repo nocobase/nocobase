@@ -32,7 +32,7 @@ ER संबंध
 
 फ़ील्ड कॉन्फ़िगरेशन
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a34982da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## पैरामीटर विवरण
 

@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
 
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/workflow/nodes/javascript).
+:::
 
 # Script JavaScript
 
@@ -12,7 +12,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 Il nodo Script JavaScript Le permette di eseguire uno script JavaScript personalizzato lato server all'interno di un flusso di lavoro. Lo script può utilizzare variabili provenienti dai nodi precedenti del flusso come parametri e il suo valore di ritorno può essere fornito ai nodi successivi.
 
-Lo script viene eseguito in un thread di lavoro sul server dell'applicazione NocoBase e supporta la maggior parte delle funzionalità di Node.js. Tuttavia, esistono alcune differenze rispetto all'ambiente di esecuzione nativo. Per maggiori dettagli, consulti l' [Elenco delle funzionalità](#特性列表).
+Lo script viene eseguito in un thread di lavoro sul server dell'applicazione NocoBase e supporta la maggior parte delle funzionalità di Node.js. Tuttavia, esistono alcune differenze rispetto all'ambiente di esecuzione nativo. Per maggiori dettagli, consulti l' [Elenco delle funzionalità](#elenco-delle-funzionalità).
 
 ## Creare un nodo
 
@@ -84,7 +84,7 @@ WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 Potrà quindi utilizzare il pacchetto `exceljs` nel Suo script:
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 

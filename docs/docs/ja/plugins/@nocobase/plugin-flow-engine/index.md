@@ -1,5 +1,5 @@
 ---
-displayName: "Flow engine"
+displayName: "フロントエンドフローエンジン"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flow engine
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-flow-engine/index)をご参照ください。
+:::
+
+# フロントエンドフローエンジン

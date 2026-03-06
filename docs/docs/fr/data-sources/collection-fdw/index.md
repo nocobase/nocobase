@@ -57,7 +57,7 @@ Créer un service de base de données
 
 Après avoir sélectionné le service de base de données, dans le menu déroulant « Collection distante », choisissez la collection à laquelle vous souhaitez vous connecter.
 
-![Sélectionner la collection à laquelle vous souhaitez vous connecter](https://static-docs.nocobase.com/e915b2b4fc01b3808053cc8dc4.png)
+![Sélectionner la collection à laquelle vous souhaitez vous connecter](https://static-docs.nocobase.com/e91fd6152b52b4fc01b3808053cc8dc4.png)
 
 Configurer les informations des champs
 

@@ -1,14 +1,18 @@
 ---
-displayName: "Record history"
+displayName: "Historia rekordów"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Tracks and stores the change history of collection records.
+  Śledzi i przechowuje historię zmian rekordów w kolekcjach.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Record history
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-record-history/index).
+:::
+
+# Historia rekordów

@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## تفعيل أدوات المصادقة
 
-![](https://static-docs.nocobase.com/7f1bf8f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 فقط أنواع المصادقة المفعّلة هي التي ستظهر في صفحة تسجيل الدخول.
 

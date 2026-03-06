@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Блок фільтрів",
+        "label": "Блоки фільтрів",
         "collapsed": true,
         "items": [
           {
@@ -69,18 +69,13 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Панель керування",
+            "label": "Панель дій",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Блок посилання",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -106,23 +101,33 @@
           },
           {
             "type": "custom-link",
+            "label": "Спосіб завантаження даних",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Макет",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
           {
             "type": "custom-link",
-            "label": "Правила зв'язування блоків",
+            "label": "Правила зв'язку блоків",
             "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Правила зв'язування полів",
+            "label": "Правила зв'язку полів",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
             "type": "custom-link",
             "label": "Правила сортування",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Сортування перетягуванням",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
           },
           {
             "type": "custom-link",
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Заголовок блоку",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Висота блоку",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Чернетки форм",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,7 +155,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Поле",
+    "label": "Поля",
     "items": [
       {
         "type": "custom-link",
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Підтаблиця",
+            "label": "Підтаблиця (вбудоване редагування)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Підтаблиця (редагування у спливаючому вікні)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -312,7 +332,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Дія",
+    "label": "Дії",
     "items": [
       {
         "type": "custom-link",
@@ -336,7 +356,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Призначення поля",
+            "label": "Призначення значень полів",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
@@ -351,14 +371,14 @@
           },
           {
             "type": "custom-link",
-            "label": "Правила зв'язування дій",
+            "label": "Правила зв'язку дій",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Тип дії",
+        "label": "Типи дій",
         "collapsed": true,
         "items": [
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Редагувати",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Копіювати",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -448,6 +473,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Масове редагування",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Додати підзапис",
             "link": "/interface-builder/actions/types/add-child"
           },
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Правила зв'язування",
+        "label": "Правила зв'язку",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Змінна",
+        "label": "Змінні",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Шаблони UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

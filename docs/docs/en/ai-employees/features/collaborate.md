@@ -25,8 +25,8 @@ The chat panel supports common operations such as sending messages, uploading at
 
 At the bottom of the input area, you can switch directly:
 
-- `AI Employee Switcher`: switch current employee.
-- `Model Switcher`: switch current session model.
+- `AI Employee Switcher`: Switch current employee.
+- `Model Switcher`: Switch current session model.
 
 Model preferences are saved per employee and restored next time.
 

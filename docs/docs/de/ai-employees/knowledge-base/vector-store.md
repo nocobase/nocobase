@@ -1,5 +1,5 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Vektorspeicher
@@ -20,7 +20,7 @@ Klicken Sie auf die Schaltfläche `Add new` oben rechts, um einen neuen Vektorsp
 
 - Geben Sie im Eingabefeld `Name` den Namen des Vektorspeichers ein;
 - Wählen Sie unter `Vector store` eine bereits konfigurierte Vektordatenbank aus. Siehe auch: [Vektordatenbank](/ai-employees/knowledge-base/vector-database);
-- Wählen Sie unter `LLM service` einen bereits konfigurierten LLM Dienst aus. Siehe auch: [LLM Dienst Verwaltung](/ai-employees/quick-start/llm-service);
+- Wählen Sie unter `LLM service` einen bereits konfigurierten LLM Dienst aus. Siehe auch: [LLM Dienst Verwaltung](/ai-employees/features/llm-service);
 - Geben Sie im Eingabefeld `Embedding model` den Namen des zu verwendenden `Embedding` Modells ein;
 
 Klicken Sie auf die Schaltfläche `Submit`, um die Vektorspeicher-Informationen zu speichern.

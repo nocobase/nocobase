@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Loop node"
+displayName: "Workflow: Loop-node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
+  Wordt gebruikt om elk item in een array te verwerken via een herhalend subproces, of voor een vast aantal herhalingen van een subproces.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Loop node
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-workflow-loop/index) voor nauwkeurige informatie.
+:::
+
+# Workflow: Loop-node

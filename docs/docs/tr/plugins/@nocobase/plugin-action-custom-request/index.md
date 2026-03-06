@@ -1,14 +1,18 @@
 ---
-displayName: "Action: Custom request"
+displayName: "İşlem: Özel istek"
 packageName: '@nocobase/plugin-action-custom-request'
 supportedVersions:
   - 1.x
 description: |
-  Sending a request to any HTTP service supports sending context data to the target service.
+  Herhangi bir HTTP servisine istek gönderir ve bağlam verilerinin hedef servise gönderilmesini destekler.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Custom request
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-action-custom-request/index) bakın.
+:::
+
+# İşlem: Özel istek

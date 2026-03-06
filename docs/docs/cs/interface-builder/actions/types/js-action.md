@@ -1,45 +1,46 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/interface-builder/actions/types/js-action).
 :::
 
+# JS Action
 
-# JS Akce
+## Představení
 
-## Úvod
-
-JS Akce slouží k vykonání JavaScriptu při kliknutí na tlačítko, což Vám umožňuje přizpůsobit si libovolné obchodní chování. Můžete ji použít v panelech nástrojů formulářů, panelech nástrojů tabulek (na úrovni **kolekce**), řádcích tabulek (na úrovni záznamu) a na dalších místech. Umožňuje provádět operace jako validace, zobrazování upozornění, volání API, otevírání vyskakovacích oken/zásuvek nebo obnovování dat.
+JS Action slouží k provádění JavaScriptu při kliknutí na tlačítko pro přizpůsobení libovolného obchodního chování. Lze jej použít v panelech nástrojů formulářů, panelech nástrojů tabulek (úroveň kolekce), řádcích tabulek (úroveň záznamu) a na dalších místech k provádění operací, jako jsou validace, upozornění, volání rozhraní, otevírání vyskakovacích oken/zásuvek, obnovování dat atd.
 
 ![jsaction-add-20251029](https://static-docs.nocobase.com/jsaction-add-20251029.png)
 
 ## API běhového kontextu (často používané)
 
-- `ctx.api.request(options)`: Odesílá HTTP požadavek.
-- `ctx.openView(viewUid, options)`: Otevře nakonfigurované zobrazení (zásuvku/dialog/stránku).
-- `ctx.message` / `ctx.notification`: Globální zprávy a oznámení.
-- `ctx.t()` / `ctx.i18n.t()`: Internacionalizace.
-- `ctx.resource`: Datový zdroj pro kontext na úrovni **kolekce** (např. panel nástrojů tabulky), včetně metod jako `getSelectedRows()` a `refresh()`.
-- `ctx.record`: Aktuální záznam řádku pro kontext na úrovni záznamu (např. tlačítko v řádku tabulky).
-- `ctx.form`: Instance AntD Form pro kontext na úrovni formuláře (např. tlačítko v panelu nástrojů formuláře).
-- `ctx.collection`: Metainformace aktuální **kolekce**.
+- `ctx.api.request(options)`: iniciuje HTTP požadavek;
+- `ctx.openView(viewUid, options)`: otevře nakonfigurované zobrazení (zásuvku/dialog/stránku);
+- `ctx.message` / `ctx.notification`: globální upozornění a oznámení;
+- `ctx.t()` / `ctx.i18n.t()`: internacionalizace;
+- `ctx.resource`: datový zdroj kontextu na úrovni kolekce (např. panel nástrojů tabulky, obsahuje `getSelectedRows()`, `refresh()` atd.);
+- `ctx.record`: aktuální záznam řádku v kontextu na úrovni záznamu (např. tlačítko v řádku tabulky);
+- `ctx.form`: instance AntD Form v kontextu na úrovni formuláře (např. tlačítko v panelu nástrojů formuláře);
+- `ctx.collection`: metadata aktuální kolekce;
 - Editor kódu podporuje fragmenty `Snippets` a předběžné spuštění `Run` (viz níže).
 
-- `ctx.requireAsync(url)`: Asynchronně načítá knihovnu AMD/UMD z URL.
-- `ctx.importAsync(url)`: Dynamicky importuje modul ESM z URL.
 
-> Skutečně dostupné proměnné se mohou lišit v závislosti na umístění tlačítka. Výše uvedený seznam je přehledem běžných možností.
+- `ctx.requireAsync(url)`: asynchronně načte knihovnu AMD/UMD podle URL;
+- `ctx.importAsync(url)`: dynamicky importuje modul ESM podle URL;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: vestavěné univerzální knihovny jako React / ReactDOM / Ant Design / Ant Design ikony / dayjs / lodash / math.js / formula.js atd., používané pro JSX vykreslování, zpracování času, manipulaci s daty a matematické výpočty.
+
+> Skutečně dostupné proměnné se budou lišit v závislosti na umístění tlačítka, výše uvedené je přehled běžných možností.
 
 ## Editor a fragmenty
 
-- `Snippets`: Otevře seznam vestavěných fragmentů kódu, které můžete vyhledávat a vložit jedním kliknutím na aktuální pozici kurzoru.
-- `Run`: Přímo spustí aktuální kód a výstupní protokoly běhu zobrazí v panelu `Logs` dole. Podporuje `console.log/info/warn/error` a zvýraznění chyb pro snadnou lokalizaci.
+- `Snippets`: Otevře seznam vestavěných fragmentů kódu, které lze vyhledat a jedním kliknutím vložit na aktuální pozici kurzoru.
+- `Run`: Přímo spustí aktuální kód a vypíše protokoly o spuštění do spodního panelu `Logs`; podporuje `console.log/info/warn/error` a zvýraznění chyb pro jejich lokalizaci.
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Skripty můžete generovat/upravovat ve spolupráci s AI zaměstnanci: [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/built-in/ai-coding)
+- Lze kombinovat s AI zaměstnanci pro generování/úpravu skriptů: [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/features/built-in-employee)
 
 ## Běžné použití (zjednodušené příklady)
 
-### 1) API požadavek a oznámení
+### 1) Rozhraní požadavků a upozornění
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
@@ -55,7 +56,7 @@ if (!rows.length) {
   ctx.message.warning(ctx.t('Please select records'));
   return;
 }
-// TODO: Implementujte obchodní logiku…
+// TODO: Provádění obchodní logiky…
 ctx.message.success(ctx.t('Selected {n} items', { n: rows.length }));
 ```
 
@@ -84,11 +85,12 @@ if (ctx.resource?.refresh) await ctx.resource.refresh();
 else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refresh();
 ```
 
+
 ## Poznámky
 
-- **Idempotentní akce**: Abyste zabránili vícenásobnému odeslání způsobenému opakovaným kliknutím, můžete do své logiky přidat přepínač stavu nebo tlačítko zakázat.
-- **Zpracování chyb**: Pro volání API přidejte bloky `try/catch` a poskytněte uživatelsky přívětivou zpětnou vazbu.
-- **Interakce zobrazení**: Při otevírání vyskakovacího okna/zásuvky pomocí `ctx.openView` se doporučuje explicitně předávat parametry a v případě potřeby aktivně obnovit nadřazený zdroj po úspěšném odeslání.
+- Idempotence chování: Vyhněte se vícenásobnému odeslání způsobenému opakovaným kliknutím; do logiky můžete přidat přepínač stavu nebo tlačítko zakázat.
+- Zpracování chyb: Přidejte try/catch pro volání rozhraní a poskytněte uživateli upozornění.
+- Propojení zobrazení: Při otevírání vyskakovacích oken/zásuvek pomocí `ctx.openView` doporučujeme explicitně předávat parametry a v případě potřeby po úspěšném odeslání aktivně obnovit nadřazený zdroj.
 
 ## Související dokumenty
 

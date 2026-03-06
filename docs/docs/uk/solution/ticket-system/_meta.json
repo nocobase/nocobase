@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Огляд рішення"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Детальний дизайн"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Встановлення"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Більше вмісту"
   }
 ]

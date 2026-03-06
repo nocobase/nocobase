@@ -1,41 +1,40 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/get-started/installation/docker) voor nauwkeurige informatie.
 :::
 
+# Docker installatie
 
-# Docker Installatie
-
-:::tip Vereisten
+:::tip Voorwaarden
 
 - [Docker](https://docs.docker.com/get-docker/) en Docker Compose zijn geïnstalleerd
 - Zorg ervoor dat de Docker-service actief is
 
 :::
 
-## 1. `docker-compose.yml` aanmaken
+## 1. Nieuwe docker-compose.yml aanmaken
 
 ```bash
-# Maak een map aan met de naam 'my-project' (u kunt ook een andere naam kiezen) om de door NocoBase gegenereerde systeembestanden op te slaan.
+# Maak een map aan met de naam my-project (kan ook een andere naam zijn) om de door NocoBase gegenereerde systeembestanden op te slaan
 mkdir my-project && cd my-project
 
-# Maak een leeg docker-compose.yml bestand aan.
+# Maak een leeg docker-compose.yml bestand aan
 vi docker-compose.yml
 ```
 
-## 2. `docker-compose.yml` configureren
+## 2. docker-compose.yml configureren
 
-Kies een NocoBase-versie ([Versieoverzicht](../quickstart.md)) en databasetype, en kopieer de bijbehorende configuratie naar `docker-compose.yml`.
+Kies een NocoBase-versie ([Versievergelijking](../quickstart.md)) en databasetype, en kopieer de bijbehorende configuratie naar docker-compose.yml.
 
 :::tip Configuratie-opmerkingen
 
 - **Kies een image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - Voor productieomgevingen raden we aan om een specifiek versienummer vast te zetten om onbedoelde automatische upgrades te voorkomen. [Bekijk alle versies](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Alibaba Cloud-image: `nocobase/nocobase:latest-full`
+  - Voor productieomgevingen wordt aanbevolen om een specifiek versienummer vast te zetten om onbedoelde automatische upgrades te voorkomen. [Bekijk alle versies](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - Alibaba Cloud-image: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
   - Docker Hub-image: `nocobase/nocobase:latest-full`
-  - De **full image** bevat de PostgreSQL 16/17 client, MySQL 8.0 client en Oracle 19.25 client die nodig zijn voor de backup- en migratiebeheer **plugins**, evenals LibreOffice voor het afdrukken van sjablonen (PDF).
+  - De **full image** bevat de PostgreSQL 16/17 client, MySQL 8.0 client en Oracle 19.25 client die nodig zijn voor de backup-beheer en migratie-beheer plugins, evenals LibreOffice die nodig is voor het afdrukken van sjablonen (PDF).
   - Als u uw eigen image wilt bouwen, kunt u de officiële [Dockerfile (compacte versie)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) en [Dockerfile-full (volledige versie)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full) raadplegen.
-- **Wijzig `APP_KEY`**: Vervang `your-secret-key` door een willekeurige tekenreeks. Deze wordt gebruikt om gevoelige informatie, zoals gebruikerstokens, te versleutelen.
-- **Gebruik een bestaande database**: Als u al een databaseservice heeft, wijzig dan `DB_HOST` naar het adres van de databaseserver en verwijder of commentarieer de configuratie van de databaseservice (bijv. de services `postgres`, `mysql`, `mariadb`).
+- **Wijzig `APP_KEY`**: Vervang `your-secret-key` door een willekeurige tekenreeks, die wordt gebruikt om gevoelige informatie zoals gebruikerstokens te versleutelen.
+- **Gebruik een bestaande database**: Als u al een databaseservice heeft, wijzig dan `DB_HOST` naar het adres van de databaseserver en verwijder of becommentarieer de configuratie van de databaseservice (bijv. de services `postgres`, `mysql`, `mariadb`).
 - **Poorttoewijzing**: Standaard wordt poort 80 van de container toegewezen aan poort 13000 van de host. U kunt dit naar behoefte aanpassen.
 
 :::
@@ -54,7 +53,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -62,14 +61,14 @@ services:
       - postgres
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=postgres
-      # Databasepoort
+      # Database port
       - DB_PORT=5432
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -88,7 +87,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u postgres niet te starten.
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -112,7 +111,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -120,14 +119,14 @@ services:
       - mysql
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mysql
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -147,7 +146,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mysql niet te starten.
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -171,7 +170,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:latest-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -179,14 +178,14 @@ services:
       - mariadb
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mariadb
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -206,7 +205,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mariadb niet te starten.
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -236,7 +235,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -244,14 +243,14 @@ services:
       - postgres
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=postgres
-      # Databasepoort
+      # Database port
       - DB_PORT=5432
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -270,7 +269,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u postgres niet te starten.
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -294,7 +293,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -302,14 +301,14 @@ services:
       - mysql
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mysql
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -329,7 +328,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mysql niet te starten.
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -353,7 +352,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:beta-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
     restart: always
     networks:
       - nocobase
@@ -361,14 +360,14 @@ services:
       - mariadb
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mariadb
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -388,7 +387,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mariadb niet te starten.
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -418,7 +417,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -426,14 +425,14 @@ services:
       - postgres
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=postgres
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=postgres
-      # Databasepoort
+      # Database port
       - DB_PORT=5432
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -452,7 +451,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u postgres niet te starten.
   postgres:
-    image: postgres:16
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -476,7 +475,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -484,14 +483,14 @@ services:
       - mysql
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mysql
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mysql
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -511,7 +510,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mysql niet te starten.
   mysql:
-    image: mysql:8
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -535,7 +534,7 @@ networks:
 
 services:
   app:
-    image: nocobase/nocobase:alpha-full
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
     restart: always
     networks:
       - nocobase
@@ -543,14 +542,14 @@ services:
       - mariadb
     environment:
       # De sleutel van de applicatie, gebruikt voor het genereren van gebruikerstokens, etc.
-      # Als de APP_KEY wordt gewijzigd, worden oude tokens ongeldig.
-      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet uitlekt.
+      # Als de APP_KEY wordt gewijzigd, worden oude tokens ook ongeldig.
+      # Kan elke willekeurige tekenreeks zijn, en zorg ervoor dat deze niet openbaar wordt gemaakt.
       - APP_KEY=your-secret-key
       # Databasetype, ondersteunt postgres, mysql, mariadb
       - DB_DIALECT=mariadb
-      # Databasehost, kan worden vervangen door een bestaand databaseserver-IP.
+      # Databasehost, kan worden vervangen door het IP-adres van een bestaande databaseserver.
       - DB_HOST=mariadb
-      # Databasepoort
+      # Database port
       - DB_PORT=3306
       # Databasenaam
       - DB_DATABASE=nocobase
@@ -570,7 +569,7 @@ services:
 
   # Als u een bestaande databaseservice gebruikt, hoeft u mariadb niet te starten.
   mariadb:
-    image: mariadb:11
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -616,7 +615,7 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. Inloggen bij NocoBase
 
-Open [http://localhost:13000](http://localhost:13000) in uw browser. De initiële gebruikersnaam en het wachtwoord zijn `admin@nocobase.com` en `admin123`.
+Gebruik uw browser om [http://localhost:13000](http://localhost:13000) te openen. De initiële gebruikersnaam en het wachtwoord zijn `admin@nocobase.com` en `admin123`.
 
 :::warning Accountbeveiligingswaarschuwing
 

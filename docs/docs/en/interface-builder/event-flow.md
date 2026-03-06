@@ -22,7 +22,7 @@ Configuration steps:
 
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
 
-3. Configure "Execution timing" to decide where this custom flow runs relative to built-in flows. In most cases, keep the default. If you want to show feedback or navigate after built-in logic finishes, choose "After built-in flows". See [Execution timing](#execution-timing) below.
+3. Configure "Execution timing" to decide where this custom flow runs relative to built-in flows. In most cases, keep the default. If you want to show feedback or navigate after built-in logic finishes, choose "After all flows". See [Execution timing](#execution-timing) below.
 
 ![event-flow-event-flow-20260204](https://static-docs.nocobase.com/event-flow-event-flow-20260204.png)
 
@@ -86,7 +86,7 @@ Many pages, blocks, and actions have built-in behavior (for example: submit, ope
 ### How to choose an option in the UI
 
 - **Before all flows (default):** runs first. Good for preparation/guarding (validation, confirmation, initializing variables, etc.).
-- **After built-in flows:** runs after the built-in logic completes. Good for cleanup/feedback (messages, refreshing other blocks, navigation, etc.).
+- **After all flows:** runs after the built-in logic completes. Good for cleanup/feedback (messages, refreshing other blocks, navigation, etc.).
 - **Before/After built-in flow:** a more specific insertion point. You’ll need to pick a “Built-in flow”.
 - **Before/After built-in flow step:** the most specific insertion point. You’ll need to pick both a “Built-in flow” and a “Built-in flow step”.
 
@@ -211,7 +211,7 @@ Example setup:
 
 1. Open event flow settings on the form block and add an event flow;
 2. Choose “Before render” as the trigger event;
-3. Set “Execution timing” to “After built-in flows”;
+3. Set “Execution timing” to “After all flows”;
 4. Add an “Execute JavaScript” step and paste/edit the code below:
 
 ```js

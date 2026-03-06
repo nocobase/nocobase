@@ -60,7 +60,7 @@ pkg: '@nocobase/plugin-workflow-manual'
 
 노드 데이터 블록도 유사하게, 상위 노드의 데이터 결과를 상세 정보로 표시할 수 있습니다. 예를 들어, 상위 계산 노드의 결과는 담당자의 할 일 작업에 대한 컨텍스트 참조 정보로 활용될 수 있습니다:
 
-![수동 노드_노드 설정_인터페이스 설정_데이터 블록_노드 데이터](https://static-docs.nocobase.com/a583e258a1a4f45db310a72c2d0a404c.png)
+![수동 노드_노드 설정_인터페이스 설정_데이터 블록_노드 데이터](https://static-docs.nocobase.com/a583e26e508e954b47e5ddff80d998c4.png)
 
 :::info{title=참고}
 인터페이스 설정 시 워크플로우는 아직 실행되지 않은 상태이므로, 데이터 블록에는 구체적인 데이터가 표시되지 않습니다. 워크플로우가 트리거되어 실행된 후에야 할 일 팝업 화면에서 특정 워크플로우 인스턴스와 관련된 데이터를 확인할 수 있습니다.
@@ -104,11 +104,11 @@ pkg: '@nocobase/plugin-workflow-manual'
 
 페이지의 블록 중에서 "워크플로우 할 일"을 선택하여 할 일 목록 블록을 추가할 수 있습니다:
 
-![수동 노드_할 일 블록 추가](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![수동 노드_할 일 블록 추가](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 할 일 목록 블록 예시:
 
-![수동 노드_할 일 목록](https://static-docs.nocobase.com/cfefb053c6a91c5c9dfa550d6b220f34.png)
+![수동 노드_할 일 목록](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### 할 일 상세 정보
 

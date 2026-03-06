@@ -15,7 +15,7 @@ Bạn có thể khai báo biến hoặc gán giá trị cho các biến đã kha
 
 Trong giao diện cấu hình luồng công việc, hãy nhấp vào nút dấu cộng (“+”) trong luồng để thêm nút "Biến":
 
-![Add Variable Node](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Add Variable Node](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Cấu hình nút
 
@@ -78,6 +78,6 @@ Sau nút tính toán, hãy tạo một nút biến khác. Chọn chế độ gá
 
 Bằng cách này, sau khi nhánh lặp kết thúc, biến người nhận sẽ lưu trữ chuỗi người nhận của tất cả các tác giả bài viết. Sau đó, bạn có thể sử dụng nút Yêu cầu HTTP để gọi API gửi email, truyền giá trị của biến người nhận làm tham số người nhận cho API:
 
-![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71ae1a63e172bcb2dce10a250947e.png)
+![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 Đến đây, một tính năng gửi email hàng loạt đơn giản đã được triển khai bằng cách sử dụng vòng lặp và nút biến.

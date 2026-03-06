@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Ringkasan Solusi"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Desain Detail"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Instalasi"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "CRM Versi Lama (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Konten Lainnya"
   }
 ]

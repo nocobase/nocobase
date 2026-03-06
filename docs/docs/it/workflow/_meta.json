@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Eventi Tabella Dati",
+        "label": "Eventi collezione",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Log di Esecuzione",
-    "link": "/workflow/advanced/execution"
+    "label": "Cronologia esecuzioni",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

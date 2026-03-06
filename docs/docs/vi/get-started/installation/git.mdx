@@ -1,15 +1,14 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/get-started/installation/git).
 :::
-
 
 # Cài đặt từ mã nguồn Git
 
 :::tip Điều kiện tiên quyết
 
-- Đã cài đặt Git, Node.js 20+ và Yarn 1.22.x
-- Đã cấu hình và khởi chạy một trong các cơ sở dữ liệu sau: MySQL 8.0.17+, MariaDB 10.9+ hoặc PostgreSQL 10+
-- Do môi trường mạng ở một số khu vực, bạn nên đổi sang một mirror trong nước (không bắt buộc).
+- Đã cài đặt Git, Node.js 20+, Yarn 1.22.x
+- Cấu hình và khởi chạy một trong các cơ sở dữ liệu yêu cầu: MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- Do môi trường mạng nội địa, bạn nên thay đổi mirror trong nước (không bắt buộc)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -18,12 +17,12 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. Tải NocoBase về máy cục bộ của bạn
+## 1. Tải NocoBase về máy cục bộ
 
-Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)) và chạy lệnh tương ứng.
+Chọn phiên bản NocoBase ([So sánh phiên bản](../quickstart.md)), thực hiện lệnh tương ứng.
 
 <Tabs>
-<Tab label="Phiên bản mới nhất">
+<Tab label="Phiên bản Latest">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
@@ -54,7 +53,7 @@ cd my-nocobase
 
 ## 3. Cài đặt các gói phụ thuộc
 
-📢 Bước này có thể mất hơn mười phút, tùy thuộc vào môi trường mạng, cấu hình hệ thống và các yếu tố khác.
+📢 Do ảnh hưởng của các yếu tố như môi trường mạng, cấu hình hệ thống, bước tiếp theo này có thể mất khoảng mười mấy phút.
 
 ```bash
 yarn install --frozen-lockfile
@@ -62,7 +61,7 @@ yarn install --frozen-lockfile
 
 ## 4. Thiết lập biến môi trường
 
-Các biến môi trường mà NocoBase yêu cầu được lưu trữ trong tệp `.env` ở thư mục gốc. Vui lòng sửa đổi các biến môi trường này theo tình hình thực tế của bạn.
+Các biến môi trường cần thiết cho NocoBase được lưu trữ trong tệp `.env` tại thư mục gốc, hãy sửa đổi các biến môi trường theo tình hình thực tế.
 
 ```bash
 TZ=Asia/Shanghai
@@ -76,9 +75,9 @@ DB_PASSWORD=nocobase
 
 :::warning Giải thích biến môi trường
 
-- `TZ` dùng để thiết lập múi giờ cho ứng dụng, mặc định là múi giờ của hệ điều hành;
-- `APP_KEY` là khóa bí mật của ứng dụng, dùng để tạo token người dùng, v.v. (Nếu `APP_KEY` bị thay đổi, các token cũ cũng sẽ không còn hiệu lực). Nó có thể là bất kỳ chuỗi ngẫu nhiên nào. Vui lòng thay đổi thành khóa bí mật của riêng bạn và đảm bảo không để lộ ra ngoài;
-- `DB_*` liên quan đến cơ sở dữ liệu. Nếu bạn không sử dụng dịch vụ cơ sở dữ liệu mặc định trong ví dụ, vui lòng sửa đổi chúng theo tình hình thực tế của bạn.
+- `TZ` dùng để thiết lập múi giờ của ứng dụng, mặc định là múi giờ của hệ điều hành;
+- `APP_KEY` là khóa bí mật của ứng dụng, dùng để tạo token người dùng, v.v. (nếu `APP_KEY` bị thay đổi, các token cũ cũng sẽ theo đó mà mất hiệu lực). Nó có thể là bất kỳ chuỗi ngẫu nhiên nào. Vui lòng sửa đổi thành khóa bí mật của riêng bạn và đảm bảo không bị rò rỉ ra ngoài;
+- `DB_*` liên quan đến cơ sở dữ liệu, nếu không phải là dịch vụ cơ sở dữ liệu mặc định trong ví dụ, vui lòng sửa đổi theo tình hình thực tế.
 
 :::
 
@@ -99,7 +98,7 @@ yarn dev
 
 **Môi trường sản xuất (không khuyến nghị)**
 
-Không khuyến nghị triển khai trực tiếp từ mã nguồn trong môi trường sản xuất. Để triển khai trong môi trường sản xuất, vui lòng tham khảo [Triển khai trong môi trường sản xuất](../deployment/production.md).
+Không khuyến nghị sử dụng mã nguồn để triển khai trực tiếp trong môi trường sản xuất, đối với môi trường sản xuất vui lòng tham khảo [Triển khai môi trường sản xuất](../deployment/production.md).
 
 ```bash
 yarn build
@@ -108,10 +107,10 @@ yarn start
 
 ## 7. Đăng nhập NocoBase
 
-Mở [http://localhost:13000](http://localhost:13000) trong trình duyệt của bạn. Tài khoản và mật khẩu ban đầu là `admin@nocobase.com` và `admin123`.
+Sử dụng trình duyệt mở [http://localhost:13000](http://localhost:13000), tài khoản và mật khẩu khởi tạo là `admin@nocobase.com` và `admin123`.
 
-:::warning Cảnh báo bảo mật tài khoản
+:::warning Gợi ý an toàn tài khoản
 
-Sau khi đăng nhập lần đầu, vui lòng thay đổi mật khẩu mặc định ngay lập tức để đảm bảo an toàn hệ thống.
+Sau khi đăng nhập lần đầu, vui lòng thay đổi mật khẩu mặc định kịp thời để đảm bảo an toàn hệ thống.
 
 :::

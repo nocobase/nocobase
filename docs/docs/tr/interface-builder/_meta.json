@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Bloklar",
+    "label": "Blok",
     "items": [
       {
         "type": "custom-link",
@@ -15,7 +15,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Veri Blokları",
+        "label": "Veri Bloğu",
         "collapsed": true,
         "items": [
           {
@@ -30,7 +30,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Detay",
+            "label": "Detaylar",
             "link": "/interface-builder/blocks/data-blocks/details"
           },
           {
@@ -40,7 +40,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Izgara Kartları",
+            "label": "Izgara kartı",
             "link": "/interface-builder/blocks/data-blocks/grid-card"
           },
           {
@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Filtre Bloku",
+        "label": "Filtre Bloğu",
         "collapsed": true,
         "items": [
           {
@@ -69,7 +69,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Kontrol Paneli",
+            "label": "İşlem Paneli",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
@@ -79,30 +79,30 @@
           },
           {
             "type": "custom-link",
-            "label": "Referans Bloğu",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
           {
             "type": "custom-link",
-            "label": "JS Block",
+            "label": "JS Bloğu",
             "link": "/interface-builder/blocks/other-blocks/js-block"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Blok Ayarları",
+        "label": "Blok Ayar Öğesi",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
             "label": "Veri Kapsamı",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Veri Yükleme Yöntemi",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -116,13 +116,18 @@
           },
           {
             "type": "custom-link",
-            "label": "Alan Etkileşim Kuralları",
+            "label": "Alan Bağlantı Kuralları",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
             "type": "custom-link",
             "label": "Sıralama Kuralları",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sürükle ve Bırak Sıralama",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
           },
           {
             "type": "custom-link",
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Blok Başlığı",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Blok Yüksekliği",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Form taslağı",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -149,34 +164,34 @@
       },
       {
         "type": "custom-link",
-        "label": "Genel Ayarlar",
+        "label": "Genel yapılandırma öğeleri",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Tablo Alanları",
+            "label": "Tablo alanı",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
             "type": "custom-link",
-            "label": "Detay Alanları",
+            "label": "Detay alanı",
             "link": "/interface-builder/fields/generic/detail-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Filtre Formu Alanları",
+            "label": "Form alanlarını filtrele",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Form Alanları",
+            "label": "Form alanı",
             "link": "/interface-builder/fields/generic/form-item"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Özel Ayarlar",
+        "label": "Özel Yapılandırma Öğeleri",
         "collapsed": true,
         "items": [
           {
@@ -206,17 +221,22 @@
           },
           {
             "type": "custom-link",
-            "label": "Kademeli Seçici",
+            "label": "Basamaklı seçici",
             "link": "/interface-builder/fields/specific/cascade-select"
           },
           {
             "type": "custom-link",
-            "label": "Alt Tablo",
+            "label": "Alt Tablo (Satır İçi Düzenleme)",
             "link": "/interface-builder/fields/specific/sub-table"
           },
           {
             "type": "custom-link",
-            "label": "Alt Detay",
+            "label": "Alt Tablo (Açılır Pencere Düzenleme)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Alt Detaylar",
             "link": "/interface-builder/fields/specific/sub-detail"
           },
           {
@@ -226,29 +246,29 @@
           },
           {
             "type": "custom-link",
-            "label": "JS Field",
+            "label": "JS Alanı",
             "link": "/interface-builder/fields/specific/js-field"
           },
           {
             "type": "custom-link",
-            "label": "JS Item",
+            "label": "JS Öğesi",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
             "type": "custom-link",
-            "label": "JS Column",
+            "label": "JS Sütunu",
             "link": "/interface-builder/fields/specific/js-column"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Alan Ayarları",
+        "label": "Alan Yapılandırma Öğeleri",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Varsayılan Değer",
+            "label": "Varsayılan değer",
             "link": "/interface-builder/fields/field-settings/default-value"
           },
           {
@@ -263,7 +283,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Alan İpucu",
+            "label": "Alan İpucu Bilgisi",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -298,21 +318,21 @@
           },
           {
             "type": "custom-link",
-            "label": "Doğrulama Kuralları",
+            "label": "Doğrulama kuralları",
             "link": "/interface-builder/fields/field-settings/validation-rules"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "İlişkisel Alan Bileşeni",
+        "label": "İlişki Alanı Bileşeni",
         "link": "/interface-builder/fields/association-field"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Eylem",
+    "label": "İşlem",
     "items": [
       {
         "type": "custom-link",
@@ -321,49 +341,49 @@
       },
       {
         "type": "custom-link",
-        "label": "Eylem Ayarları",
+        "label": "İşlem Yapılandırma Öğeleri",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Düzenle Düğmesi",
+            "label": "Düzenle butonu",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
             "type": "custom-link",
-            "label": "Tekrar Onayla",
+            "label": "İkinci Onay",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Alan Değeri Atama",
+            "label": "Alan Değer Atama",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "İş Akışı Bağla",
+            "label": "İş akışını bağla",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
             "type": "custom-link",
-            "label": "Düzenleme Penceresi",
+            "label": "Düzenleme penceresi",
             "link": "/interface-builder/actions/action-settings/edit-popup"
           },
           {
             "type": "custom-link",
-            "label": "Eylem Etkileşim Kuralları",
+            "label": "İşlem Bağlantı Kuralları",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Eylem Türü",
+        "label": "İşlem Türü",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Ekle",
+            "label": "Yeni Ekle",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Düzenle",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kopyala",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -403,7 +428,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Eki Dışa Aktar",
+            "label": "Ekleri Dışa Aktar",
             "link": "/interface-builder/actions/types/export-attachments"
           },
           {
@@ -418,7 +443,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Pencere Aç",
+            "label": "Açılır Pencereyi Aç",
             "link": "/interface-builder/actions/types/pop-up"
           },
           {
@@ -428,12 +453,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Veri Gönder",
+            "label": "Veriyi Gönder",
             "link": "/interface-builder/actions/types/submit"
           },
           {
             "type": "custom-link",
-            "label": "İş Akışını Tetikle",
+            "label": "İş akışını tetikle",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -448,19 +473,24 @@
           },
           {
             "type": "custom-link",
+            "label": "Toplu Düzenleme",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Alt Kayıt Ekle",
             "link": "/interface-builder/actions/types/add-child"
           },
           {
             "type": "custom-link",
-            "label": "JS Action",
+            "label": "JS Eylemi",
             "link": "/interface-builder/actions/types/js-action"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Eylem İzinleri",
+        "label": "İşlem Yetkileri",
         "link": "/interface-builder/actions/permission"
       }
     ]
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Etkileşim Kuralları",
+        "label": "Bağlantı kuralları",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI Şablonu",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

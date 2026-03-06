@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Pre-action event"
+displayName: "Arbetsflöde: Händelse före åtgärd"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered before the execution of a request initiated through an action button or API, such as before adding, updating, or deleting data. Suitable for data validation and logic judgment before action, and the request could be rejected by using the "End process" node.
+  Utlöses före utförandet av en begäran som initierats via en åtgärdsknapp eller API, till exempel innan data läggs till, uppdateras eller tas bort. Lämplig för datavalidering och logisk bedömning före åtgärden, och begäran kan avbrytas genom att använda en "avslutningsnod".
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Pre-action event
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-workflow-request-interceptor/index).
+:::
+
+# Arbetsflöde: Händelse före åtgärd

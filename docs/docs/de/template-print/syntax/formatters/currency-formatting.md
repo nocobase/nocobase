@@ -1,5 +1,5 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/template-print/syntax/formatters/currency-formatting).
 :::
 
 ### Währungsformatierung
@@ -7,50 +7,45 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 #### 1. :formatC(precisionOrFormat, targetCurrency)
 
 ##### Syntax-Erklärung
-Formatiert eine Währungszahl. Sie können dabei die Anzahl der Dezimalstellen oder ein bestimmtes Ausgabeformat festlegen.
+Formatiert Währungszahlen, wobei Nachkommastellen oder ein bestimmtes Ausgabeformat angegeben werden können.  
 Parameter:
-- `precisionOrFormat`: Ein optionaler Parameter, der entweder eine Zahl (zur Angabe der Dezimalstellen) oder ein Formatbezeichner sein kann:
-  - Eine ganze Zahl: Ändert die Standard-Dezimalpräzision.
-  - `'M'`: Gibt nur den Hauptwährungsnamen aus.
-  - `'L'`: Gibt die Zahl zusammen mit dem Währungssymbol aus (Standard).
-  - `'LL'`: Gibt die Zahl zusammen mit dem Hauptwährungsnamen aus.
-- `targetCurrency`: Optional; der Zielwährungscode (in Großbuchstaben, z.B. USD, EUR), der die globalen Einstellungen überschreibt.
+- precisionOrFormat: Optionaler Parameter, der entweder eine Zahl (Angabe der Nachkommastellen) oder eine bestimmte Formatkennung sein kann:
+  - Ganzzahl: Ändert die Standard-Nachkommapräzision
+  - `'M'`: Gibt nur den Hauptwährungsnamen aus
+  - `'L'`: Gibt die Zahl zusammen mit dem Währungssymbol aus (Standard)
+  - `'LL'`: Gibt die Zahl zusammen mit dem Hauptwährungsnamen aus
+- targetCurrency: Optional, Zielwährungscode (Großbuchstaben, wie USD, EUR), überschreibt die globalen Einstellungen
 
 ##### Beispiel
 ```
-// Beispielumgebung: API-Optionen { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-'1000.456':formatC()      // Ergibt "$2,000.91"
-'1000.456':formatC('M')    // Ergibt "dollars"
-'1':formatC('M')           // Ergibt "dollar"
-'1000':formatC('L')        // Ergibt "$2,000.00"
-'1000':formatC('LL')       // Ergibt "2,000.00 dollars"
-
-// Französisches Beispiel (bei abweichenden Umgebungseinstellungen):
-'1000.456':formatC()      // Ergibt "2 000,91 ..."  
-'1000.456':formatC()      // Wenn Quell- und Zielwährung identisch sind, ergibt "1 000,46 €"
+'1000.456':formatC()      // Ausgabe "$2,000.91"
+'1000.456':formatC('M')    // Ausgabe "dollars"
+'1':formatC('M')           // Ausgabe "dollar"
+'1000':formatC('L')        // Ausgabe "$2,000.00"
+'1000':formatC('LL')       // Ausgabe "2,000.00 dollars"
 ```
 
 ##### Ergebnis
-Das Ergebnis hängt von den API-Optionen und den Wechselkurseinstellungen ab.
+Das Ausgabeergebnis hängt von den API-Optionen und den Wechselkurseinstellungen ab.
+
 
 #### 2. :convCurr(target, source)
 
 ##### Syntax-Erklärung
-Konvertiert eine Zahl von einer Währung in eine andere. Der Wechselkurs kann über API-Optionen übergeben oder global festgelegt werden.
-Wenn keine Parameter angegeben werden, erfolgt die Konvertierung automatisch von `options.currencySource` zu `options.currencyTarget`.
+Konvertiert Zahlen von einer Währung in eine andere. Wechselkurse können über API-Optionen übergeben oder global festgelegt werden.  
+Wenn keine Parameter angegeben werden, erfolgt die Konvertierung automatisch von `options.currencySource` zu `options.currencyTarget`.  
 Parameter:
-- `target`: Optional; der Zielwährungscode (standardmäßig `options.currencyTarget`).
-- `source`: Optional; der Quellwährungscode (standardmäßig `options.currencySource`).
+- target: Optional, Zielwährungscode (Standardmäßig `options.currencyTarget`)
+- source: Optional, Quellwährungscode (Standardmäßig `options.currencySource`)
 
 ##### Beispiel
 ```
-// Beispielumgebung: API-Optionen { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-10:convCurr()              // Ergibt 20
-1000:convCurr()            // Ergibt 2000
-1000:convCurr('EUR')        // Ergibt 1000
-1000:convCurr('USD')        // Ergibt 2000
-1000:convCurr('USD', 'USD') // Ergibt 1000
+10:convCurr()              // Ausgabe 20
+1000:convCurr()            // Ausgabe 2000
+1000:convCurr('EUR')        // Ausgabe 1000
+1000:convCurr('USD')        // Ausgabe 2000
+1000:convCurr('USD', 'USD') // Ausgabe 1000
 ```
 
 ##### Ergebnis
-Das Ergebnis ist der konvertierte Währungswert.
+Die Ausgabe ist der konvertierte Währungswert.

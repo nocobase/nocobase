@@ -1,130 +1,137 @@
-# Installation Guide
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/solution/crm/installation).
+:::
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Cách cài đặt
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> Phiên bản hiện tại sử dụng hình thức **sao lưu và khôi phục** để triển khai. Trong các phiên bản sau, chúng tôi có thể chuyển sang hình thức **di chuyển tăng cường** (incremental migration) để dễ dàng tích hợp giải pháp vào hệ thống hiện có của bạn.
 
-Before you begin, please ensure:
+Để giúp bạn có thể triển khai giải pháp CRM 2.0 vào môi trường NocoBase của riêng mình một cách nhanh chóng và suôn sẻ, chúng tôi cung cấp hai phương thức khôi phục. Vui lòng chọn phương thức phù hợp nhất với phiên bản người dùng và nền tảng kỹ thuật của bạn.
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+Trong khi bắt đầu, hãy đảm bảo:
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+- Bạn đã có một môi trường chạy NocoBase cơ bản. Về việc cài đặt hệ thống chính, vui lòng tham khảo [tài liệu cài đặt chính thức](https://docs-cn.nocobase.com/welcome/getting-started/installation) chi tiết hơn.
+- Phiên bản NocoBase **v2.1.0-beta.2 trở lên**
+- Bạn đã tải xuống các tệp tương ứng của hệ thống CRM:
+  - **Tệp sao lưu**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - Áp dụng cho Phương pháp một
+  - **Tệp SQL**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - Áp dụng cho Phương pháp hai
+
+**Lưu ý quan trọng**:
+- Giải pháp này được xây dựng dựa trên cơ sở dữ liệu **PostgreSQL 16**, vui lòng đảm bảo môi trường của bạn sử dụng PostgreSQL 16.
+- **DB_UNDERSCORED không được là true**: Vui lòng kiểm tra tệp `docker-compose.yml` của bạn, đảm bảo biến môi trường `DB_UNDERSCORED` không được thiết lập thành `true`, nếu không sẽ xung đột với bản sao lưu giải pháp dẫn đến khôi phục thất bại.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Phương pháp một: Sử dụng Trình quản lý sao lưu để khôi phục (Khuyên dùng cho người dùng phiên bản Chuyên nghiệp/Doanh nghiệp)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+Phương thức này thực hiện khôi phục bằng một cú nhấp chuột thông qua plugin "[Trình quản lý sao lưu](https://docs-cn.nocobase.com/handbook/backups)" (phiên bản Chuyên nghiệp/Doanh nghiệp) tích hợp sẵn của NocoBase, thao tác đơn giản nhất. Tuy nhiên, nó có yêu cầu nhất định về môi trường và phiên bản người dùng.
 
-### Key Characteristics
+### Đặc điểm cốt lõi
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **Ưu điểm**:
+  1. **Thao tác thuận tiện**: Có thể hoàn thành trên giao diện UI, có thể khôi phục hoàn chỉnh tất cả các cấu hình bao gồm cả plugin.
+  2. **Khôi phục hoàn chỉnh**: **Có thể khôi phục tất cả các tệp hệ thống**, bao gồm các tệp in mẫu, các tệp được tải lên trong trường tệp của bộ sưu tập, v.v., đảm bảo tính toàn vẹn của chức năng.
+* **Hạn chế**:
+  1. **Giới hạn phiên bản Chuyên nghiệp/Doanh nghiệp**: "Trình quản lý sao lưu" là một plugin cấp doanh nghiệp, chỉ dành cho người dùng phiên bản Chuyên nghiệp/Doanh nghiệp.
+  2. **Yêu cầu môi trường nghiêm ngặt**: Yêu cầu môi trường cơ sở dữ liệu của bạn (phiên bản, cài đặt phân biệt chữ hoa chữ thường, v.v.) phải tương thích cao với môi trường khi chúng tôi tạo bản sao lưu.
+  3. **Phụ thuộc vào plugin**: Nếu giải pháp bao gồm các plugin thương mại mà môi trường địa phương của bạn không có, việc khôi phục sẽ thất bại.
 
-### Steps
+### Các bước thao tác
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**Bước 1: 【Khuyến nghị mạnh mẽ】 Sử dụng hình ảnh `full` để khởi động ứng dụng**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+Để tránh thất bại khi khôi phục do thiếu máy khách cơ sở dữ liệu, chúng tôi thực sự khuyên bạn nên sử dụng phiên bản hình ảnh Docker `full`. Nó tích hợp sẵn tất cả các chương trình hỗ trợ cần thiết, giúp bạn không cần thực hiện cấu hình bổ sung.
+
+Ví dụ lệnh kéo hình ảnh:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+Sau đó sử dụng hình ảnh này để khởi động dịch vụ NocoBase của bạn.
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **Lưu ý**: Nếu không sử dụng hình ảnh `full`, bạn có thể cần phải cài đặt thủ công máy khách cơ sở dữ liệu `pg_dump` bên trong container, quá trình này rườm rà và không ổn định.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Bước 2: Bật plugin "Trình quản lý sao lưu"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Đăng nhập vào hệ thống NocoBase của bạn.
+2. Vào **`Quản lý plugin`**.
+3. Tìm và bật plugin **`Trình quản lý sao lưu`**.
 
-**Step 3: Restore from local backup file**
+**Bước 3: Khôi phục từ tệp sao lưu cục bộ**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. Sau khi bật plugin, hãy làm mới trang.
+2. Vào menu bên trái **`Quản trị hệ thống`** -> **`Trình quản lý sao lưu`**.
+3. Nhấp vào nút **`Khôi phục từ bản sao lưu cục bộ`** ở góc trên bên phải.
+4. Kéo và thả tệp sao lưu đã tải xuống vào khu vực tải lên.
+5. Nhấp vào **`Gửi`**, kiên nhẫn đợi hệ thống hoàn tất khôi phục, quá trình này có thể mất từ vài chục giây đến vài phút.
 
-### Notes
+### Lưu ý
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **Tính tương thích của cơ sở dữ liệu**: Đây là điểm quan trọng nhất của phương pháp này. **Phiên bản, bộ ký tự, cài đặt phân biệt chữ hoa chữ thường** của cơ sở dữ liệu PostgreSQL của bạn phải khớp với tệp nguồn sao lưu. Đặc biệt là tên `schema` phải nhất quán.
+* **Khớp plugin thương mại**: Vui lòng đảm bảo bạn đã sở hữu và bật tất cả các plugin thương mại mà giải pháp yêu cầu, nếu không quá trình khôi phục sẽ bị gián đoạn.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
+## Phương pháp hai: Nhập trực tiếp tệp SQL (Phổ biến, phù hợp hơn cho phiên bản Cộng đồng)
 
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
+Phương thức này khôi phục dữ liệu bằng cách thao tác trực tiếp với cơ sở dữ liệu, bỏ qua plugin "Trình quản lý sao lưu", do đó không có giới hạn về plugin phiên bản Chuyên nghiệp/Doanh nghiệp.
 
-### Key Characteristics
+### Đặc điểm cốt lõi
 
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+* **Ưu điểm**:
+  1. **Không giới hạn phiên bản**: Áp dụng cho tất cả người dùng NocoBase, bao gồm cả phiên bản Cộng đồng.
+  2. **Tính tương thích cao**: Không phụ thuộc vào công cụ `dump` trong ứng dụng, chỉ cần có thể kết nối với cơ sở dữ liệu là có thể thao tác.
+  3. **Khả năng chịu lỗi cao**: Nếu giải pháp bao gồm các plugin thương mại mà bạn không có, các chức năng liên quan sẽ không được bật, nhưng sẽ không ảnh hưởng đến việc sử dụng bình thường của các chức năng khác, ứng dụng có thể khởi động thành công.
+* **Hạn chế**:
+  1. **Yêu cầu khả năng thao tác cơ sở dữ liệu**: Người dùng cần có khả năng thao tác cơ sở dữ liệu cơ bản, ví dụ như cách thực thi một tệp `.sql`.
+  2. **Mất tệp hệ thống**: **Phương pháp này sẽ làm mất tất cả các tệp hệ thống**, bao gồm các tệp in mẫu, các tệp được tải lên trong trường tệp của bộ sưu tập, v.v.
 
-### Steps
+### Các bước thao tác
 
-**Step 1: Prepare a clean database**
+**Bước 1: Chuẩn bị một cơ sở dữ liệu sạch**
 
-Create a brand new, empty database for the data you're about to import.
+Chuẩn bị một cơ sở dữ liệu hoàn toàn mới và trống cho dữ liệu bạn sắp nhập.
 
-**Step 2: Import the `.sql` file into the database**
+**Bước 2: Nhập tệp `.sql` vào cơ sở dữ liệu**
 
-* **Option A: Via server command line (Docker example)**
+Lấy tệp cơ sở dữ liệu đã tải xuống (thường là định dạng `.sql`), và nhập nội dung của nó vào cơ sở dữ liệu bạn đã chuẩn bị ở bước trước. Có nhiều cách thực hiện, tùy thuộc vào môi trường của bạn:
+
+* **Tùy chọn A: Thông qua dòng lệnh máy chủ (ví dụ với Docker)**
+  Nếu bạn sử dụng Docker để cài đặt NocoBase và cơ sở dữ liệu, bạn có thể tải tệp `.sql` lên máy chủ, sau đó sử dụng lệnh `docker exec` để thực hiện nhập. Giả sử tên container PostgreSQL của bạn là `my-nocobase-db`, tên tệp là `nocobase_crm_v2_sql_260223.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Sao chép tệp sql vào trong container
   docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
+  # Vào container thực hiện lệnh nhập
   docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
   ```
+* **Tùy chọn B: Thông qua máy khách cơ sở dữ liệu từ xa (Navicat, v.v.)**
+  Nếu cơ sở dữ liệu của bạn đã mở cổng, bạn có thể sử dụng bất kỳ máy khách cơ sở dữ liệu đồ họa nào (như Navicat, DBeaver, pgAdmin, v.v.) để kết nối với cơ sở dữ liệu, sau đó:
+  1. Nhấp chuột phải vào cơ sở dữ liệu đích
+  2. Chọn "Chạy tệp SQL" hoặc "Thực thi tập lệnh SQL"
+  3. Chọn tệp `.sql` đã tải xuống và thực thi
 
-* **Option B: Via a remote database client (Navicat, etc.)**
+**Bước 3: Kết nối cơ sở dữ liệu và khởi động ứng dụng**
 
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
+Cấu hình các tham số khởi động NocoBase của bạn (như các biến môi trường `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, v.v.) để trỏ đến cơ sở dữ liệu mà bạn vừa nhập dữ liệu. Sau đó, khởi động dịch vụ NocoBase bình thường.
 
-**Step 3: Connect to the database and start the application**
+### Lưu ý
 
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
+* **Quyền cơ sở dữ liệu**: Phương pháp này yêu cầu bạn có tài khoản và mật khẩu có thể thao tác trực tiếp với cơ sở dữ liệu.
+* **Trạng thái plugin**: Sau khi nhập thành công, mặc dù dữ liệu của các plugin thương mại có trong hệ thống vẫn tồn tại, nhưng nếu bạn chưa cài đặt và bật plugin tương ứng tại địa phương, các chức năng liên quan sẽ không thể hiển thị và sử dụng, nhưng điều này sẽ không khiến ứng dụng bị sập.
 
 ---
 
-## Summary & Comparison
+## Tổng kết và so sánh
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
+| Đặc tính            | Phương pháp một: Trình quản lý sao lưu                                               | Phương pháp hai: Nhập trực tiếp SQL                                                                                   |
+| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **Người dùng áp dụng**    | Người dùng phiên bản **Chuyên nghiệp/Doanh nghiệp**                                              | **Tất cả người dùng** (bao gồm cả phiên bản Cộng đồng)                                                                             |
+| **Độ dễ thao tác**  | ⭐⭐⭐⭐⭐ (Rất đơn giản, thao tác UI)                                   | ⭐⭐⭐ (Cần kiến thức cơ sở dữ liệu cơ bản)                                                                            |
+| **Yêu cầu môi trường**    | **Nghiêm ngặt**, cơ sở dữ liệu, phiên bản hệ thống, v.v. cần tương thích cao                           | **Bình thường**, cần tương thích cơ sở dữ liệu                                                                               |
+| **Phụ thuộc plugin**    | **Phụ thuộc mạnh mẽ**, khi khôi phục sẽ kiểm tra plugin, thiếu bất kỳ plugin nào cũng sẽ dẫn đến **khôi phục thất bại**. | **Chức năng phụ thuộc mạnh mẽ vào plugin**. Dữ liệu có thể được nhập độc lập, hệ thống có các chức năng cơ bản. Nhưng nếu thiếu plugin tương ứng, các chức năng liên quan sẽ **hoàn toàn không thể sử dụng**. |
+| **Tệp hệ thống**    | **Giữ lại nguyên vẹn** (mẫu in, tệp tải lên, v.v.)                          | **Sẽ bị mất** (mẫu in, tệp tải lên, v.v.)                                                                  |
+| **Kịch bản đề xuất**   | Người dùng doanh nghiệp, môi trường có thể kiểm soát, nhất quán, cần chức năng đầy đủ                     | Thiếu một số plugin, theo đuổi tính tương thích và linh hoạt cao, người dùng không phải phiên bản Chuyên nghiệp/Doanh nghiệp, có thể chấp nhận thiếu chức năng tệp                                |
 
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+Hy vọng hướng dẫn này có thể giúp bạn triển khai hệ thống CRM 2.0 một cách thuận lợi. Nếu bạn gặp bất kỳ vấn đề nào trong quá trình thao tác, vui lòng liên hệ với chúng tôi bất cứ lúc nào!

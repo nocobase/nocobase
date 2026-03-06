@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-users'
 
 בנוסף, ניתן גם להוסיף בלוקים שונים מתוך אוסף המשתמשים כדי לנהל משתמשים, לדוגמה, בלוק טבלה:
 
-![](https://static-docs.nocobase.com/76b5a4652b45d4dd96c424fb08082cf6.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## הוספת משתמש
 

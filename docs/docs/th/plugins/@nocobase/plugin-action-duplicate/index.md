@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "Action: Duplicate"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  คัดลอกระเบียน สามารถคัดลอกไปยัง Form เพื่อแก้ไขก่อน Submit หรือคัดลอกโดยตรงเพื่อสร้างระเบียนใหม่
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-action-duplicate/index)
+:::
+
+# Action: Duplicate

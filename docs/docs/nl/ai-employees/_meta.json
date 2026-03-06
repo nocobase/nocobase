@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Snelstart",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Functie-introductie",
     "items": [
       {
         "type": "custom-link",
         "label": "LLM-service configureren",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "AI-medewerker aanmaken",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "AI-medewerkers inschakelen",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "Samenwerken met AI-medewerker",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Ingebouwde AI-medewerkers",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Overzicht",
-        "link": "/ai-employees/built-in/index"
+        "label": "Samenwerken met AI-medewerkers",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Inzichtanalist",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: Datamodelleringsexpert",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: Data-opschoningsexpert",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Frontend-ontwikkelaar",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Geavanceerd",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Blok selecteren",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Gegevensbronnen",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Vaardigheden",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Taken",
-        "link": "/ai-employees/advanced/task"
+        "label": "Context toevoegen - Blokken",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "Online zoeken",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vaardigheden gebruiken",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Snelkoppelingstaken",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ingebouwde AI-medewerkers",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nieuwe AI-medewerker",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "Bestandsbeheer",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Workflow",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM-node",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Tekstgesprek",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Multimodaal gesprek",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Gestructureerde output",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Applicatiedocumentatie",
+    "label": "Workflow",
     "items": [
       {
         "type": "custom-link",
-        "label": "Scenario's",
+        "label": "LLM-nodes",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: CRM-scenario configuratie",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Configuratie",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Beheerdersconfiguratie",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Tekstgesprek",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Prompt-gids",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Multimodaal gesprek",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Gestructureerde output",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Toepassingspraktijken",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: CRM-scenarioconfiguratie",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Prompt-gids",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

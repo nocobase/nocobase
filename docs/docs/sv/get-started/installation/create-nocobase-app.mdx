@@ -1,18 +1,23 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/get-started/installation/create-nocobase-app).
 :::
 
-
-# create-nocobase-app Installation
+# create-nocobase-app installation
 
 :::tip Förutsättningar
 
-- Node.js 20+ och Yarn 1.22.x är installerade.
-- En av de nödvändiga databaserna är konfigurerad och körs: MySQL 8.0.17+, MariaDB 10.9+ eller PostgreSQL 10+.
+- Node.js 20+, Yarn 1.22.x installerade
+- Konfigurerat och startat en av de nödvändiga databaserna MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+
+- På grund av den lokala nätverksmiljön rekommenderas ni att byta till en inhemsk spegel (ej obligatoriskt)
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
 
 :::
 
-## 1. Skapa ett NocoBase-projekt
+## 1. Skapa NocoBase-projekt
 
 Välj NocoBase-version ([Versionsjämförelse](../quickstart.md)) och databastyp, kör sedan motsvarande kommando.
 
@@ -164,11 +169,11 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 </Tabs>
 
-:::warning Miljövariabler
+:::warning Förklaring av miljövariabler
 
-- `TZ` används för att ställa in applikationens tidszon, som standard är operativsystemets tidszon.
-- `APP_KEY` är applikationens hemliga nyckel, som används för att generera användartokens m.m. (Om `APP_KEY` ändras blir gamla tokens ogiltiga). Det kan vara vilken slumpmässig sträng som helst. **Ändra den till er egen hemliga nyckel och se till att den inte exponeras.**
-- `DB_*` är databasrelaterade konfigurationer. Ändra dem så att de matchar er databasanslutningsinformation enligt er faktiska installation.
+- `TZ` används för att ställa in applikationens tidszon, standard är operativsystemets tidszon
+- `APP_KEY` är applikationens hemliga nyckel, som används för att generera användartokens m.m. (Om `APP_KEY` ändras blir gamla tokens ogiltiga). Det kan vara vilken slumpmässig sträng som helst. **Vänligen ändra till er egen hemliga nyckel och se till att den inte exponeras för utomstående**
+- `DB_*` är databasrelaterade konfigurationer, vänligen ändra till er databasanslutningsinformation baserat på den faktiska situationen
 
 :::
 
@@ -180,7 +185,7 @@ cd my-nocobase-app
 
 ## 3. Installera beroenden
 
-📢 Beroende på er nätverksmiljö, systemkonfiguration och andra faktorer kan det här steget ta över tio minuter.
+📢 På grund av nätverksmiljö, systemkonfiguration och andra faktorer kan detta steg ta ett tiotal minuter.
 
 ```bash
 yarn install
@@ -188,7 +193,7 @@ yarn install
 
 :::tip Tips för produktionsmiljö
 
-När ni driftsätter i en produktionsmiljö kan ni installera endast de nödvändiga beroendena för att minska storleken:
+Vid driftsättning i produktionsmiljö kan ni installera endast nödvändiga beroenden för att minska storleken:
 
 ```bash
 yarn install --production
@@ -202,7 +207,7 @@ yarn install --production
 yarn nocobase install --lang=zh-CN
 ```
 
-Installationsprocessen kommer automatiskt att skapa databastabellstrukturen och initiera data.
+Installationsprocessen skapar automatiskt databastabellstruktur och initialiserar data.
 
 ## 5. Starta NocoBase
 
@@ -220,7 +225,7 @@ yarn start
 
 ## 6. Logga in på NocoBase
 
-Öppna [http://localhost:13000](http://localhost:13000) i er webbläsare. Det ursprungliga kontot och lösenordet är `admin@nocobase.com` och `admin123`.
+Använd webbläsaren för att öppna [http://localhost:13000](http://localhost:13000), initialt konto och lösenord är `admin@nocobase.com` och `admin123`.
 
 :::warning Tips för kontosäkerhet
 

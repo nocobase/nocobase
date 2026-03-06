@@ -1,74 +1,74 @@
-:::tip
-このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/interface-builder/fields/specific/js-field)をご参照ください。
 :::
 
-# JS フィールド
+# JS Field
 
-## はじめに
+## 介绍
 
-JS フィールドは、フィールドの位置でJavaScriptを使ってコンテンツをカスタマイズして表示するために利用されます。これは、詳細ブロック、フォームの読み取り専用項目、またはテーブル列の「その他のカスタム項目」などでよく使われます。パーソナライズされた表示、派生情報の組み合わせ、ステータスバッジ、リッチテキスト、グラフなどのレンダリングに適しています。
+JS Field は、フィールドの位置で JavaScript を使用してコンテンツをカスタムレンダリングするために使用されます。詳細ブロック、フォームの読み取り専用項目、またはテーブル列の「その他のカスタム項目」などでよく見られます。パーソナライズされた表示、派生情報の組み合わせ、ステータスバッジ、リッチテキスト、またはチャートなどのレンダリングに適しています。
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
-## タイプ
+## 类型
 
-- 読み取り専用タイプ：編集できない表示に利用され、`ctx.value` を読み取って出力がレンダリングされます。
-- 編集可能タイプ：カスタム入力インタラクションに利用され、`ctx.getValue()`/`ctx.setValue(v)` とコンテナイベント `js-field:value-change` を提供することで、フォームの値との双方向同期を容易にします。
+- 読み取り専用型：編集不可の表示に使用され、`ctx.value` を読み取って出力をレンダリングします。
+- 編集可能型：カスタム入力インタラクションに使用され、`ctx.getValue()` / `ctx.setValue(v)` とコンテナイベント `js-field:value-change` を提供し、フォーム値との双方向同期を容易にします。
 
-## ユースケース
+## 使用场景
 
-- 読み取り専用タイプ
-  - 詳細ブロック：計算結果、ステータスバッジ、リッチテキストのスニペット、グラフなどの読み取り専用コンテンツを表示します。
-  - テーブルブロック：「その他のカスタム列 > JS Field」として読み取り専用表示に利用されます（フィールドにバインドされていない列が必要な場合は、JS Column を使用してください）。
+- 読み取り専用型
+  - 詳細ブロック：計算結果、ステータスバッジ、リッチテキストのスニペット、チャートなどの読み取り専用コンテンツを表示します。
+  - テーブルブロック：「その他のカスタム列 > JS Field」として読み取り専用表示に使用されます（フィールドにバインドされていない列が必要な場合は、JS Column を使用してください）。
 
-- 編集可能タイプ
-  - フォームブロック（CreateForm/EditForm）：カスタム入力コントロールや複合入力に利用され、フォームの検証と送信に伴って処理されます。
-  - 適したシナリオ：外部ライブラリの入力コンポーネント、リッチテキスト/コードエディタ、複雑な動的コンポーネントなど。
+- 編集可能型
+  - フォームブロック（CreateForm/EditForm）：カスタム入力コントロールや複合入力に使用され、フォームのバリデーションや送信に付随します。
+  - 適したシーン：外部ライブラリの入力コンポーネント、リッチテキスト/コードエディタ、複雑な動的コンポーネントなど。
 
-## ランタイムコンテキスト API
+## 运行时上下文 API
 
-JS フィールドのランタイムコードは、以下のコンテキスト機能を直接利用できます。
+JS Field のランタイムコードは、以下のコンテキスト機能を直接使用できます。
 
-- `ctx.element`：フィールドの DOM コンテナ（ElementProxy）で、`innerHTML`、`querySelector`、`addEventListener` などに対応しています。
+- `ctx.element`：フィールドの DOM コンテナ（ElementProxy）。`innerHTML`、`querySelector`、`addEventListener` などをサポートしています。
 - `ctx.value`：現在のフィールド値（読み取り専用）。
 - `ctx.record`：現在のレコードオブジェクト（読み取り専用）。
 - `ctx.collection`：フィールドが属するコレクションのメタ情報（読み取り専用）。
 - `ctx.requireAsync(url)`：URL に基づいて AMD/UMD ライブラリを非同期でロードします。
 - `ctx.importAsync(url)`：URL に基づいて ESM モジュールを動的にインポートします。
 - `ctx.openView(options)`：設定済みのビュー（ポップアップ/ドロワー/ページ）を開きます。
-- `ctx.i18n.t()` / `ctx.t()`：国際化機能。
-- `ctx.onRefReady(ctx.ref, cb)`：コンテナの準備ができてからレンダリングします。
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`：JSX レンダリングと時間処理のための、React、ReactDOM、Ant Design、Ant Design アイコン、dayjs などの組み込み汎用ライブラリです。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` は互換性のために引き続き利用可能です。）
-- `ctx.render(vnode)`：React 要素、HTML 文字列、または DOM ノードをデフォルトコンテナ `ctx.element` にレンダリングします。繰り返しレンダリングする場合、Root を再利用し、コンテナの既存コンテンツを上書きします。
+- `ctx.i18n.t()` / `ctx.t()`：国際化。
+- `ctx.onRefReady(ctx.ref, cb)`：コンテナの準備が整ってからレンダリングします。
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`：組み込みの React / ReactDOM / Ant Design / Ant Design アイコン / dayjs / lodash / math.js / formula.js などの共通ライブラリで、JSX のレンダリング、時間処理、データ操作、数学演算に使用されます。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` は互換性のために引き続き保持されます。）
+- `ctx.render(vnode)`：React 要素、HTML 文字列、または DOM ノードをデフォルトコンテナ `ctx.element` にレンダリングします。繰り返しレンダリングすると Root が再利用され、コンテナの既存のコンテンツが上書きされます。
 
-編集可能タイプ（JSEditableField）に特有の機能：
+編集可能型（JSEditableField）特有の機能：
 
 - `ctx.getValue()`：現在のフォーム値を取得します（フォームの状態を優先し、次にフィールドの props にフォールバックします）。
 - `ctx.setValue(v)`：フォーム値とフィールドの props を設定し、双方向同期を維持します。
-- コンテナイベント `js-field:value-change`：外部の値が変更されたときにトリガーされ、スクリプトが入力表示を更新しやすくなります。
+- コンテナイベント `js-field:value-change`：外部の値が変化したときにトリガーされ、スクリプトが入力表示を更新しやすくなります。
 
-## エディタとスニペット
+## 编辑器与片段
 
-JS フィールドのスクリプトエディタは、シンタックスハイライト、エラーヒント、および組み込みコードスニペット（Snippets）に対応しています。
+JS Field のスクリプトエディタは、構文ハイライト、エラーヒント、および組み込みコードスニペット（Snippets）をサポートしています。
 
 - `Snippets`：組み込みコードスニペットのリストを開き、検索して現在のカーソル位置にワンクリックで挿入できます。
-- `Run`：現在のコードを直接実行します。実行ログは下部の `Logs` パネルに出力され、`console.log/info/warn/error` やエラーのハイライト表示による位置特定に対応しています。
+- `Run`：現在のコードを直接実行します。実行ログは下部の `Logs` パネルに出力され、`console.log/info/warn/error` とエラーのハイライト表示による位置特定をサポートしています。
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-AI 従業員と連携してコードを生成することもできます。
+AI 従業員と連携してコードを生成することもできます：
 
-- [AI 従業員・Nathan：フロントエンドエンジニア](/ai-employees/built-in/ai-coding)
+- [AI 従業員 · Nathan：フロントエンドエンジニア](/ai-employees/features/built-in-employee)
 
-## よくある使い方
+## 常见用法
 
-### 1) 基本的なレンダリング（フィールド値の読み取り）
+### 1) 基础渲染（读取字段值）
 
 ```js
 ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ```
 
-### 2) JSX を使用した React コンポーネントのレンダリング
+### 2) 使用 JSX 渲染 React 组件
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -79,7 +79,7 @@ ctx.render(
 );
 ```
 
-### 3) サードパーティライブラリのロード（AMD/UMD または ESM）
+### 3) 加载第三方库（AMD/UMD 或 ESM）
 
 ```js
 // AMD/UMD
@@ -91,7 +91,7 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.value ?? ''))}</span>);
 ```
 
-### 4) クリックでポップアップ/ドロワーを開く（openView）
+### 4) 点击打开弹窗/抽屉（openView）
 
 ```js
 ctx.element.innerHTML = `<a class="open-detail">詳細を表示</a>`;
@@ -108,10 +108,10 @@ a?.addEventListener('click', async () => {
 });
 ```
 
-### 5) 編集可能な入力（JSEditableFieldModel）
+### 5) 可编辑输入（JSEditableFieldModel）
 
 ```js
-// JSX を使用してシンプルな入力をレンダリングし、フォーム値を同期します
+// JSX でシンプルな入力をレンダリングし、フォーム値を同期します
 function InputView() {
   return (
     <input
@@ -123,7 +123,7 @@ function InputView() {
   );
 }
 
-// 外部の値が変更されたときに、入力に同期します（オプション）
+// 外部の値が変化したときに入力に同期します（オプション）
 ctx.element.addEventListener('js-field:value-change', (ev) => {
   const el = ctx.element.querySelector('.nb-js-editable');
   if (el) el.value = ev.detail ?? '';
@@ -132,8 +132,8 @@ ctx.element.addEventListener('js-field:value-change', (ev) => {
 ctx.render(<InputView />);
 ```
 
-## 注意事項
+## 注意事项
 
-- 外部ライブラリのロードには信頼できる CDN の利用を推奨し、失敗シナリオに備えてフォールバック（例: `if (!lib) return;`）を用意してください。
-- セレクタには `class` または `[name=...]` を優先的に使用し、固定 `id` の使用は避けてください。これにより、複数のブロックやポップアップでの `id` の重複を防ぎます。
-- イベントのクリーンアップ：フィールドはデータ変更やビューの切り替えにより複数回再レンダリングされる可能性があります。イベントをバインドする前に、重複トリガーを避けるためにクリーンアップまたは重複排除を行う必要があります。「remove してから add する」といった方法が考えられます。
+- 外部ライブラリのロードには信頼できる CDN を使用することを推奨し、失敗シナリオに備えてフォールバック（例：`if (!lib) return;`）を用意してください。
+- セレクタは `class` または `[name=...]` を優先的に使用し、固定 `id` の使用は避けてください。これにより、複数のブロックやポップアップでの `id` の重複を防ぎます。
+- イベントのクリーンアップ：フィールドはデータの変更やビューの切り替えにより複数回再レンダリングされる可能性があるため、イベントをバインドする前にクリーンアップまたは重複排除を行い、重複トリガーを避けてください。「先に remove してから add する」ことが可能です。

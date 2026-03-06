@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "Przepływy pracy"
+    "label": "Przepływ pracy"
   },
   {
     "type": "custom-link",
@@ -25,12 +25,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Zdarzenia tabeli danych",
+        "label": "Zdarzenie kolekcji",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Zadania zaplanowane",
+        "label": "Harmonogram",
         "link": "/workflow/triggers/schedule"
       },
       {
@@ -45,12 +45,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Niestandardowe zdarzenia akcji",
+        "label": "Niestandardowe zdarzenie akcji",
         "link": "/workflow/triggers/custom-action"
       },
       {
         "type": "custom-link",
-        "label": "Zatwierdzenia",
+        "label": "Zatwierdzenie",
         "link": "/workflow/triggers/approval"
       },
       {
@@ -76,7 +76,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "Wielki model językowy",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -92,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Rozgałęzienie warunkowe",
+            "label": "Rozgałęzienie wielowarunkowe",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -132,7 +132,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Zakończ",
+            "label": "Koniec",
             "link": "/workflow/nodes/end"
           }
         ]
@@ -148,7 +148,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Obliczenia dat",
+            "label": "Obliczenia daty",
             "link": "/workflow/nodes/date-calculation"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Dodaj dane",
+            "label": "Utwórz dane",
             "link": "/workflow/nodes/create"
           },
           {
@@ -184,7 +184,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Operacje SQL",
+            "label": "Operacja SQL",
             "link": "/workflow/nodes/sql"
           }
         ]
@@ -200,19 +200,19 @@
           },
           {
             "type": "custom-link",
-            "label": "Zatwierdzenia",
+            "label": "Zatwierdzenie",
             "link": "/workflow/nodes/approval"
           },
           {
             "type": "custom-link",
-            "label": "Kopia (CC)",
+            "label": "DW (CC)",
             "link": "/workflow/nodes/cc"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Rozszerzanie typów",
+        "label": "Typy rozszerzone",
         "items": [
           {
             "type": "custom-link",
@@ -226,7 +226,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Powiadomienia",
+            "label": "Powiadomienie",
             "link": "/notification-manager/#工作流通知节点"
           },
           {
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "Historia wykonań",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

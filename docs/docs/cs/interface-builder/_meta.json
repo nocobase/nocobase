@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Blok filtru",
+        "label": "Filtrační bloky",
         "collapsed": true,
         "items": [
           {
@@ -69,18 +69,13 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Ovládací panel",
+            "label": "Akční panel",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Blok s citací",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -106,6 +101,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Způsob načítání dat",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Rozložení",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
@@ -126,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Řazení přetažením",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Odstranění bloku",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Název bloku",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Výška bloku",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Koncepty formulářů",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -164,7 +179,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Pole filtru",
+            "label": "Pole filtračního formuláře",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Rozbalovací seznam",
+            "label": "Rozbalovací výběr",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Podřízená tabulka",
+            "label": "Podřízená tabulka (řádková úprava)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Podřízená tabulka (úprava v okně)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -336,12 +356,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Přiřazení hodnoty poli",
+            "label": "Přiřazení hodnot polím",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "Propojit s workflow",
+            "label": "Propojit s pracovním postupem",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
@@ -358,12 +378,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Typ akce",
+        "label": "Typy akcí",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Přidat",
+            "label": "Přidat nové",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -383,12 +403,17 @@
           },
           {
             "type": "custom-link",
+            "label": "Duplikovat",
+            "link": "/interface-builder/actions/types/duplicate"
+          },
+          {
+            "type": "custom-link",
             "label": "Importovat",
             "link": "/interface-builder/actions/types/import"
           },
           {
             "type": "custom-link",
-            "label": "Import Pro",
+            "label": "Importovat Pro",
             "link": "/interface-builder/actions/types/import-pro"
           },
           {
@@ -398,7 +423,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Export Pro",
+            "label": "Exportovat Pro",
             "link": "/interface-builder/actions/types/export-pro"
           },
           {
@@ -433,7 +458,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Spustit workflow",
+            "label": "Spustit pracovní postup",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -445,6 +470,11 @@
             "type": "custom-link",
             "label": "Hromadná aktualizace",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hromadná úprava",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Proměnná",
+        "label": "Proměnné",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI šablony",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

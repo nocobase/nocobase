@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Přehled řešení"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Detailní návrh"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Instalace"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Další obsah"
   }
 ]

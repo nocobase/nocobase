@@ -1,12 +1,16 @@
 ---
-displayName: "Office File Previewer"
+displayName: "Office-Dateivorschau"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  A plugin for previewing office files via Microsoft live preview service.
+  Ein Plugin zur Vorschau von Office-Dateien über den Microsoft Online-Dienst.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Office File Previewer
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/plugins/@nocobase/plugin-file-previewer-office/index).
+:::
+
+# Office-Dateivorschau

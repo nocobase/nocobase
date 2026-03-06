@@ -17,7 +17,7 @@ Yerleşik bir eklentidir, kurulum gerektirmez.
 
 İş akışı yapılandırma arayüzünde, akıştaki artı (“+”) düğmesine tıklayarak bir “Paralel Dallanma” düğümü ekleyin:
 
-![Paralel Dallanma Ekle](https://static-docs.nocobase.com/9e0f3faa0b9335270647a3047759eac.png)
+![Paralel Dallanma Ekle](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
 
 İş akışına bir paralel dallanma düğümü ekledikten sonra, varsayılan olarak iki alt dal eklenir. Ayrıca, dal ekle düğmesine tıklayarak istediğiniz sayıda dal ekleyebilirsiniz. Her dala istediğiniz sayıda düğüm ekleyebilirsiniz. Gereksiz dalları, dalın başlangıcındaki sil düğmesine tıklayarak kaldırabilirsiniz.
 

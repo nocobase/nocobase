@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, tExpr, FlowModelContext } from '@nocobase/flow-engine';
+import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
 import { isTitleField } from '../../data-source';
 
 export const titleField = defineAction({
@@ -48,8 +48,10 @@ export const titleField = defineAction({
     const target = ctx.model.collectionField.target;
     const targetCollection = ctx.model.collectionField.targetCollection;
     if (params.label !== previousParams.label) {
-      const fieldUid = ctx.model.subModels['field']['uid'];
-      await ctx.engine.destroyModel(fieldUid);
+      const fieldUid = ctx.model.subModels['field']?.['uid'];
+      if (fieldUid) {
+        await ctx.engine.destroyModel(fieldUid);
+      }
       const targetCollectionField = targetCollection.getField(params.label);
       const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
       const use = binding.modelName;

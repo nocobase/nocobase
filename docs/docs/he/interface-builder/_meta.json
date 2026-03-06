@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "בלוק",
+    "label": "בלוקים",
     "items": [
       {
         "type": "custom-link",
@@ -15,7 +15,7 @@
       },
       {
         "type": "custom-link",
-        "label": "בלוק נתונים",
+        "label": "בלוקי נתונים",
         "collapsed": true,
         "items": [
           {
@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "בלוק סינון",
+        "label": "בלוקי סינון",
         "collapsed": true,
         "items": [
           {
@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "בלוק הפניה",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -103,6 +98,11 @@
             "type": "custom-link",
             "label": "טווח נתונים",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "שיטת טעינת נתונים",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -126,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "מיון בגרירה",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "מחיקת בלוק",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "כותרת בלוק",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "גובה בלוק",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "טיוטות טופס",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,7 +155,7 @@
   },
   {
     "type": "custom-link",
-    "label": "שדה",
+    "label": "שדות",
     "items": [
       {
         "type": "custom-link",
@@ -149,7 +164,7 @@
       },
       {
         "type": "custom-link",
-        "label": "פריטי הגדרה כלליים",
+        "label": "הגדרות כלליות",
         "collapsed": true,
         "items": [
           {
@@ -176,7 +191,7 @@
       },
       {
         "type": "custom-link",
-        "label": "פריטי הגדרה ספציפיים",
+        "label": "הגדרות ספציפיות",
         "collapsed": true,
         "items": [
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "טבלת משנה",
+            "label": "טבלת משנה (עריכה בשורה)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "טבלת משנה (עריכה בחלון קופץ)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -243,7 +263,7 @@
       },
       {
         "type": "custom-link",
-        "label": "פריטי הגדרת שדה",
+        "label": "הגדרות שדה",
         "collapsed": true,
         "items": [
           {
@@ -258,7 +278,7 @@
           },
           {
             "type": "custom-link",
-            "label": "הצג תווית",
+            "label": "הצגת תווית",
             "link": "/interface-builder/fields/field-settings/show-label"
           },
           {
@@ -312,7 +332,7 @@
   },
   {
     "type": "custom-link",
-    "label": "פעולה",
+    "label": "פעולות",
     "items": [
       {
         "type": "custom-link",
@@ -321,7 +341,7 @@
       },
       {
         "type": "custom-link",
-        "label": "פריטי הגדרת פעולה",
+        "label": "הגדרות פעולה",
         "collapsed": true,
         "items": [
           {
@@ -331,17 +351,17 @@
           },
           {
             "type": "custom-link",
-            "label": "אישור שני",
+            "label": "אישור כפול",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "הקצאת שדה",
+            "label": "הקצאת ערכים לשדות",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "קשירת Workflow",
+            "label": "קישור לתהליך עבודה",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
@@ -358,7 +378,7 @@
       },
       {
         "type": "custom-link",
-        "label": "סוג פעולה",
+        "label": "סוגי פעולות",
         "collapsed": true,
         "items": [
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "עריכה",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "שכפול",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -433,7 +458,7 @@
           },
           {
             "type": "custom-link",
-            "label": "הפעלת Workflow",
+            "label": "הפעלת תהליך עבודה",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -445,6 +470,11 @@
             "type": "custom-link",
             "label": "עדכון אצווה",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "עריכה באצווה",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "משתנה",
+        "label": "משתנים",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "תבניות UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

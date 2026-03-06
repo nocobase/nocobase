@@ -1,14 +1,18 @@
 ---
-displayName: "Custom variables"
+displayName: "Custom proměnné"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Support for adding and using custom variables
+  Podpora pro přidávání a používání Custom proměnných
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Custom variables
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-custom-variables/index).
+:::
+
+# Custom proměnné

@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "סקירת הפתרון"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "עיצוב מפורט"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "כיצד להתקין"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "CRM בגרסה ישנה (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "תכנים נוספים"
   }
 ]

@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Přehled řešení"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Podrobný návrh"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Jak nainstalovat"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "Starší verze CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Více obsahu"
   }
 ]

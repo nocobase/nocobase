@@ -1,5 +1,5 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Armazenamento de Vetores
@@ -20,7 +20,7 @@ Clique no botão `Add new` no canto superior direito para adicionar um novo arma
 
 - No campo `Name`, insira o nome do armazenamento de vetores;
 - Em `Vector store`, selecione um banco de dados de vetores já configurado. Consulte: [Banco de Dados de Vetores](/ai-employees/knowledge-base/vector-database);
-- Em `LLM service`, selecione um serviço LLM já configurado. Consulte: [Gerenciamento de Serviço LLM](/ai-employees/quick-start/llm-service);
+- Em `LLM service`, selecione um serviço LLM já configurado. Consulte: [Gerenciamento de Serviço LLM](/ai-employees/features/llm-service);
 - No campo `Embedding model`, insira o nome do modelo `Embedding` a ser usado;
 
 Clique no botão `Submit` para salvar as informações do armazenamento de vetores.

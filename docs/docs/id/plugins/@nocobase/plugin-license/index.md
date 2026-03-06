@@ -1,12 +1,16 @@
 ---
-displayName: "License settings"
+displayName: "Pengaturan Lisensi"
 packageName: '@nocobase/plugin-license'
 description: |
-  Instance ID and license key settings
+  Pengaturan ID instans dan kunci lisensi
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# License settings
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-license/index).
+:::
+
+# Pengaturan Lisensi

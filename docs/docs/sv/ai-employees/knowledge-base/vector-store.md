@@ -1,5 +1,5 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Vektorlagring
@@ -20,7 +20,7 @@ Klicka på knappen `Add new` uppe till höger för att lägga till en ny vektorl
 
 - I inmatningsfältet `Name` anger ni namnet på vektorlagringen;
 - Under `Vector store` väljer ni en redan konfigurerad vektordatabas. Se: [Vektordatabas](/ai-employees/knowledge-base/vector-database);
-- Under `LLM service` väljer ni en redan konfigurerad LLM-tjänst. Se: [Hantering av LLM-tjänster](/ai-employees/quick-start/llm-service);
+- Under `LLM service` väljer ni en redan konfigurerad LLM-tjänst. Se: [Hantering av LLM-tjänster](/ai-employees/features/llm-service);
 - I inmatningsfältet `Embedding model` anger ni namnet på den `Embedding`-modell som ska användas;
 
 Klicka på knappen `Submit` för att spara informationen om vektorlagringen.

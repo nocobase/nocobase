@@ -12,7 +12,7 @@ Diagram ER:
 
 Konfiguracja pola:
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb84f82f832f3dbf752bd84c9.png)
+![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## Opis parametrów
 

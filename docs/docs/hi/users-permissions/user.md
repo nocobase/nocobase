@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-users'
 
 इसके अलावा, आप उपयोगकर्ताओं को प्रबंधित करने के लिए उपयोगकर्ता **संग्रह** के विभिन्न प्रकार के ब्लॉक भी जोड़ सकते हैं, जैसे कि टेबल ब्लॉक:
 
-![](https://static-docs.nocobase.com/76b59541a9e8f18a4568a7c9.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## उपयोगकर्ता जोड़ें
 

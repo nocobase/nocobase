@@ -1,12 +1,16 @@
 ---
-displayName: "Async task manager"
+displayName: "Менеджер асинхронных задач"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
-  Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.
+  Управление и мониторинг асинхронных задач, таких как импорт и экспорт данных. Поддержка отслеживания прогресса и уведомлений.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Async task manager
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-async-task-manager/index).
+:::
+
+# Менеджер асинхронных задач

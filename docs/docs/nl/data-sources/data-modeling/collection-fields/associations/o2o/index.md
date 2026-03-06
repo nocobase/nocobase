@@ -32,7 +32,7 @@ ER Relatie
 
 Veldconfiguratie
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a34942da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## Parameterbeschrijvingen
 

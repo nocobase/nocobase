@@ -1,5 +1,5 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Magazyn wektorowy
@@ -8,7 +8,7 @@ Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, pro
 
 W bazie wiedzy, podczas zapisywania dokumentów są one wektoryzowane. Podobnie, podczas wyszukiwania dokumentów, wektoryzowane są terminy wyszukiwania. Oba te procesy wymagają użycia `Embedding model` do wektoryzacji oryginalnego tekstu.
 
-W wtyczce AI Baza Wiedzy, magazyn wektorowy to powiązanie `Embedding model` z bazą danych wektorów.
+We wtyczce AI Baza Wiedzy, magazyn wektorowy to powiązanie `Embedding model` z bazą danych wektorów.
 
 ## Zarządzanie magazynem wektorowym
 
@@ -20,7 +20,7 @@ Proszę kliknąć przycisk `Add new` w prawym górnym rogu, aby dodać nowy maga
 
 - W polu `Name` proszę wprowadzić nazwę magazynu wektorowego;
 - W `Vector store` proszę wybrać już skonfigurowaną bazę danych wektorów. Proszę zapoznać się z: [Baza danych wektorów](/ai-employees/knowledge-base/vector-database);
-- W `LLM service` proszę wybrać już skonfigurowaną usługę LLM. Proszę zapoznać się z: [Zarządzanie usługą LLM](/ai-employees/quick-start/llm-service);
+- W `LLM service` proszę wybrać już skonfigurowaną usługę LLM. Proszę zapoznać się z: [Zarządzanie usługą LLM](/ai-employees/features/llm-service);
 - W polu `Embedding model` proszę wprowadzić nazwę `Embedding model`, który ma być użyty;
 
 Proszę kliknąć przycisk `Submit`, aby zapisać informacje o magazynie wektorowym.

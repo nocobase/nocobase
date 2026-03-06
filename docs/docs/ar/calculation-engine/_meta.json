@@ -1,0 +1,21 @@
+[
+  {
+    "type": "section-header",
+    "label": "محرك الحساب"
+  },
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/calculation-engine/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formula.js",
+    "link": "/calculation-engine/formula"
+  },
+  {
+    "type": "custom-link",
+    "label": "Math.js",
+    "link": "/calculation-engine/math"
+  }
+]

@@ -12,7 +12,7 @@ Diagrama ER:
 
 Configuração do Campo:
 
-![alt text](https://static-docs.nocobase.com/a608ce5421172dad7e8ab760107ff4e.png)
+![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
 ## Descrição dos Parâmetros
 

@@ -10,43 +10,43 @@
       },
       {
         "type": "custom-link",
-        "label": "Relazione tra FlowEngine e Plugin",
+        "label": "Relazione tra FlowEngine e plugin",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
         "type": "custom-link",
-        "label": "Avvio Rapido",
+        "label": "Avvio rapido",
         "link": "/flow-engine/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "Percorso di Apprendimento",
+        "label": "Tabella di marcia per l'apprendimento",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Guida",
+    "label": "Guide",
     "items": [
       {
         "type": "custom-link",
-        "label": "Registra FlowModel",
+        "label": "Registrare FlowModel",
         "link": "/flow-engine/register-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Crea FlowModel",
+        "label": "Creare FlowModel",
         "link": "/flow-engine/create-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "Renderizza FlowModel",
+        "label": "Renderizzare FlowModel",
         "link": "/flow-engine/flow-model-renderer"
       },
       {
         "type": "custom-link",
-        "label": "Flusso Eventi e Configurazione di FlowModel",
+        "label": "Flusso degli eventi e configurazione di FlowModel",
         "link": "/flow-engine/flow-model-settings"
       },
       {
@@ -56,23 +56,28 @@
       },
       {
         "type": "custom-link",
-        "label": "Ciclo di Vita di FlowModel",
+        "label": "Ciclo di vita di FlowModel",
         "link": "/flow-engine/flow-model-lifecycle"
       },
       {
         "type": "custom-link",
-        "label": "Sistema di Contesto di FlowModel",
+        "label": "Sistema di contesto di FlowModel",
         "link": "/flow-engine/flow-context"
       },
       {
         "type": "custom-link",
-        "label": "Meccanismo Reattivo: Observable",
+        "label": "Meccanismo reattivo: Observable",
         "link": "/flow-engine/observable"
       },
       {
         "type": "custom-link",
         "label": "FlowModel vs React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "Punti di estensione del plugin RunJS",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },
@@ -82,27 +87,27 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Definizione Modello",
+        "label": "ModelDefinition",
         "link": "/flow-engine/definitions/model-definition"
       },
       {
         "type": "custom-link",
-        "label": "Definizione Flusso",
+        "label": "FlowDefinition",
         "link": "/flow-engine/definitions/flow-definition"
       },
       {
         "type": "custom-link",
-        "label": "Definizione Evento",
+        "label": "EventDefinition",
         "link": "/flow-engine/definitions/event-definition"
       },
       {
         "type": "custom-link",
-        "label": "Definizione Azione",
+        "label": "ActionDefinition",
         "link": "/flow-engine/definitions/action-definition"
       },
       {
         "type": "custom-link",
-        "label": "Definizione Passo",
+        "label": "StepDefinition",
         "link": "/flow-engine/definitions/step-definition"
       }
     ]

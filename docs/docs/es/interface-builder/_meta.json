@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "Visión general",
+    "label": "Descripción general",
     "link": "/interface-builder"
   },
   {
@@ -10,7 +10,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/interface-builder/blocks"
       },
       {
@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Bloque de filtro",
+        "label": "Bloques de filtro",
         "collapsed": true,
         "items": [
           {
@@ -79,11 +79,6 @@
           },
           {
             "type": "custom-link",
-            "label": "Bloque de referencia",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
@@ -103,6 +98,11 @@
             "type": "custom-link",
             "label": "Alcance de datos",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Método de carga de datos",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -126,6 +126,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Ordenación por arrastrar y soltar",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Eliminación de bloque",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "Título del bloque",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Altura del bloque",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Borradores de formulario",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,11 +155,11 @@
   },
   {
     "type": "custom-link",
-    "label": "Campo",
+    "label": "Campos",
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/interface-builder/fields"
       },
       {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Subtabla",
+            "label": "Subtabla (edición en línea)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Subtabla (edición en ventana emergente)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -263,7 +283,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Ayuda del campo",
+            "label": "Información sobre herramientas del campo",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -283,12 +303,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Modo",
+            "label": "Patrón",
             "link": "/interface-builder/fields/field-settings/pattern"
           },
           {
             "type": "custom-link",
-            "label": "Requerido",
+            "label": "Obligatorio",
             "link": "/interface-builder/fields/field-settings/required"
           },
           {
@@ -305,7 +325,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Componente de campo relacional",
+        "label": "Componente de campo de asociación",
         "link": "/interface-builder/fields/association-field"
       }
     ]
@@ -316,7 +336,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visión general",
+        "label": "Descripción general",
         "link": "/interface-builder/actions"
       },
       {
@@ -331,12 +351,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Confirmación adicional",
+            "label": "Confirmación doble",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Asignación de campo",
+            "label": "Asignación de valores",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
@@ -358,12 +378,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Tipo de acción",
+        "label": "Tipos de acción",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Añadir",
+            "label": "Añadir nuevo",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Editar",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Duplicar",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -403,7 +428,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Exportar adjunto",
+            "label": "Exportar adjuntos",
             "link": "/interface-builder/actions/types/export-attachments"
           },
           {
@@ -448,6 +473,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Edición masiva",
+            "link": "/interface-builder/actions/types/bulk-edit"
+          },
+          {
+            "type": "custom-link",
             "label": "Añadir subregistro",
             "link": "/interface-builder/actions/types/add-child"
           },
@@ -488,6 +518,11 @@
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plantillas de UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Action panel"
+displayName: "Blok: İşlem paneli"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
+  Çeşitli işlemleri merkezi olarak yönetir ve görüntüler, kullanıcıların görevleri hızlı bir şekilde gerçekleştirmesine olanak tanır. Genişletilebilirliği destekler; mevcut işlem türleri arasında açılır pencereler, bağlantılar, tarama ve özel istekler bulunur.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Action panel
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-block-workbench/index) bakın.
+:::
+
+# Blok: İşlem paneli

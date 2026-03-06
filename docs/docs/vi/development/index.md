@@ -14,9 +14,9 @@ features:
         details: Công cụ phát triển giao diện người dùng không mã/mã thấp cho NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: Cơ sở dữ liệu
-        details: Module cơ sở dữ liệu của lõi NocoBase, cung cấp API thống nhất để truy cập, mô hình hóa và thao tác dữ liệu cho các plugin. Đây là nền tảng cốt lõi cho việc tương tác dữ liệu giữa các plugin.
-        link: /database
+      - title: RunJS giao diện người dùng
+        details: Môi trường thực thi JavaScript cho các kịch bản như khối JS, trường JS và thao tác JS.
+        link: /runjs
         showOnHome: true
   - title: Giao diện & Tương tác
     details: Tìm hiểu cách mở rộng và tùy chỉnh giao diện người dùng, xây dựng các thành phần, trường và logic thao tác đáp ứng nhu cầu kinh doanh, nâng cao trải nghiệm trực quan và tương tác của hệ thống.
@@ -57,3 +57,8 @@ features:
         details: Mở rộng khả năng xem trước tệp để hỗ trợ xem trước và hiển thị trực tuyến nhiều định dạng tệp hơn.
         link: /file-manager/development
 ---
+
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/development/index).
+:::
+

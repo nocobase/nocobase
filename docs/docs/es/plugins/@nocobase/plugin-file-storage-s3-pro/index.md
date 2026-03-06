@@ -1,5 +1,5 @@
 ---
-displayName: "File storage: S3(Pro)"
+displayName: "File storage: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
   - 1.x
@@ -12,4 +12,8 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# File storage: S3(Pro)
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/plugins/@nocobase/plugin-file-storage-s3-pro/index).
+:::
+
+# File storage: S3 (Pro)

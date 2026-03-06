@@ -25,12 +25,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Sự kiện bảng dữ liệu",
+        "label": "Sự kiện bộ sưu tập",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "Tác vụ định kỳ",
+        "label": "Nhiệm vụ định kỳ",
         "link": "/workflow/triggers/schedule"
       },
       {
@@ -92,7 +92,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Rẽ nhánh đa điều kiện",
+            "label": "Nhánh đa điều kiện",
             "link": "/workflow/nodes/multi-conditions"
           },
           {
@@ -107,7 +107,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Rẽ nhánh song song",
+            "label": "Nhánh song song",
             "link": "/workflow/nodes/parallel"
           },
           {
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Đầu ra của luồng",
+            "label": "Đầu ra luồng",
             "link": "/workflow/nodes/output"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "Thêm dữ liệu",
+            "label": "Thêm mới dữ liệu",
             "link": "/workflow/nodes/create"
           },
           {
@@ -205,14 +205,14 @@
           },
           {
             "type": "custom-link",
-            "label": "Gửi bản sao (CC)",
+            "label": "Đồng gửi (CC)",
             "link": "/workflow/nodes/cc"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Mở rộng loại",
+        "label": "Loại mở rộng",
         "items": [
           {
             "type": "custom-link",
@@ -221,7 +221,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Script JavaScript",
+            "label": "Kịch bản JavaScript",
             "link": "/workflow/nodes/javascript"
           },
           {
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Lịch sử thực thi",
-    "link": "/workflow/advanced/execution"
+    "label": "Bản ghi thực thi",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

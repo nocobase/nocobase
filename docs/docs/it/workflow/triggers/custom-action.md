@@ -1,77 +1,76 @@
 ---
 pkg: '@nocobase/plugin-workflow-custom-action-trigger'
 ---
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/workflow/triggers/custom-action).
 :::
 
-
-
-# Evento Azione Personalizzata
+# Evento azione personalizzata
 
 ## Introduzione
 
-NocoBase include azioni dati comuni predefinite (come creazione, lettura, aggiornamento, eliminazione, ecc.). Quando queste azioni non sono sufficienti per esigenze di business complesse, Lei può utilizzare gli eventi di azione personalizzata all'interno di un flusso di lavoro. Associando questo evento a un pulsante "Attiva flusso di lavoro" in un blocco di pagina, un flusso di lavoro di azione personalizzata verrà attivato al clic dell'utente.
+NocoBase dispone di operazioni sui dati integrate (aggiunta, eliminazione, modifica, query, ecc.). Quando queste operazioni non riescono a soddisfare esigenze aziendali complesse, Lei può utilizzare gli eventi di azione personalizzata nei flussi di lavoro e associare tale evento al pulsante "Attiva flusso di lavoro" di un blocco di pagina. Al clic dell'utente, verrà attivato un flusso di lavoro di azione personalizzata.
 
-## Creare un Flusso di Lavoro
+## Creazione di un flusso di lavoro
 
-Quando crea un flusso di lavoro, selezioni "Evento Azione Personalizzata":
+Durante la creazione di un flusso di lavoro, selezioni "Evento azione personalizzata":
 
 ![Crea flusso di lavoro "Evento azione personalizzata"](https://static-docs.nocobase.com/20240509091820.png)
 
-## Configurazione del Trigger
+## Configurazione del trigger
 
-### Tipo di Contesto
+### Tipo di contesto
 
 > v.1.6.0+
 
-Il tipo di contesto determina a quali pulsanti di blocco il flusso di lavoro può essere associato:
+Il diverso tipo di contesto determina a quali pulsanti dei blocchi può essere associato il flusso di lavoro:
 
-*   **Nessun contesto**: Un evento globale che può essere associato ai pulsanti di azione nella Barra delle azioni e nei blocchi dati.
-*   **Singolo record**: Può essere associato ai pulsanti di azione nei blocchi dati come righe di tabella, moduli e dettagli.
-*   **Record multipli**: Può essere associato ai pulsanti per azioni multiple in una tabella.
+* Nessun contesto: ovvero un evento globale, può essere associato ai pulsanti di operazione nei pannelli operativi o nei blocchi dati;
+* Singolo record: può essere associato ai pulsanti di operazione in blocchi dati come righe di tabelle, moduli, dettagli, ecc.;
+* Record multipli: può essere associato ai pulsanti di operazione in blocco delle tabelle.
 
 ![Configurazione del trigger_Tipo di contesto](https://static-docs.nocobase.com/20250215135808.png)
 
 ### Collezione
 
-Quando il tipo di contesto è Singolo record o Record multipli, deve selezionare la collezione a cui associare il modello di dati:
+Quando il tipo di contesto è Singolo record o Record multipli, è necessario selezionare la collezione a cui associare il modello di dati:
 
 ![Configurazione del trigger_Seleziona collezione](https://static-docs.nocobase.com/20250215135919.png)
 
-### Dati di Associazione da Utilizzare
+### Dati di associazione da utilizzare
 
-Se ha bisogno di utilizzare i dati di associazione della riga di dati che attiva il flusso di lavoro, può selezionare qui i campi di associazione profondi:
+Se Lei ha bisogno di utilizzare i dati di associazione della riga di dati che attiva il trigger nel flusso di lavoro, può selezionare qui i campi di associazione profondi:
 
 ![Configurazione del trigger_Seleziona dati di associazione da utilizzare](https://static-docs.nocobase.com/20250215135955.png)
 
-Questi campi verranno automaticamente precaricati nel contesto del flusso di lavoro dopo l'attivazione dell'evento, rendendoli disponibili per l'uso nel flusso di lavoro.
+Questi campi verranno automaticamente precaricati nel contesto del flusso di lavoro dopo l'attivazione dell'evento, in modo da poter essere utilizzati nel flusso di lavoro.
 
-## Configurazione dell'Azione
+## Configurazione dell'azione
 
-La configurazione dei pulsanti di azione in blocchi diversi varia a seconda del tipo di contesto configurato nel flusso di lavoro.
+A seconda del tipo di contesto configurato nel flusso di lavoro, la configurazione dei pulsanti di operazione nei diversi blocchi varia.
 
-### Nessun Contesto
+### Nessun contesto
 
-> v.1.6.0+
+> v1.6.0+
 
-Nella Barra delle azioni e in altri blocchi dati, può aggiungere un pulsante "Attiva flusso di lavoro":
+Sia nel pannello operativo che in altri blocchi dati, è possibile aggiungere il pulsante "Attiva flusso di lavoro":
 
-![Aggiungi pulsante azione al blocco_Barra delle azioni](https://static-docs.nocobase.com/20250215221738.png)
+![Aggiungi pulsante azione al blocco_Pannello operativo](https://static-docs.nocobase.com/20250215221738.png)
 
 ![Aggiungi pulsante azione al blocco_Calendario](https://static-docs.nocobase.com/20250215221942.png)
 
 ![Aggiungi pulsante azione al blocco_Diagramma di Gantt](https://static-docs.nocobase.com/20250215221810.png)
 
-Dopo aver aggiunto il pulsante, associ il flusso di lavoro senza contesto creato in precedenza. Ecco un esempio che utilizza un pulsante nella Barra delle azioni:
+Dopo aver aggiunto il pulsante, lo associ al flusso di lavoro senza contesto creato in precedenza; prendendo come esempio il pulsante nel pannello operativo:
 
-![Associa flusso di lavoro al pulsante_Barra delle azioni](https://static-docs.nocobase.com/20250215222120.png)
+![Associa flusso di lavoro al pulsante_Pannello operativo](https://static-docs.nocobase.com/20250215222120.png)
 
 ![Seleziona flusso di lavoro da associare_Nessun contesto](https://static-docs.nocobase.com/20250215222234.png)
 
-### Singolo Record
+### Singolo record
 
-In qualsiasi blocco dati, un pulsante "Attiva flusso di lavoro" può essere aggiunto alla barra delle azioni per un singolo record, ad esempio in moduli, righe di tabella, dettagli, ecc.:
+In qualsiasi blocco dati, è possibile aggiungere il pulsante "Attiva flusso di lavoro" nella barra delle operazioni per i singoli record, come moduli, righe di tabelle, dettagli, ecc.:
 
 ![Aggiungi pulsante azione al blocco_Modulo](https://static-docs.nocobase.com/20240509165428.png)
 
@@ -79,63 +78,63 @@ In qualsiasi blocco dati, un pulsante "Attiva flusso di lavoro" può essere aggi
 
 ![Aggiungi pulsante azione al blocco_Dettagli](https://static-docs.nocobase.com/20240509165545.png)
 
-Dopo aver aggiunto il pulsante, associ il flusso di lavoro creato in precedenza:
+Dopo aver aggiunto il pulsante, lo associ al flusso di lavoro creato in precedenza:
 
 ![Associa flusso di lavoro al pulsante](https://static-docs.nocobase.com/20240509165631.png)
 
 ![Seleziona flusso di lavoro da associare](https://static-docs.nocobase.com/20240509165658.png)
 
-Successivamente, cliccando su questo pulsante si attiverà l'evento di azione personalizzata:
+Successivamente, facendo clic su questo pulsante si attiverà l'evento di azione personalizzata:
 
 ![Risultato del clic sul pulsante](https://static-docs.nocobase.com/20240509170453.png)
 
-### Record Multipli
+### Record multipli
 
-> v.1.6.0+
+> v1.6.0+
 
-Nella barra delle azioni di un blocco tabella, quando aggiunge un pulsante "Attiva flusso di lavoro", c'è un'opzione aggiuntiva per selezionare il tipo di contesto: "Nessun contesto" o "Record multipli":
+Nella barra delle operazioni di un blocco tabella, quando si aggiunge il pulsante "Attiva flusso di lavoro", è presente un'opzione aggiuntiva per selezionare se il tipo di contesto è "Nessun contesto" o "Record multipli":
 
 ![Aggiungi pulsante azione al blocco_Tabella](https://static-docs.nocobase.com/20250215222507.png)
 
-Quando è selezionato "Nessun contesto", si tratta di un evento globale e può essere associato solo a flussi di lavoro senza contesto.
+Quando si seleziona "Nessun contesto", si tratta di un evento globale e può essere associato solo a flussi di lavoro di tipo senza contesto.
 
-Quando è selezionato "Record multipli", può associare un flusso di lavoro di tipo record multipli, che può essere utilizzato per azioni in blocco dopo aver selezionato più record (attualmente supportato solo dalle tabelle). I flussi di lavoro disponibili sono limitati a quelli configurati per corrispondere alla collezione del blocco dati corrente:
+Quando si seleziona "Record multipli", è possibile associare flussi di lavoro di tipo record multipli, utilizzabili per operazioni in blocco dopo la selezione di più dati (attualmente supportato solo dalle tabelle). In questo caso, l'intervallo di flussi di lavoro selezionabili è limitato a quelli configurati per corrispondere alla collezione del blocco dati corrente:
 
 ![20250215224436](https://static-docs.nocobase.com/20250215224436.png)
 
-Quando si clicca sul pulsante per attivare, alcune righe di dati nella tabella devono essere state selezionate; altrimenti, il flusso di lavoro non verrà attivato:
+Al momento dell'attivazione tramite clic sul pulsante, è necessario aver selezionato alcune righe di dati nella tabella, altrimenti il flusso di lavoro non verrà attivato:
 
 ![20250215224736](https://static-docs.nocobase.com/20250215224736.png)
 
 ## Esempio
 
-Ad esempio, abbiamo una collezione "Campioni". Per i campioni con stato "Raccolto", dobbiamo fornire un'azione "Invia per ispezione". Questa azione verificherà prima le informazioni di base del campione, quindi genererà un "Record di ispezione" e infine cambierà lo stato del campione in "Inviato". Questa serie di processi non può essere completata con semplici clic sui pulsanti di creazione, lettura, aggiornamento, eliminazione, quindi un evento di azione personalizzata può essere utilizzato per implementarla.
+Ad esempio, abbiamo una collezione "Campioni". Per i campioni con stato "Raccolto", è necessario fornire un'operazione di "Invia per ispezione". L'invio per ispezione verificherà prima le informazioni di base del campione, quindi genererà un dato "Record di ispezione" e infine modificherà lo stato del campione in "Inviato". Questa serie di processi non può essere completata con un semplice clic sui pulsanti predefiniti; in questo caso, è possibile utilizzare gli eventi di azione personalizzata.
 
-Per prima cosa, crei una collezione "Campioni" e una collezione "Record di ispezione", e inserisca alcuni dati di test di base nella collezione Campioni:
+Per prima cosa, crei una collezione "Campioni" e una collezione "Record di ispezione", inserendo i dati di test di base per la collezione campioni:
 
 ![Esempio_Collezione Campioni](https://static-docs.nocobase.com/20240509172234.png)
 
-Quindi, crei un flusso di lavoro "Evento Azione Personalizzata". Se ha bisogno di un feedback tempestivo dal processo operativo, può scegliere la modalità sincrona (in modalità sincrona, non può utilizzare nodi asincroni come l'elaborazione manuale):
+Quindi, crei un flusso di lavoro "Evento azione personalizzata". Se Lei ha bisogno di un feedback tempestivo dal processo operativo, può scegliere la modalità sincrona (in modalità sincrona non è possibile utilizzare nodi di tipo asincrono come l'elaborazione manuale):
 
 ![Esempio_Crea flusso di lavoro](https://static-docs.nocobase.com/20240509173106.png)
 
-Nella configurazione del trigger, selezioni "Campioni" per la collezione:
+Nella configurazione del trigger, selezioni "Campioni" come collezione:
 
 ![Esempio_Configurazione del trigger](https://static-docs.nocobase.com/20240509173148.png)
 
-Organizzi la logica nel processo in base ai requisiti aziendali. Ad esempio, consenta l'invio per ispezione solo quando il parametro indicatore è maggiore di `90`; altrimenti, visualizzi un messaggio pertinente:
+Organizzi la logica nel processo in base ai requisiti aziendali. Ad esempio, consenta l'invio per ispezione solo quando il parametro indicatore è maggiore di `90`, altrimenti mostri un avviso relativo al problema:
 
 ![Esempio_Arrangiamento della logica di business](https://static-docs.nocobase.com/20240509174159.png)
 
 :::info{title=Suggerimento}
-Il nodo "[Messaggio di risposta](../nodes/response-message.md)" può essere utilizzato negli eventi di azione personalizzata sincroni per restituire un messaggio di prompt al client. Non può essere utilizzato in modalità asincrona.
+Il nodo "[Messaggio di risposta](../nodes/response-message.md)" può essere utilizzato negli eventi di azione personalizzata sincroni per restituire informazioni di avviso al client. Non può essere utilizzato in modalità asincrona.
 :::
 
-Dopo aver configurato e abilitato il flusso di lavoro, torni all'interfaccia della tabella e aggiunga un pulsante "Attiva flusso di lavoro" nella colonna delle azioni della tabella:
+Dopo aver configurato e abilitato il flusso di lavoro, torni all'interfaccia della tabella e aggiunga il pulsante "Attiva flusso di lavoro" nella colonna delle operazioni della tabella:
 
 ![Esempio_Aggiungi pulsante azione](https://static-docs.nocobase.com/20240509174525.png)
 
-Quindi, nel menu di configurazione del pulsante, scelga di associare un flusso di lavoro e apra il pop-up di configurazione:
+Quindi, nel menu di configurazione del pulsante, scelga di associare il flusso di lavoro aprendo la finestra pop-up di configurazione:
 
 ![Esempio_Apri pop-up di associazione flusso di lavoro](https://static-docs.nocobase.com/20240509174633.png)
 
@@ -143,21 +142,36 @@ Aggiunga il flusso di lavoro abilitato in precedenza:
 
 ![Esempio_Seleziona flusso di lavoro](https://static-docs.nocobase.com/20240509174723.png)
 
-Dopo aver inviato, modifichi il testo del pulsante con il nome dell'azione, come "Invia per ispezione". Il processo di configurazione è ora completo.
+Dopo l'invio, modifichi il testo del pulsante con il nome dell'operazione, ad esempio "Invia per ispezione", e il processo di configurazione è completato.
 
-Per utilizzarlo, selezioni qualsiasi dato campione nella tabella e clicchi sul pulsante "Invia per ispezione" per attivare l'evento di azione personalizzata. Come da logica precedentemente organizzata, se il parametro indicatore del campione è inferiore a 90, verrà visualizzato il seguente prompt dopo il clic:
+Durante l'uso, selezioni una riga di dati campione nella tabella e clicchi sul pulsante "Invia per ispezione" per attivare l'evento di azione personalizzata. Come per la logica organizzata in precedenza, se il parametro indicatore del campione è inferiore a 90, dopo il clic apparirà il seguente avviso:
 
 ![Esempio_L'indicatore non soddisfa i criteri di invio](https://static-docs.nocobase.com/20240509175026.png)
 
-Se il parametro indicatore è maggiore di 90, il processo verrà eseguito normalmente, generando un "Record di ispezione" e modificando lo stato del campione in "Inviato":
+Se il parametro indicatore è maggiore di 90, il processo verrà eseguito normalmente, generando il dato "Record di ispezione" e modificando lo stato del campione in "Inviato":
 
 ![Esempio_Invio riuscito](https://static-docs.nocobase.com/20240509175247.png)
 
-A questo punto, un semplice evento di azione personalizzata è completo. Allo stesso modo, per le aziende con operazioni complesse come l'elaborazione degli ordini o l'invio di rapporti, gli eventi di azione personalizzata possono essere utilizzati per l'implementazione.
+A questo punto, un semplice evento di azione personalizzata è completato. Allo stesso modo, per processi aziendali con operazioni complesse, come l'elaborazione degli ordini o l'invio di rapporti, è possibile utilizzare gli eventi di azione personalizzata per l'implementazione.
 
-## Chiamata Esterna
+## Chiamata esterna
 
-L'attivazione degli eventi di azione personalizzata non è limitata alle azioni dell'interfaccia utente; può anche essere attivata tramite chiamate API HTTP. In particolare, gli eventi di azione personalizzata forniscono un nuovo tipo di azione per tutte le azioni della collezione per attivare i flussi di lavoro: `trigger`, che può essere chiamato utilizzando l'API di azione standard di NocoBase.
+L'attivazione degli eventi di azione personalizzata non è limitata alle operazioni dell'interfaccia utente, ma può essere attivata anche tramite chiamate API HTTP. In particolare, l'evento di azione personalizzata fornisce un nuovo tipo di operazione per tutte le operazioni sulle collezioni per attivare i flussi di lavoro: `trigger`, che può essere chiamato installando l'API di azione standard di NocoBase.
+
+:::info{title="Suggerimento"}
+Poiché anche le chiamate esterne devono basarsi sull'identità dell'utente, quando si effettua una chiamata tramite API HTTP, questa è identica alle richieste inviate dall'interfaccia normale e deve fornire le informazioni di autenticazione, inclusi l'intestazione `Authorization` o il parametro `token` (ottenuto al login) e l'intestazione `X-Role` (nome del ruolo corrente dell'utente).
+:::
+
+### Nessun contesto
+
+I flussi di lavoro senza contesto devono essere attivati per la risorsa workflows:
+
+```bash
+curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
+  "http://localhost:3000/api/workflows:trigger?triggerWorkflows=workflowKey"
+```
+
+### Singolo record
 
 Un flusso di lavoro attivato da un pulsante, come nell'esempio, può essere chiamato in questo modo:
 
@@ -166,55 +180,53 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
 
-Poiché questa azione è per un singolo record, quando la chiama su dati esistenti, deve specificare l'ID della riga di dati, sostituendo la parte `<:id>` nell'URL.
+Poiché questa operazione è rivolta a un singolo dato, quando si chiama su dati esistenti, è necessario specificare l'ID della riga di dati, sostituendo la parte `<:id>` nell'URL.
 
-Se viene chiamata per un modulo (ad esempio per la creazione o l'aggiornamento), può omettere l'ID per un modulo che crea nuovi dati, ma deve passare i dati inviati come contesto di esecuzione:
+Se la chiamata avviene per un modulo (come l'aggiunta o l'aggiornamento), per il modulo di aggiunta dati non è necessario passare l'ID, ma è necessario passare i dati inviati come contesto di esecuzione:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger?triggerWorkflows=workflowKey"
 ```
 
-Per un modulo di aggiornamento, deve passare sia l'ID della riga di dati che i dati aggiornati:
+Per i moduli di aggiornamento, è necessario passare contemporaneamente l'ID della riga di dati e i dati aggiornati:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d \
   '{
     "title": "Sample 1",
-    "indicator": 91
+    "id": 91
   }'
   "http://localhost:3000/api/samples:trigger/<:id>?triggerWorkflows=workflowKey"
 ```
 
-Se vengono passati sia un ID che i dati, la riga di dati corrispondente all'ID verrà caricata per prima, quindi le proprietà dall'oggetto dati passato verranno utilizzate per sovrascrivere la riga di dati originale per ottenere il contesto dati di trigger finale.
+Se vengono passati contemporaneamente l'ID e i dati, verrà prima caricata la riga di dati corrispondente all'ID, quindi verranno utilizzate le proprietà dell'oggetto dati passato per sovrascrivere la riga di dati originale e ottenere il contesto finale dei dati del trigger.
 
 :::warning{title="Attenzione"}
-Se vengono passati dati di associazione, anch'essi verranno sovrascritti. Sia particolarmente cauto quando gestisce i dati in ingresso se è configurato il precaricamento di elementi di dati di associazione, per evitare sovrascritture inattese dei dati di associazione.
+Se vengono passati dati di associazione, anch'essi verranno sovrascritti. Sia particolarmente cauto nella gestione dei dati in ingresso quando è configurato il precaricamento dei dati di associazione, per evitare che i dati di associazione vengano sovrascritti in modo imprevisto.
 :::
 
-Inoltre, il parametro URL `triggerWorkflows` è la chiave del flusso di lavoro; più chiavi di flusso di lavoro sono separate da virgole. Questa chiave può essere ottenuta passando il mouse sul nome del flusso di lavoro nella parte superiore della tela del flusso di lavoro:
+Inoltre, il parametro URL `triggerWorkflows` è la chiave del flusso di lavoro; più flussi di lavoro sono separati da virgole. Questa chiave può essere ottenuta passando il mouse sul nome del flusso di lavoro nella parte superiore della tela del flusso di lavoro:
 
 ![Flusso di lavoro_Chiave_Metodo di visualizzazione](https://static-docs.nocobase.com/20240426135108.png)
 
-Dopo una chiamata riuscita, l'evento di azione personalizzata per la collezione `samples` corrispondente verrà attivato.
+Dopo una chiamata riuscita, verrà attivato l'evento di azione personalizzata per la collezione `samples` corrispondente.
 
-:::info{title=Suggerimento}
-Poiché le chiamate esterne devono anche essere basate sull'identità dell'utente, quando si chiama tramite API HTTP, proprio come le richieste inviate dall'interfaccia normale, è necessario fornire le informazioni di autenticazione. Ciò include l'intestazione della richiesta `Authorization` o il parametro `token` (il token ottenuto al login) e l'intestazione della richiesta `X-Role` (il nome del ruolo corrente dell'utente).
+:::info{title="Suggerimento"}
+Quando si attiva un evento tramite una chiamata API HTTP, è necessario prestare attenzione anche allo stato di attivazione del flusso di lavoro e alla corrispondenza della configurazione della collezione; in caso contrario, la chiamata potrebbe non riuscire o potrebbero verificarsi errori.
 :::
 
-Se ha bisogno di attivare un evento per un dato di associazione uno-a-uno (uno-a-molti non è attualmente supportato) in questa azione, può usare `!` nel parametro per specificare i dati di trigger del campo di associazione:
+### Record multipli
+
+Simile alla modalità di chiamata per il singolo record, ma i dati passati richiedono solo i parametri delle chiavi primarie multiple (`filterByTk[]`) e non è necessario passare la parte data:
 
 ```bash
 curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' \
-  "http://localhost:3000/api/posts:trigger/<:id>?triggerWorkflows=workflowKey!category"
+  "http://localhost:3000/api/samples:trigger?filterByTk[]=1&filterByTk[]=2&triggerWorkflows=workflowKey"
 ```
 
-Dopo una chiamata riuscita, l'evento di azione personalizzata per la collezione `categories` corrispondente verrà attivato.
-
-:::info{title=Suggerimento}
-Quando si attiva un evento di azione tramite una chiamata API HTTP, è necessario prestare attenzione anche allo stato abilitato del flusso di lavoro e alla corrispondenza della configurazione della collezione; altrimenti, la chiamata potrebbe non riuscire o potrebbe verificarsi un errore.
-:::
+Questa chiamata attiverà l'evento di azione personalizzata in modalità record multipli e utilizzerà i dati con ID 1 e 2 come dati nel contesto del trigger.

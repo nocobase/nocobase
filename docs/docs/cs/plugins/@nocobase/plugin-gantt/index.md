@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "Blok: Ganttův diagram"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  Poskytuje blok Ganttova diagramu.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-gantt/index).
+:::
+
+# Blok: Ganttův diagram

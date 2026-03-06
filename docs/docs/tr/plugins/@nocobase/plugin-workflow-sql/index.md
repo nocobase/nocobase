@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: SQL node"
+displayName: "Workflow: SQL Node"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |
-  Execute SQL statements in workflow.
+  İş akışında veritabanı üzerinde herhangi bir SQL ifadesini yürütmek için kullanılabilir.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: SQL node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-sql/index) bakın.
+:::
+
+# Workflow: SQL Node

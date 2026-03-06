@@ -1,14 +1,18 @@
 ---
-displayName: "Telemetry"
+displayName: "テレメトリ"
 packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
 description: |
-  An OpenTelemetry-based telemetry plugin providing CPU, memory, and HTTP request metrics with HTTP export support.
+  OpenTelemetry ベースのアプリケーションテレメトリプラグインです。CPU、メモリ、HTTP リクエストなどのメトリクスを内蔵しており、HTTP 経由でのエクスポートをサポートしています。
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Telemetry
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-telemetry/index)をご参照ください。
+:::
+
+# テレメトリ

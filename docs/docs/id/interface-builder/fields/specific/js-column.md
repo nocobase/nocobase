@@ -1,47 +1,47 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/interface-builder/fields/specific/js-column).
 :::
 
-# Kolom JS
+# JS Column
 
 ## Pendahuluan
 
-Kolom JS digunakan untuk "kolom kustom" dalam tabel, merender konten sel setiap baris melalui JavaScript. Kolom ini tidak terikat pada bidang tertentu dan cocok untuk skenario seperti kolom turunan, tampilan gabungan antar bidang, lencana status, tombol aksi, dan agregasi data jarak jauh.
+JS Column digunakan untuk "kolom kustom" dalam tabel, merender konten sel setiap baris melalui JavaScript. Tidak terikat pada bidang tertentu, cocok untuk skenario seperti kolom turunan, kombinasi lintas bidang, lencana status, operasi tombol, ringkasan data jarak jauh, dll.
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
 ## API Konteks Runtime
 
-Saat setiap sel Kolom JS dirender, Anda dapat menggunakan API konteks berikut:
+Setiap sel JS Column dapat menggunakan kemampuan konteks berikut saat dirender:
 
-- `ctx.element`: Kontainer DOM sel saat ini (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dan lainnya;
+- `ctx.element`: Kontainer DOM sel saat ini (ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.;
 - `ctx.record`: Objek catatan baris saat ini (hanya-baca);
-- `ctx.recordIndex`: Indeks baris dalam halaman saat ini (dimulai dari 0, dapat dipengaruhi oleh paginasi);
-- `ctx.collection`: Metadata koleksi yang terikat pada tabel (hanya-baca);
+- `ctx.recordIndex`: Indeks baris dalam halaman saat ini (dimulai dari 0, mungkin dipengaruhi oleh paginasi);
+- `ctx.collection`: Meta informasi dari koleksi yang terikat pada tabel (hanya-baca);
 - `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL;
 - `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL;
-- `ctx.openView(options)`: Membuka tampilan yang telah dikonfigurasi (modal/drawer/halaman);
+- `ctx.openView(options)`: Membuka tampilan yang telah dikonfigurasi (pop-up/drawer/halaman);
 - `ctx.i18n.t()` / `ctx.t()`: Internasionalisasi;
 - `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap;
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Pustaka umum bawaan seperti React, ReactDOM, Ant Design, ikon Ant Design, dan dayjs, digunakan untuk rendering JSX dan penanganan waktu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
-- `ctx.render(vnode)`: Merender elemen React/HTML/DOM ke kontainer default `ctx.element` (sel saat ini). Beberapa rendering akan menggunakan kembali Root dan menimpa konten kontainer yang ada.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Pustaka bawaan seperti React / ReactDOM / Ant Design / Ikon Ant Design / dayjs / lodash / math.js / formula.js, digunakan untuk rendering JSX, pemrosesan waktu, manipulasi data, dan operasi matematika. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
+- `ctx.render(vnode)`: Merender elemen React/HTML/DOM ke kontainer default `ctx.element` (sel saat ini), rendering berulang akan menggunakan kembali Root dan menimpa konten kontainer yang ada.
 
 ## Editor dan Cuplikan Kode
 
-Editor skrip untuk Kolom JS mendukung penyorotan sintaks, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets).
+Editor skrip JS Column mendukung penyorotan sintaks, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets).
 
-- `Snippets`: Membuka daftar cuplikan kode bawaan, Anda dapat mencari dan memasukkannya ke posisi kursor saat ini dengan satu klik.
-- `Run`: Menjalankan kode saat ini secara langsung. Log eksekusi akan ditampilkan di panel `Logs` di bagian bawah, mendukung `console.log/info/warn/error` dan penyorotan lokasi kesalahan.
+- `Snippets`: Membuka daftar cuplikan kode bawaan, dapat dicari dan dimasukkan ke posisi kursor saat ini dengan satu klik.
+- `Run`: Menjalankan kode saat ini secara langsung, log eksekusi dikeluarkan ke panel `Logs` di bagian bawah, mendukung `console.log/info/warn/error` dan penentuan lokasi kesalahan dengan penyorotan.
 
 ![jscolumn-toolbars-20251029](https://static-docs.nocobase.com/jscolumn-toolbars-20251029.png)
 
-Anda juga dapat menggunakan Karyawan AI untuk menghasilkan kode:
+Dapat dikombinasikan dengan Karyawan AI untuk menghasilkan kode:
 
-- [Karyawan AI · Nathan: Insinyur Frontend](/ai-employees/built-in/ai-coding)
+- [Karyawan AI · Nathan: Insinyur Frontend](/ai-employees/features/built-in-employee)
 
 ## Penggunaan Umum
 
-### 1) Rendering Dasar (Membaca Catatan Baris Saat Ini)
+### 1) Rendering Dasar (Membaca catatan baris saat ini)
 
 ```js
 ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
@@ -60,7 +60,7 @@ ctx.render(
 );
 ```
 
-### 3) Membuka Modal/Drawer dari Sel (Lihat/Edit)
+### 3) Membuka Pop-up/Drawer dalam Sel (Lihat/Edit)
 
 ```js
 const tk = ctx.collection?.getFilterByTK?.(ctx.record);
@@ -92,7 +92,7 @@ ctx.render(<span>{dayjs().format('YYYY-MM-DD')}</span>);
 
 ## Catatan Penting
 
-- Disarankan untuk menggunakan CDN tepercaya untuk memuat pustaka eksternal dan memiliki mekanisme fallback untuk skenario kegagalan (misalnya, `if (!lib) return;`).
-- Disarankan untuk memprioritaskan penggunaan selektor `class` atau `[name=...]`, hindari penggunaan `id` tetap untuk mencegah duplikasi `id` di beberapa blok atau modal.
-- Pembersihan Event: Baris tabel dapat berubah secara dinamis dengan paginasi atau refresh, menyebabkan sel dirender berkali-kali. Anda harus membersihkan atau menghilangkan duplikasi event listener sebelum mengikatnya untuk menghindari pemicuan berulang.
-- Saran Performa: Hindari memuat pustaka besar secara berulang di setiap sel. Sebaliknya, cache pustaka di tingkat yang lebih tinggi (misalnya, menggunakan variabel global atau variabel tingkat tabel) dan gunakan kembali.
+- Pemuatan pustaka eksternal disarankan menggunakan CDN tepercaya, dan siapkan penanganan cadangan untuk skenario kegagalan (seperti `if (!lib) return;`).
+- Selektor disarankan memprioritaskan penggunaan `class` atau `[name=...]`, hindari penggunaan `id` tetap untuk mencegah duplikasi `id` dalam beberapa blok/pop-up.
+- Pembersihan event: Baris tabel mungkin berubah secara dinamis seiring paginasi/penyegaran, sel akan dirender berkali-kali. Sebelum mengikat event, harus dibersihkan atau dilakukan deduplikasi untuk menghindari pemicuan berulang.
+- Saran performa: Hindari memuat pustaka besar secara berulang di setiap sel; sebaiknya simpan pustaka ke dalam cache di tingkat atas (seperti melalui variabel global atau variabel tingkat tabel) kemudian gunakan kembali.

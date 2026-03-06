@@ -14,7 +14,7 @@ Na interface de configuração do fluxo de trabalho, clique no botão de adiçã
 
 ## Configuração do Nó
 
-![Nó de Cálculo_Configuração](https://static-docs.nocobase.com/6a155de3c81881b2d9c33874.png)
+![Nó de Cálculo_Configuração](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Mecanismo de Cálculo
 

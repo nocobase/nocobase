@@ -1,12 +1,16 @@
 ---
-displayName: "Data source: Main"
+displayName: "Gegevensbron: Hoofddatabase"
 packageName: '@nocobase/plugin-data-source-main'
 description: |
-  NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.
+  NocoBase hoofddatabase, ondersteunt relationele databases zoals PostgreSQL, MySQL, MariaDB, enz.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data source: Main
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-data-source-main/index) voor nauwkeurige informatie.
+:::
+
+# Gegevensbron: Hoofddatabase

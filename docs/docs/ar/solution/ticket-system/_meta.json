@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "نظرة عامة على الحل"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "التصميم التفصيلي"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "كيفية التثبيت"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "المزيد من المحتوى"
   }
 ]

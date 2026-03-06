@@ -14,7 +14,7 @@
 
 עברו לממשק התצורה ומלאו את כתובת ה-URL המורשית להפניה מחדש (redirect URL). את כתובת ה-URL להפניה מחדש ניתן לקבל בעת הוספת מאמת (authenticator) חדש ב-NocoBase. בדרך כלל, היא תהיה `http(s)://host:port/api/oidc:redirect`. ראו את סעיף [מדריך למשתמש - תצורה](../index.md#configuration).
 
-![](https://static-docs.nocobase.com/24078bf52ec966a1633489cb3d9d126.png)
+![](https://static-docs.nocobase.com/24078bf52ec966a16334894cb3d9d126.png)
 
 ## הוספת מאמת (Authenticator) חדש ב-NocoBase
 

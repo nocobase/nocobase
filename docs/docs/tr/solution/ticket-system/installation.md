@@ -1,130 +1,130 @@
-# Installation Guide
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/solution/ticket-system/installation) bakın.
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Nasıl Kurulur
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> Mevcut sürüm, dağıtım için **yedekleme ve geri yükleme** formunu kullanmaktadır. Gelecek sürümlerde, çözümü mevcut sistemlerinize entegre etmeyi kolaylaştırmak için **kademeli geçiş** formuna geçebiliriz.
 
-Before you begin, please ensure:
+İş akışı çözümünü kendi NocoBase ortamınıza hızlı ve sorunsuz bir şekilde dağıtabilmeniz için iki geri yükleme yöntemi sunuyoruz. Lütfen kullanıcı sürümünüze ve teknik geçmişinize en uygun olanı seçiniz.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+Başlamadan önce lütfen şunlardan emin olunuz:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- Temel bir NocoBase çalışma ortamına sahipsiniz. Ana sistemin kurulumu için lütfen daha ayrıntılı olan [resmi kurulum dokümantasyonuna](https://docs-cn.nocobase.com/welcome/getting-started/installation) bakınız.
+- NocoBase sürümü **2.0.0-beta.5 ve üzeri**
+- İş emri sisteminin ilgili dosyalarını indirdiniz:
+  - **Yedekleme dosyası**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - Yöntem 1 için uygundur
+  - **SQL dosyası**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - Yöntem 2 için uygundur
+
+**Önemli Notlar**:
+- Bu çözüm **PostgreSQL 16** veritabanı temel alınarak hazırlanmıştır, lütfen ortamınızın PostgreSQL 16 kullandığından emin olunuz.
+- **DB_UNDERSCORED true olamaz**: Lütfen `docker-compose.yml` dosyanızı kontrol ediniz ve `DB_UNDERSCORED` ortam değişkeninin `true` olarak ayarlanmadığından emin olunuz; aksi takdirde çözüm yedeği ile çakışacak ve geri yükleme başarısız olacaktır.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Yöntem 1: Yedekleme Yöneticisi kullanarak geri yükleme (Profesyonel/Kurumsal sürüm kullanıcıları için önerilir)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+Bu yöntem, NocoBase'in yerleşik "[Yedekleme Yöneticisi](https://docs-cn.nocobase.com/handbook/backups)" (Profesyonel/Kurumsal sürüm) eklentisi aracılığıyla tek tıkla geri yükleme sağlar ve en basit işlemdir. Ancak ortam ve kullanıcı sürümü için belirli gereksinimleri vardır.
 
-### Key Features
+### Temel Özellikler
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **Avantajlar**:
+  1. **İşlem kolaylığı**: UI arayüzünde tamamlanabilir, eklentiler dahil tüm yapılandırmaları eksiksiz geri yükleyebilir.
+  2. **Tam geri yükleme**: Şablon yazdırma dosyaları, tablolardaki dosya alanlarına yüklenen dosyalar vb. dahil olmak üzere **tüm sistem dosyalarını geri yükleyebilir**, işlevsel bütünlüğü sağlar.
+* **Sınırlamalar**:
+  1. **Profesyonel/Kurumsal sürümle sınırlıdır**: "Yedekleme Yöneticisi" kurumsal düzeyde bir eklentidir, yalnızca Profesyonel/Kurumsal sürüm kullanıcıları tarafından kullanılabilir.
+  2. **Sıkı ortam gereksinimleri**: Veritabanı ortamınızın (sürüm, büyük/küçük harf duyarlılığı ayarları vb.) yedeği hazırladığımız ortamla yüksek derecede uyumlu olmasını gerektirir.
+  3. **Eklenti bağımlılığı**: Çözüm, yerel ortamınızda bulunmayan ticari eklentiler içeriyorsa geri yükleme başarısız olur.
 
-### Steps
+### İşlem Adımları
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**1. Adım: 【Kesinlikle önerilir】 Uygulamayı `full` imajı ile başlatın**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+Eksik veritabanı istemcisi nedeniyle geri yükleme hatalarını önlemek için, `full` sürüm Docker imajını kullanmanızı kesinlikle öneririz. Tüm gerekli yardımcı programları içinde barındırır, böylece ek yapılandırma yapmanıza gerek kalmaz.
 
-Example command to pull the image:
+İmajı çekmek için komut örneği:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+Ardından bu imajı kullanarak NocoBase servisinizi başlatınız.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **Not**: `full` imajı kullanmazsanız, konteyner içine manuel olarak `pg_dump` veritabanı istemcisi kurmanız gerekebilir; bu işlem zahmetli ve kararsızdır.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**2. Adım: "Yedekleme Yöneticisi" eklentisini etkinleştirin**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. NocoBase sisteminize giriş yapınız.
+2. **`Eklenti yönetimi`** kısmına giriniz.
+3. **`Yedekleme Yöneticisi`** eklentisini bulunuz ve etkinleştiriniz.
 
-**Step 3: Restore from local backup file**
+**3. Adım: Yerel yedekleme dosyasından geri yükleyin**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. Eklentiyi etkinleştirdikten sonra sayfayı yenileyiniz.
+2. Sol menüdeki **`Sistem yönetimi`** -> **`Yedekleme Yöneticisi`** kısmına giriniz.
+3. Sağ üst köşedeki **`Yerel yedekten geri yükle`** düğmesine tıklayınız.
+4. İndirdiğiniz yedekleme dosyasını yükleme alanına sürükleyiniz.
+5. **`Gönder`**'e tıklayınız ve sistemin geri yüklemeyi tamamlamasını sabırla bekleyiniz; bu işlem birkaç on saniye ile birkaç dakika arasında sürebilir.
 
-### Notes
+### Dikkat Edilmesi Gerekenler
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **Veritabanı uyumluluğu**: Bu yöntemin en kritik noktasıdır. PostgreSQL veritabanı **sürümünüz, karakter setiniz, büyük/küçük harf duyarlılığı ayarlarınız** yedek kaynak dosyasıyla eşleşmelidir. Özellikle `schema` adı aynı olmalıdır.
+* **Ticari eklenti eşleşmesi**: Lütfen çözüm için gereken tüm ticari eklentilere sahip olduğunuzdan ve bunları etkinleştirdiğinizden emin olunuz, aksi takdirde geri yükleme kesintiye uğrayacaktır.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## Yöntem 2: Doğrudan SQL dosyası içe aktarma (Evrensel, Topluluk sürümü için daha uygun)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+Bu yöntem, "Yedekleme Yöneticisi" eklentisini atlayarak verileri doğrudan veritabanı üzerinden geri yükler, bu nedenle Profesyonel/Kurumsal sürüm eklenti kısıtlaması yoktur.
 
-### Key Features
+### Temel Özellikler
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **Avantajlar**:
+  1. **Sürüm kısıtlaması yok**: Topluluk sürümü dahil tüm NocoBase kullanıcıları için uygundur.
+  2. **Yüksek uyumluluk**: Uygulama içindeki `dump` aracına bağımlı değildir, veritabanına bağlanabildiğiniz sürece işlem yapılabilir.
+  3. **Yüksek hata toleransı**: Çözüm sahip olmadığınız ticari eklentiler içeriyorsa, ilgili özellikler etkinleştirilmez ancak diğer özelliklerin normal kullanımını etkilemez ve uygulama başarıyla başlatılabilir.
+* **Sınırlamalar**:
+  1. **Veritabanı işlem yeteneği gerektirir**: Kullanıcının bir `.sql` dosyasını nasıl çalıştıracağı gibi temel veritabanı işlem yeteneklerine sahip olması gerekir.
+  2. **Sistem dosyası kaybı**: **Bu yöntem tüm sistem dosyalarını kaybeder**; şablon yazdırma dosyaları, tablolardaki dosya alanlarına yüklenen dosyalar vb. buna dahildir.
 
-### Steps
+### İşlem Adımları
 
-**Step 1: Prepare a clean database**
+**1. Adım: Temiz bir veritabanı hazırlayın**
 
-Prepare a brand new, empty database for the data you're about to import.
+İçe aktaracağınız veriler için tamamen yeni ve boş bir veritabanı hazırlayınız.
 
-**Step 2: Import the `.sql` file into the database**
+**2. Adım: `.sql` dosyasını veritabanına içe aktarın**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+İndirilen veritabanı dosyasını (genellikle `.sql` formatında) edinin ve içeriğini bir önceki adımda hazırladığınız veritabanına aktarın. Ortamınıza bağlı olarak birkaç yöntem vardır:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **Seçenek A: Sunucu komut satırı üzerinden (Docker örneği)**
+  NocoBase ve veritabanını kurmak için Docker kullanıyorsanız, `.sql` dosyasını sunucuya yükleyebilir ve ardından içe aktarmak için `docker exec` komutunu kullanabilirsiniz. PostgreSQL konteyner adınızın `my-nocobase-db` ve dosya adınızın `ticket_system.sql` olduğunu varsayalım:
 
   ```bash
-  # Copy the sql file into the container
+  # sql dosyasını konteyner içine kopyalayın
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
-  docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
+  # Konteynere girerek içe aktarma komutunu çalıştırın
+  docker exec -it my-nocobase-db psql -U kullanıcı_adınız -d veritabanı_adınız -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **Seçenek B: Uzak veritabanı istemcisi üzerinden**
+  Veritabanınızın portu dışarıya açıksa, herhangi bir grafiksel veritabanı istemcisi (DBeaver, Navicat, pgAdmin vb.) kullanarak veritabanına bağlanabilir, yeni bir sorgu penceresi açabilir, `.sql` dosyasının tüm içeriğini yapıştırabilir ve çalıştırabilirsiniz.
 
-**Step 3: Connect to the database and start the application**
+**3. Adım: Veritabanına bağlanın ve uygulamayı başlatın**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+NocoBase başlatma parametrelerinizi (ortam değişkenleri `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` vb.) az önce verileri içe aktardığınız veritabanını gösterecek şekilde yapılandırınız. Ardından NocoBase servisini normal şekilde başlatınız.
 
-### Notes
+### Dikkat Edilmesi Gerekenler
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **Veritabanı yetkileri**: Bu yöntem, veritabanında doğrudan işlem yapabilen bir kullanıcı adı ve şifreye sahip olmanızı gerektirir.
+* **Eklenti durumu**: İçe aktarma başarılı olduktan sonra, sistemdeki ticari eklenti verileri mevcut olsa bile, yerelinizde ilgili eklentiler kurulu ve etkin değilse ilgili özellikler görüntülenemez ve kullanılamaz; ancak bu durum uygulamanın çökmesine neden olmaz.
 
 ---
 
-## Summary and Comparison
+## Özet ve Karşılaştırma
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| Özellik | Yöntem 1: Yedekleme Yöneticisi | Yöntem 2: Doğrudan SQL İçe Aktarma |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
-
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+| **Uygun Kullanıcı** | **Profesyonel/Kurumsal** sürüm kullanıcıları | **Tüm kullanıcılar** (Topluluk sürümü dahil) |
+| **İşlem Kolaylığı** | ⭐⭐⭐⭐⭐ (Çok basit, UI işlemi) | ⭐⭐⭐ (Temel veritabanı bilgisi gerektirir) |
+| **Ortam Gereksinimi** | **Sıkı**, veritabanı ve sistem sürümleri yüksek derecede uyumlu olmalıdır | **Genel**, veritabanı uyumluluğu gerektirir |
+| **Eklenti Bağımlılığı** | **Güçlü bağımlılık**,

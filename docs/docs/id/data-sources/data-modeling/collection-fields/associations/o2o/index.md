@@ -20,7 +20,7 @@ Relasi ER
 
 Konfigurasi Bidang
 
-![alt text](https://static-docs.nocobase.com/765a87e094b4fb50c9426a108f87105.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
 ## Satu-ke-Satu (Milik)
 
@@ -32,7 +32,7 @@ Relasi ER
 
 Konfigurasi Bidang
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a3498242da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## Deskripsi Parameter
 

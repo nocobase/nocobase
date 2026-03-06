@@ -1,47 +1,40 @@
-:::tip
-เอกสารนี้แปลโดย AI หากมีข้อมูลที่ไม่ถูกต้อง โปรดดู[เวอร์ชันภาษาอังกฤษ](/en)
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/template-print/syntax/formatters/time-interval-formatting)
 :::
 
-
-### การจัดรูปแบบระยะเวลา
+### การจัดรูปแบบช่วงเวลา
 
 #### 1. :formatI(patternOut, patternIn)
 
-##### คำอธิบายรูปแบบการใช้งาน
-ใช้สำหรับจัดรูปแบบระยะเวลาหรือช่วงเวลา โดยรองรับรูปแบบเอาต์พุตดังต่อไปนี้ครับ/ค่ะ:
-- `human+` หรือ `human` (เหมาะสำหรับการแสดงผลที่อ่านง่ายสำหรับมนุษย์)
-- รวมถึงหน่วยต่าง ๆ เช่น `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` (หรือตัวย่อของหน่วยเหล่านั้น) ครับ/ค่ะ
+##### คำอธิบายไวยากรณ์
+จัดรูปแบบระยะเวลาหรือช่วงเวลา รูปแบบเอาต์พุตที่รองรับรวมถึง:
+- `human+`, `human` (เหมาะสำหรับการแสดงผลที่อ่านง่ายสำหรับมนุษย์)
+- และหน่วยต่าง ๆ เช่น `millisecond(s)`, `second(s)`, `minute(s)`, `hour(s)`, `year(s)`, `month(s)`, `week(s)`, `day(s)` เป็นต้น (หรือตัวย่อ) ครับ/ค่ะ
 
 พารามิเตอร์:
-- **patternOut:** รูปแบบเอาต์พุตที่ต้องการ (เช่น `'second'` หรือ `'human+'`) ครับ/ค่ะ
-- **patternIn:** (ไม่บังคับ) หน่วยของค่าอินพุต (เช่น `'milliseconds'` หรือ `'s'`) ครับ/ค่ะ
+- patternOut：รูปแบบเอาต์พุต (เช่น `'second'`, `'human+'` เป็นต้น)
+- patternIn：ไม่บังคับ, หน่วยอินพุต (เช่น `'milliseconds'`, `'s'` เป็นต้น)
 
-##### ตัวอย่างการใช้งาน
+##### ตัวอย่าง
 ```
-// สภาพแวดล้อมตัวอย่าง: ตัวเลือก API { "lang": "en", "timezone": "Europe/Paris" }
-2000:formatI('second')       // Outputs 2
-2000:formatI('seconds')      // Outputs 2
-2000:formatI('s')            // Outputs 2
-3600000:formatI('minute')    // Outputs 60
-3600000:formatI('hour')      // Outputs 1
-2419200000:formatI('days')   // Outputs 28
+2000:formatI('second')       // เอาต์พุต 2
+2000:formatI('seconds')      // เอาต์พุต 2
+2000:formatI('s')            // เอาต์พุต 2
+3600000:formatI('minute')    // เอาต์พุต 60
+3600000:formatI('hour')      // เอาต์พุต 1
+2419200000:formatI('days')   // เอาต์พุต 28
 
-// ตัวอย่างภาษาฝรั่งเศส:
-2000:formatI('human')        // Outputs "quelques secondes"
-2000:formatI('human+')       // Outputs "dans quelques secondes"
--2000:formatI('human+')      // Outputs "il y a quelques secondes"
-
-// ตัวอย่างภาษาอังกฤษ:
-2000:formatI('human')        // Outputs "a few seconds"
-2000:formatI('human+')       // Outputs "in a few seconds"
--2000:formatI('human+')      // Outputs "a few seconds ago"
+// การแสดงผลที่อ่านง่ายสำหรับมนุษย์:
+2000:formatI('human')        // เอาต์พุต "a few seconds"
+2000:formatI('human+')       // เอาต์พุต "in a few seconds"
+-2000:formatI('human+')      // เอาต์พุต "a few seconds ago"
 
 // ตัวอย่างการแปลงหน่วย:
-60:formatI('ms', 'minute')   // Outputs 3600000
-4:formatI('ms', 'weeks')      // Outputs 2419200000
-'P1M':formatI('ms')          // Outputs 2628000000
-'P1Y2M3DT4H5M6S':formatI('hour')  // Outputs 10296.085
+60:formatI('ms', 'minute')   // เอาต์พุต 3600000
+4:formatI('ms', 'weeks')      // เอาต์พุต 2419200000
+'P1M':formatI('ms')          // เอาต์พุต 2628000000
+'P1Y2M3DT4H5M6S':formatI('hour')  // เอาต์พุต 10296.085
 ```
 
 ##### ผลลัพธ์
-ผลลัพธ์ที่ได้จะแสดงเป็นระยะเวลาหรือช่วงเวลาที่เหมาะสม โดยอิงจากค่าอินพุตและการแปลงหน่วยครับ/ค่ะ
+ผลลัพธ์จะแสดงเป็นระยะเวลาหรือช่วงเวลาที่สอดคล้องกันตามค่าอินพุตและการแปลงหน่วยครับ/ค่ะ

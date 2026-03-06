@@ -74,7 +74,7 @@ Questi strumenti sono tipicamente utilizzati per:
 
 #### Esempio 1: Overall Analytics (Analisi aziendale generale)
 
-![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/20251022013802.png)
+![05viz-configuration-2025-11-03-00-18-55](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-18-55.png)
 
 Nella demo CRM, `Overall Analytics` è un motore di analisi aziendale basato su modelli:
 
@@ -104,7 +104,7 @@ flowchart TD
 
 #### Esempio 2: SQL Execution (Strumento di analisi avanzata)
 
-![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/20251022013942.png)
+![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-17-13.png)
 
 Nella demo CRM, `SQL Execution` è uno strumento più flessibile ma che richiede un controllo rigoroso:
 

@@ -1,12 +1,16 @@
 ---
-displayName: "Localization"
+displayName: "ローカライゼーション"
 packageName: '@nocobase/plugin-localization'
 description: |
-  Allows to manage localization resources of the application.
+  アプリケーションのローカライゼーションリソースの管理をサポートします。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Localization
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-localization/index)をご参照ください。
+:::
+
+# ローカライゼーション

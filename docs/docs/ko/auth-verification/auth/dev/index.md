@@ -168,7 +168,7 @@ class CustomAuthPlugin extends Plugin {
 
 ### 관리자 설정 폼
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 위쪽은 일반적인 인증기 설정이며, 아래쪽은 등록 가능한 사용자 정의 설정 폼 부분입니다.
 

@@ -2,6 +2,10 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/multi-app/multi-app/local).
+:::
+
 # Modo de memoria compartida
 
 ## Introducción
@@ -23,11 +27,11 @@ APP_PROCESS_ADAPTER=local
 
 ### Crear una aplicación
 
-En **System Settings**, entra en **App supervisor** para abrir la gestión de aplicaciones.
+En **Ajustes del sistema**, entra en **App Supervisor** para abrir la gestión de aplicaciones.
 
 ![](https://static-docs.nocobase.com/202512291056215.png)
 
-Haz clic en **Add** para crear una nueva aplicación.
+Haz clic en **Añadir nuevo** para crear una nueva aplicación.
 
 ![](https://static-docs.nocobase.com/202512291057696.png)
 
@@ -35,26 +39,26 @@ Haz clic en **Add** para crear una nueva aplicación.
 
 | Opción | Descripción |
 | --- | --- |
-| **Nombre visible** | Nombre mostrado en la interfaz |
-| **ID de aplicación** | Identificador global único |
-| **Modo de arranque** | - Arrancar en la primera visita: se inicia al primer acceso por URL<br>- Arrancar con la aplicación principal: se inicia junto a la principal (aumenta su tiempo de arranque) |
+| **Nombre de la aplicación** | Nombre mostrado en la interfaz |
+| **Identificador de la aplicación** | Identificador global único |
+| **Modo de inicio** | - Arrancar en la primera visita: se inicia al primer acceso por URL<br>- Arrancar con la aplicación principal: se inicia junto a la principal (aumenta su tiempo de arranque) |
 | **Entorno** | En memoria compartida solo está disponible `local` |
-| **Base de datos** | Configura la fuente principal:<br>- Nueva base de datos: reutiliza el servicio DB actual y crea una BD dedicada<br>- Nueva conexión: conecta con otro servicio DB<br>- Nuevo schema: en PostgreSQL crea un schema dedicado |
+| **Conexión a la base de datos** | Configura la fuente principal:<br>- Nueva base de datos: reutiliza el servicio DB actual y crea una BD dedicada<br>- Nueva conexión de datos: conecta con otro servicio DB<br>- Modo Schema: en PostgreSQL crea un schema dedicado |
 | **Actualización** | Si se permite actualizar automáticamente datos NocoBase de versiones anteriores |
 | **JWT Secret** | Genera un JWT independiente para aislar sesiones |
 | **Dominio personalizado** | Define un dominio dedicado para la aplicación |
 
 ### Iniciar una aplicación
 
-Haz clic en **Start** para iniciarla.
+Haz clic en **Iniciar** para iniciarla.
 
-> Si se marcó _Start on first visit_ al crearla, arrancará automáticamente en el primer acceso.
+> Si se marcó _“Arrancar en la primera visita”_ al crearla, arrancará automáticamente en el primer acceso.
 
 ![](https://static-docs.nocobase.com/202512291121065.png)
 
 ### Acceder a una aplicación
 
-Haz clic en **Visit** para abrirla en una pestaña nueva.
+Haz clic en **Visitar** para abrirla en una pestaña nueva.
 
 Por defecto se accede por `/apps/:appName/admin/`, por ejemplo:
 
@@ -66,7 +70,7 @@ También puedes configurar dominio independiente. Debe resolver a la IP actual; 
 
 ### Detener una aplicación
 
-Haz clic en **Stop** para detenerla.
+Haz clic en **Detener** para detenerla.
 
 ![](https://static-docs.nocobase.com/202512291122113.png)
 
@@ -78,7 +82,7 @@ En la lista se muestra el estado actual de cada aplicación.
 
 ### Eliminar una aplicación
 
-Haz clic en **Delete** para eliminarla.
+Haz clic en **Eliminar** para eliminarla.
 
 ![](https://static-docs.nocobase.com/202512291122178.png)
 

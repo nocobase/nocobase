@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Panoramica della soluzione"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "Design dettagliato"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Installazione"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "CRM legacy (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Altro"
   }
 ]

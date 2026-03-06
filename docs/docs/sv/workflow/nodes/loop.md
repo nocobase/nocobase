@@ -95,7 +95,7 @@ Till exempel, när en order läggs, behöver ni kontrollera lagret för varje pr
 
 2.  Skapa ett arbetsflöde. För triggern, välj "Samlingshändelse", och välj samlingen "Ordrar" för att triggas "När en post läggs till". Ni behöver också konfigurera den för att förladda relationsdata för samlingen "Orderdetaljer" och samlingen "Produkter" under detaljerna:
 
-    ![Loop-nod_Exempel_Triggerkonfiguration](https://static-docs.nocobase.com/0086601c71c0e17a64d046a4c86b49b7.png)
+    ![Loop-nod_Exempel_Triggerkonfiguration](https://static-docs.nocobase.com/0086601c2fc0e17a64d046a4c86b49b7.png)
 
 3.  Skapa en loop-nod och välj loop-objektet som "Triggerdata / Orderdetaljer", vilket innebär att den kommer att bearbeta varje post i samlingen Orderdetaljer:
 
