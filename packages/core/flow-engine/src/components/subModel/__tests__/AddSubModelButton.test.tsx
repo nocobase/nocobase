@@ -17,7 +17,7 @@ import {
   FlowModel,
   FlowModelContext,
   type IFlowModelRepository,
-} from '@nocobase/flow-engine';
+} from '../../../index';
 import { SubModelItem, mergeSubModelItems, transformItems } from '../AddSubModelButton';
 import { App, ConfigProvider } from 'antd';
 

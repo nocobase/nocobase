@@ -10,7 +10,7 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@nocobase/test/client';
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider } from '../../../../../index';
 
 import { SwitchWithTitle } from '../SwitchWithTitle';
 import { SelectWithTitle } from '../SelectWithTitle';
