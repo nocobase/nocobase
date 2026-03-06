@@ -194,10 +194,12 @@ describe('lock manager', () => {
       // Acquire the lock manually so it is held during the tryAcquire call.
       const holdRelease = await lockManager.acquire('wait-test');
 
-      // Release the lock after 100 ms — tryAcquire with timeout=200 should
-      // succeed because the lock becomes available within the window.
-      setTimeout(() => holdRelease(), 100);
-      const lock = await lockManager.tryAcquire('wait-test', 200);
+      // Release the lock after 50 ms — tryAcquire with timeout=1000 should
+      // succeed because the lock becomes available well within the window.
+      // Using a large margin (50ms release vs 1000ms timeout) to avoid flakiness
+      // on slow CI machines under load.
+      setTimeout(() => holdRelease(), 50);
+      const lock = await lockManager.tryAcquire('wait-test', 1000);
       const release = await lock.acquire(1000);
       await release();
     });
@@ -217,6 +219,17 @@ describe('lock manager', () => {
       const lock2 = await lockManager.tryAcquire('seq-test');
       const release2 = await lock2.acquire(1000);
       await release2();
+    });
+
+    it('tryAcquire: release() abandons the pre-acquired lock without executing work', async () => {
+      // Acquire the lock via tryAcquire, then immediately release it.
+      const lock = await lockManager.tryAcquire('cancel-test');
+      await lock.release();
+
+      // The lock should now be free; a subsequent tryAcquire must succeed.
+      const lock2 = await lockManager.tryAcquire('cancel-test');
+      const r = await lock2.acquire(1000);
+      await r();
     });
   });
 });

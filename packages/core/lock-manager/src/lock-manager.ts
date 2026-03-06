@@ -16,12 +16,16 @@ export type Releaser = () => void | Promise<void>;
  * A lock handle returned by {@link ILockAdapter.tryAcquire}.
  *
  * **Important**: the underlying mutex is already held when this object is
- * returned.  The caller MUST invoke either `acquire()` or `runExclusive()`
- * promptly; if neither is called the lock will be held indefinitely.
+ * returned.  The caller MUST invoke one of `acquire()`, `runExclusive()`, or
+ * `release()` promptly; if none is called the lock will be held indefinitely.
+ *
+ * Use `release()` to abandon the lock without executing any work (e.g. when an
+ * early-return or error prevents the caller from proceeding).
  */
 export interface ILock {
   acquire(ttl: number): Releaser | Promise<Releaser>;
   runExclusive<T>(fn: () => Promise<T>, ttl: number): Promise<T>;
+  release(): void | Promise<void>;
 }
 
 export interface ILockAdapter {
@@ -137,6 +141,10 @@ class LocalLockAdapter implements ILockAdapter {
     };
 
     return {
+      release: async (): Promise<void> => {
+        const release = await getRelease();
+        await release();
+      },
       acquire: async (ttl: number): Promise<Releaser> => {
         const release = await getRelease();
         const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
