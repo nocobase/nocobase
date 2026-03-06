@@ -13,7 +13,7 @@ export type SkillsOptions = {
   scope: SkillsScope;
   name: string;
   description: string;
-  content: string;
+  content?: string;
   tools?: string[];
   introduction?: {
     title: string;
@@ -22,7 +22,7 @@ export type SkillsOptions = {
   from?: string;
 };
 
-export type SkillsEntry = Omit<SkillsOptions, 'content'>;
+export type SkillsEntry = SkillsOptions;
 
 export type SkillsFilter = {
   scope?: SkillsScope;

@@ -17,7 +17,7 @@ import { Field } from '@formily/core';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { observer } from '@nocobase/flow-engine';
 
-export const SkillsListItem: React.FC<{
+export const ToolsListItem: React.FC<{
   name: string;
   title: string;
   description: string;
@@ -55,7 +55,7 @@ export const SkillsListItem: React.FC<{
   );
 };
 
-export const Skills: React.FC = observer(() => {
+export const Tools: React.FC = observer(() => {
   const t = useT();
   const { token } = useToken();
   const field = useField<Field>();
@@ -69,18 +69,18 @@ export const Skills: React.FC = observer(() => {
     aiConfigRepository.getAITools();
   }, [aiConfigRepository]);
 
-  const handleAdd = (name: string) => {
-    const skills = [...(field.value || [])];
-    if (!skills.some((s) => s.name === name)) {
-      skills.push({ name, autoCall: false });
+  const handleAddTool = (name: string) => {
+    const tools = [...(field.value || [])];
+    if (!tools.some((s) => s.name === name)) {
+      tools.push({ name, autoCall: false });
     }
-    field.value = skills;
+    field.value = tools;
   };
 
-  const selectedSkills = [...(field.value ?? [])];
-  const selectedNames = new Set(selectedSkills.map((item: { name: string }) => item.name));
+  const selectedTools = [...(field.value ?? [])];
+  const selectedNames = new Set(selectedTools.map((item: { name: string }) => item.name));
 
-  const customAddItems =
+  const customAddTools =
     tools
       ?.filter((item) => item.scope === 'CUSTOM' && !selectedNames.has(item.definition.name))
       .map((item) => {
@@ -93,18 +93,18 @@ export const Skills: React.FC = observer(() => {
           name: item.definition.name,
           isRoot: true,
         };
-        result.label = <SkillsListItem {...itemProps} />;
-        result.onClick = () => handleAdd(item.definition.name);
+        result.label = <ToolsListItem {...itemProps} />;
+        result.onClick = () => handleAddTool(item.definition.name);
         return result;
       }) || [];
 
   const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
   const generalTools = tools.filter((tool) => tool.scope === 'GENERAL');
-  const specifiedSkills = selectedSkills.filter((item) => {
+  const specifiedTools = selectedTools.filter((item) => {
     const tool = toolsByName.get(item.name);
     return tool && tool.scope !== 'GENERAL' && tool.scope !== 'CUSTOM';
   });
-  const customSkills = selectedSkills.filter((item) => {
+  const customTools = selectedTools.filter((item) => {
     const tool = toolsByName.get(item.name);
     return tool && tool.scope === 'CUSTOM';
   });
@@ -122,19 +122,19 @@ export const Skills: React.FC = observer(() => {
   };
 
   const [customActiveKeys, setCustomActiveKeys] = useState<string[]>(
-    isBuiltIn && customSkills.length === 0 ? [] : ['custom-skills'],
+    isBuiltIn && customTools.length === 0 ? [] : ['custom-tools'],
   );
-  const previousCustomLength = useRef(customSkills.length);
+  const previousCustomLength = useRef(customTools.length);
 
   useEffect(() => {
     const wasEmpty = previousCustomLength.current === 0;
-    if (isBuiltIn && customSkills.length === 0) {
+    if (isBuiltIn && customTools.length === 0) {
       setCustomActiveKeys([]);
-    } else if (wasEmpty && customSkills.length > 0) {
-      setCustomActiveKeys(['custom-skills']);
+    } else if (wasEmpty && customTools.length > 0) {
+      setCustomActiveKeys(['custom-tools']);
     }
-    previousCustomLength.current = customSkills.length;
-  }, [customSkills.length, isBuiltIn]);
+    previousCustomLength.current = customTools.length;
+  }, [customTools.length, isBuiltIn]);
 
   return (
     <>
@@ -147,11 +147,11 @@ export const Skills: React.FC = observer(() => {
               defaultActiveKey={[]}
               items={[
                 {
-                  key: 'general-skills',
+                  key: 'general-tools',
                   label: (
                     <div>
                       <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
-                        {t('General skills')}
+                        {t('General tools')}
                       </div>
                       <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
                         {t('Shared by all AI employees. Read-only.')}
@@ -197,18 +197,18 @@ export const Skills: React.FC = observer(() => {
               ]}
             />
           </div>
-          {isBuiltIn && specifiedSkills.length > 0 && (
+          {isBuiltIn && specifiedTools.length > 0 && (
             <div>
               <Collapse
                 ghost
                 size="small"
                 items={[
                   {
-                    key: 'specific-skills',
+                    key: 'specific-tools',
                     label: (
                       <div>
                         <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
-                          {t('Employee-specific skills')}
+                          {t('Employee-specific tools')}
                         </div>
                         <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
                           {t('Only available to this AI employee. Read-only.')}
@@ -219,7 +219,7 @@ export const Skills: React.FC = observer(() => {
                       <List
                         itemLayout="vertical"
                         size="small"
-                        dataSource={specifiedSkills}
+                        dataSource={specifiedTools}
                         renderItem={(item: { name: string; autoCall?: boolean }) => {
                           const tool = toolsByName.get(item.name);
                           if (!tool) {
@@ -256,7 +256,7 @@ export const Skills: React.FC = observer(() => {
                     ),
                   },
                 ]}
-                defaultActiveKey={['specific-skills']}
+                defaultActiveKey={['specific-tools']}
               />
             </div>
           )}
@@ -271,14 +271,14 @@ export const Skills: React.FC = observer(() => {
               }}
               items={[
                 {
-                  key: 'custom-skills',
+                  key: 'custom-tools',
                   label: (
                     <div>
                       <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
-                        {t('Custom skills')}
+                        {t('Custom tools')}
                       </div>
                       <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
-                        {t('Created via workflow. You can add/remove and set default permissions.')}
+                        {t('Created by workflow. You can add/remove and set default permissions.')}
                       </div>
                     </div>
                   ),
@@ -293,13 +293,13 @@ export const Skills: React.FC = observer(() => {
                     >
                       <Dropdown
                         menu={{
-                          items: customAddItems,
+                          items: customAddTools,
                         }}
                         placement="bottomRight"
-                        disabled={customAddItems.length === 0}
+                        disabled={customAddTools.length === 0}
                       >
                         <Button type="primary" icon={<PlusOutlined />}>
-                          {t('Add skill')}
+                          {t('Add tool')}
                           {/* <Tooltip title={t('Tools available for LLM function calling')}> */}
                           {/*   <QuestionCircleOutlined style={{ marginLeft: '4px' }} /> */}
                           {/* </Tooltip> */}
@@ -311,7 +311,7 @@ export const Skills: React.FC = observer(() => {
                     <List
                       itemLayout="vertical"
                       bordered
-                      dataSource={customSkills}
+                      dataSource={customTools}
                       renderItem={(item: { name: string; autoCall?: boolean }) => {
                         const tool = toolsByName.get(item.name);
                         if (!tool) {
@@ -344,11 +344,11 @@ export const Skills: React.FC = observer(() => {
                                     variant="link"
                                     color="default"
                                     onClick={() => {
-                                      const skills = [...(field.value || [])];
-                                      const index = skills.findIndex((s) => s.name === tool.definition.name);
+                                      const tools = [...(field.value || [])];
+                                      const index = tools.findIndex((s) => s.name === tool.definition.name);
                                       if (index !== -1) {
-                                        skills.splice(index, 1);
-                                        field.value = skills;
+                                        tools.splice(index, 1);
+                                        field.value = tools;
                                       }
                                     }}
                                   />
@@ -375,20 +375,19 @@ export const Skills: React.FC = observer(() => {
   );
 });
 
-export const SkillSettings: React.FC = () => {
-  const t = useT();
+export const ToolSettings: React.FC = () => {
   return (
     <SchemaComponent
-      components={{ Skills }}
+      components={{ Tools }}
       schema={{
         type: 'void',
         properties: {
-          skillSettings: {
+          toolSettings: {
             type: 'object',
             properties: {
               tools: {
                 type: 'array',
-                'x-component': 'Skills',
+                'x-component': 'Tools',
                 'x-decorator': 'FormItem',
               },
             },

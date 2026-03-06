@@ -8,8 +8,7 @@
  */
 
 import { define, observable } from '@formily/reactive';
-import { ToolsEntry, type ToolsManager } from '@nocobase/client';
-import { SkillsEntry } from '@nocobase/client/ai/skills-manager';
+import { SkillsEntry, ToolsEntry, type ToolsManager } from '@nocobase/client';
 import { AIEmployee } from '../ai-employees/types';
 
 export interface LLMServiceItem {
@@ -251,8 +250,7 @@ export class AIConfigRepository {
     try {
       const { data: res } = await this.apiClient.resource('aiSkills').list({});
       const data = Array.isArray(res?.data) ? (res.data as SkillsEntry[]) : [];
-      // Filter out content field if present
-      this.aiSkills = data.map(({ content, ...rest }) => rest);
+      this.aiSkills = data;
       this.aiSkillsLoaded = true;
     } catch {
       this.aiSkills = [];
