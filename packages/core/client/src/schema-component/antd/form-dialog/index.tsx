@@ -107,14 +107,15 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
               return document.body;
             }, []);
             const inputZIndex = Number(modal?.zIndex);
+            const defaultZIndex = token.zIndexPopupBase + 1000;
             const normalizedZIndex =
-              Number.isFinite(inputZIndex) && inputZIndex > 0 ? inputZIndex + 1000 : token.zIndexPopupBase + 1000;
+              Number.isFinite(inputZIndex) && inputZIndex > 0 ? Math.max(defaultZIndex, inputZIndex) : defaultZIndex;
 
             return (
               <Modal
                 {...modal}
                 zIndex={normalizedZIndex}
-                getContainer={modal?.getContainer || container}
+                getContainer={modal?.getContainer ?? container}
                 open={open}
                 confirmLoading={form.submitting}
                 onCancel={(e) => {

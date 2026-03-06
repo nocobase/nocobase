@@ -136,7 +136,15 @@ const openStepSettingsDialog = async ({
   const openView = model.context.viewer[mode].bind(model.context.viewer);
   const resolvedUiModeProps = toJS(uiModeProps) || {};
   const { zIndex: uiModeZIndex, ...restUiModeProps } = resolvedUiModeProps;
-  const mergedZIndex = Math.max(5000, Number(uiModeZIndex) || 0);
+  const resolveDialogZIndex = (rawZIndex?: number) => {
+    const nextZIndex =
+      typeof model.context.viewer?.getNextZIndex === 'function'
+        ? model.context.viewer.getNextZIndex()
+        : (model.context.themeToken?.zIndexPopupBase || 1000) + 1;
+    const inputZIndex = Number(rawZIndex) || 0;
+    return Math.max(nextZIndex, inputZIndex);
+  };
+  const mergedZIndex = resolveDialogZIndex(uiModeZIndex);
 
   const form = createForm({
     initialValues: compileUiSchema(scopes, initialValues),
@@ -169,7 +177,11 @@ const openStepSettingsDialog = async ({
         useEffect(() => {
           return autorun(() => {
             const dynamicProps = toJS(uiModeProps);
-            currentDialog.update(dynamicProps);
+            const { zIndex, ...restDynamicProps } = dynamicProps || {};
+            currentDialog.update({
+              ...restDynamicProps,
+              zIndex: resolveDialogZIndex(zIndex),
+            });
           });
         }, []);
 
