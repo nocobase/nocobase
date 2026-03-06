@@ -150,7 +150,7 @@ RecordTriggerWorkflowActionModel.registerFlow({
       use: 'afterSuccess',
       defaultParams: {
         successMessage: tExpr('Operation succeeded'),
-        actionAfterSuccess: 'stay',
+        actionAfterSuccess: 'previous',
       },
     },
   },
@@ -336,7 +336,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
       use: 'afterSuccess',
       defaultParams: {
         successMessage: tExpr('Operation succeeded'),
-        actionAfterSuccess: 'stay',
+        actionAfterSuccess: 'previous',
       },
     },
   },
@@ -428,7 +428,7 @@ CollectionGlobalTriggerWorkflowActionModel.registerFlow({
       use: 'afterSuccess',
       defaultParams: {
         successMessage: tExpr('Operation succeeded'),
-        actionAfterSuccess: 'stay',
+        actionAfterSuccess: 'previous',
       },
     },
   },
@@ -451,7 +451,7 @@ WorkbenchTriggerWorkflowActionModel.registerFlow({
       use: 'afterSuccess',
       defaultParams: {
         successMessage: tExpr('Operation succeeded'),
-        actionAfterSuccess: 'stay',
+        actionAfterSuccess: 'previous',
       },
     },
   },
