@@ -14,7 +14,7 @@ on:
   #     - develop
   #   paths:
   #     - 'package.json'
-  #     - '**/yarn.lock'
+  #     - '**/pnpm-lock.yaml'
   #     - 'packages/core/acl/**'
   #     - 'packages/core/auth/**'
   #     - 'packages/core/actions/**'
@@ -28,7 +28,7 @@ on:
   # pull_request:
   #   paths:
   #     - 'package.json'
-  #     - '**/yarn.lock'
+  #     - '**/pnpm-lock.yaml'
   #     - 'packages/core/acl/**'
   #     - 'packages/core/auth/**'
   #     - 'packages/core/actions/**'
@@ -59,13 +59,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: 'pnpm'
       - name: Install project dependencies
         run: |
-          yarn install
-          yarn add sqlite3 --no-save -W
+          pnpm install
+          pnpm add sqlite3 --no-save -W
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite
@@ -115,15 +115,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install project dependencies
-        run: yarn install
+        run: pnpm install
       - name: Test with postgres
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: postgres
@@ -165,15 +165,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install project dependencies
-        run: yarn install
+        run: pnpm install
       - name: Test with MySQL
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mysql
@@ -211,17 +211,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: 'pnpm'
 
       - name: Install project dependencies
-        run: yarn install
+        run: pnpm install
       - name: Install project dependencies
-        run: yarn --prefer-offline
+        run: pnpm install --prefer-offline
       - name: Test with MariaDB
         run: |
           ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
           sleep 1
-          yarn test --server --single-thread=false
+          pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: mariadb

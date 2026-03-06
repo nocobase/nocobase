@@ -12,7 +12,7 @@ on:
       - develop
     paths:
       - 'package.json'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -25,7 +25,7 @@ on:
   pull_request:
     paths:
       - 'package.json'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -50,25 +50,25 @@ jobs:
 
       - run: yarn config set network-timeout 600000 -g
 
-      - name: Get yarn cache directory path
+      - name: Get pnpm store pathectory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "::set-output name=dir::$(pnpm store path)"
 
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
+            ${{ runner.os }}-pnpm-
 
       - name: Install project dependencies
         run: |
-          yarn --prefer-offline
-          yarn add sqlite3 --no-save -W
+          pnpm install --prefer-offline
+          pnpm add sqlite3 --no-save -W
 
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite

@@ -13,14 +13,14 @@ on:
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
   pull_request:
     branches:
       - '**'
     paths:
       - '.github/workflows/e2e.yml'
       - 'packages/**'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
 
 jobs:
   build:
@@ -86,9 +86,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'yarn'
-      - run: yarn
-      - run: yarn build
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm build
         env:
           __E2E__: true # e2e will be reusing this workflow, so we need to set this flag to true
       - uses: actions/upload-artifact@v4
@@ -155,18 +155,18 @@ jobs:
   #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
   #       id: vars
 
-  #     - name: Get yarn cache directory path
+  #     - name: Get pnpm store pathectory path
   #       id: yarn-cache-dir-path
-  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
   #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   #       with:
   #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
-  #           ${{ runner.os }}-yarn-
+  #           ${{ runner.os }}-pnpm-
 
-  #     - run: yarn
+  #     - run: pnpm install
 
   #     - name: Download build artifact
   #       uses: actions/download-artifact@v4
@@ -176,7 +176,7 @@ jobs:
 
   #     - run: npx playwright install chromium --with-deps
   #     - name: Test with postgres
-  #       run: yarn e2e p-test --ignore 'packages/**/{plugin-data-source-main,plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
+  #       run: pnpm e2e p-test --ignore 'packages/**/{plugin-data-source-main,plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts'
   #       env:
   #         __E2E__: true
   #         APP_ENV: production
@@ -253,18 +253,18 @@ jobs:
   #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
   #       id: vars
 
-  #     - name: Get yarn cache directory path
+  #     - name: Get pnpm store pathectory path
   #       id: yarn-cache-dir-path
-  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
   #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   #       with:
   #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
-  #           ${{ runner.os }}-yarn-
+  #           ${{ runner.os }}-pnpm-
 
-  #     - run: yarn
+  #     - run: pnpm install
 
   #     - name: Download build artifact
   #       uses: actions/download-artifact@v4
@@ -274,7 +274,7 @@ jobs:
 
   #     - run: npx playwright install chromium --with-deps
   #     - name: Test with postgres
-  #       run: yarn e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/{plugin-workflow-approval,plugin-workflow-manual}/**/__e2e__/**/*.test.ts'
+  #       run: pnpm e2e p-test --match 'packages/**/{plugin-workflow,plugin-workflow-*}/**/__e2e__/**/*.test.ts' --ignore 'packages/**/{plugin-workflow-approval,plugin-workflow-manual}/**/__e2e__/**/*.test.ts'
   #       env:
   #         __E2E__: true
   #         APP_ENV: production
@@ -379,18 +379,18 @@ jobs:
   #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
   #       id: vars
 
-  #     - name: Get yarn cache directory path
+  #     - name: Get pnpm store pathectory path
   #       id: yarn-cache-dir-path
-  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
   #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   #       with:
   #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
-  #           ${{ runner.os }}-yarn-
+  #           ${{ runner.os }}-pnpm-
 
-  #     - run: yarn
+  #     - run: pnpm install
 
   #     - name: Download build artifact
   #       uses: actions/download-artifact@v4
@@ -400,7 +400,7 @@ jobs:
 
   #     - run: npx playwright install chromium --with-deps
   #     - name: Test with postgres
-  #       run: yarn e2e p-test --match 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts'
+  #       run: pnpm e2e p-test --match 'packages/**/plugin-workflow-approval/**/__e2e__/**/*.test.ts'
   #       env:
   #         __E2E__: true
   #         APP_ENV: production
@@ -477,18 +477,18 @@ jobs:
   #         echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
   #       id: vars
 
-  #     - name: Get yarn cache directory path
+  #     - name: Get pnpm store pathectory path
   #       id: yarn-cache-dir-path
-  #       run: echo "::set-output name=dir::$(yarn cache dir)"
+  #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
   #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
   #       with:
   #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-  #         key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+  #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
-  #           ${{ runner.os }}-yarn-
+  #           ${{ runner.os }}-pnpm-
 
-  #     - run: yarn
+  #     - run: pnpm install
 
   #     - name: Download build artifact
   #       uses: actions/download-artifact@v4
@@ -498,7 +498,7 @@ jobs:
 
   #     - run: npx playwright install chromium --with-deps
   #     - name: Test with postgres
-  #       run: yarn e2e p-test --match 'packages/**/plugin-data-source-main/**/__e2e__/**/*.test.ts'
+  #       run: pnpm e2e p-test --match 'packages/**/plugin-data-source-main/**/__e2e__/**/*.test.ts'
   #       env:
   #         __E2E__: true
   #         APP_ENV: production
@@ -537,8 +537,8 @@ jobs:
   #     - uses: actions/setup-node@v4
   #       with:
   #         node-version: 20
-  #         cache: 'yarn'
-  #     - run: yarn
+  #         cache: 'pnpm'
+  #     - run: pnpm install
 
   #     - name: Download e2e report artifact
   #       uses: actions/download-artifact@v4

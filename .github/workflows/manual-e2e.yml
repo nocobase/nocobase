@@ -52,26 +52,26 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
-      - name: Get yarn cache directory path
+          cache: 'pnpm'
+      - name: Get pnpm store pathectory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "::set-output name=dir::$(pnpm store path)"
       - uses: actions/cache@v3
         id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-yarn-
-      - run: yarn install
+            ${{ runner.os }}-pnpm-
+      - run: pnpm install
       - run: ls -a ./node_modules/@nocobase
-      - name: yarn build
-        run: yarn build
+      - name: pnpm build
+        run: pnpm build
         env:
           __E2E__: true
       - run: npx playwright install chromium --with-deps
       - name: Test with postgres
-        run: yarn e2e p-test
+        run: pnpm e2e p-test
         env:
           __E2E__: true
           APP_ENV: production

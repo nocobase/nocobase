@@ -49,7 +49,7 @@
   },
   "config": {
     "ghooks": {
-      "pre-commit": "pnpm lint-staged && node ./scripts/addLicense.js",
+      "pre-commit": "yarn lint-staged && node ./scripts/addLicense.js",
       "commit-msg": "commitlint --edit"
     }
   },

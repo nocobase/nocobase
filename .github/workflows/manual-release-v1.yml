@@ -175,12 +175,12 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
-      - name: yarn install and build
+      - name: pnpm install and build
         if: ${{ !inputs.dry_run }}
         run: |
           yarn config set registry https://registry.npmjs.org/
-          yarn install
-          yarn build
+          pnpm install
+          pnpm build
 
       - name: Install Lerna
         if: ${{ !inputs.dry_run }}
