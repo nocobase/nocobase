@@ -39,7 +39,7 @@ export const afterSuccess = defineAction({
       enum: [
         { label: tExpr('Stay on the current popup or page'), value: 'stay' },
         { label: tExpr('Return to the previous popup or page'), value: 'previous' },
-        { label: tExpr('Redirect to'), value: 'redirect' },
+        { label: tExpr('Close popup and redirect to'), value: 'redirect' },
       ],
     },
     redirectTo: {
