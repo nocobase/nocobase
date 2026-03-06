@@ -14,56 +14,7 @@ export default {
   description: 'AI employee for coding',
   profile,
   skillSettings: {
-    skills: [],
-    tools: [
-      {
-        name: 'getDataSources',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionMetadata',
-        autoCall: true,
-      },
-      {
-        name: 'listCodeSnippet',
-        autoCall: true,
-      },
-      {
-        name: 'getCodeSnippet',
-        autoCall: true,
-      },
-      {
-        name: 'getContextApis',
-        autoCall: true,
-      },
-      {
-        name: 'getContextEnvs',
-        autoCall: true,
-      },
-      {
-        name: 'getContextVars',
-        autoCall: true,
-      },
-      {
-        name: 'lintAndTestJS',
-        autoCall: true,
-      },
-      {
-        name: 'searchFieldMetadata',
-        autoCall: true,
-      },
-      {
-        name: 'searchDocs',
-        autoCall: true,
-      },
-      {
-        name: 'readDocEntry',
-        autoCall: true,
-      },
-    ],
+    skills: ['frontend-developer'],
+    tools: [],
   },
 };

@@ -44,8 +44,24 @@ export class DefaultSkillsManager implements SkillsManager {
   async registerSkills(options: SkillsOptions): Promise<void> {
     if (!this.aiSkillsModel) {
       return this.registerSkillsInMemory(options);
+    } else {
+      return this.registerSkillsInDatabase(options);
     }
+  }
 
+  async persistence(): Promise<void> {
+    const skillsList = [...this.skills.getValues()];
+    for (const skill of skillsList) {
+      await this.registerSkillsInDatabase(skill);
+    }
+  }
+
+  private registerSkillsInMemory(options: SkillsOptions): void {
+    const skillsEntry: SkillsEntry = { ...options };
+    this.skills.register(options.name, skillsEntry);
+  }
+
+  async registerSkillsInDatabase(options: SkillsOptions): Promise<void> {
     const title = options.introduction?.title;
     const about = options.introduction?.about;
     const from = options.from || 'loader';
@@ -86,18 +102,6 @@ export class DefaultSkillsManager implements SkillsManager {
         );
       }
     });
-  }
-
-  private registerSkillsInMemory(options: SkillsOptions): void {
-    const skillsEntry: SkillsEntry = { ...options };
-    this.skills.register(options.name, skillsEntry);
-  }
-
-  async persistence(): Promise<void> {
-    const skillsList = [...this.skills.getValues()];
-    for (const skill of skillsList) {
-      await this.registerSkills(skill);
-    }
   }
 
   private get aiSkillsModel() {

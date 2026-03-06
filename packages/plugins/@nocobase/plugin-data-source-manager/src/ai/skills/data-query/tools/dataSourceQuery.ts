@@ -15,7 +15,7 @@ import { buildPagedToolResult, normalizeLimitOffset, truncateLongStrings, MAX_QU
 import pkg from '../../../../package.json';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("ai.tools.dataSourceQuery.title", { ns: "${pkg.name}" })}}`,

@@ -16,6 +16,7 @@ import { LoadAndRegister } from './types';
 import { Logger } from '@nocobase/logger';
 import matter from 'gray-matter';
 import path from 'path';
+import { SkillsScope } from '../skills-manager';
 
 export type SkillsLoaderOptions = { scan: DirectoryScannerOptions; log?: Logger };
 export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
@@ -59,10 +60,12 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
           try {
             const skills = await readFile(skillsFile.path, 'utf-8');
             const { data, content } = matter(skills);
+            entry.scope = data['scope'] ?? 'GENERAL';
             entry.name = data['name'];
             entry.description = data['description'];
             entry.content = content;
             entry.introduction = data['introduction'];
+            entry.tools = data['tools'] ?? [];
           } catch (e) {
             this.log?.error(`skills [${name}] load fail: error occur when reading SKILLS.md at ${skillsFile.path}`, e);
             return null;
@@ -74,7 +77,12 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
               pattern: ['tools/**/*.ts'],
             });
             const toolsFiles = await toolsScanner.scan();
-            entry.tools = toolsFiles.map((it) => (it.basename === 'index.ts' ? it.directory : it.name));
+            entry.tools = Array.from(
+              new Set([
+                ...entry.tools,
+                ...toolsFiles.map((it) => (it.basename === 'index.ts' ? it.directory : it.name)),
+              ]),
+            );
           } catch (e) {
             this.log?.error(`skills [${name}] load fail: error occur when loading tools at ${skillsDir.path}`, e);
             return null;
@@ -94,7 +102,7 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
     await Promise.all(
       this.skillsDescriptors.map(async (descriptor) => {
         await skillsManager.registerSkills({
-          scope: descriptor.skillsDir.directory === 'skills' ? 'GENERAL' : 'SPECIFIED',
+          scope: descriptor.scope,
           name: descriptor.name,
           description: descriptor.description,
           content: descriptor.content,
@@ -107,6 +115,7 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
 }
 
 export type SkillsDescriptor = {
+  scope: SkillsScope;
   name: string;
   description: string;
   content: string;

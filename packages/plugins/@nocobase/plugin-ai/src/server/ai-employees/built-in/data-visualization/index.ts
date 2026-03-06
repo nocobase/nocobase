@@ -19,10 +19,6 @@ export default {
       // 可视化工具：模式切换 + 运行查询
       { name: 'viz-switchModes', autoCall: true },
       { name: 'viz-runQuery', autoCall: true },
-      // 了解数据结构
-      { name: 'getDataSources', autoCall: true },
-      { name: 'getCollectionNames', autoCall: true },
-      { name: 'getCollectionMetadata', autoCall: true },
     ],
   },
 };

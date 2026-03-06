@@ -15,19 +15,6 @@ export default {
   profile,
   skillSettings: {
     skills: [],
-    tools: [
-      {
-        name: 'getDataSources',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionMetadata',
-        autoCall: true,
-      },
-    ],
+    tools: [],
   },
 };

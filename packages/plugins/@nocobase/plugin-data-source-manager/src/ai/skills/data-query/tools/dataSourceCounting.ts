@@ -14,7 +14,7 @@ import { Context } from '@nocobase/actions';
 import pkg from '../../../../package.json';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("ai.tools.dataSourceCounting.title", { ns: "${pkg.name}" })}}`,

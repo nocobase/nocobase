@@ -12,7 +12,7 @@ import { defineTools } from '@nocobase/ai';
 import _ from 'lodash';
 import { z } from 'zod';
 // @ts-ignore
-import pkg from '../../../../package.json';
+import pkg from '../../../../../package.json';
 
 const idField = {
   name: 'id',

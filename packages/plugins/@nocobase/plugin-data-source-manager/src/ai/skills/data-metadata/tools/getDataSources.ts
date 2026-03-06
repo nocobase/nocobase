@@ -10,10 +10,10 @@
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 // @ts-ignore
-import pkg from '../../../package.json';
+import pkg from '../../../../../package.json';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("ai.tools.getDataSources.title", { ns: "${pkg.name}" })}}`,

@@ -15,23 +15,6 @@ export default {
   profile,
   skillSettings: {
     skills: [],
-    tools: [
-      {
-        name: 'frontend-formFiller',
-        autoCall: true,
-      },
-      {
-        name: 'getDataSources',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'getCollectionMetadata',
-        autoCall: true,
-      },
-    ],
+    tools: [],
   },
 };

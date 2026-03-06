@@ -11,10 +11,10 @@ import { AIManager, defineTools } from '@nocobase/ai';
 import { DataSource } from '@nocobase/data-source-manager';
 import { Field } from '@nocobase/database';
 // @ts-ignore
-import pkg from '../../../package.json';
+import pkg from '../../../../../package.json';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("ai.tools.searchFieldMetadata.title", { ns: "${pkg.name}" })}}`,
