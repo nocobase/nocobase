@@ -53,7 +53,7 @@ jobs:
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'pnpm'
-      - name: Get pnpm store pathectory path
+      - name: Get pnpm store directory path
         id: yarn-cache-dir-path
         run: echo "::set-output name=dir::$(pnpm store path)"
       - uses: actions/cache@v3
