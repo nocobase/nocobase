@@ -44,6 +44,7 @@ export type ComponentLoaderResult =
   | { default?: ComponentTypeAndString; Component?: ComponentTypeAndString }
   | ComponentTypeAndString;
 export type ComponentLoader = () => Promise<ComponentLoaderResult>;
+type LazyRouteComponentModule = { default: ComponentType<any> };
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
   componentLoader?: ComponentLoader;
@@ -83,22 +84,23 @@ export class RouterManager {
   }
 
   protected createRouteLazyComponent(componentLoader: ComponentLoader): ComponentType {
-    const LazyComponent = React.lazy(async () => {
+    const LazyComponent = React.lazy<LazyRouteComponentModule>(async () => {
       const loadedComponent = this.resolveLoadedComponent(await componentLoader());
       if (!loadedComponent) {
         throw new Error('componentLoader must resolve to a React component or component module.');
       }
       if (typeof loadedComponent === 'string') {
+        const StringRouteComponent: ComponentType<any> = (props) => this.app.renderComponent(loadedComponent, props);
         return {
-          default: () => this.app.renderComponent(loadedComponent),
+          default: StringRouteComponent,
         };
       }
       return {
-        default: loadedComponent,
+        default: loadedComponent as ComponentType<any>,
       };
     });
 
-    return function RouteLazyComponentWrapper(props) {
+    return function RouteLazyComponentWrapper(props: Record<string, any>) {
       return (
         <React.Suspense fallback={null}>
           <LazyComponent {...props} />
