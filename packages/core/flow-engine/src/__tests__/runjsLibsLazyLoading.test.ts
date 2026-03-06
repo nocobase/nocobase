@@ -41,4 +41,12 @@ describe('RunJS ctx.libs lazy loading', () => {
     expect(r.success).toBe(true);
     expect(r.value).toBe(789);
   });
+
+  it('preloads direct ctx.antd access before runtime use', async () => {
+    const engine = new FlowEngine();
+    const ctx: any = engine.context;
+    const r = await ctx.runjs(`return typeof ctx.antd !== "undefined";`);
+    expect(r.success).toBe(true);
+    expect(r.value).toBe(true);
+  });
 });

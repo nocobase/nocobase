@@ -12,6 +12,10 @@ import type { FlowContext } from './flowContext';
 
 export type RunJSLibCache = 'global' | 'context';
 export type RunJSLibLoader<T = any> = (ctx: FlowContext) => T | Promise<T>;
+type RunJSFlowContext = FlowContext & {
+  libs?: Record<string, unknown>;
+  __runjsInternalAntd?: unknown;
+};
 
 type RunJSLibRegistryEntry = {
   loader: RunJSLibLoader<unknown>;
@@ -61,6 +65,10 @@ function __runjsGetCtxValue(ctx: FlowContext, key: string): unknown {
   return (ctx as unknown as Record<string, unknown>)[key];
 }
 
+function __runjsSetInternalAntd(ctx: FlowContext, value: unknown): void {
+  (ctx as RunJSFlowContext).__runjsInternalAntd = value;
+}
+
 async function __runjsEnsureLib(ctx: FlowContext, name: string): Promise<unknown> {
   const libs = (ctx as unknown as { libs?: unknown })?.libs;
   if (__runjsHasOwn(libs, name)) {
@@ -73,6 +81,9 @@ async function __runjsEnsureLib(ctx: FlowContext, name: string): Promise<unknown
 
   const setLib = (v: unknown) => {
     if (__runjsIsObject(libs)) libs[name] = v;
+    if (name === 'antd') {
+      __runjsSetInternalAntd(ctx, v);
+    }
   };
 
   if (entry.cache === 'context') {
@@ -156,12 +167,15 @@ function setupRunJSLibAPIs(ctx: FlowContext): void {
 const DEFAULT_RUNJS_LIBS: Array<{ name: string; cache: RunJSLibCache; loader: RunJSLibLoader }> = [
   { name: 'React', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'React') },
   { name: 'ReactDOM', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'ReactDOM') },
-  { name: 'antd', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'antd') },
+  { name: 'antd', cache: 'context', loader: () => import('antd').then((m) => m.default || m) },
   { name: 'dayjs', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'dayjs') },
   {
     name: 'antdIcons',
     cache: 'global',
-    loader: () => import('@ant-design/icons').then((m) => m.default || m),
+    loader: async () => {
+      const mod = await import('./runjsAntdIconsLoader');
+      return mod.loadRunJSAntdIcons();
+    },
   },
   { name: 'lodash', cache: 'global', loader: () => import('lodash').then((m) => m.default || m) },
   { name: 'formula', cache: 'global', loader: () => import('@formulajs/formulajs').then((m) => m.default || m) },
