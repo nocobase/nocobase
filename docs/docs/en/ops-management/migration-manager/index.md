@@ -28,11 +28,11 @@ The Migration Manager transfers tables and data from the primary database based 
 
 Migration Manager supports five built-in rules:
 
-1.  **Schema-only:** Only migrates the structure—no data is moved.
-2.  **Overwrite:** Deletes target table records, then inserts new data.
-3.  **Upsert:** Updates existing records (by primary key) or inserts new ones.
-4.  **Insert-ignore:** Inserts new records; skips existing ones.
-5.  **Skip:** No changes to the table.
+- **Schema-only:** Only migrates the structure—no data is moved.
+- **Overwrite:** Deletes target table records, then inserts new data.
+- **Upsert:** Updates existing records (by primary key) or inserts new ones.
+- **Insert-ignore:** Inserts new records; skips existing ones.
+- **Skip:** No changes to the table.
 
 **Additional notes:**
 - "Overwrite," "Upsert," and "Insert-ignore" all synchronize table structure changes.
@@ -100,7 +100,7 @@ When viewing the migration logs online, you can also download the SQL statements
 
 Click the `Process` button to view the completed migration execution process.
 
-![c065716cfbb7655f5826bf0aeae4b156](https://static-docs.nocobase.com/c065716cfbb7655f5826bf0aeae4b156.png)
+![c065716cfbb7655f5826bf0ceae4b156](https://static-docs.nocobase.com/c065716cfbb7655f5826bf0ceae4b156.png)
 
 ![f4abe566de1186a9432174ce70b2f960](https://static-docs.nocobase.com/f4abe566de1186a9432174ce70b2f960.png)
 
