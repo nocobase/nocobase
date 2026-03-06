@@ -16,7 +16,6 @@ type PrepareRunJsCodeOptions = {
 const RESOLVE_JSON_TEMPLATE_CALL = 'ctx.resolveJsonTemplate';
 const CTX_TEMPLATE_MARKER_RE = /\{\{\s*ctx(?:\.|\[|\?\.)/;
 const CTX_LIBS_MARKER_RE = /\bctx(?:\?\.|\.)libs\b/;
-const CTX_DIRECT_ANTD_MARKER_RE = /\bctx(?:\?\.|\.)antd\b|\bctx(?:\?\.)?\s*\[\s*['"]antd['"]\s*\]/;
 const STRINGIFY_HELPER_BASE_NAME = '__runjs_templateValueToString';
 const BARE_PLACEHOLDER_VAR_RE = /\b__runjs_ctx_tpl_\d+\b/;
 const STRINGIFY_HELPER_RE = /\b__runjs_templateValueToString(?:_\d+)?\b/;
@@ -238,66 +237,6 @@ function readsCtxLibsBase(code: string, index: number): number | null {
   if (tail.startsWith('.libs')) return index + 3 + 5; // ".libs"
   if (tail.startsWith('?.libs')) return index + 3 + 6; // "?.libs"
   return null;
-}
-
-function readsCtxBase(code: string, index: number): number | null {
-  if (!code.startsWith('ctx', index)) return null;
-  const before = index > 0 ? code[index - 1] : '';
-  const after = code[index + 3] || '';
-  if (isIdentChar(before) || isIdentChar(after)) return null;
-  return index + 3;
-}
-
-function tryReadCtxDirectLibAccess(code: string, index: number): { end: number; key?: string } | null {
-  const baseEnd = readsCtxBase(code, index);
-  if (baseEnd === null) return null;
-
-  let i = skipSpaceAndCommentsForward(code, baseEnd);
-  const ch = code[i];
-  const next = code[i + 1];
-  const next2 = code[i + 2];
-
-  if (ch === '?' && next === '.' && next2 === '[') {
-    i = skipSpaceAndCommentsForward(code, i + 3);
-    const q = code[i];
-    if (q === "'" || q === '"') {
-      const parsed = readSimpleStringLiteralValue(code, i, q);
-      if (!parsed) return { end: i + 1 };
-      let j = skipSpaceAndCommentsForward(code, parsed.end);
-      if (code[j] === ']') j += 1;
-      return parsed.value === 'antd' ? { end: j, key: 'antd' } : { end: j };
-    }
-    return { end: i };
-  }
-
-  if (ch === '[') {
-    i = skipSpaceAndCommentsForward(code, i + 1);
-    const q = code[i];
-    if (q === "'" || q === '"') {
-      const parsed = readSimpleStringLiteralValue(code, i, q);
-      if (!parsed) return { end: i + 1 };
-      let j = skipSpaceAndCommentsForward(code, parsed.end);
-      if (code[j] === ']') j += 1;
-      return parsed.value === 'antd' ? { end: j, key: 'antd' } : { end: j };
-    }
-    return { end: i };
-  }
-
-  if (ch === '?' && next === '.') {
-    i = skipSpaceAndCommentsForward(code, i + 2);
-    const ident = readIdentifier(code, i);
-    if (!ident) return { end: i };
-    return ident.name === 'antd' ? { end: ident.end, key: 'antd' } : { end: ident.end };
-  }
-
-  if (ch === '.') {
-    i = skipSpaceAndCommentsForward(code, i + 1);
-    const ident = readIdentifier(code, i);
-    if (!ident) return { end: i };
-    return ident.name === 'antd' ? { end: ident.end, key: 'antd' } : { end: ident.end };
-  }
-
-  return { end: baseEnd };
 }
 
 function tryReadCtxLibAccess(code: string, index: number): { end: number; key?: string } | null {
@@ -613,140 +552,10 @@ function extractUsedCtxLibKeys(code: string): string[] {
   return Array.from(out);
 }
 
-function extractUsedCtxDirectLibKeys(code: string): string[] {
-  if (!CTX_DIRECT_ANTD_MARKER_RE.test(code)) return [];
-
-  const out = new Set<string>();
-
-  const scanTemplateExpression = (start: number): number => {
-    let i = start;
-    let braceDepth = 1;
-    while (i < code.length && braceDepth > 0) {
-      const ch = code[i];
-      const next = code[i + 1];
-      if (ch === '/' && next === '/') {
-        i = readLineComment(code, i);
-        continue;
-      }
-      if (ch === '/' && next === '*') {
-        i = readBlockComment(code, i);
-        continue;
-      }
-      if (ch === "'" || ch === '"') {
-        i = readQuotedString(code, i, ch);
-        continue;
-      }
-      if (ch === '`') {
-        i = scanTemplateLiteral(i + 1);
-        continue;
-      }
-
-      const access = tryReadCtxDirectLibAccess(code, i);
-      if (access) {
-        if (access.key) out.add(access.key);
-        i = access.end;
-        continue;
-      }
-
-      if (ch === '{') braceDepth += 1;
-      else if (ch === '}') braceDepth -= 1;
-
-      i += 1;
-    }
-    return i;
-  };
-
-  const scanTemplateLiteral = (start: number): number => {
-    let i = start;
-    while (i < code.length) {
-      const ch = code[i];
-      const next = code[i + 1];
-      if (ch === '\\') {
-        i += 2;
-        continue;
-      }
-      if (ch === '`') return i + 1;
-      if (ch === '$' && next === '{') {
-        i = scanTemplateExpression(i + 2);
-        continue;
-      }
-      i += 1;
-    }
-    return i;
-  };
-
-  let i = 0;
-  while (i < code.length) {
-    const ch = code[i];
-    const next = code[i + 1];
-    if (ch === '/' && next === '/') {
-      i = readLineComment(code, i);
-      continue;
-    }
-    if (ch === '/' && next === '*') {
-      i = readBlockComment(code, i);
-      continue;
-    }
-    if (ch === "'" || ch === '"') {
-      i = readQuotedString(code, i, ch);
-      continue;
-    }
-    if (ch === '`') {
-      i = scanTemplateLiteral(i + 1);
-      continue;
-    }
-
-    const access = tryReadCtxDirectLibAccess(code, i);
-    if (access) {
-      if (access.key) out.add(access.key);
-      i = access.end;
-      continue;
-    }
-
-    if (ch === '=' && next !== '=' && next !== '>' && next !== '<') {
-      const right = skipSpaceAndCommentsForward(code, i + 1);
-      const rhsBaseEnd = readsCtxBase(code, right);
-      if (rhsBaseEnd !== null) {
-        const rhsTail = skipSpaceAndCommentsForward(code, rhsBaseEnd);
-        const rhsCh = code[rhsTail];
-        const rhsNext = code[rhsTail + 1];
-        if (rhsCh !== '.' && rhsCh !== '[' && !(rhsCh === '?' && (rhsNext === '.' || rhsNext === '['))) {
-          const leftEnd = skipWhitespaceBackward(code, i - 1);
-          if (code[leftEnd] === '}') {
-            let depth = 0;
-            let j = leftEnd;
-            while (j >= 0) {
-              const c = code[j];
-              if (c === '}') depth += 1;
-              else if (c === '{') {
-                depth -= 1;
-                if (depth === 0) break;
-              }
-              j -= 1;
-            }
-            if (j >= 0 && code[j] === '{') {
-              const inner = code.slice(j + 1, leftEnd);
-              for (const key of parseDestructuredKeysFromObjectPattern(inner)) {
-                if (key === 'antd') {
-                  out.add(key);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    i += 1;
-  }
-
-  return Array.from(out);
-}
-
 function injectEnsureLibsPreamble(code: string): string {
   if (ENSURE_LIBS_MARKER_RE.test(code)) return code;
-  if (!CTX_LIBS_MARKER_RE.test(code) && !CTX_DIRECT_ANTD_MARKER_RE.test(code)) return code;
-  const keys = Array.from(new Set([...extractUsedCtxLibKeys(code), ...extractUsedCtxDirectLibKeys(code)]));
+  if (!CTX_LIBS_MARKER_RE.test(code)) return code;
+  const keys = extractUsedCtxLibKeys(code);
   if (!keys.length) return code;
   return `/* __runjs_ensure_libs */\nawait ctx.__ensureLibs(${JSON.stringify(keys)});\n${code}`;
 }
