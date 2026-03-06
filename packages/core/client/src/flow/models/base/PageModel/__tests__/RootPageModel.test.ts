@@ -152,6 +152,7 @@ describe('RootPageModel', () => {
       await rootPageModel.handleDragEnd(mockDragEndEvent as any);
 
       expect(mockActiveModel.save).toHaveBeenCalledTimes(1);
+      expect(mockOverModel.save).not.toHaveBeenCalled();
       expect(mockApi.request).toHaveBeenCalledWith({
         url: 'desktopRoutes:move',
         method: 'post',
@@ -162,6 +163,27 @@ describe('RootPageModel', () => {
         },
       });
       expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-uid', 'over-uid', { persist: false });
+    });
+
+    it('should skip self-drop to avoid duplicate saves for the same new tab', async () => {
+      const mockModel = {
+        uid: 'same-uid',
+        props: { route: { schemaUid: 'same-schema-uid' } },
+        save: vi.fn(),
+      };
+
+      const mockDragEndEvent = {
+        active: { id: 'same-model-id' },
+        over: { id: 'same-model-id' },
+      };
+
+      mockFlowEngine.getModel.mockReturnValue(mockModel);
+
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
+
+      expect(mockModel.save).not.toHaveBeenCalled();
+      expect(mockApi.request).not.toHaveBeenCalled();
+      expect(mockFlowEngine.moveModel).not.toHaveBeenCalled();
     });
 
     it('should handle case when activeModel is not found', async () => {

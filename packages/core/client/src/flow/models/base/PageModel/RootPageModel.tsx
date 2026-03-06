@@ -88,6 +88,11 @@ export class RootPageModel extends PageModel {
       return;
     }
 
+    // 自拖拽不需要排序，也要避免对同一个新建 tab 并发保存两次。
+    if (activeModel.uid === overModel.uid) {
+      return;
+    }
+
     const [sourceId, targetId] = await Promise.all([
       this.ensurePersistedRouteId(activeModel),
       this.ensurePersistedRouteId(overModel),
