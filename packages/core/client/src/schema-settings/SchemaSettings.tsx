@@ -701,7 +701,7 @@ export const SchemaSettingsActionModalItem: FC<SchemaSettingsActionModalItemProp
   const upLevelActiveFields = useFormActiveFields();
   const parentZIndex = useZIndexContext();
 
-  const zIndex = getZIndex('modal', parentZIndex + 10, 0);
+  const zIndex = Math.max(getZIndex('modal', parentZIndex + 10, 0), ICON_POPUP_Z_INDEX + 200);
 
   const form = useMemo(
     () =>
