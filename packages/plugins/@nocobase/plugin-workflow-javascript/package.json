@@ -28,10 +28,6 @@
     "jshint": "^2.13.6",
     "node-gyp": "^10.2.0"
   },
-  "resolutions": {
-    "nan": "2.18.0",
-    "node-gyp": "^10.2.0"
-  },
   "keywords": [
     "Workflow"
   ],
