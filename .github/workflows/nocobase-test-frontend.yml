@@ -12,7 +12,7 @@ on:
       - develop
     paths:
       - 'packages/**'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - '.github/workflows/nocobase-test-frontend.yml'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
@@ -23,7 +23,7 @@ on:
     paths:
       - '.github/workflows/nocobase-test-frontend.yml'
       - 'packages/**'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - '!packages/core/acl/**'
       - '!packages/core/actions/**'
       - '!packages/core/database/**'
@@ -44,8 +44,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'yarn'
+          cache: 'pnpm'
 
-      - run: yarn install
-      - run: yarn test:client
-    timeout-minutes: 40
+      - run: pnpm install
+      - run: pnpm test:client
+    timeout-minutes: 30
