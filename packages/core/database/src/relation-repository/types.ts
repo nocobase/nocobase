@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AssociationKeysToBeUpdate, BlackList, Values, WhiteList } from '@nocobase/database';
+import { AssociationKeysToBeUpdate, BlackList, Values, WhiteList } from '..';
 import { Transaction } from 'sequelize';
 import {
   CreateOptions as SequelizeCreateOptions,

@@ -50,6 +50,15 @@ function loadCompilerOptions(): ts.CompilerOptions {
   const options: ts.CompilerOptions = {
     ...parsedConfig.options,
   };
+  
+  if (options.paths) {
+    const newPaths: Record<string, string[]> = {};
+    for (const key of Object.keys(options.paths)) {
+      newPaths[key] = options.paths[key].map(p => p.replace('/src', '/lib'));
+    }
+    options.paths = newPaths;
+  }
+  
   return options;
 }
 

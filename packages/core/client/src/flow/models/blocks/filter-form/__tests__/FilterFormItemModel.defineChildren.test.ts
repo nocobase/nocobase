@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import '@nocobase/client';
+import '../../../../..';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { CollectionBlockModel } from '../../../base';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
