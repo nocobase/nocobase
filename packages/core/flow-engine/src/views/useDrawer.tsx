@@ -118,12 +118,17 @@ export function useDrawer() {
       ctx.addDelegate(flowContext.engine.context);
     }
 
+    // 幂等保护：防止 FlowPage 路由清理时二次调用 destroy
+    let destroyed = false;
+
     // 构造 currentDrawer 实例
     const currentDrawer = {
       type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: (result?: any) => {
+        if (destroyed) return;
+        destroyed = true;
         config.onClose?.();
         drawerRef.current?.destroy();
         closeFunc?.();
@@ -169,8 +174,15 @@ export function useDrawer() {
       get: () => currentDrawer,
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
-    // 注册视图销毁回调，供外部通过引擎栈遍历来关闭多层弹窗
-    scopedEngine.setDestroyView(() => currentDrawer.destroy());
+    // 注册视图销毁回调，供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+    // 对路由触发的弹窗：先 navigation.back() 清理 URL（replace 方式），再 destroy() 立即移除元素；
+    // 对非路由弹窗：直接 destroy()。destroy() 已做幂等保护，FlowPage 后续清理不会重复执行。
+    scopedEngine.setDestroyView(() => {
+      if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+        config.inputArgs.navigation.back();
+      }
+      currentDrawer.destroy();
+    });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentDrawer);
 

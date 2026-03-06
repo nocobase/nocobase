@@ -178,8 +178,7 @@ export function usePage() {
       // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
-    // 注册视图销毁回调，供外部通过引擎栈遍历来关闭多层弹窗
-    scopedEngine.setDestroyView(() => currentPage.destroy());
+    // embed 视图不注册 destroyView，afterSuccess 关闭弹窗时自然跳过
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentPage);
 

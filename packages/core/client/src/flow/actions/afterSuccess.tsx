@@ -73,19 +73,18 @@ export const afterSuccess = defineAction({
     }
 
     /**
-     * 关闭弹窗视图并执行内部路由导航。
-     * 通过遍历引擎栈调用 destroyView() 直接销毁弹窗（跳过路由回退逻辑），
-     * 避免与后续的 router.navigate 冲突。
+     * 关闭所有弹窗视图并执行内部路由导航（"关闭并跳转至…"）。
      *
-     * 支持两种场景：
-     * 1. 跳转到完全不同的页面 → 关闭所有弹窗层
-     * 2. 当前路径包含目标路径（部分后退） → 只关闭多出的弹窗层
+     * 流程：
+     * 1. 从内到外遍历引擎栈，对每个弹窗调用 destroyView()：
+     *    - 路由触发的弹窗：navigation.back()（replace 方式清理 URL）+ destroy()（立即移除元素）
+     *    - 非路由弹窗：直接 destroy()
+     * 2. 所有弹窗关闭后 URL 回到弹窗前的页面
+     * 3. 执行 router.navigate(url) 压栈跳转到目标页面
+     * 4. 浏览器后退 → 回到弹窗前的页面
      */
     const closeViewsAndNavigate = (url: string) => {
-      if (ctx.view && ctx.engine) {
-        const currentPath = window.location.pathname;
-        const targetPath = url.startsWith('/') ? url : `/${url}`;
-
+      if (ctx.engine) {
         // 从栈顶（最内层）到栈底（根）收集所有引擎
         let top = ctx.engine;
         while (top.nextEngine) top = top.nextEngine;
@@ -96,20 +95,10 @@ export const afterSuccess = defineAction({
           eng = eng.previousEngine;
         }
 
-        if (currentPath !== targetPath && currentPath.startsWith(targetPath)) {
-          // 部分后退：目标路径是当前路径的前缀，按 URL 中的 /popups/ 段数计算需关闭的层数
-          const remaining = currentPath.slice(targetPath.length);
-          const layersToClose = (remaining.match(/\/popups\//g) || []).length;
-          let closed = 0;
-          for (const e of engines) {
-            if (closed >= layersToClose) break;
-            if (e.destroyView()) closed++;
-          }
-        } else {
-          // 不同页面：关闭所有弹窗视图
-          for (const e of engines) {
-            e.destroyView();
-          }
+        // 从内到外关闭所有弹窗视图（drawer/dialog）
+        // embed 视图未注册 destroyView 回调，会自动跳过
+        for (const e of engines) {
+          e.destroyView();
         }
       }
       ctx.router.navigate(url);

@@ -118,8 +118,9 @@ export class FlowEngine {
   private _nextEngine?: FlowEngine;
 
   /**
-   * 视图销毁回调。由 useDrawer / useDialog / usePage 在创建视图时注册，
+   * 视图销毁回调。由 useDrawer / useDialog 在创建弹窗视图时注册，
    * 供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+   * embed 视图（usePage）不注册此回调，因此 destroyView() 会自然跳过。
    */
   private _destroyView?: () => void;
 
@@ -289,16 +290,18 @@ export class FlowEngine {
   }
 
   /**
-   * 注册视图销毁回调（由 useDrawer / useDialog / usePage 调用）。
+   * 注册视图销毁回调（由 useDrawer / useDialog 调用）。
    */
   public setDestroyView(fn: () => void): void {
     this._destroyView = fn;
   }
 
   /**
-   * 销毁当前引擎关联的视图（弹窗/抽屉/页面）。
-   * 跳过路由回退逻辑，直接执行 destroy 以避免与后续导航冲突。
-   * @returns 是否成功销毁（无视图注册时返回 false）
+   * 关闭当前引擎关联的弹窗视图。
+   * 路由触发的弹窗会先 navigation.back() 清理 URL，再 destroy() 移除元素；
+   * 非路由弹窗直接 destroy()。
+   * embed 视图不注册回调，调用时返回 false 自动跳过。
+   * @returns 是否成功执行
    */
   public destroyView(): boolean {
     if (this._destroyView) {
