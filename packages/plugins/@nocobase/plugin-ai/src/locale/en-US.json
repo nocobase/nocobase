@@ -27,9 +27,9 @@
   "Ask": "Ask",
   "Allow": "Allow",
   "General tools": "General tools",
-  "Shared by all AI employees. Read-only.": "Shared by all AI employees. Read-only.",
+  "Shared by all AI employees.": "Shared by all AI employees.",
   "Employee-specific tools": "Employee-specific tools",
-  "Only available to this AI employee. Read-only.": "Only available to this AI employee. Read-only.",
+  "Only available to this AI employee.": "Only available to this AI employee.",
   "Custom tools": "Custom tools",
   "Created by workflow. You can add/remove and set default permissions.": "Created by workflow. You can add/remove and set default permissions.",
   "Permission": "Permission",
@@ -274,6 +274,10 @@
   "ai.tools.getContextVars.about": "Available variables from context. Get values via `await ctx.getVar()`, e.g. `await ctx.getVar('ctx.popup.record')`.",
   "ai.tools.lintAndTestJS.title": "Lint and test JavaScript code",
   "ai.tools.lintAndTestJS.about": "Lint, sandbox-check, and trial-run a JavaScript snippet. Returns diagnostics. Call before outputting final code.",
+  "ai.skills.frontendDeveloper.title": "Frontend developer",
+  "ai.skills.frontendDeveloper.about": "Assists with writing and testing JavaScript code for NocoBase workflows and frontend components.",
+  "ai.skills.documentSearch.title": "Document search",
+  "ai.skills.documentSearch.about": "Search and read indexed documentation using keyword-based search and file browsing.",
   "Recommended models": "Recommended models",
   "Select models": "Select models",
   "Manual input": "Manual input",
@@ -284,5 +288,7 @@
   "Thinking in progress": "Thinking in progress",
   "Thinking completed": "Thinking completed",
   "Load specific SKILLS": "Load specific SKILLS",
-  "Loading content of the specific SKILLS": "Loading content of the specific SKILLS"
+  "Loading content of the specific SKILLS": "Loading content of the specific SKILLS",
+  "General skills": "General skills",
+  "Employee-specific skills": "Employee-specific skills"
 }

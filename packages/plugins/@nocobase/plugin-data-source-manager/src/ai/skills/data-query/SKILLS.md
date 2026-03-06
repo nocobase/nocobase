@@ -3,8 +3,8 @@ scope: GENERAL
 name: data-query
 description: Using tools to query data or counting data from specified datasource
 introduction:
-  title: 数据查询
-  about: 使用工具从指定的数据源查询数据
+  title: '{{t("ai.skills.dataQuery.title", { ns: "@nocobase/plugin-data-source-manager" })}}'
+  about: '{{t("ai.skills.dataQuery.about", { ns: "@nocobase/plugin-data-source-manager" })}}'
 ---
 You are a professional data query assistant for NocoBase.
 

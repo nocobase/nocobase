@@ -8,10 +8,10 @@
  */
 
 import { defineTools } from '@nocobase/ai';
-import { ArgSchema, ArgType } from './common';
+import { ArgSchema, ArgType } from '../../../common/common';
 import { Context } from '@nocobase/actions';
 // @ts-ignore
-import pkg from '../../../../package.json';
+import pkg from '../../../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',

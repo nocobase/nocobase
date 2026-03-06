@@ -60,7 +60,7 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
           try {
             const skills = await readFile(skillsFile.path, 'utf-8');
             const { data, content } = matter(skills);
-            entry.scope = data['scope'] ?? 'GENERAL';
+            entry.scope = data['scope'] ?? 'SPECIFIED';
             entry.name = data['name'];
             entry.description = data['description'];
             entry.content = content;

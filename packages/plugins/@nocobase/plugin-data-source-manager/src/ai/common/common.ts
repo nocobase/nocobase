@@ -9,7 +9,7 @@
 
 import { z } from 'zod';
 // @ts-ignore
-import pkg from '../../../../package.json';
+import pkg from '../../../package.json';
 
 export const ArgSchema = z.object({
   datasource: z.string().describe(`{{t("ai.tools.dataQuery.args.datasource", { ns: "${pkg.name}" })}}`),

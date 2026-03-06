@@ -27,9 +27,9 @@
   "Ask": "询问",
   "Allow": "允许",
   "General tools": "通用工具",
-  "Shared by all AI employees. Read-only.": "所有 AI 员工共享，只读。",
+  "Shared by all AI employees.": "所有 AI 员工共享。",
   "Employee-specific tools": "员工专属工具",
-  "Only available to this AI employee. Read-only.": "仅当前 AI 员工可用，只读。",
+  "Only available to this AI employee.": "仅当前 AI 员工可用。",
   "Custom tools": "自定义工具",
   "Created by workflow. You can add/remove and set default permissions.": "通过工作流创建，可添加/移除并设置默认权限。",
   "Permission": "权限",
@@ -277,6 +277,10 @@
   "ai.tools.getContextVars.about": "来自上下文的可用变量。通过 `await ctx.getVar()` 获取值，例如 `await ctx.getVar('ctx.popup.record')`。",
   "ai.tools.lintAndTestJS.title": "检查并测试 JavaScript 代码",
   "ai.tools.lintAndTestJS.about": "对 JavaScript 代码进行语法检查、沙箱限制检查和试运行，返回诊断信息。输出最终代码前调用。",
+  "ai.skills.frontendDeveloper.title": "前端开发",
+  "ai.skills.frontendDeveloper.about": "协助编写和测试 nocobase 工作流和前端组件的 Javascript 代码。",
+  "ai.skills.documentSearch.title": "文档检索",
+  "ai.skills.documentSearch.about": "使用基于关键字的搜索和文件浏览搜索和读取索引文档。",
   "Recommended models": "推荐模型",
   "Select models": "选择模型",
   "Manual input": "手动输入",
@@ -289,6 +293,8 @@
   "Local models": "本地模型",
   "Thinking in progress": "深度思考中",
   "Thinking completed": "已完成思考",
-  "Load specific SKILLS": "加载指定 SKILLS",
-  "Loading content of the specific SKILLS": "正在加载指定 SKILLS 的详细内容"
+  "Load specific SKILLS": "技能加载",
+  "Loading content of the specific SKILLS": "加载指定技能的到会话上下文中",
+  "General skills": "通用技能",
+  "Employee-specific skills": "员工专属技能"
 }

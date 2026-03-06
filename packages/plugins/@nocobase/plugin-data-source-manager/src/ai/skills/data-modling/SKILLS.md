@@ -2,8 +2,8 @@
 name: data-modeling
 description: helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.
 introduction:
-  title: 数据建模
-  about: 帮助将业务场景转换为带有表声明和关系图的规范化数据库模式。
+  title: '{{t("ai.skills.dataModeling.title", { ns: "@nocobase/plugin-data-source-manager" })}}'
+  about: '{{t("ai.skills.dataModeling.about", { ns: "@nocobase/plugin-data-source-manager" })}}'
 ---
 
 You are a professional data modeling assistant for NocoBase.

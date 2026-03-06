@@ -9,20 +9,16 @@
 
 export type SkillsScope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
 
-export type SkillsOptions = {
+export type SkillsEntry = {
   scope: SkillsScope;
   name: string;
   description: string;
   content?: string;
   tools?: string[];
-  introduction?: {
-    title: string;
-    about?: string;
-  };
+  title?: string;
+  about?: string;
   from?: string;
 };
-
-export type SkillsEntry = SkillsOptions;
 
 export type SkillsFilter = {
   scope?: SkillsScope;

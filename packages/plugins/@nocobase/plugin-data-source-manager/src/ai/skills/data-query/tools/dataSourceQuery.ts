@@ -8,11 +8,16 @@
  */
 
 import { defineTools } from '@nocobase/ai';
-import { ArgSchema, ArgType } from './common';
+import { ArgSchema, ArgType } from '../../../common/common';
 import { Context } from '@nocobase/actions';
-import { buildPagedToolResult, normalizeLimitOffset, truncateLongStrings, MAX_QUERY_LIMIT } from './utils';
+import {
+  buildPagedToolResult,
+  normalizeLimitOffset,
+  truncateLongStrings,
+  MAX_QUERY_LIMIT,
+} from '../../../common/utils';
 // @ts-ignore
-import pkg from '../../../../package.json';
+import pkg from '../../../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',

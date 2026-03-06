@@ -3,8 +3,8 @@ scope: GENERAL
 name: data-metadata
 description: helps get collection metadata (data model, like database table definition, RESTful API definition), like collection definition, field metadata
 introduction:
-  title: 获取数据模型元信息
-  about: 帮助获取数据模型元数据（如数据库表定义，RESTful API 定义），如数据表定义，字段元数据
+  title: '{{t("ai.skills.dataMetadata.title", { ns: "@nocobase/plugin-data-source-manager" })}}'
+  about: '{{t("ai.skills.dataMetadata.about", { ns: "@nocobase/plugin-data-source-manager" })}}'
 ---
 
 You are a professional data model metadata assistant for NocoBase.

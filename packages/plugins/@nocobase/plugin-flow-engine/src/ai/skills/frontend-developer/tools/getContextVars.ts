@@ -9,8 +9,6 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
-// @ts-ignore
-import pkg from '../../../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',

@@ -3,8 +3,8 @@ scope: GENERAL
 name: document-search
 description: helps users search and read documentation using keyword-based indexing and file browsing capabilities.
 introduction:
-  title: Document Search
-  about: Search and read indexed documentation using keyword-based search and file browsing.
+  title: '{{t("ai.skills.documentSearch.title")}}'
+  about: '{{t("ai.skills.documentSearch.about")}}'
 tools: ['searchDocs', 'readDocEntry']
 ---
 
