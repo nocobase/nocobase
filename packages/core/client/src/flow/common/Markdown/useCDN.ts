@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '@nocobase/client';
+import { usePlugin } from '../../../index';
 import { useFlowEngine } from '@nocobase/flow-engine';
 
 export const useCDN = () => {

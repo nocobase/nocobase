@@ -15,7 +15,7 @@ import {
   useDataBlockResource,
   useCollectionRecordData,
   withDynamicSchemaProps,
-} from '@nocobase/client';
+} from '../../../../index';
 import { ISchema } from '@formily/json-schema';
 import useUrlState from '@ahooksjs/use-url-state';
 

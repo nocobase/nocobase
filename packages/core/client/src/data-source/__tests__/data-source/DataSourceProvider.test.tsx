@@ -14,7 +14,7 @@ import {
   DataSourceOptions,
   DataSource,
   SchemaComponent,
-} from '@nocobase/client';
+} from '../../../index';
 import { DataSourceProvider, useDataSourceKey } from '../../data-source/DataSourceProvider';
 import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
 import React from 'react';

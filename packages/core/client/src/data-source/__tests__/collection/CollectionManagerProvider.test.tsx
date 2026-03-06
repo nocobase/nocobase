@@ -17,7 +17,7 @@ import {
   DataSourceApplicationProvider,
   CollectionManagerProvider,
   ExtendCollectionsProvider,
-} from '@nocobase/client';
+} from '../../../index';
 import collections from '../collections.json';
 
 function renderAppOptions(Demo: ComponentType, dataSource?: string) {

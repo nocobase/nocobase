@@ -15,7 +15,7 @@ import {
   SchemaComponent,
   SchemaInitializerItem,
   useSchemaInitializer,
-} from '@nocobase/client';
+} from '../../index';
 import { uid } from '@nocobase/utils/client';
 import React, { useMemo, useState } from 'react';
 

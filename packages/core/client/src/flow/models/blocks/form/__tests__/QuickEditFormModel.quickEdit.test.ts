@@ -9,7 +9,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FlowEngine, SingleRecordResource } from '@nocobase/flow-engine';
-import { QuickEditFormModel } from '@nocobase/client';
+import { QuickEditFormModel } from '../../../../../index';
 
 describe('QuickEditFormModel - quick edit save triggers API (regression)', () => {
   let engine: FlowEngine;

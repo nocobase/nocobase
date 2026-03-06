@@ -11,7 +11,7 @@ import {
   useActionContext,
   useCloseAction,
   useRequest,
-} from '@nocobase/client';
+} from '../../../../index';
 import { Button } from 'antd';
 import { createMemoryHistory } from 'history';
 import React, { useEffect, useState } from 'react';

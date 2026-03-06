@@ -10,7 +10,7 @@
 import { screen, userEvent, waitFor } from '@nocobase/test/client';
 
 import { createApp } from '../../fixures/createApp';
-import { SchemaInitializerItemType } from '@nocobase/client';
+import { SchemaInitializerItemType } from '../../../../../index';
 
 export async function createAndHover(items: SchemaInitializerItemType[], appOptions: any = {}) {
   await createApp({ items }, appOptions);

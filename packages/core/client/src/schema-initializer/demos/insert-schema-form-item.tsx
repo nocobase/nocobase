@@ -16,7 +16,7 @@ import {
   useSchemaInitializer,
   useSchemaInitializerItem,
   useSchemaInitializerRender,
-} from '@nocobase/client';
+} from '../../index';
 import React, { FC } from 'react';
 
 const useFormItemInitializerFields = () => {

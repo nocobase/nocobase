@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, SchemaSettings, useSchemaSettingsRender } from '@nocobase/client';
+import { Application, SchemaSettings, useSchemaSettingsRender } from '../../../../index';
 import { render, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 

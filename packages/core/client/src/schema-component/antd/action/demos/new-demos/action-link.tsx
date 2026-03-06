@@ -1,5 +1,5 @@
 import React from 'react';
-import { ISchema, SchemaComponent, Plugin } from '@nocobase/client';
+import { ISchema, SchemaComponent, Plugin } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const schema: ISchema = {

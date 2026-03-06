@@ -4,7 +4,7 @@
  * title: TreeSelect
  */
 import { FormItem } from '@formily/antd-v5';
-import { SchemaComponent, SchemaComponentProvider, TreeSelect } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentProvider, TreeSelect } from '../../../../index';
 import React from 'react';
 
 const dataSource = [

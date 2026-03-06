@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockGridModel } from '@nocobase/client';
+import { BlockGridModel } from '../../../../../index';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FilterManager } from '../FilterManager';

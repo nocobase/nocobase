@@ -7,7 +7,7 @@ import {
   FormProvider,
   Input,
   SchemaComponent,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 import { mockAPIClient } from '../../../../testUtils';
 

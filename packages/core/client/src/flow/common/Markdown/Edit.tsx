@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from '@nocobase/client';
+import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from '../../../index';
 import { Button, QRCode } from 'antd';
 import { css } from '@emotion/css';
 import { createRoot } from 'react-dom/client';

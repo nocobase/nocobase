@@ -1,7 +1,7 @@
 import React from 'react';
 import { useFieldSchema, observer, ISchema } from '@formily/react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, DragHandler, SchemaSettings } from '@nocobase/client';
+import { SchemaComponent, Plugin, DragHandler, SchemaSettings } from '../../../../../index';
 
 const simpleSettings = new SchemaSettings({
   name: 'simpleSettings',

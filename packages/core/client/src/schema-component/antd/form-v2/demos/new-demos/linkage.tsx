@@ -1,5 +1,5 @@
 
-import { Plugin, ISchema, SchemaComponent } from '@nocobase/client';
+import { Plugin, ISchema, SchemaComponent } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

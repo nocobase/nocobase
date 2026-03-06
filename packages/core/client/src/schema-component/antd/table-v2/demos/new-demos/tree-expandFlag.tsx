@@ -1,5 +1,5 @@
 import React from 'react';
-import { TableBlockProvider, useTableBlockProps, SchemaComponent, Plugin, ISchema } from '@nocobase/client';
+import { TableBlockProvider, useTableBlockProps, SchemaComponent, Plugin, ISchema } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const schema: ISchema = {

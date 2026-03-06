@@ -2,7 +2,7 @@
  * title: Upload
  */
 import { FormItem } from '@formily/antd-v5';
-import { APIClientProvider, SchemaComponent, SchemaComponentProvider, Upload } from '@nocobase/client';
+import { APIClientProvider, SchemaComponent, SchemaComponentProvider, Upload } from '../../../../index';
 import React from 'react';
 import apiClient from './apiClient';
 

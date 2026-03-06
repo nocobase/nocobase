@@ -9,7 +9,7 @@
 
 import { screen, sleep, userEvent, waitFor } from '@nocobase/test/client';
 
-import { Action, Form, FormItem, Input, SchemaInitializerActionModal } from '@nocobase/client';
+import { Action, Form, FormItem, Input, SchemaInitializerActionModal } from '../../../../index';
 import React from 'react';
 
 import { createApp } from '../fixures/createApp';

@@ -13,7 +13,7 @@ import {
   DEFAULT_DATA_SOURCE_KEY,
   isTitleField,
   useDataSourceHeaders,
-} from '@nocobase/client';
+} from '../../index';
 import { renderHook } from '@nocobase/test/client';
 
 import collections from './collections.json';

@@ -13,7 +13,7 @@ import {
   Plugin,
   SchemaComponent,
   SchemaComponentProvider,
-} from '@nocobase/client';
+} from '../../../../index';
 import React from 'react';
 
 import { mockAPIClient } from '../../../../testUtils';

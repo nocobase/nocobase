@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
+import { SchemaComponent, Plugin, ISchema } from '../../../../../index';
 
 const options = [
   {

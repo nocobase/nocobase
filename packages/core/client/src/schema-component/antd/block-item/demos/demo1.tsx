@@ -2,7 +2,7 @@
 
 import { observer, useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { BlockItem, DndContext, DragHandler, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { BlockItem, DndContext, DragHandler, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import React from 'react';
 
 const Block = observer(

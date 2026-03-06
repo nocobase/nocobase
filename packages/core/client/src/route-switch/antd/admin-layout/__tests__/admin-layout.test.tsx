@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACLMenuItemProvider, AdminLayout, BlockSchemaComponentPlugin, CurrentUserProvider } from '@nocobase/client';
+import { ACLMenuItemProvider, AdminLayout, BlockSchemaComponentPlugin, CurrentUserProvider } from '../../../../index';
 import { renderAppOptions, screen, waitFor } from '@nocobase/test/client';
 import React from 'react';
 

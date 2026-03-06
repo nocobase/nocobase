@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application, Collection, CollectionManager, CollectionTemplate } from '@nocobase/client';
+import { Application, Collection, CollectionManager, CollectionTemplate } from '../../../index';
 import collections from '../collections.json';
 
 describe('CollectionManager', () => {

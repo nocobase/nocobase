@@ -1,6 +1,6 @@
 import { useFieldSchema } from '@formily/react';
 import { observer } from '@nocobase/flow-engine';
-import { SchemaComponent, ISchema, Plugin, DragHandler } from '@nocobase/client';
+import { SchemaComponent, ISchema, Plugin, DragHandler } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 import React from 'react';

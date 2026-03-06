@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaInitializer } from '@nocobase/client';
+import { SchemaInitializer } from '../../../index';
 
 describe('SchemaInitializer', () => {
   let initializer: SchemaInitializer;

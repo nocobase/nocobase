@@ -4,7 +4,7 @@
  * title: TimePicker
  */
 import { FormItem } from '@formily/antd-v5';
-import { SchemaComponent, SchemaComponentProvider, TimePicker } from '@nocobase/client';
+import { SchemaComponent, SchemaComponentProvider, TimePicker } from '../../../../index';
 import React from 'react';
 
 const schema = {

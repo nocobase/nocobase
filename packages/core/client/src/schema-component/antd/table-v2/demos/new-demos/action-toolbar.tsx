@@ -9,7 +9,7 @@ import {
   SchemaComponent,
   Plugin,
   ISchema
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const schema: ISchema = {

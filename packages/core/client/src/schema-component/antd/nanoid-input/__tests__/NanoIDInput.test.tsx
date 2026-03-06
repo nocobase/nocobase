@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockSchemaComponentPlugin } from '@nocobase/client';
+import { BlockSchemaComponentPlugin } from '../../../../index';
 import { screen, renderAppOptions, renderReadPrettyApp, userEvent, waitFor } from '@nocobase/test/client';
 
 describe('NanoIDInput', () => {

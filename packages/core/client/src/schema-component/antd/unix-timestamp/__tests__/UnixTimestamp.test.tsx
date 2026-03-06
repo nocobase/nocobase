@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UnixTimestamp } from '@nocobase/client';
+import { UnixTimestamp } from '../../../../index';
 import { renderAppOptions, renderReadPrettyApp, screen } from '@nocobase/test/client';
 
 describe('UnixTimestamp', () => {

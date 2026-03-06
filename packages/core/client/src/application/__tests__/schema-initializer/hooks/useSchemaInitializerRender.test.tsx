@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Application, SchemaInitializer, useSchemaInitializerRender } from '@nocobase/client';
+import { Application, SchemaInitializer, useSchemaInitializerRender } from '../../../../index';
 import { render, waitFor, screen } from '@nocobase/test/client';
 
 describe('useSchemaInitializerRender', () => {
