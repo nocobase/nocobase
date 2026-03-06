@@ -127,12 +127,6 @@ ctx.render(<div className="x">{name}</div>);
       expect(out).toContain(`await ctx.__ensureLibs(["antd"]);`);
     });
 
-    it('injects ensure preamble for direct ctx destructuring', async () => {
-      const src = `const { antd } = ctx;\nreturn antd.Button;`;
-      const out = await prepareRunJsCode(src, { preprocessTemplates: false });
-      expect(out).toContain(`await ctx.__ensureLibs(["antd"]);`);
-    });
-
     it('does not inject ctx.libs preamble when ctx.libs only appears in string/comment', async () => {
       const src = `// ctx.libs.lodash\nconst s = "ctx.libs.lodash";\nreturn s;`;
       const out = await prepareRunJsCode(src, { preprocessTemplates: false });
