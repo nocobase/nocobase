@@ -386,7 +386,7 @@ export const SkillSettings: React.FC = () => {
           skillSettings: {
             type: 'object',
             properties: {
-              skills: {
+              tools: {
                 type: 'array',
                 'x-component': 'Skills',
                 'x-decorator': 'FormItem',

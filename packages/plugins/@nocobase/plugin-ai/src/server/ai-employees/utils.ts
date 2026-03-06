@@ -24,7 +24,7 @@ export const convertAIMessage = ({
 }): AIMessageInput => {
   const message = aiMessage.content;
   const toolCalls = aiMessage.tool_calls;
-  const skills = aiEmployee.skillSettings?.skills;
+  const tools = aiEmployee.skillSettings?.tools;
 
   if (!message && !toolCalls?.length) {
     return null;
@@ -70,7 +70,7 @@ export const convertAIMessage = ({
     values.toolCalls = toolCalls as any;
     values.metadata.autoCallTools = toolCalls
       .filter((tool: { name: string }) => {
-        return skills?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
+        return tools?.some((s: { name: string; autoCall?: boolean }) => s.name === tool.name && s.autoCall);
       })
       .map((tool: { name: string }) => tool.name);
   }

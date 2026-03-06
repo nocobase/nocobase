@@ -14,7 +14,7 @@ export default {
   description: 'AI employee for data modeling',
   profile,
   skillSettings: {
-    _skills: ['data-modeling'],
-    skills: [],
+    skills: ['data-modeling'],
+    tools: [],
   },
 };

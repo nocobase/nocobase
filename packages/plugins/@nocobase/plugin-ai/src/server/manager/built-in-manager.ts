@@ -63,12 +63,12 @@ export class BuiltInManager {
     aiEmployee.defaultPrompt = about; // 内置 AI 员工默认系统提示词
     // 不再修改 aiEmployee.about，保持字段语义简单明确，上层按需使用
 
-    const builtInSkills = builtInEmployeeInfo.skillSettings?.skills ?? [];
-    const skillSettings: { skills?: { name: string; autoCall?: boolean }[] } = aiEmployee.skillSettings ?? {};
-    const skills = skillSettings.skills ?? [];
+    const builtInTools = builtInEmployeeInfo.skillSettings?.tools ?? [];
+    const skillSettings: { tools?: { name: string; autoCall?: boolean }[] } = aiEmployee.skillSettings ?? {};
+    const tools = skillSettings.tools ?? [];
     aiEmployee.skillSettings = {
       ...(builtInEmployeeInfo.skillSettings ?? {}),
-      skills: _.uniqBy([...skills, ...builtInSkills], 'name'),
+      tools: _.uniqBy([...tools, ...builtInTools], 'name'),
     };
   }
 
@@ -121,14 +121,14 @@ export class BuiltInManager {
       this.plugin.log.info('update built-in employees');
       const existedMap = new Map<string, any>(existed.map((it) => [it.username, it.toJSON()]));
       for (const { username, description, skillSettings } of updates) {
-        let { skills } = existedMap.get(username)?.skillSettings ?? { skills: [] };
-        skills = skills.filter((s) => s.name?.startsWith('workflowCaller-'));
-        const mergedSkills = new Set([...skills, ...skillSettings.skills]);
+        let { tools } = existedMap.get(username)?.skillSettings ?? { tools: [] };
+        tools = tools?.length ? tools.filter((s) => s.name?.startsWith('workflowCaller-')) : [];
+        const mergedTools = new Set([...tools, ...skillSettings.tools]);
         await aiEmployeesRepo.update({
           values: {
             skillSettings: {
-              _skills: [...skillSettings._skills],
-              skills: [...mergedSkills],
+              skills: [...skillSettings.skills],
+              tools: [...mergedTools],
             },
             builtIn: true,
           },

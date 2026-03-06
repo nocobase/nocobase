@@ -91,11 +91,11 @@ export const listByUser = async (ctx: Context, next: Next) => {
   });
 
   ctx.body = rows.map((row) => {
-    const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    const skillSettings: { tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? { tools: [] };
     for (const tool of tools) {
-      skillSettings.skills.push({
+      skillSettings.tools.push({
         name: tool.definition.name,
-        auto: tool.defaultPermission === 'ALLOW',
+        autoCall: tool.defaultPermission === 'ALLOW',
       });
     }
     return {

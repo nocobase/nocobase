@@ -1037,8 +1037,8 @@ If information is missing, clearly state it in the summary.</Important>`;
     if (tools.scope !== 'CUSTOM') {
       return isAutoCall;
     }
-    const skills = this.employee.skillSettings?.skills ?? [];
-    const presetTools = skills.find((s) => s.name === tools.definition.name);
+    const employeeTools = this.employee.skillSettings?.tools ?? [];
+    const presetTools = employeeTools.find((s) => s.name === tools.definition.name);
     return presetTools ? presetTools.autoCall : isAutoCall;
   }
 
@@ -1176,25 +1176,25 @@ If information is missing, clearly state it in the summary.</Important>`;
     const tools: ToolsEntry[] = await this.listTools({ scope: 'GENERAL' });
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
-    const skills = this.employee.skillSettings?.skills ?? [];
-    for (const skill of skills) {
-      if (generalToolsNameSet.has(skill.name)) {
+    const employeeTools = this.employee.skillSettings?.tools ?? [];
+    for (const toolSetting of employeeTools) {
+      if (generalToolsNameSet.has(toolSetting.name)) {
         continue;
       }
-      const tool = toolMap.get(skill.name);
+      const tool = toolMap.get(toolSetting.name);
       if (!tool) {
         continue;
       }
       tools.push(tool);
     }
-    const skillFilter = this.skillSettings?.skills ?? [];
-    return tools.filter((t) => skillFilter.length === 0 || skillFilter.includes(t.definition.name));
+    const toolFilter = this.skillSettings?.tools ?? [];
+    return tools.filter((t) => toolFilter.length === 0 || toolFilter.includes(t.definition.name));
   }
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
     const { skillsManager } = this.plugin.ai;
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
-    const specifiedSkillNames = this.employee.skillSettings?._skills ?? [];
+    const specifiedSkillNames = this.employee.skillSettings?.skills ?? [];
     const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];
     return _.uniqBy([...(generalSkills || []), ...(specifiedSkills || [])], 'name');
   }

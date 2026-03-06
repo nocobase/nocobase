@@ -202,21 +202,21 @@ const SkillSettings: React.FC<{
   const ctx = useFlowSettingsContext();
   const username = ctx.model.props.aiEmployee?.username;
   const aiEmployee = aiEmployeesMap[username];
-  const defaultSkills = aiEmployee?.skillSettings?.skills?.map(({ name }) => name) ?? [];
+  const defaultTools = aiEmployee?.skillSettings?.tools?.map(({ name }) => name) ?? [];
 
-  if (field.value?.skills?.length) {
+  if (field.value?.tools?.length) {
     field.addProperty(
-      'skills',
-      field.value.skills.filter((skill) => defaultSkills.includes(skill)),
+      'tools',
+      field.value.tools.filter((tool) => defaultTools.includes(tool)),
     );
   }
   const handleChange = (value: string[]) => {
-    field.addProperty('skills', value);
+    field.addProperty('tools', value);
   };
 
   return (
     <RemoteSelect
-      defaultValue={field.value?.skills}
+      defaultValue={field.value?.tools}
       onChange={handleChange}
       manual={false}
       multiple={true}
