@@ -895,6 +895,7 @@
   "No assigned fields configured": "未配置字段",
   "No blocks to connect": "没有可连接的区块",
   "No configuration available.": "无可配置项。",
+  "No available data currently": "当前无可用数据",
   "No data": "暂无数据",
   "No event flows": "暂无事件流",
   "No built-in flows for this event": "当前事件暂无可插入的指定流",

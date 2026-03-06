@@ -10,6 +10,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { DragEndEvent } from '@dnd-kit/core';
+import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
@@ -37,6 +38,18 @@ type PageModelStructure = {
     tabs: BasePageTabModel[];
   };
 };
+
+const TABS_BASE_ROOT_CLASS_NAME = css`
+  > .ant-tabs-nav .ant-tabs-nav-list {
+    padding-inline-start: var(--nb-flow-page-tabs-nav-padding-inline-start, 16px);
+  }
+`;
+
+const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
+  > .ant-tabs-nav .ant-tabs-tab {
+    min-width: 54px;
+  }
+`;
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
@@ -290,9 +303,21 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   renderTabs() {
+    const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
+    const tabNavPaddingInlineStartValue =
+      typeof tabNavPaddingInlineStart === 'number' ? `${tabNavPaddingInlineStart}px` : tabNavPaddingInlineStart;
+    const rootClassName = this.context.flowSettingsEnabled
+      ? `${TABS_BASE_ROOT_CLASS_NAME} ${TABS_DESIGN_MODE_ROOT_CLASS_NAME}`
+      : TABS_BASE_ROOT_CLASS_NAME;
+    const tabsStyle = {
+      '--nb-flow-page-tabs-nav-padding-inline-start': tabNavPaddingInlineStartValue,
+    } as React.CSSProperties;
+
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
+          style={tabsStyle}
+          rootClassName={rootClassName}
           activeKey={
             this.context.view?.navigation?.viewParams
               ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
@@ -406,8 +431,6 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const token = ctx.themeToken;
-        const tabPaddingInline = token?.paddingLG ?? 16;
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (ctx.model.context.closable) {
           ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
@@ -423,7 +446,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgContainer)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         } else {
@@ -432,7 +454,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgLayout)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         }
