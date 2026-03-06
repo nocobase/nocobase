@@ -8,7 +8,7 @@
  */
 
 /* istanbul ignore file -- @preserve */
-import { Database, IDatabaseOptions } from '@nocobase/database';
+import { Database, IDatabaseOptions } from '.';
 import { merge } from '@nocobase/utils';
 import { customAlphabet } from 'nanoid';
 import fetch from 'node-fetch';
