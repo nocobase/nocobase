@@ -219,8 +219,40 @@ module.exports = (_env, argv = {}) => {
       splitChunks: {
         chunks: 'all',
         cacheGroups: {
+          antdEcosystem: {
+            test: /[\\/]node_modules[\\/](?:rc-[^\\/]+|@rc-component[\\/][^\\/]+|@ant-design[\\/](?!(?:icons|icons-svg)[\\/])[^\\/]+)[\\/]/,
+            name: 'vendor-antd-ecosystem',
+            chunks: 'all',
+            priority: 45,
+            enforce: true,
+            minSize: 0,
+          },
+          momentLocales: {
+            test: /[\\/]node_modules[\\/]moment[\\/](?:locale[\\/]|moment\.js$)/,
+            name: 'vendor-moment',
+            chunks: 'all',
+            priority: 44,
+            enforce: true,
+            minSize: 0,
+          },
+          lodashCjs: {
+            test: /[\\/]node_modules[\\/]lodash[\\/]lodash\.js$/,
+            name: 'vendor-lodash',
+            chunks: 'all',
+            priority: 43,
+            enforce: true,
+            minSize: 0,
+          },
+          ses: {
+            test: /[\\/]node_modules[\\/]ses[\\/]/,
+            name: 'vendor-ses',
+            chunks: 'all',
+            priority: 42,
+            enforce: true,
+            minSize: 0,
+          },
           antdIcons: {
-            test: /[\\/]node_modules[\\/]@ant-design[\\/]icons[\\/]/,
+            test: /[\\/]node_modules[\\/]@ant-design[\\/](?:icons|icons-svg)[\\/]/,
             name: 'vendor-antd-icons',
             chunks: 'all',
             priority: 40,

@@ -143,6 +143,13 @@ export class Application {
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || createInstance();
     this.router = new RouterManager(options.router, this);
+    if (typeof options.router?.basename === 'undefined') {
+      const publicPath = this.getPublicPath();
+      const basename = publicPath === '/' ? undefined : publicPath.replace(/\/$/, '');
+      if (basename) {
+        this.router.setBasename(basename);
+      }
+    }
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.flowEngine = new FlowEngine();
     this.flowEngine.registerModels({ ApplicationModel });
