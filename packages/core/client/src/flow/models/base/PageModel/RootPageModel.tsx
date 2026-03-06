@@ -9,12 +9,33 @@
 
 import { DragEndEvent } from '@dnd-kit/core';
 import { reaction } from '@nocobase/flow-engine';
+import type { FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
+import type { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
 
 export class RootPageModel extends PageModel {
   mounted = false;
+
+  /**
+   * 新建 tab 在首次保存完成前，前端 route 里可能还没有数据库 id。
+   * 拖拽前兜底触发一次保存，确保 move 接口拿到真实主键。
+   *
+   * @param model - 当前参与拖拽的 tab model
+   * @returns 可用于排序接口的 route id
+   */
+  private async ensurePersistedRouteId(model?: FlowModel): Promise<string | number | undefined> {
+    const routeId = model?.props?.route?.id;
+    if (routeId != null) {
+      return routeId;
+    }
+
+    if (typeof model?.save === 'function') {
+      await model.save();
+    }
+
+    return model?.props?.route?.id;
+  }
 
   onMount() {
     super.onMount();
@@ -67,12 +88,21 @@ export class RootPageModel extends PageModel {
       return;
     }
 
+    const [sourceId, targetId] = await Promise.all([
+      this.ensurePersistedRouteId(activeModel),
+      this.ensurePersistedRouteId(overModel),
+    ]);
+
+    if (sourceId == null || targetId == null) {
+      return;
+    }
+
     await this.context.api.request({
       url: `desktopRoutes:move`,
       method: 'post',
       params: {
-        sourceId: activeModel.props.route.id,
-        targetId: overModel.props.route.id,
+        sourceId,
+        targetId,
         sortField: 'sort',
       },
     });

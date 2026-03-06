@@ -128,6 +128,42 @@ describe('RootPageModel', () => {
       expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-uid', 'over-uid', { persist: false });
     });
 
+    it('should save new tab before moving when route id is missing', async () => {
+      const mockActiveModel = {
+        uid: 'active-uid',
+        props: { route: { schemaUid: 'active-schema-uid' } },
+        save: vi.fn(async () => {
+          mockActiveModel.props.route.id = 'active-route-id';
+        }),
+      };
+      const mockOverModel = {
+        uid: 'over-uid',
+        props: { route: { id: 'over-route-id' } },
+        save: vi.fn(),
+      };
+
+      const mockDragEndEvent = {
+        active: { id: 'active-model-id' },
+        over: { id: 'over-model-id' },
+      };
+
+      mockFlowEngine.getModel.mockReturnValueOnce(mockActiveModel).mockReturnValueOnce(mockOverModel);
+
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
+
+      expect(mockActiveModel.save).toHaveBeenCalledTimes(1);
+      expect(mockApi.request).toHaveBeenCalledWith({
+        url: 'desktopRoutes:move',
+        method: 'post',
+        params: {
+          sourceId: 'active-route-id',
+          targetId: 'over-route-id',
+          sortField: 'sort',
+        },
+      });
+      expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-uid', 'over-uid', { persist: false });
+    });
+
     it('should handle case when activeModel is not found', async () => {
       const mockDragEndEvent = {
         active: { id: 'active-model-id' },
