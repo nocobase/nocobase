@@ -18,6 +18,7 @@ import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
 import aiTools from './resource/aiTools';
+import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
@@ -115,6 +116,7 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
+    this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
     this.app.resourceManager.define(aiContextDatasources);
 
@@ -143,7 +145,7 @@ export class PluginAIServer extends Plugin {
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'aiSkills:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-settings`,
@@ -161,6 +163,7 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');
 
     this.app.acl.allow('aiTools', 'list', 'loggedIn');
+    this.app.acl.allow('aiSkills', 'list', 'loggedIn');
 
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {

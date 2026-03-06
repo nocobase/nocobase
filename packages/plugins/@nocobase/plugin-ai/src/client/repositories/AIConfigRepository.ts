@@ -9,6 +9,7 @@
 
 import { define, observable } from '@formily/reactive';
 import { ToolsEntry, type ToolsManager } from '@nocobase/client';
+import { SkillsEntry } from '@nocobase/client/ai/skills-manager';
 import { AIEmployee } from '../ai-employees/types';
 
 export interface LLMServiceItem {
@@ -28,13 +29,17 @@ export class AIConfigRepository {
   aiEmployeesLoading = false;
   aiTools = observable.shallow<ToolsEntry[]>([]);
   aiToolsLoading = false;
+  aiSkills = observable.shallow<SkillsEntry[]>([]);
+  aiSkillsLoading = false;
 
   private llmServicesLoaded = false;
   private aiEmployeesLoaded = false;
   private aiToolsLoaded = false;
+  private aiSkillsLoaded = false;
   private llmServicesInFlight: Promise<LLMServiceItem[]> | null = null;
   private aiEmployeesInFlight: Promise<AIEmployee[]> | null = null;
   private aiToolsInFlight: Promise<ToolsEntry[]> | null = null;
+  private aiSkillsInFlight: Promise<SkillsEntry[]> | null = null;
 
   constructor(
     private readonly apiClient: any,
@@ -47,6 +52,8 @@ export class AIConfigRepository {
       aiEmployeesLoading: observable.ref,
       aiTools: observable.shallow,
       aiToolsLoading: observable.ref,
+      aiSkills: observable.shallow,
+      aiSkillsLoading: observable.ref,
     });
   }
 
@@ -141,6 +148,34 @@ export class AIConfigRepository {
     );
   }
 
+  async getAISkills(): Promise<SkillsEntry[]> {
+    if (this.aiSkillsInFlight) {
+      return this.aiSkillsInFlight;
+    }
+    if (this.aiSkillsLoaded) {
+      return this.aiSkills;
+    }
+    return this.startRefresh(
+      this.aiSkillsInFlight,
+      (promise) => {
+        this.aiSkillsInFlight = promise;
+      },
+      () => this.doRefreshAISkills(),
+      () => this.aiSkills,
+    );
+  }
+
+  async refreshAISkills(): Promise<SkillsEntry[]> {
+    return this.startRefresh(
+      this.aiSkillsInFlight,
+      (promise) => {
+        this.aiSkillsInFlight = promise;
+      },
+      () => this.doRefreshAISkills(),
+      () => this.aiSkills,
+    );
+  }
+
   private startRefresh<T>(
     inFlight: Promise<T> | null,
     setInFlight: (promise: Promise<T> | null) => void,
@@ -208,6 +243,22 @@ export class AIConfigRepository {
       this.aiToolsLoaded = false;
     } finally {
       this.aiToolsLoading = false;
+    }
+  }
+
+  private async doRefreshAISkills() {
+    this.aiSkillsLoading = true;
+    try {
+      const { data: res } = await this.apiClient.resource('aiSkills').list({});
+      const data = Array.isArray(res?.data) ? (res.data as SkillsEntry[]) : [];
+      // Filter out content field if present
+      this.aiSkills = data.map(({ content, ...rest }) => rest);
+      this.aiSkillsLoaded = true;
+    } catch {
+      this.aiSkills = [];
+      this.aiSkillsLoaded = false;
+    } finally {
+      this.aiSkillsLoading = false;
     }
   }
 }
