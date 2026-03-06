@@ -26,7 +26,7 @@ module.exports = (cli) => {
     .action(async (pkgs, options) => {
       nodeCheck();
       if (options.compile || options.watch || isPackageValid('@nocobase/build/src/index.ts')) {
-        await run('yarn', ['build', options.watch ? '--watch' : ''], {
+        await run('pnpm', ['build', options.watch ? '--watch' : ''], {
           cwd: resolve(process.cwd(), 'packages/core/build'),
         });
         if (options.watch) return;

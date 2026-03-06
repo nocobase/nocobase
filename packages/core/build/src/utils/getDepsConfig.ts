@@ -46,6 +46,23 @@ export function getRltExternalsFromDeps(
  */
 export function getDepPkgPath(dep: string, cwd: string) {
   try {
+    const mainFile = require.resolve(dep, { paths: [cwd] });
+    let currentDir = path.dirname(mainFile);
+    while (currentDir !== path.parse(currentDir).root) {
+      const pkgPath = path.join(currentDir, 'package.json');
+      if (fs.existsSync(pkgPath)) {
+        try {
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+          if (pkg.name === dep) return pkgPath;
+        } catch {}
+      }
+      currentDir = path.dirname(currentDir);
+    }
+  } catch {}
+
+  if (dep === 'xlsx') return require.resolve('xlsx/package.json');
+  if (dep === 'exceljs') return require.resolve('exceljs/package.json');
+  try {
     return require.resolve(`${dep}/package.json`, { paths: [cwd] });
   } catch {
     const mainFile = require.resolve(`${dep}`, { paths: cwd ? [cwd] : undefined });

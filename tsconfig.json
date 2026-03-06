@@ -15,6 +15,7 @@
     "inlineSources": true,
     "resolveJsonModule": true,
     "declaration": true,
+    "preserveSymlinks": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": "."

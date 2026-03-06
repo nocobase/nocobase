@@ -15,9 +15,9 @@ const { readFile, writeFile } = require('fs').promises;
 const { createStoragePluginsSymlink, createDevPluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 
 function runPatchPackage() {
-  // run yarn patch-package
+  // run pnpm patch-package
   // console.log('patching third party packages...');
-  run('yarn', ['patch-package'], {
+  run('pnpm', ['patch-package'], {
     stdio: 'pipe',
   });
 }
