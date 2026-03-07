@@ -47,8 +47,9 @@ export class ChildPageModel extends PageModel {
 }
 
 /**
- * Used for the back button in subpages
- * @returns
+ * 子页面 tab 栏左侧额外内容：
+ * - embed 场景渲染返回按钮
+ * - drawer/modal 等场景渲染占位元素以保持首个 tab 的左侧留白
  */
 const BackButtonUsedInSubPage = () => {
   const ctx = useFlowContext<any>();

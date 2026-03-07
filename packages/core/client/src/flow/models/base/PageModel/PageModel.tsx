@@ -299,24 +299,30 @@ export class PageModel extends FlowModel<PageModelStructure> {
   renderTabs() {
     const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
     const rootClassName = this.context.flowSettingsEnabled ? TABS_DESIGN_MODE_ROOT_CLASS_NAME : undefined;
-    const leftExtraContent = this.tabBarExtraContent.left ?? (
-      <span aria-hidden="true" style={{ display: 'inline-block', width: tabNavPaddingInlineStart, height: 1 }} />
-    );
-    const rightExtraContent = this.tabBarExtraContent.right ?? (
-      <AddSubModelButton
-        model={this}
-        subModelKey={'tabs'}
-        items={[
-          {
-            key: 'blank',
-            label: this.context.t('Blank tab'),
-            createModelOptions: this.createPageTabModelOptions,
-          },
-        ]}
-      >
-        <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-      </AddSubModelButton>
-    );
+    const leftExtraContent =
+      this.tabBarExtraContent.left !== undefined ? (
+        this.tabBarExtraContent.left
+      ) : (
+        <span aria-hidden="true" style={{ display: 'inline-block', width: tabNavPaddingInlineStart, height: 1 }} />
+      );
+    const rightExtraContent =
+      this.tabBarExtraContent.right !== undefined ? (
+        this.tabBarExtraContent.right
+      ) : (
+        <AddSubModelButton
+          model={this}
+          subModelKey={'tabs'}
+          items={[
+            {
+              key: 'blank',
+              label: this.context.t('Blank tab'),
+              createModelOptions: this.createPageTabModelOptions,
+            },
+          ]}
+        >
+          <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+        </AddSubModelButton>
+      );
 
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
