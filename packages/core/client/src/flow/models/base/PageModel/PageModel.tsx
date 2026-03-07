@@ -40,7 +40,7 @@ type PageModelStructure = {
 };
 
 const TABS_BASE_ROOT_CLASS_NAME = css`
-  > .ant-tabs-nav .ant-tabs-nav-list {
+  > .ant-tabs-nav {
     padding-inline-start: var(--nb-flow-page-tabs-nav-padding-inline-start, 16px);
   }
 `;
