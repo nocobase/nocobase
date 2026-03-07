@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
-import { InputNumber, Select, Space, Divider, DatePickerProps, theme } from 'antd';
+import React, { useMemo, useState } from 'react';
+import { InputNumber, Select, Space, Divider, DatePickerProps, theme, Checkbox } from 'antd';
 import dayjs from 'dayjs';
 import { css } from '@emotion/css';
 import { useCompile } from '../../../schema-component';
@@ -57,23 +57,93 @@ const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
   return isRange ? <DatePicker.RangePicker {...rest} /> : <DatePicker.FilterWithPicker {...rest} />;
 };
 
+const normalizeRelativeDateValue = (value) => {
+  if (!value || !value.type || value.type === 'exact') {
+    return undefined;
+  }
+
+  if (!['past', 'next'].includes(value.type)) {
+    return {
+      type: value.type,
+    };
+  }
+
+  const nextValue = {
+    type: value.type,
+    number: value.number ?? 1,
+    unit: value.unit ?? 'day',
+  } as any;
+
+  if (value.includeCurrent) {
+    nextValue.includeCurrent = true;
+  }
+
+  return nextValue;
+};
+
 export const DateFilterDynamicComponent = (props) => {
   const { value, onChange } = props;
   const compile = useCompile();
   const { t } = useTranslation();
   const { token } = theme.useToken();
   const [open, setOpen] = useState(false);
+  const includeCurrentLabel = useMemo(() => {
+    const labelMap = {
+      day: t('Include today'),
+      week: t('Include this week'),
+      month: t('Include this month'),
+      year: t('Include this year'),
+    };
+
+    return labelMap[value?.unit || 'day'];
+  }, [t, value?.unit]);
+
+  const wrapperStyle = useMemo(
+    () => ({
+      ...props.style,
+      width: '100%',
+      display: 'flex',
+      alignItems: 'center',
+      gap: token.marginSM,
+    }),
+    [props.style, token.marginSM],
+  );
+
+  const compactStyle = useMemo(
+    () => ({
+      flex: 1,
+      minWidth: 0,
+    }),
+    [],
+  );
+
+  const checkboxStyle = useMemo(
+    () => ({
+      flexShrink: 0,
+      display: 'inline-flex',
+      alignItems: 'center',
+      minHeight: token.controlHeight,
+      marginInlineStart: token.marginXXS,
+      color: token.colorTextSecondary,
+      whiteSpace: 'nowrap' as const,
+    }),
+    [token],
+  );
+
   const handleSelect = (val) => {
     setOpen(false);
     if (val === 'exact') {
       return onChange(undefined);
     }
-    const obj: any = {
+    const obj = normalizeRelativeDateValue({
       type: val,
-    };
+    }) as any;
     if (['past', 'next'].includes(val)) {
-      obj.number = 1;
-      obj.unit = 'day';
+      obj.number = value?.type === val ? value?.number ?? 1 : 1;
+      obj.unit = value?.type === val ? value?.unit ?? 'day' : 'day';
+      if (value?.type === 'past' || value?.type === 'next') {
+        obj.includeCurrent = value?.includeCurrent;
+      }
     }
     onChange(obj);
   };
@@ -113,55 +183,74 @@ export const DateFilterDynamicComponent = (props) => {
     );
   };
   return (
-    <Space.Compact style={{ ...props.style, width: '100%' }}>
-      <Select
-        options={compile(options)}
-        open={open}
-        onDropdownVisibleChange={setOpen}
-        {...props}
-        allowClear={false}
-        style={{
-          width: '100%',
-          minWidth: 100,
-          maxWidth: ['past', 'next', 'exact', undefined].includes(value?.type) ? 100 : null,
-        }}
-        value={value?.type || 'exact'}
-        onChange={handleSelect}
-        dropdownRender={dropdownRender}
-      />
-      {['past', 'next'].includes(value?.type) && [
-        <InputNumber
-          key="number"
-          value={value?.number}
-          onChange={(val) => {
-            const obj = {
-              ...value,
-              number: val,
-            };
-            onChange(obj);
-          }}
-        />,
+    <div style={wrapperStyle}>
+      <Space.Compact block style={compactStyle}>
         <Select
-          key="unit"
-          value={value?.unit}
-          style={{ minWidth: 130, maxWidth: 140 }}
-          onChange={(val) => {
-            const obj = {
-              ...value,
-              unit: val,
-            };
-            onChange(obj);
+          options={compile(options)}
+          open={open}
+          onDropdownVisibleChange={setOpen}
+          {...props}
+          allowClear={false}
+          style={{
+            width: '100%',
+            minWidth: 100,
+            maxWidth: ['past', 'next', 'exact', undefined].includes(value?.type) ? 100 : null,
           }}
-          options={[
-            { value: 'day', label: t('Day') },
-            { value: 'week', label: t('Calendar week') },
-            { value: 'month', label: t('Calendar Month') },
-            { value: 'year', label: t('Calendar Year') },
-          ]}
-          popupMatchSelectWidth
-        />,
-      ]}
-      {(value?.type === 'exact' || !value?.type) && <SmartDatePicker {...props} />}
-    </Space.Compact>
+          value={value?.type || 'exact'}
+          onChange={handleSelect}
+          dropdownRender={dropdownRender}
+        />
+        {['past', 'next'].includes(value?.type) && [
+          <InputNumber
+            key="number"
+            value={value?.number}
+            onChange={(val) => {
+              const obj = normalizeRelativeDateValue({
+                ...value,
+                number: val,
+              });
+              onChange(obj);
+            }}
+          />,
+          <Select
+            key="unit"
+            value={value?.unit}
+            style={{ minWidth: 130, maxWidth: 140 }}
+            onChange={(val) => {
+              const obj = normalizeRelativeDateValue({
+                ...value,
+                unit: val,
+              });
+              onChange(obj);
+            }}
+            options={[
+              { value: 'day', label: t('Day') },
+              { value: 'week', label: t('Calendar week') },
+              { value: 'month', label: t('Calendar Month') },
+              { value: 'year', label: t('Calendar Year') },
+            ]}
+            popupMatchSelectWidth
+          />,
+        ]}
+        {(value?.type === 'exact' || !value?.type) && <SmartDatePicker {...props} />}
+      </Space.Compact>
+      {['past', 'next'].includes(value?.type) && includeCurrentLabel ? (
+        <Checkbox
+          data-testid="include-current-checkbox"
+          style={checkboxStyle}
+          checked={!!value?.includeCurrent}
+          onChange={(e) => {
+            onChange(
+              normalizeRelativeDateValue({
+                ...value,
+                includeCurrent: e.target.checked || undefined,
+              }),
+            );
+          }}
+        >
+          {includeCurrentLabel}
+        </Checkbox>
+      ) : null}
+    </div>
   );
 };

@@ -345,4 +345,31 @@ describe('parseFilter', () => {
       },
     ).toEqual({ createdAt: { $dateOn: date.toISOString() } });
   });
+
+  test('relative date should support includeCurrent', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-05-22T07:00:00.000Z'));
+
+    await expectParseFilter(
+      {
+        createdAt: {
+          $dateOn: {
+            type: 'past',
+            unit: 'day',
+            number: 1,
+            includeCurrent: true,
+          },
+        },
+      },
+      {
+        timezone: '+08:00',
+      },
+    ).toEqual({
+      createdAt: {
+        $dateOn: ['2025-05-22 00:00:00', '2025-05-22 23:59:59', '[]', '+08:00'],
+      },
+    });
+
+    vi.useRealTimers();
+  });
 });
