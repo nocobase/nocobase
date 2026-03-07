@@ -13,7 +13,7 @@ import { Readable } from 'stream';
 import { getApp } from '.';
 import PluginFileManagerServer from '../server';
 
-import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL } from '../../constants';
+import { FILE_FIELD_NAME, STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS } from '../../constants';
 
 const { LOCAL_STORAGE_BASE_URL, LOCAL_STORAGE_DEST = 'storage/uploads', APP_PORT = '13000' } = process.env;
 const DEFAULT_LOCAL_BASE_URL = LOCAL_STORAGE_BASE_URL || `/storage/uploads`;
@@ -258,6 +258,67 @@ describe('file manager > server', () => {
         expect(file.mimetype).toBeNull();
         const url = await plugin.getFileURL(file, true);
         expect(url).toBe(`${process.env.APP_PUBLIC_PATH?.replace(/\/$/g, '') || ''}${file.url}`);
+      });
+
+      it('should avoid doubling thumbnailRule in getFileURL', async () => {
+        const thumbnailRule = '?x-oss-process=image/resize,w_100';
+        const storageName = 'aliyun-test-' + Math.random().toString(36).substring(7);
+        const storage = await StorageRepo.create({
+          values: {
+            name: storageName,
+            type: STORAGE_TYPE_ALI_OSS,
+            baseUrl: 'http://test-bucket.oss-cn-beijing.aliyuncs.com',
+            options: {
+              thumbnailRule,
+            },
+          },
+        });
+
+        await plugin.loadStorages();
+
+        const attachment = {
+          filename: 'test.jpg',
+          path: 'uploads',
+          mimetype: 'image/jpeg',
+          storageId: storage.id,
+        } as any;
+
+        const expectedPreviewUrl = 'http://test-bucket.oss-cn-beijing.aliyuncs.com/uploads/test.jpg' + thumbnailRule;
+
+        const previewUrl1 = await plugin.getFileURL(attachment, true);
+        expect(previewUrl1).toBe(expectedPreviewUrl);
+
+        // Simulate doubling
+        attachment.url = previewUrl1;
+        const previewUrl2 = await plugin.getFileURL(attachment, true);
+        expect(previewUrl2).toBe(expectedPreviewUrl);
+      });
+
+      it('should handle thumbnailRule in getFileURL when url is not present', async () => {
+        const thumbnailRule = '?small';
+        const storageName = 'local-test-' + Math.random().toString(36).substring(7);
+        const storage = await StorageRepo.create({
+          values: {
+            name: storageName,
+            type: STORAGE_TYPE_LOCAL,
+            baseUrl: 'http://localhost:13000/uploads',
+            options: {
+              thumbnailRule,
+            },
+          },
+        });
+
+        await plugin.loadStorages();
+
+        const attachment = {
+          filename: 'image.png',
+          path: '',
+          mimetype: 'image/png',
+          storageId: storage.id,
+        } as any;
+
+        const previewUrl1 = await plugin.getFileURL(attachment, true);
+        expect(previewUrl1).toBe('http://localhost:13000/uploads/image.png?small');
       });
     });
 
