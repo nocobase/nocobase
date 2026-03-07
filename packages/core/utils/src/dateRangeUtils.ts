@@ -52,8 +52,8 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
   const { type, unit = 'day' as any, number = 1, includeCurrent, timezone } = params;
   const now = getNow(timezone);
   const actualUnit: any = unit === 'week' ? 'isoWeek' : unit;
-  const shouldIncludeCurrent = includeCurrent && ['day', 'week', 'month', 'year'].includes(unit);
-  const safeNumber = Math.max(number || 1, 1);
+  const shouldIncludeCurrent = includeCurrent && ['day', 'week', 'isoWeek', 'month', 'year'].includes(unit);
+  const safeNumber = typeof number === 'number' && Number.isFinite(number) ? Math.max(number, 1) : 1;
 
   let start: dayjs.Dayjs;
   let end: dayjs.Dayjs;

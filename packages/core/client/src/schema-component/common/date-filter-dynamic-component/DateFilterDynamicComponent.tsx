@@ -70,7 +70,7 @@ const normalizeRelativeDateValue = (value) => {
 
   const nextValue = {
     type: value.type,
-    number: value.number ?? 1,
+    number: value.number === undefined ? 1 : value.number,
     unit: value.unit ?? 'day',
   } as any;
 
@@ -186,6 +186,7 @@ export const DateFilterDynamicComponent = (props) => {
     <div style={wrapperStyle}>
       <Space.Compact block style={compactStyle}>
         <Select
+          data-testid="date-filter-type-select"
           options={compile(options)}
           open={open}
           onDropdownVisibleChange={setOpen}
@@ -203,6 +204,8 @@ export const DateFilterDynamicComponent = (props) => {
         {['past', 'next'].includes(value?.type) && [
           <InputNumber
             key="number"
+            min={1}
+            data-testid="date-filter-number-input"
             value={value?.number}
             onChange={(val) => {
               const obj = normalizeRelativeDateValue({
@@ -214,6 +217,7 @@ export const DateFilterDynamicComponent = (props) => {
           />,
           <Select
             key="unit"
+            data-testid="date-filter-unit-select"
             value={value?.unit}
             style={{ minWidth: 130, maxWidth: 140 }}
             onChange={(val) => {

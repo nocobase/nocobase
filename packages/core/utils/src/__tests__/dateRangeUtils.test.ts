@@ -178,6 +178,11 @@ const cases = [
     expected: ['2025-05-12 00:00:00', '2025-05-25 23:59:59'],
   },
   {
+    title: 'past one iso week + include this week → 本周',
+    input: { type: 'past', unit: 'isoWeek', number: 1, includeCurrent: true, timezone: '+08:00' },
+    expected: ['2025-05-19 00:00:00', '2025-05-25 23:59:59'],
+  },
+  {
     title: 'next one calendar month → 下月整月',
     input: { type: 'next', unit: 'month', number: 1, timezone: '+08:00' },
     expected: ['2025-06-01 00:00:00', '2025-06-30 23:59:59'],

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { render, screen, userEvent, waitFor, within } from '@nocobase/test/client';
 import React, { useState } from 'react';
 import { SchemaComponentProvider } from '../../../';
 import { DateFilterDynamicComponent } from '../DateFilterDynamicComponent';
@@ -16,7 +16,7 @@ const TestApp = ({ initialValue }) => {
   const [value, setValue] = useState(initialValue);
 
   return (
-    <SchemaComponentProvider scope={{ t: (key: string) => key }}>
+    <SchemaComponentProvider>
       <DateFilterDynamicComponent value={value} onChange={setValue} />
       <pre data-testid="current-value">{JSON.stringify(value)}</pre>
     </SchemaComponentProvider>
@@ -24,13 +24,13 @@ const TestApp = ({ initialValue }) => {
 };
 
 const openTypeSelect = async (container: HTMLElement) => {
-  const selectors = container.querySelectorAll('.ant-select-selector');
-  await userEvent.click(selectors[0] as HTMLElement);
+  const selector = within(container).getByTestId('date-filter-type-select').querySelector('.ant-select-selector');
+  await userEvent.click(selector as HTMLElement);
 };
 
 const openUnitSelect = async (container: HTMLElement) => {
-  const selectors = container.querySelectorAll('.ant-select-selector');
-  await userEvent.click(selectors[1] as HTMLElement);
+  const selector = within(container).getByTestId('date-filter-unit-select').querySelector('.ant-select-selector');
+  await userEvent.click(selector as HTMLElement);
 };
 
 describe('DateFilterDynamicComponent', () => {
@@ -51,7 +51,6 @@ describe('DateFilterDynamicComponent', () => {
   it('should keep includeCurrent and update label when unit changes', async () => {
     const { container } = render(<TestApp initialValue={{ type: 'past', number: 1, unit: 'day' }} />);
 
-    await openTypeSelect(container);
     await userEvent.click(screen.getByTestId('include-current-checkbox'));
     await waitFor(() => expect(screen.getByTestId('current-value')).toHaveTextContent('"includeCurrent":true'));
 
