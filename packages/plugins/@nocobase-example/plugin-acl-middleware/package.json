@@ -3,6 +3,7 @@
   "private": true,
   "version": "2.1.0-alpha.9",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

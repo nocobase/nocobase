@@ -6,6 +6,7 @@
   "description": "Used for mapping any JSON data to structured variables for usage in subsequent nodes.",
   "description.zh-CN": "用于将任意 JSON 数据映射为结构化的变量，以供后续节点使用。",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-workflow": "2.x",

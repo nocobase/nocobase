@@ -9,6 +9,7 @@
   "description.ru-RU": "Используется для сортировки данных в коллекции.",
   "description.zh-CN": "用于对数据表的数据进行排序。",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",

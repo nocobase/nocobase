@@ -9,6 +9,7 @@
   "description.zh-CN": "提供文件存储服务，并提供了文件表模板和附件字段。",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/file-manager",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/file-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/file-manager",

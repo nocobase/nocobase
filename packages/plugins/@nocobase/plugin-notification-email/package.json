@@ -11,6 +11,7 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-email",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-email",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "@types/nodemailer": "^6.x",
     "nodemailer": "^6.x"

@@ -51,13 +51,9 @@ function loadCompilerOptions(): ts.CompilerOptions {
     ...parsedConfig.options,
   };
   
-  if (options.paths) {
-    const newPaths: Record<string, string[]> = {};
-    for (const key of Object.keys(options.paths)) {
-      newPaths[key] = options.paths[key].map(p => p.replace('/src', '/lib'));
-    }
-    options.paths = newPaths;
-  }
+  // Disable paths mapping to force resolution via node_modules (pnpm handles this)
+  options.paths = undefined;
+  options.baseUrl = undefined;
   
   return options;
 }
