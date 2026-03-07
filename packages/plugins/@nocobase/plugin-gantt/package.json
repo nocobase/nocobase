@@ -9,6 +9,7 @@
   "description.zh-CN": "提供甘特图区块。",
   "license": "Apache-2.0",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/block-gantt",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-gantt",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-gantt",

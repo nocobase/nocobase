@@ -2,6 +2,7 @@
   "name": "@nocobase/plugin-multi-keyword-filter",
   "version": "2.0.10",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "displayName": "Multi-keyword filter",
   "displayName.zh-CN": "多关键词筛选",
   "description": "Supports multi-keyword filtering for common fields, with options for quick input or batch import of keywords from Excel.",

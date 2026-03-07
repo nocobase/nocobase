@@ -6,6 +6,7 @@
   "description.zh-CN": "用于代码编辑和高亮显示，支持 Java、JavaScript、Python、SQL 等语言。",
   "version": "2.0.10",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "1.x",

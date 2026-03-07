@@ -6,6 +6,7 @@
   "description.zh-CN": "可用于在工作流中对日期进行操作求值，如加减、比较操作，格式化等。",
   "version": "2.0.10",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "moment-timezone": "0.5.48"
   },

@@ -11,6 +11,7 @@
     "Collections"
   ],
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",

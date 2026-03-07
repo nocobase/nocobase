@@ -8,6 +8,7 @@
  */
 
 import path from 'path';
+import fs from 'fs';
 
 export function winPath(path: string) {
   const isExtendedLengthPath = /^\\\\\?\\/.test(path);

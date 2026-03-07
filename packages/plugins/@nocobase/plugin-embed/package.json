@@ -6,6 +6,7 @@
   "description.zh-CN": "将 NocoBase 嵌入外部系统或页面中，使其成为该系统或页面的一部分。",
   "version": "2.0.10",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/embed",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/embed",
   "keywords": [],

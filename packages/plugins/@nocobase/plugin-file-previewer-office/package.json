@@ -8,6 +8,7 @@
   "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
   "version": "2.0.10",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-file-manager": "2.x",

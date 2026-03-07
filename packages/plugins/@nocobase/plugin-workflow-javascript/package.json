@@ -6,6 +6,7 @@
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
   "description.zh-CN": "在隔离环境中执行一段 JavaScript 代码。",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "1.x",
