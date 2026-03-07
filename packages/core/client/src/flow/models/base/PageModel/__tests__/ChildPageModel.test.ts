@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import React from 'react';
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ChildPageModel } from '../ChildPageModel';
 import { DragEndEvent } from '@dnd-kit/core';
@@ -25,8 +27,25 @@ vi.mock('../PageModel', () => ({
 }));
 
 // Mock FlowEngine
+const { mockUseFlowContext } = vi.hoisted(() => ({
+  mockUseFlowContext: vi.fn(),
+}));
+
 vi.mock('@nocobase/flow-engine', () => ({
   CreateModelOptions: {},
+  useFlowContext: mockUseFlowContext,
+}));
+
+vi.mock('antd', () => ({
+  Button: ({ children, ...props }: any) => React.createElement('button', props, children),
+}));
+
+vi.mock('@ant-design/icons', () => ({
+  ArrowLeftOutlined: () => null,
+}));
+
+vi.mock('@ant-design/pro-layout', () => ({
+  PageHeader: () => null,
 }));
 
 describe('ChildPageModel', () => {
@@ -97,6 +116,34 @@ describe('ChildPageModel', () => {
       await expect(childPageModel.handleDragEnd(eventWithNullOver)).rejects.toThrow();
 
       expect(mockFlowEngine.moveModel).toBeCalledTimes(0);
+    });
+  });
+
+  describe('tab bar extra content', () => {
+    it('should render spacer in drawer mode', () => {
+      mockUseFlowContext.mockReturnValue({
+        themeToken: { paddingLG: 16, paddingXS: 8 },
+        view: { type: 'drawer', close: vi.fn() },
+      });
+
+      const element = childPageModel.tabBarExtraContent.left as React.ReactElement;
+      const { container } = render(element);
+      const spacer = container.querySelector('span[aria-hidden="true"]') as HTMLSpanElement | null;
+
+      expect(spacer).not.toBeNull();
+      expect(spacer?.style.width).toBe('16px');
+    });
+
+    it('should render back button in embed mode', () => {
+      mockUseFlowContext.mockReturnValue({
+        themeToken: { paddingLG: 16, paddingXS: 8 },
+        view: { type: 'embed', close: vi.fn() },
+      });
+
+      const element = childPageModel.tabBarExtraContent.left as React.ReactElement;
+      render(element);
+
+      expect(screen.getByRole('button', { name: 'back-button' })).toBeTruthy();
     });
   });
 });

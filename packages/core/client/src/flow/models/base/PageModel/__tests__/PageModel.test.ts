@@ -192,12 +192,11 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(typeof tabsElement.props.rootClassName).toBe('string');
-      expect(tabsElement.props.rootClassName.length).toBeGreaterThan(0);
-      expect(tabsElement.props.rootClassName).toContain(' ');
+      expect(typeof tabsElement.props.className).toBe('string');
+      expect(tabsElement.props.className.length).toBeGreaterThan(0);
     });
 
-    it('should apply only base tabs root className in normal mode', () => {
+    it('should not apply tabs root className in normal mode', () => {
       // @ts-ignore
       pageModel.context = {
         t: (str: string) => str,
@@ -208,8 +207,51 @@ describe('PageModel', () => {
       const result = pageModel.renderTabs() as any;
       const tabsElement = result.props.children;
 
-      expect(typeof tabsElement.props.rootClassName).toBe('string');
-      expect(tabsElement.props.rootClassName).not.toContain(' ');
+      expect(tabsElement.props.className).toBeUndefined();
+    });
+
+    it('should inject default left spacing via tabBarExtraContent', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.left).toBeTruthy();
+    });
+
+    it('should preserve custom left extra content', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+      pageModel.tabBarExtraContent = { left: 'back' } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.left).toBe('back');
+    });
+
+    it('should preserve custom right extra content', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+      pageModel.tabBarExtraContent = { right: 'custom-right' } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
     });
   });
 
