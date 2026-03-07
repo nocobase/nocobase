@@ -84,6 +84,10 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     return Array.isArray(data) ? data[0] : data;
   }
 
+  hasAvailableData() {
+    return this.resource.hasData();
+  }
+
   handlePageChange = async (page: number) => {
     if (this.resource instanceof MultiRecordResource) {
       const multiResource = this.resource as MultiRecordResource;
@@ -99,6 +103,18 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   }
 
   renderPagination() {
+    if (!this.resource.loading && !this.hasAvailableData()) {
+      return (
+        <div
+          style={{
+            textAlign: 'center',
+            color: this.context?.themeToken?.colorTextDescription,
+          }}
+        >
+          {this.translate('No available data currently')}
+        </div>
+      );
+    }
     const resource = this.resource as MultiRecordResource;
     if (!this.isMultiRecordResource() || !resource.getPage() || this.resource.getMeta('count') <= 1) {
       return null;
@@ -141,6 +157,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const disableRuntimeActions = !isConfigMode && !this.hasAvailableData();
     const { heightMode, height } = this.decoratorProps;
     return (
       <DetailsBlockContent
@@ -152,29 +169,31 @@ export class DetailsBlockModel extends CollectionBlockModel<{
         layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
         actions={
           <DndProvider>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                return (
-                  <Droppable model={action} key={action.uid}>
-                    <FlowModelRenderer
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
-                  </Droppable>
-                );
-              })}
-              {this.renderConfigureActions()}
-            </Space>
+            <div style={disableRuntimeActions ? { pointerEvents: 'none', opacity: 0.45 } : undefined}>
+              <Space wrap>
+                {this.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  return (
+                    <Droppable model={action} key={action.uid}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
+                })}
+                {this.renderConfigureActions()}
+              </Space>
+            </div>
           </DndProvider>
         }
       />

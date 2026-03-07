@@ -275,6 +275,60 @@ describe('export to xlsx with preset', () => {
     }
   });
 
+  it('should export number interface value as numeric cell', async () => {
+    const Post = app.db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'float',
+          name: 'estimate',
+          interface: 'number',
+          uiSchema: {
+            'x-component-props': {
+              step: 0.01,
+            },
+          },
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    await Post.repository.create({
+      values: {
+        title: 'p1',
+        estimate: 12.3,
+      },
+    });
+
+    const xlsxFilePath = path.resolve(__dirname, `t_${uid()}.xlsx`);
+    const exporter = new XlsxExporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Post,
+      chunkSize: 10,
+      columns: [
+        { dataIndex: ['title'], defaultTitle: 'title' },
+        { dataIndex: ['estimate'], defaultTitle: 'estimate' },
+      ],
+      outputPath: xlsxFilePath,
+    });
+
+    await exporter.run();
+
+    try {
+      const workbook = new Workbook();
+      await workbook.xlsx.readFile(xlsxFilePath);
+      const worksheet = workbook.getWorksheet(1);
+      const estimateCell = worksheet.getCell('B2');
+
+      expect(estimateCell.value).toBe(12.3);
+      expect(typeof estimateCell.value).toBe('number');
+    } finally {
+      exporter.cleanOutputFile();
+    }
+  });
+
   it('should export with map field', async () => {
     const Post = app.db.collection({
       name: 'posts',
