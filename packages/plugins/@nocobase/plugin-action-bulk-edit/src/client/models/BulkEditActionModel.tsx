@@ -17,6 +17,7 @@ const SETTINGS_FLOW_KEY = 'bulkEditSettings';
 
 export class BulkEditActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.collection;
+  static capabilityActionName = 'updateMany';
 
   defaultPopupTitle = tExpr('Bulk edit');
   defaultProps: ButtonProps = {
