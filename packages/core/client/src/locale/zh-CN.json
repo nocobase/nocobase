@@ -219,6 +219,7 @@
   "Bulk enable": "批量激活",
   "Bulk update": "批量更新",
   "Button background color": "按钮颜色",
+  "Button color": "按钮颜色",
   "Button icon": "按钮图标",
   "Button settings": "按钮设置",
   "Button title": "按钮标题",
@@ -1639,5 +1640,7 @@
   "Edit popup (Select record)":"编辑弹窗（选择纪录）",
   "Remove record":"移除记录",
   "Block height":"区块高度",
-  "Height": "高度"
+  "Height": "高度",
+  "Pink": "粉红",
+  "Yellow": "明黄"
 }

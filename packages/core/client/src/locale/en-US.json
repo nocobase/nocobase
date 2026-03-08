@@ -219,6 +219,7 @@
   "Bulk enable": "Bulk enable",
   "Bulk update": "Bulk update",
   "Button background color": "Button background color",
+  "Button color": "Button color",
   "Button icon": "Button icon",
   "Button settings": "Button settings",
   "Button title": "Button title",
@@ -1601,5 +1602,7 @@
   "{{count}} more items": "{{count}} more items",
   "≠": "≠",
   "≤": "≤",
-  "≥": "≥"
+  "≥": "≥",
+  "Pink": "Pink",
+  "Yellow": "Yellow"
 }
