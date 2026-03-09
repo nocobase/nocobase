@@ -11,6 +11,10 @@ import { Plugin } from '@nocobase/client-v2';
 
 export class AppInfoDemoPlugin extends Plugin {
   async load() {
+    this.router.add('demo.homepage', {
+      path: '/',
+      componentLoader: () => import('../routes/DemoHomepageRoute'),
+    });
     this.router.add('demo.app-info', {
       path: '/demo/app-info',
       componentLoader: () => import('../routes/AppInfoDemoRoute'),

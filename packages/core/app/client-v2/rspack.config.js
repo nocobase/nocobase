@@ -10,6 +10,7 @@
 const fs = require('fs');
 const path = require('path');
 const { rspack } = require('@rspack/core');
+const { ReactRefreshRspackPlugin } = require('@rspack/plugin-react-refresh');
 
 function ensurePublicPath(value) {
   let normalized = value || '/v2/';
@@ -101,11 +102,11 @@ module.exports = (_env, argv = {}) => {
       filename: 'assets/[name]-[contenthash:8].js',
       chunkFilename: 'assets/[name]-[contenthash:8].js',
       assetModuleFilename: 'assets/[name]-[contenthash:8][ext][query]',
-      module: true,
-      chunkFormat: 'module',
+      module: isBuild,
+      chunkFormat: isBuild ? 'module' : 'array-push',
     },
     experiments: {
-      outputModule: true,
+      outputModule: isBuild,
     },
     devtool: isBuild ? false : 'eval-cheap-module-source-map',
     resolve: {
@@ -142,7 +143,7 @@ module.exports = (_env, argv = {}) => {
                     react: {
                       runtime: 'automatic',
                       development: !isBuild,
-                      refresh: false,
+                      refresh: !isBuild,
                     },
                   },
                   target: 'es2020',
@@ -169,7 +170,7 @@ module.exports = (_env, argv = {}) => {
                     react: {
                       runtime: 'automatic',
                       development: !isBuild,
-                      refresh: false,
+                      refresh: !isBuild,
                     },
                   },
                   target: 'es2020',
@@ -206,10 +207,17 @@ module.exports = (_env, argv = {}) => {
       }),
       new rspack.HtmlRspackPlugin({
         template: path.resolve(__dirname, 'index.html'),
-        scriptLoading: 'module',
+        scriptLoading: isBuild ? 'module' : 'defer',
         minify: isBuild,
         templateParameters: createTemplateParameters(v2PublicPath),
       }),
+      ...(!isBuild
+        ? [
+            new ReactRefreshRspackPlugin({
+              overlay: false,
+            }),
+          ]
+        : []),
     ],
     optimization: {
       // Keep one shared runtime when splitChunks is enabled in dev/prod.
