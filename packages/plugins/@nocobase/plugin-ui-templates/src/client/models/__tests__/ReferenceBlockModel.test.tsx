@@ -30,6 +30,8 @@ class MockFormBlockModel extends FlowModel {
   }
 }
 
+class PassiveBlockModel extends FlowModel {}
+
 class DetailsBlockModel extends FlowModel {}
 class EditFormModel extends FlowModel {}
 
@@ -43,12 +45,14 @@ describe('ReferenceBlockModel', () => {
   let scopedEngine: FlowEngine;
   let store: Record<string, any>;
   let lastSavedSnapshot: Record<string, any>;
+  let hostCollection: { name: string };
 
   beforeEach(() => {
     vi.spyOn(ReferenceBlockModel.prototype as any, 'rerender').mockResolvedValue(undefined);
     engine = new FlowEngine();
     scopedEngine = new FlowEngine();
     lastSavedSnapshot = {};
+    hostCollection = { name: 'host-collection' };
     store = {
       'grid-uid': {
         uid: 'grid-uid',
@@ -132,6 +136,7 @@ describe('ReferenceBlockModel', () => {
     engine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      PassiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -139,6 +144,7 @@ describe('ReferenceBlockModel', () => {
     scopedEngine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      PassiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -151,6 +157,9 @@ describe('ReferenceBlockModel', () => {
       parentId: 'page-uid',
       subKey: 'items',
       subType: 'array',
+    });
+    gridModel.context.defineProperty('collection', {
+      value: hostCollection,
     });
 
     // 创建目标区块模型（表单区块）
@@ -277,6 +286,46 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         expect(referenceBlockModel.context.collection.name).toBe('mock-collection');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should fallback to host collection when target does not define collection context',
+      async () => {
+        store['target-without-collection-context'] = {
+          uid: 'target-without-collection-context',
+          use: 'PassiveBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid-no-own-context',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-without-collection-context',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel;
+        expect(target).toBeTruthy();
+        expect(() => target.context.collection).not.toThrow();
+        expect(target.context.collection).toBe(hostCollection);
+        expect(referenceBlockModel.context.collection).toBe(hostCollection);
       },
       TEST_TIMEOUT,
     );
