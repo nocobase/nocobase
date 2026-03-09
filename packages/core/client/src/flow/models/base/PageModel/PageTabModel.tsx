@@ -11,6 +11,7 @@ import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
+import type { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { RemoteFlowModelRenderer } from '../../../FlowPage';
@@ -32,6 +33,25 @@ function PageTabChildrenRenderer({ ctx, options }) {
     return <SkeletonFallback style={{ margin }} />;
   }
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin }} />} />;
+}
+
+/**
+ * 统一归一化 `desktopRoutes:updateOrCreate` 的返回值。
+ *
+ * 该接口在 create/update 场景下可能分别返回对象或数组，
+ * 这里始终抽出第一条 route 记录，便于把持久化 id 回填到前端模型。
+ *
+ * @param payload - 接口返回的 data 节点
+ * @returns 可用于回填的 route 记录
+ */
+function normalizePersistedRoute(payload: unknown): Partial<NocoBaseDesktopRoute> | undefined {
+  if (Array.isArray(payload)) {
+    return payload.find((item): item is Partial<NocoBaseDesktopRoute> => !!item && typeof item === 'object');
+  }
+  if (payload && typeof payload === 'object') {
+    return payload as Partial<NocoBaseDesktopRoute>;
+  }
+  return undefined;
 }
 
 export class BasePageTabModel extends FlowModel<{
@@ -150,7 +170,7 @@ export class RootPageTabModel extends BasePageTabModel {
   async save() {
     const json = this.serialize();
     const documentTitle = this.stepParams?.pageTabSettings?.tab?.documentTitle;
-    await this.context.api.request({
+    const response = await this.context.api.request({
       method: 'post',
       url: 'desktopRoutes:updateOrCreate',
       params: {
@@ -166,6 +186,19 @@ export class RootPageTabModel extends BasePageTabModel {
         },
       },
     });
+    const persistedRoute = normalizePersistedRoute(response?.data?.data);
+
+    // 新建 tab 首次保存后需要立即拿到持久化 route id，拖拽排序会直接依赖它。
+    if (persistedRoute) {
+      this.setProps('route', {
+        ...this.props.route,
+        ...persistedRoute,
+        options: {
+          ...this.props.route?.options,
+          ...persistedRoute.options,
+        },
+      });
+    }
   }
 
   async destroy() {

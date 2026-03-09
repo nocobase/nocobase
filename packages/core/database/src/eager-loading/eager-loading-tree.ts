@@ -173,6 +173,12 @@ export class EagerLoadingTree {
           pushAttribute(eagerLoadingTreeParent, sourceKey);
         }
 
+        if (associationType == 'BelongsToArray') {
+          const { foreignKey, targetKey } = association;
+          pushAttribute(eagerLoadingTreeParent, foreignKey);
+          pushAttribute(child, targetKey);
+        }
+
         eagerLoadingTreeParent.children.push(child);
 
         if (include.include) {

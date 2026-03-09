@@ -13,6 +13,7 @@ import { ActionModel, ActionSceneEnum } from '../base';
 
 export class BulkDeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
+  static capabilityActionName = 'destroyMany';
 
   defaultProps: ButtonProps = {
     title: tExpr('Delete'),
