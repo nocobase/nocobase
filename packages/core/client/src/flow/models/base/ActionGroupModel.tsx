@@ -16,6 +16,7 @@ import {
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { ActionModel, ActionSceneEnum, ActionSceneType } from './ActionModel';
+import { areCapabilitiesSupported, getActionCapabilityNamesFromModelClass } from '../../utils/actionCapability';
 
 export class ActionGroupModel extends FlowModel {
   static baseClass?: string | ModelConstructor;
@@ -71,19 +72,38 @@ export class ActionGroupModel extends FlowModel {
     }
   }
 
+  /**
+   * 判断动作模型在当前数据表上下文下是否应显示在 v2 的“添加动作”菜单中。
+   *
+   * @param ModelClass 动作模型类
+   * @param ctx Flow 上下文
+   * @returns 是否显示
+   */
+  static isActionModelVisible(ModelClass: typeof ActionModel, ctx: FlowModelContext) {
+    const collection = ctx.collection || ctx.blockModel?.collection;
+    const capabilityNames = getActionCapabilityNamesFromModelClass(ModelClass);
+    return areCapabilitiesSupported(collection, capabilityNames);
+  }
+
   static async defineChildren(ctx: FlowModelContext) {
     const children = this.baseClass ? await buildSubModelItems(this.baseClass)(ctx) : [];
     const extra = [];
 
     const items = children.filter((item) => {
+      const M = ctx.engine.getModelClass(item.useModel) as typeof ActionModel;
+      if (!this.isActionModelVisible(M, ctx)) {
+        return false;
+      }
       if (!this.scene) {
         return true;
       }
-      const M = ctx.engine.getModelClass(item.useModel) as typeof ActionModel;
       return M._isScene(this.scene);
     });
 
     for (const [_, M] of this.models) {
+      if (!this.isActionModelVisible(M, ctx)) {
+        continue;
+      }
       const r = items.find((item) => item.useModel === M.name);
       if (r) {
         continue;

@@ -223,17 +223,57 @@ function isNumeric(str: any) {
   return !isNaN(str as any) && !isNaN(parseFloat(str));
 }
 
+function getFieldFromCollectionManager(ctx, resourceName: string, fieldPath: string) {
+  const collectionManager = ctx.dataSource?.collectionManager;
+  if (!collectionManager?.getCollection) {
+    return;
+  }
+
+  const collection = collectionManager.getCollection(resourceName);
+  if (!collection?.getField) {
+    return;
+  }
+
+  const [firstName, ...others] = fieldPath.split('.');
+  let field = collection.getField(firstName);
+  if (!field || !others.length) {
+    return field;
+  }
+
+  let currentCollection =
+    typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+
+  for (const name of others) {
+    if (!currentCollection?.getField) {
+      return;
+    }
+    field = currentCollection.getField(name);
+    if (!field) {
+      return;
+    }
+    currentCollection =
+      typeof field.targetCollection === 'function' ? field.targetCollection() : field.targetCollection;
+  }
+
+  return field;
+}
+
 export function createContextVariablesScope(ctx) {
   const state = JSON.parse(JSON.stringify(ctx.state));
   return {
     timezone: ctx.get('x-timezone'),
     now: new Date().toISOString(),
     getField: (path) => {
+      const { resourceName } = ctx.action;
       const fieldPath = path
         .split('.')
         .filter((p) => !p.startsWith('$') && !isNumeric(p))
         .join('.');
-      const { resourceName } = ctx.action;
+
+      if (!ctx.database) {
+        return getFieldFromCollectionManager(ctx, resourceName, fieldPath);
+      }
+
       return ctx.database.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
