@@ -165,5 +165,71 @@ describe('lock manager', () => {
       await r2();
       expect(order).toEqual([1, 2, 3, 4]);
     });
+
+    it('tryAcquire: only one concurrent caller wins (TOCTOU race)', async () => {
+      // Simulate two nodes calling tryAcquire at the same time (single-process,
+      // like createMockCluster). Only one should succeed; the other must throw.
+      const results: Array<'acquired' | 'skipped'> = [];
+      await Promise.all(
+        [0, 1].map(async () => {
+          try {
+            const lock = await lockManager.tryAcquire('race-test');
+            const release = await lock.acquire(1000);
+            results.push('acquired');
+            await release();
+          } catch (e) {
+            if (e instanceof LockAcquireError) {
+              results.push('skipped');
+            } else {
+              throw e;
+            }
+          }
+        }),
+      );
+      expect(results.filter((r) => r === 'acquired').length).toBe(1);
+      expect(results.filter((r) => r === 'skipped').length).toBe(1);
+    });
+
+    it('tryAcquire: waits up to timeout ms before throwing when lock is held', async () => {
+      // Acquire the lock manually so it is held during the tryAcquire call.
+      const holdRelease = await lockManager.acquire('wait-test');
+
+      // Release the lock after 50 ms — tryAcquire with timeout=1000 should
+      // succeed because the lock becomes available well within the window.
+      // Using a large margin (50ms release vs 1000ms timeout) to avoid flakiness
+      // on slow CI machines under load.
+      setTimeout(() => holdRelease(), 50);
+      const lock = await lockManager.tryAcquire('wait-test', 1000);
+      const release = await lock.acquire(1000);
+      await release();
+    });
+
+    it('tryAcquire: throws LockAcquireError when timeout expires before lock is released', async () => {
+      const holdRelease = await lockManager.acquire('timeout-test');
+      // Lock is held; tryAcquire with a very short timeout should fail.
+      await expect(lockManager.tryAcquire('timeout-test', 50)).rejects.toThrowError(LockAcquireError);
+      await holdRelease();
+    });
+
+    it('tryAcquire: subsequent call succeeds after previous lock is released', async () => {
+      const lock1 = await lockManager.tryAcquire('seq-test');
+      const release = await lock1.acquire(1000);
+      await release();
+      // After release, a second tryAcquire on the same key should succeed
+      const lock2 = await lockManager.tryAcquire('seq-test');
+      const release2 = await lock2.acquire(1000);
+      await release2();
+    });
+
+    it('tryAcquire: release() abandons the pre-acquired lock without executing work', async () => {
+      // Acquire the lock via tryAcquire, then immediately release it.
+      const lock = await lockManager.tryAcquire('cancel-test');
+      await lock.release();
+
+      // The lock should now be free; a subsequent tryAcquire must succeed.
+      const lock2 = await lockManager.tryAcquire('cancel-test');
+      const r = await lock2.acquire(1000);
+      await r();
+    });
   });
 });

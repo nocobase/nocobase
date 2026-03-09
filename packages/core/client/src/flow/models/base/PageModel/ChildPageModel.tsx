@@ -47,14 +47,16 @@ export class ChildPageModel extends PageModel {
 }
 
 /**
- * Used for the back button in subpages
- * @returns
+ * 子页面 tab 栏左侧额外内容：
+ * - embed 场景渲染返回按钮
+ * - drawer/modal 等场景渲染占位元素以保持首个 tab 的左侧留白
  */
 const BackButtonUsedInSubPage = () => {
   const ctx = useFlowContext<any>();
   const token = ctx.themeToken;
   // tab item gutter, this is fixed value in antd
   const horizontalItemGutter = 32;
+  const tabNavPaddingInlineStart = token?.paddingLG ?? 16;
 
   const resetStyle = useMemo(() => {
     return {
@@ -62,13 +64,14 @@ const BackButtonUsedInSubPage = () => {
       height: 'auto',
       lineHeight: 1,
       padding: token.paddingXS,
+      marginLeft: token.paddingLG,
       marginRight: horizontalItemGutter - token.paddingXS,
     };
-  }, [token.paddingXS]);
+  }, [token.paddingLG, token.paddingXS]);
 
-  // 只有子页面需要返回按钮
+  // 抽屉/弹窗没有返回按钮，但仍需保留首个 tab 的左侧留白。
   if (ctx.view.type !== 'embed') {
-    return null;
+    return <span aria-hidden="true" style={{ display: 'inline-block', width: tabNavPaddingInlineStart, height: 1 }} />;
   }
 
   return (

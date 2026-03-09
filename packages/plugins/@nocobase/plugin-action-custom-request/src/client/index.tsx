@@ -12,6 +12,7 @@ import React from 'react';
 import { CustomRequestAction } from './components';
 import { customRequestActionSettings } from './components/CustomRequestActionDesigner';
 import { CustomRequestInitializer } from './initializer';
+import { customRequestFlowAction } from './models/customRequestFlowAction';
 import { customizeCustomRequestActionSettings } from './schemaSettings';
 import { CustomRequestConfigurationFieldsSchema } from './schemas';
 
@@ -31,6 +32,7 @@ const CustomRequestProvider: React.FC = (props) => {
 export class PluginActionCustomRequestClient extends Plugin {
   async load() {
     this.app.use(CustomRequestProvider);
+    this.app.flowEngine.registerActions({ customRequestFlowAction });
     this.app.schemaSettingsManager.add(customizeCustomRequestActionSettings);
 
     // @deprecated
