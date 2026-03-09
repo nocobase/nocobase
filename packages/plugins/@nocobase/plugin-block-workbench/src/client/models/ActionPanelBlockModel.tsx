@@ -239,11 +239,18 @@ export class ActionPanelBlockModel extends BlockModel {
                               background: none !important;
                               border: none !important;
                               box-shadow: none !important;
+                              &,
+                              &:hover,
+                              &:focus,
+                              &:active {
+                                color: ${token.colorText} !important;
+                              }
                               &:disabled,
                               &.ant-btn-disabled {
                                 background: none !important;
                                 border: none !important;
                                 box-shadow: none !important;
+                                color: ${token.colorTextDisabled} !important;
                               }
                               .ant-btn-icon {
                                 display: none;
@@ -344,6 +351,12 @@ export class ActionPanelBlockModel extends BlockModel {
                               box-shadow: none !important;
                               border: none !important;
                               background: none !important;
+                              &,
+                              &:hover,
+                              &:focus,
+                              &:active {
+                                color: ${token.colorText} !important;
+                              }
                               display: block;
                               width: 100%;
                               text-align: justify;
@@ -353,6 +366,7 @@ export class ActionPanelBlockModel extends BlockModel {
                                 background: none !important;
                                 border: none !important;
                                 box-shadow: none !important;
+                                color: ${token.colorTextDisabled} !important;
                               }
                               .ant-btn-icon {
                                 display: ${action.hidden ? 'block' : ' none'};
