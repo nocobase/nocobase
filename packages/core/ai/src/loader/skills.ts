@@ -74,13 +74,15 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
           try {
             const toolsScanner = new DirectoryScanner({
               basePath: skillsDir.path,
-              pattern: ['tools/**/*.ts'],
+              pattern: ['tools/**/*.ts', 'tools/**/*.js', '!tools/**/*.d.ts'],
             });
             const toolsFiles = await toolsScanner.scan();
             entry.tools = Array.from(
               new Set([
                 ...entry.tools,
-                ...toolsFiles.map((it) => (it.basename === 'index.ts' ? it.directory : it.name)),
+                ...toolsFiles.map((it) =>
+                  it.basename === 'index.ts' || it.basename === 'index.js' ? it.directory : it.name,
+                ),
               ]),
             );
           } catch (e) {
