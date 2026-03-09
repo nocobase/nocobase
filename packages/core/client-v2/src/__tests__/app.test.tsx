@@ -81,7 +81,7 @@ describe('app', () => {
     }
     const app = createMockClient({ plugins: [PluginHelloClient] });
     await renderApp(app);
-    expect(screen.getByText('Hello Lazy Route')).toBeInTheDocument();
+    expect(await screen.findByText('Hello Lazy Route')).toBeInTheDocument();
   });
 
   it('should support publicPath basename for plugin routes', async () => {
@@ -101,7 +101,7 @@ describe('app', () => {
       router: { type: 'memory', initialEntries: ['/v2/demo/app-info'] },
     });
     await renderApp(app);
-    expect(screen.getByText('Hello Basename Route')).toBeInTheDocument();
+    expect(await screen.findByText('Hello Basename Route')).toBeInTheDocument();
   });
 
   it('should support plugin settings componentLoader lazy functionality', async () => {
@@ -120,7 +120,7 @@ describe('app', () => {
       router: { type: 'memory', initialEntries: ['/admin/settings/demo'] },
     });
     await renderApp(app);
-    expect(screen.getByText('Hello Lazy Settings')).toBeInTheDocument();
+    expect(await screen.findByText('Hello Lazy Settings')).toBeInTheDocument();
   });
 
   it('should show maintaining state', async () => {
