@@ -35,6 +35,7 @@ import {
 import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
+import { lazy } from './lazy-helper';
 
 const Panel = Collapse.Panel;
 
@@ -113,6 +114,11 @@ export interface FlowSettingsOpenOptions {
   /** 配置保存成功后触发的回调 */
   onSaved?: () => void | Promise<void>;
 }
+
+export type FlowSettingsComponent = React.ComponentType<any>;
+export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | Record<string, FlowSettingsComponent>;
+export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
+export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponentLoader>;
 
 export class FlowSettings {
   public components: Record<string, any> = {};
@@ -288,6 +294,30 @@ export class FlowSettings {
         console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
       }
       this.components[name] = components[name];
+    });
+  }
+
+  public registerComponentLoaders(loaders: FlowSettingsComponentLoaderMap): void {
+    Object.entries(loaders).forEach(([name, loader]) => {
+      if (this.components[name]) {
+        console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.components[name] = lazy(async () => {
+        const loaded = await loader();
+        if (typeof loaded === 'function') {
+          return { default: loaded };
+        }
+        if (loaded?.default && typeof loaded.default === 'function') {
+          return { default: loaded.default };
+        }
+        const namedComponent = loaded?.[name];
+        if (typeof namedComponent === 'function') {
+          return { default: namedComponent };
+        }
+        throw new Error(
+          `FlowSettings: component loader for '${name}' must resolve to a React component or a module exporting it.`,
+        );
+      });
     });
   }
 

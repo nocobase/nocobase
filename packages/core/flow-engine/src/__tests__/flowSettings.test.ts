@@ -8,6 +8,10 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
+import React from 'react';
+import { createForm } from '@formily/core';
+import { createSchemaField, FormProvider } from '@formily/react';
+import { render, screen } from '@testing-library/react';
 import { FlowSettings } from '../flowSettings';
 import { DefaultSettingsIcon } from '../components/settings/wrappers/contextual/DefaultSettingsIcon';
 import { FlowModel } from '../models';
@@ -185,6 +189,43 @@ describe('FlowSettings', () => {
     test('should handle empty components object', () => {
       flowSettings.registerComponents({});
       expect(Object.keys(flowSettings.components)).toHaveLength(0);
+    });
+
+    test('should register component loaders and load component on render', async () => {
+      const loader = vi.fn(async () => ({
+        default: () => React.createElement('div', null, 'Lazy Flow Settings Component'),
+      }));
+
+      flowSettings.registerComponentLoaders({
+        DemoFlowSettingsLazyField: loader,
+      });
+
+      expect(loader).not.toHaveBeenCalled();
+
+      const SchemaField = createSchemaField();
+      const form = createForm();
+
+      render(
+        React.createElement(
+          FormProvider,
+          { form },
+          React.createElement(SchemaField, {
+            schema: {
+              type: 'object',
+              properties: {
+                demo: {
+                  type: 'void',
+                  'x-component': 'DemoFlowSettingsLazyField',
+                },
+              },
+            },
+            components: flowSettings.components,
+          }),
+        ),
+      );
+
+      expect(await screen.findByText('Lazy Flow Settings Component')).toBeInTheDocument();
+      expect(loader).toHaveBeenCalledTimes(1);
     });
   });
 

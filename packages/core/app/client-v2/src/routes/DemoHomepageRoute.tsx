@@ -14,9 +14,15 @@ import { useNavigate } from 'react-router-dom';
 export default function DemoHomepageRoute() {
   const navigate = useNavigate();
   return (
-    <div>
-      Demo Homepage Route
-      <Button onClick={() => navigate('/demo/app-info')}>Go to demo route</Button>
-    </div>
+    <>
+      <div>
+        Demo Homepage Route
+        <Button onClick={() => navigate('/demo/app-info')}>Go to demo route</Button>
+      </div>
+      <div>
+        Demo flow settings page
+        <Button onClick={() => navigate('/demo/flow-settings-component-loader')}>Go to demo route</Button>
+      </div>
+    </>
   );
 }
