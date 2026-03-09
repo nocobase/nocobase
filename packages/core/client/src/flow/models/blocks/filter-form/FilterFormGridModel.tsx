@@ -46,6 +46,16 @@ export class FilterFormGridModel extends GridModel {
   private hiddenRows: any = {};
   readonly loading = observable.ref(false);
 
+  private getAssociationFilterTargetKey(field: any) {
+    const filterTargetKey = field?.targetCollection?.filterTargetKey;
+
+    if (Array.isArray(filterTargetKey)) {
+      return filterTargetKey[0] || 'id';
+    }
+
+    return filterTargetKey || 'id';
+  }
+
   toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
     const gridRows = this.props.rows || {};
 
@@ -116,7 +126,7 @@ export class FilterFormGridModel extends GridModel {
           if (field?.target) {
             return {
               targetId: model.uid,
-              filterPaths: [`${fieldPath}.${field.targetCollection?.filterTargetKey || 'id'}`],
+              filterPaths: [`${fieldPath}.${this.getAssociationFilterTargetKey(field)}`],
             };
           }
         }
