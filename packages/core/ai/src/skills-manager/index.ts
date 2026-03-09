@@ -42,10 +42,10 @@ export class DefaultSkillsManager implements SkillsManager {
   }
 
   async registerSkills(options: SkillsOptions): Promise<void> {
-    if (!this.aiSkillsModel) {
-      return this.registerSkillsInMemory(options);
-    } else {
+    if (await this.isAISkillsCollectionSync()) {
       return this.registerSkillsInDatabase(options);
+    } else {
+      return this.registerSkillsInMemory(options);
     }
   }
 
@@ -104,8 +104,16 @@ export class DefaultSkillsManager implements SkillsManager {
     });
   }
 
+  private async isAISkillsCollectionSync() {
+    return this.aiSkillsCollection?.existsInDb() ?? Promise.resolve(false);
+  }
+
+  private get aiSkillsCollection() {
+    return this.collectionManager.getCollection('aiSkills');
+  }
+
   private get aiSkillsModel() {
-    return this.collectionManager.getCollection('aiSkills')?.model;
+    return this.aiSkillsCollection?.model;
   }
 
   private get sequelize() {

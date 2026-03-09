@@ -75,6 +75,12 @@ export class PluginAIServer extends Plugin {
       },
     });
     this.snowflake = new Snowflake(pluginRecord?.createdAt.getTime());
+    this.app.on('afterInstall', async () => {
+      await this.ai.skillsManager.persistence();
+    });
+    this.app.on('afterLoad', async () => {
+      await this.ai.skillsManager.persistence();
+    });
   }
 
   async load() {
@@ -85,7 +91,6 @@ export class PluginAIServer extends Plugin {
     this.setPermissions();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
-    await this.ai.skillsManager.persistence();
   }
 
   async setupBuiltIn() {
