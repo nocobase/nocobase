@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, observable, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import React from 'react';
 import { CollectionBlockModel, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
@@ -116,7 +116,7 @@ export class FilterFormGridModel extends GridModel {
           if (field?.target) {
             return {
               targetId: model.uid,
-              filterPaths: [`${fieldPath}.${field.targetKey}`],
+              filterPaths: [`${fieldPath}.${field.targetCollection?.filterTargetKey || 'id'}`],
             };
           }
         }
