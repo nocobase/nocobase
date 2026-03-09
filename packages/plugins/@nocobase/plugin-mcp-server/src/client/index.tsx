@@ -7,8 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './document-manager';
-export * from './mcp-tools-manager';
-export * from './tools-manager';
-export * from './loader';
+export { default } from './plugin';

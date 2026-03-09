@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-mcp-server",
+  "version": "2.0.12",
+  "main": "dist/server/index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "openapi-mcp-generator": "^3.3.0",
+    "light-my-request": "^6.6.0"
+  },
+  "peerDependencies": {
+    "@nocobase/ai": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

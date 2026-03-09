@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './document-manager';
-export * from './mcp-tools-manager';
-export * from './tools-manager';
-export * from './loader';
+import { Plugin } from '@nocobase/client';
+import models from './models';
+
+export class PluginMcpServerClient extends Plugin {
+  async load() {
+    this.flowEngine.registerModels(models);
+  }
+}
+
+export default PluginMcpServerClient;
