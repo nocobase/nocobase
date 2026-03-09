@@ -288,7 +288,8 @@ ClickableFieldModel.registerFlow({
         };
       },
       hideInSettings: (ctx) => {
-        if (ctx.model.props.displayStyle !== 'tag') {
+        const currentDisplayStyle = ctx.getStepParams?.('displayStyle')?.displayStyle ?? ctx.model.props.displayStyle;
+        if (currentDisplayStyle !== 'tag') {
           return true;
         }
         const targetCollection = ctx.collectionField?.targetCollection;
