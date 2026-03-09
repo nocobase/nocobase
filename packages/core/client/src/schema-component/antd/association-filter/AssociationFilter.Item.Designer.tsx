@@ -100,7 +100,7 @@ export const AssociationFilterItemDesigner = (props) => {
         }}
       />
       <SchemaSettingsSwitchItem
-        title={t('Default collapse')}
+        title={t('Default expanded')}
         checked={field.componentProps.defaultCollapse}
         onChange={(v) => {
           field.componentProps.defaultCollapse = v;
