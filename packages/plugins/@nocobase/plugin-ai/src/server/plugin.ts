@@ -47,6 +47,12 @@ import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
+  declare app: any;
+  declare db: any;
+  declare log: any;
+  declare name: string;
+  declare ai: any;
+
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
@@ -77,9 +83,11 @@ export class PluginAIServer extends Plugin {
     this.snowflake = new Snowflake(pluginRecord?.createdAt.getTime());
     this.app.on('afterInstall', async () => {
       await this.ai.skillsManager.persistence();
+      await this.ai.employeeManager.persistence();
     });
     this.app.on('afterLoad', async () => {
       await this.ai.skillsManager.persistence();
+      await this.ai.employeeManager.persistence();
     });
   }
 
