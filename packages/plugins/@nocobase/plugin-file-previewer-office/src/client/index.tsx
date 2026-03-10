@@ -106,23 +106,18 @@ function OfficeModalPreviewer({ index, list, onSwitchIndex }) {
     >
       <div
         style={{
-          maxWidth: '100%',
-          maxHeight: 'calc(100vh - 256px)',
-          height: '100%',
           width: '100%',
+          height: 'calc(85vh - 120px)',
           background: 'white',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          overflowY: 'auto',
         }}
       >
         <iframe
           src={url}
           style={{
             width: '100%',
-            maxHeight: '100%',
+            height: '100%',
             flex: '1 1 auto',
             border: 'none',
           }}
