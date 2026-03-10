@@ -67,7 +67,7 @@ jobs:
           echo "PKG_SRC_NOCOBASE_TOKEN=$token2" >> $GITHUB_ENV
       - name: pnpm install and build
         run: |
-          yarn config set registry https://registry.npmjs.org/
+          pnpm config set registry https://registry.npmjs.org/
           pnpm install
           pnpm build
       - name: publish npmjs.org
@@ -82,11 +82,11 @@ jobs:
           npm config set access public
           npm config set registry https://registry.npmjs.org/
           npm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
-          yarn config set access public
-          yarn config set registry https://registry.npmjs.org/
-          yarn config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
+          pnpm config set access public
+          pnpm config set registry https://registry.npmjs.org/
+          pnpm config set //registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}
           npm whoami
-          yarn release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=${{ steps.get-info.outputs.defaultTag }}
+          pnpm release:force --no-verify-access --no-git-reset --registry https://registry.npmjs.org/ --dist-tag=${{ steps.get-info.outputs.defaultTag }}
       - name: Checkout pro-plugins
         uses: actions/checkout@v3
         with:
@@ -103,20 +103,20 @@ jobs:
           done
       - name: Build Pro plugins
         run: |
-          yarn config set registry https://registry.npmjs.org/
+          pnpm config set registry https://registry.npmjs.org/
           pnpm install
           pnpm build packages/pro-plugins
       - name: publish pkg.nocobase.com
         run: |
           git reset --hard
           npm config set //pkg.nocobase.com/:_authToken=${{ env.PKG_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
+          pnpm release:force --no-verify-access --no-git-reset --registry https://pkg.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
       - name: publish pkg-src.nocobase.com
         run: |
           git reset --hard
           bash generate-npmignore.sh ignore-src
           npm config set //pkg-src.nocobase.com/:_authToken=${{ env.PKG_SRC_NOCOBASE_TOKEN }}
-          yarn release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
+          pnpm release:force --no-verify-access --no-git-reset --registry https://pkg-src.nocobase.com --dist-tag=${{ steps.get-info.outputs.defaultTag }}
   push-docker:
     runs-on: ubuntu-latest
     needs:

@@ -76,7 +76,7 @@ jobs:
           echo "packages/pro-plugins" >> .git/info/exclude
       - name: pnpm install and build
         run: |
-          yarn config set registry https://registry.npmjs.org/
+          pnpm config set registry https://registry.npmjs.org/
           pnpm install
           pnpm build
       - name: Install Lerna

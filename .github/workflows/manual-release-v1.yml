@@ -178,7 +178,7 @@ jobs:
       - name: pnpm install and build
         if: ${{ !inputs.dry_run }}
         run: |
-          yarn config set registry https://registry.npmjs.org/
+          pnpm config set registry https://registry.npmjs.org/
           pnpm install
           pnpm build
 

@@ -48,16 +48,16 @@ jobs:
         with:
           node-version: '20'
 
-      - run: yarn config set network-timeout 600000 -g
+      - run: pnpm config set network-timeout 600000 -g
 
       - name: Get pnpm store directory path
-        id: yarn-cache-dir-path
+        id: pnpm-cache-dir-path
         run: echo "::set-output name=dir::$(pnpm store path)"
 
       - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+        id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
