@@ -608,47 +608,20 @@ const MenuItemTitle: React.FC = (props) => {
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
-  const shouldPatchMobileLevelOneIcon = options?.isMobile && item?._depth === 1 && item?._route?.icon;
-  const patchedDom = shouldPatchMobileLevelOneIcon ? (
-    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-      <Icon type={item._route.icon} />
-      <span>{dom}</span>
-    </span>
-  ) : (
-    dom
-  );
-
   return (
     <VariableScope scopeId={item._route.schemaUid} type="menuItem">
       <MenuItem item={item} options={options}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{patchedDom}</MenuItemTitleWithTooltip>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
       </MenuItem>
     </VariableScope>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
-  const patchedDom = (
-    <RouteContext.Consumer>
-      {(context) => {
-        const shouldPatchMobileLevelOneIcon = context?.isMobile && item?._depth === 1 && item?._route?.icon;
-        if (!shouldPatchMobileLevelOneIcon) {
-          return dom;
-        }
-        return (
-          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <Icon type={item._route.icon} />
-            <span>{dom}</span>
-          </span>
-        );
-      }}
-    </RouteContext.Consumer>
-  );
-
   return (
     <VariableScope scopeId={item._route.schemaUid} type="groupItem">
       <GroupItem item={item}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{patchedDom}</MenuItemTitleWithTooltip>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
       </GroupItem>
     </VariableScope>
   );
@@ -1149,7 +1122,7 @@ function convertRoutesToLayout(
       if (item.type === NocoBaseDesktopRouteType.group) {
         const itemChildren = Array.isArray(item.children) ? item.children : [];
         const children =
-          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, t }) || [];
+          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) || [];
 
         // add a designer button
         if (designable && depth === 0) {
