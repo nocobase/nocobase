@@ -1,7 +1,7 @@
 {
   "name": "@nocobase-example/plugin-acl-middleware",
   "private": true,
-  "version": "2.0.11",
+  "version": "2.0.12",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {

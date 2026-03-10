@@ -25,6 +25,7 @@ import { submitHandler } from './submitHandler';
 // CreateFormModel - 专门用于新增记录
 export class CreateFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.new;
+  static blockCapabilityActionName = 'create';
 
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [
