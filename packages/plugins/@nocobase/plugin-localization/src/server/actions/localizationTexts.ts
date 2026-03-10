@@ -13,7 +13,7 @@ import { Database, Model, Op } from '@nocobase/database';
 import { PluginManager } from '@nocobase/server';
 import PluginLocalizationServer from '../plugin';
 
-const appendTranslations = async (db: Database, rows: Model[], locale: string): Promise<any[]> => {
+const appendTranslations = async (db: any, rows: any[], locale: string): Promise<any[]> => {
   const texts = rows || [];
   const textIds = texts.map((text: any) => text.id);
   const textMp = texts.reduce((memo: any, text: any) => {
@@ -27,7 +27,7 @@ const appendTranslations = async (db: Database, rows: Model[], locale: string): 
       textId: textIds,
     },
   });
-  translations.forEach((translation: Model) => {
+  translations.forEach((translation: any) => {
     const text = textMp[translation.textId];
     if (text) {
       text.set('translation', translation.translation, { raw: true });
@@ -38,7 +38,7 @@ const appendTranslations = async (db: Database, rows: Model[], locale: string): 
   return Object.values(textMp);
 };
 
-const listText = async (db: Database, params: any): Promise<[any[], number]> => {
+const listText = async (db: any, params: any): Promise<[any[], number]> => {
   const { module, keyword, hasTranslation, locale, options } = params;
   if (module) {
     options['filter'] = { module: `resources.${module}` };

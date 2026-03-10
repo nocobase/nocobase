@@ -62,7 +62,7 @@ export const lintAndTestJSTool: [string, ToolsOptions] = [
     async invoke(app, { code }) {
       let ctx: FlowContext = this.flowContext;
       if (!ctx) {
-        ctx = app.flowEngine?.context;
+        ctx = app.flowEngine?.context as any;
       }
       if (!ctx?.previewRunJS) {
         return {

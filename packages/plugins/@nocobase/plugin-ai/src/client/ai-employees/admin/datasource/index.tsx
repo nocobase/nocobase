@@ -15,8 +15,8 @@ import { DatasourceSettingModel } from './flow-models';
 export const DatasourceSettingPage: React.FC = () => {
   const app = useApp();
   const model = app.flowEngine.createModel({
-    use: DatasourceSettingModel,
+    use: DatasourceSettingModel as any,
   });
 
-  return <FlowModelRenderer model={model} />;
+  return <FlowModelRenderer model={model as any} />;
 };

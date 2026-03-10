@@ -13,7 +13,7 @@ import lodash from 'lodash';
 import FlowModelRepository, { GetJsonSchemaOptions, GetPropertiesOptions } from '../repository';
 
 const getRepositoryFromCtx = (ctx: Context) => {
-  const repo = ctx.db.getCollection('flowModels').repository as FlowModelRepository;
+  const repo = ctx.db.getCollection('flowModels').repository as any as FlowModelRepository;
   repo.setCache(ctx.cache);
   return repo;
 };

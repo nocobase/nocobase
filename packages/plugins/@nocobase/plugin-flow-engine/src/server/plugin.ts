@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Database } from '@nocobase/database';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
@@ -25,13 +26,13 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     await super.beforeLoad();
   }
 
-  getDatabaseByDataSourceKey(dataSourceKey = 'main') {
+  getDatabaseByDataSourceKey(dataSourceKey = 'main'): Database {
     const dataSource = this.app.dataSourceManager.get(dataSourceKey);
     const cm = dataSource.collectionManager as SequelizeCollectionManager;
     if (!cm.db) {
       throw new Error('no db');
     }
-    return cm.db;
+    return cm.db as any;
   }
 
   async load() {

@@ -15,7 +15,7 @@ import { contextAware } from '../../stores/context-aware';
 import { FlowRuntimeContext } from '@nocobase/flow-engine';
 import { dialogController } from '../../stores/dialog-controller';
 
-const getAwareModels = (ctx: FlowRuntimeContext<any>, model: AIEmployeeShortcutListModel) => {
+const getAwareModels = (ctx: any, model: AIEmployeeShortcutListModel) => {
   if (!model) {
     return [];
   }
@@ -44,7 +44,7 @@ BlockModel.registerFlow({
     aiOnSelect: {
       handler(ctx, params) {
         const { className, onClick, onMouseEnter, onMouseLeave } = ctx.model.decoratorProps;
-        const model = ctx.engine.getModel(`ai-shortcuts-${ctx.route.params.name}`) as AIEmployeeShortcutListModel;
+        const model = ctx.engine.getModel(`ai-shortcuts-${ctx.route.params.name}`) as any as AIEmployeeShortcutListModel;
         ctx.model.setDecoratorProps({
           className: classNames('ai-selectable', className),
           ['data-uid']: ctx.model.uid,

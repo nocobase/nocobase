@@ -40,11 +40,11 @@ const sync = async (ctx: Context, next: Next) => {
       transaction: t,
     });
     const translationValues = texts
-      .filter((text: Model) => {
+      .filter((text: any) => {
         const module = text.module.replace('resources.', '');
         return resources[module]?.[text.text];
       })
-      .map((text: Model) => {
+      .map((text: any) => {
         const module = text.module.replace('resources.', '');
         return {
           locale,

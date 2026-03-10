@@ -23,7 +23,9 @@ import WorkflowPlugin, {
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
-interface Context extends ActionContext, DefaultContext {}
+interface Context extends ActionContext {
+  [key: string]: any;
+}
 
 class RequestOnActionTriggerError extends Error {
   status = 400;
