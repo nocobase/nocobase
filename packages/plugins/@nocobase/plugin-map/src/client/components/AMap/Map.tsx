@@ -19,6 +19,7 @@ import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, us
 import { useMapConfiguration, useMapConfig } from '../../hooks';
 import { useMapTranslation } from '../../locale';
 import { MapEditorType } from '../../types';
+import { normalizeErrorMessage, runIdleTask } from '../../utils';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -68,32 +69,6 @@ const methodMapping = {
   },
 };
 
-const runIdleTask = (callback: () => void) => {
-  if (window.requestIdleCallback) {
-    window.requestIdleCallback(() => {
-      callback();
-    });
-    return;
-  }
-  window.setTimeout(callback, 1);
-};
-
-const normalizeErrorMessage = (error: unknown, fallbackMessage: string) => {
-  if (typeof error === 'string') {
-    return error;
-  }
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-  if (error && typeof error === 'object' && 'message' in error) {
-    const { message } = error as { message?: unknown };
-    if (typeof message === 'string' && message) {
-      return message;
-    }
-  }
-  return fallbackMessage;
-};
-
 export interface AMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
   getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
@@ -127,6 +102,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
+  const defaultErrorMessage = 'Something went wrong, please refresh the page and try again';
   const { getField } = useCollection_deprecated();
   const type = useMemo<MapEditorType>(() => {
     if (props.type) return props.type;
@@ -364,8 +340,8 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     (window as any).define = undefined;
 
     if (window.AMap) {
-      try {
-        runIdleTask(() => {
+      runIdleTask(() => {
+        try {
           map.current = new AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -373,11 +349,13 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
           aMap.current = AMap;
           setErrMessage('');
           forceUpdate([]);
-        });
-        return;
-      } catch (err) {
-        setErrMessage(normalizeErrorMessage(err, 'Something went wrong, please refresh the page and try again'));
-      }
+        } catch (err) {
+          setErrMessage(normalizeErrorMessage(err, defaultErrorMessage));
+        } finally {
+          (window as any).define = _define;
+        }
+      });
+      return;
     }
 
     AMapLoader.load({
@@ -388,23 +366,28 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       .then((amap) => {
         (window as any).define = _define;
         return runIdleTask(() => {
-          map.current = new amap.Map(id.current, {
-            resizeEnable: true,
-            zoom,
-          } as AMap.MapOptions);
-          aMap.current = amap;
-          setErrMessage('');
-          forceUpdate([]);
+          try {
+            map.current = new amap.Map(id.current, {
+              resizeEnable: true,
+              zoom,
+            } as AMap.MapOptions);
+            aMap.current = amap;
+            setErrMessage('');
+            forceUpdate([]);
+          } catch (err) {
+            setErrMessage(normalizeErrorMessage(err, defaultErrorMessage));
+          }
         });
       })
       .catch((err) => {
-        const errorMessage = normalizeErrorMessage(err, 'Something went wrong, please refresh the page and try again');
+        (window as any).define = _define;
+        const errorMessage = normalizeErrorMessage(err, defaultErrorMessage);
         if (errorMessage.includes('多个不一致的 key')) {
           setErrMessage(t('The AccessKey is incorrect, please check it'));
           return;
         }
         if (err && typeof err === 'object' && 'type' in err && err.type === 'error') {
-          setErrMessage('Something went wrong, please refresh the page and try again');
+          setErrMessage(defaultErrorMessage);
         } else {
           setErrMessage(errorMessage);
         }
