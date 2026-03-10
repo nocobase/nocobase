@@ -68,6 +68,32 @@ const methodMapping = {
   },
 };
 
+const runIdleTask = (callback: () => void) => {
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => {
+      callback();
+    });
+    return;
+  }
+  window.setTimeout(callback, 1);
+};
+
+const normalizeErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const { message } = error as { message?: unknown };
+    if (typeof message === 'string' && message) {
+      return message;
+    }
+  }
+  return fallbackMessage;
+};
+
 export interface AMapForwardedRefProps {
   setOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
   getOverlay: (t: MapEditorType, v: any, o?: AMap.PolylineOptions & AMap.PolygonOptions & AMap.MarkerOptions) => any;
@@ -339,7 +365,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
     if (window.AMap) {
       try {
-        requestIdleCallback(() => {
+        runIdleTask(() => {
           map.current = new AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -350,7 +376,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
         });
         return;
       } catch (err) {
-        setErrMessage(err);
+        setErrMessage(normalizeErrorMessage(err, 'Something went wrong, please refresh the page and try again'));
       }
     }
 
@@ -361,7 +387,7 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     })
       .then((amap) => {
         (window as any).define = _define;
-        return requestIdleCallback(() => {
+        return runIdleTask(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -372,14 +398,15 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
         });
       })
       .catch((err) => {
-        if (typeof err === 'string') {
-          if (err.includes('多个不一致的 key')) {
-            setErrMessage(t('The AccessKey is incorrect, please check it'));
-          } else {
-            setErrMessage(err);
-          }
-        } else if (err?.type === 'error') {
+        const errorMessage = normalizeErrorMessage(err, 'Something went wrong, please refresh the page and try again');
+        if (errorMessage.includes('多个不一致的 key')) {
+          setErrMessage(t('The AccessKey is incorrect, please check it'));
+          return;
+        }
+        if (err && typeof err === 'object' && 'type' in err && err.type === 'error') {
           setErrMessage('Something went wrong, please refresh the page and try again');
+        } else {
+          setErrMessage(errorMessage);
         }
       });
 
