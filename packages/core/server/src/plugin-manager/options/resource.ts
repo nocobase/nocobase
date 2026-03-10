@@ -16,6 +16,8 @@ import Application from '../../application';
 import PluginManager from '../plugin-manager';
 import crypto from 'crypto';
 
+import packageJson from '../../../package.json';
+
 class PackageUrls {
   static items = {};
   static async get(packageName: string) {
@@ -44,9 +46,10 @@ class PackageUrls {
         } catch (error) {
           // Ignore errors reading package.json and fall back to empty version
         }
+        const appVersion = packageJson.version;
         const hash = crypto
           .createHash('sha256')
-          .update(fsState.mtime.getTime() + appKey + version)
+          .update(fsState.mtime.getTime() + appKey + version + appVersion)
           .digest('hex')
           .slice(0, 8);
         t = `?hash=${hash}`;
