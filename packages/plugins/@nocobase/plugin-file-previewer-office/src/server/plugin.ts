@@ -20,6 +20,8 @@ export class PluginFilePreviewerOfficeServer extends Plugin {
     Object.values(collections).forEach((collection: any) => {
       this.db.collection(collection);
     });
+
+    this.app.acl.allow('filePreviewer', 'list');
   }
 
   async install() {

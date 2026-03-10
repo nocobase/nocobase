@@ -353,6 +353,7 @@ export class PluginFilePreviewerOfficeClient extends Plugin {
       const response = await this.app.apiClient.request({
         resource: 'filePreviewer',
         action: 'list',
+        skipNotify: true,
       });
       if (response?.data?.data?.[0]) {
         updatePreviewConfig(response.data.data[0]);
@@ -480,6 +481,7 @@ function V2FilePreviewProvider({ app, children }) {
       .request({
         resource: 'filePreviewer',
         action: 'list',
+        skipNotify: true,
       })
       .then((res) => {
         // console.log('[V2FilePreviewer-Init] Config loaded:', res?.data?.data?.[0]);

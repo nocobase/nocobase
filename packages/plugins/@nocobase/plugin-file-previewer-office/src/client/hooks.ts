@@ -23,6 +23,7 @@ export const useFilePreviewerConfig = () => {
     {
       resource: 'filePreviewer',
       action: 'list',
+      skipNotify: true,
     },
     {
       cacheTime: 300000, // 5 minutes cache
