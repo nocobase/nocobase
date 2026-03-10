@@ -32,6 +32,18 @@ class MockFormBlockModel extends FlowModel {
 
 class PassiveBlockModel extends FlowModel {}
 
+class ThrowingCollectionBlockModel extends FlowModel {
+  onInit(options: any) {
+    super.onInit(options);
+    this.context.defineProperty('collection', {
+      cache: false,
+      get: () => {
+        throw new Error('target collection getter failed');
+      },
+    });
+  }
+}
+
 class DetailsBlockModel extends FlowModel {}
 class EditFormModel extends FlowModel {}
 
@@ -137,6 +149,7 @@ describe('ReferenceBlockModel', () => {
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
       PassiveBlockModel,
+      ThrowingCollectionBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -145,6 +158,7 @@ describe('ReferenceBlockModel', () => {
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
       PassiveBlockModel,
+      ThrowingCollectionBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -325,6 +339,43 @@ describe('ReferenceBlockModel', () => {
         expect(target).toBeTruthy();
         expect(() => target.context.collection).not.toThrow();
         expect(target.context.collection).toBe(hostCollection);
+        expect(referenceBlockModel.context.collection).toBe(hostCollection);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should fallback to host collection when target own collection getter throws',
+      async () => {
+        store['target-with-throwing-collection-context'] = {
+          uid: 'target-with-throwing-collection-context',
+          use: 'ThrowingCollectionBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid-throwing-context',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-with-throwing-collection-context',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        expect(() => referenceBlockModel.context.collection).not.toThrow();
         expect(referenceBlockModel.context.collection).toBe(hostCollection);
       },
       TEST_TIMEOUT,

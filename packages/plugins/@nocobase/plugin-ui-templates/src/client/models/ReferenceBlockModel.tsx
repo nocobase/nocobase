@@ -253,20 +253,15 @@ export class ReferenceBlockModel extends BlockModel {
     const contextKeys = ['collection', 'dataSource', 'resource', 'association', 'resourceName'] as const;
     type ContextKey = (typeof contextKeys)[number];
     const getTargetOwnContextValue = (key: ContextKey) => {
-      const targetContext = this._targetModel?.context as any;
-      if (!targetContext) {
-        return TARGET_OWN_CONTEXT_MISSING;
-      }
-
-      const ownProps = targetContext?._props;
-      if (!ownProps || !Object.prototype.hasOwnProperty.call(ownProps, key)) {
+      const targetContext = this._targetModel?.context as FlowContext | undefined;
+      if (!targetContext || !targetContext.has(key)) {
         return TARGET_OWN_CONTEXT_MISSING;
       }
 
       try {
-        return targetContext._getOwnProperty(key, targetContext.createProxy?.() || targetContext);
+        return (targetContext as any)._getOwnProperty(key, (targetContext as any).createProxy?.() || targetContext);
       } catch (_) {
-        return undefined;
+        return TARGET_OWN_CONTEXT_MISSING;
       }
     };
     contextKeys.forEach((key: ContextKey) => {
