@@ -207,13 +207,6 @@ export class ReferenceBlockModel extends BlockModel {
       } else {
         currentResource.removeRequestParameter?.('filterByTk');
       }
-      if (currentResource instanceof MultiRecordResource) {
-        currentResource.setPageSize?.(1);
-        currentResource.setPage?.(1);
-      }
-      if (currentResource instanceof SingleRecordResource) {
-        currentResource.isNewRecord = false;
-      }
     }
 
     if (currentAppends.length) {
