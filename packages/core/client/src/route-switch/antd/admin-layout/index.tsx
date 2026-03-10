@@ -11,7 +11,7 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Grid, Popover, Result, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -608,20 +608,47 @@ const MenuItemTitle: React.FC = (props) => {
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
 const menuItemRender = (item, dom, options) => {
+  const shouldPatchMobileLevelOneIcon = options?.isMobile && item?._depth === 1 && item?._route?.icon;
+  const patchedDom = shouldPatchMobileLevelOneIcon ? (
+    <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+      <Icon type={item._route.icon} />
+      <span>{dom}</span>
+    </span>
+  ) : (
+    dom
+  );
+
   return (
     <VariableScope scopeId={item._route.schemaUid} type="menuItem">
       <MenuItem item={item} options={options}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{patchedDom}</MenuItemTitleWithTooltip>
       </MenuItem>
     </VariableScope>
   );
 };
 
 const subMenuItemRender = (item, dom) => {
+  const patchedDom = (
+    <RouteContext.Consumer>
+      {(context) => {
+        const shouldPatchMobileLevelOneIcon = context?.isMobile && item?._depth === 1 && item?._route?.icon;
+        if (!shouldPatchMobileLevelOneIcon) {
+          return dom;
+        }
+        return (
+          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <Icon type={item._route.icon} />
+            <span>{dom}</span>
+          </span>
+        );
+      }}
+    </RouteContext.Consumer>
+  );
+
   return (
     <VariableScope scopeId={item._route.schemaUid} type="groupItem">
       <GroupItem item={item}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
+        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{patchedDom}</MenuItemTitleWithTooltip>
       </GroupItem>
     </VariableScope>
   );
@@ -749,24 +776,28 @@ const GlobalStyle = () => {
 export const InternalAdminLayout = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
+  const screens = Grid.useBreakpoint();
+  const isMobileViewport =
+    screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const { isMobileLayout } = useMobileLayout();
-  const [collapsed, setCollapsed] = useState(isMobileLayout);
+  const isMobileSider = isMobileLayout || isMobileViewport;
+  const [collapsed, setCollapsed] = useState(isMobileSider);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
-  const designable = isMobileLayout ? false : _designable;
+  const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
-    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t });
+    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileSider, t });
     return {
       path: '/',
       children: Array.isArray(children) ? children : [],
     };
-  }, [allAccessRoutes, designable, isMobileLayout, t]);
+  }, [allAccessRoutes, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -827,11 +858,11 @@ export const InternalAdminLayout = (props) => {
   }, [styles.headerPopup]);
 
   const closeMobileMenu = useCallback(() => {
-    if (!isMobileLayout) {
+    if (!isMobileSider) {
       return;
     }
     setCollapsed(true);
-  }, [isMobileLayout]);
+  }, [isMobileSider]);
 
   return (
     <div style={rootStyle}>
@@ -1044,6 +1075,11 @@ const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
   return <>{props.title}</>;
 };
 
+export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; isMobile: boolean }) => {
+  // ProLayout 在深层菜单和移动端侧栏一级菜单里都可能忽略 icon 字段，因此统一把图标渲染到标题内部。
+  return depth > 1 || (isMobile && depth > 0);
+};
+
 function convertRoutesToLayout(
   routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
@@ -1068,40 +1104,45 @@ function convertRoutesToLayout(
         return null;
       }
 
-      const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
+      const shouldShowIconInTitle = shouldRenderIconInTitle({ depth, isMobile });
+      const name = shouldShowIconInTitle ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title);
+      const icon = shouldShowIconInTitle ? null : item.icon ? <Icon type={item.icon} /> : null;
 
       if (item.type === NocoBaseDesktopRouteType.link) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: '/',
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.page) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.schemaUid}`,
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.flowPage) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.schemaUid}`,
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
@@ -1117,7 +1158,7 @@ function convertRoutesToLayout(
 
         const groupRoute: any = {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.id}`,
           redirect:
             children[0]?.key === 'x-designer-button'
