@@ -64,7 +64,7 @@ jobs:
       - name: Install project dependencies
         run: |
           pnpm install
-          pnpm add sqlite3 --no-save -W
+          pnpm add sqlite3 -w
       - name: Test with Sqlite
         run: pnpm test --server --single-thread=false
         env:
