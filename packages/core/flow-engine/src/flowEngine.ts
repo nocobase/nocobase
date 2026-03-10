@@ -433,6 +433,17 @@ export class FlowEngine {
   }
 
   /**
+   * for proxy instance, the #registerModel can't be called.
+   */
+  private _registerModel(name: string, modelClass: ModelConstructor): void {
+    if (this._modelClasses.has(name)) {
+      console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
+    }
+    Object.defineProperty(modelClass, 'name', { value: name });
+    this._modelClasses.set(name, modelClass);
+  }
+
+  /**
    * Register multiple model classes.
    * @param {Record<string, ModelConstructor>} models Model class map, key is model name, value is model constructor
    * @returns {void}
@@ -582,7 +593,8 @@ export class FlowEngine {
         if (!modelClass) {
           return null;
         }
-        this.#registerModel(name, modelClass);
+        // 这里拿到的 this 是 Proxy(FlowEngine) 而不是原始的 FlowEngine，无法直接调用 #registerModel
+        this._registerModel(name, modelClass);
         return modelClass;
       } catch (error) {
         console.warn(`FlowEngine: Failed to load model '${name}'. Falling back to ErrorFlowModel when needed.`, error);
