@@ -984,6 +984,9 @@ export class FlowEngine {
       model = this.createModel<T>(data as any, extra);
     } else {
       model = this.createModel<T>(options, extra);
+      if (!model.context.flowSettingsEnabled) {
+        return model;
+      }
       await model.save();
     }
     if (model.parent) {
