@@ -18,10 +18,12 @@ jobs:
     needs: get-plugins
     runs-on: ubuntu-latest
     steps:
+      - uses: pnpm/action-setup@v4
       - name: Set Node.js 20
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: 'pnpm'
       - name: Get info
         id: get-info
         shell: bash
