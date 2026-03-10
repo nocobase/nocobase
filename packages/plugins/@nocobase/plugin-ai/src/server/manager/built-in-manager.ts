@@ -8,7 +8,7 @@
  */
 
 import PluginAIServer from '../plugin';
-import dataModeling from '../ai-employees/built-in/data-modeling';
+// import dataModeling from '../ai-employees/_recycling/data-modeling';
 import aiCoding from '../ai-employees/built-in/ai-coding';
 import dataOrganizer from '../ai-employees/built-in/data-organizer';
 import insightsAnalyst from '../ai-employees/built-in/insights-analyst';
@@ -19,6 +19,9 @@ import emailAssistant from '../ai-employees/built-in/email-assistant';
 import dataVisualization from '../ai-employees/built-in/data-visualization';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
+import { Context } from '@nocobase/actions';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_KNOWLEDGE_BASE = {
@@ -31,7 +34,7 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
 
 export class BuiltInManager {
   private builtInEmployees = [
-    dataModeling,
+    // dataModeling,
     aiCoding,
     dataOrganizer,
     insightsAnalyst,
@@ -45,12 +48,18 @@ export class BuiltInManager {
 
   constructor(protected plugin: PluginAIServer) {}
 
-  setupBuiltInInfo(locale: string, aiEmployee: AIEmployee) {
+  setupBuiltInInfo(ctx: Context, locale: string, aiEmployee: AIEmployee) {
     if (!aiEmployee) {
       return;
     }
     const builtInEmployeeInfo = this.builtInEmployeeMap[aiEmployee.username];
     if (!builtInEmployeeInfo) {
+      if (aiEmployee.builtIn) {
+        aiEmployee.nickname = ctx.t(aiEmployee.nickname, { ns: pkg.name });
+        aiEmployee.position = ctx.t(aiEmployee.position, { ns: pkg.name });
+        aiEmployee.bio = ctx.t(aiEmployee.bio, { ns: pkg.name });
+        aiEmployee.greeting = ctx.t(aiEmployee.greeting, { ns: pkg.name });
+      }
       return;
     }
     const { profile } = builtInEmployeeInfo;

@@ -22,7 +22,7 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
   "From knowledge base:\n{knowledgeBaseData}\nanswer user's question using this information.";
 
 export class DefaultAIEmployeeManager implements AIEmployeeManager {
-  private readonly employees = new Registry<AIEmployeeEntry>();
+  private readonly employees = new Registry<AIEmployeeOptions>();
 
   constructor(private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager }) {}
 

@@ -8,7 +8,6 @@
  */
 
 import { Model, Op, Transaction } from '@nocobase/database';
-import { Context } from '@nocobase/actions';
 import { LLMProvider, ToolDefinition } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import PluginAIServer from '../plugin';
@@ -37,6 +36,7 @@ import { concat } from '@langchain/core/utils/stream';
 import { convertAIMessage } from './utils';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
+import { Context } from '@nocobase/actions';
 
 export interface ModelRef {
   llmService: string;
@@ -80,7 +80,7 @@ export class AIEmployee {
 
     const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
-    builtInManager.setupBuiltInInfo(locale, this.employee as unknown as AIEmployeeType);
+    builtInManager.setupBuiltInInfo(ctx, locale, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
     this.protocol = ChatStreamProtocol.create(ctx);
   }

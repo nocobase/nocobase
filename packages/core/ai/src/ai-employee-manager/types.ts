@@ -31,7 +31,7 @@ export type AIEmployeeOptions = {
   username: string;
   description?: string;
   skills?: string[];
-  tools: AIEmployeeToolSetting[];
+  tools?: AIEmployeeToolSetting[];
   avatar?: string;
   nickname?: string;
   position?: string;
