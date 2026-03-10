@@ -273,7 +273,7 @@ exports.generatePlugins = function () {
     .split(',')
     .map((item) => path.join(process.cwd(), item));
 
-  const outputPluginPath = path.join(process.env.APP_PACKAGE_ROOT, 'client', 'src', '.plugins');
+  const outputPluginPath = path.join(process.env.APP_PACKAGE_ROOT, 'client', 'src', 'plugins');
   const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
   indexGenerator.generate();
 };
