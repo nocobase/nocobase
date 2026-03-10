@@ -9,7 +9,14 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, FlowContext, FlowModel, type FlowEngine } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowContext,
+  MultiRecordResource,
+  SingleRecordResource,
+  type FlowEngine,
+  type FlowModel,
+} from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -147,12 +154,7 @@ export class ReferenceBlockModel extends BlockModel {
     if (!original) return;
     (target as any).getStepParams = original;
     delete (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS];
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
-    }
-    this._syncTargetResourceAppends(target);
+    this._refreshTargetResourceState(target);
   }
 
   private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
@@ -173,6 +175,52 @@ export class ReferenceBlockModel extends BlockModel {
     return !!dataSourceMismatch;
   }
 
+  private _refreshTargetResourceState(target?: FlowModel) {
+    if (!target) return;
+    const init = (target.getStepParams?.('resourceSettings', 'init') || {}) as Record<string, any>;
+    const associationType = (target as any)?.association?.type;
+    const shouldUseSingle =
+      associationType === 'hasOne' || associationType === 'belongsTo' || Object.keys(init).includes('filterByTk');
+    const currentResource = target.context?.resource as any;
+    const currentAppends = currentResource?.getAppends?.() || [];
+    const shouldRecreate =
+      !currentResource ||
+      (shouldUseSingle && !(currentResource instanceof SingleRecordResource)) ||
+      (!shouldUseSingle && !(currentResource instanceof MultiRecordResource));
+
+    if (shouldRecreate) {
+      try {
+        target.context?.removeCache?.('resource');
+      } catch (_) {
+        // ignore
+      }
+    } else {
+      currentResource.setDataSourceKey?.(init.dataSourceKey);
+      currentResource.setResourceName?.(init.associationName || init.collectionName);
+      if (Object.prototype.hasOwnProperty.call(init, 'sourceId')) {
+        currentResource.setSourceId?.(init.sourceId);
+      } else if ('sourceId' in currentResource) {
+        currentResource.sourceId = null;
+      }
+      if (Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+        currentResource.setFilterByTk?.(init.filterByTk);
+      } else {
+        currentResource.removeRequestParameter?.('filterByTk');
+      }
+      if (currentResource instanceof MultiRecordResource) {
+        currentResource.setPageSize?.(1);
+        currentResource.setPage?.(1);
+      }
+      if (currentResource instanceof SingleRecordResource) {
+        currentResource.isNewRecord = false;
+      }
+    }
+
+    if (currentAppends.length) {
+      target.context?.resource?.addAppends?.(currentAppends);
+    }
+  }
+
   private _applyTemplateFallbackPatchState(target?: FlowModel) {
     if (!target) return;
     const useTemplate = this.getStepParams('referenceSettings', 'useTemplate') || {};
@@ -188,75 +236,27 @@ export class ReferenceBlockModel extends BlockModel {
     }
 
     // Avoid double patch
-    if ((target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
-      return;
-    }
+    if (!(target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
+      const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
+      (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
 
-    const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
-    (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
-
-    const ref = this;
-    (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
-      const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
-      if (flowKey === 'resourceSettings' && stepKey === 'init') {
-        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
-          if (ref._shouldTemplateFallbackToList(res as any)) {
-            const next = { ...(res as any) };
-            delete (next as any).filterByTk;
-            return next;
+      const ref = this;
+      (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
+        const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
+        if (flowKey === 'resourceSettings' && stepKey === 'init') {
+          if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
+            if (ref._shouldTemplateFallbackToList(res as any)) {
+              const next = { ...(res as any) };
+              delete (next as any).filterByTk;
+              return next;
+            }
           }
         }
-      }
-      return res;
-    };
-
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
-    }
-    this._syncTargetResourceAppends(target);
-  }
-
-  private _syncTargetResourceAppends(target?: FlowModel) {
-    if (!target || typeof (target as any).addAppends !== 'function') {
-      return;
+        return res;
+      };
     }
 
-    const candidates = new Set<string>();
-    const addCandidate = (val: unknown) => {
-      const fieldPath = typeof val === 'string' ? val.trim() : '';
-      if (!fieldPath) return;
-      candidates.add(fieldPath);
-      const topLevelPath = fieldPath.split('.')[0]?.trim();
-      if (topLevelPath) {
-        candidates.add(topLevelPath);
-      }
-    };
-
-    const visit = (model?: FlowModel) => {
-      if (!model) return;
-      const init = model.getStepParams?.('fieldSettings', 'init') as
-        | { fieldPath?: string; associationPathName?: string }
-        | undefined;
-      if (init) {
-        addCandidate(init.fieldPath);
-        addCandidate(init.associationPathName);
-      }
-      const subModels = model.subModels || {};
-      for (const child of Object.values(subModels)) {
-        if (Array.isArray(child)) {
-          child.forEach((subModel) => subModel instanceof FlowModel && visit(subModel));
-        } else if (child instanceof FlowModel) {
-          visit(child);
-        }
-      }
-    };
-
-    visit(target);
-    for (const fieldPath of candidates) {
-      (target as any).addAppends(fieldPath);
-    }
+    this._refreshTargetResourceState(target);
   }
 
   private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {

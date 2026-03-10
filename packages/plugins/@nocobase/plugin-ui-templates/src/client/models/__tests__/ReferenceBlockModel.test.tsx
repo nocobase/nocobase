@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ReferenceBlockModel } from '../ReferenceBlockModel';
 
@@ -718,26 +718,38 @@ describe('ReferenceBlockModel', () => {
     it(
       'reapplies relation appends after template fallback recreates target resource',
       async () => {
-        class ResourceAwareDetailsBlockModel extends FlowModel {
+        class SwitchableDetailsBlockModel extends FlowModel {
           onInit(options: any) {
             super.onInit(options);
+            this.context.defineProperty('association', {
+              get: () => this.getStepParams('mockSettings', 'association'),
+              cache: false,
+            });
             this.context.defineProperty('blockModel', {
               value: this,
             });
             this.context.defineProperty('resource', {
-              get: () => ({
-                appends: [] as string[],
-                addAppends(appends: string | string[]) {
-                  for (const append of [appends].flat().filter(Boolean) as string[]) {
-                    if (!this.appends.includes(append)) {
-                      this.appends.push(append);
-                    }
-                  }
-                },
-                getAppends() {
-                  return this.appends;
-                },
-              }),
+              get: () => {
+                const init = this.getStepParams('resourceSettings', 'init') || {};
+                const associationType = this.context.association?.type;
+                const useSingle =
+                  associationType === 'hasOne' ||
+                  associationType === 'belongsTo' ||
+                  Object.keys(init).includes('filterByTk');
+                const resource = this.context.createResource(useSingle ? SingleRecordResource : MultiRecordResource);
+                resource.setDataSourceKey(init.dataSourceKey);
+                resource.setResourceName(init.associationName || init.collectionName);
+                if (Object.keys(init).includes('sourceId')) {
+                  resource.setSourceId(init.sourceId);
+                }
+                if (Object.keys(init).includes('filterByTk')) {
+                  resource.setFilterByTk(init.filterByTk);
+                }
+                if (resource instanceof MultiRecordResource) {
+                  resource.setPageSize(1);
+                }
+                return resource;
+              },
             });
           }
 
@@ -759,20 +771,38 @@ describe('ReferenceBlockModel', () => {
         }
 
         engine.registerModels({
-          DetailsBlockModel: ResourceAwareDetailsBlockModel,
+          DetailsBlockModel: SwitchableDetailsBlockModel,
           RelationFieldModel: MockRelationFieldModel,
         });
         scopedEngine.registerModels({
-          DetailsBlockModel: ResourceAwareDetailsBlockModel,
+          DetailsBlockModel: SwitchableDetailsBlockModel,
           RelationFieldModel: MockRelationFieldModel,
         });
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        referenceBlockModel.context.defineProperty('view', {
+          value: {
+            inputArgs: {
+              dataSourceKey: 'main',
+              collectionName: 'B',
+              filterByTk: 1,
+            },
+          },
+        });
 
-        store['target-with-relation-uid'] = {
+        const target = scopedEngine.createModel<FlowModel>({
           uid: 'target-with-relation-uid',
           use: 'DetailsBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
           stepParams: {
             resourceSettings: {
               init: {
@@ -808,44 +838,15 @@ describe('ReferenceBlockModel', () => {
               },
             },
           },
-        };
-
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-uid',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-          stepParams: {
-            referenceSettings: {
-              useTemplate: {
-                templateUid: 'tpl-1',
-                mode: 'reference',
-              },
-              target: {
-                targetUid: 'target-with-relation-uid',
-                mode: 'reference',
-              },
-            },
-          },
-        }) as ReferenceBlockModel;
-        referenceBlockModel.context.defineProperty('view', {
-          value: {
-            inputArgs: {
-              dataSourceKey: 'main',
-              collectionName: 'B',
-              filterByTk: 1,
-            },
-          },
         });
 
-        gridModel.addSubModel('items', referenceBlockModel);
+        expect(target.context.resource).toBeInstanceOf(SingleRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
 
-        await referenceBlockModel.dispatchEvent('beforeRender');
+        (referenceBlockModel as any)._applyTemplateFallbackPatchState(target);
 
-        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
-        expect(target).toBeTruthy();
-        expect(target!.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+        expect(target.context.resource).toBeInstanceOf(MultiRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
       },
       TEST_TIMEOUT,
     );
