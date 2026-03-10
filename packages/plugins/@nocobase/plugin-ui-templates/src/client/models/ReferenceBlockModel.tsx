@@ -9,7 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, FlowContext, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import { escapeT, FlowContext, FlowModel, type FlowEngine } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -152,6 +152,7 @@ export class ReferenceBlockModel extends BlockModel {
     } catch (_) {
       // ignore
     }
+    this._syncTargetResourceAppends(target);
   }
 
   private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
@@ -213,6 +214,48 @@ export class ReferenceBlockModel extends BlockModel {
       target.context?.removeCache?.('resource');
     } catch (_) {
       // ignore
+    }
+    this._syncTargetResourceAppends(target);
+  }
+
+  private _syncTargetResourceAppends(target?: FlowModel) {
+    if (!target || typeof (target as any).addAppends !== 'function') {
+      return;
+    }
+
+    const candidates = new Set<string>();
+    const addCandidate = (val: unknown) => {
+      const fieldPath = typeof val === 'string' ? val.trim() : '';
+      if (!fieldPath) return;
+      candidates.add(fieldPath);
+      const topLevelPath = fieldPath.split('.')[0]?.trim();
+      if (topLevelPath) {
+        candidates.add(topLevelPath);
+      }
+    };
+
+    const visit = (model?: FlowModel) => {
+      if (!model) return;
+      const init = model.getStepParams?.('fieldSettings', 'init') as
+        | { fieldPath?: string; associationPathName?: string }
+        | undefined;
+      if (init) {
+        addCandidate(init.fieldPath);
+        addCandidate(init.associationPathName);
+      }
+      const subModels = model.subModels || {};
+      for (const child of Object.values(subModels)) {
+        if (Array.isArray(child)) {
+          child.forEach((subModel) => subModel instanceof FlowModel && visit(subModel));
+        } else if (child instanceof FlowModel) {
+          visit(child);
+        }
+      }
+    };
+
+    visit(target);
+    for (const fieldPath of candidates) {
+      (target as any).addAppends(fieldPath);
     }
   }
 

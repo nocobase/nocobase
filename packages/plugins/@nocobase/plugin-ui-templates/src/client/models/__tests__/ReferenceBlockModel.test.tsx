@@ -716,6 +716,141 @@ describe('ReferenceBlockModel', () => {
 
   describe('Props forwarding', () => {
     it(
+      'reapplies relation appends after template fallback recreates target resource',
+      async () => {
+        class ResourceAwareDetailsBlockModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            this.context.defineProperty('blockModel', {
+              value: this,
+            });
+            this.context.defineProperty('resource', {
+              get: () => ({
+                appends: [] as string[],
+                addAppends(appends: string | string[]) {
+                  for (const append of [appends].flat().filter(Boolean) as string[]) {
+                    if (!this.appends.includes(append)) {
+                      this.appends.push(append);
+                    }
+                  }
+                },
+                getAppends() {
+                  return this.appends;
+                },
+              }),
+            });
+          }
+
+          addAppends(fieldPath?: string) {
+            if (!fieldPath) {
+              return;
+            }
+            this.context.resource.addAppends(fieldPath);
+          }
+        }
+
+        class MockRelationFieldModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            const init = this.getStepParams('fieldSettings', 'init') || {};
+            this.context.blockModel?.addAppends?.(init.fieldPath);
+            this.context.blockModel?.addAppends?.(init.associationPathName);
+          }
+        }
+
+        engine.registerModels({
+          DetailsBlockModel: ResourceAwareDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+        scopedEngine.registerModels({
+          DetailsBlockModel: ResourceAwareDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+
+        store['target-with-relation-uid'] = {
+          uid: 'target-with-relation-uid',
+          use: 'DetailsBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: 1,
+              },
+            },
+          },
+          subModels: {
+            grid: {
+              uid: 'target-with-relation-grid',
+              use: 'GridModel',
+              subKey: 'grid',
+              subType: 'object',
+              subModels: {
+                items: [
+                  {
+                    uid: 'target-with-relation-field',
+                    use: 'RelationFieldModel',
+                    subKey: 'items',
+                    subType: 'array',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          fieldPath: 'profile.nickname',
+                          associationPathName: 'profile',
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+              target: {
+                targetUid: 'target-with-relation-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        referenceBlockModel.context.defineProperty('view', {
+          value: {
+            inputArgs: {
+              dataSourceKey: 'main',
+              collectionName: 'B',
+              filterByTk: 1,
+            },
+          },
+        });
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
+        expect(target!.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
       'should forward props mutations to target model after beforeRender',
       async () => {
         referenceBlockModel = engine.createModel({
