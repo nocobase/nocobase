@@ -333,7 +333,10 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
 
     const columnElements = Array.from(
       container.querySelectorAll(`[data-grid-column-row-id="${rowId}"][data-grid-column-index]`),
-    ) as HTMLElement[];
+    ).filter((el) => {
+      // 只保留当前 row 下的直接列，避免嵌套 Grid 中相同 rowId 的列混入
+      return (el as HTMLElement).closest('[data-grid-row-id]') === rowElement;
+    }) as HTMLElement[];
 
     const sortedColumns = columnElements.sort((a, b) => {
       const indexA = Number(a.dataset.gridColumnIndex || 0);
@@ -363,7 +366,10 @@ export const buildLayoutSnapshot = ({ container }: BuildLayoutSnapshotOptions): 
 
       const itemElements = Array.from(
         columnElement.querySelectorAll(`[data-grid-item-row-id="${rowId}"][data-grid-column-index="${columnIndex}"]`),
-      ) as HTMLElement[];
+      ).filter((el) => {
+        // 只保留当前 column 下的直接 item，避免命中更深层嵌套 column 的 item
+        return (el as HTMLElement).closest('[data-grid-column-row-id][data-grid-column-index]') === columnElement;
+      }) as HTMLElement[];
 
       const sortedItems = itemElements.sort((a, b) => {
         const indexA = Number(a.dataset.gridItemIndex || 0);
