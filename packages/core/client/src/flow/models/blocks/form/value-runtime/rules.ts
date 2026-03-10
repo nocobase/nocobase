@@ -1195,12 +1195,14 @@ export class RuleEngine {
     const initPatches = this.collectUpdateAssociationInitPatches(baseCtx, ensuredTargetNamePath);
     if (initPatches == null) return;
 
-    if (rule.source === 'system') {
+    if (rule.source === 'system' || rule.source === 'default') {
       const modelForUi = baseCtx?.model;
-      if (modelForUi?.subModels?.field) {
+      const fieldModelForUi = modelForUi?.subModels?.field;
+      if (fieldModelForUi) {
         const modelTarget = this.getModelTargetNamePath(modelForUi);
         if (modelTarget && namePathToPathKey(modelTarget) === ensuredTargetKey) {
           modelForUi.setProps({ value: normalizedResolvedForTarget });
+          fieldModelForUi.setProps?.({ value: normalizedResolvedForTarget });
         }
       }
     }
