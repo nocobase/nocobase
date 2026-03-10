@@ -24,7 +24,11 @@ import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
   CreateModelOptions,
+  EnsureBatchResult,
   EventDefinition,
+  FlowModelLoaderEntry,
+  FlowModelLoaderMap,
+  FlowModelLoaderResult,
   FlowModelOptions,
   IFlowModelRepository,
   ModelConstructor,
@@ -74,6 +78,32 @@ export class FlowEngine {
    * @private
    */
   private _modelClasses: Map<string, ModelConstructor> = observable.shallow(new Map());
+
+  /**
+   * Registered model entries.
+   * Key is the model class name, value is the model loader entry.
+   * @private
+   */
+  private _modelEntries: Map<string, FlowModelLoaderEntry> = new Map();
+
+  /**
+   * In-flight model loading promises.
+   * Key is the model class name, value is the loading promise.
+   * @private
+   */
+  private _loadingModelPromises: Map<string, Promise<ModelConstructor | null>> = new Map();
+
+  /**
+   * Whether design-mode model preload has completed in this session.
+   * @private
+   */
+  private _designModelsPreloaded = false;
+
+  /**
+   * In-flight design-mode preload promise.
+   * @private
+   */
+  private _designModelsPreloadPromise?: Promise<EnsureBatchResult>;
 
   /**
    * Created model instances.
@@ -413,6 +443,263 @@ export class FlowEngine {
     for (const [name, modelClass] of Object.entries(models)) {
       this.#registerModel(name, modelClass);
     }
+  }
+
+  /**
+   * Register multiple model loader entries.
+   * @param {FlowModelLoaderMap} loaders Model loader entry map, key is model name, value is the model loader entry
+   * @returns {void}
+   * @example
+   * flowEngine.registerModelLoaders({
+   *   DemoModel: {
+   *     loader: () => import('./models/DemoModel'),
+   *   },
+   * });
+   */
+  public registerModelLoaders(loaders: FlowModelLoaderMap): void {
+    for (const [name, entry] of Object.entries(loaders)) {
+      if (this._modelEntries.has(name)) {
+        console.warn(`FlowEngine: Model loader with name '${name}' is already registered and will be overwritten.`);
+      }
+      this._modelEntries.set(name, entry);
+    }
+  }
+
+  /**
+   * Prepare a model tree before synchronous model creation begins.
+   * @param {unknown} data Model tree data
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @internal
+   */
+  public async prepareModelTree(data: unknown): Promise<EnsureBatchResult> {
+    return this.ensureModelTree(data);
+  }
+
+  /**
+   * Prepare FlowEngine for design mode.
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @internal
+   */
+  public async prepareDesignMode(): Promise<EnsureBatchResult> {
+    return this.preloadDesignModeModels();
+  }
+
+  /**
+   * Normalize a loader result into a model constructor.
+   * @param {string} name Model class name
+   * @param {FlowModelLoaderResult} loaded Loader result
+   * @returns {ModelConstructor | null} Normalized model constructor
+   * @private
+   */
+  private normalizeModelLoaderResult(name: string, loaded: FlowModelLoaderResult): ModelConstructor | null {
+    if (typeof loaded === 'function') {
+      return loaded as ModelConstructor;
+    }
+    if (loaded && typeof loaded === 'object') {
+      const defaultExport = loaded.default;
+      if (typeof defaultExport === 'function') {
+        return defaultExport as ModelConstructor;
+      }
+      const namedExport = loaded[name];
+      if (typeof namedExport === 'function') {
+        return namedExport as ModelConstructor;
+      }
+    }
+    console.warn(`FlowEngine: model loader for '${name}' did not resolve to a valid model constructor.`);
+    return null;
+  }
+
+  /**
+   * Collect string-based model names from a model tree.
+   * @param {unknown} data Model tree data
+   * @param {Set<string>} names Model name set
+   * @private
+   */
+  private collectModelNamesFromTree(data: unknown, names: Set<string>): void {
+    if (!data || typeof data !== 'object') {
+      return;
+    }
+    if (Array.isArray(data)) {
+      data.forEach((item) => this.collectModelNamesFromTree(item, names));
+      return;
+    }
+
+    const tree = data as Record<string, any>;
+    if (typeof tree.use === 'string') {
+      names.add(tree.use);
+    }
+
+    const subModels = tree.subModels;
+    if (!subModels || typeof subModels !== 'object') {
+      return;
+    }
+
+    Object.values(subModels).forEach((value) => {
+      this.collectModelNamesFromTree(value, names);
+    });
+  }
+
+  /**
+   * Collect additional model names from object-form meta.createModelOptions defaults.
+   * @param {ModelConstructor} modelClass Model class constructor
+   * @param {Set<string>} names Model name set
+   * @private
+   */
+  private collectModelNamesFromMetaDefaults(modelClass: ModelConstructor, names: Set<string>): void {
+    const metaCreate = (modelClass as typeof FlowModel).meta?.createModelOptions;
+    if (metaCreate && typeof metaCreate === 'object') {
+      this.collectModelNamesFromTree(metaCreate, names);
+    }
+  }
+
+  /**
+   * Ensure a single model class is available.
+   * @param {string} name Model class name
+   * @returns {Promise<ModelConstructor | null>} Model constructor or null when resolution fails
+   * @private
+   */
+  private async ensureModel(name: string): Promise<ModelConstructor | null> {
+    const existing = this._modelClasses.get(name);
+    if (existing) {
+      return existing;
+    }
+
+    const inflight = this._loadingModelPromises.get(name);
+    if (inflight) {
+      return inflight;
+    }
+
+    const entry = this._modelEntries.get(name);
+    if (!entry) {
+      console.warn(`FlowEngine: Model entry '${name}' not found. Falling back to ErrorFlowModel when needed.`);
+      return null;
+    }
+
+    const promise = (async () => {
+      try {
+        const loaded = await entry.loader();
+        const modelClass = this.normalizeModelLoaderResult(name, loaded);
+        if (!modelClass) {
+          return null;
+        }
+        this.#registerModel(name, modelClass);
+        return modelClass;
+      } catch (error) {
+        console.warn(`FlowEngine: Failed to load model '${name}'. Falling back to ErrorFlowModel when needed.`, error);
+        return null;
+      } finally {
+        this._loadingModelPromises.delete(name);
+      }
+    })();
+
+    this._loadingModelPromises.set(name, promise);
+    return promise;
+  }
+
+  /**
+   * Ensure multiple model classes are available.
+   * @param {string[]} names Model class names
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @private
+   */
+  private async ensureModels(names: string[]): Promise<EnsureBatchResult> {
+    const requested = Array.from(new Set(names.filter((name): name is string => !!name)));
+    const loaded: string[] = [];
+    const failed: EnsureBatchResult['failed'] = [];
+
+    const results = await Promise.all(
+      requested.map(async (name) => {
+        const modelClass = await this.ensureModel(name);
+        return { name, modelClass };
+      }),
+    );
+
+    results.forEach(({ name, modelClass }) => {
+      if (modelClass) {
+        loaded.push(name);
+      } else {
+        failed.push({ name });
+      }
+    });
+
+    return { requested, loaded, failed };
+  }
+
+  /**
+   * Ensure all string-based model references in a model tree are available.
+   * @param {unknown} data Model tree data
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @private
+   */
+  private async ensureModelTree(data: unknown): Promise<EnsureBatchResult> {
+    const requested = new Set<string>();
+    const loaded = new Set<string>();
+    const failed = new Map<string, { name: string; error?: unknown }>();
+    const processed = new Set<string>();
+    const pending = new Set<string>();
+
+    this.collectModelNamesFromTree(data, pending);
+
+    while (pending.size > 0) {
+      const batch = Array.from(pending).filter((name) => !processed.has(name));
+      pending.clear();
+      if (batch.length === 0) {
+        break;
+      }
+
+      batch.forEach((name) => requested.add(name));
+      const result = await this.ensureModels(batch);
+
+      result.loaded.forEach((name) => {
+        processed.add(name);
+        loaded.add(name);
+        const modelClass = this.getModelClass(name);
+        if (modelClass) {
+          const discovered = new Set<string>();
+          this.collectModelNamesFromMetaDefaults(modelClass, discovered);
+          discovered.forEach((discoveredName) => {
+            if (!processed.has(discoveredName)) {
+              pending.add(discoveredName);
+            }
+          });
+        }
+      });
+
+      result.failed.forEach((item) => {
+        processed.add(item.name);
+        failed.set(item.name, item);
+      });
+    }
+
+    return {
+      requested: Array.from(requested),
+      loaded: Array.from(loaded),
+      failed: Array.from(failed.values()),
+    };
+  }
+
+  /**
+   * Preload unresolved model loaders for design mode.
+   * @returns {Promise<EnsureBatchResult>} Batch ensure result
+   * @private
+   */
+  private async preloadDesignModeModels(): Promise<EnsureBatchResult> {
+    if (this._designModelsPreloaded) {
+      return { requested: [], loaded: [], failed: [] };
+    }
+    if (this._designModelsPreloadPromise) {
+      return this._designModelsPreloadPromise;
+    }
+
+    this._designModelsPreloadPromise = (async () => {
+      const unresolved = Array.from(this._modelEntries.keys()).filter((name) => !this._modelClasses.has(name));
+      const result = await this.ensureModels(unresolved);
+      this._designModelsPreloaded = true;
+      this._designModelsPreloadPromise = undefined;
+      return result;
+    })();
+
+    return this._designModelsPreloadPromise;
   }
 
   registerResources(resources: Record<string, any>) {
@@ -836,10 +1123,10 @@ export class FlowEngine {
    * Hydrate a model into current engine from an already-existing model instance in previous engines.
    * - Avoids repository requests when the model tree is already present in memory.
    */
-  private hydrateModelFromPreviousEngines<T extends FlowModel = FlowModel>(
+  private async hydrateModelFromPreviousEngines<T extends FlowModel = FlowModel>(
     options: any,
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
-  ): T | null {
+  ): Promise<T | null> {
     const uid = options?.uid;
     const parentId = options?.parentId;
     const subKey = options?.subKey;
@@ -853,6 +1140,7 @@ export class FlowEngine {
       }
       if (existing) {
         const data = existing.serialize();
+        await this.ensureModelTree(data);
         return this.createModel<T>(data as any, extra);
       }
     }
@@ -868,10 +1156,12 @@ export class FlowEngine {
       if (!localParent) {
         const parentData = parentFromPrev.serialize();
         delete (parentData as any).subModels;
+        await this.ensureModelTree(parentData);
         localParent = this.createModel<FlowModel>(parentData as any, extra);
       }
       // Create (or reuse) the sub-model instance in current engine.
       const modelData = modelFromPrev.serialize();
+      await this.ensureModelTree(modelData);
       const localModel = this.createModel<T>(modelData as any, extra);
 
       // Mount under local parent if not mounted yet (so later lookups by parentId/subKey won't hit repo).
@@ -913,13 +1203,14 @@ export class FlowEngine {
       if (model) {
         return model as T;
       }
-      const hydrated = this.hydrateModelFromPreviousEngines<T>(options);
+      const hydrated = await this.hydrateModelFromPreviousEngines<T>(options);
       if (hydrated) {
         return hydrated as T;
       }
     }
     const data = await this._modelRepository.findOne(options);
     if (!data?.uid) return null;
+    await this.ensureModelTree(data);
     if (refresh) {
       const existing = this.getModel(data.uid);
       if (existing) {
@@ -973,7 +1264,7 @@ export class FlowEngine {
       return m;
     }
 
-    const hydrated = this.hydrateModelFromPreviousEngines<T>(options, extra);
+    const hydrated = await this.hydrateModelFromPreviousEngines<T>(options, extra);
     if (hydrated) {
       return hydrated;
     }
@@ -981,8 +1272,10 @@ export class FlowEngine {
     const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
+      await this.ensureModelTree(data);
       model = this.createModel<T>(data as any, extra);
     } else {
+      await this.ensureModelTree(options);
       model = this.createModel<T>(options, extra);
       await model.save();
     }

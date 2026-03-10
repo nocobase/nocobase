@@ -98,12 +98,30 @@ export const FlowRoute = () => {
   }, [isMobileLayout, flowEngine]);
 
   useEffect(() => {
-    // 移动端中不允许配置 UI
-    if (isMobileLayout) {
-      flowEngine.flowSettings.disable();
-    } else if (designable) {
-      flowEngine.flowSettings.enable();
-    }
+    let cancelled = false;
+
+    const syncFlowSettings = async () => {
+      // 移动端中不允许配置 UI
+      if (isMobileLayout) {
+        flowEngine.flowSettings.disable();
+        return;
+      }
+
+      if (!designable) {
+        flowEngine.flowSettings.disable();
+        return;
+      }
+
+      await flowEngine.prepareDesignMode();
+      if (!cancelled) {
+        flowEngine.flowSettings.enable();
+      }
+    };
+
+    syncFlowSettings();
+    return () => {
+      cancelled = true;
+    };
   }, [designable, flowEngine, isMobileLayout]);
 
   useEffect(() => {

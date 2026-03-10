@@ -99,6 +99,64 @@ describe('AddSubModelButton - preset settings open on add', () => {
   });
 });
 
+describe('AddSubModelButton - model loader integration', () => {
+  test('resolves model loaders before creating sub models', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+
+    class ParentModel extends FlowModel {}
+    class ChildModel extends FlowModel {}
+
+    const childLoader = vi.fn(async () => ({ ChildModel }));
+
+    engine.registerModels({ ParentModel });
+    engine.registerModelLoaders({
+      ChildModel: {
+        loader: childLoader,
+      },
+    });
+
+    const parent = engine.createModel<ParentModel>({ use: 'ParentModel', uid: 'parent-loader' });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="items"
+              items={[
+                {
+                  key: 'child',
+                  label: 'Add Child',
+                  createModelOptions: { use: 'ChildModel' },
+                },
+              ]}
+            >
+              Add SubModel
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Add SubModel'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Add Child')).toBeInTheDocument());
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Add Child'));
+    });
+
+    await waitFor(() => expect(childLoader).toHaveBeenCalledTimes(1));
+    const items = parent.subModels.items as FlowModel[];
+    expect(Array.isArray(items)).toBe(true);
+    expect(items[0]).toBeInstanceOf(ChildModel);
+  });
+});
+
 describe('AddSubModelButton - async group children (nested)', () => {
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

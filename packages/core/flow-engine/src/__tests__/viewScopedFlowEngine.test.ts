@@ -256,11 +256,11 @@ describe('ViewScopedFlowEngine', () => {
 
     // Both children should return null from hydration because parent has flowSettingsEnabled
     // This is the bug fix: previously only children with their own flowSettingsEnabled would return null
-    const result1 = (scoped as any).hydrateModelFromPreviousEngines({
+    const result1 = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-with-settings',
       subKey: 'popup',
     });
-    const result2 = (scoped as any).hydrateModelFromPreviousEngines({
+    const result2 = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-with-settings',
       subKey: 'items',
     });
@@ -298,7 +298,7 @@ describe('ViewScopedFlowEngine', () => {
     const scoped = createViewScopedEngine(root);
 
     // Call the private method hydrateModelFromPreviousEngines directly
-    const result = (scoped as any).hydrateModelFromPreviousEngines({
+    const result = await (scoped as any).hydrateModelFromPreviousEngines({
       parentId: 'parent-normal',
       subKey: 'content',
     });

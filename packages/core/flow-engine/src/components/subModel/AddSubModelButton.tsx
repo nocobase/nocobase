@@ -594,6 +594,7 @@ const AddSubModelButtonCore = function AddSubModelButton({
     let addedModel: FlowModel | undefined;
 
     try {
+      await model.flowEngine.prepareModelTree(createOpts);
       addedModel = model.flowEngine.createModel({
         ..._.cloneDeep(createOpts),
         parentId: model.uid,
