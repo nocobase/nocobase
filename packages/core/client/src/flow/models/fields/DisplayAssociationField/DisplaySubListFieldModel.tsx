@@ -46,7 +46,10 @@ const ArrayNester = ({ name, value = [] }: any) => {
             blockPage,
           });
           const fork = gridModel.createFork({}, `${key}`);
-          fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          // 仅在 fork 首次创建时为其分配独立 ref，避免每次渲染重建导致拖拽快照不稳定
+          if (fork.gridContainerRef === gridModel.gridContainerRef) {
+            fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          }
           const parentItem = model?.context?.item;
           fork.context.defineProperty('fieldIndex', {
             get: () => [...resultIndex, `${collectionName}:${index}`],
