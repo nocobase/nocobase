@@ -21,6 +21,7 @@ import {
 import type { FlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { createDefaultCollectionBlockTitle } from '../../utils/blockUtils';
+import { areCapabilitiesSupported, getBlockCapabilityNamesFromModelClass } from '../../utils/actionCapability';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { DataBlockModel } from './DataBlockModel';
 
@@ -44,6 +45,25 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     this.previousBeforeRenderHash = this.context.location.search;
   }
 
+  private getDirtyTrackingVersion(
+    engine: FlowEngine,
+    dataSourceKey: string,
+    resource: BaseRecordResource | undefined,
+    params: ResourceSettingsInitParams,
+  ): number {
+    const names = new Set<string>();
+    const primary = resource?.getResourceName?.() || params.associationName || params.collectionName;
+    if (primary) names.add(String(primary));
+    if (params.associationName) names.add(String(params.associationName));
+    if (params.collectionName) names.add(String(params.collectionName));
+
+    let version = 0;
+    for (const name of names) {
+      version += engine.getDataSourceDirtyVersion(dataSourceKey, name);
+    }
+    return version;
+  }
+
   onActive(forceRefresh = false) {
     if (!this.hidden && this.previousBeforeRenderHash !== this.context.location.search) {
       this.rerender();
@@ -59,10 +79,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
     const params = this.getResourceSettingsInitParams();
     const dataSourceKey = resource.getDataSourceKey() || params.dataSourceKey || 'main';
-    const resourceName = resource.getResourceName() || params.associationName || params.collectionName;
-
     const engine = this.context.engine as FlowEngine;
-    const currentVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+    const currentVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
 
     if (forceRefresh) {
       if (this.dirtyRefreshing) return;
@@ -70,7 +88,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       void resource
         .refresh()
         .then(() => {
-          this.lastSeenDirtyVersion = currentVersion;
+          this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
         })
         .catch(() => {
           // keep lastSeenDirtyVersion unchanged so next activate can retry
@@ -92,7 +110,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     void resource
       .refresh()
       .then(() => {
-        this.lastSeenDirtyVersion = currentVersion;
+        this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
       })
       .catch(() => {
         // keep lastSeenDirtyVersion unchanged so next activate can retry
@@ -110,6 +128,20 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       return true;
     }
     return false;
+  }
+
+  /**
+   * 判断当前区块模型在 collection 选择菜单中是否应该展示指定数据表。
+   *
+   * @param collection 数据表
+   * @returns 是否显示
+   */
+  static isCollectionAvailable(collection: Collection | undefined) {
+    if (!collection) {
+      return false;
+    }
+    const capabilityNames = getBlockCapabilityNamesFromModelClass(this as any);
+    return areCapabilitiesSupported(collection, capabilityNames);
   }
 
   /**
@@ -146,6 +178,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               .getCollections()
               .map((collection) => {
                 if (!this.filterCollection(collection)) {
+                  return null;
+                }
+                if (!this.isCollectionAvailable(collection)) {
                   return null;
                 }
                 const initOptions = {
@@ -189,8 +224,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         initOptions['associationName'] = associationName;
         initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
       }
-      return [
-        {
+      const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      const items: any[] = [];
+      if (this.isCollectionAvailable(currentCollection)) {
+        items.push({
           key: genKey('current-collection'),
           label: 'Current collection',
           useModel: this.name,
@@ -201,13 +238,14 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               },
             },
           }),
-        },
-        {
-          key: genKey('others-collections'),
-          label: 'Other collections',
-          children: children(ctx),
-        },
-      ];
+        });
+      }
+      items.push({
+        key: genKey('others-collections'),
+        label: 'Other collections',
+        children: children(ctx),
+      });
+      return items;
     }
     if (this._isScene('new')) {
       const initOptions = {
@@ -219,8 +257,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         initOptions['associationName'] = associationName;
         initOptions['sourceId'] = '{{ctx.view.inputArgs.sourceId}}';
       }
-      const items: any[] = [
-        {
+      const items: any[] = [];
+      const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      if (this.isCollectionAvailable(currentCollection)) {
+        items.push({
           key: genKey('current-collection'),
           label: 'Current collection',
           useModel: this.name,
@@ -231,8 +271,8 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               },
             },
           }),
-        },
-      ];
+        });
+      }
 
       // 新建记录的弹窗（如 Add new）没有 record 锚点（filterByTk），此时不应允许添加「关联记录」区块。
       // 仅当弹窗携带 filterByTk（例如 View/Details 等记录态弹窗）时，才开放关联记录入口。
@@ -248,7 +288,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
                 if (!field.targetCollection) {
                   return null;
                 }
+                if (field.type === 'belongsToArray') {
+                  return null;
+                }
                 if (!this.filterCollection(field.targetCollection)) {
+                  return null;
+                }
+                if (!this.isCollectionAvailable(field.targetCollection)) {
                   return null;
                 }
                 let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
@@ -299,7 +345,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               if (!field.targetCollection) {
                 return null;
               }
+              if (field.type === 'belongsToArray') {
+                return null;
+              }
               if (!this.filterCollection(field.targetCollection)) {
+                return null;
+              }
+              if (!this.isCollectionAvailable(field.targetCollection)) {
                 return null;
               }
               let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
@@ -336,7 +388,11 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     ];
     if (this._isScene('one')) {
       const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
-      if (!currentCollection || !this.filterCollection(currentCollection)) {
+      if (
+        !currentCollection ||
+        !this.filterCollection(currentCollection) ||
+        !this.isCollectionAvailable(currentCollection)
+      ) {
         return items;
       }
       const initOptions = {
@@ -450,9 +506,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
           const engine = this.context.engine as FlowEngine | undefined;
           if (!engine?.getDataSourceDirtyVersion) return;
           const dataSourceKey = resource.getDataSourceKey?.() || params.dataSourceKey || 'main';
-          const resourceName = resource.getResourceName?.() || params.associationName || params.collectionName;
-          if (!resourceName) return;
-          this.lastSeenDirtyVersion = engine.getDataSourceDirtyVersion(dataSourceKey, resourceName);
+          this.lastSeenDirtyVersion = this.getDirtyTrackingVersion(engine, dataSourceKey, resource, params);
         };
 
         syncDirtyVersion();

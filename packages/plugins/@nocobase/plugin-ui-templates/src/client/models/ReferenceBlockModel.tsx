@@ -31,6 +31,9 @@ import {
 } from './referenceShared';
 
 const TARGET_CONTEXT_BRIDGE_MARKER = Symbol.for('nocobase.referenceBlockTargetContextBridge');
+const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
+  'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
+);
 
 /**
  * ReferenceBlockModel（插件版）
@@ -49,6 +52,26 @@ export class ReferenceBlockModel extends BlockModel {
     // - 支持写入：未知属性写入目标模型（若存在对应键）；否则写回自身。
     const proxy = new Proxy(this as any, {
       get(target, prop: string | symbol, receiver) {
+        // 显式转发：当引用区块已解析出目标模型时，props / setProps / getProps 必须指向目标模型
+        // 否则在引用壳子上设置 props 不会影响真正渲染的目标区块。
+        const t = target._targetModel as any;
+        if (t) {
+          if (prop === 'props') return t.props;
+          if (prop === 'setProps' && typeof t.setProps === 'function') {
+            return (...args: any[]) => {
+              const res = t.setProps(...args);
+              // 当目标模型 setProps 以 object 形式替换 props 对象时，保持引用壳子的 props 指针同步
+              // 以支持 ctx.model.props.xxx 的写法在后续继续指向目标 props
+              try {
+                target.props = t.props;
+              } catch (_) {
+                // ignore
+              }
+              return res;
+            };
+          }
+          if (prop === 'getProps' && typeof t.getProps === 'function') return t.getProps.bind(t);
+        }
         if (prop in target) {
           // 自身已有（含原型链）则直接返回；若为函数需绑定到 target，避免 private field 访问报错
           const val = Reflect.get(target, prop, target);
@@ -57,7 +80,6 @@ export class ReferenceBlockModel extends BlockModel {
           }
           return val;
         }
-        const t = target._targetModel as any;
         if (t) {
           const val = Reflect.get(t, prop, t);
           if (typeof val === 'function' && prop !== 'constructor') {
@@ -68,10 +90,21 @@ export class ReferenceBlockModel extends BlockModel {
         return undefined;
       },
       set(target, prop: string | symbol, value, receiver) {
+        // 显式转发：允许直接替换 props（少见但能避免写到壳子导致不生效）
+        const t = target._targetModel as any;
+        if (t && prop === 'props') {
+          const ok = Reflect.set(t, prop, value, t);
+          // 同步壳子 props 指针，避免后续 ctx.model.props 仍指向旧对象
+          try {
+            target.props = t.props;
+          } catch (_) {
+            // ignore
+          }
+          return ok;
+        }
         if (prop in target) {
           return Reflect.set(target, prop, value, target);
         }
-        const t = target._targetModel as any;
         if (t && prop in t) {
           return Reflect.set(t, prop, value, t);
         }
@@ -103,8 +136,86 @@ export class ReferenceBlockModel extends BlockModel {
   public settingsMenuLevel = 2;
   private _scopedEngine?: FlowEngine;
   private _targetModel?: FlowModel;
+  private _localProps?: Record<string, any>;
   private _resolvedTargetUid?: string;
   private _invalidTargetUid?: string;
+
+  private _restoreTemplateFallbackPatch(target?: FlowModel) {
+    if (!target) return;
+    const original = (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] as
+      | FlowModel['getStepParams']
+      | undefined;
+    if (!original) return;
+    (target as any).getStepParams = original;
+    delete (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS];
+    try {
+      target.context?.removeCache?.('resource');
+    } catch (_) {
+      // ignore
+    }
+  }
+
+  private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
+    const viewArgs = (this as any)?.context?.view?.inputArgs || {};
+    const filterByTk = viewArgs?.filterByTk;
+    const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+    if (missingFilterByTk) {
+      return true;
+    }
+    const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+    if (collectionMismatch) {
+      return true;
+    }
+    const viewDataSourceKey = viewArgs?.dataSourceKey;
+    const hasViewDataSourceKey =
+      viewDataSourceKey !== undefined && viewDataSourceKey !== null && String(viewDataSourceKey).trim() !== '';
+    const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+    return !!dataSourceMismatch;
+  }
+
+  private _applyTemplateFallbackPatchState(target?: FlowModel) {
+    if (!target) return;
+    const useTemplate = this.getStepParams('referenceSettings', 'useTemplate') || {};
+    const templateUid = String(useTemplate?.templateUid || '').trim();
+    const mode = useTemplate?.mode || (this.getStepParams('referenceSettings', 'target') || {})?.mode || 'reference';
+    const isTemplateReference = !!templateUid && mode !== 'copy';
+    const targetName = target?.constructor?.name;
+    const isSupportedTarget = targetName === 'DetailsBlockModel' || targetName === 'EditFormModel';
+
+    if (!isTemplateReference || !isSupportedTarget) {
+      this._restoreTemplateFallbackPatch(target);
+      return;
+    }
+
+    // Avoid double patch
+    if ((target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
+      return;
+    }
+
+    const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
+    (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
+
+    const ref = this;
+    (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
+      const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
+      if (flowKey === 'resourceSettings' && stepKey === 'init') {
+        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
+          if (ref._shouldTemplateFallbackToList(res as any)) {
+            const next = { ...(res as any) };
+            delete (next as any).filterByTk;
+            return next;
+          }
+        }
+      }
+      return res;
+    };
+
+    try {
+      target.context?.removeCache?.('resource');
+    } catch (_) {
+      // ignore
+    }
+  }
 
   private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {
     if (!target?.context || !this.context) {
@@ -129,6 +240,8 @@ export class ReferenceBlockModel extends BlockModel {
 
   onInit(option) {
     super.onInit(option);
+    // 保存本地 props，用于在目标未解析/被清空时回退到引用壳子自身
+    this._localProps = this.props as any;
     this.context.defineProperty('refModel', {
       get: () => this._targetModel,
       cache: false,
@@ -146,6 +259,28 @@ export class ReferenceBlockModel extends BlockModel {
         get: () => getTargetContext()?.[key],
       });
     });
+  }
+
+  // 让 `ctx.model.setProps/getProps` 在引用区块场景下也作用到目标模型
+  setProps(props: any, value?: any): void {
+    const t = this._targetModel as any;
+    if (t && typeof t.setProps === 'function') {
+      t.setProps(props, value);
+      // 保持 ctx.model.props.xxx 写法指向目标 props
+      this.props = t.props;
+      return;
+    }
+    // 目标未解析：修改本地 props，并同步 _localProps 指针（处理 object form setProps 会替换对象的情况）
+    super.setProps(props as any, value as any);
+    this._localProps = this.props as any;
+  }
+
+  getProps(): any {
+    const t = this._targetModel as any;
+    if (t && typeof t.getProps === 'function') {
+      return t.getProps();
+    }
+    return super.getProps() as any;
   }
 
   private _getTargetUidFromParams(): string | undefined {
@@ -215,6 +350,7 @@ export class ReferenceBlockModel extends BlockModel {
       this._syncExtraTitle(false);
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
       }
@@ -222,12 +358,19 @@ export class ReferenceBlockModel extends BlockModel {
       this._resolvedTargetUid = undefined;
       this._invalidTargetUid = undefined;
       (this.subModels as any)['target'] = undefined;
+      // 目标为空：回退到引用壳子本地 props
+      if (this._localProps) {
+        this.props = this._localProps as any;
+      }
       return;
     }
 
     this._syncExtraTitle(true);
     if (this._resolvedTargetUid === targetUid && this._targetModel) {
       this._invalidTargetUid = undefined;
+      this._applyTemplateFallbackPatchState(this._targetModel);
+      // 目标未变化：确保 props 仍指向目标模型（避免 target.setProps 替换对象后指针失效）
+      this.props = this._targetModel.props;
       return;
     }
     // 进入解析流程：先清理 invalid 标记，避免渲染层误判为 invalid
@@ -246,6 +389,7 @@ export class ReferenceBlockModel extends BlockModel {
     if (!target) {
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
       }
@@ -253,6 +397,10 @@ export class ReferenceBlockModel extends BlockModel {
       this._resolvedTargetUid = undefined;
       this._invalidTargetUid = targetUid;
       (this.subModels as any)['target'] = undefined;
+      // 目标非法：回退到引用壳子本地 props
+      if (this._localProps) {
+        this.props = this._localProps as any;
+      }
       this.rerender();
       return;
     }
@@ -262,6 +410,10 @@ export class ReferenceBlockModel extends BlockModel {
     this._bridgeTargetContext(target, scopedEngine);
     const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
     if (oldTarget?.uid !== target.uid) {
+      if (oldTarget) {
+        this._restoreTemplateFallbackPatch(oldTarget);
+      }
+      this._applyTemplateFallbackPatchState(target);
       this.setSubModel('target', target);
       if (oldTarget) {
         this._scopedEngine?.removeModel(oldTarget.uid);
@@ -269,16 +421,21 @@ export class ReferenceBlockModel extends BlockModel {
     } else {
       (this.subModels as any)['target'] = target;
       (this as any).emitter?.emit?.('onSubModelReplaced', { oldModel: oldTarget, newModel: target });
+      this._applyTemplateFallbackPatchState(target);
     }
 
     this._targetModel = target;
     this._resolvedTargetUid = targetUid;
     this._invalidTargetUid = undefined;
+    // 关键：让 ctx.model.props.xxx 的写法在引用区块中也能作用到目标区块
+    // - beforeRender 的 flows 会在 onDispatchEventStart 之后执行，因此这里同步可以保证事件流拿到的是目标 props
+    this.props = target.props;
     this.rerender();
   }
 
   async destroy(): Promise<boolean> {
     try {
+      this._restoreTemplateFallbackPatch(this._targetModel);
       unlinkScopedEngine(this._scopedEngine);
     } finally {
       this._scopedEngine = undefined;
@@ -541,7 +698,7 @@ ReferenceBlockModel.registerFlow({
           const flow = (ctx.model.constructor as typeof FlowModel).globalFlowRegistry.getFlow('referenceSettings');
           const targetStepDef = flow?.steps?.target as any;
           if (targetStepDef?.beforeParamsSave) {
-            await targetStepDef.beforeParamsSave(ctx, { targetUid, mode: 'copy' });
+            await targetStepDef.beforeParamsSave(ctx, { targetUid, mode: 'copy', templateUid });
           }
           return;
         }
@@ -685,7 +842,32 @@ ReferenceBlockModel.registerFlow({
         const v = (params?.targetUid || '').trim();
         const mode = params?.mode || 'reference';
         if (mode !== 'copy' || !v) return;
+        const templateUid = (params?.templateUid || '').trim();
         const engine = ctx.engine;
+
+        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
+        if (templateUid) {
+          const use = String((duplicated as any)?.use || '');
+          const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
+          if (isSupported) {
+            const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
+            if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
+              const filterByTk = viewArgs?.filterByTk;
+              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+              const viewDataSourceKey = viewArgs?.dataSourceKey;
+              const hasViewDataSourceKey =
+                viewDataSourceKey !== undefined &&
+                viewDataSourceKey !== null &&
+                String(viewDataSourceKey).trim() !== '';
+              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+                delete (init as any).filterByTk;
+              }
+            }
+          }
+        }
 
         // 2) 计算父模型与原位置
         const oldModel = ctx.model as FlowModel;

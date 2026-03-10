@@ -244,10 +244,21 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
 
   const updateRoute = useCallback(
     async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
-      const res = await resource.update({
-        filterByTk,
-        values,
-      });
+      const res = await resource.update(
+        Array.isArray(filterByTk)
+          ? {
+              filter: {
+                id: {
+                  $in: filterByTk,
+                },
+              },
+              values,
+            }
+          : {
+              filterByTk,
+              values,
+            },
+      );
       refreshAfterUpdate && refreshRoutes();
       return res;
     },

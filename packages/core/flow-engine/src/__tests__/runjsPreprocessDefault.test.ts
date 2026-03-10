@@ -36,6 +36,29 @@ describe('ctx.runjs preprocessTemplates default', () => {
     expect(r.value).toBe('{{ctx.user.id}}');
   });
 
+  it('disables template preprocess by default for version v2', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context as any;
+    ctx.defineProperty('user', { value: { id: 123 } });
+
+    const r = await ctx.runjs('return "{{ctx.user.id}}";', undefined, { version: 'v2' });
+    expect(r.success).toBe(true);
+    expect(r.value).toBe('{{ctx.user.id}}');
+  });
+
+  it('keeps explicit preprocessTemplates override higher priority than version', async () => {
+    const engine = new FlowEngine();
+    const ctx = engine.context as any;
+    ctx.defineProperty('user', { value: { id: 123 } });
+
+    const r = await ctx.runjs('return "{{ctx.user.id}}";', undefined, {
+      version: 'v2',
+      preprocessTemplates: true,
+    });
+    expect(r.success).toBe(true);
+    expect(r.value).toBe('123');
+  });
+
   it('does not double-preprocess already prepared code', async () => {
     const engine = new FlowEngine();
     const ctx = engine.context as any;

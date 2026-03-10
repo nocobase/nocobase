@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { JSRunner } from '../JSRunner';
+import { JSRunner, shouldPreprocessRunJSTemplates } from '../JSRunner';
 import { createSafeWindow } from '../utils';
 
 describe('JSRunner', () => {
@@ -28,6 +28,18 @@ describe('JSRunner', () => {
       // ignore
     }
     vi.restoreAllMocks();
+  });
+
+  it('shouldPreprocessRunJSTemplates: explicit option has highest priority', () => {
+    expect(shouldPreprocessRunJSTemplates({ version: 'v2', preprocessTemplates: true })).toBe(true);
+    expect(shouldPreprocessRunJSTemplates({ version: 'v1', preprocessTemplates: false })).toBe(false);
+  });
+
+  it('shouldPreprocessRunJSTemplates: falls back to version policy', () => {
+    expect(shouldPreprocessRunJSTemplates({ version: 'v1' })).toBe(true);
+    expect(shouldPreprocessRunJSTemplates({ version: 'v2' })).toBe(false);
+    expect(shouldPreprocessRunJSTemplates({})).toBe(true);
+    expect(shouldPreprocessRunJSTemplates()).toBe(true);
   });
 
   it('executes simple code and returns value', async () => {
@@ -150,6 +162,20 @@ describe('JSRunner', () => {
     expect(result.timeout).toBe(true);
     expect(result.error).toBeInstanceOf(Error);
     expect((result.error as Error).message).toBe('Execution timed out');
+  });
+
+  it('returns friendly hint when bare {{ctx.xxx}} appears in syntax error', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const runner = new JSRunner();
+    const result = await runner.run('const z = {{ctx.user.id}}');
+    expect(result.success).toBe(false);
+    expect(result.error).toBeInstanceOf(SyntaxError);
+    const msg = String((result.error as any)?.message || '');
+    expect(msg).toContain('"{{ctx.user.id}}" has been deprecated');
+    expect(msg).toContain('await ctx.getVar("ctx.user.id")');
+    expect(msg).not.toContain('(at ');
+    expect((result.error as any)?.__runjsHideLocation).toBe(true);
+    expect(spy).toHaveBeenCalled();
   });
 
   it('skips execution when URL contains skipRunJs=true', async () => {

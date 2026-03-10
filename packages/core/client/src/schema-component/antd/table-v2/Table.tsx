@@ -179,14 +179,14 @@ const useTableColumns = (
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
 
-  const columnsSchemas = useMemo(() => {
-    return schema.reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
-        return buf.concat([s]);
-      }
-      return buf;
-    }, []);
-  }, [schema, schemaInWhitelist]);
+  // 列配置（隐藏/删除/顺序）在设计器中会对同一个 schema 对象做原地变更，
+  // 这里不能仅依赖引用级 memo，否则会出现配置已保存但界面不立即更新。
+  const columnsSchemas = schema.reduceProperties((buf, s) => {
+    if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+      return buf.concat([s]);
+    }
+    return buf;
+  }, []);
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();

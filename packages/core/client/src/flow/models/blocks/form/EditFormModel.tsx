@@ -28,6 +28,7 @@ import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
+  static blockCapabilityActionName = 'update';
 
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [
@@ -63,6 +64,11 @@ export class EditFormModel extends FormBlockModel {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
   }
+
+  hasAvailableData() {
+    return this.resource.hasData();
+  }
+
   getAclActionName() {
     return 'update';
   }
@@ -87,9 +93,21 @@ export class EditFormModel extends FormBlockModel {
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const hasAvailableData = this.hasAvailableData();
+    const disableRuntimeActions = !isConfigMode && !hasAvailableData;
     const { heightMode, height } = this.decoratorProps;
     const footer =
-      this.isMultiRecordResource() && this.resource.getMeta('count') > 1 ? (
+      !this.resource.loading && !hasAvailableData ? (
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: 16,
+            color: this.context?.themeToken?.colorTextDescription,
+          }}
+        >
+          {this.translate('No available data currently')}
+        </div>
+      ) : this.isMultiRecordResource() && this.resource.getMeta('count') > 1 ? (
         <div
           style={{
             textAlign: 'center',
@@ -117,26 +135,28 @@ export class EditFormModel extends FormBlockModel {
         height={height}
         grid={<FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />}
         actions={
-          <DndProvider>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                return (
-                  <Droppable model={action} key={action.uid}>
-                    <MemoFlowModelRenderer
-                      key={action.uid}
-                      model={action}
-                      showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
-                      extraToolbarItems={this.actionExtraToolbarItems}
-                    />
-                  </Droppable>
-                );
-              })}
-              {this.renderConfigureActions()}
-            </Space>
-          </DndProvider>
+          <div style={disableRuntimeActions ? { pointerEvents: 'none', opacity: 0.45 } : undefined}>
+            <DndProvider>
+              <Space wrap>
+                {this.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  return (
+                    <Droppable model={action} key={action.uid}>
+                      <MemoFlowModelRenderer
+                        key={action.uid}
+                        model={action}
+                        showFlowSettings={this.context.flowSettingsEnabled ? this.actionFlowSettings : false}
+                        extraToolbarItems={this.actionExtraToolbarItems}
+                      />
+                    </Droppable>
+                  );
+                })}
+                {this.renderConfigureActions()}
+              </Space>
+            </DndProvider>
+          </div>
         }
         footer={footer}
       />
