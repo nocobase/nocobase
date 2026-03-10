@@ -29,6 +29,7 @@ import {
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import {
+  CUSTOM_FIELD_TARGET_PATH_PREFIX,
   findFormItemModelByFieldPath,
   getCollectionFromModel,
   getFormItemPreferredFieldPath,
@@ -785,7 +786,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
     const customFieldProps = itemModel?.customFieldProps || customFieldSettings?.fieldModelProps || {};
     const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
-    const normalizedFieldPath = fieldPath.startsWith('__custom__:') ? customFieldName || fieldName : fieldPath;
+    const normalizedFieldPath = fieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
+      ? customFieldName || fieldName
+      : fieldPath;
     const tempFieldStepParams: Record<string, any> = {
       ...(((originFieldModel as any)?.stepParams as Record<string, any>) || {}),
     };
