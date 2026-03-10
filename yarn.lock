@@ -5706,7 +5706,7 @@
     openai "^6.18.0"
     zod "^3.25.76 || ^4"
 
-"@langchain/textsplitters@1.0.1":
+"@langchain/textsplitters@1.0.1", "@langchain/textsplitters@^1.0.1":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@langchain/textsplitters/-/textsplitters-1.0.1.tgz#292f9c93239178c248b3338acf7b68aa47aa9830"
   integrity sha512-rheJlB01iVtrOUzttscutRgLybPH9qR79EyzBEbf1u97ljWyuxQfCwIWK+SjoQTM9O8M7GGLLRBSYE26Jmcoww==
