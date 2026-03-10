@@ -959,6 +959,7 @@ export class FlowEngine {
   async loadOrCreateModel<T extends FlowModel = FlowModel>(
     options,
     extra?: {
+      skipSave?: boolean;
       delegateToParent?: boolean;
       delegate?: FlowContext;
     },
@@ -984,7 +985,7 @@ export class FlowEngine {
       model = this.createModel<T>(data as any, extra);
     } else {
       model = this.createModel<T>(options, extra);
-      if (model.context.flowSettingsEnabled) {
+      if (!extra?.skipSave) {
         await model.save();
       }
     }

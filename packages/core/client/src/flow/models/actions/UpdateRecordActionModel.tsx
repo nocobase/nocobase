@@ -39,11 +39,14 @@ function AssignFieldsEditor() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const loaded = (await engine.loadOrCreateModel({
-        parentId: action.uid,
-        subKey: 'assignForm',
-        use: 'AssignFormModel',
-      })) as AssignFormModel;
+      const loaded = (await engine.loadOrCreateModel(
+        {
+          parentId: action.uid,
+          subKey: 'assignForm',
+          use: 'AssignFormModel',
+        },
+        { skipSave: !model.context.flowSettingsEnabled },
+      )) as AssignFormModel;
       if (cancelled) return;
       setFormModel(loaded);
       action.assignFormUid = (loaded as any)?.uid || action.assignFormUid;

@@ -249,13 +249,16 @@ export const openView = defineAction({
     // and use it as the parent for the child page content.
     let parentIdForChild = ctx.model.uid;
     if (params.subModelKey) {
-      const container = await ctx.engine.loadOrCreateModel({
-        async: true,
-        parentId: ctx.model.uid,
-        subKey: params.subModelKey,
-        subType: 'object',
-        use: 'FlowModel',
-      });
+      const container = await ctx.engine.loadOrCreateModel(
+        {
+          async: true,
+          parentId: ctx.model.uid,
+          subKey: params.subModelKey,
+          subType: 'object',
+          use: 'FlowModel',
+        },
+        { skipSave: !ctx.flowSettingsEnabled },
+      );
       if (container?.uid) {
         parentIdForChild = container.uid;
       }
