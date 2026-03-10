@@ -8,6 +8,7 @@
  */
 
 import type { CollectionField } from '@nocobase/flow-engine';
+import { getFormItemPreferredFieldPath } from '../internal/utils/modelUtils';
 
 export type FieldAssignCascaderOption = {
   label: string;
@@ -20,8 +21,7 @@ export type FieldAssignCascaderOption = {
 };
 
 function getItemFieldPath(itemModel: any): string | undefined {
-  const fp = itemModel?.fieldPath || itemModel?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-  return typeof fp === 'string' && fp ? fp : undefined;
+  return getFormItemPreferredFieldPath(itemModel);
 }
 
 function getItemLabel(itemModel: any, t: (key: string) => string): string {
