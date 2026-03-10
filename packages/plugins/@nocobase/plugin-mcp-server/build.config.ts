@@ -3,7 +3,12 @@ import fs from 'fs/promises';
 import path from 'path';
 
 function getPackageRoot(packageName: string) {
-  const resolved = require.resolve(`${packageName}/package.json`);
+  let resolved = '';
+  try {
+    resolved = require.resolve(packageName);
+  } catch (error) {
+    resolved = require.resolve(`${packageName}/package.json`);
+  }
   const marker = `${path.sep}node_modules${path.sep}${packageName.split('/').join(path.sep)}${path.sep}`;
   const markerIndex = resolved.lastIndexOf(marker);
   if (markerIndex < 0) {
@@ -35,6 +40,8 @@ export default defineConfig({
   afterBuild: async (log) => {
     const packagesToCopy = [
       '@modelcontextprotocol/sdk',
+      '@hono/node-server',
+      'hono',
       'openapi-mcp-generator',
       '@apidevtools/swagger-parser',
       '@apidevtools/json-schema-ref-parser',
