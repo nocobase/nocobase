@@ -47,9 +47,10 @@ class PackageUrls {
           // Ignore errors reading package.json and fall back to empty version
         }
         const appVersion = packageJson.version;
+        const salt = process.env.PLUGIN_URL_HASH_SALT || '';
         const hash = crypto
           .createHash('sha256')
-          .update(fsState.mtime.getTime() + appKey + version + appVersion + process.env.PLUGIN_URL_HASH_SALT || '')
+          .update(fsState.mtime.getTime() + appKey + version + appVersion + salt)
           .digest('hex')
           .slice(0, 8);
         t = `?hash=${hash}`;
