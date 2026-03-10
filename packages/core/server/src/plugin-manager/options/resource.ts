@@ -49,7 +49,7 @@ class PackageUrls {
         const appVersion = packageJson.version;
         const hash = crypto
           .createHash('sha256')
-          .update(fsState.mtime.getTime() + appKey + version + appVersion)
+          .update(fsState.mtime.getTime() + appKey + version + appVersion + process.env.PLUGIN_URL_HASH_SALT || '')
           .digest('hex')
           .slice(0, 8);
         t = `?hash=${hash}`;
