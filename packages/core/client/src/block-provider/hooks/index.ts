@@ -2042,10 +2042,18 @@ async function resetFormCorrectly(form: Form) {
 }
 
 export function appendQueryStringToUrl(url: string, queryString: string) {
-  if (queryString) {
-    return url + (url.includes('?') ? '&' : '?') + queryString;
+  if (!queryString) {
+    return url;
   }
-  return url;
+
+  const [path, hash = ''] = url.split('#');
+  if (hash) {
+    const hashSeparator = hash.includes('?') ? '&' : '?';
+    return `${path}#${hash}${hashSeparator}${queryString}`;
+  }
+
+  const separator = path.includes('?') ? '&' : '?';
+  return `${path}${separator}${queryString}`;
 }
 
 export const useParseURLAndParams = () => {
