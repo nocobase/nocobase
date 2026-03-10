@@ -988,6 +988,7 @@ export class FlowEngine {
   async loadOrCreateModel<T extends FlowModel = FlowModel>(
     options,
     extra?: {
+      skipSave?: boolean;
       delegateToParent?: boolean;
       delegate?: FlowContext;
     },
@@ -1013,7 +1014,9 @@ export class FlowEngine {
       model = this.createModel<T>(data as any, extra);
     } else {
       model = this.createModel<T>(options, extra);
-      await model.save();
+      if (!extra?.skipSave) {
+        await model.save();
+      }
     }
     if (model.parent) {
       const subModel = model.parent.findSubModel(model.subKey, (m) => {
