@@ -8,7 +8,16 @@ function getPackageRoot(packageName: string) {
 
 export default defineConfig({
   afterBuild: async (log) => {
-    const packagesToCopy = ['@modelcontextprotocol/sdk', 'openapi-mcp-generator'];
+    const packagesToCopy = [
+      '@modelcontextprotocol/sdk',
+      'openapi-mcp-generator',
+      '@apidevtools/swagger-parser',
+      '@apidevtools/json-schema-ref-parser',
+      '@apidevtools/openapi-schemas',
+      '@apidevtools/swagger-methods',
+      '@jsdevtools/ono',
+      'call-me-maybe',
+    ];
     for (const packageName of packagesToCopy) {
       const source = getPackageRoot(packageName);
       const target = path.resolve(__dirname, 'dist/node_modules', packageName);
