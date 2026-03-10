@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, observable, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import React from 'react';
 import { CollectionBlockModel, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
@@ -45,6 +45,16 @@ export class FilterFormGridModel extends GridModel {
 
   private hiddenRows: any = {};
   readonly loading = observable.ref(false);
+
+  private getAssociationFilterTargetKey(field: any) {
+    const filterTargetKey = field?.targetCollection?.filterTargetKey;
+
+    if (Array.isArray(filterTargetKey)) {
+      return filterTargetKey[0] || 'id';
+    }
+
+    return filterTargetKey || 'id';
+  }
 
   toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
     const gridRows = this.props.rows || {};
@@ -116,7 +126,7 @@ export class FilterFormGridModel extends GridModel {
           if (field?.target) {
             return {
               targetId: model.uid,
-              filterPaths: [`${fieldPath}.${field.targetKey}`],
+              filterPaths: [`${fieldPath}.${this.getAssociationFilterTargetKey(field)}`],
             };
           }
         }
