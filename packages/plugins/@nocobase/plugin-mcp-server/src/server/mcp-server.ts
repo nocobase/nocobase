@@ -7,17 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { randomUUID } from 'node:crypto';
 import type { McpToolsManager } from '@nocobase/ai';
 import { McpServer as SDKMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import {
-  CallToolRequestSchema,
-  InitializeRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
-
-type JsonRpcBody = Record<string, any> | Record<string, any>[];
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
 
 function stringifyContent(content: any) {
   if (typeof content === 'string') {
@@ -30,10 +24,30 @@ function stringifyContent(content: any) {
   }
 }
 
-export class McpServer {
-  private readonly server: SDKMcpServer;
-  private readonly transports = new Map<string, StreamableHTTPServerTransport>();
+function normalizeHeaderValue(value?: string | string[]) {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+  return value;
+}
 
+function resolveTokenFromExtra(extra?: RequestHandlerExtra<any, any>) {
+  if (extra?.authInfo?.token) {
+    return extra.authInfo.token;
+  }
+  const headers = extra?.requestInfo?.headers;
+  if (!headers) {
+    return undefined;
+  }
+  const authHeader = normalizeHeaderValue(headers.authorization || headers.Authorization);
+  if (!authHeader) {
+    return undefined;
+  }
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] || authHeader;
+}
+
+export class McpServer {
   constructor(
     private readonly options: {
       name: string;
@@ -43,11 +57,32 @@ export class McpServer {
         error: (...args: any[]) => void;
       };
     },
-  ) {
-    this.server = new SDKMcpServer(
+  ) {}
+
+  async handlePost(ctx: any) {
+    const body = (ctx.request.body || {}) as Record<string, any> | Record<string, any>[];
+    const server = this.createServer();
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    });
+    transport.onerror = (error) => {
+      this.options.logger.error(error);
+    };
+
+    await server.connect(transport);
+    try {
+      await transport.handleRequest(ctx.req, ctx.res, body);
+    } finally {
+      await server.close();
+    }
+    ctx.respond = false;
+  }
+
+  private createServer() {
+    const server = new SDKMcpServer(
       {
-        name: options.name,
-        version: options.version,
+        name: this.options.name,
+        version: this.options.version,
       },
       {
         capabilities: {
@@ -55,53 +90,7 @@ export class McpServer {
         },
       },
     );
-    this.registerHandlers();
-  }
-
-  async handlePost(ctx: any) {
-    const sessionId = ctx.get('mcp-session-id');
-    const body = (ctx.request.body || {}) as JsonRpcBody;
-
-    if (sessionId) {
-      const transport = this.transports.get(sessionId);
-      if (!transport) {
-        ctx.status = 400;
-        ctx.body = this.badRequestError('Invalid session id');
-        return;
-      }
-      ctx.respond = false;
-      await transport.handleRequest(ctx.req, ctx.res, body);
-      return;
-    }
-
-    if (!this.isInitializeRequest(body)) {
-      ctx.status = 400;
-      ctx.body = this.badRequestError('Initialize request required for new session');
-      return;
-    }
-
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => randomUUID(),
-    });
-    transport.onerror = (error) => {
-      this.options.logger.error(error);
-    };
-    await this.server.connect(transport);
-
-    const newSessionId = transport.sessionId;
-    if (newSessionId) {
-      this.transports.set(newSessionId, transport);
-      transport.onclose = () => {
-        this.transports.delete(newSessionId);
-      };
-    }
-
-    await transport.handleRequest(ctx.req, ctx.res, body);
-    ctx.respond = false;
-  }
-
-  private registerHandlers() {
-    this.server.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: this.options.toolsManager.listTools().map((tool) => {
           return {
@@ -116,16 +105,20 @@ export class McpServer {
       };
     });
 
-    this.server.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const toolName = request.params.name;
       const args = (request.params.arguments || {}) as Record<string, any>;
       const tool = this.options.toolsManager.getTool(toolName);
       if (!tool) {
         throw new Error(`Tool not found: ${toolName}`);
       }
+      const token = resolveTokenFromExtra(extra);
 
       try {
-        const result = await tool.call(args);
+        const result = await tool.call(args, {
+          token,
+          headers: extra?.requestInfo?.headers,
+        });
         return {
           content: [
             {
@@ -147,23 +140,6 @@ export class McpServer {
         };
       }
     });
-  }
-
-  private isInitializeRequest(body: JsonRpcBody) {
-    if (Array.isArray(body)) {
-      return body.some((item) => InitializeRequestSchema.safeParse(item).success);
-    }
-    return InitializeRequestSchema.safeParse(body).success;
-  }
-
-  private badRequestError(message: string) {
-    return {
-      jsonrpc: '2.0',
-      id: randomUUID(),
-      error: {
-        code: -32000,
-        message,
-      },
-    };
+    return server;
   }
 }

@@ -13,38 +13,42 @@ import { McpServer } from './mcp-server';
 
 export class PluginMcpServerServer extends Plugin {
   private mcpServer: McpServer;
-
-  async afterAdd() {
-    this.app.on('afterStart', async () => {
-      this.mcpServer = new McpServer({
-        name: 'nocobase-mcp-server',
-        version: this.options.version || '0.0.0',
-        toolsManager: this.ai.mcpToolsManager,
-        logger: this.log,
-      });
-    });
-  }
-
-  async beforeLoad() {}
-
-  async load() {
+  private readonly registerMcpTools = async () => {
     const apiTools = await collectMcpToolsFromSwagger({
       app: this.app,
     });
     this.ai.mcpToolsManager.registerTools(apiTools);
+  };
 
+  async afterAdd() {}
+
+  async beforeLoad() {}
+
+  async load() {
+    await this.registerMcpTools();
+
+    this.mcpServer = new McpServer({
+      name: 'nocobase-mcp-server',
+      version: this.options.version || '0.0.0',
+      toolsManager: this.ai.mcpToolsManager,
+      logger: this.log,
+    });
+
+    const mcpHandler = async (ctx, next) => {
+      await this.mcpServer.handlePost(ctx);
+      await next();
+    };
     this.app.resourceManager.define({
       name: 'mcp',
       actions: {
-        call: async (ctx, next) => {
-          await this.mcpServer.handlePost(ctx);
-          await next();
-        },
+        // list and create are default methods for 'GET' and 'POST' requests
+        // so that the mcp server can be called via '/mcp' endpoint directly
+        list: mcpHandler,
+        create: mcpHandler,
       },
+      only: ['list', 'create'],
     });
-    this.app.acl.allow('mcp', 'call', 'loggedIn');
-
-    this.log.info(`MCP StreamableHTTP route ready: POST /mcp`);
+    this.app.acl.allow('mcp', '*', 'loggedIn');
   }
 
   async install() {}

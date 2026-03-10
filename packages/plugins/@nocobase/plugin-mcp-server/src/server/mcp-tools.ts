@@ -7,22 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { ResourceManager } from '@nocobase/resourcer';
 import type { McpTool } from '@nocobase/ai';
+import type { McpToolCallContext } from '@nocobase/ai';
+import type { OpenAPIV3 } from 'openapi-types';
 import { requireModule } from '@nocobase/utils';
 import { merge as deepmerge } from '@nocobase/utils';
 import inject from 'light-my-request';
 
-type OpenAPIDocument = Record<string, any>;
-type OpenAPIOperation = Record<string, any>;
+type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
 
-const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'] as const;
-const SWAGGER_PREFIXES = ['src', 'lib', 'dist'];
 const SWAGGER_TARGETS = ['swagger.json', 'swagger/index.json', 'swagger'];
 
-function loadSwagger(packageName: string) {
-  for (const prefix of SWAGGER_PREFIXES) {
+function getSwaggerPrefixes() {
+  if (process.env.NODE_ENV === 'production') {
+    return ['lib', 'dist', 'src'];
+  }
+  return ['src', 'lib', 'dist'];
+}
+
+function loadSwagger(packageName: string): Partial<OpenAPIDocument> {
+  const prefixes = getSwaggerPrefixes();
+  for (const prefix of prefixes) {
     for (const target of SWAGGER_TARGETS) {
       try {
         const file = `${packageName}/${prefix}/${target}`;
@@ -37,10 +43,10 @@ function loadSwagger(packageName: string) {
   return {};
 }
 
-function mergeSwagger(target: OpenAPIDocument, source: OpenAPIDocument) {
+function mergeSwagger(target: OpenAPIDocument, source: Partial<OpenAPIDocument>): OpenAPIDocument {
   return deepmerge(target, source, {
     arrayMerge: (destinationArray, sourceArray) => sourceArray.concat(destinationArray),
-  });
+  }) as OpenAPIDocument;
 }
 
 function joinUrl(baseUrl: string, path: string) {
@@ -52,65 +58,11 @@ function joinUrl(baseUrl: string, path: string) {
   return `${normalizedBase}${normalizedPath}`;
 }
 
-function getActionNameCandidate(path: string, operation: OpenAPIOperation) {
-  const directPathMatch = path.match(/^\/([^{}]+:[^{}]+)$/);
-  if (directPathMatch?.[1]) {
-    return directPathMatch[1];
-  }
-
-  const candidates = [operation?.['x-action'], operation?.description, operation?.summary];
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && /^[^:\s]+:[^:\s]+$/.test(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
-}
-
-function getRegisteredResourceActions(resourceManager: ResourceManager) {
-  const result = new Set<string>();
-  const resources = (resourceManager as any).resources as Map<string, any>;
-  if (!resources) {
-    return result;
-  }
-  for (const [resourceName, resource] of resources.entries()) {
-    const actions = resource?.actions;
-    if (!actions) {
-      continue;
-    }
-    for (const [actionName] of actions.entries()) {
-      if (String(actionName).includes(':')) {
-        result.add(String(actionName));
-      } else {
-        result.add(`${resourceName}:${String(actionName)}`);
-      }
-    }
-  }
-  return result;
-}
-
-function buildActionLookup(swagger: OpenAPIDocument, resourceManager: ResourceManager) {
-  const registeredActions = getRegisteredResourceActions(resourceManager);
-  const lookup = new Map<string, string>();
-  const paths = swagger?.paths ?? {};
-  for (const [path, pathItem] of Object.entries(paths)) {
-    for (const method of HTTP_METHODS) {
-      const operation = pathItem?.[method];
-      if (!operation) {
-        continue;
-      }
-      const actionName = getActionNameCandidate(path, operation);
-      if (!actionName || !registeredActions.has(actionName)) {
-        continue;
-      }
-      lookup.set(`${method.toUpperCase()} ${path}`, actionName);
-    }
-  }
-  return lookup;
-}
-
-function buildRequest(tool: McpToolDefinitionWithBaseUrl, args: Record<string, any> = {}) {
+function buildRequest(
+  tool: McpToolDefinitionWithBaseUrl,
+  args: Record<string, any> = {},
+  context?: McpToolCallContext,
+) {
   const missingPathParams: string[] = [];
   const path = tool.pathTemplate.replace(/\{([^}]+)\}/g, (_, key) => {
     const value = args[key];
@@ -141,6 +93,10 @@ function buildRequest(tool: McpToolDefinitionWithBaseUrl, args: Record<string, a
     if (parameter.in === 'cookie') {
       cookies[parameter.name] = String(value);
     }
+  }
+
+  if (context?.token && !headers.authorization && !headers.Authorization) {
+    headers.authorization = `Bearer ${context.token}`;
   }
 
   let payload = args.requestBody;
@@ -174,7 +130,6 @@ function buildRequest(tool: McpToolDefinitionWithBaseUrl, args: Record<string, a
 export async function collectMcpToolsFromSwagger(options: {
   app: {
     db: any;
-    resourceManager: ResourceManager;
     version: { get: () => Promise<string> };
     resourcer: { options?: { prefix?: string } };
     callback: () => any;
@@ -193,6 +148,7 @@ export async function collectMcpToolsFromSwagger(options: {
       title: 'NocoBase API - MCP',
       version: await app.version.get(),
     },
+    paths: {},
     servers: [
       {
         url: (app.resourcer.options?.prefix || '/').replace(/^[^/]/, '/$1'),
@@ -214,55 +170,53 @@ export async function collectMcpToolsFromSwagger(options: {
     swagger = mergeSwagger(swagger, pluginSwagger);
   }
 
-  const actionLookup = buildActionLookup(swagger, app.resourceManager);
   const { getToolsFromOpenApi } = await import('openapi-mcp-generator');
   const mcpTools = (await getToolsFromOpenApi(swagger)) as McpToolDefinitionWithBaseUrl[];
 
-  return mcpTools
-    .filter((tool) => actionLookup.has(`${tool.method.toUpperCase()} ${tool.pathTemplate}`))
-    .map((tool) => {
-      return {
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        call: async (args: Record<string, any>) => {
-          const request = buildRequest(tool, args);
-          if (request.missingPathParams.length > 0) {
-            throw new Error(`Missing required path params: ${request.missingPathParams.join(', ')}`);
-          }
+  return mcpTools.map((tool) => {
+    console.log(tool.name);
+    return {
+      name: tool.name,
+      description: tool.description,
+      inputSchema: tool.inputSchema,
+      call: async (args: Record<string, any>, context?: McpToolCallContext) => {
+        const request = buildRequest(tool, args, context);
+        if (request.missingPathParams.length > 0) {
+          throw new Error(`Missing required path params: ${request.missingPathParams.join(', ')}`);
+        }
 
-          const response = await inject(app.callback(), {
-            method: request.method as any,
-            url: request.url,
-            query: request.query,
-            headers: request.headers,
-            cookies: request.cookies,
-            payload: request.payload,
-          });
+        const response = await inject(app.callback(), {
+          method: request.method as any,
+          url: request.url,
+          query: request.query,
+          headers: request.headers,
+          cookies: request.cookies,
+          payload: request.payload,
+        });
 
-          const contentType = String(response.headers['content-type'] || '').toLowerCase();
-          const body =
-            contentType.includes('application/json') || contentType.includes('+json')
-              ? (() => {
-                  try {
-                    return response.json();
-                  } catch (error) {
-                    return response.payload;
-                  }
-                })()
-              : response.payload;
+        const contentType = String(response.headers['content-type'] || '').toLowerCase();
+        const body =
+          contentType.includes('application/json') || contentType.includes('+json')
+            ? (() => {
+                try {
+                  return response.json();
+                } catch (error) {
+                  return response.payload;
+                }
+              })()
+            : response.payload;
 
-          if (response.statusCode >= 400) {
-            throw new Error(
-              JSON.stringify({
-                statusCode: response.statusCode,
-                body,
-              }),
-            );
-          }
+        if (response.statusCode >= 400) {
+          throw new Error(
+            JSON.stringify({
+              statusCode: response.statusCode,
+              body,
+            }),
+          );
+        }
 
-          return body;
-        },
-      };
-    });
+        return body;
+      },
+    };
+  });
 }

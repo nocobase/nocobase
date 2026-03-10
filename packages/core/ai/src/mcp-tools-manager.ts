@@ -13,7 +13,12 @@ export type McpTool = {
   name: string;
   description: string;
   inputSchema?: any;
-  call: (args: Record<string, any>) => Promise<any>;
+  call: (args: Record<string, any>, context?: McpToolCallContext) => Promise<any>;
+};
+
+export type McpToolCallContext = {
+  token?: string;
+  headers?: Record<string, string | string[] | undefined>;
 };
 
 export class McpToolsManager {
