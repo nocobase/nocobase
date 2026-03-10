@@ -48,21 +48,12 @@ jobs:
           APPEND_PRESET_LOCAL_PLUGINS=$(find ./packages/pro-plugins/@nocobase -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | sed 's/^plugin-//' | tr '\n' ',' | sed 's/,$//')
           echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
         id: vars
+      - uses: pnpm/action-setup@v4
       - name: Use Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'pnpm'
-      - name: Get pnpm store directory path
-        id: pnpm-cache-dir-path
-        run: echo "::set-output name=dir::$(pnpm store path)"
-      - uses: actions/cache@v3
-        id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
       - run: pnpm install
       - run: ls -a ./node_modules/@nocobase
       - name: pnpm build
