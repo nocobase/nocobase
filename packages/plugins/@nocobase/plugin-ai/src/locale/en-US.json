@@ -290,5 +290,8 @@
   "Load specific SKILLS": "Load specific SKILLS",
   "Loading content of the specific SKILLS": "Loading content of the specific SKILLS",
   "General skills": "General skills",
-  "Employee-specific skills": "Employee-specific skills"
+  "Employee-specific skills": "Employee-specific skills",
+  "Data modeling expert": "Data modeling expert",
+  "A data modeling expert who helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.": "A data modeling expert who helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.",
+  "Hi, I’m Orin. Tell me about your business scenario, and I’ll help you model the database step by step.": "Hi, I’m Orin. Tell me about your business scenario, and I’ll help you model the database step by step."
 }

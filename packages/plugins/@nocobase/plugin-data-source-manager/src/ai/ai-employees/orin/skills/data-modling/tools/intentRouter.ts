@@ -10,7 +10,7 @@
 import { Context } from '@nocobase/actions';
 import { defineTools } from '@nocobase/ai';
 // @ts-ignore
-import pkg from '../../../../../package.json';
+import pkg from '../../../../../../../package.json';
 
 const createPrompt = `You are now entering the **New Schema Creation Flow**. Follow these rules:
 
