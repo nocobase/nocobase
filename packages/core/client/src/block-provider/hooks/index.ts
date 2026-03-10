@@ -2046,14 +2046,19 @@ export function appendQueryStringToUrl(url: string, queryString: string) {
     return url;
   }
 
-  const [path, hash = ''] = url.split('#');
-  if (hash) {
+  const hashIndex = url.indexOf('#');
+  const hasHash = hashIndex >= 0;
+  const path = hasHash ? url.slice(0, hashIndex) : url;
+  const hash = hasHash ? url.slice(hashIndex + 1) : '';
+  const isHashRoute = hash.startsWith('/') || hash.startsWith('!/');
+
+  if (hasHash && isHashRoute) {
     const hashSeparator = hash.includes('?') ? '&' : '?';
     return `${path}#${hash}${hashSeparator}${queryString}`;
   }
 
   const separator = path.includes('?') ? '&' : '?';
-  return `${path}${separator}${queryString}`;
+  return hasHash ? `${path}${separator}${queryString}#${hash}` : `${path}${separator}${queryString}`;
 }
 
 export const useParseURLAndParams = () => {
