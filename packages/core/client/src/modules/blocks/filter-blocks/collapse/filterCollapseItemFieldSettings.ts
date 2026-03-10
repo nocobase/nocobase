@@ -85,10 +85,12 @@ export const filterCollapseItemFieldSettings = new SchemaSettings({
               const field = useField();
               const { t } = useTranslation();
               const { dn } = useDesignable();
+              // 历史字段名为 defaultCollapse，实际开关语义为“默认展开”
+              const defaultExpanded = field.componentProps.defaultCollapse;
 
               return {
                 title: t('Default expanded'),
-                checked: field.componentProps.defaultCollapse,
+                checked: defaultExpanded,
                 onChange: (v) => {
                   field.componentProps.defaultCollapse = v;
                   _.set(fieldSchema, 'x-component-props.defaultCollapse', v);

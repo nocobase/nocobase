@@ -40,6 +40,8 @@ export const AssociationFilterItemDesigner = (props) => {
   const { dn } = useDesignable();
 
   const targetFields = collectionField?.target ? getCollectionFields(collectionField?.target) : [];
+  // 历史字段名为 defaultCollapse，实际开关语义为“默认展开”
+  const defaultExpanded = field.componentProps.defaultCollapse;
 
   const options = targetFields
     .filter((field) => !field?.target && field.type !== 'boolean')
@@ -101,7 +103,7 @@ export const AssociationFilterItemDesigner = (props) => {
       />
       <SchemaSettingsSwitchItem
         title={t('Default expanded')}
-        checked={field.componentProps.defaultCollapse}
+        checked={defaultExpanded}
         onChange={(v) => {
           field.componentProps.defaultCollapse = v;
           _.set(fieldSchema, 'x-component-props.defaultCollapse', v);
