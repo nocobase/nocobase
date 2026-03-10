@@ -981,8 +981,7 @@ export class FlowEngine {
     let model: T | null = null;
 
     // Prefer ensure (single request) over findOne→save (two requests)
-    const ensure = (this._modelRepository as any)?.ensure;
-    const canEnsure = typeof ensure === 'function';
+    const canEnsure = typeof (this._modelRepository as any)?.ensure === 'function';
     const includeAsyncNode = !!(options as any)?.includeAsyncNode;
     const use = (options as any)?.use;
     const canUseEnsure = canEnsure && typeof use === 'string' && !!String(use).trim();
@@ -1024,7 +1023,7 @@ export class FlowEngine {
 
     const ensureValues = canUseEnsure ? buildEnsureValues() : null;
     if (ensureValues) {
-      const ensured = await ensure(ensureValues, { includeAsyncNode });
+      const ensured = await (this._modelRepository as any).ensure(ensureValues, { includeAsyncNode });
       if (ensured?.uid) {
         model = this.createModel<T>(ensured as any, extra);
       }
