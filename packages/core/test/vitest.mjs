@@ -97,7 +97,7 @@ const defineCommonConfig = () => {
           '**/swagger/**',
           '**/.dumi/**',
           '**/.umi/**',
-          '**/.plugins/**',
+          '**/plugins/**',
           '**/lib/**',
           '**/__tests__/**',
           '**/e2e/**',
