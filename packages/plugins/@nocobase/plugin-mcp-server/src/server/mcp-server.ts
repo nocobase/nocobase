@@ -8,10 +8,33 @@
  */
 
 import type { McpToolsManager } from '@nocobase/ai';
-import { McpServer as SDKMcpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import type { RequestHandlerExtra } from '@modelcontextprotocol/sdk/shared/protocol.js';
+
+type McpSdkModules = {
+  McpServer: any;
+  StreamableHTTPServerTransport: any;
+  CallToolRequestSchema: any;
+  ListToolsRequestSchema: any;
+};
+
+let mcpSdkPromise: Promise<McpSdkModules> | null = null;
+
+function getMcpSdkModules() {
+  if (!mcpSdkPromise) {
+    mcpSdkPromise = Promise.all([
+      import('@modelcontextprotocol/sdk/server/mcp.js'),
+      import('@modelcontextprotocol/sdk/server/streamableHttp.js'),
+      import('@modelcontextprotocol/sdk/types.js'),
+    ]).then(([mcpServerModule, transportModule, typesModule]) => {
+      return {
+        McpServer: mcpServerModule.McpServer,
+        StreamableHTTPServerTransport: transportModule.StreamableHTTPServerTransport,
+        CallToolRequestSchema: typesModule.CallToolRequestSchema,
+        ListToolsRequestSchema: typesModule.ListToolsRequestSchema,
+      };
+    });
+  }
+  return mcpSdkPromise;
+}
 
 function stringifyContent(content: any) {
   if (typeof content === 'string') {
@@ -31,7 +54,7 @@ function normalizeHeaderValue(value?: string | string[]) {
   return value;
 }
 
-function resolveTokenFromExtra(extra?: RequestHandlerExtra<any, any>) {
+function resolveTokenFromExtra(extra?: any) {
   if (extra?.authInfo?.token) {
     return extra.authInfo.token;
   }
@@ -61,8 +84,9 @@ export class McpServer {
 
   async handlePost(ctx: any) {
     const body = (ctx.request.body || {}) as Record<string, any> | Record<string, any>[];
-    const server = this.createServer();
-    const transport = new StreamableHTTPServerTransport({
+    const sdkModules = await getMcpSdkModules();
+    const server = this.createServer(sdkModules);
+    const transport = new sdkModules.StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
     transport.onerror = (error) => {
@@ -78,8 +102,8 @@ export class McpServer {
     ctx.respond = false;
   }
 
-  private createServer() {
-    const server = new SDKMcpServer(
+  private createServer(sdkModules: McpSdkModules) {
+    const server = new sdkModules.McpServer(
       {
         name: this.options.name,
         version: this.options.version,
@@ -90,7 +114,7 @@ export class McpServer {
         },
       },
     );
-    server.server.setRequestHandler(ListToolsRequestSchema, async () => {
+    server.server.setRequestHandler(sdkModules.ListToolsRequestSchema, async () => {
       return {
         tools: this.options.toolsManager.listTools().map((tool) => {
           return {
@@ -105,7 +129,7 @@ export class McpServer {
       };
     });
 
-    server.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+    server.server.setRequestHandler(sdkModules.CallToolRequestSchema, async (request, extra) => {
       const toolName = request.params.name;
       const args = (request.params.arguments || {}) as Record<string, any>;
       const tool = this.options.toolsManager.getTool(toolName);
