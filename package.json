@@ -65,6 +65,8 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
+    "@nocobase/build": "workspace:*",
+    "@nocobase/cli": "workspace:*",
     "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "ali-oss": "^6.1.0",
@@ -85,15 +87,12 @@
     "react-dom": "^18.0.0",
     "safe-load-script": "^0.0.1",
     "typescript": "5.1.3",
-    "vitest": "^1.5.0",
-    "@nocobase/build": "workspace:*",
-    "@nocobase/cli": "workspace:*"
+    "vitest": "^1.5.0"
   },
   "volta": {
     "node": "20.16.0",
     "pnpm": "10.29.1"
   },
-  "dependencies": {},
   "packageManager": "pnpm@10.29.1",
   "pnpm": {
     "overrides": {

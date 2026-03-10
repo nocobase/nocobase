@@ -20,7 +20,7 @@ VariableInput 是一个统一的变量输入组件，支持静态值输入和动
 - 过滤条件中的变量输入
 - 简单的变量选择需求
 
-[查看 VariableInput 详细文档 →](./variable-input)
+[查看 VariableInput 详细文档 →](./variable-input.md/index.md)
 
 ### SlateVariableEditor - 智能变量编辑器 ⭐️
 
@@ -39,7 +39,7 @@ VariableInput 是一个统一的变量输入组件，支持静态值输入和动
 - 表达式编辑
 - 任何需要在长文本中插入变量的复杂场景
 
-[查看 SlateVariableEditor 详细文档 →](./slate-variable-editor)
+[查看 SlateVariableEditor 详细文档 →](./slate-variable-editor.md/index.md)
 
 ## 选择指南
 
