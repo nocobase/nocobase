@@ -137,7 +137,15 @@ export const openView = defineAction({
       if (hasInput) return inputArgs[key];
       return actionDefaults?.[key];
     };
-    const mergedFilterByTk = pickWithDefault('filterByTk');
+    const mergedFilterByTk = (() => {
+      const value = pickWithDefault('filterByTk');
+      return Array.isArray(ctx.collection?.filterTargetKey) &&
+        ctx.collection.filterTargetKey.length === 1 &&
+        value != null &&
+        typeof value !== 'object'
+        ? { [ctx.collection.filterTargetKey[0]]: value }
+        : value;
+    })();
     const mergedSourceId = pickWithDefault('sourceId');
 
     const runtimeDataSourceKey =

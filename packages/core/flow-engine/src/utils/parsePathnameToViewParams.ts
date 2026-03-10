@@ -116,8 +116,8 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
               // 解析失败，按字符串保留
               parsed = decoded;
             }
-          } else if (decoded && decoded.includes('=') && decoded.includes('&')) {
-            // 形如 a=b&c=d 的整体段
+          } else if (decoded && /^[^=&]+=[^=&]*(?:&[^=&]+=[^=&]*)*$/.test(decoded)) {
+            // 形如 a=b 或 a=b&c=d 的整体段
             parsed = parseKeyValuePairs(decoded);
           }
           currentView.filterByTk = parsed;
