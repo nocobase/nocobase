@@ -105,7 +105,7 @@ jobs:
         if: ${{ !matrix.settings.docker }}
         with:
           node-version: 20
-          cache: yarn
+          cache: pnpm
       - name: Install
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -132,7 +132,7 @@ jobs:
         shell: bash
       - name: Setup node x86
         if: matrix.settings.target == 'i686-pc-windows-msvc'
-        run: yarn config set supportedArchitectures.cpu "ia32"
+        run: pnpm config set supportedArchitectures.cpu "ia32"
         shell: bash
       - name: Install dependencies
         run: pnpm install
@@ -141,7 +141,7 @@ jobs:
         if: matrix.settings.target == 'i686-pc-windows-msvc'
         with:
           node-version: 20
-          cache: yarn
+          cache: pnpm
           architecture: x86
       - name: Install OpenSSL dev
         if: ${{ matrix.settings.host == 'ubuntu-latest' }}
@@ -198,7 +198,7 @@ jobs:
           shell: bash
           run: |
             sudo pkg install -y -f curl node libnghttp2 npm openssl ca_root_nss
-            sudo npm install -g yarn --ignore-scripts
+            sudo npm install -g pnpm --ignore-scripts
             export SSL_CERT_FILE=/usr/local/share/certs/ca-root-nss.crt
             export RUSTUP_INIT_SKIP_PATH_CHECK=yes
             curl https://sh.rustup.rs -sSf --output rustup.sh
@@ -208,8 +208,8 @@ jobs:
             rustc --version
             echo "~~~~ node -v ~~~~"
             node -v
-            echo "~~~~ yarn --version ~~~~"
-            yarn --version
+            echo "~~~~ pnpm --version ~~~~"
+            pnpm --version
             pwd
             ls -lah
             whoami
@@ -219,7 +219,7 @@ jobs:
             pnpm build
             rm -rf node_modules
             rm -rf target
-            rm -rf .yarn/cache
+            rm -rf ~/.local/share/pnpm/store
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -261,7 +261,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
+          cache: pnpm
           architecture: x64
       - name: Install dependencies
         run: pnpm install
@@ -305,7 +305,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install
       - name: Download artifacts
@@ -348,10 +348,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
+          cache: pnpm
       - name: Install dependencies
         run: |
-          yarn config set supportedArchitectures.libc "musl"
+          pnpm config set supportedArchitectures.libc "musl"
           pnpm install
       - name: Download artifacts
         uses: actions/download-artifact@v4
@@ -399,8 +399,8 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: |
-          yarn config set supportedArchitectures.cpu "arm64"
-          yarn config set supportedArchitectures.libc "glibc"
+          pnpm config set supportedArchitectures.cpu "arm64"
+          pnpm config set supportedArchitectures.libc "glibc"
           pnpm install
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -446,8 +446,8 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: |
-          yarn config set supportedArchitectures.cpu "arm64"
-          yarn config set supportedArchitectures.libc "musl"
+          pnpm config set supportedArchitectures.cpu "arm64"
+          pnpm config set supportedArchitectures.libc "musl"
           pnpm install
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -498,7 +498,7 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: |
-          yarn config set supportedArchitectures.cpu "arm"
+          pnpm config set supportedArchitectures.cpu "arm"
           pnpm install
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -538,7 +538,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install
       - name: Download macOS x64 artifact
@@ -552,7 +552,7 @@ jobs:
           name: bindings-aarch64-apple-darwin
           path: artifacts
       - name: Combine binaries
-        run: yarn universal
+        run: pnpm universal
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -590,7 +590,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
+          cache: pnpm
       - name: Install dependencies
         run: pnpm install
       - name: Download all artifacts
@@ -598,7 +598,7 @@ jobs:
         with:
           path: artifacts
       - name: Move artifacts
-        run: yarn artifacts
+        run: pnpm artifacts
       - name: List packages
         run: ls -R ./npm
         shell: bash

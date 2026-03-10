@@ -157,12 +157,12 @@ jobs:
   #       id: vars
 
   #     - name: Get pnpm store directory path
-  #       id: yarn-cache-dir-path
+  #       id: pnpm-cache-dir-path
   #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
-  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
   #       with:
-  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
   #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
   #           ${{ runner.os }}-pnpm-
@@ -255,12 +255,12 @@ jobs:
   #       id: vars
 
   #     - name: Get pnpm store directory path
-  #       id: yarn-cache-dir-path
+  #       id: pnpm-cache-dir-path
   #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
-  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
   #       with:
-  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
   #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
   #           ${{ runner.os }}-pnpm-
@@ -381,12 +381,12 @@ jobs:
   #       id: vars
 
   #     - name: Get pnpm store directory path
-  #       id: yarn-cache-dir-path
+  #       id: pnpm-cache-dir-path
   #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
-  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
   #       with:
-  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
   #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
   #           ${{ runner.os }}-pnpm-
@@ -479,12 +479,12 @@ jobs:
   #       id: vars
 
   #     - name: Get pnpm store directory path
-  #       id: yarn-cache-dir-path
+  #       id: pnpm-cache-dir-path
   #       run: echo "::set-output name=dir::$(pnpm store path)"
   #     - uses: actions/cache@v4
-  #       id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
+  #       id: pnpm-cache # use this to check for `cache-hit` (`steps.pnpm-cache.outputs.cache-hit != 'true'`)
   #       with:
-  #         path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+  #         path: ${{ steps.pnpm-cache-dir-path.outputs.dir }}
   #         key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
   #         restore-keys: |
   #           ${{ runner.os }}-pnpm-
