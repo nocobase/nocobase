@@ -109,6 +109,13 @@ describe('parsePathnameToViewParams', () => {
     expect(result).toEqual([{ viewUid: 'xxx', filterByTk: { id: '1', tenant: 'ac' } }]);
   });
 
+  test('should parse filterByTk from single key-value encoded segment into object', () => {
+    const kv = encodeURIComponent('id=1');
+    const path = `/admin/xxx/filterbytk/${kv}`;
+    const result = parsePathnameToViewParams(path);
+    expect(result).toEqual([{ viewUid: 'xxx', filterByTk: { id: '1' } }]);
+  });
+
   test('should parse filterByTk from JSON object segment', () => {
     const json = encodeURIComponent('{"id":"1","tenant":"ac"}');
     const path = `/admin/xxx/filterbytk/${json}`;
