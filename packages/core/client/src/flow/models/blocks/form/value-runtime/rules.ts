@@ -523,6 +523,11 @@ export class RuleEngine {
         this.scheduleRule(id);
       }
     }
+
+    for (const id of Array.from(this.rules.keys())) {
+      if (!id.startsWith('default:')) continue;
+      this.scheduleRule(id);
+    }
   }
 
   onModelMounted(model: FlowModel) {
@@ -648,6 +653,25 @@ export class RuleEngine {
     return null;
   }
 
+  private getAssignTemplateTargetPathForModel(model: FlowModel): string {
+    const direct = this.getModelTargetPath(model);
+    if (direct) return direct;
+
+    const targetNamePath = this.getModelTargetNamePath(model);
+    if (!targetNamePath?.length) return '';
+
+    const normalized = targetNamePath.filter((seg) => typeof seg !== 'number');
+    if (!normalized.length) return '';
+
+    return namePathToPathKey(normalized as NamePath);
+  }
+
+  private hasAssignTemplateForTargetPath(targetPath: string): boolean {
+    const key = String(targetPath || '');
+    if (!key) return false;
+    return this.assignTemplatesByTargetPath.has(key);
+  }
+
   private tryRegisterDefaultRuleInstance(model: FlowModel) {
     if (this.options.isDisposed()) return;
     if (!this.isModelInThisForm(model)) return;
@@ -663,11 +687,32 @@ export class RuleEngine {
     if (this.rules.has(id)) return;
 
     const master = (model as any).master || model;
+    const assignTemplateTargetPath = this.getAssignTemplateTargetPathForModel(model);
     this.bindMasterInitialValue(master, id);
 
-    const getPropsInitialValue = () => {
+    const getRawPropsInitialValue = () => {
       const p = (master as any)?.getProps?.() ?? (master as any)?.props;
       return p?.initialValue;
+    };
+
+    const initialPropsInitialValue = getRawPropsInitialValue();
+    let hasRuntimePropsInitialValueChange = false;
+
+    const getPropsInitialValue = () => {
+      const next = getRawPropsInitialValue();
+      if (!hasRuntimePropsInitialValueChange && !_.isEqual(next, initialPropsInitialValue)) {
+        hasRuntimePropsInitialValueChange = true;
+      }
+      if (!this.hasAssignTemplateForTargetPath(assignTemplateTargetPath)) {
+        return next;
+      }
+      if (hasRuntimePropsInitialValueChange) {
+        return next;
+      }
+      if (typeof initialPropsInitialValue !== 'undefined') {
+        return undefined;
+      }
+      return next;
     };
 
     const getDefaultRulePriority = () => {
@@ -675,6 +720,9 @@ export class RuleEngine {
     };
 
     const getStepDefaultValue = () => {
+      if (this.hasAssignTemplateForTargetPath(assignTemplateTargetPath)) {
+        return undefined;
+      }
       try {
         const fromEdit = master?.getStepParams?.('editItemSettings', 'initialValue')?.defaultValue;
         if (typeof fromEdit !== 'undefined') return fromEdit;

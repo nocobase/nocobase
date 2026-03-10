@@ -822,6 +822,61 @@ describe('FormValueRuntime (form assign rules)', () => {
     await waitFor(() => expect(formStub.getFieldValue(['a'])).toBe('Z'));
   });
 
+  it('prefers form-level Field values defaults over persisted field initialValue for the same target', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub({});
+
+    const blockModel: any = {
+      uid: 'form-assign-form-level-over-legacy-default',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['color'] });
+
+    const fieldModel: any = {
+      uid: 'field-color-form-level-over-legacy-default',
+      context: fieldCtx,
+      props: observable({ initialValue: '#1677FF' }),
+      getProps: function () {
+        return this.props;
+      },
+    };
+    fieldCtx.defineProperty('model', { value: fieldModel });
+
+    engineEmitter.emit('model:mounted', { model: fieldModel });
+    await waitFor(() => expect(formStub.getFieldValue(['color'])).toBe('#1677FF'));
+
+    runtime.syncAssignRules([
+      {
+        key: 'r1',
+        enable: true,
+        targetPath: 'color',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '#fadb14',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['color'])).toBe('#fadb14'));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(formStub.getFieldValue(['color'])).toBe('#fadb14');
+
+    fieldModel.props.initialValue = '#13c2c2';
+    await waitFor(() => expect(formStub.getFieldValue(['color'])).toBe('#13c2c2'));
+  });
+
   it('tracks ctx var deps and updates when ctx var changes', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
