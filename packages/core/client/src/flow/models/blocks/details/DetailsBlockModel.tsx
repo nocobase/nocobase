@@ -101,6 +101,10 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     return this.resource instanceof MultiRecordResource;
   }
 
+  hasDispatchedMultiRefresh() {
+    return this.hasMultiRefreshDispatched;
+  }
+
   getCurrentRecord() {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
@@ -362,7 +366,7 @@ DetailsBlockModel.registerFlow({
         if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
           return;
         }
-        if (ctx.model.hasMultiRefreshDispatched) {
+        if (ctx.model.hasDispatchedMultiRefresh()) {
           return;
         }
 
