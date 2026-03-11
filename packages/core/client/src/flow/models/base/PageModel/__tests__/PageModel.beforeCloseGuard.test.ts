@@ -11,12 +11,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { PageModel } from '@nocobase/client';
 
 const getConfirmUnsavedChangesHandler = () => {
-  const flow = PageModel.globalFlowRegistry.getFlow('beforeCloseGuard');
+  const flow = PageModel.globalFlowRegistry.getFlow('closeGuard');
   const step = flow?.getStep('confirmUnsavedChanges');
   return step?.serialize().handler;
 };
 
-describe('PageModel beforeCloseGuard flow', () => {
+describe('PageModel closeGuard flow', () => {
   it('skips confirmation when there are no dirty forms', async () => {
     const handler = getConfirmUnsavedChangesHandler();
     const modalConfirm = vi.fn();

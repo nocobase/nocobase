@@ -69,7 +69,7 @@ const openDynamicFlowsEditor = async (model: FlowModel) => {
   render(embedCall.content);
 };
 
-const createModel = (options: { preventClose?: boolean; hiddenBeforeClose?: boolean } = {}) => {
+const createModel = (options: { preventClose?: boolean; hiddenClose?: boolean } = {}) => {
   const engine = new FlowEngine();
   engine.translate = vi.fn((key: string) => key) as any;
   engine.flowSettings.renderStepForm = vi.fn(() => null) as any;
@@ -77,12 +77,12 @@ const createModel = (options: { preventClose?: boolean; hiddenBeforeClose?: bool
   class LocalTestModel extends TestModel {}
 
   LocalTestModel.registerEvents({
-    beforeClose: {
-      name: 'beforeClose',
-      title: 'Before close',
+    close: {
+      name: 'close',
+      title: 'Close',
       handler: vi.fn(),
       hideInSettings(ctx) {
-        return options.hiddenBeforeClose ?? !!ctx.view?.preventClose;
+        return options.hiddenClose ?? !!ctx.view?.preventClose;
       },
     },
     click: {
@@ -134,7 +134,7 @@ describe('DynamicFlowsIcon', () => {
   });
 
   it('filters hidden events from trigger event options', async () => {
-    const model = createModel({ hiddenBeforeClose: true });
+    const model = createModel({ hiddenClose: true });
 
     await openDynamicFlowsEditor(model);
 
@@ -144,7 +144,7 @@ describe('DynamicFlowsIcon', () => {
     });
   });
 
-  it('hides beforeClose when view.preventClose=true', async () => {
+  it('hides close when view.preventClose=true', async () => {
     const model = createModel({ preventClose: true });
 
     await openDynamicFlowsEditor(model);
@@ -155,7 +155,7 @@ describe('DynamicFlowsIcon', () => {
     });
   });
 
-  it('keeps beforeClose visible when view.preventClose=false', async () => {
+  it('keeps close visible when view.preventClose=false', async () => {
     const model = createModel({ preventClose: false });
 
     await openDynamicFlowsEditor(model);
@@ -163,7 +163,7 @@ describe('DynamicFlowsIcon', () => {
     await waitFor(() => {
       const triggerEventSelectProps = getTriggerEventSelectProps();
       expect(triggerEventSelectProps?.options).toEqual([
-        { label: 'Before close', value: 'beforeClose' },
+        { label: 'Close', value: 'close' },
         { label: 'Click', value: 'click' },
       ]);
     });

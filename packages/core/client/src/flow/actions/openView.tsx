@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr, FlowModelContext, FlowModel } from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
@@ -72,7 +72,7 @@ function createViewBeforeCloseHandler(pageModel: FlowModel) {
     const dirty = createBeforeCloseDirtyState(pageModel);
 
     let prevented = false;
-    await pageModel.dispatchEvent('beforeClose', {
+    const dispatchResults = await pageModel.dispatchEvent('close', {
       result,
       force: false,
       dirty,
@@ -83,7 +83,11 @@ function createViewBeforeCloseHandler(pageModel: FlowModel) {
       },
     });
 
-    return !prevented;
+    const exited =
+      (dispatchResults as any)?.__abortedByExitAll === true ||
+      (Array.isArray(dispatchResults) ? dispatchResults.some((item) => item instanceof FlowExitAllException) : false);
+
+    return !prevented && !exited;
   };
 }
 

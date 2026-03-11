@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { FlowExitAllException } from '@nocobase/flow-engine';
 import { FlowPage } from '../../FlowPage';
 import { openView } from '../openView';
 
@@ -91,8 +92,8 @@ const openAndLoad = async (pageModel: any, inputArgs: any = {}) => {
   return { currentView, pageModel };
 };
 
-describe('openView action - beforeClose behavior', () => {
-  it('dispatches beforeClose with clean dirty state when no form was modified', async () => {
+describe('openView action - close behavior', () => {
+  it('dispatches close with clean dirty state when no form was modified', async () => {
     const pageModel = createPageModel();
     const { currentView } = await openAndLoad(pageModel);
 
@@ -101,7 +102,7 @@ describe('openView action - beforeClose behavior', () => {
     expect(allowed).toBe(true);
     expect(pageModel.context.modal.confirm).not.toHaveBeenCalled();
     expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
-      'beforeClose',
+      'close',
       expect.objectContaining({
         result: 'done',
         force: false,
@@ -114,7 +115,7 @@ describe('openView action - beforeClose behavior', () => {
     );
   });
 
-  it('passes dirty form info into beforeClose event payload', async () => {
+  it('passes dirty form info into close event payload', async () => {
     const pageModel = createPageModel({
       subModels: {
         items: [
@@ -132,7 +133,7 @@ describe('openView action - beforeClose behavior', () => {
 
     expect(allowed).toBe(true);
     expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
-      'beforeClose',
+      'close',
       expect.objectContaining({
         dirty: {
           hasDirtyForms: true,
@@ -142,7 +143,7 @@ describe('openView action - beforeClose behavior', () => {
     );
   });
 
-  it('allows dynamic beforeClose flows to prevent closing after confirmation', async () => {
+  it('allows dynamic close flows to prevent closing after confirmation', async () => {
     const dispatchEvent = vi.fn().mockImplementation(async (_eventName: string, inputArgs: any) => {
       inputArgs.controller.prevent();
     });
@@ -165,12 +166,51 @@ describe('openView action - beforeClose behavior', () => {
 
     expect(allowed).toBe(false);
     expect(dispatchEvent).toHaveBeenCalledWith(
-      'beforeClose',
+      'close',
       expect.objectContaining({
         dirty: {
           hasDirtyForms: true,
           formModelUids: ['dirty-form-uid'],
         },
+        controller: expect.any(Object),
+      }),
+    );
+  });
+
+  it('blocks closing when a close flow exits via ctx.exit()', async () => {
+    const abortedResults: any[] = [];
+    Object.defineProperty(abortedResults, '__abortedByExitAll', {
+      value: true,
+      configurable: true,
+    });
+    const pageModel = createPageModel({
+      dispatchEvent: vi.fn().mockResolvedValue(abortedResults),
+    });
+    const { currentView } = await openAndLoad(pageModel);
+
+    const allowed = await currentView.beforeClose({ force: false });
+
+    expect(allowed).toBe(false);
+    expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
+      'close',
+      expect.objectContaining({
+        controller: expect.any(Object),
+      }),
+    );
+  });
+
+  it('still blocks closing for direct FlowExitAllException mock results', async () => {
+    const pageModel = createPageModel({
+      dispatchEvent: vi.fn().mockResolvedValue([new FlowExitAllException('closeFlow', 'page-model-uid', 'exitAll')]),
+    });
+    const { currentView } = await openAndLoad(pageModel);
+
+    const allowed = await currentView.beforeClose({ force: false });
+
+    expect(allowed).toBe(false);
+    expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
+      'close',
+      expect.objectContaining({
         controller: expect.any(Object),
       }),
     );

@@ -1017,8 +1017,8 @@ describe('Utils', () => {
       };
 
       mockEvent = {
-        name: 'beforeClose',
-        title: 'Before close',
+        name: 'close',
+        title: 'Close',
         handler: vi.fn(),
       };
     });

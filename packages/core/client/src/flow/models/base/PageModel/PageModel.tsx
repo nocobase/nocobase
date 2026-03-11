@@ -375,9 +375,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
 }
 
 PageModel.registerEvents({
-  beforeClose: {
-    title: tExpr('Before close'),
-    name: 'beforeClose',
+  close: {
+    title: tExpr('Close'),
+    name: 'close',
     hideInSettings(ctx) {
       return !!ctx.view?.preventClose;
     },
@@ -394,9 +394,9 @@ PageModel.registerEvents({
 });
 
 PageModel.registerFlow({
-  key: 'beforeCloseGuard',
-  title: tExpr('Before close guard'),
-  on: 'beforeClose',
+  key: 'closeGuard',
+  title: tExpr('Close guard'),
+  on: 'close',
   steps: {
     confirmUnsavedChanges: {
       title: tExpr('Unsaved changes confirmation'),

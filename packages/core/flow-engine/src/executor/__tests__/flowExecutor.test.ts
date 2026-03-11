@@ -232,6 +232,37 @@ describe('FlowExecutor', () => {
     expect(calls.sort()).toEqual(['a', 'b']);
   });
 
+  it('dispatchEvent sequential exposes abortedByExitAll metadata on result array', async () => {
+    const flows = {
+      stopClose: {
+        on: { eventName: 'close' },
+        steps: {
+          only: {
+            handler: vi.fn().mockImplementation((ctx) => {
+              ctx.exit();
+            }),
+          },
+        },
+      },
+      afterClose: {
+        on: { eventName: 'close', phase: 'afterAllFlows' },
+        steps: {
+          only: {
+            handler: vi.fn(),
+          },
+        },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-close-meta', flows);
+
+    const result = await engine.executor.dispatchEvent(model, 'close', {}, { sequential: true });
+
+    expect(Array.isArray(result)).toBe(true);
+    expect((result as any).__abortedByExitAll).toBe(true);
+    expect(flows.afterClose.steps.only.handler).not.toHaveBeenCalled();
+  });
+
   it('dispatchEvent sequential respects sort order and stops on errors', async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number, opts?: { throw?: boolean }) => ({
