@@ -36,6 +36,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 }> {
   static scene = BlockSceneEnum.oam;
   private hadSingleRecordData = false;
+  private hasMultiRefreshDispatched = false;
 
   _defaultCustomModelClasses = {
     RecordActionGroupModel: 'RecordActionGroupModel',
@@ -65,6 +66,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   onInit(options: any): void {
     super.onInit(options);
     this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+    this.hasMultiRefreshDispatched = false;
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
@@ -78,6 +80,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
     this.resource.on('refresh', () => {
       if (this.isMultiRecordResource()) {
+        this.hasMultiRefreshDispatched = true;
         void dispatchEventDeep(this, 'paginationChange');
         return;
       }
@@ -359,9 +362,19 @@ DetailsBlockModel.registerFlow({
         if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
           return;
         }
-        // multi 详情在资源 refresh 后会自动分发 paginationChange；
-        // 仅在无数据场景兜底一次，避免初始化阶段重复分发。
-        if (ctx.model.resource?.hasData?.()) {
+        if (ctx.model.hasMultiRefreshDispatched) {
+          return;
+        }
+
+        const resource: any = ctx.model.resource;
+        if (!resource) {
+          return;
+        }
+        const loadingMode = resource.dataLoadingMode ?? resource.loadingMode;
+        const isManualLoadingMode = loadingMode === 'manual';
+        const hasActiveFilters = typeof resource.hasActiveFilters === 'function' ? resource.hasActiveFilters() : false;
+        // 仅当 manual 且无活动筛选时，refresh 流程可能不会触发，才兜底分发一次。
+        if (!isManualLoadingMode || hasActiveFilters) {
           return;
         }
 

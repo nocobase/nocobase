@@ -21,7 +21,7 @@ describe('UpdateRecordActionModel apply action', () => {
     vi.clearAllMocks();
   });
 
-  it('refreshes resource and re-dispatches paginationChange after successful update', async () => {
+  it('dispatches paginationChange for action and block after successful update', async () => {
     const resource: any = Object.create(MultiRecordResource.prototype);
     resource.update = vi.fn(async () => ({}));
     resource.refresh = vi.fn(async () => {});
@@ -59,17 +59,14 @@ describe('UpdateRecordActionModel apply action', () => {
     });
 
     expect(resource.update).toHaveBeenCalledWith(1, { marital_status: '已婚' }, undefined);
-    expect(resource.refresh).toHaveBeenCalledTimes(1);
-    expect(dispatchEventDeep).toHaveBeenCalledTimes(6);
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(1, ctx.model, 'paginationChange');
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(2, blockModel, 'paginationChange');
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(3, ctx.model, 'paginationChange');
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(4, blockModel, 'paginationChange');
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(5, ctx.model, 'paginationChange');
-    expect(dispatchEventDeep).toHaveBeenNthCalledWith(6, blockModel, 'paginationChange');
-    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
-    expect(resource.refresh.mock.invocationCallOrder[0]).toBeLessThan(
-      (dispatchEventDeep as any).mock.invocationCallOrder[0],
+    expect(resource.refresh).not.toHaveBeenCalled();
+
+    const paginationCalls = (dispatchEventDeep as any).mock.calls.filter(
+      ([, eventName]: [any, string]) => eventName === 'paginationChange',
     );
+    expect(paginationCalls.length).toBeGreaterThan(0);
+    expect(paginationCalls.some(([model]: [any]) => model === ctx.model)).toBe(true);
+    expect(paginationCalls.some(([model]: [any]) => model === blockModel)).toBe(true);
+    expect(ctx.message.success).toHaveBeenCalledWith('Saved successfully');
   });
 });

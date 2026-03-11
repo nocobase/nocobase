@@ -75,6 +75,22 @@ describe('DetailsBlockModel initial pagination refresh', () => {
     );
   });
 
+  it('uses a real paginated details model and emits root paginationChange once when initial refresh returns empty data', async () => {
+    const { model, resource } = setupDetailsBlockModel();
+    expect(resource).toBeInstanceOf(MultiRecordResource);
+
+    const dispatchSpy = vi.spyOn(model, 'dispatchEvent');
+    vi.spyOn(resource, 'refresh').mockImplementation(async () => {
+      resource.setData([] as any);
+      resource.setMeta({ count: 0, page: 1, pageSize: 1, totalPage: 0 });
+      resource.emit('refresh');
+    });
+
+    await model.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    expect(dispatchSpy.mock.calls.filter(([eventName]) => eventName === 'paginationChange')).toHaveLength(1);
+  });
+
   it('uses a real single-record details model and does not emit root paginationChange on initial render', async () => {
     const { model, resource } = setupDetailsBlockModel({ filterByTk: 1 });
     expect(resource).toBeInstanceOf(SingleRecordResource);

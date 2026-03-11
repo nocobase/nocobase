@@ -11,10 +11,6 @@ import { MultiRecordResource, SingleRecordResource, resolveRunJSObjectValues } f
 import { dispatchEventDeep } from '../../utils';
 
 export async function refreshLinkageRulesAfterUpdate(ctx: any) {
-  if (typeof ctx?.resource?.refresh === 'function') {
-    await ctx.resource.refresh();
-  }
-
   const blockModel = ctx?.blockModel || ctx?.model?.context?.blockModel || ctx?.model;
   const actionModel = ctx?.model;
   const syncRecordAccessor = (model: any) => {
@@ -29,25 +25,6 @@ export async function refreshLinkageRulesAfterUpdate(ctx: any) {
     ctx.model.forks.forEach((fork: any) => syncRecordAccessor(fork));
   }
 
-  const dispatchRefresh = async () => {
-    if (actionModel) {
-      await dispatchEventDeep(actionModel, 'paginationChange');
-    }
-    if (blockModel && blockModel !== actionModel) {
-      await dispatchEventDeep(blockModel, 'paginationChange');
-    }
-  };
-
-  if (blockModel || actionModel) {
-    await dispatchRefresh();
-    // Some model contexts (especially action forks) sync record references on the next microtask.
-    // Re-dispatch once to ensure linkage rules consume the latest record after refresh.
-    await Promise.resolve();
-    await dispatchRefresh();
-    await new Promise((resolve) => setTimeout(resolve, 120));
-    await dispatchRefresh();
-  }
-
   if (typeof blockModel?.getCurrentRecord === 'function') {
     const latestRecord = blockModel.getCurrentRecord();
     if (typeof ctx?.defineProperty === 'function') {
@@ -60,15 +37,11 @@ export async function refreshLinkageRulesAfterUpdate(ctx: any) {
     }
   }
 
-  // Ensure the current action button itself re-evaluates linkage rules after update.
-  // This directly refreshes button linkage even when event-based refresh misses the current action context.
-  const raw = actionModel?.getStepParams?.('buttonSettings', 'linkageRules');
-  const resolved = ctx?.resolveJsonTemplate
-    ? await ctx.resolveJsonTemplate({ value: [], ...(raw || {}) })
-    : { value: [], ...(raw || {}) };
-  const actionLinkage = ctx?.getAction?.('actionLinkageRules');
-  if (actionLinkage?.handler) {
-    await actionLinkage.handler(ctx, resolved);
+  if (actionModel) {
+    await dispatchEventDeep(actionModel, 'paginationChange');
+  }
+  if (blockModel && blockModel !== actionModel) {
+    await dispatchEventDeep(blockModel, 'paginationChange');
   }
 }
 
