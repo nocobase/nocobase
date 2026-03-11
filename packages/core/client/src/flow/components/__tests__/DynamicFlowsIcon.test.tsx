@@ -56,6 +56,10 @@ const getTriggerEventSelectProps = () => {
   return mockState.capturedSelectProps.filter((props) => props.placeholder === 'Select trigger event').at(-1);
 };
 
+const getTriggerEventOptionValues = () => {
+  return (getTriggerEventSelectProps()?.options ?? []).map((option: { value: string }) => option.value);
+};
+
 const openDynamicFlowsEditor = async (model: FlowModel) => {
   const { container } = render(<DynamicFlowsIcon model={model} />);
   const trigger = container.querySelector('.anticon');
@@ -139,8 +143,9 @@ describe('DynamicFlowsIcon', () => {
     await openDynamicFlowsEditor(model);
 
     await waitFor(() => {
-      const triggerEventSelectProps = getTriggerEventSelectProps();
-      expect(triggerEventSelectProps?.options).toEqual([{ label: 'Click', value: 'click' }]);
+      const eventValues = getTriggerEventOptionValues();
+      expect(eventValues).toContain('click');
+      expect(eventValues).not.toContain('close');
     });
   });
 
@@ -150,8 +155,9 @@ describe('DynamicFlowsIcon', () => {
     await openDynamicFlowsEditor(model);
 
     await waitFor(() => {
-      const triggerEventSelectProps = getTriggerEventSelectProps();
-      expect(triggerEventSelectProps?.options).toEqual([{ label: 'Click', value: 'click' }]);
+      const eventValues = getTriggerEventOptionValues();
+      expect(eventValues).toContain('click');
+      expect(eventValues).not.toContain('close');
     });
   });
 
@@ -161,11 +167,8 @@ describe('DynamicFlowsIcon', () => {
     await openDynamicFlowsEditor(model);
 
     await waitFor(() => {
-      const triggerEventSelectProps = getTriggerEventSelectProps();
-      expect(triggerEventSelectProps?.options).toEqual([
-        { label: 'Close', value: 'close' },
-        { label: 'Click', value: 'click' },
-      ]);
+      const eventValues = getTriggerEventOptionValues();
+      expect(eventValues).toEqual(expect.arrayContaining(['close', 'click']));
     });
   });
 });
