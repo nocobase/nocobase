@@ -53,6 +53,9 @@ function getMenuItems(list: PluginSettingsPageType[]) {
 }
 
 function matchRoute(data, url) {
+  if (typeof url !== 'string') {
+    return null;
+  }
   const keys = Object.keys(data);
   if (data[url]) {
     return data[url];
