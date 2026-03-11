@@ -29,10 +29,9 @@ export const aclCheck = defineAction({
       resourceName: ctx.collectionField?.collectionName || ctx.resourceName,
       actionName: ctx.actionName,
       fields: ctx?.collectionField && [ctx.collectionField.name],
-      allowedActions: ctx.resource?.getMeta('allowedActions'),
+      allowedActions: ctx.collectionField ? null : ctx.resource?.getMeta('allowedActions'),
       recordPkValue: getRecordPkValue(ctx?.record && ctx.collection?.getFilterByTK?.(ctx?.record)),
     });
-
     if (!ctx.actionName) {
       return;
     }
