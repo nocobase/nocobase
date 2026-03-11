@@ -539,6 +539,8 @@ describe('transformItems - toggleable items', () => {
       </FlowEngineProvider>,
     );
 
+    await waitFor(() => expect(screen.getByText('Toggle Menu')).toBeInTheDocument());
+
     await act(async () => {
       await userEvent.click(screen.getByText('Toggle Menu'));
     });
