@@ -119,6 +119,18 @@ describe('resolveFilterPickerFormat', () => {
     ).toBe('MM/DD/YY HH:mm:ss');
   });
 
+  it('应在 12 小时制日期时间格式中避免重复拼接时间部分', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        format: 'MM/DD/YY hh:mm:ss a',
+        showTime: true,
+        timeFormat: 'hh:mm:ss a',
+      }),
+    ).toBe('MM/DD/YY hh:mm:ss a');
+  });
+
   it('切换 picker 时应回退到对应 picker 的默认格式', () => {
     expect(
       resolveFilterPickerFormat({

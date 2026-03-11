@@ -25,7 +25,7 @@ interface IDatePickerProps {
 }
 
 const stripTimeFromFormat = (format?: string) =>
-  format ? format.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : format;
+  format ? format.replace(/\s*[Hh]{1,2}:mm(?::ss)?(?:\.SSS)?(?:\s*[aA])?/g, '').trim() : format;
 
 /**
  * 解析筛选日期组件的展示格式。
