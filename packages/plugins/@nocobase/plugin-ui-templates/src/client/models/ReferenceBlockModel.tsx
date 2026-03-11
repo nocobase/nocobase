@@ -34,6 +34,7 @@ const TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH = Symbol.for('nocobase.referenceBloc
 const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
   'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
 );
+const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
 /**
  * ReferenceBlockModel（插件版）
@@ -363,11 +364,28 @@ export class ReferenceBlockModel extends BlockModel {
     // 这里桥接相关上下文属性到目标模型，避免“能找到模型实例但字段下拉为空”。
     const contextKeys = ['collection', 'dataSource', 'resource', 'association', 'resourceName'] as const;
     type ContextKey = (typeof contextKeys)[number];
-    const getTargetContext = () => this._targetModel?.context;
+    const getTargetOwnContextValue = (key: ContextKey) => {
+      const targetContext = this._targetModel?.context as FlowContext | undefined;
+      if (!targetContext || !targetContext.has(key)) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+
+      try {
+        return (targetContext as any)._getOwnProperty(key, (targetContext as any).createProxy?.() || targetContext);
+      } catch (_) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+    };
     contextKeys.forEach((key: ContextKey) => {
       this.context.defineProperty(key, {
         cache: false,
-        get: () => getTargetContext()?.[key],
+        get: () => {
+          const ownValue = getTargetOwnContextValue(key);
+          if (ownValue !== TARGET_OWN_CONTEXT_MISSING) {
+            return ownValue;
+          }
+          return this.parent?.context?.[key];
+        },
       });
     });
   }
