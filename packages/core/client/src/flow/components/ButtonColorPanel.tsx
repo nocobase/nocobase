@@ -13,7 +13,7 @@ import type { ButtonProps } from 'antd/es/button';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-const ANTD_DEFAULT_SEED = theme.defaultSeed as Record<string, string>;
+const ANTD_DEFAULT_SEED = theme.defaultSeed as unknown as Record<string, string>;
 
 export const LEGACY_TYPE_TO_VARIANT: Record<string, ButtonProps['variant']> = {
   default: 'outlined',

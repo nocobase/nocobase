@@ -33,7 +33,7 @@ export const WorkbenchLayout = {
   List: 'list',
 };
 
-const ANTD_DEFAULT_SEED = theme.defaultSeed as Record<string, string>;
+const ANTD_DEFAULT_SEED = theme.defaultSeed as unknown as Record<string, string>;
 const DEFAULT_ACTION_PANEL_ICON_BACKGROUND = '#1677FF';
 const ANTD_PRESET_BUTTON_COLOR_SET = new Set([
   'blue',
