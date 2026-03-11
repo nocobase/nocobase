@@ -24,6 +24,7 @@ import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
+import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
@@ -90,7 +91,13 @@ function createStaticInputRenderer(
   };
 }
 
-type OperatorMeta = { value: string; label: string; noValue?: boolean; schema?: any; selected?: boolean };
+type OperatorMeta = {
+  value: string;
+  label: string | React.ReactNode;
+  noValue?: boolean;
+  schema?: any;
+  selected?: boolean;
+};
 type FilterableChild = {
   name: string;
   title?: string;
@@ -237,8 +244,8 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
       );
       const mappedList = visibleOperators.map((operatorItem) => ({
         value: operatorItem.value,
-        // 使用原始 label（或字符串化），避免因翻译函数引用变化导致不必要的重建
-        label: typeof operatorItem.label === 'string' ? operatorItem.label : String(operatorItem.label),
+        // 保留 ReactNode，避免插件注册的富标签被误转成 [object Object]
+        label: operatorItem.label,
         noValue: !!operatorItem.noValue,
         schema: operatorItem.schema,
         selected: !!operatorItem.selected,
@@ -250,7 +257,10 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const operatorSelectOptions = useMemo(() => {
     // 在展示阶段再做翻译，且依赖 operatorMetadataList 值；避免翻译函数进入 operatorMetadataList 的依赖链
-    return operatorMetadataList.map((operatorItem) => ({ value: operatorItem.value, label: t(operatorItem.label) }));
+    return operatorMetadataList.map((operatorItem) => ({
+      value: operatorItem.value,
+      label: typeof operatorItem.label === 'string' ? t(operatorItem.label) : operatorItem.label,
+    }));
   }, [operatorMetadataList, t]);
 
   useEffect(() => {
@@ -309,6 +319,37 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     [mergedSchema, leftFieldMeta, stableT],
   );
 
+  const constantInputRenderer = useMemo(() => {
+    const resolved = resolveOperatorComponent(model.context.app, selectedOperator, operatorMetadataList);
+    const shouldUseKeywordComponent = selectedOperator === '$in' || selectedOperator === '$notIn';
+    if (!resolved || !shouldUseKeywordComponent) {
+      return staticInputRenderer;
+    }
+
+    const { Comp, props: componentProps } = resolved;
+    return (inputProps: { value?: any; onChange?: (v: any) => void } & Record<string, any>) => {
+      const { value: inputValue, onChange, ...rest } = inputProps || {};
+      const normalizedValue = Array.isArray(inputValue)
+        ? inputValue
+        : typeof inputValue === 'string'
+          ? inputValue
+              .split(/\r?\n/)
+              .map((item) => item.trim())
+              .filter(Boolean)
+          : [];
+
+      return (
+        <Comp
+          {...componentProps}
+          {...rest}
+          value={normalizedValue}
+          onChange={onChange}
+          style={{ width: 200, ...(componentProps?.style || {}), ...(rest?.style || {}) }}
+        />
+      );
+    };
+  }, [model.context.app, operatorMetadataList, selectedOperator, staticInputRenderer]);
+
   const NullComponent = useMemo(() => {
     return function NullValue() {
       return <Input placeholder={`<${t('Null')}>`} readOnly />;
@@ -345,7 +386,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     return {
       renderInputComponent: (metaNode) => {
         const firstPathSegment = metaNode?.paths?.[0];
-        if (firstPathSegment === 'constant') return staticInputRenderer;
+        if (firstPathSegment === 'constant') return constantInputRenderer;
         if (firstPathSegment === 'null') return NullComponent;
         return null;
       },
@@ -362,7 +403,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
         return ['constant'];
       },
     };
-  }, [NullComponent, staticInputRenderer]);
+  }, [NullComponent, constantInputRenderer]);
 
   const handleLeftPathChange = useCallback(
     (variableValue: string, metaNode?: MetaTreeNode) => {
