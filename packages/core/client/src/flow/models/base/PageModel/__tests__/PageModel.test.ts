@@ -35,8 +35,12 @@ vi.mock('@nocobase/flow-engine', () => {
         return [];
       }
       static registerFlow() {}
+      static registerEvents() {}
     },
     tExpr: (str: string) => str,
+    observer: (component: any) => component,
+    useFlowContext: () => ({ model: {}, getPropertyMetaTree: () => [] }),
+    FlowContextSelector: ({ children }: any) => children,
     DndProvider: ({ children }: any) => children,
     AddSubModelButton: () => null,
     FlowSettingsButton: () => null,
@@ -69,6 +73,15 @@ vi.mock('@nocobase/flow-engine', () => {
     DATA_SOURCE_DIRTY_EVENT: 'dataSource:dirty',
   };
 });
+
+vi.mock('../../../components/ConditionBuilder', () => ({
+  ConditionBuilder: () => null,
+  commonConditionHandler: vi.fn(),
+}));
+
+vi.mock('../../../components/TextAreaWithContextSelector', () => ({
+  TextAreaWithContextSelector: () => null,
+}));
 
 vi.mock('antd', () => ({
   Tabs: (props: any) => null,
