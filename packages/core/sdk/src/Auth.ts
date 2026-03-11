@@ -9,6 +9,7 @@
 
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { APIClient } from './APIClient';
+import { hasHeaderValue } from './headers';
 
 export class Auth {
   protected api: APIClient;
@@ -153,10 +154,10 @@ export class Auth {
     if (this.role) {
       config.headers['X-Role'] = this.role;
     }
-    if (this.authenticator && !config.headers['X-Authenticator']) {
+    if (this.authenticator && !hasHeaderValue(config.headers, 'X-Authenticator')) {
       config.headers['X-Authenticator'] = this.authenticator;
     }
-    if (this.token) {
+    if (this.token && !hasHeaderValue(config.headers, 'Authorization')) {
       config.headers['Authorization'] = `Bearer ${this.token}`;
     }
     return config;
