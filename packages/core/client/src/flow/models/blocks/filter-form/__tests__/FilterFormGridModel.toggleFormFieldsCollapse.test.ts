@@ -92,6 +92,14 @@ describe('FilterFormGridModel.toggleFormFieldsCollapse', () => {
     expect(model.props.rows).toEqual({
       first: [['field-1']],
     });
+    expect(model.props.rowOrder).toEqual(['first']);
+
+    model.toggleFormFieldsCollapse(false, 1);
+
+    expect(model.props.rows).toEqual({
+      first: [['field-1', 'field-2', 'field-3']],
+    });
+    expect(model.props.rowOrder).toEqual(['first']);
   });
 
   it('restores the persisted full layout when current props rows were already truncated', () => {

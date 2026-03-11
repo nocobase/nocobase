@@ -66,7 +66,16 @@ export class FilterFormGridModel extends GridModel {
     const rawSavedRows = params.rows || {};
     const currentCount = Object.keys(rawCurrentRows).length;
     const savedCount = Object.keys(rawSavedRows).length;
-    const useCurrentLayout = currentCount >= savedCount;
+    const currentItemCount = Object.values(rawCurrentRows).reduce(
+      (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
+      0,
+    );
+    const savedItemCount = Object.values(rawSavedRows).reduce(
+      (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
+      0,
+    );
+    const useCurrentLayout =
+      currentCount > savedCount || (currentCount === savedCount && currentItemCount >= savedItemCount);
     const sourceRows = this.mergeRowsWithItems(useCurrentLayout ? rawCurrentRows : rawSavedRows);
     const sourceRowOrder = useCurrentLayout
       ? this.props.rowOrder || params.rowOrder
