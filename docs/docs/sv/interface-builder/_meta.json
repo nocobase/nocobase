@@ -64,7 +64,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Andra block",
+        "label": "Övriga block",
         "collapsed": true,
         "items": [
           {
@@ -76,11 +76,6 @@
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Referensblock",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -96,13 +91,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Blockinställningar",
+        "label": "Inställningar för block",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Dataomfång",
+            "label": "Dataintervall",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Datainläsningsmetod",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -111,12 +111,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Blockinteraktionsregler",
+            "label": "Länkningsregler för block",
             "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Fältinteraktionsregler",
+            "label": "Fältberoenderegler",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
@@ -126,13 +126,28 @@
           },
           {
             "type": "custom-link",
+            "label": "Dra och släpp-sortering",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
             "label": "Ta bort block",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
           {
             "type": "custom-link",
-            "label": "Blocktitel",
+            "label": "Blockrubrik",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Blockhöjd",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formulärutkast",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -164,7 +179,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Filterformulärfält",
+            "label": "Filtrera formulärfält",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
@@ -196,7 +211,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Rullgardinsväljare",
+            "label": "Dropdown-väljare",
             "link": "/interface-builder/fields/specific/select"
           },
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Undertabell",
+            "label": "Undertabell (inline-redigering)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Undertabell (redigera i popup)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -243,7 +263,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Fältinställningar",
+        "label": "Fältkonfigurationer",
         "collapsed": true,
         "items": [
           {
@@ -263,12 +283,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Fälttips",
+            "label": "Fältbeskrivning",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
             "type": "custom-link",
-            "label": "Dataomfång",
+            "label": "Dataintervall",
             "link": "/interface-builder/fields/field-settings/data-scope"
           },
           {
@@ -278,7 +298,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Talformatering",
+            "label": "Nummerformatering",
             "link": "/interface-builder/fields/field-settings/number-format"
           },
           {
@@ -288,7 +308,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Obligatorisk",
+            "label": "Obligatoriskt",
             "link": "/interface-builder/fields/field-settings/required"
           },
           {
@@ -305,14 +325,14 @@
       },
       {
         "type": "custom-link",
-        "label": "Relationsfältkomponent",
+        "label": "Relationsfältskomponent",
         "link": "/interface-builder/fields/association-field"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Åtgärder",
+    "label": "Åtgärd",
     "items": [
       {
         "type": "custom-link",
@@ -321,7 +341,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Åtgärdsinställningar",
+        "label": "Konfigurationsalternativ för åtgärder",
         "collapsed": true,
         "items": [
           {
@@ -331,7 +351,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Bekräftelse",
+            "label": "Dubbelbekräftelse",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
@@ -351,19 +371,19 @@
           },
           {
             "type": "custom-link",
-            "label": "Åtgärdsinteraktionsregler",
+            "label": "Regler för åtgärdskoppling",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Åtgärdstyper",
+        "label": "Åtgärdstyp",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Ny",
+            "label": "Lägg till",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -380,6 +400,11 @@
             "type": "custom-link",
             "label": "Redigera",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kopiera",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -433,7 +458,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Starta arbetsflöde",
+            "label": "Utlösa arbetsflöde",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -443,8 +468,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Massuppdatera",
+            "label": "Batchuppdatering",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Batchredigering",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Interaktionsregler",
+        "label": "Kopplingsregler",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Variabler",
+        "label": "Variabel",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
-        "label": "Kör JS",
+        "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI-mall",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

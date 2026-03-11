@@ -16,7 +16,7 @@ Ni kan deklarera variabler i ett arbetsflöde eller tilldela värden till redan 
 
 I arbetsflödets konfigurationsgränssnitt klickar ni på plusknappen ("+") i arbetsflödet för att lägga till en "Variabel"-nod:
 
-![Add Variable Node](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Add Variable Node](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Konfigurera nod
 
@@ -79,6 +79,6 @@ Efter beräkningsnoden skapar ni ytterligare en variabelnod. Välj tilldelningsl
 
 På så sätt, efter att loopgrenen har avslutats, kommer mottagarvariabeln att lagra mottagarsträngen för alla artikelns författare. Därefter, efter loopen, kan ni använda en HTTP-förfrågningsnod för att anropa ett e-postsändnings-API och skicka värdet från mottagarvariabeln som mottagarparameter till API:et:
 
-![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71aa1a36e172bcb2dce10a250947e.png)
+![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 Härmed har en enkel massutskicksfunktion för e-post implementerats med hjälp av en loop och en variabelnod.

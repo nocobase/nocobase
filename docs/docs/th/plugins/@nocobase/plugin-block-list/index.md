@@ -1,12 +1,16 @@
 ---
-displayName: "Block: List"
+displayName: "บล็อก: List"
 packageName: '@nocobase/plugin-block-list'
 description: |
-  Display data in a list with pagination support.
+  แสดงข้อมูลในรูปแบบ List พร้อมรองรับการตั้งค่าการแบ่งหน้า
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: List
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-block-list/index)
+:::
+
+# บล็อก: List

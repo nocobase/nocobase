@@ -1,5 +1,5 @@
 ---
-displayName: "UI templates"
+displayName: "UI Templates"
 packageName: '@nocobase/plugin-ui-templates'
 supportedVersions:
   - 2.x
@@ -11,4 +11,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# UI templates
+# UI Templates

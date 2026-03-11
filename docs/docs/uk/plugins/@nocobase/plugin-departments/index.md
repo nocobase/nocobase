@@ -1,12 +1,16 @@
 ---
-displayName: "Departments"
+displayName: "Департаменти"
 packageName: '@nocobase/plugin-departments'
 description: |
-  Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.
+  Організовуйте користувачів за департаментами, встановлюйте ієрархічні зв'язки, прив'язуйте ролі для контролю прав доступу та використовуйте їх як змінні в робочих процесах і виразах.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Departments
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-departments/index).
+:::
+
+# Департаменти

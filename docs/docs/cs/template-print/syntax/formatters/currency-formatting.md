@@ -1,7 +1,6 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/template-print/syntax/formatters/currency-formatting).
 :::
-
 
 ### Formátování měny
 
@@ -19,16 +18,11 @@ Parametry:
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 '1000.456':formatC()      // Vypíše "$2,000.91"
 '1000.456':formatC('M')    // Vypíše "dollars"
 '1':formatC('M')           // Vypíše "dollar"
 '1000':formatC('L')        // Vypíše "$2,000.00"
 '1000':formatC('LL')       // Vypíše "2,000.00 dollars"
-
-// Příklad ve francouzštině (při odlišném nastavení prostředí):
-'1000.456':formatC()      // Vypíše "2 000,91 ..."  
-'1000.456':formatC()      // Když jsou zdrojová a cílová měna stejné, vypíše "1 000,46 €"
 ```
 
 ##### Výsledek
@@ -46,7 +40,6 @@ Parametry:
 
 ##### Příklad
 ```
-// Příklad prostředí: Možnosti API { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
 10:convCurr()              // Vypíše 20
 1000:convCurr()            // Vypíše 2000
 1000:convCurr('EUR')        // Vypíše 1000

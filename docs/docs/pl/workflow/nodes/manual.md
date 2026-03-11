@@ -32,7 +32,7 @@ Węzeł ręczny wymaga przypisania użytkownika jako wykonawcy zadania do wykona
 
 Proszę wybrać użytkownika lub wybrać klucz podstawowy bądź klucz obcy danych użytkownika z kontekstu za pomocą zmiennej.
 
-![Węzeł ręczny_Konfiguracja_Osoba odpowiedzialna_Wybór zmiennej](https://static-docs.nocobase.com/22fbca3b8e21fda3b825abb4b257df909.png)
+![Węzeł ręczny_Konfiguracja_Osoba odpowiedzialna_Wybór zmiennej](https://static-docs.nocobase.com/22fbca3b8e21fda3a831019037001445.png)
 
 :::info{title=Uwaga}
 Obecnie opcja osoby odpowiedzialnej dla węzłów ręcznych nie obsługuje wielu użytkowników. Funkcjonalność ta zostanie dodana w przyszłych wersjach.
@@ -104,11 +104,11 @@ W przypadku ręcznego przetwarzania, należy również dodać listę zadań do w
 
 Mogą Państwo wybrać „Zadania do wykonania przepływu pracy” z dostępnych bloków na stronie, aby dodać blok listy zadań do wykonania:
 
-![Węzeł ręczny_Dodaj blok zadań do wykonania](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Węzeł ręczny_Dodaj blok zadań do wykonania](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Przykład bloku listy zadań do wykonania:
 
-![Węzeł ręczny_Lista zadań do wykonania](https://static-docs.nocobase.com/cfefb054cd73b704267bf30fe5e647.png)
+![Węzeł ręczny_Lista zadań do wykonania](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Szczegóły zadania do wykonania
 

@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: LDAP"
+displayName: "Uwierzytelnianie: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  LDAP authentication.
+  Uwierzytelnianie tożsamości za pomocą protokołu LDAP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Auth: LDAP
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-auth-ldap/index).
+:::
+
+# Uwierzytelnianie: LDAP

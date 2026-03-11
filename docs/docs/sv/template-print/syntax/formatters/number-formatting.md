@@ -1,5 +1,5 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/template-print/syntax/formatters/number-formatting).
 :::
 
 ### Nummerformatering
@@ -14,7 +14,6 @@ Parameter:
 
 ##### Exempel
 ```
-// Exempelmiljö: API-alternativ { "lang": "en-us" }
 '10':formatN()         // Utdata "10.000"
 '1000.456':formatN()   // Utdata "1,000.456"
 ```

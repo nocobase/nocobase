@@ -2,6 +2,10 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/multi-app/multi-app/local)をご参照ください。
+:::
+
 # 共有メモリモード
 
 ## 紹介
@@ -23,11 +27,11 @@ APP_PROCESS_ADAPTER=local
 
 ### アプリ作成
 
-システム設定メニューで「App supervisor」をクリックし、アプリ管理ページに入ります。
+システム設定メニューで「App Supervisor」をクリックし、アプリ管理ページに入ります。
 
 ![](https://static-docs.nocobase.com/202512291056215.png)
 
-「Add」をクリックして新しいアプリを作成します。
+「Add New」をクリックして新しいアプリを作成します。
 
 ![](https://static-docs.nocobase.com/202512291057696.png)
 
@@ -82,7 +86,7 @@ http://localhost:13000/apps/a_7zkxoarusnx/admin/
 
 ![](https://static-docs.nocobase.com/202512291122178.png)
 
-## よくある質問
+## FAQ
 
 ### 1. プラグイン管理
 

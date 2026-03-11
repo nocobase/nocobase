@@ -10,7 +10,7 @@
 
 בממשק הגדרות תהליך העבודה, לחצו על כפתור הפלוס ("+") בזרימת העבודה כדי להוסיף צומת "חישוב":
 
-![Calculation Node_Add](https://static-docs.nocobase.com/58a5540d26945251cd143eb4b16579.png)
+![Calculation Node_Add](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## הגדרות צומת
 

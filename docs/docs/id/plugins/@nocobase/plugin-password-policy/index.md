@@ -1,15 +1,19 @@
 ---
-displayName: "Password policy"
+displayName: "Kebijakan kata sandi"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Set the password rules and sign in lockout policy for all users
+  Mengatur aturan kata sandi dan kebijakan penguncian masuk untuk semua pengguna
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Password policy
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-password-policy/index).
+:::
+
+# Kebijakan kata sandi

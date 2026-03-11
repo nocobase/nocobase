@@ -1,195 +1,207 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/template-print/syntax/formatters/number-formatting).
 :::
 
-### Formatação de Números
+### Formatação de números
 
 #### 1. :formatN(precision)
 
-##### Explicação da Sintaxe
-Formata um número de acordo com as configurações de localização.
-Parâmetro:
-- **precision:** O número de casas decimais.
-  Para formatos ODS/XLSX, o número de casas decimais exibidas é determinado pelo editor de texto; para outros formatos, este parâmetro é utilizado.
+##### Explicação da sintaxe
+Formata números de acordo com as configurações de localização.  
+Parâmetros:
+- precision: casas decimais  
+  Para formatos ODS/XLSX, o número de casas decimais exibidas é determinado pelo editor de texto; outros formatos dependem deste parâmetro.
 
 ##### Exemplo
 ```
-// Ambiente de exemplo: opções da API { "lang": "en-us" }
-'10':formatN()         // Saída: "10.000"
-'1000.456':formatN()   // Saída: "1,000.456"
+'10':formatN()         // Saída "10.000"
+'1000.456':formatN()   // Saída "1,000.456"
 ```
 
 ##### Resultado
-O número é exibido de acordo com a precisão e o formato de localização especificados.
+O número é exibido de acordo com a precisão especificada e o formato de localização.
+
 
 #### 2. :round(precision)
 
-##### Explicação da Sintaxe
-Arredonda o número para o número de casas decimais especificado.
+##### Explicação da sintaxe
+Realiza o arredondamento do número, o parâmetro especifica o número de casas decimais.
 
 ##### Exemplo
 ```
-10.05123:round(2)      // Saída: 10.05
-1.05:round(1)          // Saída: 1.1
+10.05123:round(2)      // Saída 10.05
+1.05:round(1)          // Saída 1.1
 ```
 
 ##### Resultado
-A saída é o número arredondado com a precisão fornecida.
+A saída é o valor após o arredondamento.
+
 
 #### 3. :add(value)
 
-##### Explicação da Sintaxe
-Adiciona o valor especificado ao número atual.
-Parâmetro:
-- **value:** O número a ser adicionado.
+##### Explicação da sintaxe
+Soma o número atual com o valor especificado.  
+Parâmetros:
+- value: o número a ser somado
 
 ##### Exemplo
 ```
-1000.4:add(2)         // Saída: 1002.4
-'1000.4':add('2')      // Saída: 1002.4
+1000.4:add(2)         // Saída 1002.4
+'1000.4':add('2')      // Saída 1002.4
 ```
 
 ##### Resultado
-A saída é a soma do número atual com o valor especificado.
+A saída é o valor após a soma.
+
 
 #### 4. :sub(value)
 
-##### Explicação da Sintaxe
-Subtrai o valor especificado do número atual.
-Parâmetro:
-- **value:** O número a ser subtraído.
+##### Explicação da sintaxe
+Subtrai o valor especificado do número atual.  
+Parâmetros:
+- value: subtraendo
 
 ##### Exemplo
 ```
-1000.4:sub(2)         // Saída: 998.4
-'1000.4':sub('2')      // Saída: 998.4
+1000.4:sub(2)         // Saída 998.4
+'1000.4':sub('2')      // Saída 998.4
 ```
 
 ##### Resultado
-A saída é o número atual menos o valor especificado.
+A saída é o valor após a subtração.
+
 
 #### 5. :mul(value)
 
-##### Explicação da Sintaxe
-Multiplica o número atual pelo valor especificado.
-Parâmetro:
-- **value:** O multiplicador.
+##### Explicação da sintaxe
+Multiplica o número atual pelo valor especificado.  
+Parâmetros:
+- value: multiplicador
 
 ##### Exemplo
 ```
-1000.4:mul(2)         // Saída: 2000.8
-'1000.4':mul('2')      // Saída: 2000.8
+1000.4:mul(2)         // Saída 2000.8
+'1000.4':mul('2')      // Saída 2000.8
 ```
 
 ##### Resultado
-A saída é o produto do número atual pelo valor especificado.
+A saída é o valor após a multiplicação.
+
 
 #### 6. :div(value)
 
-##### Explicação da Sintaxe
-Divide o número atual pelo valor especificado.
-Parâmetro:
-- **value:** O divisor.
+##### Explicação da sintaxe
+Divide o número atual pelo valor especificado.  
+Parâmetros:
+- value: divisor
 
 ##### Exemplo
 ```
-1000.4:div(2)         // Saída: 500.2
-'1000.4':div('2')      // Saída: 500.2
+1000.4:div(2)         // Saída 500.2
+'1000.4':div('2')      // Saída 500.2
 ```
 
 ##### Resultado
-A saída é o resultado da divisão.
+A saída é o valor após a divisão.
+
 
 #### 7. :mod(value)
 
-##### Explicação da Sintaxe
-Calcula o módulo (resto) do número atual dividido pelo valor especificado.
-Parâmetro:
-- **value:** O divisor do módulo.
+##### Explicação da sintaxe
+Calcula o módulo (resto da divisão) do número atual pelo valor especificado.  
+Parâmetros:
+- value: o divisor do módulo
 
 ##### Exemplo
 ```
-4:mod(2)              // Saída: 0
-3:mod(2)              // Saída: 1
+4:mod(2)              // Saída 0
+3:mod(2)              // Saída 1
 ```
 
 ##### Resultado
-A saída é o resto da operação de módulo.
+A saída é o resultado da operação de módulo.
+
 
 #### 8. :abs
 
-##### Explicação da Sintaxe
+##### Explicação da sintaxe
 Retorna o valor absoluto do número.
 
 ##### Exemplo
 ```
--10:abs()             // Saída: 10
--10.54:abs()          // Saída: 10.54
-10.54:abs()           // Saída: 10.54
-'-200':abs()          // Saída: 200
+-10:abs()             // Saída 10
+-10.54:abs()          // Saída 10.54
+10.54:abs()           // Saída 10.54
+'-200':abs()          // Saída 200
 ```
 
 ##### Resultado
-A saída é o valor absoluto do número de entrada.
+A saída é o valor absoluto.
+
 
 #### 9. :ceil
 
-##### Explicação da Sintaxe
-Arredonda o número para cima, retornando o menor inteiro que é maior ou igual ao número atual.
+##### Explicação da sintaxe
+Arredonda para cima, ou seja, retorna o menor inteiro que é maior ou igual ao número atual.
 
 ##### Exemplo
 ```
-10.05123:ceil()       // Saída: 11
-1.05:ceil()           // Saída: 2
--1.05:ceil()          // Saída: -1
+10.05123:ceil()       // Saída 11
+1.05:ceil()           // Saída 2
+-1.05:ceil()          // Saída -1
 ```
 
 ##### Resultado
-A saída é o número arredondado para o inteiro mais próximo (para cima).
+A saída é o número inteiro após o arredondamento.
+
 
 #### 10. :floor
 
-##### Explicação da Sintaxe
-Arredonda o número para baixo, retornando o maior inteiro que é menor ou igual ao número atual.
+##### Explicação da sintaxe
+Arredonda para baixo, ou seja, retorna o maior inteiro que é menor ou igual ao número atual.
 
 ##### Exemplo
 ```
-10.05123:floor()      // Saída: 10
-1.05:floor()          // Saída: 1
--1.05:floor()         // Saída: -2
+10.05123:floor()      // Saída 10
+1.05:floor()          // Saída 1
+-1.05:floor()         // Saída -2
 ```
 
 ##### Resultado
-A saída é o número arredondado para o inteiro mais próximo (para baixo).
+A saída é o número inteiro após o arredondamento.
+
 
 #### 11. :int
 
-##### Explicação da Sintaxe
-Converte o número para um inteiro (não recomendado para uso).
+##### Explicação da sintaxe
+Converte o número em um inteiro (não recomendado).
 
-##### Exemplo e Resultado
-Depende do caso de conversão específico.
+##### Exemplo e resultado
+Depende da situação específica da conversão.
+
 
 #### 12. :toEN
 
-##### Explicação da Sintaxe
-Converte o número para o formato inglês (usando '.' como separador decimal). Não recomendado para uso.
+##### Explicação da sintaxe
+Converte o número para o formato inglês (ponto decimal é '.'), não recomendado.
 
-##### Exemplo e Resultado
-Depende do caso de conversão específico.
+##### Exemplo e resultado
+Depende da situação específica da conversão.
+
 
 #### 13. :toFixed
 
-##### Explicação da Sintaxe
-Converte o número para uma string, mantendo apenas o número especificado de casas decimais. Não recomendado para uso.
+##### Explicação da sintaxe
+Converte o número em uma string, mantendo apenas o número especificado de casas decimais, não recomendado.
 
-##### Exemplo e Resultado
-Depende do caso de conversão específico.
+##### Exemplo e resultado
+Depende da situação específica da conversão.
+
 
 #### 14. :toFR
 
-##### Explicação da Sintaxe
-Converte o número para o formato francês (usando ',' como separador decimal). Não recomendado para uso.
+##### Explicação da sintaxe
+Converte o número para o formato francês (ponto decimal é ','), não recomendado.
 
-##### Exemplo e Resultado
-Depende do caso de conversão específico.
+##### Exemplo e resultado
+Depende da situação específica da conversão.

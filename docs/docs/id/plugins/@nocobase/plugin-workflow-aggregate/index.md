@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Aggregate node"
+displayName: "Workflow: Node kueri agregasi"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
+  Dapat digunakan untuk melakukan kueri agregasi pada database dalam workflow, seperti: menghitung jumlah, jumlah total, rata-rata, dll.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Aggregate node
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-workflow-aggregate/index).
+:::
+
+# Workflow: Node kueri agregasi

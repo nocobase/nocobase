@@ -1,12 +1,16 @@
 ---
-displayName: "Notification: In-app message"
+displayName: "Сповіщення: Внутрішні повідомлення"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |
-  It supports users in receiving real-time message notifications within the NocoBase application.
+  Дозволяє користувачам отримувати сповіщення в режимі реального часу всередині додатка NocoBase.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification: In-app message
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-notification-in-app-message/index).
+:::
+
+# Сповіщення: Внутрішні повідомлення

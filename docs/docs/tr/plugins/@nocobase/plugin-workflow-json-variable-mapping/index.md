@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: JSON variable mapping"
+displayName: "Workflow: JSON Değişken Eşleme"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 description: |
-  Used for mapping any JSON data to structured variables for usage in subsequent nodes.
+  Herhangi bir JSON verisini sonraki Node'larda kullanılmak üzere yapılandırılmış değişkenlere eşlemek için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: JSON variable mapping
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-json-variable-mapping/index) bakın.
+:::
+
+# Workflow: JSON Değişken Eşleme

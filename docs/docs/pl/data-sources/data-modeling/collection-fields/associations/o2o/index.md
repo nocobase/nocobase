@@ -20,7 +20,7 @@ Relacja ER
 
 Konfiguracja pola
 
-![alt text](https://static-docs.nocobase.com/765a87e094b4fb50c9426a108f87105.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
 ## Jeden do jednego (Należy do)
 

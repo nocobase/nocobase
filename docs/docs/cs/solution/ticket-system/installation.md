@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/solution/ticket-system/installation).
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Jak nainstalovat
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> Současná verze využívá pro nasazení formu **zálohování a obnovy**. V budoucích verzích můžeme přejít na formu **přírůstkové migrace**, aby bylo snazší integrovat řešení do vašich stávajících systémů.
 
-Before you begin, please ensure:
+Abychom vám umožnili rychle a hladce nasadit řešení tiketů do vašeho vlastního prostředí NocoBase, nabízíme dva způsoby obnovy. Vyberte si ten, který nejlépe vyhovuje vaší verzi uživatele a technickému zázemí.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+Než začnete, ujistěte se, že:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- Již máte základní provozní prostředí NocoBase. Ohledně instalace hlavního systému se prosím podívejte na podrobnou [oficiální instalační dokumentaci](https://docs-cn.nocobase.com/welcome/getting-started/installation).
+- Verze NocoBase je **2.0.0-beta.5 a vyšší**
+- Již jste si stáhli příslušné soubory systému tiketů:
+  - **Soubor zálohy**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) – vhodný pro metodu jedna
+  - **SQL soubor**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) – vhodný pro metodu dvě
+
+**Důležité upozornění**:
+- Toto řešení je vytvořeno na databázi **PostgreSQL 16**, ujistěte se, že vaše prostředí používá PostgreSQL 16.
+- **DB_UNDERSCORED nesmí být true**: Zkontrolujte prosím svůj soubor `docker-compose.yml` a ujistěte se, že proměnná prostředí `DB_UNDERSCORED` není nastavena na `true`, jinak dojde ke konfliktu se zálohou řešení a selhání obnovy.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Metoda jedna: Obnova pomocí Správce záloh (doporučeno pro uživatele verzí Professional/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+Tento způsob využívá k obnově jedním kliknutím vestavěný plugin NocoBase „[Správce záloh](https://docs-cn.nocobase.com/handbook/backups)“ (verze Professional/Enterprise), což je nejjednodušší operace. Má však určité požadavky na prostředí a verzi uživatele.
 
-### Key Features
+### Klíčové vlastnosti
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **Výhody**:
+  1. **Pohodlné ovládání**: Lze dokončit v uživatelském rozhraní (UI), přičemž lze kompletně obnovit všechny konfigurace včetně pluginů.
+  2. **Kompletní obnova**: **Dokáže obnovit všechny systémové soubory**, včetně souborů šablon tisku, souborů nahraných v polích typu soubor v tabulkách atd., což zajišťuje úplnou funkčnost.
+* **Omezení**:
+  1. **Omezeno na verze Professional/Enterprise**: „Správce záloh“ je plugin na podnikové úrovni, který je k dispozici pouze uživatelům verzí Professional/Enterprise.
+  2. **Přísné požadavky na prostředí**: Vyžaduje, aby vaše databázové prostředí (verze, nastavení citlivosti na velikost písmen atd.) bylo vysoce kompatibilní s prostředím, ve kterém jsme zálohu vytvořili.
+  3. **Závislost na pluginech**: Pokud řešení obsahuje komerční pluginy, které ve vašem lokálním prostředí nemáte, obnova selže.
 
-### Steps
+### Provozní kroky
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**Krok 1: [Důrazně doporučeno] Spusťte aplikaci pomocí obrazu `full`**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+Aby se předešlo selhání obnovy kvůli chybějícím databázovým klientům, důrazně doporučujeme použít verzi Docker obrazu `full`. Obsahuje všechny potřebné doprovodné programy, takže nemusíte provádět žádnou další konfiguraci.
 
-Example command to pull the image:
+Příklad příkazu pro stažení obrazu:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+Poté použijte tento obraz ke spuštění vaší služby NocoBase.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **Poznámka**: Pokud nepoužijete obraz `full`, možná budete muset v kontejneru ručně nainstalovat databázového klienta `pg_dump`, což je proces zdlouhavý a nestabilní.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Krok 2: Zapněte plugin „Správce záloh“**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Přihlaste se do svého systému NocoBase.
+2. Přejděte do **`Správa pluginů`**.
+3. Najděte a povolte plugin **`Správce záloh`**.
 
-**Step 3: Restore from local backup file**
+**Krok 3: Obnova z lokálního souboru zálohy**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. Po povolení pluginu obnovte stránku.
+2. V levém menu přejděte na **`Správa systému`** -> **`Správce záloh`**.
+3. Klikněte na tlačítko **`Obnovit z lokální zálohy`** v pravém horním rohu.
+4. Přetáhněte stažený soubor zálohy do oblasti pro nahrávání.
+5. Klikněte na **`Odeslat`** a trpělivě počkejte, až systém dokončí obnovu. Tento proces může trvat od několika sekund do několika minut.
 
-### Notes
+### Poznámky
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **Kompatibilita databáze**: Toto je nejdůležitější bod této metody. **Verze, znaková sada a nastavení citlivosti na velikost písmen** vaší databáze PostgreSQL musí odpovídat zdrojovému souboru zálohy. Zejména název `schema` musí být shodný.
+* **Shoda komerčních pluginů**: Ujistěte se, že již vlastníte a máte zapnuté všechny komerční pluginy vyžadované řešením, jinak bude obnova přerušena.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## Metoda dvě: Přímý import SQL souboru (univerzální, vhodnější pro komunitní verzi)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+Tento způsob obnovuje data přímou operací s databází, čímž obchází plugin „Správce záloh“, a proto nemá žádná omezení pro verze Professional/Enterprise.
 
-### Key Features
+### Klíčové vlastnosti
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **Výhody**:
+  1. **Bez omezení verze**: Vhodné pro všechny uživatele NocoBase, včetně komunitní verze.
+  2. **Vysoká kompatibilita**: Nezávisí na nástroji `dump` v aplikaci; funguje, dokud se lze připojit k databázi.
+  3. **Vysoká odolnost proti chybám**: Pokud řešení obsahuje komerční pluginy, které nemáte, související funkce nebudou povoleny, ale neovlivní to běžné používání ostatních funkcí a aplikace se úspěšně spustí.
+* **Omezení**:
+  1. **Vyžaduje znalost práce s databází**: Vyžaduje, aby uživatel měl základní dovednosti pro práci s databází, například jak spustit soubor `.sql`.
+  2. **Ztráta systémových souborů**: **Tímto způsobem dojde ke ztrátě všech systémových souborů**, včetně souborů šablon tisku, souborů nahraných v polích typu soubor v tabulkách atd.
 
-### Steps
+### Provozní kroky
 
-**Step 1: Prepare a clean database**
+**Krok 1: Příprava čisté databáze**
 
-Prepare a brand new, empty database for the data you're about to import.
+Připravte si zcela novou, prázdnou databázi pro data, která se chystáte importovat.
 
-**Step 2: Import the `.sql` file into the database**
+**Krok 2: Import souboru `.sql` do databáze**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+Získejte stažený databázový soubor (obvykle ve formátu `.sql`) a importujte jeho obsah do databáze připravené v předchozím kroku. Existuje několik způsobů provedení v závislosti na vašem prostředí:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **Možnost A: Přes příkazový řádek serveru (příklad s Dockerem)**
+  Pokud k instalaci NocoBase a databáze používáte Docker, můžete soubor `.sql` nahrát na server a poté k provedení importu použít příkaz `docker exec`. Předpokládejme, že váš kontejner PostgreSQL se jmenuje `my-nocobase-db` a soubor se jmenuje `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Zkopírujte sql soubor do kontejneru
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # Vstupte do kontejneru a proveďte příkaz pro import
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **Možnost B: Přes vzdáleného databázového klienta**
+  Pokud má vaše databáze otevřený port, můžete k připojení k databázi použít jakéhokoli grafického databázového klienta (jako DBeaver, Navicat, pgAdmin atd.), otevřít nové okno dotazu, vložit do něj celý obsah souboru `.sql` a spustit jej.
 
-**Step 3: Connect to the database and start the application**
+**Krok 3: Připojení k databázi a spuštění aplikace**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+Nakonfigurujte spouštěcí parametry NocoBase (například proměnné prostředí `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` atd.) tak, aby ukazovaly na databázi, do které jste právě importovali data. Poté normálně spusťte službu NocoBase.
 
-### Notes
+### Poznámky
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **Oprávnění k databázi**: Tato metoda vyžaduje, abyste měli účet a heslo s oprávněním přímo manipulovat s databází.
+* **Stav pluginů**: Po úspěšném importu sice data komerčních pluginů v systému existují, ale pokud nemáte lokálně nainstalované a povolené odpovídající pluginy, související funkce se nebudou zobrazovat ani nebudou použitelné, což však nezpůsobí pád aplikace.
 
 ---
 
-## Summary and Comparison
+## Souhrn a porovnání
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| Vlastnost | Metoda jedna: Správce záloh | Metoda dvě: Přímý import SQL |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **Vhodní uživatelé** | Uživatelé verzí **Professional/Enterprise** | **Všichni uživatelé** (včetně komunitní verze) |
+| **Jednoduchost ovládání** | ⭐⭐⭐⭐⭐ (Velmi jednoduché, UI operace) | ⭐⭐⭐ (Vyžaduje základní znalost databází) |
+| **Požadavky na prostředí** | **Přísné**, databáze, verze systému atd. musí být vysoce kompatibilní | **Obecné**, vyžaduje kompatibilitu databáze |
+| **Závislost na pluginech** | **Silná závislost**, při obnově se kontrolují pluginy, chybějící plugin způsobí **selhání obnovy**. | **Funkce silně závisí na pluginech**. Data lze importovat nezávisle, systém má základní funkce. Pokud však chybí odpovídající pluginy, související funkce budou **zcela nepoužitelné**. |
+| **Systémové soubory** | **Plně zachovány** (šablony tisku, nahrané soubory atd.) | **Budou ztraceny** (šablony tisku, nahrané soubory atd.) |
+| **Doporučený scénář** | Podnikoví uživatelé s kontrolovaným a konzistentním prostředím, kteří potřebují plnou funkčnost | Chybějící některé pluginy, snaha o vysokou kompatibilitu a flexibilitu, uživatelé jiných než Pro/Enterprise verzí, akceptují absenci funkcí souborů |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+Doufáme, že vám tento návod pomůže úspěšně nasadit systém tiketů. Pokud během procesu narazíte na jakékoli problémy, neváhejte nás kontaktovat!

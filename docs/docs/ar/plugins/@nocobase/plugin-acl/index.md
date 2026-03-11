@@ -1,15 +1,19 @@
 ---
-displayName: "Access control"
+displayName: "التحكم في الوصول"
 packageName: '@nocobase/plugin-acl'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.
+  يعتمد التحكم في الوصول على الأدوار والموارد والإجراءات، ويمكنه التحكم بدقة في صلاحيات Interface Configuration، وصلاحيات عمليات البيانات، وصلاحيات الوصول إلى القوائم، وصلاحيات الإضافات.
 isFree: true
 builtIn: true
 defaultEnabled: true
 editionLevel: 0
 ---
 
-# Access control
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-acl/index).
+:::
+
+# التحكم في الوصول

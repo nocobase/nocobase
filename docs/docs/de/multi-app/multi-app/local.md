@@ -2,105 +2,109 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/multi-app/multi-app/local).
+:::
+
 # Shared-Memory-Modus
 
 ## Einführung
 
-Wenn Sie Geschäftsbereiche auf App-Ebene aufteilen möchten, ohne eine komplexe Deployment- und Betriebsarchitektur einzuführen, verwenden Sie den Shared-Memory-Multi-App-Modus.
+Wenn Benutzer eine Aufteilung des Geschäfts auf Anwendungsebene wünschen, aber keine komplexe Bereitstellungs- und Betriebsarchitektur einführen möchten, kann der Shared-Memory-Modus für mehrere Anwendungen verwendet werden.
 
-In diesem Modus laufen mehrere Apps in einer NocoBase-Instanz. Jede App ist unabhängig, kann eine eigene Datenbank verwenden und einzeln erstellt, gestartet oder gestoppt werden. Gleichzeitig teilen sich alle Apps denselben Prozess- und Speicherraum.
+In diesem Modus können mehrere Anwendungen gleichzeitig in einer NocoBase-Instanz ausgeführt werden. Jede Anwendung ist unabhängig, kann mit einer unabhängigen Datenbank verbunden werden, kann separat erstellt, gestartet und gestoppt werden, aber sie teilen sich denselben Prozess und Speicherplatz. Benutzer müssen weiterhin nur eine NocoBase-Instanz warten.
 
 ## Benutzerhandbuch
 
-### Umgebungsvariablen
+### Konfiguration der Umgebungsvariablen
 
-Vor der Nutzung der Multi-App-Funktionen stellen Sie sicher, dass beim Start von NocoBase folgende Umgebungsvariablen gesetzt sind:
+Stellen Sie vor der Verwendung der Multi-Anwendungs-Funktion sicher, dass beim Start von NocoBase die folgenden Umgebungsvariablen festgelegt wurden:
 
 ```bash
 APP_DISCOVERY_ADAPTER=local
 APP_PROCESS_ADAPTER=local
 ```
 
-### App erstellen
+### Erstellung von Anwendungen
 
-Öffnen Sie in den **System Settings** den Eintrag **App supervisor**, um zur App-Verwaltung zu gelangen.
+Klicken Sie im Systemeinstellungsmenü auf „App-Supervisor“, um die Anwendungsverwaltungsseite aufzurufen.
 
 ![](https://static-docs.nocobase.com/202512291056215.png)
 
-Klicken Sie auf **Add**, um eine neue App zu erstellen.
+Klicken Sie auf die Schaltfläche „Neu hinzufügen“, um eine neue Anwendung zu erstellen.
 
 ![](https://static-docs.nocobase.com/202512291057696.png)
 
-#### Konfigurationsoptionen
+#### Beschreibung der Konfigurationselemente
 
-| Option | Beschreibung |
-| --- | --- |
-| **Anzeigename** | Name der App in der Oberfläche |
-| **App-ID** | Eindeutiger, globaler App-Identifier |
-| **Startmodus** | - Beim ersten Aufruf starten: Start beim ersten URL-Zugriff<br>- Mit Hauptanwendung starten: Start zusammen mit der Hauptanwendung (verlängert die Startzeit) |
-| **Umgebung** | Im Shared-Memory-Modus ist nur `local` verfügbar |
-| **Datenbank** | Konfiguration der Hauptdatenquelle:<br>- Neue Datenbank: bestehenden DB-Service wiederverwenden und eigene DB anlegen<br>- Neue Verbindung: mit anderem DB-Service verbinden<br>- Neues Schema: bei PostgreSQL ein eigenes Schema erstellen |
-| **Upgrade** | Ob vorhandene Daten älterer NocoBase-Versionen automatisch auf die aktuelle Version angehoben werden |
-| **JWT-Secret** | Automatische Erzeugung eines eigenen JWT-Secrets zur Sitzungsisolation |
-| **Custom Domain** | Eigene Zugriffsdomain für die App |
+| Konfigurationselement | Beschreibung |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Anwendungsname**   | Der in der Benutzeroberfläche angezeigte Name der Anwendung                                                                                                                                                                                       |
+| **Anwendungskennung**   | Anwendungskennung, global eindeutig                                                                                                                                                                                           |
+| **Startmodus**   | - Beim ersten Zugriff starten: Die Unteranwendung wird erst gestartet, wenn der Benutzer sie zum ersten Mal über eine URL aufruft<br>- Zusammen mit der Hauptanwendung starten: Die Unteranwendung wird gleichzeitig mit der Hauptanwendung gestartet (erhöht die Startzeit der Hauptanwendung)                                                                        |
+| **Umgebung**       | Im Shared-Memory-Modus ist nur die lokale Umgebung verfügbar, d. h. `local`                                                                                                                                                               |
+| **Datenbankverbindung** | Dient zur Konfiguration der Haupt-Datenquelle der Anwendung und unterstützt die folgenden drei Methoden:<br>- Neue Datenbank: Den aktuellen Datenbankdienst wiederverwenden und eine unabhängige Datenbank erstellen<br>- Neue Datenverbindung: Verbindung zu anderen Datenbankdiensten herstellen<br>- Schema-Modus: Wenn die aktuelle Haupt-Datenquelle PostgreSQL ist, wird ein unabhängiges Schema für die Anwendung erstellt |
+| **Upgrade**       | Wenn in der verbundenen Datenbank NocoBase-Anwendungsdaten einer niedrigeren Version vorhanden sind, ob ein automatisches Upgrade auf die aktuelle Anwendungsversion zulässig ist                                                                                                                             |
+| **JWT-Schlüssel**   | Generiert automatisch einen unabhängigen JWT-Schlüssel für die Anwendung, um sicherzustellen, dass die Anwendungssitzung von der Hauptanwendung und anderen Anwendungen unabhängig ist                                                                                                                                            |
+| **Benutzerdefinierte Domain** | Konfiguriert eine unabhängige Zugriffsdomain für die Anwendung                                                                                                                                                                                       |
 
-### App starten
+### Starten der Anwendung
 
-Klicken Sie auf **Start**, um die App zu starten.
+Klicken Sie auf die Schaltfläche **Starten**, um die Unteranwendung zu starten.
 
-> Wenn beim Erstellen _Start on first visit_ gewählt wurde, startet die App automatisch beim ersten Zugriff.
+> Wenn bei der Erstellung _„Beim ersten Zugriff starten“_ ausgewählt wurde, startet sie beim ersten Zugriff automatisch.
 
 ![](https://static-docs.nocobase.com/202512291121065.png)
 
-### App aufrufen
+### Zugriff auf die Anwendung
 
-Klicken Sie auf **Visit**, um die App in einem neuen Tab zu öffnen.
+Klicken Sie auf die Schaltfläche **Besuchen**, um die Unteranwendung in einem neuen Tab zu öffnen.
 
-Standardmäßig erfolgt der Zugriff über `/apps/:appName/admin/`, zum Beispiel:
+Standardmäßig wird `/apps/:appName/admin/` verwendet, um auf die Unteranwendung zuzugreifen, zum Beispiel:
 
 ```bash
 http://localhost:13000/apps/a_7zkxoarusnx/admin/
 ```
 
-Alternativ können Sie eine eigene Domain konfigurieren. Die Domain muss auf die aktuelle IP auflösen; bei Nginx muss die Domain zusätzlich in der Nginx-Konfiguration eingetragen werden.
+Gleichzeitig kann auch eine unabhängige Domain für die Unteranwendung konfiguriert werden. Die Domain muss auf die aktuelle IP aufgelöst werden. Wenn Nginx verwendet wird, muss die Domain auch in der Nginx-Konfiguration hinzugefügt werden.
 
-### App stoppen
+### Stoppen der Anwendung
 
-Klicken Sie auf **Stop**, um die App zu stoppen.
+Klicken Sie auf die Schaltfläche **Stoppen**, um die Unteranwendung zu stoppen.
 
 ![](https://static-docs.nocobase.com/202512291122113.png)
 
-### App-Status
+### Anwendungsstatus
 
-Der aktuelle Status jeder App wird in der Liste angezeigt.
+In der Liste können Sie den aktuellen Status jeder Anwendung einsehen.
 
 ![](https://static-docs.nocobase.com/202512291122339.png)
 
-### App löschen
+### Löschen der Anwendung
 
-Klicken Sie auf **Delete**, um eine App zu entfernen.
+Klicken Sie auf die Schaltfläche **Löschen**, um die Anwendung zu entfernen.
 
 ![](https://static-docs.nocobase.com/202512291122178.png)
 
-## FAQ
+## Häufig gestellte Fragen
 
 ### 1. Plugin-Verwaltung
 
-Andere Apps können dieselben Plugins (inkl. Versionen) wie die Hauptanwendung nutzen, die Konfiguration bleibt jedoch pro App isoliert.
+Die Plugins, die von anderen Anwendungen verwendet werden können, entsprechen denen der Hauptanwendung (einschließlich der Versionen), aber Plugins können unabhängig konfiguriert und verwendet werden.
 
 ### 2. Datenbank-Isolation
 
-Apps können eigene Datenbanken nutzen. Für Datenaustausch zwischen Apps verwenden Sie externe Datenquellen.
+Andere Anwendungen können unabhängige Datenbanken konfigurieren. Wenn ein Datenaustausch zwischen Anwendungen gewünscht ist, kann dies über externe Datenquellen realisiert werden.
 
-### 3. Backup und Migration
+### 3. Datensicherung und Migration
 
-Backups in der Hauptanwendung enthalten derzeit keine Daten anderer Apps (nur Basis-Metadaten). Backup und Migration müssen je App separat erfolgen.
+Derzeit unterstützt die Datensicherung in der Hauptanwendung nicht die Einbeziehung von Daten anderer Anwendungen (sie enthält nur grundlegende Anwendungsinformationen). Sicherungen und Migrationen müssen manuell innerhalb der anderen Anwendungen durchgeführt werden.
 
-### 4. Deployment und Upgrade
+### 4. Bereitstellung und Aktualisierung
 
-Im Shared-Memory-Modus folgen App-Versionen automatisch der Hauptanwendung und bleiben damit konsistent.
+Im Shared-Memory-Modus folgen die Versionen anderer Anwendungen automatisch dem Upgrade der Hauptanwendung, wodurch die Konsistenz der Anwendungsversionen automatisch gewährleistet wird.
 
-### 5. App-Sitzungen
+### 5. Anwendungssitzung
 
-- Mit eigenem JWT-Secret ist die Sitzung von Haupt- und anderen Apps isoliert. Bei Zugriff über Subpfade derselben Domain ist beim Wechsel oft eine erneute Anmeldung nötig (Token in LocalStorage). Separate Domains pro App werden empfohlen.
-- Ohne eigenes JWT-Secret teilen sich Apps die Sitzung der Hauptanwendung. Das ist komfortabler, birgt aber Sicherheitsrisiken: Bei überlappenden Benutzer-IDs kann es zu unberechtigtem app-übergreifendem Zugriff kommen.
+- Wenn die Anwendung einen unabhängigen JWT-Schlüssel verwendet, ist die Anwendungssitzung von der Hauptanwendung und anderen Anwendungen unabhängig. Wenn über Unterpfade derselben Domain auf verschiedene Anwendungen zugegriffen wird, ist beim Wechsel zwischen verschiedenen Anwendungen eine erneute Anmeldung erforderlich, da das Anwendungs-TOKEN im LocalStorage zwischengespeichert wird. Es wird empfohlen, unabhängige Domains für verschiedene Anwendungen zu konfigurieren, um eine bessere Sitzungsisolation zu erreichen.
+- Wenn die Anwendung keinen unabhängigen JWT-Schlüssel verwendet, teilt sie sich die Sitzung der Hauptanwendung. Nach dem Zugriff auf andere Anwendungen im selben Browser ist bei der Rückkehr zur Hauptanwendung keine erneute Anmeldung erforderlich. Es bestehen jedoch Sicherheitsrisiken: Wenn die Benutzer-IDs verschiedener Anwendungen identisch sind, kann dies dazu führen, dass Benutzer unbefugt auf Daten anderer Anwendungen zugreifen.

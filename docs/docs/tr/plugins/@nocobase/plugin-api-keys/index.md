@@ -1,12 +1,16 @@
 ---
-displayName: "Auth: API keys"
+displayName: "Kimlik Doğrulama: API Anahtarları"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Allows users to use API key to access application's HTTP API
+  Kullanıcıların uygulamanın HTTP API'sine erişmek için API anahtarlarını kullanmasına olanak tanır
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: API keys
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-api-keys/index) bakın.
+:::
+
+# Kimlik Doğrulama: API Anahtarları

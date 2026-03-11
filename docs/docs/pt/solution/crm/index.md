@@ -1,142 +1,146 @@
-# NocoBase CRM 2.0 Solution
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/crm/index).
+:::
 
-> A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
+# Solução NocoBase CRM 2.0
 
-## 1. Background
+> Sistema de gestão de vendas modular baseado na plataforma low-code NocoBase, com tomada de decisão assistida por funcionários de IA
 
-### Challenges Sales Teams Face
+## 1. Contexto
 
-Sales teams commonly encounter these problems: inconsistent lead quality makes fast screening difficult, opportunity follow-ups slip through the cracks, customer information is scattered across emails and multiple systems, sales forecasts rely on gut feeling, and quote approval processes are ad hoc.
+### Desafios enfrentados pelas equipes de vendas
 
-**Typical scenarios:** rapid lead evaluation and assignment, opportunity health monitoring, customer churn alerts, multi-level quote approvals, linking emails to customers and opportunities.
+As equipes de vendas das empresas frequentemente encontram estes problemas em suas operações diárias: a qualidade inconsistente dos leads dificulta a triagem rápida, os acompanhamentos de oportunidades são facilmente esquecidos, as informações dos clientes estão dispersas em e-mails e em vários sistemas, as previsões de vendas dependem inteiramente da experiência e os processos de aprovação de orçamentos não são padronizados.
 
-### Target Users
+**Cenários típicos:** Avaliação e atribuição rápida de leads, monitoramento da saúde das oportunidades, alertas de rotatividade de clientes, aprovação de orçamentos em vários níveis, associação de e-mails com clientes/oportunidades.
 
-B2B sales, project-based sales, and cross-border trade teams at small-to-mid and mid-to-large enterprises. These organizations are graduating from Excel/email management to systematic operations and have high requirements for customer data security.
+### Público-alvo
 
-### Limitations of Existing Solutions
+Equipes de vendas B2B, vendas baseadas em projetos e vendas de comércio exterior em pequenas, médias e grandes empresas. Essas empresas estão atualizando a gestão de Excel/e-mail para uma gestão sistematizada e possuem altos requisitos de segurança para os dados dos clientes.
 
-- **High cost**: Salesforce/HubSpot charge per seat, which is unaffordable for most SMEs
-- **Feature overload**: Enterprise CRMs are bloated; less than 20% of features are actually used, yet learning costs are high
-- **Hard to customize**: SaaS systems cannot easily adapt to your own business processes — even changing a field requires a ticket
-- **Data security**: Customer data stored on third-party servers creates compliance and security risks
-- **Expensive to build in-house**: Custom development has long cycles and high maintenance costs; adapting to business changes is slow
+### Deficiências das soluções existentes
 
----
-
-## 2. Differentiated Advantages
-
-**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
-
-**Platform-level advantages:**
-
-- **Configuration-first**: Data models, page layouts, and business processes are all configurable via UI — no code required
-- **Low-code rapid deployment**: Faster than custom development, more flexible than SaaS
-- **Modular and decomposable**: Modules are independently designed and can be toggled as needed; minimum viable setup requires only Customer + Opportunity
-
-**What traditional CRMs can't do, or can only do at prohibitive cost:**
-
-- **Data sovereignty**: Self-hosted deployment — your customer data stays on your own servers, meeting compliance requirements
-- **Native AI employee integration**: AI employees are deeply embedded in business pages and automatically read data context — not just "an AI button"
-- **All designs are reproducible**: Users can extend the solution template independently, without vendor dependency
+- **Custo alto**: Salesforce/HubSpot cobram por usuário, o que é difícil de arcar para pequenas e médias empresas
+- **Sobrecarga de funções**: CRMs de grande porte possuem funções excessivas e altos custos de aprendizado; menos de 20% das funções são realmente utilizadas
+- **Dificuldade de customização**: Sistemas SaaS são difíceis de adaptar aos processos de negócios da própria empresa; até para alterar um campo é necessário seguir um processo formal
+- **Segurança de dados**: Dados de clientes armazenados em servidores de terceiros representam riscos de conformidade e segurança
+- **Alto custo de desenvolvimento próprio**: O desenvolvimento tradicional tem ciclos longos e altos custos de manutenção, dificultando ajustes rápidos quando o negócio muda
 
 ---
 
-## 3. Design Principles
+## 2. Vantagens Diferenciadas
 
-- **Low cognitive load**: Clean interface, core features are immediately visible
-- **Business before technology**: Focus on sales scenarios, not technical showmanship
-- **Evolvable**: Supports phased rollout and incremental improvement
-- **Configuration over code**: If it can be configured, don't write code
-- **Human-AI collaboration**: AI employees assist decision-making; they don't replace salespeople's judgment
+**Principais produtos do mercado:** Salesforce, HubSpot, Zoho CRM, 纷享销客 (Fxiaoke), Odoo CRM, SuiteCRM, etc.
 
----
+**Vantagens ao nível da plataforma:**
 
-## 4. Solution Overview
+- **Prioridade de configuração**: Modelos de dados, layouts de página e fluxos de trabalho podem ser configurados via UI, sem necessidade de escrever código
+- **Construção rápida low-code**: Mais rápido que o desenvolvimento próprio e mais flexível que o SaaS
+- **Módulos desmontáveis**: Cada módulo é projetado de forma independente e pode ser reduzido conforme a necessidade; o mínimo viável requer apenas os módulos de Cliente e Oportunidade
 
-### Core Capabilities
+**O que os CRMs tradicionais não conseguem fazer ou têm custos altíssimos:**
 
-- **End-to-end pipeline**: Lead → Opportunity → Quotation → Order → Customer Success
-- **Modular**: Full version has 7 modules; minimum viable setup needs only 2 core modules
-- **Multi-currency**: CNY/USD/EUR/GBP/JPY with automatic conversion
-- **AI assistance**: Lead scoring, win probability prediction, next-best-action suggestions
-
-### Core Modules
-
-| Module | Required | Description | AI Assistance |
-|--------|:--------:|-------------|--------------|
-| Customer Management | ✅ | Customer profiles, contacts, account hierarchy | Health scoring, churn alerts |
-| Opportunity Management | ✅ | Sales funnel, stage progression, activity log | Win probability, next-step suggestions |
-| Lead Management | — | Lead entry, status flow, conversion tracking | Smart scoring |
-| Quotation Management | — | Multi-currency, version control, approval workflow | — |
-| Order Management | — | Order creation, payment tracking | — |
-| Product Management | — | Product catalog, categories, tiered pricing | — |
-| Email Integration | — | Send/receive emails, CRM association | Sentiment analysis, summary generation |
-
-### Solution Editions
-
-- **Enterprise** (all 7 modules): Full-process B2B sales teams
-- **Standard** (Customer + Opportunity + Quotation + Order + Product): SME sales management
-- **Lite** (Customer + Opportunity): Simple customer and opportunity tracking
-- **Trade** (Customer + Opportunity + Quotation + Email): Cross-border trade teams
+- **Soberania de dados**: Implantação auto-hospedada, os dados dos clientes são armazenados em servidores próprios, atendendo aos requisitos de conformidade
+- **Integração nativa de funcionários de IA**: Funcionários de IA profundamente incorporados nas páginas de negócios, percebendo automaticamente o contexto dos dados, em vez de ser apenas "um botão de IA"
+- **Todo o design pode ser replicado**: Os usuários podem expandir a solução por conta própria com base em modelos, sem depender do fornecedor
 
 ---
 
-## 5. AI Employees
+## 3. Princípios de Design
 
-The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages. Unlike generic AI chat tools, they automatically recognize the data you're currently viewing — whether a lead list, opportunity details, or email thread — no copy-pasting required.
-
-**How to use**: Click the AI floating button in the lower-right corner of any page, or click the AI icon next to a block to summon the corresponding employee. You can also pre-configure common tasks for each employee and trigger them with a single click next time.
-
-| Employee | Role | Typical Use in CRM |
-|----------|------|--------------------|
-| **Viz** | Insight Analyst | Lead channel analysis, sales trends, pipeline health |
-| **Ellis** | Email Expert | Draft follow-up emails, generate communication summaries |
-| **Lexi** | Translation Assistant | Multilingual emails, cross-border customer communication |
-| **Dara** | Visualization Expert | Configure report charts, build dashboards |
-| **Orin** | Task Planner | Daily priorities, next-step action suggestions |
-
-### Business Value of AI Employees
-
-| Value Dimension | Specific Impact |
-|-----------------|----------------|
-| Efficiency | Lead scoring done automatically, saving manual screening time; follow-up emails drafted in one click |
-| Empowerment | Sales data analysis always at your fingertips — no waiting for the data team |
-| Communication quality | Professional emails + AI polish; cross-border teams communicate fluently in multiple languages |
-| Decision support | Real-time win probability and next-step suggestions reduce deals lost to missed follow-ups |
+- **Baixo custo cognitivo**: Interface simples, com funções principais claras à primeira vista
+- **Negócio antes da tecnologia**: Foco em cenários de vendas, não em exibicionismo técnico
+- **Evoluível**: Suporte para lançamento em fases e melhoria gradual
+- **Configuração primeiro**: O que puder ser configurado, não escreva código
+- **Colaboração humano-IA**: Funcionários de IA auxiliam na tomada de decisões, em vez de substituir o julgamento da equipe de vendas
 
 ---
 
-## 6. Highlights
+## 4. Visão Geral da Solução
 
-**Modular** — Each module is independently designed and can be toggled on or off. The minimum setup needs only Customer + Opportunity. Start lean, grow as needed.
+### Capacidades Principais
 
-**Complete sales loop** — Lead → Opportunity → Quotation → Order → Payment → Customer Success. Full end-to-end data flow with no need to switch between systems.
+- **Gestão de fluxo completo**: Lead → Oportunidade → Orçamento → Pedido → Sucesso do Cliente
+- **Módulos ajustáveis**: Versão completa com 7 módulos, o mínimo viável requer apenas 2 módulos principais
+- **Suporte multimoeda**: Conversão automática entre CNY/USD/EUR/GBP/JPY
+- **Assistência de IA**: Pontuação de leads, previsão de taxa de ganho e sugestões de próximas ações
 
-**Native AI employee integration** — Not just "an AI button." 5 AI employees are embedded in every business page, automatically reading current data context and delivering analysis and suggestions with one click.
+### Módulos Principais
 
-**Deep email integration** — Emails are automatically linked to customers, contacts, and opportunities. Supports Gmail and Outlook. Multiple English email templates cover common sales scenarios.
+| Módulo | Obrigatório | Descrição | Assistência de IA |
+|------|:----:|------|--------|
+| Gestão de Clientes | ✅ | Arquivos de clientes, contatos, hierarquia de clientes | Avaliação de saúde, alerta de rotatividade |
+| Gestão de Oportunidades | ✅ | Funil de vendas, progressão de estágios, registros de atividades | Previsão de taxa de ganho, sugestões de próximos passos |
+| Gestão de Leads | - | Entrada de leads, fluxo de status, rastreamento de conversão | Pontuação inteligente |
+| Gestão de Orçamentos | - | Multimoeda, gestão de versões, fluxo de aprovação | - |
+| Gestão de Pedidos | - | Geração de pedidos, rastreamento de pagamentos | - |
+| Gestão de Produtos | - | Catálogo de produtos, categorias, preços escalonados | - |
+| Integração de E-mail | - | Envio e recebimento de e-mails, associação com CRM | Análise de sentimento, geração de resumos |
 
-**Multi-currency trade support** — Supports CNY/USD/EUR/GBP/JPY with configurable exchange rate conversion, designed for cross-border and international sales teams.
+### Ajuste da Solução
 
----
-
-## 7. Getting Started
-
-Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
-
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
-
----
-
-## 8. Roadmap
-
-- **Opportunity automation**: Stage progression triggers notifications; stagnant opportunities auto-alert, reducing manual oversight
-- **Approval workflows**: Multi-level quote approval with mobile approval support
-- **AI automation**: AI employees embedded in workflows for unattended background execution — automated lead scoring and opportunity analysis
-- **Mobile-friendly**: Mobile-optimized interface for on-the-go customer follow-up
-- **Multi-tenant support**: Horizontal scaling across spaces/applications, distributing to independent sales teams
+- **Versão Completa** (todos os 7 módulos): Para equipes de vendas B2B com processos completos
+- **Versão Padrão** (Cliente + Oportunidade + Orçamento + Pedido + Produto): Gestão de vendas para pequenas e médias empresas
+- **Versão Leve** (Cliente + Oportunidade): Rastreamento simples de clientes e oportunidades
+- **Versão de Comércio Exterior** (Cliente + Oportunidade + Orçamento + E-mail): Para empresas do tipo comércio exterior
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 5. Funcionários de IA
+
+O sistema CRM vem pré-configurado com 5 funcionários de IA, profundamente incorporados nas páginas de negócios. Diferente das ferramentas de chat de IA comuns, eles podem identificar automaticamente os dados que você está visualizando no momento — seja uma lista de leads, detalhes de uma oportunidade ou registros de e-mail — sem a necessidade de copiar e colar manualmente.
+
+**Como usar**: Clique na bola flutuante de IA no canto inferior direito da página ou clique diretamente no ícone de IA ao lado de um bloco para chamar o funcionário correspondente. Você também pode predefinir tarefas comuns para cada funcionário para acioná-las com um clique na próxima vez.
+
+| Funcionário | Responsabilidade | Uso Típico no CRM |
+|------|------|-----------------|
+| **Viz** | Analista de Insights | Análise de canais de leads, tendências de vendas, saúde do pipeline |
+| **Ellis** | Especialista em E-mail | Redação de e-mails de acompanhamento, geração de resumos de comunicação |
+| **Lexi** | Assistente de Tradução | E-mails multilíngues, comunicação com clientes de comércio exterior |
+| **Dara** | Especialista em Visualização | Configuração de relatórios e gráficos, construção de painéis |
+| **Orin** | Planejador de Tarefas | Prioridades diárias, sugestões de próximas ações |
+
+### Valor de Negócio dos Funcionários de IA
+
+| Dimensão de Valor | Efeito Específico |
+|----------|----------|
+| Aumento de Eficiência | Pontuação de leads concluída automaticamente, economizando triagem manual; redação de e-mails de acompanhamento com um clique |
+| Empoderamento da Equipe | Análise de dados de vendas sempre ao seu alcance, sem esperar que a equipe de dados gere relatórios |
+| Qualidade da Comunicação | E-mails profissionais + polimento por IA, comunicação multilíngue sem barreiras para equipes de comércio exterior |
+| Suporte à Decisão | Julgamento de taxa de ganho em tempo real e sugestões de próximos passos, reduzindo a perda de oportunidades por falta de acompanhamento |
+
+---
+
+## 6. Destaques
+
+**Módulos desmontáveis** — Cada módulo é projetado de forma independente e pode ser ligado ou desligado individualmente. A configuração mínima requer apenas os módulos principais de Cliente + Oportunidade; use o que for suficiente, sem obrigatoriedade de usar tudo.
+
+**Ciclo de vendas completo** — Lead → Oportunidade → Orçamento → Pedido → Pagamento → Sucesso do Cliente, com dados integrados em toda a cadeia, sem necessidade de alternar entre vários sistemas.
+
+**Integração nativa de funcionários de IA** — Não é apenas "adicionar um botão de IA", mas sim 5 funcionários de IA integrados em cada página de negócio, obtendo automaticamente o contexto dos dados atuais para acionar análises e sugestões com um clique.
+
+**Integração profunda de e-mail** — E-mails associados automaticamente a clientes, contatos e oportunidades; suporte para Gmail e Outlook, com vários modelos de e-mail em inglês cobrindo cenários comuns de vendas.
+
+**Suporte multimoeda para comércio exterior** — Suporte para CNY/USD/EUR/GBP/JPY, com configuração de conversão de taxa de câmbio, adequado para equipes de vendas internacionais e multinacionais.
+
+---
+
+## 7. Instalação e Uso
+
+Use a função de gerenciamento de migração do NocoBase para migrar o pacote do aplicativo CRM para o ambiente de destino com um clique.
+
+**Pronto para usar:** Coleções, fluxos de trabalho e painéis pré-configurados, visões de múltiplos papéis (Gerente de Vendas/Representante de Vendas/Executivo), 37 modelos de e-mail cobrindo cenários comuns de vendas.
+
+---
+
+## 8. Planejamento Futuro
+
+- **Automação de Oportunidades**: A progressão de estágios aciona notificações, alertas automáticos para oportunidades estagnadas, reduzindo o monitoramento manual
+- **Fluxos de Trabalho de Aprovação**: Fluxo de trabalho de aprovação de orçamentos em vários níveis, com suporte para aprovação em dispositivos móveis
+- **Automação de IA**: Funcionários de IA incorporados em fluxos de trabalho, com suporte para execução automática em segundo plano, realizando pontuação de leads e análise de oportunidades sem supervisão
+- **Adaptação Móvel**: Interface amigável para dispositivos móveis, para acompanhar clientes a qualquer hora e em qualquer lugar
+- **Suporte Multi-inquilino**: Expansão horizontal de múltiplos espaços/aplicativos, distribuindo para diferentes equipes de vendas operarem de forma independente
+
+---
+
+*Versão do documento: v2.0 | Data de atualização: 06-02-2026*

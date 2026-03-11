@@ -1,8 +1,8 @@
 ---
-displayName: "Mobile client(Deprecated)"
+displayName: "Mobiele client (Verouderd)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
-  Provides the ability to configure mobile pages.
+  Biedt de mogelijkheid om mobiele pagina's te configureren.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Mobile client(Deprecated)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-mobile-client/index) voor nauwkeurige informatie.
+:::
 
-> Note: This plugin is deprecated.
+# Mobiele client (Verouderd)
+
+> Let op: Deze plugin is verouderd (deprecated).

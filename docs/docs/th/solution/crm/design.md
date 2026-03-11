@@ -1,714 +1,707 @@
-# CRM 2.0 System Design
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/solution/crm/design)
+:::
 
-## 1. System Overview & Design Philosophy
+# รายละเอียดการออกแบบระบบ CRM 2.0
 
-### 1.1 System Positioning
+## 1. ภาพรวมระบบและแนวคิดการออกแบบ
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+### 1.1 ตำแหน่งของระบบ
+
+ระบบนี้เป็น **แพลตฟอร์มการจัดการการขาย CRM 2.0** ที่สร้างขึ้นบนแพลตฟอร์ม No-code ของ NocoBase โดยมีเป้าหมายหลักคือ:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+เพื่อให้พนักงานขายมุ่งเน้นไปที่การสร้างความสัมพันธ์กับลูกค้า แทนที่จะเป็นการกรอกข้อมูลและการวิเคราะห์ที่ซ้ำซาก
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+ระบบจะประมวลผลภารกิจทั่วไปโดยอัตโนมัติผ่านเวิร์กโฟลว์ และใช้ AI ช่วยในการให้คะแนนลูกค้าเป้าหมาย (Lead Scoring) และการวิเคราะห์โอกาสทางการขาย เพื่อช่วยให้ทีมขายเพิ่มประสิทธิภาพในการทำงานครับ
 
-### 1.2 Design Philosophy
+### 1.2 แนวคิดการออกแบบ
 
-#### Principle 1: Complete Sales Funnel
+#### แนวคิดที่ 1: กรวยการขายที่สมบูรณ์ (Complete Sales Funnel)
 
-**End-to-end sales flow:**
+**กระบวนการขายแบบ End-to-end:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**ทำไมถึงออกแบบเช่นนี้?**
 
-**Why design it this way?**
+| วิธีแบบดั้งเดิม | CRM แบบบูรณาการ |
+|---------|-----------|
+| ใช้หลายระบบในแต่ละขั้นตอนที่แตกต่างกัน | ระบบเดียวครอบคลุมตลอดวงจรชีวิต |
+| การส่งต่อข้อมูลระหว่างระบบด้วยตนเอง | การไหลเวียนและการแปลงข้อมูลโดยอัตโนมัติ |
+| มุมมองลูกค้าที่ไม่สอดคล้องกัน | มุมมองลูกค้าแบบ 360 องศาที่รวมเป็นหนึ่งเดียว |
+| การวิเคราะห์ข้อมูลที่กระจัดกระจาย | การวิเคราะห์ไปป์ไลน์การขายแบบครบวงจร |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### แนวคิดที่ 2: ไปป์ไลน์การขายที่กำหนดค่าได้
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+ธุรกิจในอุตสาหกรรมที่ต่างกันสามารถปรับแต่งขั้นตอนของไปป์ไลน์การขายได้เอง โดยไม่จำเป็นต้องแก้ไขโค้ดครับ
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### แนวคิดที่ 3: การออกแบบเชิงโมดูล (Modular Design)
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- โมดูลหลัก (ลูกค้า + โอกาสทางการขาย) เป็นสิ่งที่จำเป็น ส่วนโมดูลอื่นๆ สามารถเลือกเปิดใช้งานได้ตามความต้องการ
+- การปิดใช้งานโมดูลไม่จำเป็นต้องแก้ไขโค้ด สามารถกำหนดค่าผ่านอินเทอร์เฟซของ NocoBase ได้ทันที
+- แต่ละโมดูลถูกออกแบบมาอย่างเป็นอิสระต่อกัน เพื่อลดความซับซ้อนในการเชื่อมโยง (Low Coupling)
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. สถาปัตยกรรมโมดูลและการปรับแต่ง
 
-### 2.1 Module Overview
+### 2.1 ภาพรวมโมดูล
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+ระบบ CRM ใช้การออกแบบ**สถาปัตยกรรมแบบโมดูลาร์** ซึ่งแต่ละโมดูลสามารถเปิดหรือปิดใช้งานได้อย่างอิสระตามความต้องการทางธุรกิจครับ
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 ความสัมพันธ์ระหว่างโมดูล
 
-### 2.2 Module Dependencies
+| โมดูล | จำเป็นหรือไม่ | สิ่งที่ต้องมีก่อน (Dependencies) | เงื่อนไขการปิดใช้งาน |
+|-----|---------|--------|---------|
+| **การจัดการลูกค้า** | ✅ ใช่ | - | ไม่สามารถปิดได้ (แกนหลัก) |
+| **การจัดการโอกาสทางการขาย** | ✅ ใช่ | การจัดการลูกค้า | ไม่สามารถปิดได้ (แกนหลัก) |
+| **การจัดการลูกค้าเป้าหมาย** | ทางเลือก | - | เมื่อไม่ต้องการการรวบรวม Lead |
+| **การจัดการใบเสนอราคา** | ทางเลือก | โอกาสทางการขาย, ผลิตภัณฑ์ | ธุรกรรมง่ายๆ ที่ไม่ต้องการใบเสนอราคาเป็นทางการ |
+| **การจัดการคำสั่งซื้อ** | ทางเลือก | โอกาสทางการขาย (หรือใบเสนอราคา) | เมื่อไม่ต้องการการติดตามคำสั่งซื้อ/การชำระเงิน |
+| **การจัดการผลิตภัณฑ์** | ทางเลือก | - | เมื่อไม่ต้องการแคตตาล็อกผลิตภัณฑ์ |
+| **การรวมระบบอีเมล** | ทางเลือก | ลูกค้า, ผู้ติดต่อ | เมื่อใช้ระบบอีเมลภายนอก |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 เวอร์ชันที่กำหนดค่าไว้ล่วงหน้า
 
-### 2.3 Pre-configured Editions
+| เวอร์ชัน | โมดูลที่รวมอยู่ | สถานการณ์การใช้งาน | จำนวนคอลเลกชัน |
+|-----|---------|---------|-----------|
+| **รุ่น Lite** | ลูกค้า + โอกาสทางการขาย | การติดตามธุรกรรมอย่างง่าย | 6 |
+| **รุ่นมาตรฐาน** | รุ่น Lite + Lead + ใบเสนอราคา + คำสั่งซื้อ + ผลิตภัณฑ์ | วงจรการขายที่สมบูรณ์ | 15 |
+| **รุ่นองค์กร** | รุ่นมาตรฐาน + การรวมอีเมล | ฟังก์ชันครบถ้วนรวมถึงอีเมล | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 การจับคู่โมดูลกับคอลเลกชัน
 
-### 2.4 Module–Table Mapping
+#### คอลเลกชันโมดูลหลัก (จำเป็นเสมอ)
 
-#### Core Module Tables (Always Required)
+| คอลเลกชัน | โมดูล | คำอธิบาย |
+|-------|------|------|
+| nb_crm_customers | การจัดการลูกค้า | บันทึกลูกค้า/บริษัท |
+| nb_crm_contacts | การจัดการลูกค้า | ผู้ติดต่อ |
+| nb_crm_customer_shares | การจัดการลูกค้า | สิทธิ์การแชร์ข้อมูลลูกค้า |
+| nb_crm_opportunities | การจัดการโอกาสทางการขาย | โอกาสทางการขาย |
+| nb_crm_opportunity_stages | การจัดการโอกาสทางการขาย | การกำหนดค่าขั้นตอน |
+| nb_crm_opportunity_users | การจัดการโอกาสทางการขาย | ผู้ร่วมงานในโอกาสทางการขาย |
+| nb_crm_activities | การจัดการกิจกรรม | บันทึกกิจกรรม |
+| nb_crm_comments | การจัดการกิจกรรม | ความคิดเห็น/หมายเหตุ |
+| nb_crm_tags | แกนหลัก | แท็กที่ใช้ร่วมกัน |
+| nb_cbo_currencies | ข้อมูลพื้นฐาน | พจนานุกรมสกุลเงิน |
+| nb_cbo_regions | ข้อมูลพื้นฐาน | พจนานุกรมประเทศ/ภูมิภาค |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 วิธีปิดใช้งานโมดูล
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
-
----
-
-## 3. Core Entities & Data Model
-
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
-
-#### 3.2.1 Leads Table (nb_crm_leads)
-
-Lead management with a simplified 4-stage workflow.
-
-**Stage flow:**
-```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
-```
-
-**Key fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
-| status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
-
-#### 3.2.2 Customers Table (nb_crm_customers)
-
-Customer/company management with foreign trade support.
-
-**Key fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
-| status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
-| region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
-
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
-
-Sales opportunity management with configurable pipeline stages.
-
-**Key fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
-
-#### 3.2.4 Quotations Table (nb_crm_quotations)
-
-Quotation management with multi-currency and approval workflow support.
-
-**Status flow:**
-```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
-              ↓
-          Rejected → Revise → Draft
-```
-
-**Key fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
-| status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
-
-#### 3.2.5 Orders Table (nb_crm_orders)
-
-Order management with payment tracking.
-
-**Key fields:**
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
-
-### 3.3 Table Summary
-
-#### CRM Business Tables
-
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
-
-#### Base Data Tables (Shared Module)
-
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
-
-### 3.4 Supporting Tables
-
-#### 3.4.1 Comments Table (nb_crm_comments)
-
-General-purpose comment/note table, linkable to multiple business objects.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
-
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
-
-Enables multi-user collaboration and permission sharing on customers.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
-
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
-
-Supports sales team collaboration on opportunities.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
-| role | VARCHAR | Role: owner/collaborator/viewer |
-
-#### 3.4.4 Regions Table (nb_cbo_regions)
-
-Country/region base data dictionary.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+เพียงซ่อนเมนูทางเข้าของโมดูลนั้นในส่วนการจัดการหลังบ้านของ NocoBase โดยไม่จำเป็นต้องแก้ไขโค้ดหรือลบคอลเลกชันข้อมูลครับ
 
 ---
 
-## 4. Lead Lifecycle
+## 3. เอนทิตีหลักและโมเดลข้อมูล
 
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
+### 3.1 ภาพรวมความสัมพันธ์ของเอนทิตี
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-### 4.1 Status Definitions
+### 3.2 รายละเอียดคอลเลกชันหลัก
 
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
+#### 3.2.1 ตารางลูกค้าเป้าหมาย (nb_crm_leads)
 
-### 4.2 Status Flow
+ใช้เวิร์กโฟลว์การจัดการลูกค้าเป้าหมายแบบ 4 ขั้นตอนที่เรียบง่าย
 
+**กระบวนการขั้นตอน:**
+```
+สร้างใหม่ → กำลังติดตาม → ตรวจสอบแล้ว → แปลงเป็นลูกค้า/โอกาสทางการขาย
+         ↓          ↓
+    ไม่ผ่านเกณฑ์   ไม่ผ่านเกณฑ์
+```
 
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
+**ฟิลด์สำคัญ:**
 
-### 4.3 Lead Conversion Flow
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| lead_no | VARCHAR | หมายเลข Lead (สร้างอัตโนมัติ) |
+| name | VARCHAR | ชื่อผู้ติดต่อ |
+| company | VARCHAR | ชื่อบริษัท |
+| title | VARCHAR | ตำแหน่งงาน |
+| email | VARCHAR | อีเมล |
+| phone | VARCHAR | โทรศัพท์ |
+| mobile_phone | VARCHAR | มือถือ |
+| website | TEXT | เว็บไซต์ |
+| address | TEXT | ที่อยู่ |
+| source | VARCHAR | แหล่งที่มา: website/ads/referral/exhibition/telemarketing/email/social |
+| industry | VARCHAR | อุตสาหกรรม |
+| annual_revenue | VARCHAR | ขนาดรายได้ต่อปี |
+| number_of_employees | VARCHAR | ขนาดจำนวนพนักงาน |
+| status | VARCHAR | สถานะ: new/working/qualified/unqualified |
+| rating | VARCHAR | การจัดลำดับ: hot/warm/cold |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| ai_score | INTEGER | คะแนนคุณภาพ AI 0-100 |
+| ai_convert_prob | DECIMAL | ความน่าจะเป็นในการแปลงข้อมูลโดย AI |
+| ai_best_contact_time | VARCHAR | เวลาที่ AI แนะนำให้ติดต่อ |
+| ai_tags | JSONB | แท็กที่สร้างโดย AI |
+| ai_scored_at | TIMESTAMP | เวลาที่ AI ให้คะแนน |
+| ai_next_best_action | TEXT | คำแนะนำการดำเนินการถัดไปที่ดีที่สุดโดย AI |
+| ai_nba_generated_at | TIMESTAMP | เวลาที่สร้างคำแนะนำ AI |
+| is_converted | BOOLEAN | เครื่องหมายว่าแปลงแล้ว |
+| converted_at | TIMESTAMP | เวลาที่แปลง |
+| converted_customer_id | BIGINT | ID ลูกค้าที่ถูกแปลงไป |
+| converted_contact_id | BIGINT | ID ผู้ติดต่อที่ถูกแปลงไป |
+| converted_opportunity_id | BIGINT | ID โอกาสทางการขายที่ถูกแปลงไป |
+| lost_reason | TEXT | เหตุผลที่สูญเสีย |
+| disqualification_reason | TEXT | เหตุผลที่ไม่ผ่านเกณฑ์ |
+| description | TEXT | คำอธิบาย |
 
-The conversion UI presents three options simultaneously; users can create or link:
+#### 3.2.2 ตารางลูกค้า (nb_crm_customers)
 
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
+รองรับการจัดการลูกค้า/บริษัทสำหรับการทำธุรกิจระหว่างประเทศ
 
+**ฟิลด์สำคัญ:**
 
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| name | VARCHAR | ชื่อลูกค้า (จำเป็น) |
+| account_number | VARCHAR | หมายเลขบัญชีลูกค้า (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| phone | VARCHAR | โทรศัพท์ |
+| website | TEXT | เว็บไซต์ |
+| address | TEXT | ที่อยู่ |
+| industry | VARCHAR | อุตสาหกรรม |
+| type | VARCHAR | ประเภท: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | ขนาดจำนวนพนักงาน |
+| annual_revenue | VARCHAR | ขนาดรายได้ต่อปี |
+| level | VARCHAR | ระดับ: normal/important/vip |
+| status | VARCHAR | สถานะ: potential/active/dormant/churned |
+| country | VARCHAR | ประเทศ |
+| region_id | BIGINT | ภูมิภาค (FK → nb_cbo_regions) |
+| preferred_currency | VARCHAR | สกุลเงินที่ต้องการ: CNY/USD/EUR |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| parent_id | BIGINT | บริษัทแม่ (FK → self) |
+| source_lead_id | BIGINT | ID แหล่งที่มาของ Lead |
+| ai_health_score | INTEGER | คะแนนสุขภาพลูกค้าโดย AI 0-100 |
+| ai_health_grade | VARCHAR | เกรดสุขภาพโดย AI: A/B/C/D |
+| ai_churn_risk | DECIMAL | ความเสี่ยงในการเลิกใช้งานโดย AI 0-100% |
+| ai_churn_risk_level | VARCHAR | ระดับความเสี่ยงในการเลิกใช้งานโดย AI: low/medium/high |
+| ai_health_dimensions | JSONB | คะแนนสุขภาพในแต่ละมิติโดย AI |
+| ai_recommendations | JSONB | รายการคำแนะนำโดย AI |
+| ai_health_assessed_at | TIMESTAMP | เวลาที่ประเมินสุขภาพโดย AI |
+| ai_tags | JSONB | แท็กที่สร้างโดย AI |
+| ai_best_contact_time | VARCHAR | เวลาที่ AI แนะนำให้ติดต่อ |
+| ai_next_best_action | TEXT | คำแนะนำการดำเนินการถัดไปที่ดีที่สุดโดย AI |
+| ai_nba_generated_at | TIMESTAMP | เวลาที่สร้างคำแนะนำ AI |
+| description | TEXT | คำอธิบาย |
+| is_deleted | BOOLEAN | เครื่องหมายการลบแบบ Soft Delete |
+
+#### 3.2.3 ตารางโอกาสทางการขาย (nb_crm_opportunities)
+
+การจัดการโอกาสทางการขายที่ใช้ขั้นตอนไปป์ไลน์การขายแบบกำหนดค่าได้
+
+**ฟิลด์สำคัญ:**
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| opportunity_no | VARCHAR | หมายเลขโอกาสทางการขาย (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| name | VARCHAR | ชื่อโอกาสทางการขาย (จำเป็น) |
+| amount | DECIMAL | จำนวนเงินที่คาดหวัง |
+| currency | VARCHAR | สกุลเงิน |
+| exchange_rate | DECIMAL | อัตราแลกเปลี่ยน |
+| amount_usd | DECIMAL | จำนวนเงินเทียบเท่า USD |
+| customer_id | BIGINT | ลูกค้า (FK) |
+| contact_id | BIGINT | ผู้ติดต่อหลัก (FK) |
+| stage | VARCHAR | รหัสขั้นตอน (FK → stages.code) |
+| stage_sort | INTEGER | การเรียงลำดับขั้นตอน (เพื่อความสะดวกในการจัดเรียง) |
+| stage_entered_at | TIMESTAMP | เวลาที่เข้าสู่ขั้นตอนปัจจุบัน |
+| days_in_stage | INTEGER | จำนวนวันที่อยู่ในขั้นตอนปัจจุบัน |
+| win_probability | DECIMAL | โอกาสชนะ (กรอกเอง) |
+| ai_win_probability | DECIMAL | โอกาสชนะที่ทำนายโดย AI |
+| ai_analyzed_at | TIMESTAMP | เวลาที่ AI วิเคราะห์ |
+| ai_confidence | DECIMAL | ความเชื่อมั่นในการทำนายของ AI |
+| ai_trend | VARCHAR | แนวโน้มการทำนายของ AI: up/stable/down |
+| ai_risk_factors | JSONB | ปัจจัยเสี่ยงที่ระบุโดย AI |
+| ai_recommendations | JSONB | รายการคำแนะนำโดย AI |
+| ai_predicted_close | DATE | วันที่คาดว่าจะปิดการขายโดย AI |
+| ai_next_best_action | TEXT | คำแนะนำการดำเนินการถัดไปที่ดีที่สุดโดย AI |
+| ai_nba_generated_at | TIMESTAMP | เวลาที่สร้างคำแนะนำ AI |
+| expected_close_date | DATE | วันที่คาดว่าจะปิดการขาย |
+| actual_close_date | DATE | วันที่ปิดการขายจริง |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| last_activity_at | TIMESTAMP | เวลาที่มีกิจกรรมล่าสุด |
+| stagnant_days | INTEGER | จำนวนวันที่ไม่มีกิจกรรม |
+| loss_reason | TEXT | เหตุผลที่เสียโอกาส |
+| competitor_id | BIGINT | คู่แข่ง (FK) |
+| lead_source | VARCHAR | แหล่งที่มาของ Lead |
+| campaign_id | BIGINT | ID แคมเปญการตลาด |
+| expected_revenue | DECIMAL | รายได้ที่คาดหวัง = amount × probability |
+| description | TEXT | คำอธิบาย |
+
+#### 3.2.4 ตารางใบเสนอราคา (nb_crm_quotations)
+
+การจัดการใบเสนอราคาที่รองรับหลายสกุลเงินและกระบวนการอนุมัติ
+
+**กระบวนการสถานะ:**
+```
+ร่าง → รออนุมัติ → อนุมัติแล้ว → ส่งแล้ว → ยอมรับแล้ว/ปฏิเสธแล้ว/หมดอายุ
+           ↓
+      ถูกตีกลับ → แก้ไข → ร่าง
+```
+
+**ฟิลด์สำคัญ:**
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| quotation_no | VARCHAR | หมายเลขใบเสนอราคา (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| name | VARCHAR | ชื่อใบเสนอราคา |
+| version | INTEGER | หมายเลขเวอร์ชัน |
+| opportunity_id | BIGINT | โอกาสทางการขาย (FK, จำเป็น) |
+| customer_id | BIGINT | ลูกค้า (FK) |
+| contact_id | BIGINT | ผู้ติดต่อ (FK) |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| currency_id | BIGINT | สกุลเงิน (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | อัตราแลกเปลี่ยน |
+| subtotal | DECIMAL | ยอดรวมย่อย |
+| discount_rate | DECIMAL | อัตราส่วนลด |
+| discount_amount | DECIMAL | จำนวนส่วนลด |
+| shipping_handling | DECIMAL | ค่าขนส่ง/ค่าธรรมเนียม |
+| tax_rate | DECIMAL | อัตราภาษี |
+| tax_amount | DECIMAL | จำนวนภาษี |
+| total_amount | DECIMAL | จำนวนเงินรวม |
+| total_amount_usd | DECIMAL | จำนวนเงินเทียบเท่า USD |
+| status | VARCHAR | สถานะ: draft/pending_approval/approved/sent/accepted/rejected/expired |
+| submitted_at | TIMESTAMP | เวลาที่ส่ง |
+| approved_by | BIGINT | ผู้อนุมัติ (FK → users) |
+| approved_at | TIMESTAMP | เวลาที่อนุมัติ |
+| rejected_at | TIMESTAMP | เวลาที่ตีกลับ |
+| sent_at | TIMESTAMP | เวลาที่ส่ง |
+| customer_response_at | TIMESTAMP | เวลาที่ลูกค้าตอบกลับ |
+| expired_at | TIMESTAMP | เวลาที่หมดอายุ |
+| valid_until | DATE | มีผลใช้ได้ถึงวันที่ |
+| payment_terms | TEXT | เงื่อนไขการชำระเงิน |
+| terms_condition | TEXT | ข้อกำหนดและเงื่อนไข |
+| address | TEXT | ที่อยู่จัดส่ง |
+| description | TEXT | คำอธิบาย |
+
+#### 3.2.5 ตารางคำสั่งซื้อ (nb_crm_orders)
+
+การจัดการคำสั่งซื้อพร้อมการติดตามการรับชำระเงิน
+
+**ฟิลด์สำคัญ:**
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| order_no | VARCHAR | หมายเลขคำสั่งซื้อ (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| customer_id | BIGINT | ลูกค้า (FK) |
+| contact_id | BIGINT | ผู้ติดต่อ (FK) |
+| opportunity_id | BIGINT | โอกาสทางการขาย (FK) |
+| quotation_id | BIGINT | ใบเสนอราคา (FK) |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| currency | VARCHAR | สกุลเงิน |
+| exchange_rate | DECIMAL | อัตราแลกเปลี่ยน |
+| order_amount | DECIMAL | จำนวนเงินในคำสั่งซื้อ |
+| paid_amount | DECIMAL | จำนวนเงินที่ชำระแล้ว |
+| unpaid_amount | DECIMAL | จำนวนเงินที่ยังไม่ได้ชำระ |
+| status | VARCHAR | สถานะ: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
+| payment_status | VARCHAR | สถานะการชำระเงิน: unpaid/partial/paid |
+| order_date | DATE | วันที่สั่งซื้อ |
+| delivery_date | DATE | วันที่คาดว่าจะส่งมอบ |
+| actual_delivery_date | DATE | วันที่ส่งมอบจริง |
+| shipping_address | TEXT | ที่อยู่จัดส่ง |
+| logistics_company | VARCHAR | บริษัทขนส่ง |
+| tracking_no | VARCHAR | หมายเลขติดตามพัสดุ |
+| terms_condition | TEXT | ข้อกำหนดและเงื่อนไข |
+| description | TEXT | คำอธิบาย |
+
+### 3.3 สรุปคอลเลกชันข้อมูล
+
+#### คอลเลกชันธุรกิจ CRM
+
+| ลำดับ | ชื่อตาราง | คำอธิบาย | ประเภท |
+|-----|------|------|------|
+| 1 | nb_crm_leads | การจัดการ Lead | ธุรกิจ |
+| 2 | nb_crm_customers | ลูกค้า/บริษัท | ธุรกิจ |
+| 3 | nb_crm_contacts | ผู้ติดต่อ | ธุรกิจ |
+| 4 | nb_crm_opportunities | โอกาสทางการขาย | ธุรกิจ |
+| 5 | nb_crm_opportunity_stages | การกำหนดค่าขั้นตอน | การกำหนดค่า |
+| 6 | nb_crm_opportunity_users | ผู้ร่วมงาน (ทีมขาย) | ความสัมพันธ์ |
+| 7 | nb_crm_quotations | ใบเสนอราคา | ธุรกิจ |
+| 8 | nb_crm_quotation_items | รายละเอียดใบเสนอราคา | ธุรกิจ |
+| 9 | nb_crm_quotation_approvals | บันทึกการอนุมัติ | ธุรกิจ |
+| 10 | nb_crm_orders | คำสั่งซื้อ | ธุรกิจ |
+| 11 | nb_crm_order_items | รายละเอียดคำสั่งซื้อ | ธุรกิจ |
+| 12 | nb_crm_payments | บันทึกการรับชำระเงิน | ธุรกิจ |
+| 13 | nb_crm_products | แคตตาล็อกผลิตภัณฑ์ | ธุรกิจ |
+| 14 | nb_crm_product_categories | หมวดหมู่ผลิตภัณฑ์ | การกำหนดค่า |
+| 15 | nb_crm_price_tiers | ราคาตามลำดับขั้น | การกำหนดค่า |
+| 16 | nb_crm_activities | บันทึกกิจกรรม | ธุรกิจ |
+| 17 | nb_crm_comments | ความคิดเห็น/หมายเหตุ | ธุรกิจ |
+| 18 | nb_crm_competitors | คู่แข่ง | ธุรกิจ |
+| 19 | nb_crm_tags | แท็ก | การกำหนดค่า |
+| 20 | nb_crm_lead_tags | ความสัมพันธ์ Lead-แท็ก | ความสัมพันธ์ |
+| 21 | nb_crm_contact_tags | ความสัมพันธ์ ผู้ติดต่อ-แท็ก | ความสัมพันธ์ |
+| 22 | nb_crm_customer_shares | สิทธิ์การแชร์ลูกค้า | ความสัมพันธ์ |
+| 23 | nb_crm_exchange_rates | ประวัติอัตราแลกเปลี่ยน | การกำหนดค่า |
+
+#### คอลเลกชันข้อมูลพื้นฐาน (โมดูลส่วนกลาง)
+
+| ลำดับ | ชื่อตาราง | คำอธิบาย | ประเภท |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | พจนานุกรมสกุลเงิน | การกำหนดค่า |
+| 2 | nb_cbo_regions | พจนานุกรมประเทศ/ภูมิภาค | การกำหนดค่า |
+
+### 3.4 ตารางเสริม
+
+#### 3.4.1 ตารางความคิดเห็น (nb_crm_comments)
+
+ตารางความคิดเห็น/หมายเหตุทั่วไป ที่สามารถเชื่อมโยงกับวัตถุทางธุรกิจได้หลากหลาย
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| content | TEXT | เนื้อหาความคิดเห็น |
+| lead_id | BIGINT | เชื่อมโยง Lead (FK) |
+| customer_id | BIGINT | เชื่อมโยงลูกค้า (FK) |
+| opportunity_id | BIGINT | เชื่อมโยงโอกาสทางการขาย (FK) |
+| order_id | BIGINT | เชื่อมโยงคำสั่งซื้อ (FK) |
+
+#### 3.4.2 ตารางการแชร์ลูกค้า (nb_crm_customer_shares)
+
+ช่วยให้สามารถทำงานร่วมกันหลายคนและแชร์สิทธิ์การเข้าถึงข้อมูลลูกค้าได้
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| customer_id | BIGINT | ลูกค้า (FK, จำเป็น) |
+| shared_with_user_id | BIGINT | ผู้ใช้ที่ได้รับสิทธิ์แชร์ (FK, จำเป็น) |
+| shared_by_user_id | BIGINT | ผู้ริเริ่มการแชร์ (FK) |
+| permission_level | VARCHAR | ระดับสิทธิ์: read/write/full |
+| shared_at | TIMESTAMP | เวลาที่แชร์ |
+
+#### 3.4.3 ตารางผู้ร่วมงานในโอกาสทางการขาย (nb_crm_opportunity_users)
+
+รองรับการทำงานร่วมกันของทีมขายในโอกาสทางการขาย
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| opportunity_id | BIGINT | โอกาสทางการขาย (FK, คีย์หลักร่วม) |
+| user_id | BIGINT | ผู้ใช้ (FK, คีย์หลักร่วม) |
+| role | VARCHAR | บทบาท: owner/collaborator/viewer |
+
+#### 3.4.4 ตารางภูมิภาค (nb_cbo_regions)
+
+พจนานุกรมข้อมูลพื้นฐานประเทศ/ภูมิภาค
+
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| code_alpha2 | VARCHAR | รหัส ISO 3166-1 สองตัวอักษร (ไม่ซ้ำ) |
+| code_alpha3 | VARCHAR | รหัส ISO 3166-1 สามตัวอักษร (ไม่ซ้ำ) |
+| code_numeric | VARCHAR | รหัส ISO 3166-1 แบบตัวเลข |
+| name | VARCHAR | ชื่อประเทศ/ภูมิภาค |
+| is_active | BOOLEAN | เปิดใช้งานหรือไม่ |
+| sort_order | INTEGER | การเรียงลำดับ |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. วงจรชีวิตของลูกค้าเป้าหมาย (Lead)
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+การจัดการ Lead ใช้เวิร์กโฟลว์ 4 ขั้นตอนที่เรียบง่าย เมื่อมีการสร้าง Lead ใหม่ สามารถเปิดใช้งานการให้คะแนนโดย AI โดยอัตโนมัติผ่านเวิร์กโฟลว์ เพื่อช่วยให้พนักงานขายระบุ Lead ที่มีคุณภาพสูงได้อย่างรวดเร็วครับ
 
-### 5.1 Configurable Stages
+### 4.1 คำจำกัดความของสถานะ
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| สถานะ | ชื่อ | คำอธิบาย |
+|-----|------|------|
+| new | สร้างใหม่ | เพิ่งสร้างขึ้น รอการติดต่อ |
+| working | กำลังติดตาม | อยู่ระหว่างการติดตามอย่างต่อเนื่อง |
+| qualified | ตรวจสอบแล้ว | พร้อมสำหรับการแปลงข้อมูล |
+| unqualified | ไม่ผ่านเกณฑ์ | ไม่เหมาะสมกับธุรกิจ |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 แผนผังกระบวนการสถานะ
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 กระบวนการแปลง Lead
 
-### 5.3 Stagnation Detection
+อินเทอร์เฟซการแปลงข้อมูลมีสามตัวเลือกพร้อมกัน โดยผู้ใช้สามารถเลือกสร้างหรือเชื่อมโยง:
 
-Opportunities with no activity will be flagged:
+- **ลูกค้า**: สร้างลูกค้าใหม่ หรือ เชื่อมโยงกับลูกค้าที่มีอยู่
+- **ผู้ติดต่อ**: สร้างผู้ติดต่อใหม่ (เชื่อมโยงกับลูกค้า)
+- **โอกาสทางการขาย**: จำเป็นต้องสร้างโอกาสทางการขาย
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**บันทึกหลังการแปลง:**
+- `converted_customer_id`: ID ลูกค้าที่เชื่อมโยง
+- `converted_contact_id`: ID ผู้ติดต่อที่เชื่อมโยง
+- `converted_opportunity_id`: ID โอกาสทางการขายที่สร้างขึ้น
+
+---
+
+## 5. วงจรชีวิตของโอกาสทางการขาย
+
+การจัดการโอกาสทางการขายใช้ขั้นตอนไปป์ไลน์การขายที่กำหนดค่าได้ เมื่อมีการเปลี่ยนขั้นตอน จะสามารถเรียกใช้การทำนายโอกาสชนะโดย AI โดยอัตโนมัติ เพื่อช่วยให้พนักงานขายระบุความเสี่ยงและโอกาสได้ครับ
+
+### 5.1 ขั้นตอนที่กำหนดค่าได้
+
+ขั้นตอนจะถูกเก็บไว้ในตาราง `nb_crm_opportunity_stages` ซึ่งสามารถปรับแต่งได้:
+
+| รหัส | ชื่อ | ลำดับ | โอกาสชนะเริ่มต้น |
+|-----|------|------|---------|
+| prospecting | ติดต่อเบื้องต้น | 1 | 10% |
+| analysis | วิเคราะห์ความต้องการ | 2 | 30% |
+| proposal | นำเสนอแผนงาน | 3 | 60% |
+| negotiation | เจรจาต่อรอง | 4 | 80% |
+| won | ปิดการขายสำเร็จ | 5 | 100% |
+| lost | ปิดการขายไม่ได้ | 6 | 0% |
+
+### 5.2 กระบวนการไปป์ไลน์
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 การตรวจจับการหยุดนิ่ง
+
+โอกาสทางการขายที่ไม่มีกิจกรรมจะถูกทำเครื่องหมาย:
+
+| จำนวนวันที่ไม่มีกิจกรรม | การดำเนินการ |
+|-----------|------|
+| 7 วัน | คำเตือนสีเหลือง |
+| 14 วัน | การแจ้งเตือนสีส้มไปยังผู้รับผิดชอบ |
+| 30 วัน | การแจ้งเตือนสีแดงไปยังผู้จัดการ |
 
 ```sql
--- Calculate stagnation days
+-- คำนวณจำนวนวันที่หยุดนิ่ง
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 การจัดการเมื่อชนะ/เสียโอกาส
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**เมื่อชนะการขาย:**
+1. อัปเดตขั้นตอนเป็น 'won'
+2. บันทึกวันที่ปิดการขายจริง
+3. อัปเดตสถานะลูกค้าเป็น 'active'
+4. เรียกใช้การสร้างคำสั่งซื้อ (หากใบเสนอราคาได้รับการยอมรับ)
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**เมื่อเสียโอกาส:**
+1. อัปเดตขั้นตอนเป็น 'lost'
+2. บันทึกเหตุผลที่เสียโอกาส
+3. บันทึก ID คู่แข่ง (หากแพ้ให้กับคู่แข่ง)
+4. แจ้งเตือนผู้จัดการ
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. วงจรชีวิตของใบเสนอราคา
 
-### 6.1 Status Definitions
+### 6.1 คำจำกัดความของสถานะ
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| สถานะ | ชื่อ | คำอธิบาย |
+|-----|------|------|
+| draft | ร่าง | อยู่ระหว่างการเตรียม |
+| pending_approval | รออนุมัติ | รอการอนุมัติ |
+| approved | อนุมัติแล้ว | สามารถส่งได้ |
+| sent | ส่งแล้ว | ส่งให้ลูกค้าแล้ว |
+| accepted | ยอมรับแล้ว | ลูกค้ายอมรับแล้ว |
+| rejected | ปฏิเสธแล้ว | ลูกค้าปฏิเสธแล้ว |
+| expired | หมดอายุ | เกินระยะเวลาที่มีผล |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 กฎการอนุมัติ (รอการปรับปรุง)
 
-Approval flow is triggered based on the following conditions:
+กระบวนการอนุมัติจะถูกเรียกใช้ตามเงื่อนไขต่อไปนี้:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| เงื่อนไข | ระดับการอนุมัติ |
+|------|---------|
+| ส่วนลด > 10% | ผู้จัดการฝ่ายขาย |
+| ส่วนลด > 20% | ผู้อำนวยการฝ่ายขาย |
+| จำนวนเงิน > $100K | ฝ่ายการเงิน + ผู้จัดการทั่วไป |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 การรองรับหลายสกุลเงิน
 
-### 6.3 Multi-Currency Support
+#### แนวคิดการออกแบบ
 
-#### Design Rationale
+ใช้ **USD เป็นสกุลเงินหลักที่เป็นหนึ่งเดียว** สำหรับรายงานและการวิเคราะห์ทั้งหมด ทุกบันทึกจำนวนเงินจะเก็บข้อมูล:
+- สกุลเงินและจำนวนเงินต้นทาง (ที่ลูกค้าเห็น)
+- อัตราแลกเปลี่ยน ณ เวลาที่ทำธุรกรรม
+- จำนวนเงินเทียบเท่า USD (สำหรับการเปรียบเทียบภายใน)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### ตารางพจนานุกรมสกุลเงิน (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+การกำหนดค่าสกุลเงินใช้ตารางข้อมูลพื้นฐานส่วนกลาง รองรับการจัดการแบบไดนามิก ฟิลด์ `current_rate` จะเก็บอัตราแลกเปลี่ยนปัจจุบัน ซึ่งอัปเดตโดยภารกิจที่กำหนดเวลาไว้ (Scheduled Task) จากบันทึกล่าสุดในตาราง `nb_crm_exchange_rates` ครับ
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| code | VARCHAR | รหัสสกุลเงิน (ไม่ซ้ำ): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | ชื่อสกุลเงิน |
+| symbol | VARCHAR | สัญลักษณ์สกุลเงิน |
+| decimal_places | INTEGER | จำนวนตำแหน่งทศนิยม |
+| current_rate | DECIMAL | อัตราแลกเปลี่ยนปัจจุบันเทียบกับ USD (ซิงค์จากประวัติ) |
+| is_active | BOOLEAN | เปิดใช้งานหรือไม่ |
+| sort_order | INTEGER | การเรียงลำดับ |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### ตารางประวัติอัตราแลกเปลี่ยน (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+บันทึกข้อมูลอัตราแลกเปลี่ยนย้อนหลัง ภารกิจที่กำหนดเวลาไว้จะซิงค์อัตราแลกเปลี่ยนล่าสุดไปยัง `nb_cbo_currencies.current_rate`
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| currency_code | VARCHAR | รหัสสกุลเงิน (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | อัตราแลกเปลี่ยนเทียบกับ USD |
+| effective_date | DATE | วันที่มีผล |
+| source | VARCHAR | แหล่งที่มา: manual/api |
+| createdAt | TIMESTAMP | เวลาที่สร้าง |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **คำอธิบาย**: ใบเสนอราคาจะเชื่อมโยงกับตาราง `nb_cbo_currencies` ผ่านคีย์นอก `currency_id` และรับอัตราแลกเปลี่ยนโดยตรงจากฟิลด์ `current_rate` ส่วนโอกาสทางการขายและคำสั่งซื้อจะใช้ฟิลด์ VARCHAR `currency` เพื่อเก็บรหัสสกุลเงินครับ
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### รูปแบบฟิลด์จำนวนเงิน
 
-#### Monetary Field Pattern
+ตารางที่มีจำนวนเงินจะใช้รูปแบบนี้:
 
-Tables with monetary amounts follow this pattern:
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| currency | VARCHAR | สกุลเงินที่ทำธุรกรรม |
+| amount | DECIMAL | จำนวนเงินต้นทาง |
+| exchange_rate | DECIMAL | อัตราแลกเปลี่ยนเทียบกับ USD ณ เวลาทำธุรกรรม |
+| amount_usd | DECIMAL | จำนวนเงินเทียบเท่า USD (จากการคำนวณ) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**นำไปใช้กับ:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### การรวมเข้ากับเวิร์กโฟลว์
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**ตรรกะการรับอัตราแลกเปลี่ยน:**
+1. เมื่อมีการดำเนินการทางธุรกิจ จะรับอัตราแลกเปลี่ยนโดยตรงจาก `nb_cbo_currencies.current_rate`
+2. ธุรกรรม USD: อัตราแลกเปลี่ยน = 1.0 ไม่จำเป็นต้องค้นหา
+3. `current_rate` จะถูกซิงค์โดยภารกิจที่กำหนดเวลาไว้จากบันทึกล่าสุดใน `nb_crm_exchange_rates`
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 การจัดการเวอร์ชัน
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+เมื่อใบเสนอราคาถูกปฏิเสธหรือหมดอายุ สามารถคัดลอกเป็นเวอร์ชันใหม่ได้:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → ถูกปฏิเสธ
+QT-20260119-001 v2 → ส่งแล้ว
+QT-20260119-001 v3 → ยอมรับแล้ว
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. วงจรชีวิตของคำสั่งซื้อ
 
-### 7.1 Order Overview
+### 7.1 ภาพรวมคำสั่งซื้อ
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+คำสั่งซื้อจะถูกสร้างขึ้นเมื่อใบเสนอราคาได้รับการยอมรับ ซึ่งแสดงถึงข้อตกลงทางธุรกิจที่ได้รับการยืนยันแล้วครับ
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 คำจำกัดความสถานะคำสั่งซื้อ
 
-### 7.2 Order Status Definitions
+| สถานะ | รหัส | คำอธิบาย | การดำเนินการที่อนุญาต |
+|-----|------|------|---------|
+| ร่าง | `draft` | สร้างคำสั่งซื้อแล้ว แต่ยังไม่ได้ยืนยัน | แก้ไข, ยืนยัน, ยกเลิก |
+| ยืนยันแล้ว | `confirmed` | ยืนยันคำสั่งซื้อแล้ว รอการดำเนินการ | เริ่มดำเนินการ, ยกเลิก |
+| กำลังดำเนินการ | `in_progress` | อยู่ระหว่างการประมวลผล/ผลิต | อัปเดตความคืบหน้า, ส่งสินค้า, ยกเลิก (ต้องอนุมัติ) |
+| ส่งสินค้าแล้ว | `shipped` | สินค้าถูกส่งให้ลูกค้าแล้ว | ทำเครื่องหมายว่าส่งถึงแล้ว |
+| ส่งถึงแล้ว | `delivered` | ลูกค้าได้รับสินค้าแล้ว | ปิดงานคำสั่งซื้อ |
+| เสร็จสมบูรณ์ | `completed` | คำสั่งซื้อเสร็จสมบูรณ์ทั้งหมด | ไม่มี |
+| ยกเลิกแล้ว | `cancelled` | คำสั่งซื้อถูกยกเลิก | ไม่มี |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 โมเดลข้อมูลคำสั่งซื้อ
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| order_no | VARCHAR | หมายเลขคำสั่งซื้อ (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| customer_id | BIGINT | ลูกค้า (FK) |
+| contact_id | BIGINT | ผู้ติดต่อ (FK) |
+| opportunity_id | BIGINT | โอกาสทางการขาย (FK) |
+| quotation_id | BIGINT | ใบเสนอราคา (FK) |
+| owner_id | BIGINT | ผู้รับผิดชอบ (FK → users) |
+| status | VARCHAR | สถานะคำสั่งซื้อ |
+| payment_status | VARCHAR | สถานะการชำระเงิน: unpaid/partial/paid |
+| order_date | DATE | วันที่สั่งซื้อ |
+| delivery_date | DATE | วันที่คาดว่าจะส่งมอบ |
+| actual_delivery_date | DATE | วันที่ส่งมอบจริง |
+| currency | VARCHAR | สกุลเงินคำสั่งซื้อ |
+| exchange_rate | DECIMAL | อัตราแลกเปลี่ยนเทียบกับ USD |
+| order_amount | DECIMAL | ยอดรวมคำสั่งซื้อ |
+| paid_amount | DECIMAL | จำนวนเงินที่ชำระแล้ว |
+| unpaid_amount | DECIMAL | จำนวนเงินที่ยังไม่ได้ชำระ |
+| shipping_address | TEXT | ที่อยู่จัดส่ง |
+| logistics_company | VARCHAR | บริษัทขนส่ง |
+| tracking_no | VARCHAR | หมายเลขติดตามพัสดุ |
+| terms_condition | TEXT | ข้อกำหนดและเงื่อนไข |
+| description | TEXT | คำอธิบาย |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| order_id | FK | คำสั่งซื้อหลัก |
+| product_id | FK | อ้างอิงผลิตภัณฑ์ |
+| product_name | VARCHAR | ภาพรวมชื่อผลิตภัณฑ์ |
+| quantity | INT | จำนวนที่สั่ง |
+| unit_price | DECIMAL | ราคาต่อหน่วย |
+| discount_percent | DECIMAL | เปอร์เซ็นต์ส่วนลด |
+| line_total | DECIMAL | ยอดรวมรายการ |
+| notes | TEXT | หมายเหตุรายการ |
 
-### 7.4 Payment Tracking
+### 7.4 การติดตามการรับชำระเงิน
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| ฟิลด์ | ประเภท | คำอธิบาย |
+|-----|------|------|
+| id | BIGINT | คีย์หลัก |
+| order_id | BIGINT | คำสั่งซื้อที่เกี่ยวข้อง (FK, จำเป็น) |
+| customer_id | BIGINT | ลูกค้า (FK) |
+| payment_no | VARCHAR | หมายเลขการชำระเงิน (สร้างอัตโนมัติ, ไม่ซ้ำ) |
+| amount | DECIMAL | จำนวนเงินที่ชำระ (จำเป็น) |
+| currency | VARCHAR | สกุลเงินที่ชำระ |
+| payment_method | VARCHAR | วิธีการชำระเงิน: transfer/check/cash/credit_card/lc |
+| payment_date | DATE | วันที่ชำระเงิน |
+| bank_account | VARCHAR | หมายเลขบัญชีธนาคาร |
+| bank_name | VARCHAR | ชื่อธนาคาร |
+| notes | TEXT | หมายเหตุการชำระเงิน |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. วงจรชีวิตของลูกค้า
 
-### 8.1 Customer Overview
+### 8.1 ภาพรวมลูกค้า
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+ลูกค้าจะถูกสร้างขึ้นเมื่อมีการแปลง Lead หรือเมื่อชนะโอกาสทางการขาย ระบบจะติดตามวงจรชีวิตที่สมบูรณ์ตั้งแต่การได้ลูกค้ามาจนถึงการเป็นผู้สนับสนุนแบรนด์ครับ
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 คำจำกัดความสถานะลูกค้า
 
-### 8.2 Customer Status Definitions
+| สถานะ | รหัส | สุขภาพ | คำอธิบาย |
+|-----|------|--------|------|
+| ผู้มุ่งหวัง | `prospect` | ไม่มี | Lead ที่ถูกแปลงแล้ว แต่ยังไม่มีคำสั่งซื้อ |
+| ใช้งานอยู่ | `active` | ≥70 | ลูกค้าที่ชำระเงินแล้ว มีปฏิสัมพันธ์ที่ดี |
+| เติบโต | `growing` | ≥80 | ลูกค้าที่มีโอกาสในการขยายธุรกิจ |
+| มีความเสี่ยง | `at_risk` | <50 | ลูกค้าที่แสดงสัญญาณว่าจะเลิกใช้งาน |
+| เลิกใช้งาน | `churned` | ไม่มี | ลูกค้าที่ไม่มีการใช้งานแล้ว |
+| ดึงกลับมา | `win_back` | ไม่มี | อดีตลูกค้าที่กำลังถูกกระตุ้นให้กลับมาใช้งานใหม่ |
+| ผู้สนับสนุน | `advocate` | ≥90 | มีความพึงพอใจสูง และช่วยแนะนำลูกค้าใหม่ |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 การให้คะแนนสุขภาพลูกค้า
 
-### 8.3 Customer Health Score
+คำนวณสุขภาพลูกค้าโดยอิงจากหลายปัจจัย:
 
-Health score is calculated from multiple factors:
+| ปัจจัย | น้ำหนัก | ตัวชี้วัด |
+|-----|------|---------|
+| ความใหม่ของการซื้อ | 25% | จำนวนวันนับจากคำสั่งซื้อล่าสุด |
+| ความถี่ในการซื้อ | 20% | จำนวนคำสั่งซื้อต่อช่วงเวลา |
+| มูลค่าเงิน | 20% | ยอดรวมคำสั่งซื้อและยอดเฉลี่ยต่อคำสั่งซื้อ |
+| ระดับการมีปฏิสัมพันธ์ | 15% | อัตราการเปิดอีเมล, การเข้าร่วมประชุม |
+| สุขภาพการสนับสนุน | 10% | ปริมาณตั๋วปัญหาและอัตราการแก้ไข |
+| การใช้งานผลิตภัณฑ์ | 10% | ตัวชี้วัดการใช้งานจริง (ถ้ามี) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**เกณฑ์คะแนนสุขภาพ:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +710,216 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 การแบ่งกลุ่มลูกค้า
 
-#### Automatic Segmentation
+#### การแบ่งกลุ่มอัตโนมัติ
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
-
----
-
-## 9. Email Integration
-
-### 9.1 Overview
-
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
-
-### 9.2 Email Sync
-
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
-
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
-
-### 9.3 Email–CRM Association (To Be Refined)
-
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
-
-### 9.4 Email Templates
-
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| กลุ่ม | เงื่อนไข | การดำเนินการที่แนะนำ |
+|-----|------|---------|
+| VIP | มูลค่าตลอดช่วงชีวิต (LTV) > $100K | บริการระดับพรีเมียม, การดูแลโดยผู้บริหาร |
+| องค์กรใหญ่ | ขนาดบริษัท > 500 คน | ผู้จัดการบัญชีลูกค้าเฉพาะราย |
+| ขนาดกลาง | ขนาดบริษัท 50-500 คน | การเยี่ยมเยียนตามระยะเวลา, การสนับสนุนตามขนาด |
+| สตาร์ทอัพ | ขนาดบริษัท < 50 คน | ทรัพยากรแบบบริการตนเอง, ชุมชน |
+| หยุดนิ่ง | ไม่มีกิจกรรมเกิน 90 วัน | การตลาดเพื่อกระตุ้นการกลับมาใช้งาน |
 
 ---
 
-## 10. AI Capabilities
+## 9. การรวมระบบอีเมล
 
-### 10.1 AI Employee Team
+### 9.1 ภาพรวม
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+NocoBase มีปลั๊กอินการรวมอีเมลในตัว รองรับ Gmail และ Outlook เมื่อซิงค์อีเมลเข้าสู่ระบบแล้ว สามารถเรียกใช้การวิเคราะห์อารมณ์และเจตนาของอีเมลโดย AI ผ่านเวิร์กโฟลว์ เพื่อช่วยให้พนักงานขายเข้าใจทัศนคติของลูกค้าได้อย่างรวดเร็วครับ
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+### 9.2 การซิงค์อีเมล
 
-### 10.2 AI Task List
+**อีเมลที่รองรับ:**
+- Gmail (ผ่าน OAuth 2.0)
+- Outlook/Microsoft 365 (ผ่าน OAuth 2.0)
 
-AI capabilities are divided into two independent categories:
+**พฤติกรรมการซิงค์:**
+- ซิงค์แบบสองทางทั้งอีเมลที่ส่งและรับ
+- เชื่อมโยงอีเมลกับบันทึก CRM โดยอัตโนมัติ (Lead, ผู้ติดต่อ, โอกาสทางการขาย)
+- ไฟล์แนบจะถูกเก็บไว้ในระบบไฟล์ของ NocoBase
 
-#### 1. AI Employees (Frontend — User-Triggered)
+### 9.3 ความสัมพันธ์ อีเมล-CRM (รอการปรับปรุง)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+### 9.4 เทมเพลตอีเมล
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+พนักงานขายสามารถใช้เทมเพลตที่ตั้งค่าไว้ล่วงหน้าได้:
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
-
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
-
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
-
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
-
-### 10.3 AI Fields in the Database
-
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
-| | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| หมวดหมู่เทมเพลต | ตัวอย่าง |
+|---------|------|
+| การติดต่อครั้งแรก | Cold email, การแนะนำตัวอย่างเป็นกันเอง, การติดตามหลังงานกิจกรรม |
+| การติดตามผล | ติดตามหลังการประชุม, ติดตามแผนงาน, กระตุ้นเมื่อไม่มีการตอบกลับ |
+| ใบเสนอราคา | แนบใบเสนอราคา, แก้ไขใบเสนอราคา, ใบเสนอราคากำลังจะหมดอายุ |
+| คำสั่งซื้อ | ยืนยันคำสั่งซื้อ, แจ้งการส่งสินค้า, ยืนยันการรับสินค้า |
+| ความสำเร็จของลูกค้า | การต้อนรับ, การเยี่ยมเยียน, การขอคำวิจารณ์ |
 
 ---
 
-## 11. Workflow Engine
+## 10. ความสามารถเสริมด้วย AI
 
-### 11.1 Implemented Workflows
+### 10.1 ทีมพนักงาน AI
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+ระบบ CRM รวมปลั๊กอิน AI ของ NocoBase โดยใช้พนักงาน AI ในตัวและกำหนดภารกิจเฉพาะสำหรับสถานการณ์ CRM ดังนี้ครับ:
 
-### 11.2 Planned Workflows
+| ID | ชื่อ | ตำแหน่งในตัว | ความสามารถเสริมใน CRM |
+|----|------|---------|-------------|
+| viz | Viz | นักวิเคราะห์ข้อมูล | วิเคราะห์ข้อมูลการขาย, ทำนายไปป์ไลน์ |
+| dara | Dara | ผู้เชี่ยวชาญด้านแผนภูมิ | การแสดงข้อมูลด้วยภาพ, พัฒนาแผนภูมิรายงาน, ออกแบบแดชบอร์ด |
+| ellis | Ellis | บรรณาธิการ | ร่างการตอบกลับอีเมล, สรุปการสื่อสาร, ร่างอีเมลธุรกิจ |
+| lexi | Lexi | นักแปล | การสื่อสารกับลูกค้าหลายภาษา, แปลเนื้อหา |
+| orin | Orin | ผู้จัดการ | ลำดับความสำคัญรายวัน, คำแนะนำขั้นตอนถัดไป, แผนการติดตามผล |
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
+### 10.2 รายการภารกิจ AI
 
----
+ความสามารถของ AI แบ่งออกเป็นสองประเภทที่เป็นอิสระต่อกัน:
 
-## 12. Menu & Interface Design
+#### 1. พนักงาน AI (เรียกใช้จากบล็อกหน้าบ้าน)
 
-### 12.1 Admin Menu Structure
+ผู้ใช้โต้ตอบกับ AI โดยตรงผ่านบล็อกพนักงาน AI ที่หน้าบ้าน เพื่อรับการวิเคราะห์และคำแนะนำครับ
 
+| พนักงาน | ภารกิจ | คำอธิบาย |
+|------|------|------|
+| Viz | วิเคราะห์ข้อมูลการขาย | วิเคราะห์แนวโน้มไปป์ไลน์, อัตราการแปลง |
+| Viz | ทำนายไปป์ไลน์ | ทำนายรายได้ตามน้ำหนักของไปป์ไลน์ |
+| Dara | สร้างแผนภูมิ | สร้างแผนภูมิรายงานการขาย |
+| Dara | ออกแบบแดชบอร์ด | ออกแบบเลย์เอาต์แดชบอร์ดข้อมูล |
+| Ellis | ร่างการตอบกลับ | สร้างการตอบกลับอีเมลแบบมืออาชีพ |
+| Ellis | สรุปการสื่อสาร | สรุปหัวข้ออีเมล (Email Thread) |
+| Ellis | ร่างอีเมลธุรกิจ | อีเมลเชิญประชุม, ติดตามผล, ขอบคุณ ฯลฯ |
+| Orin | ลำดับความสำคัญรายวัน | สร้างรายการภารกิจที่ต้องทำตามลำดับความสำคัญในแต่ละวัน |
+| Orin | คำแนะนำขั้นตอนถัดไป | แนะนำการดำเนินการถัดไปสำหรับแต่ละโอกาสทางการขาย |
+| Lexi | แปลเนื้อหา | แปลสื่อการตลาด, แผนงาน, อีเมล |
 
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
+#### 2. Node LLM ในเวิร์กโฟลว์ (ทำงานอัตโนมัติที่หลังบ้าน)
 
-### 12.2 Dashboard Views
+Node LLM ที่ฝังอยู่ในเวิร์กโฟลว์ จะถูกเรียกใช้อัตโนมัติผ่านเหตุการณ์ในตารางข้อมูล, เหตุการณ์การดำเนินการ หรือภารกิจที่กำหนดเวลาไว้ โดยไม่เกี่ยวข้องกับพนักงาน AI ครับ
 
-#### Sales Manager View
+| ภารกิจ | วิธีเรียกใช้ | คำอธิบาย | ฟิลด์ที่เขียนข้อมูล |
+|------|---------|------|---------|
+| ให้คะแนน Lead | เหตุการณ์ในตาราง (สร้าง/อัปเดต) | ประเมินคุณภาพของ Lead | ai_score, ai_convert_prob |
+| ทำนายโอกาสชนะ | เหตุการณ์ในตาราง (เปลี่ยนขั้นตอน) | ทำนายความเป็นไปได้ที่จะสำเร็จของโอกาสทางการขาย | ai_win_probability, ai_risk_factors |
 
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
+> **คำอธิบาย**: Node LLM ในเวิร์กโฟลว์ใช้ Prompt และ Schema Output เพื่อส่งออก JSON ที่มีโครงสร้าง จากนั้นจะถูกแยกวิเคราะห์และเขียนลงในฟิลด์ข้อมูลธุรกิจโดยที่ผู้ใช้ไม่ต้องดำเนินการเองครับ
 
-#### Sales Rep View
+### 10.3 ฟิลด์ AI ในฐานข้อมูล
 
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| ตาราง | ฟิลด์ AI | คำอธิบาย |
+|----|--------|------|
+| nb_crm_leads | ai_score | คะแนน AI 0-100 |
+| | ai_convert_prob | ความน่าจะเป็นในการแปลง |
+| | ai_best_contact_time | เวลาที่ควรติดต่อที่สุด |
+| | ai_tags | แท็กที่สร้างโดย AI (JSONB) |
+| | ai_scored_at | เวลาที่ให้คะแนน |
+| | ai_next_best_action | คำแนะนำการดำเนินการถัดไปที่ดีที่สุด |
+| | ai_nba_generated_at | เวลาที่สร้างคำแนะนำ |
+| nb_crm_opportunities | ai_win_probability | โอกาสชนะที่ทำนายโดย AI |
+| | ai_analyzed_at | เวลาที่วิเคราะห์ |
+| | ai_confidence | ความเชื่อมั่นในการทำนาย |
+| | ai_trend | แนวโน้ม: up/stable/down |
+| | ai_risk_factors | ปัจจัยเสี่ยง (JSONB) |
+| | ai_recommendations | รายการคำแนะนำ (JSONB) |
+| | ai_predicted_close | วันที่คาดว่าจะปิดการขาย |
+| | ai_next_best_action | คำแนะนำการดำเนินการถัดไปที่ดีที่สุด |
+| | ai_nba_generated_at | เวลาที่สร้างคำแนะนำ |
+| nb_crm_customers | ai_health_score | คะแนนสุขภาพ 0-100 |
+| | ai_health_grade | เกรดสุขภาพ: A/B/C/D |
+| | ai_churn_risk | ความเสี่ยงในการเลิกใช้งาน 0-100% |
+| | ai_churn_risk_level | ระดับความเสี่ยงในการเลิกใช้งาน: low/medium/high |
+| | ai_health_dimensions | คะแนนในแต่ละมิติ (JSONB) |
+| | ai_recommendations | รายการคำแนะนำ (JSONB) |
+| | ai_health_assessed_at | เวลาที่ประเมินสุขภาพ |
+| | ai_tags | แท็กที่สร้างโดย AI (JSONB) |
+| | ai_best_contact_time | เวลาที่ควรติดต่อที่สุด |
+| | ai_next_best_action | คำแนะนำการดำเนินการถัดไปที่ดีที่สุด |
+| | ai_nba_generated_at | เวลาที่สร้างคำแนะนำ |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 11. เครื่องมือจัดการเวิร์กโฟลว์
+
+### 11.1 เวิร์กโฟลว์ที่ใช้งานแล้ว
+
+| ชื่อเวิร์กโฟลว์ | ประเภทการเรียกใช้ | สถานะ | คำอธิบาย |
+|-----------|---------|------|------|
+| Leads Created | เหตุการณ์ในตาราง | เปิดใช้งาน | เรียกใช้เมื่อมีการสร้าง Lead |
+| CRM Overall Analytics | เหตุการณ์พนักงาน AI | เปิดใช้งาน | การวิเคราะห์ข้อมูล CRM โดยรวม |
+| Lead Conversion | เหตุการณ์หลังการดำเนินการ | เปิดใช้งาน | กระบวนการแปลง Lead |
+| Lead Assignment | เหตุการณ์ในตาราง | เปิดใช้งาน | การจัดสรร Lead อัตโนมัติ |
+| Lead Scoring | เหตุการณ์ในตาราง | ปิดใช้งาน | การให้คะแนน Lead (รอการปรับปรุง) |
+| Follow-up Reminder | ภารกิจที่กำหนดเวลาไว้ | ปิดใช้งาน | การแจ้งเตือนการติดตามผล (รอการปรับปรุง) |
+
+### 11.2 เวิร์กโฟลว์ที่รอการพัฒนา
+
+| เวิร์กโฟลว์ | ประเภทการเรียกใช้ | คำอธิบาย |
+|-------|---------|------|
+| การเลื่อนขั้นตอนโอกาสทางการขาย | เหตุการณ์ในตาราง | อัปเดตโอกาสชนะและบันทึกเวลาเมื่อเปลี่ยนขั้นตอน |
+| การตรวจจับโอกาสทางการขายที่หยุดนิ่ง | ภารกิจที่กำหนดเวลาไว้ | ตรวจสอบโอกาสทางการขายที่ไม่มีกิจกรรมและส่งการแจ้งเตือน |
+| การอนุมัติใบเสนอราคา | เหตุการณ์หลังการดำเนินการ | กระบวนการอนุมัติหลายระดับ |
+| การสร้างคำสั่งซื้อ | เหตุการณ์หลังการดำเนินการ | สร้างคำสั่งซื้ออัตโนมัติหลังจากยอมรับใบเสนอราคา |
+
+---
+
+## 12. การออกแบบเมนูและอินเทอร์เฟซ
+
+### 12.1 โครงสร้างการจัดการหลังบ้าน
+
+| เมนู | ประเภท | คำอธิบาย |
+|------|------|------|
+| **Dashboards** | กลุ่ม | แดชบอร์ด |
+| - Dashboard | หน้า | แดชบอร์ดเริ่มต้น |
+| - SalesManager | หน้า | มุมมองผู้จัดการฝ่ายขาย |
+| - SalesRep | หน้า | มุมมองตัวแทนฝ่ายขาย |
+| - Executive | หน้า | มุมมองผู้บริหาร |
+| **Leads** | หน้า | การจัดการ Lead |
+| **Customers** | หน้า | การจัดการลูกค้า |
+| **Opportunities** | หน้า | การจัดการโอกาสทางการขาย |
+| - Table | แท็บ | รายการโอกาสทางการขาย |
+| **Products** | หน้า | การจัดการผลิตภัณฑ์ |
+| - Categories | แท็บ | หมวดหมู่ผลิตภัณฑ์ |
+| **Orders** | หน้า | การจัดการคำสั่งซื้อ |
+| **Settings** | กลุ่ม | ตั้งค่า |
+| - Stage Settings | หน้า | การกำหนดค่าขั้นตอนโอกาสทางการขาย |
+| - Exchange Rate | หน้า | การตั้งค่าอัตราแลกเปลี่ยน |
+| - Activity | หน้า | บันทึกกิจกรรม |
+| - Emails | หน้า | การจัดการอีเมล |
+| - Contacts | หน้า | การจัดการผู้ติดต่อ |
+| - Data Analysis | หน้า | การวิเคราะห์ข้อมูล |
+
+### 12.2 มุมมองแดชบอร์ด
+
+#### มุมมองผู้จัดการฝ่ายขาย
+
+| คอมโพเนนต์ | ประเภท | ข้อมูล |
+|-----|------|------|
+| มูลค่าไปป์ไลน์ | การ์ด KPI | ยอดรวมไปป์ไลน์ในแต่ละขั้นตอน |
+| ตารางอันดับทีม | ตาราง | การจัดอันดับผลงานของตัวแทนขาย |
+| คำเตือนความเสี่ยง | รายการคำเตือน | โอกาสทางการขายที่มีความเสี่ยงสูง |
+| แนวโน้มโอกาสชนะ | กราฟเส้น | อัตราการชนะรายเดือน |
+| รายการที่หยุดนิ่ง | รายการ | รายการที่ต้องให้ความสนใจเป็นพิเศษ |
+
+#### มุมมองตัวแทนฝ่ายขาย
+
+| คอมโพเนนต์ | ประเภท | ข้อมูล |
+|-----|------|------|
+| ความคืบหน้าเป้าหมายของฉัน | แถบความคืบหน้า | ยอดขายจริงเทียบกับเป้าหมายรายเดือน |
+| โอกาสทางการขายที่รอจัดการ | การ์ด KPI | จำนวนโอกาสทางการขายที่ฉันต้องจัดการ |
+| รายการที่จะปิดในสัปดาห์นี้ | รายการ | รายการที่คาดว่าจะปิดการขายเร็วๆ นี้ |
+| กิจกรรมที่เกินกำหนด | คำเตือน | ภารกิจที่หมดเวลาแล้ว |
+| การดำเนินการด่วน | ปุ่ม | บันทึกกิจกรรม, สร้างโอกาสทางการขาย |
+
+#### มุมมองผู้บริหาร
+
+| คอมโพเนนต์ | ประเภท | ข้อมูล |
+|-----|------|------|
+| รายได้รายปี | การ์ด KPI | รายได้สะสมตั้งแต่ต้นปีจนถึงปัจจุบัน |
+| มูลค่าไปป์ไลน์รวม | การ์ด KPI | ยอดรวมไปป์ไลน์ทั้งหมด |
+| อัตราการชนะ | การ์ด KPI | อัตราการชนะโดยรวม |
+| สุขภาพลูกค้า | กราฟการกระจาย | การกระจายคะแนนสุขภาพลูกค้า |
+| การทำนายรายได้ | แผนภูมิ | การทำนายรายได้รายเดือน |
+
+---
+
+*เวอร์ชันเอกสาร: v2.0 | วันที่อัปเดต: 2026-02-06*

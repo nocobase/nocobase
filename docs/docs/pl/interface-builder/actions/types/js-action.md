@@ -1,44 +1,46 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/interface-builder/actions/types/js-action).
 :::
 
-# Akcja JS
+# JS Action
 
 ## Wprowadzenie
 
-Akcja JS służy do wykonywania kodu JavaScript po kliknięciu przycisku, umożliwiając dostosowanie dowolnego zachowania biznesowego. Może być używana w paskach narzędzi formularzy, paskach narzędzi tabel (na poziomie kolekcji), wierszach tabel (na poziomie rekordu) i innych miejscach, aby wykonywać operacje takie jak walidacja, wyświetlanie powiadomień, wywoływanie API, otwieranie wyskakujących okien/szuflad oraz odświeżanie danych.
+JS Action służy do wykonywania kodu JavaScript po kliknięciu przycisku, aby dostosować dowolne zachowanie biznesowe. Może być używana w paskach narzędzi formularzy, paskach narzędzi tabel (poziom kolekcji), wierszach tabel (poziom rekordu) i innych miejscach, aby realizować operacje takie jak walidacja, komunikaty, wywołania interfejsów, otwieranie okien/szuflad, odświeżanie danych itp.
 
 ![jsaction-add-20251029](https://static-docs.nocobase.com/jsaction-add-20251029.png)
 
-## API kontekstu środowiska uruchomieniowego (najczęściej używane)
+## API kontekstu środowiska uruchomieniowego (często używane)
 
-- `ctx.api.request(options)`: Wykonuje żądanie HTTP;
+- `ctx.api.request(options)`: Inicjuje żądanie HTTP;
 - `ctx.openView(viewUid, options)`: Otwiera skonfigurowany widok (szufladę/okno dialogowe/stronę);
 - `ctx.message` / `ctx.notification`: Globalne komunikaty i powiadomienia;
 - `ctx.t()` / `ctx.i18n.t()`: Internacjonalizacja;
-- `ctx.resource`: Zasób danych dla kontekstu na poziomie kolekcji (np. pasek narzędzi tabeli), zawierający metody takie jak `getSelectedRows()` i `refresh()`;
-- `ctx.record`: Bieżący rekord wiersza dla kontekstu na poziomie rekordu (np. przycisk w wierszu tabeli);
-- `ctx.form`: Instancja formularza AntD dla kontekstu na poziomie formularza (np. przycisk na pasku narzędzi formularza);
+- `ctx.resource`: Zasób danych kontekstu na poziomie kolekcji (np. pasek narzędzi tabeli, zawiera `getSelectedRows()`, `refresh()` itp.);
+- `ctx.record`: Bieżący rekord wiersza w kontekście na poziomie rekordu (np. przycisk w wierszu tabeli);
+- `ctx.form`: Instancja AntD Form w kontekście na poziomie formularza (np. przycisk na pasku narzędzi formularza);
 - `ctx.collection`: Metadane bieżącej kolekcji;
-- Edytor kodu obsługuje fragmenty `Snippets` i wstępne uruchamianie `Run` (patrz niżej).
+- Edytor kodu obsługuje fragmenty `Snippets` oraz wstępne uruchamianie `Run` (patrz poniżej).
 
-- `ctx.requireAsync(url)`: Asynchronicznie ładuje bibliotekę AMD/UMD z adresu URL;
-- `ctx.importAsync(url)`: Dynamicznie importuje moduł ESM z adresu URL;
 
-> Rzeczywiste dostępne zmienne mogą się różnić w zależności od położenia przycisku. Powyższa lista przedstawia przegląd typowych możliwości.
+- `ctx.requireAsync(url)`: Asynchroniczne ładowanie bibliotek AMD/UMD poprzez URL;
+- `ctx.importAsync(url)`: Dynamiczny import modułów ESM poprzez URL;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Wbudowane biblioteki React / ReactDOM / Ant Design / Ikony Ant Design / dayjs / lodash / math.js / formula.js itp., używane do renderowania JSX, przetwarzania czasu, operacji na danych i obliczeń matematycznych.
+
+> Rzeczywiste dostępne zmienne będą się różnić w zależności od lokalizacji przycisku; powyższe stanowi przegląd typowych możliwości.
 
 ## Edytor i fragmenty kodu
 
-- `Snippets`: Otwiera listę wbudowanych fragmentów kodu, które można wyszukać i wstawić w bieżącej pozycji kursora jednym kliknięciem.
-- `Run`: Bezpośrednio wykonuje bieżący kod i wyprowadza dzienniki wykonania do panelu `Logs` na dole; obsługuje `console.log/info/warn/error` oraz podświetlanie błędów w celu łatwej lokalizacji.
+- `Snippets`: Otwiera listę wbudowanych fragmentów kodu, które można wyszukiwać i wstawiać jednym kliknięciem w bieżącej pozycji kursora.
+- `Run`: Bezpośrednio uruchamia bieżący kod i wyprowadza logi do dolnego panelu `Logs`; obsługuje `console.log/info/warn/error` oraz lokalizację błędów z podświetlaniem.
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- Mogą Państwo użyć pracowników AI do generowania/modyfikowania skryptów: [Pracownik AI · Nathan: Inżynier Frontend](/ai-employees/built-in/ai-coding)
+- Można połączyć z pracownikiem AI w celu generowania/modyfikowania skryptów: [Pracownik AI · Nathan: Inżynier Frontend](/ai-employees/features/built-in-employee)
 
 ## Typowe zastosowania (uproszczone przykłady)
 
-### 1) Żądanie API i powiadomienie
+### 1) Żądanie interfejsu i komunikaty
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
@@ -54,7 +56,7 @@ if (!rows.length) {
   ctx.message.warning(ctx.t('Please select records'));
   return;
 }
-// TODO: Wdrożyć logikę biznesową...
+// TODO: Wykonaj logikę biznesową…
 ctx.message.success(ctx.t('Selected {n} items', { n: rows.length }));
 ```
 
@@ -83,11 +85,12 @@ if (ctx.resource?.refresh) await ctx.resource.refresh();
 else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refresh();
 ```
 
+
 ## Uwagi
 
-- **Idempotentność działania**: Aby zapobiec wielokrotnemu przesyłaniu danych spowodowanemu powtarzającymi się kliknięciami, mogą Państwo dodać przełącznik stanu w logice lub wyłączyć przycisk.
-- **Obsługa błędów**: Proszę dodać bloki `try/catch` dla wywołań API i zapewnić użytkownikowi odpowiednie komunikaty.
-- **Interakcja z widokami**: Podczas otwierania wyskakującego okna/szuflady za pomocą `ctx.openView`, zaleca się jawne przekazywanie parametrów, a w razie potrzeby aktywne odświeżanie zasobu nadrzędnego po pomyślnym przesłaniu.
+- Idempotentność działania: Unikanie wielokrotnego przesyłania spowodowanego powtarzającymi się kliknięciami; można dodać przełącznik stanu w logice lub wyłączyć przycisk.
+- Obsługa błędów: Należy dodać bloki try/catch do wywołań interfejsów i wyświetlać komunikaty użytkownikowi.
+- Powiązania widoków: Przy otwieraniu okien/szuflad przez `ctx.openView` zaleca się jawne przekazywanie parametrów i, jeśli to konieczne, aktywne odświeżanie zasobów nadrzędnych po pomyślnym przesłaniu.
 
 ## Powiązane dokumenty
 

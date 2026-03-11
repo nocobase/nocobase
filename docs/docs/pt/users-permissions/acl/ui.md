@@ -32,11 +32,11 @@ Processo de configuração completo:
 
 **Visualizar**: Determina se campos específicos são visíveis no nível do campo, permitindo controlar quais campos são visíveis para certas funções dentro da **coleção** de Pedidos.
 
-![](https://static-docs.nocobase.com/30dea84d984d95036e6f7b180955a6cf.png)
+![](https://static-docs.nocobase.com/30dea84d984d95039e6f7b180955a6cf.png)
 
 Na UI, apenas os campos com permissões configuradas são visíveis dentro do bloco da **coleção** de Pedidos. Campos do sistema (Id, CreatedAt, LastUpdatedAt) mantêm as permissões de visualização mesmo sem configuração específica.
 
-![](https://static-docs.nocobase.com/40cc49b17efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **Editar**: Controla se os campos podem ser editados e salvos (atualizados).
 

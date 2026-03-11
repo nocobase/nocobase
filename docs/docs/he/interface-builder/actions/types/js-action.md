@@ -1,44 +1,46 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/interface-builder/actions/types/js-action).
 :::
 
-# פעולת JS
+# JS Action
 
-## מבוא
+## 介绍
 
-פעולת JS משמשת להרצת JavaScript בלחיצת כפתור, ומאפשרת התאמה אישית של כל התנהגות עסקית. ניתן להשתמש בה במקומות שונים כמו סרגלי כלים של טפסים, סרגלי כלים של טבלאות (ברמת ה**אוסף**), שורות טבלה (ברמת הרשומה), ועוד. היא מאפשרת לבצע פעולות כמו אימות נתונים, הצגת התראות, קריאות ל-API, פתיחת חלונות קופצים/מגירות ורענון נתונים.
+JS Action 用于按钮点击时执行 JavaScript，自定义任意业务行为。可用于表单工具栏、表格工具栏（集合级）、表格行（记录级）等位置，实现校验、提示、接口调用、打开弹窗/抽屉、刷新数据等操作。
 
 ![jsaction-add-20251029](https://static-docs.nocobase.com/jsaction-add-20251029.png)
 
 ## API של הקשר זמן ריצה (נפוץ)
 
-- `ctx.api.request(options)`: שולח בקשת HTTP;
-- `ctx.openView(viewUid, options)`: פותח תצוגה מוגדרת (מגירה/דיאלוג/עמוד);
-- `ctx.message` / `ctx.notification`: הודעות והתראות גלובליות;
-- `ctx.t()` / `ctx.i18n.t()`: בינאום (Internationalization);
-- `ctx.resource`: משאב נתונים עבור הקשר ברמת ה**אוסף** (לדוגמה, סרגל כלים של טבלה), הכולל מתודות כמו `getSelectedRows()` ו-`refresh()`;
-- `ctx.record`: רשומת השורה הנוכחית עבור הקשר ברמת הרשומה (לדוגמה, כפתור בשורת טבלה);
-- `ctx.form`: מופע AntD Form עבור הקשר ברמת הטופס (לדוגמה, כפתור בסרגל כלים של טופס);
-- `ctx.collection`: מטא-מידע של ה**אוסף** הנוכחי;
-- עורך הקוד תומך ב`Snippets` (קטעי קוד) וב`Run` (הרצה מקדימה) (ראו להלן).
+- `ctx.api.request(options)`: ביצוע בקשת HTTP;
+- `ctx.openView(viewUid, options)`: פתיחת תצוגה מוגדרת (מגירה/דיאלוג/דף);
+- `ctx.message` / `ctx.notification`: התראות והודעות גלובליות;
+- `ctx.t()` / `ctx.i18n.t()`: בינאום;
+- `ctx.resource`: משאב נתונים של הקשר ברמת ה**אוסף** (כגון סרגל כלים של טבלה, כולל `getSelectedRows()`, `refresh()` וכו');
+- `ctx.record`: רשומת השורה הנוכחית של הקשר ברמת הרשומה (כגון כפתור בשורת טבלה);
+- `ctx.form`: מופע AntD Form של הקשר ברמת הטופס (כגון כפתור בסרגל כלים של טופס);
+- `ctx.collection`: מטא-נתונים של ה**אוסף** הנוכחי;
+- עורך הקוד תומך בקטעי קוד `Snippets` והרצה מוקדמת `Run` (ראו להלן).
 
-- `ctx.requireAsync(url)`: טוען ספריית AMD/UMD באופן אסינכרוני מכתובת URL;
-- `ctx.importAsync(url)`: מייבא מודול ESM באופן דינמי מכתובת URL;
 
-> המשתנים הזמינים בפועל עשויים להשתנות בהתאם למיקום הכפתור. הרשימה לעיל היא סקירה כללית של היכולות הנפוצות.
+- `ctx.requireAsync(url)`: טעינה אסינכרונית של ספריות AMD/UMD לפי URL;
+- `ctx.importAsync(url)`: ייבוא דינמי של מודולי ESM לפי URL;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: ספריות מובנות כגון React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js וכו', המשמשות לרינדור JSX, טיפול בזמן, פעולות בנתונים וחישובים מתמטיים.
+
+> המשתנים הזמינים בפועל ישתנו בהתאם למיקום הכפתור, לעיל מופיעה סקירה של היכולות הנפוצות.
 
 ## עורך וקטעי קוד
 
-- `Snippets`: פותח רשימה של קטעי קוד מובנים, אותם ניתן לחפש ולהוסיף בלחיצה אחת למיקום הסמן הנוכחי.
-- `Run`: מריץ את הקוד הנוכחי ישירות ומציג את יומני ההרצה בלוח ה`Logs` שבתחתית. תומך ב`console.log/info/warn/error` ובהדגשת שגיאות לזיהוי קל.
+- `Snippets`: פתיחת רשימת קטעי קוד מובנים, ניתן לחיפוש ולהכנסה בלחיצה אחת למיקום הסמן הנוכחי.
+- `Run`: הרצה ישירה של הקוד הנוכחי, ופלט של יומני ההרצה ללוח ה-`Logs` בתחתית; תמיכה ב-`console.log/info/warn/error` ומיקום שגיאות מודגש.
 
 ![jsaction-toolbars-20251029](https://static-docs.nocobase.com/jsaction-toolbars-20251029.png)
 
-- ניתן להשתמש בעובדי AI כדי ליצור/לשנות סקריפטים: [עובד AI · נתן: מהנדס פרונטאנד](/ai-employees/built-in/ai-coding)
+- ניתן לשלב עם עובד AI ליצירת/שינוי סקריפטים: [עובד AI · Nathan: מהנדס Front-end](/ai-employees/features/built-in-employee)
 
-## שימושים נפוצים (דוגמאות מקוצרות)
+## שימושים נפוצים (דוגמאות תמציתיות)
 
-### 1) בקשת API והודעה
+### 1) בקשת ממשק והתראה
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
@@ -46,7 +48,7 @@ ctx.message.success(ctx.t('Request finished'));
 console.log(ctx.t('Response data:'), resp?.data);
 ```
 
-### 2) כפתור **אוסף**: אימות בחירה ועיבוד
+### 2) כפתור אוסף: אימות בחירה ועיבוד
 
 ```js
 const rows = ctx.resource?.getSelectedRows?.() || [];
@@ -54,7 +56,7 @@ if (!rows.length) {
   ctx.message.warning(ctx.t('Please select records'));
   return;
 }
-// TODO: הטמעו את הלוגיקה העסקית...
+// TODO: ביצוע לוגיקה עסקית...
 ctx.message.success(ctx.t('Selected {n} items', { n: rows.length }));
 ```
 
@@ -78,18 +80,19 @@ await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Details'), size: 'l
 ### 5) רענון נתונים לאחר שליחה
 
 ```js
-// רענון כללי: קודם כל משאבי טבלה/רשימה, אחר כך משאבי הבלוק המכיל את הטופס
+// רענון כללי: עדיפות למשאבי טבלה/רשימה, לאחר מכן למשאב הבלוק שבו נמצא הטופס
 if (ctx.resource?.refresh) await ctx.resource.refresh();
 else if (ctx.blockModel?.resource?.refresh) await ctx.blockModel.resource.refresh();
 ```
 
-## הערות
 
-- **פעולות אידמפוטנטיות**: כדי למנוע שליחות מרובות כתוצאה מלחיצות חוזרות, ניתן להוסיף דגל מצב בלוגיקה שלכם או להשבית את הכפתור.
-- **טיפול בשגיאות**: הוסיפו בלוקי try/catch לקריאות API וספקו משוב ידידותי למשתמש.
-- **אינטראקציה עם תצוגות**: בעת פתיחת חלון קופץ/מגירה באמצעות `ctx.openView`, מומלץ להעביר פרמטרים במפורש, ובמידת הצורך, לרענן באופן יזום את משאב ההורה לאחר שליחה מוצלחת.
+## 注意事项
 
-## מסמכים קשורים
+- אידמפוטנטיות של התנהגות: הימנעו משליחות מרובות הנגרמות מלחיצות חוזרות, ניתן להוסיף מתג מצב בלוגיקה או להשבית את הכפתור.
+- טיפול בשגיאות: הוסיפו try/catch לקריאות ממשק וספקו התראות למשתמש.
+- קישוריות תצוגה: בעת פתיחת חלון קופץ/מגירה דרך `ctx.openView`, מומלץ להעביר פרמטרים בצורה מפורשת, ולרענן באופן יזום את משאב ההורה לאחר שליחה מוצלחת במידת הצורך.
+
+## 相关文档
 
 - [משתנים והקשר](/interface-builder/variables)
 - [כללי קישוריות](/interface-builder/linkage-rule)

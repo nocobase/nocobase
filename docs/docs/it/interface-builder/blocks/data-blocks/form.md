@@ -1,31 +1,31 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/blocks/data-blocks/form).
 :::
 
-# Blocco Modulo
+# Blocco modulo
 
 ## Introduzione
 
-Il blocco Modulo è un elemento fondamentale per la creazione di interfacce di inserimento e modifica dati. È altamente personalizzabile e utilizza componenti specifici per mostrare i campi necessari, basandosi sul modello di dati. Grazie a flussi di eventi come le regole di collegamento, il blocco Modulo può visualizzare i campi in modo dinamico. Inoltre, può essere integrato con i **flussi di lavoro** per attivare processi automatizzati e gestire i dati, migliorando ulteriormente l'efficienza operativa o orchestrando logiche complesse.
+Il blocco modulo è un blocco importante per la costruzione di interfacce di inserimento e modifica dei dati. È altamente personalizzabile e utilizza i componenti corrispondenti per visualizzare i campi richiesti in base al modello dei dati. Attraverso flussi di eventi come le regole di collegamento, il blocco modulo può visualizzare i campi in modo dinamico. Inoltre, può essere combinato con il flusso di lavoro per realizzare l'attivazione automatica dei processi e l'elaborazione dei dati, migliorando ulteriormente l'efficienza lavorativa o realizzando l'orchestrazione della logica.
 
-## Aggiungere un blocco Modulo
+## Aggiungere un blocco modulo
 
--   **Modifica modulo**: Utilizzato per modificare dati esistenti.
--   **Aggiungi modulo**: Utilizzato per creare nuove voci di dati.
+- **Modifica modulo**: utilizzato per modificare i dati esistenti.
+- **Nuovo modulo**: utilizzato per creare nuove voci di dati.
 
 ![20251023191139](https://static-docs.nocobase.com/20251023191139.png)
 
-## Impostazioni del blocco
+## Opzioni di configurazione del blocco
 
 ![20251023191448](https://static-docs.nocobase.com/20251023191448.png)
 
 ### Regole di collegamento del blocco
 
-Controlli il comportamento del blocco (ad esempio, se visualizzarlo o eseguire JavaScript) tramite le regole di collegamento.
+Controlli il comportamento del blocco (come la visualizzazione o l'esecuzione di JavaScript) tramite le regole di collegamento.
 
 ![20251023191703](https://static-docs.nocobase.com/20251023191703.png)
 
-Per maggiori dettagli, consulti [Regole di collegamento del blocco](/interface-builder/blocks/block-settings/block-linkage-rule)
+Per ulteriori contenuti, consulti [Regole di collegamento del blocco](/interface-builder/blocks/block-settings/block-linkage-rule)
 
 ### Regole di collegamento dei campi
 
@@ -33,38 +33,59 @@ Controlli il comportamento dei campi del modulo tramite le regole di collegament
 
 ![20251023191849](https://static-docs.nocobase.com/20251023191849.png)
 
-Per maggiori dettagli, consulti [Regole di collegamento dei campi](/interface-builder/blocks/block-settings/field-linkage-rule)
+Per ulteriori contenuti, consulti [Regole di collegamento dei campi](/interface-builder/blocks/block-settings/field-linkage-rule)
 
 ### Layout
 
-Il blocco Modulo supporta due modalità di layout, impostabili tramite l'attributo `layout`:
+Il blocco modulo supporta due modalità di layout, impostate tramite l'attributo `layout`:
 
--   **horizontal** (orizzontale): Questo layout mostra l'etichetta e il contenuto su una singola riga, risparmiando spazio verticale. È ideale per moduli semplici o situazioni con poche informazioni.
--   **vertical** (verticale) (predefinito): L'etichetta è posizionata sopra il campo. Questo layout rende il modulo più facile da leggere e compilare, specialmente per moduli con molti campi o elementi di input complessi.
+- **horizontal** (layout orizzontale): questo layout consente di visualizzare l'etichetta e il contenuto su una sola riga, risparmiando spazio verticale, adatto a moduli semplici o situazioni con poche informazioni.
+- **vertical** (layout verticale) (predefinito): l'etichetta si trova sopra il campo; questo layout rende il modulo più facile da leggere e compilare, specialmente per i moduli che contengono più campi o voci di input complesse.
 
 ![20251023193638](https://static-docs.nocobase.com/20251023193638.png)
 
 ## Configurare i campi
 
-### Campi di questa collezione
+### Campi della collezione corrente
 
-> **Nota**: I campi delle **collezioni** ereditate (ossia i campi della **collezione** padre) vengono automaticamente uniti e visualizzati nell'elenco dei campi attuale.
+> **Nota**: i campi nelle tabelle ereditate (ovvero i campi della collezione padre) verranno uniti e visualizzati automaticamente nell'elenco dei campi corrente.
 
 ![20240416230739](https://static-docs.nocobase.com/20240416230739.png)
+
+### Campi della collezione di associazione
+
+> I campi della collezione di associazione sono in sola lettura nel modulo e vengono solitamente utilizzati in combinazione con i campi di associazione per visualizzare più valori di campo dei dati associati.
+
+![20260212161035](https://static-docs.nocobase.com/20260212161035.png)
+
+- Attualmente supporta solo relazioni uno-a-uno (come belongsTo / hasOne, ecc.).
+- Di solito viene utilizzato in combinazione con i campi di associazione (utilizzati per selezionare i record associati): il componente del campo di associazione è responsabile della selezione/modifica del record associato, mentre il campo della collezione di associazione è responsabile della visualizzazione di ulteriori informazioni su quel record (sola lettura).
+
+**Esempio**: dopo aver selezionato il "Responsabile", nel modulo vengono visualizzati il numero di cellulare, l'indirizzo e-mail e altre informazioni di tale responsabile.
+
+> Se il campo di associazione "Responsabile" non è configurato nel modulo di modifica, le informazioni associate corrispondenti possono comunque essere visualizzate; quando il campo di associazione "Responsabile" è configurato, le informazioni associate corrispondenti verranno aggiornate al record corrispondente quando il responsabile viene modificato.
+
+![20260212160748](https://static-docs.nocobase.com/20260212160748.gif)
 
 ### Altri campi
 
 ![20251023192559](https://static-docs.nocobase.com/20251023192559.png)
 
--   Scrivere JavaScript per personalizzare il contenuto visualizzato e mostrare informazioni complesse.
+- La scrittura di JavaScript consente di realizzare contenuti di visualizzazione personalizzati e la presentazione di contenuti complessi.
 
 ![20251023192935](https://static-docs.nocobase.com/20251023192935.png)
 
-## Configurare le azioni
+### Modello di campo
+
+I modelli di campo vengono utilizzati per riutilizzare la configurazione dell'area dei campi nel blocco modulo. Per i dettagli, consulti [Modello di campo](/interface-builder/fields/field-template).
+
+![field-template-menu-20251228](https://static-docs.nocobase.com/field-template-menu-20251228.png)
+
+## Configurare le operazioni
 
 ![20251023193231](https://static-docs.nocobase.com/20251023193231.png)
 
--   [Invia](/interface-builder/actions/types/submit)
--   [Attiva **flusso di lavoro**](/interface-builder/actions/types/trigger-workflow)
--   [Azione JS](/interface-builder/actions/types/js-action)
--   [Dipendente AI](/interface-builder/actions/types/ai-employee)
+- [Invia](/interface-builder/actions/types/submit)
+- [Attiva flusso di lavoro](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
+- [Dipendente AI](/interface-builder/actions/types/ai-employee)

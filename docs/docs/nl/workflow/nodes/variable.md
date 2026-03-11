@@ -16,7 +16,7 @@ U kunt variabelen declareren in een workflow of waarden toewijzen aan reeds gede
 
 In de workflow configuratie-interface klikt u op de plusknop ("+") in de workflow om een "Variabele" knooppunt toe te voegen:
 
-![Add Variable Node](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Add Variable Node](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Knooppunt configureren
 
@@ -79,6 +79,6 @@ Na het rekenknooppunt maakt u nog een variabele knooppunt aan. Selecteer de toew
 
 Op deze manier, nadat de lusvertakking is voltooid, bevat de ontvanger-variabele de ontvanger-string van alle auteurs van het artikel. Vervolgens kunt u na de lus een HTTP-verzoek knooppunt gebruiken om een e-mailverzend-API aan te roepen, waarbij u de waarde van de ontvanger-variabele als ontvangerparameter aan de API doorgeeft:
 
-![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71aa1c3e172bcb2dce10a250947e.png)
+![Send mail to recipients via the request node](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 Hiermee is een eenvoudige bulk-e-mailfunctie geïmplementeerd met behulp van een lus en een variabele knooppunt.

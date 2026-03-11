@@ -1,21 +1,19 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/template-print/syntax/formatters/number-formatting).
 :::
 
-
-### Formátování čísel
+### Digitální formátování
 
 #### 1. :formatN(precision)
 
-##### Popis syntaxe
-Formátuje číslo podle nastavení lokalizace.
-Parametr:
-- **precision:** Počet desetinných míst.
-  U formátů ODS/XLSX je počet zobrazených desetinných míst určen textovým editorem; u ostatních formátů se používá tento parametr.
+##### Vysvětlení syntaxe
+Formátuje číslo podle nastavení lokalizace.  
+Parametry:
+- precision: počet desetinných míst  
+  U formátů ODS/XLSX je počet zobrazených desetinných míst určen textovým editorem; ostatní formáty závisí na tomto parametru.
 
 ##### Příklad
 ```
-// Příklad prostředí: API options { "lang": "en-us" }
 '10':formatN()         // Výstup "10.000"
 '1000.456':formatN()   // Výstup "1,000.456"
 ```
@@ -26,8 +24,8 @@ Parametr:
 
 #### 2. :round(precision)
 
-##### Popis syntaxe
-Zaokrouhlí číslo na zadaný počet desetinných míst.
+##### Vysvětlení syntaxe
+Zaokrouhlí číslo, parametr určuje počet desetinných míst.
 
 ##### Příklad
 ```
@@ -36,15 +34,15 @@ Zaokrouhlí číslo na zadaný počet desetinných míst.
 ```
 
 ##### Výsledek
-Výstupem je číslo zaokrouhlené na danou přesnost.
+Výstupem je zaokrouhlená hodnota.
 
 
 #### 3. :add(value)
 
-##### Popis syntaxe
-Přičte zadanou hodnotu k aktuálnímu číslu.
-Parametr:
-- **value:** Číslo, které se má přičíst.
+##### Vysvětlení syntaxe
+Přičte zadanou hodnotu k aktuálnímu číslu.  
+Parametry:
+- value: sčítanec
 
 ##### Příklad
 ```
@@ -53,15 +51,15 @@ Parametr:
 ```
 
 ##### Výsledek
-Výstupem je součet aktuálního čísla a zadané hodnoty.
+Výstupem je hodnota po sečtení.
 
 
 #### 4. :sub(value)
 
-##### Popis syntaxe
-Odečte zadanou hodnotu od aktuálního čísla.
-Parametr:
-- **value:** Číslo, které se má odečíst.
+##### Vysvětlení syntaxe
+Odečte zadanou hodnotu od aktuálního čísla.  
+Parametry:
+- value: menšitel
 
 ##### Příklad
 ```
@@ -70,15 +68,15 @@ Parametr:
 ```
 
 ##### Výsledek
-Výstupem je aktuální číslo minus zadaná hodnota.
+Výstupem je hodnota po odečtení.
 
 
 #### 5. :mul(value)
 
-##### Popis syntaxe
-Vynásobí aktuální číslo zadanou hodnotou.
-Parametr:
-- **value:** Násobitel.
+##### Vysvětlení syntaxe
+Vynásobí aktuální číslo zadanou hodnotou.  
+Parametry:
+- value: činitel
 
 ##### Příklad
 ```
@@ -87,15 +85,15 @@ Parametr:
 ```
 
 ##### Výsledek
-Výstupem je součin aktuálního čísla a zadané hodnoty.
+Výstupem je hodnota po vynásobení.
 
 
 #### 6. :div(value)
 
-##### Popis syntaxe
-Vydělí aktuální číslo zadanou hodnotou.
-Parametr:
-- **value:** Dělitel.
+##### Vysvětlení syntaxe
+Vydělí aktuální číslo zadanou hodnotou.  
+Parametry:
+- value: dělitel
 
 ##### Příklad
 ```
@@ -104,15 +102,15 @@ Parametr:
 ```
 
 ##### Výsledek
-Výstupem je výsledek dělení.
+Výstupem je hodnota po vydělení.
 
 
 #### 7. :mod(value)
 
-##### Popis syntaxe
-Vypočítá zbytek po dělení (modulo) aktuálního čísla zadanou hodnotou.
-Parametr:
-- **value:** Dělitel pro modulo operaci.
+##### Vysvětlení syntaxe
+Vypočítá modulo (zbytek po dělení) aktuálního čísla vůči zadané hodnotě.  
+Parametry:
+- value: dělitel (pro modulo)
 
 ##### Příklad
 ```
@@ -121,12 +119,12 @@ Parametr:
 ```
 
 ##### Výsledek
-Výstupem je zbytek z operace modulo.
+Výstupem je výsledek operace modulo.
 
 
 #### 8. :abs
 
-##### Popis syntaxe
+##### Vysvětlení syntaxe
 Vrátí absolutní hodnotu čísla.
 
 ##### Příklad
@@ -138,13 +136,13 @@ Vrátí absolutní hodnotu čísla.
 ```
 
 ##### Výsledek
-Výstupem je absolutní hodnota vstupního čísla.
+Výstupem je absolutní hodnota.
 
 
 #### 9. :ceil
 
-##### Popis syntaxe
-Zaokrouhlí číslo nahoru na nejmenší celé číslo, které je větší nebo rovno aktuálnímu číslu.
+##### Vysvětlení syntaxe
+Zaokrouhlí nahoru, tedy vrátí nejmenší celé číslo, které je větší nebo rovno aktuálnímu číslu.
 
 ##### Příklad
 ```
@@ -154,13 +152,13 @@ Zaokrouhlí číslo nahoru na nejmenší celé číslo, které je větší nebo 
 ```
 
 ##### Výsledek
-Výstupem je číslo zaokrouhlené nahoru na nejbližší celé číslo.
+Výstupem je zaokrouhlené celé číslo.
 
 
 #### 10. :floor
 
-##### Popis syntaxe
-Zaokrouhlí číslo dolů na největší celé číslo, které je menší nebo rovno aktuálnímu číslu.
+##### Vysvětlení syntaxe
+Zaokrouhlí dolů, tedy vrátí největší celé číslo, které je menší nebo rovno aktuálnímu číslu.
 
 ##### Příklad
 ```
@@ -170,40 +168,40 @@ Zaokrouhlí číslo dolů na největší celé číslo, které je menší nebo r
 ```
 
 ##### Výsledek
-Výstupem je číslo zaokrouhlené dolů na nejbližší celé číslo.
+Výstupem je zaokrouhlené celé číslo.
 
 
 #### 11. :int
 
-##### Popis syntaxe
+##### Vysvětlení syntaxe
 Převede číslo na celé číslo (nedoporučuje se používat).
 
 ##### Příklad a výsledek
-Závisí na konkrétním případě převodu.
+Závisí na konkrétní situaci převodu.
 
 
 #### 12. :toEN
 
-##### Popis syntaxe
-Převede číslo do anglického formátu (s tečkou '.' jako desetinným oddělovačem). Nedoporučuje se používat.
+##### Vysvětlení syntaxe
+Převede číslo do anglického formátu (desetinná tečka je '.'), nedoporučuje se používat.
 
 ##### Příklad a výsledek
-Závisí na konkrétním případě převodu.
+Závisí na konkrétní situaci převodu.
 
 
 #### 13. :toFixed
 
-##### Popis syntaxe
-Převede číslo na řetězec a zachová pouze zadaný počet desetinných míst. Nedoporučuje se používat.
+##### Vysvětlení syntaxe
+Převede číslo na řetězec, přičemž zachová pouze určený počet desetinných míst, nedoporučuje se používat.
 
 ##### Příklad a výsledek
-Závisí na konkrétním případě převodu.
+Závisí na konkrétní situaci převodu.
 
 
 #### 14. :toFR
 
-##### Popis syntaxe
-Převede číslo do francouzského formátu (s čárkou ',' jako desetinným oddělovačem). Nedoporučuje se používat.
+##### Vysvětlení syntaxe
+Převede číslo do francouzského formátu (desetinná čárka je ','), nedoporučuje se používat.
 
 ##### Příklad a výsledek
-Závisí na konkrétním případě převodu.
+Závisí na konkrétní situaci převodu.

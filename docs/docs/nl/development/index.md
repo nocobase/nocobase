@@ -14,9 +14,9 @@ features:
         details: De no-code/low-code frontend ontwikkelingsengine voor NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: Database
-        details: De databasemodule van de NocoBase-kern, die een uniforme API biedt voor gegevenstoegang, -modellering en -bewerkingen voor plugins. Het is de kernbasis voor gegevensinteractie tussen plugins.
-        link: /database
+      - title: Frontend RunJS
+        details: JavaScript-uitvoeringsomgeving voor scenario's zoals JS-blokken, JS-velden en JS-acties.
+        link: /runjs
         showOnHome: true
   - title: Interface en Interactie
     details: Leer hoe u de frontend-interface uitbreidt en aanpast, componenten, velden en actielogica bouwt die voldoen aan zakelijke behoeften, en de visualisatie- en interactie-ervaring van het systeem verbetert.
@@ -57,3 +57,8 @@ features:
         details: Breid de mogelijkheden voor bestandsvoorbeelden uit om online voorbeelden en weergave van meer bestandsformaten te ondersteunen.
         link: /file-manager/development
 ---
+
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/development/index) voor nauwkeurige informatie.
+:::
+

@@ -17,7 +17,7 @@ pkg: '@nocobase/plugin-auth'
 
 ## Активация аутентификаторов
 
-![](https://static-docs.nocobase.com/7f1f8ca5de67ffc68eff0a65848f5.png)
+![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
 На странице входа отображаются только активированные типы аутентификации.
 

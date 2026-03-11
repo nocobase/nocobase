@@ -1,50 +1,50 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/interface-builder/fields/specific/js-field).
 :::
 
 # JS Field
 
 ## Introduktion
 
-JS Field används för att anpassa rendering av innehåll på en fältposition med JavaScript. Det används ofta i detaljblock, skrivskyddade objekt i formulär eller som ”Andra anpassade objekt” i tabellkolumner. Det är lämpligt för personliga visningar, kombination av härledd information, rendering av statusbrickor, rik text eller diagram.
+JS Field används för att anpassa rendering av innehåll på en fältposition med JavaScript, vilket är vanligt förekommande i detaljblock, skrivskyddade objekt i formulär eller som ”Andra anpassade objekt” i tabellkolumner. Det är lämpligt för personlig visning, kombination av härledd information, statusbrickor, rik text eller diagram.
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
 ## Typer
 
-- Skrivskyddad: Används för icke-redigerbar visning och läser `ctx.value` för att rendera utdata.
-- Redigerbar: Används för anpassade inmatningsinteraktioner. Den tillhandahåller `ctx.getValue()`/`ctx.setValue(v)` och en behållarhändelse `js-field:value-change` för att underlätta tvåvägssynkronisering med formulärvärden.
+- Skrivskyddad typ: Används för icke-redigerbar visning, läser `ctx.value` för att rendera utdata.
+- Redigerbar typ: Används för anpassade inmatningsinteraktioner, tillhandahåller `ctx.getValue()`/`ctx.setValue(v)` och behållarhändelsen `js-field:value-change`, vilket underlättar tvåvägssynkronisering med formulärvärden.
 
 ## Användningsområden
 
-- Skrivskyddad
-  - Detaljblock: Visa skrivskyddat innehåll som beräkningsresultat, statusbrickor, rik text-utdrag, diagram, etc.
-  - Tabellblock: Används som ”Andra anpassade kolumner > JS Field” för skrivskyddad visning (om du behöver en kolumn som inte är bunden till ett fält, använd JS Column).
+- Skrivskyddad typ
+  - Detaljblock: Visa skrivskyddat innehåll som beräkningsresultat, statusbrickor, rik text-utdrag, diagram, etc.;
+  - Tabellblock: Används som ”Andra anpassade kolumner > JS Field” för skrivskyddad visning (om ni behöver en kolumn som inte är bunden till ett fält, använd JS Column);
 
-- Redigerbar
-  - Formulärblock (CreateForm/EditForm): Används för anpassade inmatningskontroller eller sammansatta inmatningar, som valideras och skickas med formuläret.
-  - Lämplig för scenarier som: inmatningskomponenter från externa bibliotek, rik text-/kodredigerare, komplexa dynamiska komponenter, etc.
+- Redigerbar typ
+  - Formulärblock (CreateForm/EditForm): Används för anpassade inmatningskontroller eller sammansatta inmatningar, som valideras och skickas med formuläret;
+  - Lämpliga scenarier: inmatningskomponenter från externa bibliotek, rik text-/kodredigerare, komplexa dynamiska komponenter, etc.;
 
 ## Körtidskontext API
 
 JS Field-körtidskoden kan direkt använda följande kontextfunktioner:
 
-- `ctx.element`: Fältets DOM-behållare (ElementProxy), som stöder `innerHTML`, `querySelector`, `addEventListener`, etc.
-- `ctx.value`: Aktuellt fältvärde (skrivskyddat).
-- `ctx.record`: Aktuellt postobjekt (skrivskyddat).
-- `ctx.collection`: Metainformation för den samling som fältet tillhör (skrivskyddat).
-- `ctx.requireAsync(url)`: Laddar asynkront ett AMD/UMD-bibliotek via URL.
-- `ctx.importAsync(url)`: Importerar dynamiskt en ESM-modul via URL.
-- `ctx.openView(options)`: Öppnar en konfigurerad vy (popup/låda/sida).
-- `ctx.i18n.t()` / `ctx.t()`: Internationalisering.
-- `ctx.onRefReady(ctx.ref, cb)`: Rendera efter att behållaren är redo.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Inbyggda React, ReactDOM, Ant Design, Ant Design-ikoner och dayjs-bibliotek för JSX-rendering och tidsbehandling. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls för kompatibilitet.)
-- `ctx.render(vnode)`: Rendrar ett React-element, HTML-sträng eller DOM-nod till standardbehållaren `ctx.element`. Upprepad rendering kommer att återanvända Root och skriva över befintligt innehåll i behållaren.
+- `ctx.element`: Fältets DOM-behållare (ElementProxy), stöder `innerHTML`, `querySelector`, `addEventListener`, etc.;
+- `ctx.value`: Aktuellt fältvärde (skrivskyddat);
+- `ctx.record`: Aktuellt postobjekt (skrivskyddat);
+- `ctx.collection`: Metainformation för den samling som fältet tillhör (skrivskyddat);
+- `ctx.requireAsync(url)`: Laddar asynkront ett AMD/UMD-bibliotek via URL;
+- `ctx.importAsync(url)`: Importerar dynamiskt en ESM-modul via URL;
+- `ctx.openView(options)`: Öppnar en konfigurerad vy (popup/låda/sida);
+- `ctx.i18n.t()` / `ctx.t()`: Internationalisering;
+- `ctx.onRefReady(ctx.ref, cb)`: Rendera efter att behållaren är redo;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Inbyggda React / ReactDOM / Ant Design / Ant Design-ikoner / dayjs / lodash / math.js / formula.js och andra universella bibliotek för JSX-rendering, tidsbehandling, datamanipulering och matematiska beräkningar. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls fortfarande för kompatibilitet.)
+- `ctx.render(vnode)`: Rendrar ett React-element, en HTML-sträng eller en DOM-nod till standardbehållaren `ctx.element`; upprepad rendering kommer att återanvända Root och skriva över behållarens befintliga innehåll.
 
 Specifikt för redigerbar typ (JSEditableField):
 
-- `ctx.getValue()`: Hämta aktuellt formulärvärde (prioriterar formulärstatus, faller sedan tillbaka på fältets props).
-- `ctx.setValue(v)`: Ställ in formulärvärdet och fältets props, bibehåll tvåvägssynkronisering.
+- `ctx.getValue()`: Hämtar aktuellt formulärvärde (prioriterar formulärstatus, faller sedan tillbaka på fältets props).
+- `ctx.setValue(v)`: Ställer in formulärvärdet och fältets props, bibehåller tvåvägssynkronisering.
 - Behållarhändelse `js-field:value-change`: Utlöses när ett externt värde ändras, vilket gör det enkelt för skriptet att uppdatera inmatningsvisningen.
 
 ## Redigerare och kodsnuttar
@@ -56,9 +56,9 @@ JS Field-skriptredigeraren stöder syntaxmarkering, felmeddelanden och inbyggda 
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-Ni kan också generera kod med AI-medarbetaren:
+Kan kombineras med AI-medarbetare för att generera kod:
 
-- [AI-medarbetare · Nathan: Frontend-utvecklare](/ai-employees/built-in/ai-coding)
+- [AI-medarbetare · Nathan: Frontend-ingenjör](/ai-employees/features/built-in-employee)
 
 ## Vanliga användningsområden
 
@@ -68,7 +68,7 @@ Ni kan också generera kod med AI-medarbetaren:
 ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ```
 
-### 2) Använda JSX för att rendera en React-komponent
+### 2) Använda JSX för att rendera React-komponenter
 
 ```js
 const { Tag } = ctx.libs.antd;
@@ -91,7 +91,7 @@ const { default: he } = await ctx.importAsync('https://cdn.jsdelivr.net/npm/he/+
 ctx.render(<span>{he.encode(String(ctx.value ?? ''))}</span>);
 ```
 
-### 4) Klicka för att öppna en popup/låda (openView)
+### 4) Klicka för att öppna popup/låda (openView)
 
 ```js
 ctx.element.innerHTML = `<a class="open-detail">Visa detaljer</a>`;
@@ -132,8 +132,8 @@ ctx.element.addEventListener('js-field:value-change', (ev) => {
 ctx.render(<InputView />);
 ```
 
-## Att tänka på
+## Observera
 
 - Det rekommenderas att använda en betrodd CDN för att ladda externa bibliotek och att ha en reservlösning för misslyckade scenarier (t.ex. `if (!lib) return;`).
 - Det rekommenderas att prioritera användningen av `class` eller `[name=...]` för väljare och att undvika att använda fasta `id`:n för att förhindra dubbla `id`:n i flera block eller popup-fönster.
-- Händelsestädning: Ett fält kan renderas om flera gånger på grund av dataändringar eller vyväxlingar. Innan en händelse binds bör ni rensa eller deduplicera den för att undvika upprepade utlösningar. Ni kan ”först ta bort, sedan lägga till”.
+- Händelsestädning: Fältet kan renderas om flera gånger på grund av dataändringar eller vyväxlingar. Innan en händelse binds bör ni rensa eller deduplicera den för att undvika upprepade utlösningar. Ni kan ”först ta bort, sedan lägga till”.

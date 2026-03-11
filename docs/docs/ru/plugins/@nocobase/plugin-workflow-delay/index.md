@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Delay node"
+displayName: "Workflow: Узел задержки"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |
-  Could be used in workflow parallel branch for waiting other branches.
+  Может использоваться в параллельных ветвях Workflow для ожидания завершения других ветвей.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Delay node
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-workflow-delay/index).
+:::
+
+# Workflow: Узел задержки

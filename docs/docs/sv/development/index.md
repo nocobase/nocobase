@@ -14,9 +14,9 @@ features:
         details: NocoBase 2.0:s frontendutvecklingsmotor för no-code och low-code.
         link: /flow-engine
         showOnHome: true
-      - title: Databas
-        details: Databasmodulen i NocoBases kärna, som tillhandahåller ett enhetligt API för dataåtkomst, modellering och operationer för plugin. Den utgör den centrala grunden för datainteraktion mellan plugin.
-        link: /database
+      - title: Frontend RunJS
+        details: JavaScript-exekveringsmiljö för scenarier som JS-block, JS-fält och JS-åtgärder.
+        link: /runjs
         showOnHome: true
   - title: Gränssnitt och interaktion
     details: Lär dig hur ni utökar och anpassar frontendgränssnittet, bygger komponenter, fält och åtgärdslogik som uppfyller verksamhetens behov, och förbättrar systemets visualisering och interaktiva upplevelse.
@@ -57,3 +57,8 @@ features:
         details: Utöka filförhandsvisningsfunktionerna för att stödja onlineförhandsvisning och rendering av fler filformat.
         link: /file-manager/development
 ---
+
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/development/index).
+:::
+

@@ -28,7 +28,7 @@ Dodaj - SAML
 
 ## Konfiguracja
 
-![](https://static-docs.nocobase.com/976b66e58973c322d81dcddd22c6146.png)
+![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
 
 - Adres URL SSO (Single Sign-On) – dostarczany przez IdP, używany do logowania jednokrotnego.
 - Certyfikat publiczny (Public Certificate) – dostarczany przez IdP.

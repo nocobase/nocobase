@@ -13,7 +13,7 @@ ER diagram:
 
 Konfigurace pole:
 
-![alt text](https://static-docs.nocobase.com/3b484ebb98d82f832f3dbf752bd84c9.png)
+![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## Popis parametrů
 

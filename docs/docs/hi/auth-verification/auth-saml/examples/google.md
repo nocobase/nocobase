@@ -12,7 +12,7 @@
 
 ऐप सेट करने के बाद, **SSO URL**, **एंटिटी ID** और **सर्टिफिकेट** कॉपी करें।
 
-![](https://static-docs.nocobase.com/aafd20a730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## NocoBase पर नया ऑथेंटिकेटर जोड़ें
 

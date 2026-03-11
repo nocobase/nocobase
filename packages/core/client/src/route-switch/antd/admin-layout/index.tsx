@@ -11,7 +11,8 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
+import { FlowModelRenderer, useFlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
+import { theme as antdTheme, Badge, ConfigProvider, Grid, Popover, Result, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -62,13 +63,15 @@ import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSe
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
-import { useFlowEngineContext } from '@nocobase/flow-engine';
+import { AdminLayoutModel } from './AdminLayoutModel';
 
 export * from './useDeleteRouteSchema';
 export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
+
+const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';
 
 export const CurrentRouteProvider: FC<{ uid: string }> = memo(({ children, uid }) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -266,10 +269,24 @@ function isDvhSupported() {
 
 export const LayoutContent = () => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
+  const flowEngine = useFlowEngine();
+  const layoutContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
+    model?.setLayoutContentElement(layoutContentRef.current);
+    return () => {
+      model?.setLayoutContentElement(null);
+    };
+  }, [flowEngine]);
 
   /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
   return (
-    <div className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`} style={style}>
+    <div
+      ref={layoutContentRef}
+      className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}
+      style={style}
+    >
       <div style={pageContentStyle}>
         <Outlet />
         <ShowTipWhenNoPages />
@@ -749,24 +766,28 @@ const GlobalStyle = () => {
 export const InternalAdminLayout = (props) => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
+  const screens = Grid.useBreakpoint();
+  const isMobileViewport =
+    screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
   const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const { isMobileLayout } = useMobileLayout();
-  const [collapsed, setCollapsed] = useState(isMobileLayout);
+  const isMobileSider = isMobileLayout || isMobileViewport;
+  const [collapsed, setCollapsed] = useState(isMobileSider);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
-  const designable = isMobileLayout ? false : _designable;
+  const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
-    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileLayout, t });
+    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileSider, t });
     return {
       path: '/',
       children: Array.isArray(children) ? children : [],
     };
-  }, [allAccessRoutes, designable, isMobileLayout, t]);
+  }, [allAccessRoutes, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -827,11 +848,11 @@ export const InternalAdminLayout = (props) => {
   }, [styles.headerPopup]);
 
   const closeMobileMenu = useCallback(() => {
-    if (!isMobileLayout) {
+    if (!isMobileSider) {
       return;
     }
     setCollapsed(true);
-  }, [isMobileLayout]);
+  }, [isMobileSider]);
 
   return (
     <div style={rootStyle}>
@@ -986,11 +1007,31 @@ export const AdminProvider = (props) => {
 };
 
 export const AdminLayout = (props) => {
-  return (
+  const flowEngine = useFlowEngine();
+  const modelRef = useRef<AdminLayoutModel>(null);
+  const modelChildren = (
     <AdminProvider>
       <InternalAdminLayout {...props} />
     </AdminProvider>
   );
+
+  if (!modelRef.current) {
+    modelRef.current =
+      flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID) ||
+      flowEngine.createModel<AdminLayoutModel>({
+        uid: ADMIN_LAYOUT_MODEL_UID,
+        use: AdminLayoutModel,
+        props: { ...props, children: modelChildren },
+      });
+  }
+
+  const model = modelRef.current;
+
+  useEffect(() => {
+    model.setProps({ ...props, children: modelChildren });
+  }, [model, modelChildren, props]);
+
+  return <FlowModelRenderer model={model} />;
 };
 
 export class AdminLayoutPlugin extends Plugin {
@@ -998,6 +1039,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
+    this.app.flowEngine.registerModels({ AdminLayoutModel });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
     this.app.use(MobileLayoutProvider);
@@ -1044,6 +1086,11 @@ const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
   return <>{props.title}</>;
 };
 
+export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; isMobile: boolean }) => {
+  // ProLayout 在深层菜单和移动端侧栏一级菜单里都可能忽略 icon 字段，因此统一把图标渲染到标题内部。
+  return depth > 1 || (isMobile && depth > 0);
+};
+
 function convertRoutesToLayout(
   routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
@@ -1068,47 +1115,52 @@ function convertRoutesToLayout(
         return null;
       }
 
-      const name = depth > 1 ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title); // ProLayout 组件不显示第二级菜单的 icon，所以这里自己实现
+      const shouldShowIconInTitle = shouldRenderIconInTitle({ depth, isMobile });
+      const name = shouldShowIconInTitle ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title);
+      const icon = shouldShowIconInTitle ? null : item.icon ? <Icon type={item.icon} /> : null;
 
       if (item.type === NocoBaseDesktopRouteType.link) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: '/',
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.page) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.schemaUid}`,
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.flowPage) {
         return {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.schemaUid}`,
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
           _parentRoute: parentRoute,
+          _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.group) {
         const itemChildren = Array.isArray(item.children) ? item.children : [];
         const children =
-          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, t }) || [];
+          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) || [];
 
         // add a designer button
         if (designable && depth === 0) {
@@ -1117,7 +1169,7 @@ function convertRoutesToLayout(
 
         const groupRoute: any = {
           name,
-          icon: item.icon ? <Icon type={item.icon} /> : null,
+          icon,
           path: `/admin/${item.id}`,
           redirect:
             children[0]?.key === 'x-designer-button'

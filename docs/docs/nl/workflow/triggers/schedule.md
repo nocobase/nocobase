@@ -70,7 +70,7 @@ Nadat de workflow is ingeschakeld, wordt deze elke minuut geactiveerd vanaf de s
 
 Maak een workflow aan op basis van een geplande taak. In de triggerconfiguratie kiest u de modus "Tijdveld van een collectie". Selecteer de collectie "Bestellingen". Stel de starttijd in op 30 minuten na de aanmaaktijd van de bestelling en kies "Niet herhalen" voor de herhalingsregel:
 
-![Geplande taak_Triggerconfiguratie_Tijdveld van een collectie modus_Trigger](https://static-docs.nocobase.com/d40b5aef57f42799d31cc5882dd94246.png)
+![Geplande taak_Triggerconfiguratie_Tijdveld van een collectie modus_Trigger](https://static-docs.nocobase.com/d40d5aef57f42799d31cc5882dd94246.png)
 
 Configureer vervolgens andere knooppunten volgens de proceslogica. Werk de status van de bestelling met de triggerdata-ID en de status "onbetaald" bij naar 'geannuleerd':
 

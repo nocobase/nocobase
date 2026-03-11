@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# מבוא לפתרון פניות שירות (Ticketing)
 
-## 1. Background (Why)
+> **הערה**: גרסה זו היא גרסת תצוגה מקדימה מוקדמת. התכונות עדיין אינן מושלמות ואנו משפרים אותן ללא הרף. משוב והצעות יתקבלו בברכה!
 
-### Industry/Role/Management Problems Solved
+## 1. רקע (למה)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### אילו בעיות בתעשייה / בתפקיד / בניהול נפתרות
 
-**Typical Business Scenarios:**
+ארגונים מתמודדים עם סוגים שונים של בקשות שירות בתפעול היומיומי: תיקון ציוד, תמיכת IT, תלונות לקוחות, התייעצויות והצעות. מקורות הבקשות הללו מבוזרים (מערכות CRM, מהנדסי שטח, אימיילים, טפסים ציבוריים וכו'), תהליכי הטיפול בהן משתנים, וחסר מנגנון מעקב וניהול מאוחד.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**דוגמאות לתרחישים עסקיים טיפוסיים:**
 
-### Target User Profile
+- **תיקון ציוד**: צוות שירות לאחר מכירה מטפל בבקשות לתיקון ציוד, ונדרש לתעד מידע ייעודי כמו מספרים סידוריים של המכשירים, קודי תקלה וחלקי חילוף.
+- **תמיכת IT**: מחלקת ה-IT מטפלת בבקשות של עובדים פנימיים לאיפוס סיסמאות, התקנת תוכנה ותקלות רשת.
+- **תלונות לקוחות**: צוות שירות הלקוחות מטפל בתלונות המגיעות מערוצים מרובים; חלק מהלקוחות טעונים רגשית וזקוקים לטיפול בעדיפות גבוהה.
+- **שירות עצמי ללקוח**: לקוחות קצה מעוניינים להגיש בקשות שירות בקלות ולהתעדכן בהתקדמות הטיפול.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### פרופיל משתמשי היעד
 
-### Pain Points of Current Mainstream Solutions
+| ממד | תיאור |
+|------|------|
+| גודל הארגון | עסקים קטנים ובינוניים עד ארגונים גדולים, עם נפח משמעותי של צורכי שירות לקוחות |
+| מבנה תפקידים | צוותי שירות לקוחות, תמיכת IT, צוותי שירות לאחר מכירה, מנהלי תפעול |
+| בשלות דיגיטלית | רמה בסיסית עד בינונית, המחפשים לשדרג מניהול ב-Excel/אימייל לניהול מערכתי |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### נקודות כשל בפתרונות הנפוצים הקיימים
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **עלות גבוהה / התאמה אישית איטית**: מערכות פניות במודל SaaS הן יקרות, ומחזורי פיתוח בהתאמה אישית הם ארוכים.
+- **מערכות מפוצלות, סילו נתונים (Data Silos)**: נתונים עסקיים מפוזרים במערכות שונות, מה שמקשה על ניתוח וקבלת החלטות מאוחדת.
+- **שינויים עסקיים מהירים, קושי בהתפתחות המערכת**: כאשר הצרכים העסקיים משתנים, קשה להתאים את המערכת במהירות.
+- **תגובת שירות איטית**: פניות הזורמות בין מערכות שונות אינן ניתנות להקצאה בזמן אמת.
+- **תהליך לא שקוף**: לקוחות אינם יכולים לעקוב אחר התקדמות הפנייה, ופניות תכופות לבירור סטטוס מגבירות את העומס על שירות הלקוחות.
+- **קושי בהבטחת איכות**: חוסר בניטור SLA (הסכם רמת שירות), מה שמונע התרעה בזמן על חריגות בזמנים או משוב שלילי.
 
 ---
 
-## 3. Design Principles
+## 2. מוצרים ופתרונות להשוואה (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### מוצרים מובילים בשוק
+
+- **SaaS**: כגון Salesforce, Zendesk, Odoo וכו'.
+- **מערכות בהתאמה אישית / מערכות פנימיות**
+
+### ממדי השוואה
+
+- כיסוי פונקציונלי
+- גמישות
+- יכולת הרחבה
+- אופן השימוש ב-AI
+
+### נקודות השוני בפתרון של NocoBase
+
+**יתרונות ברמת הפלטפורמה:**
+
+- **עדיפות להגדרה (Configuration-First)**: מטבלאות הנתונים הבסיסיות ועד לסוגי העסקים, SLA וניתוב לפי מיומנויות - הכל מנוהל באמצעות הגדרות.
+- **בנייה מהירה ב-Low-code**: מהיר יותר מפיתוח עצמי וגמיש יותר מפתרונות SaaS.
+
+**דברים שמערכות מסורתיות אינן יכולות לבצע או שעלותם גבוהה מאוד:**
+
+- **אינטגרציה מובנית של AI (AI-Native)**: שימוש בתוספי ה-AI של NocoBase לסיווג חכם, עזרה במילוי טפסים והמלצות ידע.
+- **כל העיצובים ניתנים לשכפול על ידי המשתמש**: משתמשים יכולים להרחיב את המערכת בעצמם על בסיס תבניות.
+- **ארכיטקטורת נתונים בצורת T**: טבלה ראשית + טבלאות הרחבה עסקיות; הוספת סוג עסק חדש דורשת רק הוספת טבלת הרחבה.
 
 ---
 
-## 4. Solution Overview
+## 3. עקרונות עיצוב (Principles)
 
-### Summary Introduction
+- **עלות קוגניטיבית נמוכה**
+- **העסק קודם לטכנולוגיה**
+- **ניתן להתפתחות, לא פרויקט חד-פעמי**
+- **הגדרה תחילה, קוד כגיבוי**
+- **שיתוף פעולה בין אדם ל-AI, ולא החלפת האדם ב-AI**
+- **כל עיצוב חייב להיות ניתן לשכפול על ידי המשתמש**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. סקירה כללית של הפתרון (Solution Overview)
 
-### Ticket Processing Flow
+### מבוא תמציתי
+
+מרכז פניות שירות אוניברסלי שנבנה על גבי פלטפורמת ה-Low-code של NocoBase, המשיג:
+
+- **נקודת כניסה מאוחדת**: אינטגרציה ממקורות מרובים וטיפול סטנדרטי.
+- **הפצה חכמה**: סיווג בעזרת AI והקצאה מבוססת איזון עומסים.
+- **עסקים פולימורפיים**: טבלה ראשית של הליבה + טבלאות הרחבה עסקיות, להרחבה גמישה.
+- **משוב בלולאה סגורה**: ניטור SLA, הערכות לקוחות וסגירת מעגל על משוב שלילי.
+
+### תהליך הטיפול בפנייה
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+כניסה ממקורות מרובים ← עיבוד מקדים/ניתוח AI ← הקצאה חכמה ← ביצוע ידני ← לולאת משוב
+    ↓                        ↓                    ↓               ↓               ↓
+ בדיקת כפילויות          זיהוי כוונה          התאמת מיומנויות    זרימת סטטוסים    דירוג שביעות רצון
+                         ניתוח רגשות          איזון עומסים       ניטור SLA        מעקב משוב שלילי
+                         מענה אוטומטי         ניהול תורים        תקשורת בתגובות   ארכוב נתונים
 ```
 
-### Core Module List
+### רשימת מודולי ליבה
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| מודול | הסבר |
+|------|------|
+| קליטת פניות | טפסים ציבוריים, פורטל לקוחות, הקלטה על ידי נציג, API/Webhook, פענוח אימיילים |
+| ניהול פניות | CRUD של פניות, זרימת סטטוסים, הקצאה/העברה, תקשורת בתגובות, יומני פעולות |
+| הרחבה עסקית | טבלאות הרחבה לתיקון ציוד, תמיכת IT, תלונות לקוחות וכו' |
+| ניהול SLA | הגדרת SLA, התרעות על חריגת זמן, הסלמה בחריגת זמן |
+| ניהול לקוחות | טבלת לקוחות ראשית, ניהול אנשי קשר, פורטל לקוחות |
+| מערכת דירוג | דירוג רב-ממדי, תגיות מהירות, NPS, התרעות על משוב שלילי |
+| סיוע AI | סיווג כוונות, ניתוח רגשות, המלצות ידע, סיוע במענה, שיפור סגנון הכתיבה |
 
-### Core Interface Display
+### תצוגת ממשק מרכזי
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. עובד AI (AI Employee)
 
-### AI Employee Types and Scenarios
+### סוגי עובדי AI ותרחישים
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **עוזר שירות לקוחות**, **עוזר מכירות**, **אנליסט נתונים**, **מבקר**
+- מסייעים לבני אדם, לא מחליפים אותם
 
-### AI Employee Value Quantification
+### כימות הערך של עובד AI
 
-In this solution, AI employees can:
+בפתרון זה, עובדי AI יכולים:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| ממד ערך | אפקט ספציפי |
+|----------|----------|
+| שיפור יעילות | סיווג אוטומטי מפחית את זמן המיון הידני ב-50%+; המלצות ידע מאיצות את פתרון הבעיות |
+| הפחתת עלויות | מענה אוטומטי לשאלות פשוטות מפחית את עומס העבודה של נציגי השירות |
+| העצמת עובדים | התרעות רגשיות עוזרות לנציגים להתכונן מראש; שיפור סגנון המענה מעלה את איכות התקשורת |
+| שיפור שביעות רצון הלקוחות | תגובה מהירה יותר, הקצאה מדויקת יותר ומענה מקצועי יותר |
 
 ---
 
-## 7. Installation & Deployment
+## 6. נקודות בולטות (Highlights)
 
-### How to Install and Use
+### 1. ארכיטקטורת נתונים בצורת T
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- כל הפניות חולקות טבלה ראשית ולוגיקת זרימה מאוחדת.
+- טבלאות הרחבה עסקיות מכילות שדות ייחודיים ומאפשרות הרחבה גמישה.
+- הוספת סוג עסק חדש דורשת רק הוספת טבלת הרחבה, ללא השפעה על התהליך הראשי.
+
+### 2. מחזור חיים מלא של פנייה
+
+- חדש ← הוקצה ← בטיפול ← בהמתנה ← נפתר ← סגור.
+- תמיכה בתרחישים מורכבים כמו העברה, החזרה ופתיחה מחדש.
+- מדידת זמן SLA מדויקת הכוללת עצירה בזמן המתנה.
+
+### 3. אינטגרציה מאוחדת רב-ערוצית
+
+- טפסים ציבוריים, פורטל לקוחות, API, אימייל, הקלטה על ידי נציג.
+- בדיקת אידמפוטנטיות (Idempotency) למניעת יצירת פניות כפולות.
+
+### 4. אינטגרציה מובנית של AI
+
+- לא רק "הוספת כפתור AI", אלא שילוב בכל שלב ושלב.
+- זיהוי כוונות, ניתוח רגשות, המלצות ידע ושיפור סגנון המענה.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. מפת דרכים (Roadmap - עדכון רציף)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **הטמעת מערכת**: תמיכה בהטמעת מודול הפניות בתוך מערכות עסקיות שונות כמו ERP, CRM וכו'.
+- **קישוריות פניות**: חיבור פניות בין מערכות במעלה ובמורד הזרם והחזרת סטטוסים (Callback), להשגת שיתוף פעולה חוצה מערכות.
+- **אוטומציית AI**: הטמעת עובדי AI בתהליכי עבודה (Workflows), תמיכה בהרצה אוטומטית ברקע לטיפול ללא מגע יד אדם.
+- **תמיכה בריבוי דיירים (Multi-tenancy)**: הרחבה רוחבית באמצעות ריבוי מרחבים/אפליקציות, המאפשרת הפצה לצוותי שירות שונים להפעלה עצמאית.
+- **מאגר ידע RAG**: וקטוריזציה אוטומטית של כל הנתונים (פניות, לקוחות, מוצרים וכו') להשגת אחזור חכם והמלצות ידע.
+- **תמיכה בריבוי שפות**: תמיכה במעבר בין שפות שונות בממשק ובתוכן, למענה על צורכי שיתוף פעולה של צוותים בינלאומיים/אזוריים.

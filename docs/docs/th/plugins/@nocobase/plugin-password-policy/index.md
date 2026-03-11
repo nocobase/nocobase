@@ -1,15 +1,19 @@
 ---
-displayName: "Password policy"
+displayName: "นโยบายรหัสผ่าน"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Set the password rules and sign in lockout policy for all users
+  กำหนดกฎเกณฑ์ของรหัสผ่านและนโยบายการล็อกการเข้าสู่ระบบสำหรับผู้ใช้ทุกคน
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Password policy
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-password-policy/index)
+:::
+
+# นโยบายรหัสผ่าน

@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "סקירת הפתרון"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "תכנון מפורט"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "התקנה"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "תוכן נוסף"
   }
 ]

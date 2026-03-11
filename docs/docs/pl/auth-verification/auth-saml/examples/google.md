@@ -12,7 +12,7 @@ Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, pro
 
 Po skonfigurowaniu aplikacji proszę skopiować **URL SSO**, **Entity ID** oraz **Certyfikat**.
 
-![](https://static-docs.nocobase.com/aafd20a730e85411c0c8f368637e0.png)
+![](https://static-docs.nocobase.com/aafd20a794730e85411c0c8f368637e0.png)
 
 ## Dodawanie nowego uwierzytelniacza w NocoBase
 

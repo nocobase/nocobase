@@ -1,5 +1,5 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/interface-builder/blocks/other-blocks/js-block).
 :::
 
 # בלוק JS
@@ -38,7 +38,7 @@
 
 בנוסף, ניתן לזמן ישירות את עובד ה-AI "מהנדס Frontend · Nathan" מהפינה הימנית העליונה של העורך. Nathan יכול לסייע בכתיבה או שינוי סקריפטים בהתבסס על ההקשר הנוכחי. לאחר מכן, ניתן ללחוץ על "Apply to editor" ולהריץ את הקוד כדי לראות את התוצאה. לפרטים נוספים, ראו:
 
-- [עובד AI · Nathan: מהנדס Frontend](/ai-employees/built-in/ai-coding)
+- [עובד AI · Nathan: מהנדס Frontend](/ai-employees/features/built-in-employee)
 
 ## סביבת ריצה ואבטחה
 
@@ -54,8 +54,8 @@
 const { Button } = ctx.libs.antd;
 ctx.render(
   <div style={{ padding: 12 }}>
-    <Button type="primary" onClick={() => ctx.message.success(ctx.t('נלחץ!'))}>
-      {ctx.t('לחץ')}
+    <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>
+      {ctx.t('Click')}
     </Button>
   </div>
 );
@@ -65,8 +65,8 @@ ctx.render(
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
-ctx.message.success(ctx.t('הבקשה הסתיימה'));
-console.log(ctx.t('נתוני תגובה:'), resp?.data);
+ctx.message.success(ctx.t('Request finished'));
+console.log(ctx.t('Response data:'), resp?.data);
 ```
 
 ### 3) טעינת ECharts ורינדור
@@ -87,7 +87,7 @@ chart.resize();
 
 ```js
 const popupUid = ctx.model.uid + '-1';
-await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('מגירה לדוגמה'), size: 'large' });
+await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Sample drawer'), size: 'large' });
 ```
 
 ### 5) קריאת משאב ורינדור JSON

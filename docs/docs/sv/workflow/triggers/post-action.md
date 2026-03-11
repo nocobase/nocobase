@@ -178,7 +178,7 @@ Om händelsen är konfigurerad i globalt läge, behöver ni inte använda URL-pa
 
 Som visas i figuren nedan:
 
-![Åtgärdsutförandeordning](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Åtgärdsutförandeordning](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Skillnad från samlingshändelse
 

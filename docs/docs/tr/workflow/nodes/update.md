@@ -17,7 +17,7 @@ Belirli koşulları karşılayan bir `koleksiyon`daki verileri güncellemek içi
 
 ## Düğüm Yapılandırması
 
-![Veri Güncelle Düğümü Yapılandırması](https://static-docs.nocobase.com/98e0f41c57275fc835f08260d0b2e86.png)
+![Veri Güncelle Düğümü Yapılandırması](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 ### Koleksiyon
 
@@ -46,6 +46,6 @@ Not: Bir `iş akışı`ndaki "Veri Güncelle" düğümü tarafından güncellene
 
 Örneğin, yeni bir "Makale" oluşturulduğunda, "Makale Kategorisi" `koleksiyon`undaki "Makale Sayısı" alanını otomatik olarak güncellemeniz gerekebilir. Bu, "Veri Güncelle" düğümü kullanılarak gerçekleştirilebilir:
 
-![Veri Güncelle Düğümü Örnek Yapılandırması](https://static-docs.nocobase.com/98e0f41c57275fc835f08260d0b2e86.png)
+![Veri Güncelle Düğümü Örnek Yapılandırması](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 `iş akışı` tetiklendiğinde, "Makale Kategorisi" `koleksiyon`unun "Makale Sayısı" alanı otomatik olarak mevcut makale sayısı + 1 olarak güncellenecektir.

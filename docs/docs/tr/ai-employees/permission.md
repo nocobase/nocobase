@@ -103,7 +103,7 @@ flowchart TD
 
 #### Örnek 2: SQL Execution (Gelişmiş Analiz Aracı)
 
-![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/20251022013942.png)
+![05viz-configuration-2025-11-03-00-17-13](https://static-docs.nocobase.com/05viz-configuration-2025-11-03-00-17-13.png)
 
 CRM Demosunda, `SQL Execution` daha esnek ancak sıkı kontrol gerektiren bir araçtır:
 

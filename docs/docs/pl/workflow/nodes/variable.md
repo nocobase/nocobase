@@ -16,7 +16,7 @@ Mogą Państwo deklarować zmienne w przepływie pracy lub przypisywać wartośc
 
 W interfejsie konfiguracji przepływu pracy, proszę kliknąć przycisk plusa („+”) w przepływie, aby dodać węzeł „Zmienna”:
 
-![Dodaj węzeł zmiennej](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Dodaj węzeł zmiennej](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Konfiguracja węzła
 
@@ -41,7 +41,7 @@ Wartość zmiennej może być dowolnego typu. Może to być stała, taka jak ci�
 
 W trybie deklaracji, ustawienie wartości zmiennej jest równoznaczne z przypisaniem jej wartości początkowej.
 
-![Deklaruj wartość początkową](https://static-docs.nocobase.com/4ce2c608986565ad537343013758c6a4.png)
+![Deklaruj wartość początkową](https://static-docs.nocobase.com/4ce2c508986565ad537343013758c6a4.png)
 
 W trybie przypisania, ustawienie wartości zmiennej jest równoznaczne ze zmianą wartości zadeklarowanej zmiennej docelowej na nową wartość. Kolejne użycia będą pobierać tę nową wartość.
 
@@ -79,6 +79,6 @@ Po węźle obliczeniowym proszę utworzyć kolejny węzeł zmiennej. Proszę wyb
 
 W ten sposób, po zakończeniu rozgałęzienia pętli, zmienna odbiorcy będzie przechowywać ciąg znaków odbiorców wszystkich autorów artykułu. Następnie, po pętli, mogą Państwo użyć węzła żądania HTTP, aby wywołać interfejs API wysyłania wiadomości e-mail, przekazując wartość zmiennej odbiorcy jako parametr odbiorcy do interfejsu API:
 
-![Wyślij wiadomość e-mail do odbiorców za pośrednictwem węzła żądania](https://static-docs.nocobase.com/37f71a63e172bcb2dce10a250947e.png)
+![Wyślij wiadomość e-mail do odbiorców za pośrednictwem węzła żądania](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 W tym momencie prosta funkcja masowej wysyłki wiadomości e-mail została zaimplementowana za pomocą pętli i węzła zmiennej.

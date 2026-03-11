@@ -1,12 +1,16 @@
 ---
-displayName: "Auth: API keys"
+displayName: "Autenticazione: Chiavi API"
 packageName: '@nocobase/plugin-api-keys'
 description: |
-  Allows users to use API key to access application's HTTP API
+  Consente agli utenti di utilizzare le chiavi API per accedere alle API HTTP dell'applicazione
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: API keys
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-api-keys/index).
+:::
+
+# Autenticazione: Chiavi API

@@ -1,5 +1,5 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/template-print/syntax/formatters/number-formatting).
 :::
 
 ### Pemformatan Angka
@@ -14,7 +14,7 @@ Parameter:
 
 ##### Contoh
 ```
-// Contoh lingkungan: API options { "lang": "en-us" }
+
 '10':formatN()         // Output "10.000"
 '1000.456':formatN()   // Output "1,000.456"
 ```

@@ -1,8 +1,8 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "Samlingsfält: Relationssnapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
+  När Ni lägger till data skapas en snapshot för dess relationsdata och sparas i den aktuella datan. När relationsdata uppdateras kommer snapshoten inte att uppdateras.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Collection field: Snapshot
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-snapshot-field/index).
+:::
 
-> Note: This plugin is deprecated.
+# Samlingsfält: Relationssnapshot
+
+> Observera: Detta plugin är föråldrat (deprecated).

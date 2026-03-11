@@ -5,11 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides abilities for integrating WeCom, including authentication, notification channel and data source for synchronizing user data.
+  يوفر إمكانيات التكامل مع WeCom، بما في ذلك طرق المصادقة وقنوات الإشعارات ومصادر مزامنة بيانات المستخدم.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-auth-wecom/index).
+:::
 
 # WeCom

@@ -1,7 +1,6 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/get-started/installation/git).
 :::
-
 
 # Installazione da codice sorgente Git
 
@@ -9,12 +8,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 - Git, Node.js 20+ e Yarn 1.22.x sono installati.
 - Un database richiesto è configurato e in esecuzione: MySQL 8.0.17+, MariaDB 10.9+ o PostgreSQL 10+ (a Sua scelta).
-- A causa delle condizioni della rete in alcune regioni, Le consigliamo di configurare un mirror nazionale (non obbligatorio).
 
-```bash
-$ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
-```
 
 :::
 
@@ -23,21 +17,21 @@ $ yarn config set registry https://registry.npmmirror.com/
 Scelga una versione di NocoBase ([Confronto versioni](../quickstart.md)) ed esegua il comando corrispondente.
 
 <Tabs>
-<Tab label="ultima versione">
+<Tab label="Versione Latest">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
 ```
 
 </Tab>
-<Tab label="versione Beta">
+<Tab label="Versione Beta">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
 ```
 
 </Tab>
-<Tab label="versione Alpha">
+<Tab label="Versione Alpha">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
@@ -65,7 +59,7 @@ yarn install --frozen-lockfile
 Le variabili d'ambiente richieste da NocoBase sono memorizzate nel file `.env` nella directory principale. Le modifichi in base alla Sua situazione.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=UTC
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432

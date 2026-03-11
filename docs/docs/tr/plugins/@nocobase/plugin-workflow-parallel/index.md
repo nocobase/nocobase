@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Parallel node"
+displayName: "Workflow: Paralel branş düğümü"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Could be used for parallel execution of branch processes in the workflow.
+  İş akışında paralel olarak yürütülmesi gereken branş süreçleri için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-parallel/index) bakın.
+:::
+
+# Workflow: Paralel branş düğümü

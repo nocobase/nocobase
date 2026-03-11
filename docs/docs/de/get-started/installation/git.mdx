@@ -1,7 +1,6 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/get-started/installation/git).
 :::
-
 
 # Installation aus dem Git-Quellcode
 
@@ -9,12 +8,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 - Git, Node.js 20+ und Yarn 1.22.x sind installiert.
 - Eine der folgenden Datenbanken ist konfiguriert und läuft: MySQL 8.0.17+, MariaDB 10.9+ oder PostgreSQL 10+.
-- Für Nutzer in bestimmten Netzwerkumgebungen (z.B. in China) wird empfohlen, einen nationalen Mirror zu verwenden (nicht zwingend erforderlich).
 
-```bash
-$ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
-```
 
 :::
 
@@ -65,7 +59,7 @@ yarn install --frozen-lockfile
 Die von NocoBase benötigten Umgebungsvariablen sind in der Datei `.env` im Stammverzeichnis gespeichert. Passen Sie die Umgebungsvariablen entsprechend Ihrer tatsächlichen Situation an.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=UTC
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432

@@ -26,7 +26,7 @@ Izin tindakan global berlaku secara universal untuk semua **koleksi** dan dikate
 
 ## Izin Tindakan Koleksi
 
-![](https://static-docs.nocobase.com/6a6e0281939cecdea5b5218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

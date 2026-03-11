@@ -5,11 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to call other workflows within a workflow, can use the variables of the current workflow as the input of the subflow, and use the output of the subflow as the variables of the current workflow.
+  Slouží k volání jiných workflow v rámci workflow. Umožňuje použít proměnné aktuálního workflow jako vstup pro subflow a výstup ze subflow jako proměnné aktuálního workflow.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-workflow-subflow/index).
+:::
 
 # Workflow: Subflow

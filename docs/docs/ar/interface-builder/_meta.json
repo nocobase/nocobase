@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "الكتل",
+    "label": "كتلة",
     "items": [
       {
         "type": "custom-link",
@@ -45,7 +45,7 @@
           },
           {
             "type": "custom-link",
-            "label": "رسم بياني",
+            "label": "مخطط بياني",
             "link": "/interface-builder/blocks/data-blocks/chart"
           }
         ]
@@ -69,40 +69,40 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "لوحة الإجراءات",
+            "label": "لوحة العمليات",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
-            "label": "Iframe",
+            "label": "إطار مضمن (Iframe)",
             "link": "/interface-builder/blocks/other-blocks/iframe"
           },
           {
             "type": "custom-link",
-            "label": "كتلة مرجعية",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
-          },
-          {
-            "type": "custom-link",
-            "label": "Markdown",
+            "label": "ماركداون (Markdown)",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
           {
             "type": "custom-link",
-            "label": "JS Block",
+            "label": "كتلة JS",
             "link": "/interface-builder/blocks/other-blocks/js-block"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "إعدادات الكتلة",
+        "label": "عناصر إعدادات الكتلة",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
             "label": "نطاق البيانات",
             "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "طريقة تحميل البيانات",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
           },
           {
             "type": "custom-link",
@@ -121,8 +121,13 @@
           },
           {
             "type": "custom-link",
-            "label": "قواعد الفرز",
+            "label": "قواعد الترتيب",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "ترتيب بالسحب والإفلات",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
           },
           {
             "type": "custom-link",
@@ -133,6 +138,16 @@
             "type": "custom-link",
             "label": "عنوان الكتلة",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "ارتفاع الكتلة",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "مسودة النموذج",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -140,7 +155,7 @@
   },
   {
     "type": "custom-link",
-    "label": "الحقول",
+    "label": "حقل",
     "items": [
       {
         "type": "custom-link",
@@ -149,12 +164,12 @@
       },
       {
         "type": "custom-link",
-        "label": "إعدادات عامة",
+        "label": "عناصر التكوين العامة",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "حقول الجدول",
+            "label": "حقل الجدول",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
@@ -169,14 +184,14 @@
           },
           {
             "type": "custom-link",
-            "label": "حقول النموذج",
+            "label": "حقل النموذج",
             "link": "/interface-builder/fields/generic/form-item"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "إعدادات خاصة",
+        "label": "عناصر تكوين خاصة",
         "collapsed": true,
         "items": [
           {
@@ -211,8 +226,13 @@
           },
           {
             "type": "custom-link",
-            "label": "جدول فرعي",
+            "label": "جدول فرعي (تحرير سطري)",
             "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "جدول فرعي (تحرير منبثق)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
           },
           {
             "type": "custom-link",
@@ -226,24 +246,24 @@
           },
           {
             "type": "custom-link",
-            "label": "JS Field",
+            "label": "حقل JS",
             "link": "/interface-builder/fields/specific/js-field"
           },
           {
             "type": "custom-link",
-            "label": "JS Item",
+            "label": "عنصر JS",
             "link": "/interface-builder/fields/specific/js-item"
           },
           {
             "type": "custom-link",
-            "label": "JS Column",
+            "label": "عمود JS",
             "link": "/interface-builder/fields/specific/js-column"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "إعدادات الحقل",
+        "label": "عناصر تكوين الحقل",
         "collapsed": true,
         "items": [
           {
@@ -258,12 +278,12 @@
           },
           {
             "type": "custom-link",
-            "label": "عرض التسمية",
+            "label": "تسمية العرض",
             "link": "/interface-builder/fields/field-settings/show-label"
           },
           {
             "type": "custom-link",
-            "label": "تلميح الحقل",
+            "label": "معلومات تلميح الحقل",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -283,7 +303,7 @@
           },
           {
             "type": "custom-link",
-            "label": "الوضع",
+            "label": "وضع",
             "link": "/interface-builder/fields/field-settings/pattern"
           },
           {
@@ -312,7 +332,7 @@
   },
   {
     "type": "custom-link",
-    "label": "الإجراءات",
+    "label": "عملية",
     "items": [
       {
         "type": "custom-link",
@@ -321,12 +341,12 @@
       },
       {
         "type": "custom-link",
-        "label": "إعدادات الإجراء",
+        "label": "عناصر تكوين العمليات",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "زر التعديل",
+            "label": "زر التحرير",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
@@ -346,24 +366,24 @@
           },
           {
             "type": "custom-link",
-            "label": "نافذة التعديل المنبثقة",
+            "label": "نافذة تحرير منبثقة",
             "link": "/interface-builder/actions/action-settings/edit-popup"
           },
           {
             "type": "custom-link",
-            "label": "قواعد ربط الإجراءات",
+            "label": "قواعد ربط العمليات",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "نوع الإجراء",
+        "label": "نوع العملية",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "إضافة",
+            "label": "إضافة جديد",
             "link": "/interface-builder/actions/types/add-new"
           },
           {
@@ -378,8 +398,13 @@
           },
           {
             "type": "custom-link",
-            "label": "تعديل",
+            "label": "تحرير",
             "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "نسخ",
+            "link": "/interface-builder/actions/types/duplicate"
           },
           {
             "type": "custom-link",
@@ -388,7 +413,7 @@
           },
           {
             "type": "custom-link",
-            "label": "استيراد Pro",
+            "label": "استيراد برو",
             "link": "/interface-builder/actions/types/import-pro"
           },
           {
@@ -398,7 +423,7 @@
           },
           {
             "type": "custom-link",
-            "label": "تصدير Pro",
+            "label": "تصدير برو",
             "link": "/interface-builder/actions/types/export-pro"
           },
           {
@@ -428,7 +453,7 @@
           },
           {
             "type": "custom-link",
-            "label": "إرسال البيانات",
+            "label": "تقديم البيانات",
             "link": "/interface-builder/actions/types/submit"
           },
           {
@@ -438,13 +463,18 @@
           },
           {
             "type": "custom-link",
-            "label": "تحديث السجل",
+            "label": "تحديث السجلات",
             "link": "/interface-builder/actions/types/update-record"
           },
           {
             "type": "custom-link",
-            "label": "تحديث مجمع",
+            "label": "تحديث جماعي",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "تحرير جماعي",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -453,14 +483,14 @@
           },
           {
             "type": "custom-link",
-            "label": "JS Action",
+            "label": "إجراء JS",
             "link": "/interface-builder/actions/types/js-action"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "صلاحيات الإجراءات",
+        "label": "صلاحيات العمليات",
         "link": "/interface-builder/actions/permission"
       }
     ]
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "قواعد الربط",
+        "label": "قواعد الارتباط",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "المتغيرات",
+        "label": "متغير",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
-        "label": "RunJS",
+        "label": "تشغيل JS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "قالب واجهة المستخدم",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

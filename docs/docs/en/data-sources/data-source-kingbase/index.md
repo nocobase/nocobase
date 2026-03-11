@@ -41,7 +41,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -72,7 +72,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true

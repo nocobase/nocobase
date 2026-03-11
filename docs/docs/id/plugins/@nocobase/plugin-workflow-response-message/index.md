@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Response message"
+displayName: "Workflow: Pesan respons"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |
-  Used for assemble response message and showing to client in form event and request interception workflows.
+  Digunakan untuk menyusun dan menampilkan pesan respons kepada klien dalam workflow peristiwa formulir dan intersepsi permintaan.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Response message
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-workflow-response-message/index).
+:::
+
+# Workflow: Pesan respons

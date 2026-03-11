@@ -1,74 +1,76 @@
 # ctx.route
 
-Current route match info, corresponding to React Router’s route; used to get the matched route config, params, etc. Use with `ctx.router` and `ctx.location`.
+The current route matching information, corresponding to the `route` concept in React Router. It is used to retrieve the current matching route configuration, parameters, and more. It is typically used in conjunction with `ctx.router` and `ctx.location`.
 
 ## Use Cases
 
 | Scenario | Description |
-|----------|-------------|
-| **JSBlock / JSField** | Conditional render or display based on `route.pathname` or `route.params` |
-| **Linkage / event flow** | Read route params (e.g. `params.name`) for logic or pass to children |
-| **View navigation** | Compare `ctx.route.pathname` with target path to decide `ctx.router.navigate` |
+|------|------|
+| **JSBlock / JSField** | Perform conditional rendering or display the current page identifier based on `route.pathname` or `route.params`. |
+| **Linkage Rules / FlowEngine** | Read route parameters (e.g., `params.name`) for logic branching or to pass them to child components. |
+| **View Navigation** | Internally compare `ctx.route.pathname` with a target path to determine whether to trigger `ctx.router.navigate`. |
 
-> Note: `ctx.route` is only available in RunJS when a router context exists (e.g. JSBlock on a page, Flow page); in pure backend or non-routed contexts (e.g. workflow) it may be empty.
+> Note: `ctx.route` is only available in RunJS environments that contain a routing context (such as JSBlocks within a page, Flow pages, etc.). It may be null in pure backend or non-routing contexts (such as background workflows).
 
-## Type
+## Type Definition
 
 ```ts
 type RouteOptions = {
-  name?: string;
-  path?: string;
-  params?: Record<string, any>;
-  pathname?: string;
+  name?: string;   // Unique route identifier
+  path?: string;   // Route template (e.g., /admin/:name)
+  params?: Record<string, any>;  // Route parameters (e.g., { name: 'users' })
+  pathname?: string;  // Full path of the current route (e.g., /admin/users)
 };
 ```
 
-## Common fields
+## Common Fields
 
 | Field | Type | Description |
-|-------|------|-------------|
-| `pathname` | `string` | Full path of current route; same as `ctx.location.pathname` |
-| `params` | `Record<string, any>` | Dynamic params from route template, e.g. `{ name: 'users' }` |
-| `path` | `string` | Route template, e.g. `/admin/:name` |
-| `name` | `string` | Route unique id; often used for tabs/views |
+|------|------|------|
+| `pathname` | `string` | The full path of the current route, consistent with `ctx.location.pathname`. |
+| `params` | `Record<string, any>` | Dynamic parameters parsed from the route template, such as `{ name: 'users' }`. |
+| `path` | `string` | The route template, such as `/admin/:name`. |
+| `name` | `string` | Unique route identifier, commonly used in multi-tab or multi-view scenarios. |
 
-## Relation to ctx.router, ctx.location
+## Relationship with ctx.router and ctx.location
 
-| Use | Recommended |
-|-----|-------------|
-| **Current path** | `ctx.route.pathname` or `ctx.location.pathname`; they match when route is matched |
-| **Route params** | `ctx.route.params`, e.g. `params.name` for current page UID |
-| **Navigate** | `ctx.router.navigate(path)` |
-| **Query params, state** | `ctx.location.search`, `ctx.location.state` |
+| Purpose | Recommended Usage |
+|------|----------|
+| **Read current path** | `ctx.route.pathname` or `ctx.location.pathname`; both are consistent during matching. |
+| **Read route parameters** | `ctx.route.params`, e.g., `params.name` representing the current page UID. |
+| **Navigation** | `ctx.router.navigate(path)` |
+| **Read query parameters, state** | `ctx.location.search`, `ctx.location.state` |
 
-`ctx.route` is “matched route config”; `ctx.location` is “current URL”; together they describe the current route state.
+`ctx.route` focuses on the "matched route configuration," while `ctx.location` focuses on the "current URL location." Together, they provide a complete description of the current routing state.
 
 ## Examples
 
-### Read pathname
+### Reading pathname
 
 ```ts
-ctx.message.info('Current page: ' + ctx.route.pathname);
+// Display the current path
+ctx.message.info('Current Page: ' + ctx.route.pathname);
 ```
 
-### Branch by params
+### Branching based on params
 
 ```ts
+// params.name is typically the current page UID (e.g., a Flow page identifier)
 if (ctx.route.params?.name === 'users') {
-  // On user management page
+  // Execute specific logic on the user management page
 }
 ```
 
-### In Flow page
+### Displaying in a Flow page
 
 ```tsx
 <div>
-  <h1>Current page - {ctx.route.pathname}</h1>
-  <p>Route id: {ctx.route.params?.name}</p>
+  <h1>Current Page - {ctx.route.pathname}</h1>
+  <p>Route Identifier: {ctx.route.params?.name}</p>
 </div>
 ```
 
 ## Related
 
-- [ctx.router](./router.md): navigation; after `ctx.router.navigate()`, `ctx.route` updates
-- [ctx.location](./location.md): current URL (pathname, search, hash, state); use with `ctx.route`
+- [ctx.router](./router.md): Route navigation. When `ctx.router.navigate()` changes the path, `ctx.route` will update accordingly.
+- [ctx.location](./location.md): Current URL location (pathname, search, hash, state), used in conjunction with `ctx.route`.

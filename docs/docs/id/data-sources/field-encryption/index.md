@@ -30,7 +30,7 @@ Jika `plugin` diaktifkan oleh sub-aplikasi, kunci akan disimpan secara default d
 
 Menggunakan metode Enkripsi Amplop (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Proses Pembuatan Kunci
 1. Saat pertama kali membuat bidang terenkripsi, sistem akan secara otomatis menghasilkan `kunci aplikasi` 32-bit dan menyimpannya ke direktori penyimpanan default dalam format Base64.

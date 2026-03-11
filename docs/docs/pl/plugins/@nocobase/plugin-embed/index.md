@@ -1,14 +1,18 @@
 ---
-displayName: "Embed NocoBase"
+displayName: "Osadź NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
-  Embed NocoBase into another system or webpage, integrating it as a part of that system or webpage.
+  Osadź NocoBase w zewnętrznym systemie lub na stronie internetowej, czyniąc go częścią tego systemu lub strony.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Embed NocoBase
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-embed/index).
+:::
+
+# Osadź NocoBase

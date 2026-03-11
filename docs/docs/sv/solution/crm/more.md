@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Mer innehåll
 
-Content coming soon...
+> Den nuvarande CRM-lösningen är endast för förhandsgranskning. Framtida versioner kommer att byggas om helt baserat på NocoBase 2.0. Mer fullständig dokumentation kommer att tillhandahållas då.
+
+Innehåll kommer snart...

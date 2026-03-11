@@ -1,59 +1,51 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/template-print/syntax/formatters/currency-formatting).
 :::
 
-### Formato de Moneda
+### Formateo de moneda
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)
 
-##### Explicación de la Sintaxis
-Formatea un número de moneda y le permite especificar el número de decimales o un formato de salida particular.
-
+##### Explicación de la sintaxis
+Formatea números de moneda, permitiendo especificar el número de decimales o un formato de salida específico.  
 Parámetros:
-- `precisionOrFormat`: Un parámetro opcional que puede ser un número (para especificar la cantidad de decimales) o un identificador de formato:
-  - Un número entero: cambia la precisión decimal predeterminada.
-  - `'M'`: Muestra solo el nombre principal de la moneda.
-  - `'L'`: Muestra el número junto con el símbolo de la moneda (opción predeterminada).
-  - `'LL'`: Muestra el número junto con el nombre principal de la moneda.
-- `targetCurrency`: Opcional; el código de la moneda de destino (en mayúsculas, por ejemplo, USD, EUR) que anula la configuración global.
+- precisionOrFormat: Parámetro opcional, puede ser un número (especifica el número de decimales) o un identificador de formato específico:
+  - Entero: Cambia la precisión decimal predeterminada
+  - `'M'`: Solo muestra el nombre principal de la moneda
+  - `'L'`: Muestra el número junto con el símbolo de la moneda (predeterminado)
+  - `'LL'`: Muestra el número junto con el nombre principal de la moneda
+- targetCurrency: Opcional, código de la moneda de destino (en mayúsculas, como USD, EUR), anulará la configuración global
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-'1000.456':formatC()      // Muestra "$2,000.91"
-'1000.456':formatC('M')    // Muestra "dollars"
-'1':formatC('M')           // Muestra "dollar"
-'1000':formatC('L')        // Muestra "$2,000.00"
-'1000':formatC('LL')       // Muestra "2,000.00 dollars"
-
-// Ejemplo en francés (cuando la configuración del entorno es diferente):
-'1000.456':formatC()      // Muestra "2 000,91 ..."  
-'1000.456':formatC()      // Cuando las monedas de origen y destino son las mismas, muestra "1 000,46 €"
+'1000.456':formatC()      // Salida "$2,000.91"
+'1000.456':formatC('M')    // Salida "dollars"
+'1':formatC('M')           // Salida "dollar"
+'1000':formatC('L')        // Salida "$2,000.00"
+'1000':formatC('LL')       // Salida "2,000.00 dollars"
 ```
 
 ##### Resultado
-El resultado que se muestra depende de las opciones de la API y de la configuración del tipo de cambio.
+El resultado de la salida depende de las opciones de la API y de la configuración de la tasa de cambio.
+
 
 #### 2. :convCurr(target, source)
 
-##### Explicación de la Sintaxis
-Convierte un número de una moneda a otra. El tipo de cambio se puede pasar a través de las opciones de la API o configurarse globalmente.
-
-Si no se especifican parámetros, la conversión se realiza automáticamente de `options.currencySource` a `options.currencyTarget`.
-
+##### Explicación de la sintaxis
+Convierte un número de una moneda a otra. La tasa de cambio puede pasarse a través de las opciones de la API o configurarse globalmente.  
+Si no se especifican parámetros, se convierte automáticamente de `options.currencySource` a `options.currencyTarget`.  
 Parámetros:
-- `target`: Opcional; el código de la moneda de destino (por defecto es `options.currencyTarget`).
-- `source`: Opcional; el código de la moneda de origen (por defecto es `options.currencySource`).
+- target: Opcional, código de la moneda de destino (por defecto es igual a `options.currencyTarget`)
+- source: Opcional, código de la moneda de origen (por defecto es igual a `options.currencySource`)
 
 ##### Ejemplo
 ```
-// Entorno de ejemplo: opciones de la API { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-10:convCurr()              // Muestra 20
-1000:convCurr()            // Muestra 2000
-1000:convCurr('EUR')        // Muestra 1000
-1000:convCurr('USD')        // Muestra 2000
-1000:convCurr('USD', 'USD') // Muestra 1000
+10:convCurr()              // Salida 20
+1000:convCurr()            // Salida 2000
+1000:convCurr('EUR')        // Salida 1000
+1000:convCurr('USD')        // Salida 2000
+1000:convCurr('USD', 'USD') // Salida 1000
 ```
 
 ##### Resultado
-El resultado es el valor de la moneda convertida.
+La salida es el valor numérico de la moneda convertida.

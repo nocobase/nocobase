@@ -17,8 +17,8 @@ Pierwszy sposób polega na wybraniu roli w polu roli formularza edycji działu.
 
 Drugi sposób polega na dodaniu działów do odpowiedniej roli w zarządzaniu rolami.
 
-![](https://static-docs.nocobase.com/f2a77bb89aa1fb415c152a51a51cc23b.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 Działów, które już posiadają tę rolę, nie można wybrać.
 
-![](https://static-docs.nocobase.com/be1029983581e1f97a4e01ddd5c7e59.png)
+![](https://static-docs.nocobase.com/be10299893581e1f97a4e01ddd5c7e59.png)

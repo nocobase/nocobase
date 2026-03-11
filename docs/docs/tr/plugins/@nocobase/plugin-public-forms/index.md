@@ -1,12 +1,16 @@
 ---
-displayName: "Public forms"
+displayName: "Genel formlar"
 packageName: '@nocobase/plugin-public-forms'
 description: |
-  Share public forms externally to collect information from anonymous users
+  Anonim kullanıcılardan bilgi toplamak için genel formları harici olarak paylaşın.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Public forms
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-public-forms/index) bakın.
+:::
+
+# Genel formlar

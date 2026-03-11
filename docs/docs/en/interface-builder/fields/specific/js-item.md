@@ -87,5 +87,5 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 ## Related Documentation
 
 - [Variables and Context](/interface-builder/variables)
-- [Linkage Rules](/interface-builder/linkage-rule)
+- [Linkage Rule](/interface-builder/linkage-rule)
 - [Views and Popups](/interface-builder/actions/types/view)

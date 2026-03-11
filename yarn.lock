@@ -92,15 +92,15 @@
   dependencies:
     "@alicloud/tea-typescript" "^1.5.1"
 
-"@alicloud/dingtalk@2.2.24":
-  version "2.2.24"
-  resolved "https://registry.npmjs.org/@alicloud/dingtalk/-/dingtalk-2.2.24.tgz#df986380bf6a832ef85d02a63c1ba9234e1c67e5"
-  integrity sha512-OHhYAbIyVhug6bm4pNVElJmZYpgHkvKL6QEkpRFE0geduOUhwB6hY3iLNW2C7RjijUmsWsSvyQRkKWHYgw+8Rg==
+"@alicloud/dingtalk@^2.1.23":
+  version "2.2.38"
+  resolved "https://registry.npmjs.org/@alicloud/dingtalk/-/dingtalk-2.2.38.tgz#eddd828f0c159b90bd3de20729db2f5d87bbbeb4"
+  integrity sha512-gcpx7dzruf3/5ecWnVHGtFZgoWcZrHRwPs/TAZVMbk+bTBiSmqXWbv+BcWhhNF9JqRkufybe+QjE4r9B38nSmQ==
   dependencies:
     "@alicloud/endpoint-util" "^0.0.2"
     "@alicloud/gateway-dingtalk" "^1.0.2"
     "@alicloud/gateway-spi" "^0.0.8"
-    "@alicloud/openapi-client" "^0.4.14"
+    "@alicloud/openapi-client" "^0.4.15"
     "@alicloud/openapi-util" "^0.3.2"
     "@alicloud/tea-typescript" "^1.7.1"
     "@alicloud/tea-util" "^1.4.9"
@@ -175,7 +175,7 @@
     "@alicloud/tea-util" "^1.4.9"
     "@alicloud/tea-xml" "0.0.3"
 
-"@alicloud/openapi-client@^0.4.14", "@alicloud/openapi-client@^0.4.8", "@alicloud/openapi-client@^0.4.9":
+"@alicloud/openapi-client@^0.4.15", "@alicloud/openapi-client@^0.4.8", "@alicloud/openapi-client@^0.4.9":
   version "0.4.15"
   resolved "https://registry.npmjs.org/@alicloud/openapi-client/-/openapi-client-0.4.15.tgz#fde48ae16af661897883db920a3242e6466447d8"
   integrity sha512-4VE0/k5ZdQbAhOSTqniVhuX1k5DUeUMZv74degn3wIWjLY6Bq+hxjaGsaHYlLZ2gA5wUrs8NcI5TE+lIQS3iiA==
@@ -5701,7 +5701,7 @@
     openai "^6.18.0"
     zod "^3.25.76 || ^4"
 
-"@langchain/textsplitters@1.0.1":
+"@langchain/textsplitters@1.0.1", "@langchain/textsplitters@^1.0.1":
   version "1.0.1"
   resolved "https://registry.npmjs.org/@langchain/textsplitters/-/textsplitters-1.0.1.tgz#292f9c93239178c248b3338acf7b68aa47aa9830"
   integrity sha512-rheJlB01iVtrOUzttscutRgLybPH9qR79EyzBEbf1u97ljWyuxQfCwIWK+SjoQTM9O8M7GGLLRBSYE26Jmcoww==
@@ -10158,6 +10158,13 @@
   resolved "https://registry.npmmirror.com/@types/unist/-/unist-2.0.10.tgz#04ffa7f406ab628f7f7e97ca23e290cd8ab15efc"
   integrity sha512-IfYcSBWE3hLpBg8+X2SEa8LVkJdJEkT2Ese2aaLs3ptGdVtABxndrMaxuFlQ1qdFf9Q5rDvDpxI3WwgvKFAsQA==
 
+"@types/unzipper@^0.10.10":
+  version "0.10.11"
+  resolved "https://registry.npmjs.org/@types/unzipper/-/unzipper-0.10.11.tgz#2a605ae639fc20ee6886be0f7d28dc61c1e6d3d3"
+  integrity sha512-D25im2zjyMCcgL9ag6N46+wbtJBnXIr7SI4zHf9eJD2Dw2tEB5e+p5MYkrxKIVRscs5QV0EhtU9rgXSPx90oJg==
+  dependencies:
+    "@types/node" "*"
+
 "@types/uuid@^10.0.0":
   version "10.0.0"
   resolved "https://registry.npmmirror.com/@types/uuid/-/uuid-10.0.0.tgz#e9c07fe50da0f53dc24970cca94d619ff03f6f6d"
@@ -10232,13 +10239,6 @@
   integrity sha512-xQ67Yc/laOG5uMfX/093MRlGGCIBzZMarVa+gfNKJxWAIgykYpVGkBdbqEzGDDfCrVUj6Hiff4mTZ5BA6TmAog==
   dependencies:
     "@types/yargs-parser" "*"
-
-"@types/yauzl@^2.10.3":
-  version "2.10.3"
-  resolved "https://registry.npmjs.org/@types/yauzl/-/yauzl-2.10.3.tgz#e9b2808b4f109504a03cda958259876f61017999"
-  integrity sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==
-  dependencies:
-    "@types/node" "*"
 
 "@typescript-eslint/eslint-plugin@^5.62.0":
   version "5.62.0"
@@ -12421,7 +12421,7 @@ bloom-filters@^3.0.1:
     seedrandom "^3.0.5"
     xxhashjs "^0.2.2"
 
-bluebird@^3.5.0, bluebird@^3.5.1:
+bluebird@^3.5.0, bluebird@^3.5.1, bluebird@~3.7.2:
   version "3.7.2"
   resolved "https://registry.npmmirror.com/bluebird/-/bluebird-3.7.2.tgz#9f229c15be272454ffa973ace0dbee79a1b0c36f"
   integrity sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
@@ -15765,13 +15765,6 @@ dingbat-to-unicode@^1.0.1:
   resolved "https://registry.npmjs.org/dingbat-to-unicode/-/dingbat-to-unicode-1.0.1.tgz#5091dd673241453e6b5865e26e5a4452cdef5c83"
   integrity sha512-98l0sW87ZT58pU4i61wa2OHwxbiYSbuxsCBozaVnYX2iCnr3bLM3fIes1/ej7h1YdOKuKt/MLs706TVnALA65w==
 
-dingtalk-jsapi@3.1.1:
-  version "3.1.1"
-  resolved "https://registry.npmjs.org/dingtalk-jsapi/-/dingtalk-jsapi-3.1.1.tgz#bf0f978aa9f23efc0140845f0f010f3662e1311b"
-  integrity sha512-Xwt4kv6EZEf5MZWR42yzIHKI95e+Hlqz6X6tcjCiLIyTN8crA87lgs5s3beN7epwCRHcPUyQ7vVm5Q/H3hiUCQ==
-  dependencies:
-    promise-polyfill "^7.1.0"
-
 dir-glob@^3.0.1:
   version "3.0.1"
   resolved "https://registry.npmmirror.com/dir-glob/-/dir-glob-3.0.1.tgz#56dbf73d992a4a93ba1584f4534063fd2e41717f"
@@ -18328,6 +18321,15 @@ fs-extra@^11.1.1:
   version "11.2.0"
   resolved "https://registry.npmmirror.com/fs-extra/-/fs-extra-11.2.0.tgz#e70e17dfad64232287d01929399e0ea7c86b0e5b"
   integrity sha512-PmDi3uwK5nFuXh7XDTlVnS17xJS7vW36is2+w3xcv8SVxiB4NyATf4ctkVY5bkSjX0Y4nbvZCq1/EjtEyr9ktw==
+  dependencies:
+    graceful-fs "^4.2.0"
+    jsonfile "^6.0.1"
+    universalify "^2.0.0"
+
+fs-extra@^11.2.0:
+  version "11.3.4"
+  resolved "https://registry.npmjs.org/fs-extra/-/fs-extra-11.3.4.tgz#ab6934eca8bcf6f7f6b82742e33591f86301d6fc"
+  integrity sha512-CTXd6rk/M3/ULNQj8FBqBWHYBVYybQ3VPBw0xGKFe3tuH7ytT6ACnvzpIQ3UZtB8yvUKC2cXn1a+x+5EVQLovA==
   dependencies:
     graceful-fs "^4.2.0"
     jsonfile "^6.0.1"
@@ -25624,9 +25626,9 @@ openai@^6.18.0:
   integrity sha512-7Yvy17F33Bi9RutWbsaYt5hJEEJ/krRPOrwan+f9aCPuMat1WVsb2VNSII5W1EksKT6fF69TG/xj4XzodK3JZw==
 
 openai@^6.24.0:
-  version "6.27.0"
-  resolved "https://registry.npmjs.org/openai/-/openai-6.27.0.tgz#eabaea9ce6904a8b2e6b2ac0a9d69b527d95ecf6"
-  integrity sha512-osTKySlrdYrLYTt0zjhY8yp0JUBmWDCN+Q+QxsV4xMQnnoVFpylgKGgxwN8sSdTNw0G4y+WUXs4eCMWpyDNWZQ==
+  version "6.25.0"
+  resolved "https://registry.npmjs.org/openai/-/openai-6.25.0.tgz#a874e43c0f514464ea83d62c7b746ff4d39a031a"
+  integrity sha512-mEh6VZ2ds2AGGokWARo18aPISI1OhlgdEIC1ewhkZr8pSIT31dec0ecr9Nhxx0JlybyOgoAT1sWeKtwPZzJyww==
 
 openapi-mcp-generator@^3.3.0:
   version "3.3.0"
@@ -27639,11 +27641,6 @@ promise-inflight@^1.0.1:
   version "1.0.1"
   resolved "https://registry.npmmirror.com/promise-inflight/-/promise-inflight-1.0.1.tgz#98472870bf228132fcbdd868129bad12c3c029e3"
   integrity sha512-6zWPyEOFaQBJYcGMHBKTKJ3u6TBsnMFOIZSa6ce1e/ZrrsOlnHRHbabMjLiBYKp+n44X9eUI6VUPaukCXHuG4g==
-
-promise-polyfill@^7.1.0:
-  version "7.1.2"
-  resolved "https://registry.npmjs.org/promise-polyfill/-/promise-polyfill-7.1.2.tgz#ab05301d8c28536301622d69227632269a70ca3b"
-  integrity sha512-FuEc12/eKqqoRYIGBrUptCBRhobL19PS2U31vMNTfyck1FxPyMfgsXyW4Mav85y/ZN1hop3hOwRlUDok23oYfQ==
 
 promise-retry@^1.1.1:
   version "1.1.1"
@@ -33296,6 +33293,17 @@ unzipper@^0.10.11:
     readable-stream "~2.3.6"
     setimmediate "~1.0.4"
 
+unzipper@^0.12.3:
+  version "0.12.3"
+  resolved "https://registry.npmjs.org/unzipper/-/unzipper-0.12.3.tgz#31958f5eed7368ed8f57deae547e5a673e984f87"
+  integrity sha512-PZ8hTS+AqcGxsaQntl3IRBw65QrBI6lxzqDEL7IAo/XCEqRTKGfOX56Vea5TH9SZczRVxuzk1re04z/YjuYCJA==
+  dependencies:
+    bluebird "~3.7.2"
+    duplexer2 "~0.1.4"
+    fs-extra "^11.2.0"
+    graceful-fs "^4.2.2"
+    node-int64 "^0.4.0"
+
 upath@2.0.1, upath@^2.0.1:
   version "2.0.1"
   resolved "https://registry.npmmirror.com/upath/-/upath-2.0.1.tgz#50c73dea68d6f6b990f51d279ce6081665d61a8b"
@@ -34630,7 +34638,7 @@ yauzl@^2.10.0, yauzl@^2.4.2:
     buffer-crc32 "~0.2.3"
     fd-slicer "~1.1.0"
 
-yauzl@^3.1.3, yauzl@^3.2.0:
+yauzl@^3.1.3:
   version "3.2.0"
   resolved "https://registry.npmjs.org/yauzl/-/yauzl-3.2.0.tgz#7b6cb548f09a48a6177ea0be8ece48deb7da45c0"
   integrity sha512-Ow9nuGZE+qp1u4JIPvg+uCiUr7xGQWdff7JQSk5VGYTAZMDe2q8lxJ10ygv10qmSj031Ty/6FNJpLO4o1Sgc+w==

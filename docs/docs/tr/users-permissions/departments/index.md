@@ -33,7 +33,7 @@ Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen 
 
 Bölüm düzenleme formunda üst bölüm alanını değiştirebilirsiniz. Ancak, mevcut bölüm ve bu bölümün altındaki bölümler seçilemez.
 
-![](https://static-docs.nocobase.com/9d80dd1e4f32c77186566ed8ada70128.png)
+![](https://static-docs.nocobase.com/9d80ddf42f32c77186566ed8ada70128.png)
 
 ## Bölüm Üyeleri Yönetimi
 

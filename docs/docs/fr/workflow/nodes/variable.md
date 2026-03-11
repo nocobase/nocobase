@@ -15,7 +15,7 @@ Vous pouvez déclarer des variables dans un flux de travail ou attribuer des val
 
 Dans l'interface de configuration du flux de travail, cliquez sur le bouton plus (« + ») dans le flux pour ajouter un nœud « Variable » :
 
-![Ajouter un nœud Variable](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Ajouter un nœud Variable](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Configurer le nœud
 
@@ -40,7 +40,7 @@ La valeur d'une variable peut être de n'importe quel type. Il peut s'agir d'une
 
 En mode déclaration, définir la valeur de la variable équivaut à lui attribuer une valeur initiale.
 
-![Déclarer la valeur initiale](https://static-docs.nocobase.com/4ce2c50896565ad537343013758c6a4.png)
+![Déclarer la valeur initiale](https://static-docs.nocobase.com/4ce2c508986565ad537343013758c6a4.png)
 
 En mode attribution, définir la valeur de la variable équivaut à modifier la valeur de la variable cible déclarée pour une nouvelle valeur. Les utilisations ultérieures récupéreront cette nouvelle valeur.
 
@@ -78,6 +78,6 @@ Après le nœud de calcul, créez un autre nœud Variable. Sélectionnez le mode
 
 Ainsi, une fois la branche de boucle terminée, la variable de destinataire stockera la chaîne de destinataires de tous les auteurs de l'article. Ensuite, après la boucle, vous pourrez utiliser un nœud de requête HTTP pour appeler une API d'envoi de courrier, en passant la valeur de la variable de destinataire comme paramètre de destinataire à l'API :
 
-![Envoyer un e-mail aux destinataires via le nœud de requête](https://static-docs.nocobase.com/37f71ae1a63e172bcb2dce10a250947e.png)
+![Envoyer un e-mail aux destinataires via le nœud de requête](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 À ce stade, une fonctionnalité simple d'envoi d'e-mails en masse a été implémentée à l'aide d'une boucle et d'un nœud Variable.

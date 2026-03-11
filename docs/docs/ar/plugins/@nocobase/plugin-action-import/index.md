@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records"
+displayName: "الإجراء: استيراد السجلات"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
+  استيراد البيانات باستخدام قوالب Excel، يمكن تكوين الحقول المراد استيرادها، وتوليد القوالب تلقائياً.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Import records
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-action-import/index).
+:::
+
+# الإجراء: استيراد السجلات

@@ -14,7 +14,7 @@
 
 انتقل إلى واجهة الإعدادات واملأ عنوان URL لإعادة التوجيه المصرّح به. يمكن الحصول على عنوان URL لإعادة التوجيه عند إضافة مُصادِق جديد في NocoBase، وعادةً ما يكون `http(s)://host:port/api/oidc:redirect`. راجع قسم [دليل المستخدم - الإعدادات](../index.md#configuration).
 
-![](https://static-docs.nocobase.com/24078bf2ec966a16334894cb3d9d126.png)
+![](https://static-docs.nocobase.com/24078bf52ec966a16334894cb3d9d126.png)
 
 ## إضافة مُصادِق جديد في NocoBase
 

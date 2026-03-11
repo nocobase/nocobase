@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "Akce: Duplikovat záznam"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  Zkopíruje záznam. Můžete jej zkopírovat do formuláře, upravit a poté odeslat, nebo jej zkopírovat přímo a vytvořit tak nový záznam.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-action-duplicate/index).
+:::
+
+# Akce: Duplikovat záznam

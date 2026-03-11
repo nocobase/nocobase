@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "Auditní protokoly (zastaralé)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  Tento plugin je zastaralý, nepoužívejte jej, v budoucnu bude k dispozici nový plugin pro auditní protokoly.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-audit-logs/index).
+:::
 
-> Note: This plugin is deprecated.
+# Auditní protokoly (zastaralé)
+
+> Poznámka: Tento plugin je zastaralý (deprecated).

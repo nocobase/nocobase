@@ -1,12 +1,16 @@
 ---
-displayName: "Auth: SMS"
+displayName: "Аутентификация: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  SMS authentication.
+  Аутентификация по СМС-коду.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Auth: SMS
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-auth-sms/index).
+:::
+
+# Аутентификация: SMS

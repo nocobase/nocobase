@@ -1,12 +1,16 @@
 ---
-displayName: "File manager"
+displayName: "Dosya yöneticisi"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides files storage services with files collection template and attachment field.
+  Dosya depolama hizmetleri sağlar, dosya koleksiyonu şablonu ve ek alanı sunar.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-file-manager/index) bakın.
+:::
+
+# Dosya yöneticisi

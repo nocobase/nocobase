@@ -19,7 +19,7 @@ Aplikace po úvodní instalaci obsahuje dvě předdefinované role: „Admin“ 
 
 Identifikátor role (jedinečný systémový identifikátor) umožňuje přizpůsobení výchozích rolí, ale systémové výchozí role nelze smazat.
 
-![](https://static-docs.nocobase.com/35f323b6db4f9f12f9bee4dea63302.png)
+![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
 ### Nastavení výchozí role
 

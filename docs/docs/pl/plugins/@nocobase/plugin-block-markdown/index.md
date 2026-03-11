@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Markdown"
+displayName: "Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
-  Provide Markdown block
+  Zapewnia blok Markdown
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Markdown
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-block-markdown/index).
+:::
+
+# Markdown

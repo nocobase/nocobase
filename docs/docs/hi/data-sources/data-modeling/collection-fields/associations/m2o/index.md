@@ -12,7 +12,7 @@ ER आरेख:
 
 फ़ील्ड कॉन्फ़िगरेशन:
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb82f832f3dbf752bd84c9.png)
+![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## पैरामीटर विवरण
 

@@ -36,7 +36,7 @@ El proceso de configuración completo es el siguiente:
 
 En la interfaz de usuario, solo se muestran los campos con permisos configurados dentro del bloque de la colección de Pedidos. Los campos del sistema (Id, CreatedAt, LastUpdatedAt) conservan los permisos de visualización incluso sin una configuración específica.
 
-![](https://static-docs.nocobase.com/40cc51a717efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **Editar**: Controla si los campos pueden ser editados y guardados (actualizados).
 

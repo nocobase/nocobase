@@ -10,7 +10,7 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowEngine & plugins",
+        "label": "Förhållandet mellan FlowEngine och plugin",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
@@ -20,14 +20,14 @@
       },
       {
         "type": "custom-link",
-        "label": "Inlärningsväg",
+        "label": "Inlärningskarta",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Guide",
+    "label": "Guider",
     "items": [
       {
         "type": "custom-link",
@@ -46,7 +46,7 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModel: Händelseflöde & konfiguration",
+        "label": "FlowModel händelseflöde och konfiguration",
         "link": "/flow-engine/flow-model-settings"
       },
       {
@@ -56,7 +56,7 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowModels livscykel",
+        "label": "FlowModel livscykel",
         "link": "/flow-engine/flow-model-lifecycle"
       },
       {
@@ -73,6 +73,11 @@
         "type": "custom-link",
         "label": "FlowModel vs React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS plugin-utökningspunkter",
+        "link": "/flow-engine/runjs-extension-points"
       }
     ]
   },

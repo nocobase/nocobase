@@ -1,50 +1,50 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/interface-builder/blocks/other-blocks/js-block).
 :::
 
 # JS Block
 
 ## Pendahuluan
 
-JS Block adalah "blok rendering kustom" yang sangat fleksibel. Blok ini mendukung penulisan skrip JavaScript secara langsung untuk menghasilkan antarmuka, mengikat event, memanggil API data, atau mengintegrasikan pustaka pihak ketiga. JS Block cocok untuk skenario visualisasi yang dipersonalisasi, eksperimen sementara, dan ekstensi ringan yang sulit dicakup oleh blok bawaan.
+JS Block adalah "blok rendering kustom" yang sangat fleksibel, mendukung penulisan skrip JavaScript secara langsung untuk menghasilkan antarmuka, mengikat event, memanggil antarmuka data, atau mengintegrasikan pustaka pihak ketiga. Cocok untuk visualisasi personal, eksperimen sementara, dan skenario perluasan ringan yang sulit dicakup oleh blok bawaan.
 
 ## API Konteks Runtime
 
-Konteks runtime JS Block telah dilengkapi dengan kemampuan umum yang dapat langsung Anda gunakan:
+Konteks runtime JS Block telah dilengkapi dengan kemampuan umum yang dapat langsung digunakan:
 
-- `ctx.element`: Kontainer DOM blok (dibungkus dengan aman sebagai ElementProxy), mendukung `innerHTML`, `querySelector`, `addEventListener`, dan lainnya;
+- `ctx.element`: Kontainer DOM blok (ElementProxy yang telah dibungkus dengan aman), mendukung `innerHTML`, `querySelector`, `addEventListener`, dll.;
 - `ctx.requireAsync(url)`: Memuat pustaka AMD/UMD secara asinkron berdasarkan URL;
 - `ctx.importAsync(url)`: Mengimpor modul ESM secara dinamis berdasarkan URL;
-- `ctx.openView`: Membuka tampilan yang telah dikonfigurasi (popup/drawer/halaman);
-- `ctx.useResource(...)` + `ctx.resource`: Mengakses data sebagai sebuah sumber daya;
+- `ctx.openView`: Membuka tampilan yang telah dikonfigurasi (pop-up/laci/halaman);
+- `ctx.useResource(...)` + `ctx.resource`: Mengakses data sebagai sumber daya;
 - `ctx.i18n.t()` / `ctx.t()`: Kemampuan internasionalisasi bawaan;
-- `ctx.onRefReady(ctx.ref, cb)`: Merender setelah kontainer siap untuk menghindari masalah waktu;
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Pustaka umum bawaan seperti React, ReactDOM, Ant Design, ikon Ant Design, dan dayjs, digunakan untuk rendering JSX dan utilitas waktu. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
-- `ctx.render(vnode)`: Merender elemen React, string HTML, atau node DOM ke kontainer default `ctx.element`; beberapa panggilan akan menggunakan kembali React Root yang sama dan menimpa konten yang ada di kontainer.
+- `ctx.onRefReady(ctx.ref, cb)`: Melakukan rendering setelah kontainer siap untuk menghindari masalah urutan waktu;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Pustaka umum bawaan seperti React / ReactDOM / Ant Design / Ikon Ant Design / dayjs / lodash / math.js / formula.js, digunakan untuk rendering JSX, pemrosesan waktu, operasi data, dan perhitungan matematika. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` tetap dipertahankan untuk kompatibilitas.)
+- `ctx.render(vnode)`: Merender elemen React, string HTML, atau node DOM ke kontainer default `ctx.element`; pemanggilan berulang akan menggunakan kembali React Root yang sama dan menimpa konten kontainer yang ada.
 
 ## Menambahkan Blok
 
-Anda dapat menambahkan JS Block ke halaman atau popup.
+- Dapat menambahkan JS Block di halaman atau pop-up.
 ![jsblock-add-20251029](https://static-docs.nocobase.com/jsblock-add-20251029.png)
 
 ## Editor dan Cuplikan Kode
 
-Editor skrip JS Block mendukung penyorotan sintaksis, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets), memungkinkan Anda untuk dengan cepat menyisipkan contoh umum seperti merender grafik, mengikat event tombol, memuat pustaka eksternal, merender komponen React/Vue, linimasa, kartu informasi, dan lainnya.
+Editor skrip JS Block mendukung penyorotan sintaksis, petunjuk kesalahan, dan cuplikan kode bawaan (Snippets), untuk menyisipkan contoh umum dengan cepat seperti: merender bagan, mengikat event tombol, memuat pustaka eksternal, merender komponen React/Vue, lini masa, kartu informasi, dll.
 
-- `Snippets`: Membuka daftar cuplikan kode bawaan. Anda dapat mencari dan menyisipkan cuplikan yang dipilih ke editor kode pada posisi kursor saat ini dengan satu klik.
-- `Run`: Menjalankan kode secara langsung di editor saat ini dan menampilkan log eksekusi ke panel `Logs` di bagian bawah. Ini mendukung tampilan `console.log/info/warn/error`, dan kesalahan akan disorot dengan tautan ke baris dan kolom tertentu.
+- `Snippets`: Membuka daftar cuplikan kode bawaan, dapat mencari dan menyisipkan cuplikan yang dipilih ke posisi kursor saat ini di area edit kode dengan satu klik.
+- `Run`: Menjalankan kode dalam editor saat ini secara langsung, dan mengeluarkan log eksekusi ke panel `Logs` di bagian bawah. Mendukung tampilan `console.log/info/warn/error`, kesalahan akan disorot dan dapat diarahkan ke baris serta kolom tertentu.
 
 ![jsblock-toolbars-20251029](https://static-docs.nocobase.com/jsblock-toolbars-20251029.png)
 
-Selain itu, Anda dapat langsung memanggil karyawan AI "Frontend Engineer · Nathan" dari sudut kanan atas editor. Nathan dapat membantu Anda menulis atau memodifikasi skrip berdasarkan konteks saat ini. Anda kemudian dapat "Apply to editor" dengan satu klik dan menjalankan kode untuk melihat hasilnya. Untuk detailnya, lihat:
+Selain itu, sudut kanan atas editor dapat langsung memanggil karyawan AI "Frontend Engineer · Nathan", memintanya membantu menulis atau mengubah skrip berdasarkan konteks saat ini, lalu klik "Apply to editor" untuk menerapkannya ke editor sebelum dijalankan untuk melihat hasilnya. Lihat detailnya:
 
-- [AI Karyawan · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [Karyawan AI · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Lingkungan Runtime dan Keamanan
 
-- **Kontainer**: Sistem menyediakan kontainer DOM `ctx.element` (ElementProxy) yang aman untuk skrip, yang hanya memengaruhi blok saat ini dan tidak mengganggu area lain di halaman.
-- **Sandbox**: Skrip berjalan di lingkungan yang terkontrol. `window`/`document`/`navigator` menggunakan objek proxy yang aman, memungkinkan API umum digunakan sambil membatasi perilaku berisiko.
-- **Render Ulang**: Blok secara otomatis merender ulang saat disembunyikan dan kemudian ditampilkan kembali (untuk menghindari eksekusi ulang skrip pemasangan awal).
+- Kontainer: Sistem menyediakan kontainer DOM yang aman `ctx.element` (ElementProxy) untuk skrip, hanya memengaruhi blok saat ini, tidak mengganggu area lain di halaman.
+- Sandbox: Skrip berjalan di lingkungan yang terkontrol, `window`/`document`/`navigator` menggunakan objek proksi yang aman, API umum tersedia, perilaku berisiko dibatasi.
+- Render ulang: Blok akan otomatis merender ulang setelah disembunyikan dan ditampilkan kembali (menghindari eksekusi berulang pada pemasangan pertama).
 
 ## Penggunaan Umum (Contoh Sederhana)
 
@@ -83,7 +83,7 @@ chart.setOption({ title: { text: ctx.t('ECharts') }, xAxis: {}, yAxis: {}, serie
 chart.resize();
 ```
 
-### 4) Membuka Tampilan (Drawer)
+### 4) Membuka Tampilan (Laci)
 
 ```js
 const popupUid = ctx.model.uid + '-1';
@@ -102,12 +102,12 @@ ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JS
 
 ## Catatan
 
-- Disarankan untuk menggunakan CDN tepercaya untuk memuat pustaka eksternal.
-- **Saran Penggunaan Selektor**: Prioritaskan penggunaan selektor atribut `class` atau `[name=...]`. Hindari penggunaan `id` tetap untuk mencegah konflik dari `id` yang duplikat saat menggunakan beberapa blok atau popup.
-- **Pembersihan Event**: Karena blok dapat merender ulang beberapa kali, listener event harus dibersihkan atau diduplikasi sebelum mengikat untuk menghindari pemicuan berulang. Anda dapat menggunakan pendekatan "hapus lalu tambahkan", listener satu kali, atau tanda untuk mencegah duplikasi.
+- Pemuatan pustaka eksternal disarankan menggunakan CDN tepercaya.
+- Saran penggunaan selektor: Prioritaskan penggunaan selektor atribut `class` atau `[name=...]`; hindari penggunaan `id` tetap untuk mencegah duplikasi `id` di beberapa blok/pop-up yang menyebabkan konflik gaya atau event.
+- Pembersihan event: Blok mungkin merender ulang beberapa kali, bersihkan atau hapus duplikasi event sebelum mengikat untuk menghindari pemicuan berulang. Dapat menggunakan cara "hapus dulu baru tambah", atau listener sekali pakai, atau menambahkan penanda untuk mencegah pengulangan.
 
 ## Dokumen Terkait
 
 - [Variabel dan Konteks](/interface-builder/variables)
 - [Aturan Keterkaitan](/interface-builder/linkage-rule)
-- [Tampilan dan Popup](/interface-builder/actions/types/view)
+- [Tampilan dan Pop-up](/interface-builder/actions/types/view)

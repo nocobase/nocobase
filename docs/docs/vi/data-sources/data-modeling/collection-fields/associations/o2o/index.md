@@ -29,7 +29,7 @@ Cấu hình trường
 
 Mối quan hệ ER
 
-![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98573ca24ac72d.png)
+![](https://static-docs.nocobase.com/31e7cc3e630220cf1e98753ca24ac72d.png)
 
 Cấu hình trường
 

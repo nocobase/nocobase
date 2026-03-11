@@ -2,21 +2,21 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Tổng quan giải pháp"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Thiết kế chi tiết"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "Cài đặt"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Nội dung khác"
   }
 ]

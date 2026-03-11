@@ -4,4 +4,4 @@ Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, pro
 
 # Mapa drogowa nauki
 
-![20250915220745](https://static-docs.nocobase.com/20250915220745.png)
+![20250915220745](https://static-docs.nocobase.com/20251102202401.png)

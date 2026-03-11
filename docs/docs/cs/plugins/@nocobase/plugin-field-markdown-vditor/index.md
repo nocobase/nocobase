@@ -2,11 +2,15 @@
 displayName: "Collection field: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |
-  Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.
+  Slouží k ukládání Markdownu a jeho vykreslování pomocí editoru Vditor. Podporuje běžnou syntaxi Markdownu, jako jsou seznamy, kód, citace atd., a podporuje nahrávání obrázků, zvukových záznamů atd. Zároveň umožňuje okamžité vykreslování (WYSIWYG).
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
+
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-field-markdown-vditor/index).
+:::
 
 # Collection field: Markdown(Vditor)

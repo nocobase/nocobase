@@ -1,8 +1,8 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "Pole kolekcji: Migawka relacji"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
-  When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
+  Podczas dodawania danych tworzy migawkę danych relacji i zapisuje ją w bieżących danych. Migawka nie jest aktualizowana, gdy dane relacji zostaną zaktualizowane.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Collection field: Snapshot
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/plugins/@nocobase/plugin-snapshot-field/index).
+:::
 
-> Note: This plugin is deprecated.
+# Pole kolekcji: Migawka relacji
+
+> Uwaga: Ta wtyczka jest przestarzała (deprecated).

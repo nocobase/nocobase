@@ -1,13 +1,12 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/ai-employees/knowledge-base/vector-store).
 :::
-
 
 # Vektorové úložiště
 
 ## Úvod
 
-V rámci znalostní báze, při ukládání dokumentů dochází k jejich vektorizaci, a při vyhledávání dokumentů jsou vektorizovány vyhledávací termíny. Oba tyto procesy vyžadují použití `Embedding modelu` pro vektorizaci původního textu.
+V rámci znalostní báze při ukládání dokumentů dochází k jejich vektorizaci a při vyhledávání dokumentů jsou vektorizovány vyhledávací termíny. Oba tyto procesy vyžadují použití `Embedding modelu` pro vektorizaci původního textu.
 
 V pluginu AI Znalostní báze představuje vektorové úložiště propojení `Embedding modelu` a vektorové databáze.
 
@@ -21,7 +20,7 @@ Klikněte na tlačítko `Add new` v pravém horním rohu pro přidání nového 
 
 - Do vstupního pole `Name` zadejte název vektorového úložiště;
 - V části `Vector store` vyberte již nakonfigurovanou vektorovou databázi. Viz: [Vektorová databáze](/ai-employees/knowledge-base/vector-database);
-- V části `LLM service` vyberte již nakonfigurovanou službu LLM. Viz: [Správa služeb LLM](/ai-employees/quick-start/llm-service);
+- V části `LLM service` vyberte již nakonfigurovanou službu LLM. Viz: [Správa služeb LLM](/ai-employees/features/llm-service);
 - Do vstupního pole `Embedding model` zadejte název `Embedding` modelu, který chcete použít;
   
 Klikněte na tlačítko `Submit` pro uložení informací o vektorovém úložišti.

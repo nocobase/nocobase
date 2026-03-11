@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: Approval"
+displayName: "Workflow: Goedkeuring"
 packageName: '@nocobase/plugin-workflow-approval'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Triggered when an approval request is initiated through an action button or API. Dedicated to the approval process, with exclusive approval node and block for managing documents and tracking processing processes.
+  Geactiveerd wanneer een goedkeuringsaanvraag wordt gestart via een actieknop of API. Speciaal bedoeld voor het goedkeuringsproces, met een exclusieve goedkeuringsnode en -blok voor het beheren van documenten en het volgen van het verwerkingsproces.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Approval
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-workflow-approval/index) voor nauwkeurige informatie.
+:::
+
+# Workflow: Goedkeuring

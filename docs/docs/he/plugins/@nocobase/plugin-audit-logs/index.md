@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "יומן ביקורת (מיושן)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  תוסף זה מיושן, נא לא להשתמש בו. בעתיד יהיה תוסף יומן ביקורת חדש.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-audit-logs/index).
+:::
 
-> Note: This plugin is deprecated.
+# יומן ביקורת (מיושן)
+
+> הערה: תוסף זה מיושן (deprecated).

@@ -1,5 +1,5 @@
 ---
-displayName: "Locale tester"
+displayName: "Nástroj pro testování překladu"
 packageName: '@nocobase/plugin-locale-tester'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Locale tester
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-locale-tester/index).
+:::
+
+# Nástroj pro testování překladu

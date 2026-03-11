@@ -32,7 +32,7 @@ Un nodo manuale richiede che Lei specifichi un utente come responsabile dell'ese
 
 Selezioni un utente, oppure selezioni la chiave primaria o la chiave esterna dei dati utente dal contesto tramite una variabile.
 
-![Nodo Manuale_Configurazione_Responsabile_Selezionare Variabile](https://static-docs.nocobase.com/22fbca3b8e21fda3a813019037001445.png)
+![Nodo Manuale_Configurazione_Responsabile_Selezionare Variabile](https://static-docs.nocobase.com/22fbca3b8e21fda3a831019037001445.png)
 
 :::info{title=Nota}
 Attualmente, l'opzione responsabile per i nodi manuali non supporta la gestione di più utenti. Questa funzionalità sarà supportata in una versione futura.
@@ -104,11 +104,11 @@ Per la gestione manuale, è necessario aggiungere anche un elenco di attività i
 
 Può selezionare "Attività in sospeso del flusso di lavoro" dai blocchi in una pagina per aggiungere un blocco elenco di attività in sospeso:
 
-![Nodo Manuale_Aggiungere Blocco Attività in Sospeso](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Nodo Manuale_Aggiungere Blocco Attività in Sospeso](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Esempio di blocco elenco attività in sospeso:
 
-![Nodo Manuale_Elenco Attività in Sospeso](https://static-docs.nocobase.com/cfefb0d3c6a91c5c9dfa550d6b220f34.png)
+![Nodo Manuale_Elenco Attività in Sospeso](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Dettagli Attività in Sospeso
 

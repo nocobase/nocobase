@@ -1,65 +1,64 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/interface-builder/fields/specific/js-field).
 :::
 
-
-# JS Pole
+# JS Field
 
 ## Úvod
 
-JS Pole slouží k vlastnímu vykreslování obsahu na pozici pole pomocí JavaScriptu. Běžně se používá v blocích detailů, pro položky jen pro čtení ve formulářích nebo jako „Jiné vlastní položky“ ve sloupcích tabulek. Je vhodné pro personalizované zobrazení, kombinování odvozených informací, vykreslování stavových odznaků, bohatého textu nebo grafů.
+JS Field se používá k vlastnímu vykreslování obsahu na pozici pole pomocí JavaScriptu. Často se vyskytuje v blocích detailů, v položkách formulářů jen pro čtení nebo jako „jiné vlastní položky“ ve sloupcích tabulky. Je vhodný pro personalizované zobrazení, kombinování odvozených informací, stavové odznaky, bohatý text nebo vykreslování grafů.
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)
 
 ## Typy
 
-- Jen pro čtení: Slouží pro zobrazení, které nelze upravovat, a pro vykreslení výstupu čte `ctx.value`.
-- Editovatelné: Slouží pro vlastní interakce s vstupem. Poskytuje `ctx.getValue()`/`ctx.setValue(v)` a událost kontejneru `js-field:value-change` pro usnadnění obousměrné synchronizace s hodnotami formuláře.
+- Jen pro čtení: Používá se pro needitovatelné zobrazení, čte `ctx.value` pro vykreslení výstupu.
+- Editovatelné: Používá se pro vlastní interakce se vstupem, poskytuje `ctx.getValue()`/`ctx.setValue(v)` a událost kontejneru `js-field:value-change` pro usnadnění obousměrné synchronizace s hodnotami formuláře.
 
 ## Případy použití
 
 - Jen pro čtení
-  - Blok detailů: Zobrazuje obsah jen pro čtení, jako jsou výsledky výpočtů, stavové odznaky, fragmenty bohatého textu, grafy atd.
-  - Blok tabulky: Používá se jako „Jiné vlastní sloupce > JS Field“ pro zobrazení jen pro čtení (pokud potřebujete sloupec, který není vázán na pole, použijte prosím JS Column).
+  - Blok detailů: Zobrazení výsledků výpočtů, stavových odznaků, úryvků bohatého textu, grafů a jiného obsahu jen pro čtení;
+  - Blok tabulky: Používá se jako „Ostatní vlastní sloupce > JS Field“ pro zobrazení jen pro čtení (pokud potřebujete sloupec, který není vázán na pole, použijte JS Column);
 
 - Editovatelné
-  - Blok formuláře (CreateForm/EditForm): Slouží pro vlastní vstupní ovládací prvky nebo složené vstupy, které jsou validovány a odesílány s formulářem.
-  - Vhodné pro scénáře jako: vstupní komponenty z externích knihoven, editory bohatého textu/kódu, složité dynamické komponenty atd.
+  - Blok formuláře (CreateForm/EditForm): Používá se pro vlastní vstupní ovládací prvky nebo složené vstupy, které se validují a odesílají spolu s formulářem;
+  - Vhodné scénáře: vstupní komponenty z externích knihoven, editory bohatého textu/kódu, složité dynamické komponenty atd.;
 
 ## API běhového kontextu
 
-Kód JS Pole za běhu může přímo využívat následující možnosti kontextu:
+Kód JS Field za běhu může přímo využívat následující možnosti kontextu:
 
-- `ctx.element`: Kontejner DOM pole (ElementProxy), podporující `innerHTML`, `querySelector`, `addEventListener` atd.
-- `ctx.value`: Aktuální hodnota pole (jen pro čtení).
-- `ctx.record`: Aktuální objekt záznamu (jen pro čtení).
-- `ctx.collection`: Metadata kolekce, do které pole patří (jen pro čtení).
-- `ctx.requireAsync(url)`: Asynchronně načte knihovnu AMD/UMD pomocí URL.
-- `ctx.importAsync(url)`: Dynamicky importuje modul ESM pomocí URL.
-- `ctx.openView(options)`: Otevře nakonfigurované zobrazení (vyskakovací okno/zásuvka/stránka).
-- `ctx.i18n.t()` / `ctx.t()`: Internationalizace.
-- `ctx.onRefReady(ctx.ref, cb)`: Vykreslí po připravenosti kontejneru.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Vestavěné knihovny React, ReactDOM, Ant Design, ikony Ant Design a dayjs pro vykreslování JSX a utility pro práci s datem a časem. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou zachovány pro kompatibilitu.)
-- `ctx.render(vnode)`: Vykreslí React element, HTML řetězec nebo DOM uzel do výchozího kontejneru `ctx.element`. Opakované vykreslování znovu použije Root a přepíše stávající obsah kontejneru.
+- `ctx.element`: DOM kontejner pole (ElementProxy), podporující `innerHTML`, `querySelector`, `addEventListener` atd.;
+- `ctx.value`: Aktuální hodnota pole (jen pro čtení);
+- `ctx.record`: Aktuální objekt záznamu (jen pro čtení);
+- `ctx.collection`: Meta informace o kolekci, ke které pole patří (jen pro čtení);
+- `ctx.requireAsync(url)`: Asynchronně načte knihovnu AMD/UMD pomocí URL;
+- `ctx.importAsync(url)`: Dynamicky importuje modul ESM pomocí URL;
+- `ctx.openView(options)`: Otevře nakonfigurované zobrazení (vyskakovací okno/zásuvka/stránka);
+- `ctx.i18n.t()` / `ctx.t()`: Internacionalizace;
+- `ctx.onRefReady(ctx.ref, cb)`: Vykreslí po připravenosti kontejneru;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Vestavěné React / ReactDOM / Ant Design / Ant Design ikony / dayjs / lodash / math.js / formula.js a další univerzální knihovny pro vykreslování JSX, zpracování času, manipulaci s daty a matematické výpočty. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou stále zachovány pro kompatibilitu.)
+- `ctx.render(vnode)`: Vykreslí React element, HTML řetězec nebo DOM uzel do výchozího kontejneru `ctx.element`; opakované vykreslování znovu použije Root a přepíše stávající obsah kontejneru.
 
 Specifické pro editovatelný typ (JSEditableField):
 
 - `ctx.getValue()`: Získá aktuální hodnotu formuláře (upřednostňuje stav formuláře, poté se vrátí k props pole).
 - `ctx.setValue(v)`: Nastaví hodnotu formuláře a props pole, udržuje obousměrnou synchronizaci.
-- Událost kontejneru `js-field:value-change`: Spustí se, když se změní externí hodnota, což usnadňuje skriptu aktualizaci zobrazení vstupu.
+- Událost kontejneru `js-field:value-change`: Spustí se při změně externí hodnoty, což usnadňuje skriptu aktualizaci zobrazení vstupu.
 
-## Editor a úryvky kódu
+## Editor a úryvky
 
-Editor skriptů JS Pole podporuje zvýrazňování syntaxe, nápovědy k chybám a vestavěné úryvky kódu (Snippets).
+Editor skriptů JS Field podporuje zvýrazňování syntaxe, nápovědy k chybám a vestavěné úryvky kódu (Snippets).
 
 - `Snippets`: Otevře seznam vestavěných úryvků kódu, které lze vyhledávat a vložit na aktuální pozici kurzoru jedním kliknutím.
-- `Run`: Přímo spustí aktuální kód. Protokol spuštění je vyveden do panelu `Logs` dole, podporuje `console.log/info/warn/error` a zvýrazňování chyb pro snadnou lokalizaci.
+- `Run`: Přímo spustí aktuální kód, protokol spuštění se vypíše do panelu `Logs` dole, podporuje `console.log/info/warn/error` a zvýrazňování chyb pro snadnou lokalizaci.
 
 ![jsfield-readonly-toolbars-20251029](https://static-docs.nocobase.com/jsfield-readonly-toolbars-20251029.png)
 
-Kód můžete také generovat s pomocí AI zaměstnance:
+Kód můžete také generovat ve spolupráci s AI zaměstnancem:
 
-- [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/built-in/ai-coding)
+- [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/features/built-in-employee)
 
 ## Běžné použití
 
@@ -112,7 +111,7 @@ a?.addEventListener('click', async () => {
 ### 5) Editovatelný vstup (JSEditableFieldModel)
 
 ```js
-// Vykreslete jednoduchý vstup pomocí JSX a synchronizujte hodnotu formuláře
+// Vykreslení jednoduchého vstupu pomocí JSX a synchronizace hodnoty formuláře
 function InputView() {
   return (
     <input
@@ -124,7 +123,7 @@ function InputView() {
   );
 }
 
-// Synchronizujte vstup, když se změní externí hodnota (volitelné)
+// Synchronizace vstupu při změně externí hodnoty (volitelné)
 ctx.element.addEventListener('js-field:value-change', (ev) => {
   const el = ctx.element.querySelector('.nb-js-editable');
   if (el) el.value = ev.detail ?? '';
@@ -135,6 +134,6 @@ ctx.render(<InputView />);
 
 ## Poznámky
 
-- Pro načítání externích knihoven se doporučuje používat důvěryhodné CDN a mít připravený záložní plán pro případ selhání (např. `if (!lib) return;`).
-- Pro selektory se doporučuje upřednostňovat `class` nebo `[name=...]` a vyhnout se používání pevných `id`, aby se zabránilo duplicitním `id` ve více blocích nebo vyskakovacích oknech.
-- Vyčištění událostí: Pole se může kvůli změnám dat nebo přepínání zobrazení vykreslit vícekrát. Před navázáním události byste ji měli vyčistit nebo odstranit duplicity, abyste zabránili opakovanému spouštění. Můžete „nejprve odebrat, poté přidat“.
+- Pro načítání externích knihoven doporučujeme používat důvěryhodné CDN a připravit se na scénáře selhání (např. `if (!lib) return;`).
+- Pro selektory doporučujeme upřednostňovat `class` nebo `[name=...]` a vyhýbat se používání pevných `id`, aby se zabránilo duplicitním `id` ve více blocích nebo vyskakovacích oknech.
+- Vyčištění událostí: Pole může být kvůli změnám dat nebo přepínání zobrazení vykresleno vícekrát. Před navázáním události byste ji měli vyčistit nebo odstranit duplicity, aby se zabránilo opakovanému spouštění. Lze použít „nejprve remove, poté add“.

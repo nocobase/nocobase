@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "בלוק: גאנט"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  מספק בלוק גאנט.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-gantt/index).
+:::
+
+# בלוק: גאנט

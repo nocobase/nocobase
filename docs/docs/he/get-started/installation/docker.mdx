@@ -1,7 +1,6 @@
-:::tip
-מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/get-started/installation/docker).
 :::
-
 
 # התקנת NocoBase באמצעות Docker
 
@@ -31,7 +30,7 @@ vi docker-compose.yml
 - **בחירת אימג'**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - בסביבות ייצור, מומלץ לקבע גרסה מספרית ספציפית כדי למנוע שדרוגים אוטומטיים לא מכוונים. [צפו בכל הגרסאות](https://hub.docker.com/r/nocobase/nocobase/tags)
   - אימג' Docker Hub: `nocobase/nocobase:latest-full`
-  - ה**אימג' המלא** (full image) כולל את לקוחות PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 הנדרשים עבור תוספי ניהול גיבויים והעברות, וכן את LibreOffice הנדרש להדפסת תבניות (PDF).
+  - ה**אימג' המלא** (full image) כולל את לקוחות PostgreSQL 16/17, MySQL 8.0, Oracle 19.25 הנדרשים עבור תוספי ניהול גיבויים ומיגרציות, וכן את LibreOffice הנדרש להדפסת תבניות (PDF).
   - אם אתם צריכים לבנות אימג' משלכם, תוכלו לעיין ב-[Dockerfile הרשמי (גרסה מצומצמת)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) וב-[Dockerfile-full (גרסה מלאה)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full).
 - **שינוי `APP_KEY`**: אנא החליפו את `your-secret-key` במחרוזת אקראית, המשמשת להצפנת מידע רגיש כגון אסימוני משתמש.
 - **שימוש במסד נתונים קיים**: אם יש לכם כבר שירות מסד נתונים, אנא שנו את `DB_HOST` לכתובת שרת מסד הנתונים, ומחקו או הסירו את ההערה מהגדרת שירותי מסד הנתונים (לדוגמה, שירותי `postgres`, `mysql`, `mariadb`).

@@ -16,7 +16,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 Nell'interfaccia di configurazione del **flusso di lavoro**, clicchi sul pulsante più ("+") all'interno del flusso per aggiungere un nodo "**Variabile**":
 
-![Add Variable Node](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Add Variable Node](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Configurare il nodo
 

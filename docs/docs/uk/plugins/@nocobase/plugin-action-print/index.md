@@ -1,12 +1,16 @@
 ---
-displayName: "Action: Print"
+displayName: "Дія: Друк"
 packageName: '@nocobase/plugin-action-print'
 description: |
-  Calls the browser's print function to print a record.
+  Викликає функцію друку браузера для друку одного запису.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Print
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-action-print/index).
+:::
+
+# Дія: Друк

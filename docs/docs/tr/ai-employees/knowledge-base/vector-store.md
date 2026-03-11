@@ -1,7 +1,6 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/ai-employees/knowledge-base/vector-store) bakın.
 :::
-
 
 # Vektör Deposu
 
@@ -21,7 +20,7 @@ Sağ üst köşedeki `Add new` düğmesine tıklayarak yeni bir vektör deposu e
 
 - `Name` giriş kutusuna vektör deposu adını girin;
 - `Vector store` alanında önceden yapılandırılmış bir vektör veritabanı seçin. Bakınız: [Vektör Veritabanı](/ai-employees/knowledge-base/vector-database);
-- `LLM service` alanında önceden yapılandırılmış bir LLM hizmeti seçin. Bakınız: [LLM Hizmet Yönetimi](/ai-employees/quick-start/llm-service);
+- `LLM service` alanında önceden yapılandırılmış bir LLM hizmeti seçin. Bakınız: [LLM Hizmet Yönetimi](/ai-employees/features/llm-service);
 - `Embedding model` giriş kutusuna kullanılacak `Embedding` modelinin adını girin;
 
 `Submit` düğmesine tıklayarak vektör deposu bilgilerini kaydedin.

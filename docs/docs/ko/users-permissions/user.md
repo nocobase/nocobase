@@ -28,7 +28,7 @@ pkg: '@nocobase/plugin-users'
 
 ![](https://static-docs.nocobase.com/d25e06872bd1d48ed8c1139728fa5ff3.png)
 
-![](https://static-docs.nocobase.com/c140cabb240385b9b5aca32a2ec2801.png)
+![](https://static-docs.nocobase.com/c140bcaab240385b9b5aca32a2ec2801.png)
 
 ## 사용자 비밀번호 변경
 

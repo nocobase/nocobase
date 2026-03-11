@@ -25,7 +25,7 @@ pkg: '@nocobase/plugin-users'
 
 ## การแก้ไขโปรไฟล์ผู้ใช้งาน
 
-![](https://static-docs.nocobase.com/d2e06872bd1d48ed8c1139728fa5ff3.png)
+![](https://static-docs.nocobase.com/d25e06872bd1d48ed8c1139728fa5ff3.png)
 
 ![](https://static-docs.nocobase.com/c140bcaab240385b9b5aca32a2ec2801.png)
 

@@ -73,4 +73,4 @@ Synkronisering av fjärrtabell
 
 Slutligen visas den i gränssnittet
 
-![Visas i gränssnittet](https://static-docs.nocobase.com/368fca27c99277d9360ca81350949357.png)
+![Visas i gränssnittet](https://static-docs.nocobase.com/368fca27a99277d9360ca81350949357.png)

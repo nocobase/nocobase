@@ -1,14 +1,18 @@
 ---
-displayName: "Custom variables"
+displayName: "Anpassade variabler"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
   - 1.x
 description: |
-  Support for adding and using custom variables
+  Stöd för att lägga till och använda anpassade variabler
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Custom variables
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-custom-variables/index).
+:::
+
+# Anpassade variabler

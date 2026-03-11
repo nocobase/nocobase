@@ -22,13 +22,13 @@ Door het te gebruiken in combinatie met het knooppunt "Antwoordbericht", kunt u 
 
 Wanneer u een **workflow** aanmaakt, selecteert u het type "Gebeurtenis vóór actie":
 
-![Create Before Action Event](https://static-docs.nocobase.com/2add03f2bdb0a86baae5fe9864fc4b6.png)
+![Create Before Action Event](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9864fc4b6.png)
 
 ### Collectie selecteren
 
 In de trigger van een interceptie-**workflow** is het eerste wat u moet configureren de **collectie** die overeenkomt met de actie:
 
-![Interceptor Event Configuration_Collection](https://static-docs.nocobase.com/8f712caca159d334cf776f838d53d6.png)
+![Interceptor Event Configuration_Collection](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 Vervolgens selecteert u de interceptiemodus. U kunt ervoor kiezen om alleen de actieknop te onderscheppen die aan deze **workflow** is gekoppeld, of om alle geselecteerde acties voor deze **collectie** te onderscheppen (ongeacht uit welk formulier ze komen, en zonder dat de bijbehorende **workflow** hoeft te worden gekoppeld):
 
@@ -111,7 +111,7 @@ Het conditieknooppunt binnen de lus wordt gebruikt om te bepalen of de voorraad 
 
 Andere configuraties zijn hetzelfde als in het basisgebruik. Wanneer de bestelling uiteindelijk wordt ingediend, wordt de bestelling onderschept en wordt een bijbehorende melding teruggestuurd als een product onvoldoende voorraad heeft. Probeer tijdens het testen een bestelling in te dienen met meerdere producten, waarbij één product onvoldoende voorraad heeft en een ander voldoende. U ziet dan het geretourneerde antwoordbericht:
 
-![Example_Response Message after Submission](https://static-docs.nocobase.com/dd9e81084aa237d5629595ab6cf00f8aa898e3.png)
+![Example_Response Message after Submission](https://static-docs.nocobase.com/dd9e81084aa237bda0241d399ac19270.png)
 
 Zoals u kunt zien, geeft het antwoordbericht niet aan dat het eerste product, "iPhone 15 pro", onvoldoende voorraad heeft, maar alleen dat het tweede product, "iPhone 14 pro", onvoldoende voorraad heeft. Dit komt omdat in de lus het eerste product voldoende voorraad had en daarom niet werd onderschept, terwijl het tweede product onvoldoende voorraad had, wat de orderinzending onderschepte.
 

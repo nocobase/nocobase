@@ -1,15 +1,19 @@
 ---
-displayName: "RabbitMQ queue adapter"
+displayName: "RabbitMQ kuyruk adaptörü"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with RabbitMQ.
+  Uygulama mesaj kuyruklarını RabbitMQ ile işlemek için kullanılır.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# RabbitMQ queue adapter
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-queue-adapter-rabbitmq/index) bakın.
+:::
+
+# RabbitMQ kuyruk adaptörü

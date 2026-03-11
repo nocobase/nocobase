@@ -1,12 +1,16 @@
 ---
-displayName: "Multi-app manager (deprecated)"
+displayName: "מנהל Multi-app (מיושן)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
-  Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.
+  Multi-app מריץ אפליקציות בשיטה של שיתוף תהליכים, המתאימה לסביבות בדיקה והדגמה בלבד. אין להשתמש בסביבת ייצור.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Multi-app manager (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-multi-app-manager/index).
+:::
+
+# מנהל Multi-app (מיושן)

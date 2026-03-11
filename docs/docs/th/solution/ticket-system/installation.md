@@ -1,130 +1,134 @@
-# Installation Guide
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/solution/ticket-system/installation)
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# วิธีการติดตั้ง
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> ปัจจุบันเวอร์ชันนี้ใช้รูปแบบ**การสำรองและคืนค่า (backup and restoration)** ในการปรับใช้ ในเวอร์ชันถัดไป เราอาจเปลี่ยนเป็นรูปแบบ**การย้ายข้อมูลส่วนเพิ่ม (incremental migration)** เพื่อให้ง่ายต่อการรวมโซลูชันเข้ากับระบบที่คุณมีอยู่แล้วครับ
 
-Before you begin, please ensure:
+เพื่อให้คุณสามารถปรับใช้โซลูชันระบบใบสั่งงาน (ticketing solution) ลงในสภาพแวดล้อม NocoBase ของคุณเองได้อย่างรวดเร็วและราบรื่น เรามีวิธีการคืนค่าให้เลือก 2 วิธี โปรดเลือกวิธีที่เหมาะสมที่สุดตามเวอร์ชันผู้ใช้และพื้นฐานทางเทคนิคของคุณครับ
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+ก่อนเริ่มต้น โปรดตรวจสอบให้แน่ใจว่า:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- คุณมีสภาพแวดล้อมการรัน NocoBase พื้นฐานอยู่แล้ว สำหรับการติดตั้งระบบหลัก โปรดอ้างอิง[เอกสารการติดตั้งอย่างเป็นทางการ](https://docs-cn.nocobase.com/welcome/getting-started/installation)ที่มีรายละเอียดมากกว่าครับ
+- เวอร์ชัน NocoBase **2.0.0-beta.5 ขึ้นไป**
+- คุณได้ดาวน์โหลดไฟล์ที่เกี่ยวข้องของระบบใบสั่งงานแล้ว:
+  - **ไฟล์สำรองข้อมูล**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - สำหรับวิธีที่ 1
+  - **ไฟล์ SQL**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - สำหรับวิธีที่ 2
+
+**คำชี้แจงสำคัญ**:
+- โซลูชันนี้สร้างขึ้นบนฐานข้อมูล **PostgreSQL 16** โปรดตรวจสอบให้แน่ใจว่าสภาพแวดล้อมของคุณใช้ PostgreSQL 16 ครับ
+- **DB_UNDERSCORED ต้องไม่เป็น true**: โปรดตรวจสอบไฟล์ `docker-compose.yml` ของคุณ และตรวจสอบให้แน่ใจว่าไม่ได้ตั้งค่าตัวแปรสภาพแวดล้อม `DB_UNDERSCORED` เป็น `true` มิฉะนั้นจะเกิดความขัดแย้งกับการสำรองข้อมูลของโซลูชันและทำให้การคืนค่าล้มเหลวครับ
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## วิธีที่ 1: คืนค่าโดยใช้ตัวจัดการการสำรองข้อมูล (แนะนำสำหรับผู้ใช้เวอร์ชัน Professional/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+วิธีนี้เป็นการคืนค่าแบบคลิกเดียวผ่านปลั๊กอิน "[ตัวจัดการการสำรองข้อมูล (Backup Manager)](https://docs-cn.nocobase.com/handbook/backups)" (เวอร์ชัน Professional/Enterprise) ที่ติดตั้งมาในตัว NocoBase ซึ่งมีการใช้งานที่ง่ายที่สุด แต่มีข้อกำหนดบางประการเกี่ยวกับสภาพแวดล้อมและเวอร์ชันของผู้ใช้ครับ
 
-### Key Features
+### คุณลักษณะหลัก
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **ข้อดี**:
+  1. **ใช้งานสะดวก**: สามารถทำได้ผ่านอินเทอร์เฟซ UI และสามารถคืนค่าการกำหนดค่าทั้งหมดรวมถึงปลั๊กอินได้อย่างสมบูรณ์ครับ
+  2. **คืนค่าครบถ้วน**: **สามารถคืนค่าไฟล์ระบบทั้งหมดได้** รวมถึงไฟล์เทมเพลตการพิมพ์ ไฟล์ที่อัปโหลดในฟิลด์ไฟล์ของตาราง ฯลฯ เพื่อให้มั่นใจในความสมบูรณ์ของฟังก์ชันการทำงานครับ
+* **ข้อจำกัด**:
+  1. **จำกัดเฉพาะเวอร์ชัน Professional/Enterprise**: "ตัวจัดการการสำรองข้อมูล (Backup Manager)" เป็นปลั๊กอินระดับองค์กร ซึ่งใช้งานได้เฉพาะผู้ใช้เวอร์ชัน Professional/Enterprise เท่านั้นครับ
+  2. **ข้อกำหนดสภาพแวดล้อมที่เข้มงวด**: กำหนดให้สภาพแวดล้อมฐานข้อมูลของคุณ (เวอร์ชัน, การตั้งค่าการแยกแยะตัวพิมพ์เล็ก-ใหญ่ ฯลฯ) ต้องเข้ากันได้อย่างมากกับสภาพแวดล้อมที่เราใช้สร้างไฟล์สำรองครับ
+  3. **การพึ่งพาปลั๊กอิน**: หากโซลูชันประกอบด้วยปลั๊กอินเชิงพาณิชย์ที่ไม่มีในสภาพแวดล้อมท้องถิ่นของคุณ การคืนค่าจะล้มเหลวครับ
 
-### Steps
+### ขั้นตอนการดำเนินงาน
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**ขั้นตอนที่ 1: 【แนะนำเป็นอย่างยิ่ง】เริ่มใช้งานแอปพลิเคชันด้วยอิมเมจ `full`**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+เพื่อหลีกเลี่ยงการคืนค่าล้มเหลวเนื่องจากขาดไคลเอนต์ฐานข้อมูล เราขอแนะนำเป็นอย่างยิ่งให้คุณใช้อิมเมจ Docker เวอร์ชัน `full` ซึ่งมีโปรแกรมเสริมที่จำเป็นทั้งหมดติดตั้งมาให้แล้ว ทำให้คุณไม่ต้องกำหนดค่าเพิ่มเติมครับ
 
-Example command to pull the image:
+ตัวอย่างคำสั่งในการดึงอิมเมจ (pull image):
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+จากนั้นใช้อิมเมจนี้เพื่อเริ่มบริการ NocoBase ของคุณครับ
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **หมายเหตุ**: หากไม่ใช้อิมเมจ `full` คุณอาจต้องติดตั้งไคลเอนต์ฐานข้อมูล `pg_dump` ด้วยตนเองภายในคอนเทนเนอร์ ซึ่งเป็นกระบวนการที่ยุ่งยากและไม่เสถียรครับ
 
-**Step 2: Enable the "Backup Manager" plugin**
+**ขั้นตอนที่ 2: เปิดใช้งานปลั๊กอิน "ตัวจัดการการสำรองข้อมูล (Backup Manager)"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. เข้าสู่ระบบ NocoBase ของคุณ
+2. ไปที่ **`การจัดการปลั๊กอิน`**
+3. ค้นหาและเปิดใช้งานปลั๊กอิน **`ตัวจัดการการสำรองข้อมูล (Backup Manager)`** ครับ
 
-**Step 3: Restore from local backup file**
+**ขั้นตอนที่ 3: คืนค่าจากไฟล์สำรองข้อมูลในเครื่อง**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. หลังจากเปิดใช้งานปลั๊กอินแล้ว ให้รีเฟรชหน้าเว็บ
+2. ไปที่เมนูด้านซ้าย **`การจัดการระบบ`** -> **`ตัวจัดการการสำรองข้อมูล (Backup Manager)`**
+3. คลิกปุ่ม **`คืนค่าจากการสำรองข้อมูลในเครื่อง`** ที่มุมขวาบน
+4. ลากไฟล์สำรองข้อมูลที่ดาวน์โหลดมาไปยังพื้นที่อัปโหลด
+5. คลิก **`ส่ง (Submit)`** และรอให้ระบบดำเนินการคืนค่าให้เสร็จสิ้น กระบวนการนี้อาจใช้เวลาตั้งแต่ไม่กี่สิบวินาทีไปจนถึงหลายนาทีครับ
 
-### Notes
+### ข้อควรระวัง
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **ความเข้ากันได้ของฐานข้อมูล**: นี่คือจุดที่สำคัญที่สุดของวิธีนี้ เวอร์ชันฐานข้อมูล PostgreSQL, ชุดตัวอักษร (character set) และการตั้งค่าการแยกแยะตัวพิมพ์เล็ก-ใหญ่ของคุณ**ต้องตรงกับ**ไฟล์ต้นฉบับที่สำรองไว้ โดยเฉพาะอย่างยิ่งชื่อ `schema` ต้องตรงกันครับ
+* **การจับคู่ปลั๊กอินเชิงพาณิชย์**: โปรดตรวจสอบให้แน่ใจว่าคุณมีและเปิดใช้งานปลั๊กอินเชิงพาณิชย์ทั้งหมดที่โซลูชันต้องการแล้ว มิฉะนั้นการคืนค่าจะหยุดชะงักครับ
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## วิธีที่ 2: นำเข้าไฟล์ SQL โดยตรง (ทั่วไป, เหมาะสำหรับเวอร์ชัน Community มากกว่า)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+วิธีนี้เป็นการคืนค่าข้อมูลโดยการจัดการฐานข้อมูลโดยตรง โดยข้ามปลั๊กอิน "ตัวจัดการการสำรองข้อมูล (Backup Manager)" ดังนั้นจึงไม่มีข้อจำกัดเรื่องปลั๊กอินเวอร์ชัน Professional/Enterprise ครับ
 
-### Key Features
+### คุณลักษณะหลัก
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **ข้อดี**:
+  1. **ไม่มีข้อจำกัดด้านเวอร์ชัน**: เหมาะสำหรับผู้ใช้ NocoBase ทุกคน รวมถึงเวอร์ชัน Community ครับ
+  2. **ความเข้ากันได้สูง**: ไม่พึ่งพาเครื่องมือ `dump` ภายในแอปพลิเคชัน ตราบใดที่สามารถเชื่อมต่อกับฐานข้อมูลได้ก็สามารถดำเนินการได้ครับ
+  3. **ความทนทานต่อข้อผิดพลาดสูง**: หากโซลูชันประกอบด้วยปลั๊กอินเชิงพาณิชย์ที่คุณไม่มี ฟังก์ชันที่เกี่ยวข้องจะไม่ถูกเปิดใช้งาน แต่จะไม่ส่งผลกระทบต่อการใช้งานฟังก์ชันอื่นๆ และแอปพลิเคชันสามารถเริ่มทำงานได้สำเร็จครับ
+* **ข้อจำกัด**:
+  1. **ต้องมีความสามารถในการจัดการฐานข้อมูล**: ผู้ใช้จำเป็นต้องมีความรู้พื้นฐานในการจัดการฐานข้อมูล เช่น วิธีการรันไฟล์ `.sql` ครับ
+  2. **ไฟล์ระบบสูญหาย**: **วิธีนี้จะทำให้ไฟล์ระบบทั้งหมดสูญหาย** รวมถึงไฟล์เทมเพลตการพิมพ์ ไฟล์ที่อัปโหลดในฟิลด์ไฟล์ของตาราง ฯลฯ ครับ
 
-### Steps
+### ขั้นตอนการดำเนินงาน
 
-**Step 1: Prepare a clean database**
+**ขั้นตอนที่ 1: เตรียมฐานข้อมูลที่สะอาด**
 
-Prepare a brand new, empty database for the data you're about to import.
+เตรียมฐานข้อมูลใหม่ที่ว่างเปล่าสำหรับข้อมูลที่คุณกำลังจะนำเข้าครับ
 
-**Step 2: Import the `.sql` file into the database**
+**ขั้นตอนที่ 2: นำเข้าไฟล์ `.sql` ไปยังฐานข้อมูล**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+รับไฟล์ฐานข้อมูลที่ดาวน์โหลดมา (โดยปกติจะเป็นรูปแบบ `.sql`) และนำเนื้อหาเข้าไปยังฐานข้อมูลที่คุณเตรียมไว้ในขั้นตอนก่อนหน้า มีหลายวิธีในการดำเนินการ ขึ้นอยู่กับสภาพแวดล้อมของคุณ:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **ตัวเลือก A: ผ่านบรรทัดคำสั่งของเซิร์ฟเวอร์ (ตัวอย่างเช่น Docker)**
+  หากคุณใช้ Docker ในการติดตั้ง NocoBase และฐานข้อมูล คุณสามารถอัปโหลดไฟล์ `.sql` ไปยังเซิร์ฟเวอร์ จากนั้นใช้คำสั่ง `docker exec` เพื่อดำเนินการนำเข้า สมมติว่าคอนเทนเนอร์ PostgreSQL ของคุณชื่อ `my-nocobase-db` และชื่อไฟล์คือ `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # คัดลอกไฟล์ sql เข้าไปในคอนเทนเนอร์
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # เข้าไปในคอนเทนเนอร์เพื่อรันคำสั่งนำเข้า
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **ตัวเลือก B: ผ่านไคลเอนต์ฐานข้อมูลระยะไกล**
+  หากฐานข้อมูลของคุณเปิดพอร์ตไว้ คุณสามารถใช้ไคลเอนต์ฐานข้อมูลแบบกราฟิกใดก็ได้ (เช่น DBeaver, Navicat, pgAdmin ฯลฯ) เพื่อเชื่อมต่อกับฐานข้อมูล เปิดหน้าต่างคิวรีใหม่ วางเนื้อหาทั้งหมดของไฟล์ `.sql` ลงไป แล้วรันคำสั่งครับ
 
-**Step 3: Connect to the database and start the application**
+**ขั้นตอนที่ 3: เชื่อมต่อฐานข้อมูลและเริ่มใช้งานแอปพลิเคชัน**
 
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
+กำหนดค่าพารามิเตอร์การเริ่มต้นของ NocoBase (เช่น ตัวแปรสภาพแวดล้อม `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` ฯลฯ) ให้ชี้ไปยังฐานข้อมูลที่คุณเพิ่งนำเข้าข้อมูล จากนั้นเริ่มบริการ NocoBase ตามปกติครับ
 
-### Notes
+### ข้อควรระวัง
 
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
+* **สิทธิ์ในฐานข้อมูล**: วิธีนี้กำหนดให้คุณต้องมีบัญชีและรหัสผ่านที่สามารถจัดการฐานข้อมูลได้โดยตรงครับ
+* **สถานะปลั๊กอิน**: หลังจากนำเข้าสำเร็จ แม้ว่าข้อมูลของปลั๊กอินเชิงพาณิชย์จะมีอยู่ในระบบ แต่หากคุณไม่ได้ติดตั้งและเปิดใช้งานปลั๊กอินที่เกี่ยวข้องในเครื่อง ฟังก์ชันที่เกี่ยวข้องจะไม่แสดงและไม่สามารถใช้งานได้ แต่สิ่งนี้จะไม่ทำให้แอปพลิเคชันล่มครับ
 
 ---
 
-## Summary and Comparison
+## สรุปและเปรียบเทียบ
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
+| คุณสมบัติ | วิธีที่ 1: ตัวจัดการการสำรองข้อมูล (Backup Manager) | วิธีที่ 2: นำเข้า SQL โดยตรง |
 | :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
+| **ผู้ใช้ที่เหมาะสม** | ผู้ใช้เวอร์ชัน **Professional/Enterprise** | **ผู้ใช้ทุกคน** (รวมถึงเวอร์ชัน Community) |
+| **ความง่ายในการใช้งาน** | ⭐⭐⭐⭐⭐ (ง่ายมาก, จัดการผ่าน UI) | ⭐⭐⭐ (ต้องการความรู้พื้นฐานด้านฐานข้อมูล) |
+| **ข้อกำหนดสภาพแวดล้อม** | **เข้มงวด** ฐานข้อมูลและเวอร์ชันระบบต้องเข้ากันได้อย่างมาก | **ทั่วไป** ต้องการความเข้ากันได้ของฐานข้อมูล |
+| **การพึ่งพาปลั๊กอิน** | **พึ่งพาอย่างมาก** จะมีการตรวจสอบปลั๊กอินขณะคืนค่า หากขาดปลั๊กอินใดๆ จะทำให้**การคืนค่าล้มเหลว** | **ฟังก์ชันการทำงานพึ่งพาปลั๊กอินอย่างมาก** ข้อมูลสามารถนำเข้าแยกกันได้ และระบบจะมีฟังก์ชันพื้นฐาน แต่หากขาดปลั๊กอินที่เกี่ยวข้อง ฟังก์ชันที่เกี่ยวข้องจะ**ไม่สามารถใช้งานได้อย่างสิ้นเชิง** |
+| **ไฟล์ระบบ** | **เก็บรักษาไว้อย่างครบถ้วน** (เทมเพลตการพิมพ์, ไฟล์ที่อัปโหลด ฯลฯ) | **จะสูญหาย** (เทมเพลตการพิมพ์, ไฟล์ที่อัปโหลด ฯลฯ) |
+| **สถานการณ์ที่แนะนำ** | ผู้ใช้ระดับองค์กร ที่มีสภาพแวดล้อมที่ควบคุมได้และสอดคล้องกัน และต้องการฟังก์ชันที่ครบถ้วน | ขาดปลั๊กอินบางส่วน ต้องการความเข้ากันได้และความยืดหยุ่นสูง ไม่ใช่ผู้ใช้เวอร์ชัน Professional/Enterprise และยอมรับการขาดหายของฟังก์ชันไฟล์ได้ |
 
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+หวังว่าคู่มือนี้จะช่วยให้คุณปรับใช้ระบบใบสั่งงานได้อย่างราบรื่น หากคุณพบปัญหาใดๆ ในระหว่างกระบวนการ โปรดติดต่อเราได้ตลอดเวลาครับ!

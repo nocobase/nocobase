@@ -10,15 +10,15 @@ pkg: "@nocobase/plugin-email-manager"
 ## Налаштування шаблонів
 
 Перейдіть до Центру керування електронною поштою та натисніть кнопку налаштувань:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
 Перейдіть на панель шаблонів:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_53_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_12_PM.png)
 
 Тут можна керувати шаблонами:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM.png)
 
 ## Використання шаблонів
 
 У полі для тексту електронного листа натисніть на іконку шаблону, щоб вибрати потрібний шаблон:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_54_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_13_PM%20(1).png)

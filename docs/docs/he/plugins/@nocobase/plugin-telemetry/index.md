@@ -1,14 +1,18 @@
 ---
-displayName: "Telemetry"
+displayName: "טלמטריה"
 packageName: '@nocobase/plugin-telemetry'
 supportedVersions:
   - 2.x
 description: |
-  An OpenTelemetry-based telemetry plugin providing CPU, memory, and HTTP request metrics with HTTP export support.
+  תוסף טלמטריה המבוסס על OpenTelemetry, המספק מדדי CPU, זיכרון ובקשות HTTP עם תמיכה בייצוא דרך HTTP.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Telemetry
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-telemetry/index).
+:::
+
+# טלמטריה

@@ -29,7 +29,7 @@ Nếu plugin được kích hoạt bởi một ứng dụng con, thư mục lưu
 
 Sử dụng phương pháp mã hóa phong bì (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Quy trình tạo khóa
 1. Khi tạo trường mã hóa lần đầu tiên, hệ thống sẽ tự động tạo một `khóa ứng dụng` 32 bit và lưu trữ nó dưới dạng mã hóa Base64 vào thư mục lưu trữ mặc định.

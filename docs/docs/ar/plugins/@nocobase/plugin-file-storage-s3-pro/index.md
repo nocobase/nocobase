@@ -1,15 +1,19 @@
 ---
-displayName: "File storage: S3(Pro)"
+displayName: "تخزين الملفات: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support S3-compatible file storage, including services like Amazon S3, Aliyun OSS, Tencent Cloud COS, and MinIO. Features include direct file uploads and private access control.
+  يدعم أنواع تخزين الملفات المتوافقة مع بروتوكول S3، مثل Amazon S3 و Aliyun OSS و Tencent Cloud COS و MinIO وغيرها. يدعم رفع الملفات المباشر والوصول الخاص.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# File storage: S3(Pro)
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-file-storage-s3-pro/index).
+:::
+
+# تخزين الملفات: S3 (Pro)

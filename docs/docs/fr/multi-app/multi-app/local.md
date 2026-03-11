@@ -2,105 +2,109 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/multi-app/multi-app/local).
+:::
+
 # Mode mémoire partagée
 
 ## Introduction
 
-Lorsque vous souhaitez séparer les domaines métier au niveau application sans complexifier l'infrastructure, vous pouvez utiliser le mode multi-application en mémoire partagée.
+Lorsque les utilisateurs souhaitent effectuer une séparation au niveau de l'application pour leurs activités, mais ne souhaitent pas introduire une architecture de déploiement et d'exploitation complexe, ils peuvent utiliser le mode multi-application en mémoire partagée.
 
-Dans ce mode, plusieurs applications s'exécutent dans une seule instance NocoBase. Chaque application reste indépendante (base dédiée, création/démarrage/arrêt séparés), mais partage le même processus et la même mémoire.
+Dans ce mode, plusieurs applications peuvent s'exécuter simultanément au sein d'une seule instance NocoBase. Chaque application est indépendante, peut se connecter à une base de données distincte, et peut être créée, démarrée et arrêtée individuellement. Cependant, elles partagent le même processus et le même espace mémoire, de sorte que l'utilisateur n'a toujours qu'une seule instance NocoBase à maintenir.
 
-## Guide d'utilisation
+## Manuel d'utilisation
 
-### Variables d'environnement
+### Configuration des variables d'environnement
 
-Avant d'activer les fonctionnalités multi-applications, vérifiez les variables suivantes au démarrage de NocoBase :
+Avant d'utiliser la fonctionnalité multi-application, veuillez vous assurer que les variables d'environnement suivantes sont définies lors du démarrage de NocoBase :
 
 ```bash
 APP_DISCOVERY_ADAPTER=local
 APP_PROCESS_ADAPTER=local
 ```
 
-### Créer une application
+### Création d'une application
 
-Dans **System Settings**, cliquez sur **App supervisor** pour accéder à la gestion des applications.
+Dans le menu des paramètres système, cliquez sur « Superviseur d'application » pour accéder à la page de gestion des applications.
 
 ![](https://static-docs.nocobase.com/202512291056215.png)
 
-Cliquez sur **Add** pour créer une nouvelle application.
+Cliquez sur le bouton « Ajouter » pour créer une nouvelle application.
 
 ![](https://static-docs.nocobase.com/202512291057696.png)
 
-#### Options de configuration
+#### Description des options de configuration
 
-| Option | Description |
-| --- | --- |
-| **Nom d'affichage** | Nom affiché dans l'interface |
-| **ID application** | Identifiant unique global |
-| **Mode de démarrage** | - Démarrer à la première visite : au premier accès URL<br>- Démarrer avec l'application principale : au démarrage de l'app principale (augmente le temps de démarrage) |
-| **Environnement** | En mode mémoire partagée, seul `local` est disponible |
-| **Base de données** | Configure la source principale :<br>- Nouvelle base : réutilise le service DB actuel et crée une base dédiée<br>- Nouvelle connexion : se connecte à un autre service DB<br>- Nouveau schéma : avec PostgreSQL, crée un schéma dédié |
-| **Upgrade** | Autoriser la mise à niveau automatique des données NocoBase plus anciennes |
-| **Secret JWT** | Génère un secret JWT indépendant pour isoler les sessions |
-| **Domaine personnalisé** | Configure un domaine d'accès dédié |
+| Option de configuration | Description |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Nom de l'application** | Nom de l'application affiché dans l'interface. |
+| **Identifiant de l'application** | Identifiant de l'application, unique au niveau mondial. |
+| **Mode de démarrage** | - Démarrer lors de la première visite : l'application ne démarre que lorsque l'utilisateur y accède pour la première fois via l'URL.<br>- Démarrer avec l'application principale : l'application enfant démarre en même temps que l'application principale (ce qui augmente le temps de démarrage de l'application principale). |
+| **Environnement** | En mode mémoire partagée, seul l'environnement local est disponible, soit `local`. |
+| **Connexion à la base de données** | Utilisé pour configurer la source de données principale de l'application, prend en charge les trois méthodes suivantes :<br>- Nouvelle base de données : réutilise le service de base de données actuel pour créer une base de données indépendante.<br>- Nouvelle connexion de données : se connecte à d'autres services de base de données.<br>- Mode Schema : lorsque la source de données principale actuelle est PostgreSQL, crée un schéma indépendant pour l'application. |
+| **Mise à niveau** | Si des données d'application NocoBase d'une version antérieure existent dans la base de données connectée, autorise ou non la mise à niveau automatique vers la version actuelle de l'application. |
+| **Clé secrète JWT** | Génère automatiquement une clé secrète JWT indépendante pour l'application, garantissant que la session de l'application est indépendante de l'application principale et des autres applications. |
+| **Nom de domaine personnalisé** | Configure un nom de domaine d'accès indépendant pour l'application. |
 
-### Démarrer une application
+### Démarrage de l'application
 
-Cliquez sur **Start**.
+Cliquez sur le bouton **Démarrer** pour lancer l'application enfant.
 
-> Si _Start on first visit_ a été sélectionné à la création, l'application démarre automatiquement au premier accès.
+> Si vous avez coché _« Démarrer lors de la première visite »_ lors de la création, l'application démarrera automatiquement lors du premier accès.
 
 ![](https://static-docs.nocobase.com/202512291121065.png)
 
-### Accéder à une application
+### Accès à l'application
 
-Cliquez sur **Visit** pour ouvrir l'application dans un nouvel onglet.
+Cliquez sur le bouton **Accéder**, l'application enfant s'ouvrira dans un nouvel onglet.
 
-Par défaut, l'URL est `/apps/:appName/admin/`, par exemple :
+Par défaut, l'accès à l'application enfant se fait via `/apps/:appName/admin/`, par exemple :
 
 ```bash
 http://localhost:13000/apps/a_7zkxoarusnx/admin/
 ```
 
-Vous pouvez aussi configurer un domaine dédié. Le domaine doit pointer vers l'IP courante ; avec Nginx, il faut également l'ajouter à la configuration.
+En même temps, vous pouvez également configurer un nom de domaine indépendant pour l'application enfant. Vous devez faire pointer la résolution du nom de domaine vers l'adresse IP actuelle. Si vous utilisez Nginx, vous devez également ajouter le nom de domaine dans la configuration Nginx.
 
-### Arrêter une application
+### Arrêt de l'application
 
-Cliquez sur **Stop**.
+Cliquez sur le bouton **Arrêter** pour arrêter l'application enfant.
 
 ![](https://static-docs.nocobase.com/202512291122113.png)
 
-### État des applications
+### État de l'application
 
-L'état courant de chaque application est affiché dans la liste.
+Vous pouvez consulter l'état actuel de chaque application dans la liste.
 
 ![](https://static-docs.nocobase.com/202512291122339.png)
 
-### Supprimer une application
+### Suppression de l'application
 
-Cliquez sur **Delete**.
+Cliquez sur le bouton **Supprimer** pour retirer l'application.
 
 ![](https://static-docs.nocobase.com/202512291122178.png)
 
-## FAQ
+## Foire aux questions
 
 ### 1. Gestion des plugins
 
-Les applications utilisent les mêmes plugins (et versions) que l'application principale, mais la configuration reste isolée par application.
+Les plugins utilisables par les autres applications sont identiques à ceux de l'application principale (y compris les versions), mais les plugins peuvent être configurés et utilisés de manière indépendante.
 
-### 2. Isolation base de données
+### 2. Isolation de la base de données
 
-Chaque application peut utiliser une base indépendante. Pour partager des données, utilisez des sources externes.
+Les autres applications peuvent configurer des bases de données indépendantes. Si vous souhaitez partager des données entre les applications, cela peut être réalisé via une source de données externe.
 
-### 3. Sauvegarde et migration
+### 3. Sauvegarde et migration des données
 
-Les sauvegardes faites dans l'application principale n'incluent pas les données des autres applications (uniquement des métadonnées de base). Sauvegarde/migration doivent être faites dans chaque application.
+Actuellement, la sauvegarde des données sur l'application principale ne prend pas en charge l'inclusion des données des autres applications (elle ne contient que les informations de base des applications). Les sauvegardes et migrations doivent être effectuées manuellement au sein de chaque application.
 
-### 4. Déploiement et mises à jour
+### 4. Déploiement et mise à jour
 
-En mode mémoire partagée, les versions des applications suivent automatiquement celle de l'application principale.
+En mode mémoire partagée, les versions des autres applications suivront automatiquement les mises à niveau de l'application principale, garantissant ainsi automatiquement la cohérence des versions des applications.
 
-### 5. Sessions applicatives
+### 5. Session de l'application
 
-- Avec un secret JWT indépendant, la session est isolée de l'application principale et des autres applications. En sous-chemins d'un même domaine, un changement d'application peut imposer une reconnexion (token LocalStorage). Des domaines séparés sont recommandés.
-- Sans secret JWT indépendant, la session est partagée avec l'application principale. Pratique, mais plus risqué : en cas d'ID utilisateur qui se chevauchent, des accès inter-applications non autorisés peuvent survenir.
+- Si l'application utilise une clé secrète JWT indépendante, la session de l'application est indépendante de l'application principale et des autres applications. Si vous accédez à différentes applications via des sous-chemins d'un même nom de domaine, comme le TOKEN de l'application est mis en cache dans le LocalStorage, vous devrez vous reconnecter lors du passage d'une application à l'autre. Il est recommandé de configurer des noms de domaine indépendants pour les différentes applications afin de réaliser une meilleure isolation des sessions.
+- Si l'application n'utilise pas de clé secrète JWT indépendante, elle partagera la session de l'application principale. Après avoir accédé à d'autres applications dans le même navigateur, il n'est pas nécessaire de se reconnecter pour revenir à l'application principale. Cependant, cela présente un risque de sécurité : si les identifiants d'utilisateur (User ID) de différentes applications sont identiques, cela peut permettre à un utilisateur d'accéder sans autorisation aux données d'autres applications.

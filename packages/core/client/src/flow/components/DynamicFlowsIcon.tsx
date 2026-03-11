@@ -22,6 +22,8 @@ import {
   FlowStep,
   FlowStepContext,
   isBeforeRenderFlow,
+  FlowRuntimeContext,
+  setupRuntimeContextSteps,
   observer,
   GLOBAL_EMBED_CONTAINER_ID,
   EMBED_REPLACING_DATA_KEY,
@@ -664,7 +666,51 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               setSubmitLoading(false);
               return;
             }
-            await model.flowRegistry.save();
+            try {
+              const afterSaves: Array<() => Promise<void>> = [];
+
+              for (const flow of model.flowRegistry.mapFlows((it) => it)) {
+                for (const step of flow.mapSteps((it) => it)) {
+                  const serialized = step.serialize();
+                  const actionDef = step.use ? model.getAction(step.use) : undefined;
+
+                  const beforeParamsSave = serialized.beforeParamsSave || actionDef?.beforeParamsSave;
+                  const afterParamsSave = serialized.afterParamsSave || actionDef?.afterParamsSave;
+
+                  if (typeof beforeParamsSave !== 'function' && typeof afterParamsSave !== 'function') {
+                    continue;
+                  }
+
+                  const runtimeCtx = new FlowRuntimeContext(model, flow.key, 'settings');
+                  setupRuntimeContextSteps(runtimeCtx, flow.steps, model, flow.key);
+                  runtimeCtx.defineProperty('currentStep', { value: serialized });
+
+                  const currentValues = { ...(step.defaultParams || {}) };
+                  const previousParams = { ...(step.defaultParams || {}) };
+
+                  if (typeof beforeParamsSave === 'function') {
+                    await beforeParamsSave(runtimeCtx as any, currentValues, previousParams);
+                  }
+
+                  if (typeof afterParamsSave === 'function') {
+                    afterSaves.push(async () => {
+                      await afterParamsSave(runtimeCtx as any, currentValues, previousParams);
+                    });
+                  }
+
+                  step.defaultParams = currentValues;
+                }
+              }
+
+              await model.flowRegistry.save();
+
+              for (const runAfterSave of afterSaves) {
+                await runAfterSave();
+              }
+            } catch (error) {
+              model.context?.message?.error?.('Steps post-save hooks failed to run');
+              console.error(error);
+            }
             // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
             const beforeRenderFlows = model.flowRegistry
               .mapFlows((flow) => {

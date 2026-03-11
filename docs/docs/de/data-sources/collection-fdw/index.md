@@ -45,7 +45,7 @@ Anschließend installieren und aktivieren Sie das Plugin über den Plugin-Manage
 
 Wählen Sie im Dropdown-Menü unter „Sammlungsverwaltung > Sammlung erstellen“ die Option „Fremddaten verbinden“.
 
-![Fremddaten verbinden](https://static-docs.nocobase.com/029d946d067d1c35a39755219d623c.png)
+![Fremddaten verbinden](https://static-docs.nocobase.com/029d946a6d067d1c35a39755219d623c.png)
 
 Wählen Sie im Dropdown-Menü „Datenbankdienst“ einen bestehenden Datenbankdienst aus oder klicken Sie auf „Datenbankdienst erstellen“.
 

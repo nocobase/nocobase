@@ -30,7 +30,7 @@ Si el plugin se activa en una subaplicación, la clave se guarda por defecto en 
 
 Utiliza el método de cifrado de sobre (Envelope Encryption).
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Proceso de creación de claves
 1. La primera vez que se crea un campo cifrado, el sistema genera automáticamente una `clave de aplicación` de 32 bits y la guarda codificada en Base64 en el directorio de almacenamiento predeterminado.

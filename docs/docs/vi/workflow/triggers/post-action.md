@@ -177,7 +177,7 @@ Nếu sự kiện được cấu hình ở chế độ toàn cục, bạn không
 
 Như được hiển thị trong hình dưới đây:
 
-![Thứ tự thực thi thao tác](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Thứ tự thực thi thao tác](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Sự khác biệt với sự kiện bộ sưu tập
 

@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Action panel"
+displayName: "Blok: Akční panel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
+  Centrálně spravuje a zobrazuje různé akce, což uživatelům umožňuje efektivně plnit úkoly. Podporuje rozšiřitelnost a aktuálně podporované typy akcí jsou vyskakovací okna, odkazy, skenování a vlastní požadavky.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Action panel
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-block-workbench/index).
+:::
+
+# Blok: Akční panel

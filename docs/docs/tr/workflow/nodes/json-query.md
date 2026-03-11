@@ -15,7 +15,7 @@ Farklı JSON hesaplama motorlarını kullanarak, yukarı akış düğümleri tar
 
 İş akışı yapılandırma arayüzünde, süreçteki artı ("+") düğmesine tıklayarak bir "JSON Hesaplama" düğümü ekleyebilirsiniz:
 
-![Düğüm Oluşturma](https://static-docs.nocobase.com/7de76517539ad9dfc88b7160f1d0dd7.png)
+![Düğüm Oluşturma](https://static-docs.nocobase.com/7de796517539ad9dfc88b7160f1d0dd7.png)
 
 :::info{title=İpucu}
 Genellikle, JSON Hesaplama düğümü, diğer veri düğümlerinin altına oluşturulur, böylece bu verileri ayrıştırabilirsiniz.

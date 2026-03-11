@@ -20,7 +20,7 @@ Start with [Quick Start](/ai-employees/quick-start), and complete minimal setup 
 
 1. Configure at least one [LLM Service](/ai-employees/features/llm-service).
 2. Enable at least one [AI Employee](/ai-employees/features/enable-ai-employee).
-3. Open a session and start [collaborating with AI Employees](/ai-employees/features/collaborate).
+3. Open a chat and start [collaborating with AI Employees](/ai-employees/features/collaborate).
 4. Enable [Web Search](/ai-employees/features/web-search) and [Shortcut Tasks](/ai-employees/features/task) when needed.
 
 ## Feature Map
@@ -29,7 +29,7 @@ Start with [Quick Start](/ai-employees/quick-start), and complete minimal setup 
 
 - [Configure LLM Service](/ai-employees/features/llm-service): connect providers and manage available models.
 - [Enable AI Employees](/ai-employees/features/enable-ai-employee): enable/disable built-in employees and control scope.
-- [New AI Employee](/ai-employees/features/new-ai-employees): define role, persona, greeting message, and capability boundary.
+- [New AI Employee](/ai-employees/features/new-ai-employees): define role, role setting, greeting message, and capability boundary.
 - [Use Skills](/ai-employees/features/tool): configure skill permissions (`Ask` / `Allow`) and control execution risk.
 
 ### B. Daily Collaboration (Business Users)

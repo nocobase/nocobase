@@ -26,7 +26,7 @@ Identyfikator roli, będący unikalnym identyfikatorem systemowym, pozwala Pańs
 
 Rola domyślna to ta, która zostanie automatycznie przypisana nowym użytkownikom, jeśli podczas ich tworzenia nie wskażą Państwo żadnej konkretnej roli.
 
-![](https://static-docs.nocobase.com/f41b4b7ff55ca28715c486dc45bc1708.png)
+![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
 ## Centrum Osobiste
 

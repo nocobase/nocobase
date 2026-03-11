@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Gantt"
+displayName: "Блок: Гант"
 packageName: '@nocobase/plugin-gantt'
 description: |
-  Provides Gantt block.
+  Надає блок діаграми Ганта.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Gantt
+:::tip{title="Повідомлення про ШІ-переклад"}
+Цей документ було перекладено за допомогою ШІ. Для точної інформації зверніться до [англійської версії](/plugins/@nocobase/plugin-gantt/index).
+:::
+
+# Блок: Гант

@@ -35,7 +35,7 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 Trong biểu mẫu chỉnh sửa phòng ban, bạn có thể thay đổi trường phòng ban cấp trên. Lưu ý rằng phòng ban hiện tại và các phòng ban con của nó sẽ không thể chọn được.
 
-![](https://static-docs.nocobase.com/9d80dd4f32c77186566ed8ada70128.png)
+![](https://static-docs.nocobase.com/9d80ddf42f32c77186566ed8ada70128.png)
 
 ## Quản lý Thành viên Phòng Ban
 

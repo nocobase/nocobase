@@ -1,7 +1,6 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/template-print/syntax/formatters/date-formatting) bakın.
 :::
-
 
 ### Tarih Biçimlendirme
 
@@ -10,18 +9,23 @@ Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen 
 ##### Söz Dizimi Açıklaması
 Tarihi biçimlendirmek için kullanılır. Bir çıkış biçimi (`patternOut`) ve isteğe bağlı bir giriş biçimi (`patternIn`) alır. `patternIn` varsayılan olarak ISO 8601'dir. Saat dilimi ve dil ayarlarını `options.timezone` ve `options.lang` seçenekleriyle yapabilirsiniz.
 
-##### Örnek
+##### Yaygın Örnekler
 ```
-// Örnek ortam: API seçenekleri { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Çıktı 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Çıktı 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Çıktı 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Çıktı 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Çıktı 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Çıktı 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Çıktı 2024年1月15日 Pazartesi
+```
+
+##### Daha Fazla Biçim Örneği
+```
 '20160131':formatD(L)      // Çıktı 01/31/2016
 '20160131':formatD(LL)     // Çıktı January 31, 2016
 '20160131':formatD(LLLL)   // Çıktı Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Çıktı Sunday
-
-// Fransızca örnek:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Çıktı mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Çıktı dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Çıktı dimanche 14 septembre 2014 19:27
 ```
 
 ##### Sonuç
@@ -39,7 +43,6 @@ Parametreler:
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Çıktı "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Çıktı "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Çıktı "2016-02-03T00:00:00.000Z"
@@ -58,7 +61,6 @@ Bir tarihten belirtilen miktarda zaman çıkarır. Parametreler `addD` ile aynı
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Çıktı "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Çıktı "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Çıktı "2016-01-28T00:00:00.000Z"
@@ -80,7 +82,6 @@ Parametreler:
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Çıktı "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Çıktı "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Çıktı "2016-01-31T00:00:00.000Z"
@@ -100,7 +101,6 @@ Parametreler `startOfD` ile aynıdır.
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Çıktı "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Çıktı "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Çıktı "2016-01-31T23:59:59.999Z"
@@ -158,15 +158,11 @@ Parametreler:
 
 ##### Örnek
 ```
-// Örnek ortam: API seçenekleri { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // Çıktı "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Çıktı "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Çıktı "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Çıktı "Sunday"
 1410715640:convDate('X', 'LLLL')          // Çıktı "Sunday, September 14, 2014 7:27 PM"
-// Fransızca örnek:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Çıktı "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Çıktı "dimanche"
 ```
 
 ##### Sonuç
@@ -189,6 +185,6 @@ Yaygın tarih biçimi sembolleri (DayJS belgelerine bakınız):
 - `Z`, `ZZ`: UTC ofseti, örn. +05:00 veya +0500
 - `A`, `a`: AM/PM
 - `Q`: Çeyrek (1-4)
-- `Do`: Sıra ekiyle birlikte ayın günü, örn. 1'inci, 2'nci, ...
+- `Do`: Sıra ekiyle birlikte ayın günü, örn. 1st, 2nd, …
 - Diğer biçimler için tam belgelere bakınız.  
   Ek olarak, `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL` gibi dile dayalı yerelleştirilmiş biçimler de bulunmaktadır.

@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Multi-app Collection शेयरिंग"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-multi-app-share-collection/index) देखें।
+:::
 
-> Note: This plugin is deprecated.
+# Multi-app Collection शेयरिंग
+
+> नोट: यह प्लगइन अप्रचलित (deprecated) है।

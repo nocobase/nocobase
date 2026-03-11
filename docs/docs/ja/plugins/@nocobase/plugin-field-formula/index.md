@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Formula"
+displayName: "コレクションフィールド：数式"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
+  同一レコード内の複数フィールド値間の計算結果を設定および保存できます。Math.js と Excel formula functions の2つのエンジンをサポートしています。
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Formula
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/plugins/@nocobase/plugin-field-formula/index)をご参照ください。
+:::
+
+# コレクションフィールド：数式

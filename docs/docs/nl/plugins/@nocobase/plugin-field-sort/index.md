@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Collectieveld: Sorteren"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Wordt gebruikt om de gegevens in een collectie te sorteren.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-field-sort/index) voor nauwkeurige informatie.
+:::
+
+# Collectieveld: Sorteren

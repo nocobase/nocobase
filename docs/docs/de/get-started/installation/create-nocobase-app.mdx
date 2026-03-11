@@ -1,7 +1,6 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/get-started/installation/create-nocobase-app).
 :::
-
 
 # create-nocobase-app Installation
 
@@ -9,12 +8,6 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 - Node.js 20+ und Yarn 1.22.x sind installiert.
 - Eine der folgenden erforderlichen Datenbanken ist konfiguriert und läuft: MySQL 8.0.17+, MariaDB 10.9+ oder PostgreSQL 10+.
-- Aufgrund der Netzwerkbedingungen in China wird empfohlen, einen nationalen Spiegelserver zu verwenden (nicht zwingend erforderlich).
-
-```bash
-$ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
-```
 
 :::
 
@@ -172,7 +165,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 :::warning Umgebungsvariablen
 
-- `TZ` wird verwendet, um die Zeitzone der Anwendung festzulegen. Standardmäßig wird die Zeitzone des Betriebssystems verwendet.
+- `TZ` wird verwendet, um die Zeitzone der Anwendung festzulegen. Standardmäßig wird die Zeitzone des Betriebssystems verwendet (z. B. `TZ=UTC`).
 - `APP_KEY` ist der geheime Schlüssel der Anwendung, der zur Generierung von Benutzer-Tokens usw. verwendet wird (wenn der `APP_KEY` geändert wird, werden alte Tokens ungültig). Es kann eine beliebige zufällige Zeichenfolge sein. **Bitte ändern Sie ihn in Ihren eigenen geheimen Schlüssel und stellen Sie sicher, dass er nicht nach außen gelangt.**
 - `DB_*` sind datenbankbezogene Konfigurationen. Bitte passen Sie diese entsprechend Ihrer tatsächlichen Einrichtung an Ihre Datenbankverbindungsinformationen an.
 
@@ -205,7 +198,7 @@ yarn install --production
 ## 4. NocoBase installieren
 
 ```bash
-yarn nocobase install --lang=zh-CN
+yarn nocobase install --lang=en-US
 ```
 
 Der Installationsprozess erstellt automatisch die Datenbanktabellenstruktur und initialisiert die Daten.

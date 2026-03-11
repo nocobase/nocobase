@@ -12,7 +12,7 @@ ER-diagram:
 
 Fältkonfiguration:
 
-![alt text](https://static-docs.nocobase.com/3b4484ebb82f3dbf752bd84c9.png)
+![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
 
 ## Parameterbeskrivning
 

@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Parallel node"
+displayName: "Workflow : Nœud de branche parallèle"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |
-  Could be used for parallel execution of branch processes in the workflow.
+  Utilisé pour les processus de branche devant être exécutés en parallèle dans un workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Parallel node
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-workflow-parallel/index).
+:::
+
+# Workflow : Nœud de branche parallèle

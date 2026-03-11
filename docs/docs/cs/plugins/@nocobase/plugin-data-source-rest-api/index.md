@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: REST API"
+displayName: "Datový zdroj: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external REST API data sources.
+  Používejte externí datové zdroje REST API.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: REST API
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-data-source-rest-api/index).
+:::
+
+# Datový zdroj: REST API

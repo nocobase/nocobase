@@ -1,10 +1,10 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/file-manager/development/index).
 :::
 
 # Vývoj rozšíření
 
-## Rozšíření úložných mechanismů
+## Rozšíření Storage Engine
 
 ### Na straně serveru
 
@@ -74,7 +74,7 @@ Na straně klienta je potřeba říct správci souborů, jak vykreslit konfigura
 
 ## Rozšíření typů souborů na frontendu
 
-U nahraných souborů můžete v uživatelském rozhraní zobrazovat různé náhledy podle typu souboru. Pole příloh správce souborů obsahuje vestavěný náhled založený na prohlížeči (vložený v iframe), který podporuje náhled většiny formátů (např. obrázky, video, audio a PDF) přímo v prohlížeči. Pokud prohlížeč nepodporuje daný formát nebo jsou potřeba speciální interakce, můžete rozšířit komponentu náhledu podle typu souboru.
+U nahraných souborů můžete v uživatelském rozhraní zobrazovat různé náhledy podle typu souboru. Attachment Field správce souborů obsahuje vestavěný náhled založený na prohlížeči (vložený v iframe), který podporuje náhled většiny formátů (např. obrázky, video, audio a PDF) přímo v prohlížeči. Pokud prohlížeč nepodporuje daný formát nebo jsou potřeba speciální interakce, můžete rozšířit komponentu náhledu podle typu souboru.
 
 ### Příklad
 
@@ -174,4 +174,3 @@ Předávané props jsou:
 * `file`: aktuální objekt souboru (může být řetězcová URL nebo objekt obsahující `url`/`preview`)
 * `index`: index souboru v seznamu
 * `list`: seznam souborů
-

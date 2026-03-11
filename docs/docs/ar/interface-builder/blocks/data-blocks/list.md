@@ -43,7 +43,7 @@ pkg: "@nocobase/plugin-block-list"
 
 > **ملاحظة**: يمكن عرض الحقول من المجموعات المرتبطة (حاليًا، يتم دعم العلاقات من نوع "واحد إلى واحد" فقط).
 
-![20251023203611](https://docs.nocobase.com/20251023203611.png)
+![20251023203611](https://static-docs.nocobase.com/20251023203611.png)
 
 لتهيئة حقول القائمة، راجع [حقل التفاصيل](/interface-builder/fields/generic/detail-form-item)
 

@@ -22,7 +22,7 @@ Darüber hinaus können Sie auf der Seite verschiedene Blöcke der Benutzer-Samm
 
 ![](https://static-docs.nocobase.com/4f8ef9ffc1c17f275b62b462f6385b19.png)
 
-![](https://static-docs.nocobase.com/437828173950bd7c21w40a6243ffe150.png)
+![](https://static-docs.nocobase.com/437828173950bd7c21b40a6243ffe150.png)
 
 ## Benutzerprofil bearbeiten
 

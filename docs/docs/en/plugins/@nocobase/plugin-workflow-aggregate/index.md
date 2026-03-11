@@ -1,12 +1,12 @@
 ---
-displayName: "Workflow: Aggregate node"
+displayName: "Workflow: Aggregate query node"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
+  Used to perform aggregate queries on the database in a workflow, such as: count, sum, average, etc.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Aggregate node
+# Workflow: Aggregate query node

@@ -1,5 +1,5 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/file-manager/development/index).
 :::
 
 # Sviluppo di Estensioni
@@ -74,7 +74,7 @@ Sul lato client, devi informare il file manager su come renderizzare il modulo d
 
 ## Estendere i tipi di file nel frontend
 
-Per i file già caricati, è possibile mostrare contenuti di anteprima diversi nell'interfaccia frontend in base al tipo di file. Il campo allegati del file manager include una anteprima basata sul browser (integrata in un iframe), che supporta la visualizzazione della maggior parte dei formati (come immagini, video, audio e PDF) direttamente nel browser. Quando un formato non è supportato dal browser o sono necessarie interazioni di anteprima speciali, è possibile estendere il componente di anteprima basato sul tipo di file.
+Per i file già caricati, è possibile mostrare contenuti di anteprima diversi nell'interfaccia frontend in base al tipo di file. Il campo Attachment del file manager include una anteprima basata sul browser (integrata in un iframe), che supporta la visualizzazione della maggior parte dei formati (come immagini, video, audio e PDF) direttamente nel browser. Quando un formato non è supportato dal browser o sono necessarie interazioni di anteprima speciali, è possibile estendere il componente di anteprima basato sul tipo di file.
 
 ### Esempio
 
@@ -112,7 +112,7 @@ Qui `filePreviewTypes` è l'oggetto di ingresso fornito da `@nocobase/plugin-fil
 
 Ogni tipo di file deve implementare un metodo `match()` per verificare se il tipo soddisfa i requisiti. Nell'esempio, `matchMimetype` è usato per controllare l'attributo `mimetype` del file. Se corrisponde al tipo `docx`, viene considerato il tipo da gestire. Se non corrisponde, verrà usata la gestione integrata.
 
-La proprietà `Previewer` del descrittore di tipo è il componente usato per l'anteprima. Quando il tipo di file corrisponde, il componente verrà renderizzato nella finestra di anteprima. Puoi restituire qualsiasi vista React (ad esempio un iframe, un player o un grafico).
+La proprietà `Previewer` del descrittore di tipo è il componente usato per l'anteprima. Quando il tipo di file corrisponde, il componente verrà renderizzato nel modal di anteprima. Puoi restituire qualsiasi vista React (ad esempio un iframe, un player o un grafico).
 
 ### API
 
@@ -174,4 +174,3 @@ Le props in ingresso sono:
 * `file`: oggetto file corrente (può essere una URL stringa o un oggetto che contiene `url`/`preview`)
 * `index`: indice del file nell'elenco
 * `list`: elenco dei file
-

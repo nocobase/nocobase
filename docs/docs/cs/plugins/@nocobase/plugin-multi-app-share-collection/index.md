@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Sdílení Collection (Multi-app)"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Sdílení Collection (Multi-app)
+
+> Poznámka: Tento plugin je zastaralý (deprecated).

@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Grafy (zastaralé)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Tento plugin je zastaralý, místo něj použijte plugin pro vizualizaci dat.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-charts/index).
+:::
 
-> Note: This plugin is deprecated.
+# Grafy (zastaralé)
+
+> Poznámka: Tento plugin je zastaralý (deprecated).

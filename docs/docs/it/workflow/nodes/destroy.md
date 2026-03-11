@@ -20,7 +20,7 @@ Nell'interfaccia di configurazione del flusso di lavoro, clicchi sul pulsante pi
 
 ## Configurazione del nodo
 
-![Nodo di eliminazione_Configurazione del nodo](https://static-docs.nocobase.com/580600c2b1ef4e01dfa48b23539648e.png)
+![Nodo di eliminazione_Configurazione del nodo](https://static-docs.nocobase.com/580600c2b13ef4e01dfa48b23539648e.png)
 
 ### Collezione
 

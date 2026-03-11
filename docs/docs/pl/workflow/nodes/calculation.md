@@ -14,7 +14,7 @@ W interfejsie konfiguracji przepływu pracy proszę kliknąć przycisk plusa (�
 
 ## Konfiguracja węzła
 
-![Węzeł Obliczenia_Konfiguracja](https://static-docs.nocobase.com/6a155de3c883d8cd1881b2d9c33874.png)
+![Węzeł Obliczenia_Konfiguracja](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Silnik obliczeniowy
 

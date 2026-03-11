@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Быстрый старт",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Настройка сервисов LLM",
-        "link": "/ai-employees/quick-start/llm-service"
-      },
-      {
-        "type": "custom-link",
-        "label": "Создание AI-сотрудников",
-        "link": "/ai-employees/quick-start/ai-employees"
-      },
-      {
-        "type": "custom-link",
-        "label": "Совместная работа с AI-сотрудниками",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
+    "link": "/ai-employees/quick-start"
   },
   {
     "type": "custom-link",
-    "label": "Встроенные AI-сотрудники",
+    "label": "Возможности",
     "items": [
       {
         "type": "custom-link",
-        "label": "Обзор",
-        "link": "/ai-employees/built-in/index"
+        "label": "Настройка LLM-сервиса",
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Аналитик инсайтов",
-        "link": "/ai-employees/built-in/viz"
+        "label": "Включение AI-сотрудников",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "Orin: Эксперт по моделированию данных",
-        "link": "/ai-employees/built-in/data-modeling"
+        "label": "Сотрудничество с AI-сотрудниками",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Dex: Эксперт по обработке данных",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: Frontend-разработчик",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Продвинутый уровень",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Выбор блока",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "Источники данных",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "Навыки",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Задачи",
-        "link": "/ai-employees/advanced/task"
+        "label": "Добавление контекста — Блоки",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "Поиск в интернете",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "Использование навыков",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "Быстрые задачи",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Встроенные AI-сотрудники",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "Создание AI-сотрудников",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "Управление файлами",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Рабочие процессы",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Узел LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Текстовый диалог",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Мультимодальный диалог",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Структурированный вывод",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Документация по применению",
+    "label": "Рабочий процесс",
     "items": [
       {
         "type": "custom-link",
-        "label": "Сценарии",
+        "label": "Узлы LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: Настройка сценария CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Настройки",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Настройки администратора",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Текстовый чат",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Руководство по промптам",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Мультимодальный чат",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Структурированный вывод",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Практика применения",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: Настройка сценария CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Руководство по промптам",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

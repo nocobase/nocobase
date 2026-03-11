@@ -1,44 +1,48 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/template-print/syntax/formatters/date-formatting).
 :::
 
-### Formatowanie Dat
+### Formatowanie dat
 
 #### 1. :formatD(patternOut, patternIn)
 
 ##### Opis składni
-Formatuje datę, przyjmując wzorzec formatu wyjściowego `patternOut` oraz opcjonalny wzorzec formatu wejściowego `patternIn` (domyślnie ISO 8601).  
-Strefę czasową i język można dostosować za pomocą `options.timezone` i `options.lang`.
+Formatuje datę, przyjmując wzorzec formatu wyjściowego `patternOut` oraz wzorzec formatu wejściowego `patternIn` (domyślnie ISO 8601).
 
-##### Przykład
+##### Typowe przykłady
 ```
-// Środowisko przykładu: opcje API { "lang": "en-us", "timezone": "Europe/Paris" }
+{d.createdAt:formatD(YYYY-MM-DD)}           // Wynik 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Wynik 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Wynik 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Wynik 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Wynik 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Wynik 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Wynik 2024年1月15日 星期一
+```
+
+##### Więcej przykładów formatowania
+```
 '20160131':formatD(L)      // Wynik 01/31/2016
 '20160131':formatD(LL)     // Wynik January 31, 2016
 '20160131':formatD(LLLL)   // Wynik Sunday, January 31, 2016 12:00 AM
 '20160131':formatD(dddd)   // Wynik Sunday
-
-// Przykład w języku francuskim:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Wynik mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Wynik dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Wynik dimanche 14 septembre 2014 19:27
 ```
 
 ##### Wynik
-Wynikiem jest data sformatowana zgodnie z podaną specyfikacją.
+Wyjściem jest ciąg znaków daty w określonym formacie.
+
 
 #### 2. :addD(amount, unit, patternIn)
 
 ##### Opis składni
-Dodaje określoną ilość czasu do daty. Obsługiwane jednostki to: dzień, tydzień, miesiąc, kwartał, rok, godzina, minuta, sekunda, milisekunda.  
+Dodaje określoną ilość czasu do daty. Obsługiwane jednostki: day, week, month, quarter, year, hour, minute, second, millisecond.  
 Parametry:
-- **amount:** Ilość do dodania.
-- **unit:** Jednostka czasu (wielkość liter nie ma znaczenia).
-- **patternIn:** Opcjonalny, format wejściowy (domyślnie ISO8601).
+- amount: ilość do dodania
+- unit: jednostka czasu (wielkość liter nie ma znaczenia)
+- patternIn: opcjonalny, format wejściowy, domyślnie ISO8601
 
 ##### Przykład
 ```
-// Środowisko przykładu: opcje API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':addD('3', 'day')    // Wynik "2017-05-13T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':addD('3', 'month')      // Wynik "2017-08-10T12:57:23.769Z"
 '20160131':addD('3', 'day')       // Wynik "2016-02-03T00:00:00.000Z"
@@ -47,16 +51,16 @@ Parametry:
 ```
 
 ##### Wynik
-Wynikiem jest nowa data po dodaniu określonego czasu.
+Wyjściem jest nowa data po dodaniu czasu.
+
 
 #### 3. :subD(amount, unit, patternIn)
 
 ##### Opis składni
-Odejmuje określoną ilość czasu od daty. Parametry są takie same jak w `addD`.
+Odejmuje określoną ilość czasu od daty. Parametry takie same jak w `addD`.
 
 ##### Przykład
 ```
-// Środowisko przykładu: opcje API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':subD('3', 'day')    // Wynik "2017-05-07T12:57:23.769Z"
 '2017-05-10 15:57:23.769561+03:00':subD('3', 'month')      // Wynik "2017-02-10T12:57:23.769Z"
 '20160131':subD('3', 'day')       // Wynik "2016-01-28T00:00:00.000Z"
@@ -65,19 +69,19 @@ Odejmuje określoną ilość czasu od daty. Parametry są takie same jak w `addD
 ```
 
 ##### Wynik
-Wynikiem jest nowa data po odjęciu określonego czasu.
+Wyjściem jest nowa data po odjęciu czasu.
+
 
 #### 4. :startOfD(unit, patternIn)
 
 ##### Opis składni
-Ustawia datę na początek określonej jednostki czasu.  
+Ustawia datę na moment początkowy określonej jednostki czasu.  
 Parametry:
-- **unit:** Jednostka czasu.
-- **patternIn:** Opcjonalny, format wejściowy.
+- unit: jednostka czasu
+- patternIn: opcjonalny, format wejściowy
 
 ##### Przykład
 ```
-// Środowisko przykładu: opcje API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':startOfD('day')    // Wynik "2017-05-10T00:00:00.000Z"
 '2017-05-10 15:57:23.769561+03:00':startOfD('month')      // Wynik "2017-05-01T00:00:00.000Z"
 '20160131':startOfD('day')       // Wynik "2016-01-31T00:00:00.000Z"
@@ -86,17 +90,17 @@ Parametry:
 ```
 
 ##### Wynik
-Wynikiem jest data ustawiona na początek określonej jednostki.
+Wyjściem jest ciąg znaków daty momentu początkowego.
+
 
 #### 5. :endOfD(unit, patternIn)
 
 ##### Opis składni
-Ustawia datę na koniec określonej jednostki czasu.  
-Parametry są takie same jak dla `startOfD`.
+Ustawia datę na moment końcowy określonej jednostki czasu.  
+Parametry takie same jak powyżej.
 
 ##### Przykład
 ```
-// Środowisko przykładu: opcje API { "lang": "fr", "timezone": "Europe/Paris" }
 '2017-05-10T15:57:23.769561+03:00':endOfD('day')    // Wynik "2017-05-10T23:59:59.999Z"
 '2017-05-10 15:57:23.769561+03:00':endOfD('month')      // Wynik "2017-05-31T23:59:59.999Z"
 '20160131':endOfD('day')       // Wynik "2016-01-31T23:59:59.999Z"
@@ -105,27 +109,28 @@ Parametry są takie same jak dla `startOfD`.
 ```
 
 ##### Wynik
-Wynikiem jest data ustawiona na koniec określonej jednostki.
+Wyjściem jest ciąg znaków daty momentu końcowego.
+
 
 #### 6. :diffD(toDate, unit, patternFromDate, patternToDate)
 
 ##### Opis składni
-Oblicza różnicę między dwiema datami i zwraca ją w określonej jednostce. Obsługiwane jednostki to:
-- `day(s)` lub `d` (dzień/dni)
-- `week(s)` lub `w` (tydzień/tygodnie)
-- `quarter(s)` lub `Q` (kwartał/kwartały)
-- `month(s)` lub `M` (miesiąc/miesiące)
-- `year(s)` lub `y` (rok/lata)
-- `hour(s)` lub `h` (godzina/godziny)
-- `minute(s)` lub `m` (minuta/minuty)
-- `second(s)` lub `s` (sekunda/sekundy)
-- `millisecond(s)` lub `ms` (milisekunda/milisekundy) (jednostka domyślna)
+Oblicza różnicę między dwiema datami i zwraca ją w określonej jednostce. Obsługiwane jednostki wyjściowe obejmują:
+- `day(s)` lub `d`
+- `week(s)` lub `w`
+- `quarter(s)` lub `Q`
+- `month(s)` lub `M`
+- `year(s)` lub `y`
+- `hour(s)` lub `h`
+- `minute(s)` lub `m`
+- `second(s)` lub `s`
+- `millisecond(s)` lub `ms` (jednostka domyślna)
 
 Parametry:
-- **toDate:** Data docelowa.
-- **unit:** Jednostka wyjściowa.
-- **patternFromDate:** Opcjonalny, format daty początkowej.
-- **patternToDate:** Opcjonalny, format daty docelowej.
+- toDate: data docelowa
+- unit: jednostka wyjściowa
+- patternFromDate: opcjonalny, format daty początkowej
+- patternToDate: opcjonalny, format daty docelowej
 
 ##### Przykład
 ```
@@ -140,35 +145,32 @@ Parametry:
 ```
 
 ##### Wynik
-Wynikiem jest różnica czasu między dwiema datami, przeliczona na określoną jednostkę.
+Wyjściem jest różnica czasu między dwiema datami, przeliczona zgodnie z określoną jednostką.
+
 
 #### 7. :convDate(patternIn, patternOut)
 
 ##### Opis składni
-Konwertuje datę z jednego formatu na inny (nie zaleca się używania).  
+Konwertuje datę z jednego formatu na inny. (Nie zaleca się używania)  
 Parametry:
-- **patternIn:** Wejściowy format daty.
-- **patternOut:** Wyjściowy format daty.
+- patternIn: format daty wejściowej
+- patternOut: format daty wyjściowej
 
 ##### Przykład
 ```
-// Środowisko przykładu: opcje API { "lang": "en", "timezone": "Europe/Paris" }
 '20160131':convDate('YYYYMMDD', 'L')      // Wynik "01/31/2016"
 '20160131':convDate('YYYYMMDD', 'LL')     // Wynik "January 31, 2016"
 '20160131':convDate('YYYYMMDD', 'LLLL')   // Wynik "Sunday, January 31, 2016 12:00 AM"
 '20160131':convDate('YYYYMMDD', 'dddd')   // Wynik "Sunday"
 1410715640:convDate('X', 'LLLL')          // Wynik "Sunday, September 14, 2014 7:27 PM"
-// Przykład w języku francuskim:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Wynik "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Wynik "dimanche"
 ```
 
 ##### Wynik
-Wynikiem jest data skonwertowana do określonego formatu.
+Wyjściem jest przekonwertowany ciąg znaków daty.
+
 
 #### 8. Wzorce formatowania dat
-
-Najczęściej używane wzorce formatowania dat (patrz dokumentacja DayJS):
+Opis popularnych formatów dat (na podstawie DayJS):
 - `X`: Znacznik czasu Unix (w sekundach), np. 1360013296
 - `x`: Znacznik czasu Unix w milisekundach, np. 1360013296123
 - `YY`: Rok dwucyfrowy, np. 18
@@ -183,6 +185,6 @@ Najczęściej używane wzorce formatowania dat (patrz dokumentacja DayJS):
 - `Z`, `ZZ`: Przesunięcie UTC, np. +05:00 lub +0500
 - `A`, `a`: AM/PM
 - `Q`: Kwartał (1-4)
-- `Do`: Dzień miesiąca z liczbą porządkową, np. 1-szy, 2-gi, …
+- `Do`: Data z liczebnikiem porządkowym, np. 1st, 2nd, …
 - Inne formaty znajdą Państwo w pełnej dokumentacji.  
-  Ponadto dostępne są zlokalizowane formaty, zależne od języka, takie jak `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL` itd.
+  Ponadto istnieją formaty lokalne oparte na języku: np. `LT`, `LTS`, `L`, `LL`, `LLL`, `LLLL` itd.

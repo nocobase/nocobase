@@ -15,7 +15,7 @@ Přejděte do [Google Cloud Console](https://console.cloud.google.com/apis/crede
 
 Přejděte do konfiguračního rozhraní a vyplňte autorizovanou URL pro přesměrování. Tuto URL pro přesměrování získáte při přidávání autentikátoru v NocoBase; obvykle má formát `http(s)://host:port/api/oidc:redirect`. Podrobnosti naleznete v části [Uživatelská příručka - Konfigurace](../index.md#konfigurace).
 
-![](https://static-docs.nocobase.com/24078bf52ec96616334894cb3d9d126.png)
+![](https://static-docs.nocobase.com/24078bf52ec966a16334894cb3d9d126.png)
 
 ## Přidání nového autentikátoru v NocoBase
 

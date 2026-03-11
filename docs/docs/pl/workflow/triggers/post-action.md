@@ -179,7 +179,7 @@ Jeśli zdarzenie jest skonfigurowane w trybie globalnym, nie ma potrzeby używan
 
 Jak pokazano na poniższym rysunku:
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Różnica w stosunku do zdarzenia kolekcji
 

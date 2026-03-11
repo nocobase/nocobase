@@ -4,4 +4,4 @@ Detta dokument har översatts av AI. För eventuella felaktigheter, se [den enge
 
 # Lärandekarta
 
-![20250915220745](https://static-docs.nocobase.com/20250915220745.png)
+![20250915220745](https://static-docs.nocobase.com/20251102202401.png)

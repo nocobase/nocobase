@@ -1,142 +1,146 @@
-# NocoBase CRM 2.0 Solution
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/solution/crm/index) voor nauwkeurige informatie.
+:::
 
-> A modular sales management system built on the NocoBase low-code platform, with AI employee assistance
+# NocoBase CRM 2.0-oplossing
 
-## 1. Background
+> Modulair verkoopbeheersysteem gebaseerd op het NocoBase low-code platform, met AI-medewerkers die ondersteunen bij de besluitvorming.
 
-### Challenges Sales Teams Face
+## 1. Achtergrond
 
-Sales teams commonly encounter these problems: inconsistent lead quality makes fast screening difficult, opportunity follow-ups slip through the cracks, customer information is scattered across emails and multiple systems, sales forecasts rely on gut feeling, and quote approval processes are ad hoc.
+### Uitdagingen voor verkoopteams
 
-**Typical scenarios:** rapid lead evaluation and assignment, opportunity health monitoring, customer churn alerts, multi-level quote approvals, linking emails to customers and opportunities.
+Verkoopteams van bedrijven komen in hun dagelijkse werkzaamheden vaak de volgende problemen tegen: de kwaliteit van leads is wisselend en lastig snel te filteren, opvolging van verkoopkansen wordt gemakkelijk vergeten, klantgegevens staan verspreid in e-mails en verschillende systemen, verkoopprognoses zijn volledig gebaseerd op ervaring en goedkeuringsprocessen voor offertes zijn niet gestandaardiseerd.
 
-### Target Users
+**Typische scenario's:** Snelle evaluatie en toewijzing van leads, monitoring van de gezondheid van verkoopkansen, waarschuwingen voor klantverloop, goedkeuring van offertes op meerdere niveaus, koppeling van e-mail aan klanten/verkoopkansen.
 
-B2B sales, project-based sales, and cross-border trade teams at small-to-mid and mid-to-large enterprises. These organizations are graduating from Excel/email management to systematic operations and have high requirements for customer data security.
+### Doelgebruikers
 
-### Limitations of Existing Solutions
+B2B-verkoopteams, projectmatige verkoopteams en teams voor buitenlandse handel in kleine tot middelgrote en middelgrote tot grote ondernemingen. Deze bedrijven stappen over van beheer via Excel/e-mail naar gesystematiseerd beheer en stellen hoge eisen aan de beveiliging van klantgegevens.
 
-- **High cost**: Salesforce/HubSpot charge per seat, which is unaffordable for most SMEs
-- **Feature overload**: Enterprise CRMs are bloated; less than 20% of features are actually used, yet learning costs are high
-- **Hard to customize**: SaaS systems cannot easily adapt to your own business processes — even changing a field requires a ticket
-- **Data security**: Customer data stored on third-party servers creates compliance and security risks
-- **Expensive to build in-house**: Custom development has long cycles and high maintenance costs; adapting to business changes is slow
+### Tekortkomingen van bestaande oplossingen
 
----
-
-## 2. Differentiated Advantages
-
-**Competing products on the market:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
-
-**Platform-level advantages:**
-
-- **Configuration-first**: Data models, page layouts, and business processes are all configurable via UI — no code required
-- **Low-code rapid deployment**: Faster than custom development, more flexible than SaaS
-- **Modular and decomposable**: Modules are independently designed and can be toggled as needed; minimum viable setup requires only Customer + Opportunity
-
-**What traditional CRMs can't do, or can only do at prohibitive cost:**
-
-- **Data sovereignty**: Self-hosted deployment — your customer data stays on your own servers, meeting compliance requirements
-- **Native AI employee integration**: AI employees are deeply embedded in business pages and automatically read data context — not just "an AI button"
-- **All designs are reproducible**: Users can extend the solution template independently, without vendor dependency
+- **Hoge kosten**: Salesforce/HubSpot rekenen kosten per gebruiker, wat voor het MKB moeilijk op te brengen is.
+- **Overdaad aan functies**: Grote CRM-systemen hebben talloze functies en een hoge leercurve; minder dan 20% van de functies wordt daadwerkelijk gebruikt.
+- **Moeilijk aan te passen**: SaaS-systemen zijn lastig af te stemmen op de eigen bedrijfsprocessen; zelfs het wijzigen van een veld vereist een formeel proces.
+- **Gegevensbeveiliging**: Klantgegevens worden opgeslagen op servers van derden, wat risico's voor naleving en veiligheid met zich meebrengt.
+- **Hoge kosten voor eigen ontwikkeling**: Traditionele eigen ontwikkeling heeft een lange cyclus en hoge onderhoudskosten, waardoor het moeilijk is om snel aan te passen bij veranderingen in de bedrijfsvoering.
 
 ---
 
-## 3. Design Principles
+## 2. Onderscheidende voordelen
 
-- **Low cognitive load**: Clean interface, core features are immediately visible
-- **Business before technology**: Focus on sales scenarios, not technical showmanship
-- **Evolvable**: Supports phased rollout and incremental improvement
-- **Configuration over code**: If it can be configured, don't write code
-- **Human-AI collaboration**: AI employees assist decision-making; they don't replace salespeople's judgment
+**Belangrijkste producten op de markt:** Salesforce, HubSpot, Zoho CRM, Fxiaoke, Odoo CRM, SuiteCRM, etc.
 
----
+**Voordelen op platformniveau:**
 
-## 4. Solution Overview
+- **Configuratie eerst**: Datamodellen, paginalay-outs en bedrijfsprocessen kunnen allemaal via de UI worden geconfigureerd zonder code te schrijven.
+- **Snel bouwen met low-code**: Sneller dan eigen ontwikkeling en flexibeler dan SaaS.
+- **Modulair afbreekbaar**: Elk onderdeel is onafhankelijk ontworpen en kan naar behoefte worden aangepast; de minimaal levensvatbare versie vereist slechts twee modules: Klanten + Verkoopkansen.
 
-### Core Capabilities
+**Wat traditionele CRM's niet kunnen of waar de kosten extreem hoog zijn:**
 
-- **End-to-end pipeline**: Lead → Opportunity → Quotation → Order → Customer Success
-- **Modular**: Full version has 7 modules; minimum viable setup needs only 2 core modules
-- **Multi-currency**: CNY/USD/EUR/GBP/JPY with automatic conversion
-- **AI assistance**: Lead scoring, win probability prediction, next-best-action suggestions
-
-### Core Modules
-
-| Module | Required | Description | AI Assistance |
-|--------|:--------:|-------------|--------------|
-| Customer Management | ✅ | Customer profiles, contacts, account hierarchy | Health scoring, churn alerts |
-| Opportunity Management | ✅ | Sales funnel, stage progression, activity log | Win probability, next-step suggestions |
-| Lead Management | — | Lead entry, status flow, conversion tracking | Smart scoring |
-| Quotation Management | — | Multi-currency, version control, approval workflow | — |
-| Order Management | — | Order creation, payment tracking | — |
-| Product Management | — | Product catalog, categories, tiered pricing | — |
-| Email Integration | — | Send/receive emails, CRM association | Sentiment analysis, summary generation |
-
-### Solution Editions
-
-- **Enterprise** (all 7 modules): Full-process B2B sales teams
-- **Standard** (Customer + Opportunity + Quotation + Order + Product): SME sales management
-- **Lite** (Customer + Opportunity): Simple customer and opportunity tracking
-- **Trade** (Customer + Opportunity + Quotation + Email): Cross-border trade teams
+- **Datasoevereiniteit**: Zelf-gehoste implementatie waarbij klantgegevens op uw eigen servers worden opgeslagen om aan de nalevingsvereisten te voldoen.
+- **Native integratie van AI-medewerkers**: AI-medewerkers zijn diep ingebed in de bedrijfspagina's en herkennen automatisch de context van de gegevens; het is meer dan alleen een "AI-knop".
+- **Alle ontwerpen zijn kopieerbaar**: Gebruikers kunnen de oplossing zelfstandig uitbreiden op basis van sjablonen, zonder afhankelijk te zijn van de leverancier.
 
 ---
 
-## 5. AI Employees
+## 3. Ontwerpprincipes
 
-The CRM comes pre-loaded with 5 AI employees, deeply embedded in business pages. Unlike generic AI chat tools, they automatically recognize the data you're currently viewing — whether a lead list, opportunity details, or email thread — no copy-pasting required.
-
-**How to use**: Click the AI floating button in the lower-right corner of any page, or click the AI icon next to a block to summon the corresponding employee. You can also pre-configure common tasks for each employee and trigger them with a single click next time.
-
-| Employee | Role | Typical Use in CRM |
-|----------|------|--------------------|
-| **Viz** | Insight Analyst | Lead channel analysis, sales trends, pipeline health |
-| **Ellis** | Email Expert | Draft follow-up emails, generate communication summaries |
-| **Lexi** | Translation Assistant | Multilingual emails, cross-border customer communication |
-| **Dara** | Visualization Expert | Configure report charts, build dashboards |
-| **Orin** | Task Planner | Daily priorities, next-step action suggestions |
-
-### Business Value of AI Employees
-
-| Value Dimension | Specific Impact |
-|-----------------|----------------|
-| Efficiency | Lead scoring done automatically, saving manual screening time; follow-up emails drafted in one click |
-| Empowerment | Sales data analysis always at your fingertips — no waiting for the data team |
-| Communication quality | Professional emails + AI polish; cross-border teams communicate fluently in multiple languages |
-| Decision support | Real-time win probability and next-step suggestions reduce deals lost to missed follow-ups |
+- **Lage cognitieve kosten**: De interface is eenvoudig en de kernfuncties zijn in één oogopslag duidelijk.
+- **Bedrijfsvoering gaat voor techniek**: Focus op verkoopscenario's in plaats van technisch vertoon.
+- **Evolueerbaar**: Ondersteunt gefaseerde lancering en stapsgewijze verbetering.
+- **Configuratie eerst**: Schrijf geen code voor zaken die geconfigureerd kunnen worden.
+- **Samenwerking tussen mens en AI**: AI-medewerkers ondersteunen de besluitvorming in plaats van het oordeel van het verkooppersoneel te vervangen.
 
 ---
 
-## 6. Highlights
+## 4. Overzicht van de oplossing
 
-**Modular** — Each module is independently designed and can be toggled on or off. The minimum setup needs only Customer + Opportunity. Start lean, grow as needed.
+### Kerncapaciteiten
 
-**Complete sales loop** — Lead → Opportunity → Quotation → Order → Payment → Customer Success. Full end-to-end data flow with no need to switch between systems.
+- **Beheer van het volledige proces**: Lead → Verkoopkans → Offerte → Order → Customer Success.
+- **Aanpasbare modules**: De volledige versie bevat 7 modules, de minimaal levensvatbare versie heeft slechts 2 kernmodules nodig.
+- **Ondersteuning voor meerdere valuta**: Automatische omrekening tussen CNY/USD/EUR/GBP/JPY.
+- **AI-ondersteuning**: Leadscoring, voorspelling van winstkansen, suggesties voor de volgende actie.
 
-**Native AI employee integration** — Not just "an AI button." 5 AI employees are embedded in every business page, automatically reading current data context and delivering analysis and suggestions with one click.
+### Kernmodules
 
-**Deep email integration** — Emails are automatically linked to customers, contacts, and opportunities. Supports Gmail and Outlook. Multiple English email templates cover common sales scenarios.
+| Module | Vereist | Toelichting | AI-ondersteuning |
+|------|:----:|------|--------|
+| Klantbeheer | ✅ | Klantdossiers, contactpersonen, klantniveaus | Gezondheidsevaluatie, waarschuwing voor verloop |
+| Beheer van verkoopkansen | ✅ | Verkooppijplijn, fasevoortgang, activiteitsregistratie | Winstkansvoorspelling, suggesties voor volgende stap |
+| Leadbeheer | - | Leadregistratie, statusverloop, conversietracking | Intelligente scoring |
+| Offertebeheer | - | Meerdere valuta, versiebeheer, goedkeuringsprocessen | - |
+| Orderbeheer | - | Ordergeneratie, opvolging van betalingen | - |
+| Productbeheer | - | Productcatalogus, categorieën, staffelprijzen | - |
+| E-mailintegratie | - | E-mail verzenden/ontvangen, CRM-koppeling | Sentimentanalyse, samenvatting genereren |
 
-**Multi-currency trade support** — Supports CNY/USD/EUR/GBP/JPY with configurable exchange rate conversion, designed for cross-border and international sales teams.
+### Aanpassing van de oplossing
 
----
-
-## 7. Getting Started
-
-Deploy the CRM package to your target environment using NocoBase's migration manager for one-click import.
-
-**Ready out of the box:** Pre-built data tables, workflows, and dashboards. Multi-role views (Sales Manager / Sales Rep / Executive). 37 email templates covering common sales scenarios.
-
----
-
-## 8. Roadmap
-
-- **Opportunity automation**: Stage progression triggers notifications; stagnant opportunities auto-alert, reducing manual oversight
-- **Approval workflows**: Multi-level quote approval with mobile approval support
-- **AI automation**: AI employees embedded in workflows for unattended background execution — automated lead scoring and opportunity analysis
-- **Mobile-friendly**: Mobile-optimized interface for on-the-go customer follow-up
-- **Multi-tenant support**: Horizontal scaling across spaces/applications, distributing to independent sales teams
+- **Volledige versie** (alle 7 modules): Voor B2B-verkoopteams met een volledig proces.
+- **Standaardversie** (Klanten + Verkoopkansen + Offertes + Orders + Producten): Voor verkoopbeheer in het MKB.
+- **Light-versie** (Klanten + Verkoopkansen): Voor het eenvoudig volgen van klanten en verkoopkansen.
+- **Versie voor buitenlandse handel** (Klanten + Verkoopkansen + Offertes + E-mail): Voor bedrijven in de buitenlandse handel.
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 5. AI-medewerkers
+
+Het CRM-systeem is vooraf uitgerust met 5 AI-medewerkers die diep in de bedrijfspagina's zijn ingebed. In tegenstelling tot gewone AI-chattools herkennen zij automatisch de gegevens die u momenteel bekijkt — of het nu gaat om een lijst met leads, details van een verkoopkans of e-mailrecords — zonder dat u handmatig hoeft te kopiëren en plakken.
+
+**Gebruikswijze**: Klik op de AI-zwevende bol rechtsonder op de pagina, of klik direct op het AI-icoon naast een blok om de betreffende medewerker op te roepen. U kunt ook voor elke medewerker veelvoorkomende taken vooraf instellen, zodat u deze de volgende keer met één klik kunt activeren.
+
+| Medewerker | Verantwoordelijkheid | Typisch gebruik in CRM |
+|------|------|-----------------|
+| **Viz** | Inzichtanalist | Analyse van leadkanalen, verkooptrends, gezondheid van de pijplijn |
+| **Ellis** | E-mailexpert | Opstellen van opvolgingsmails, genereren van communicatiesamenvattingen |
+| **Lexi** | Vertaalassistent | Meertalige e-mails, communicatie met buitenlandse klanten |
+| **Dara** | Visualisatie-expert | Configuratie van rapporten en grafieken, opbouw van dashboards |
+| **Orin** | Taakplanner | Dagelijkse prioriteiten, suggesties voor de volgende actie |
+
+### Bedrijfswaarde van AI-medewerkers
+
+| Waardedimensie | Concreet effect |
+|----------|----------|
+| Efficiëntie verhogen | Leadscoring gebeurt automatisch, wat handmatige filtering bespaart; opvolgingsmails worden met één klik opgesteld. |
+| Medewerkers versterken | Analyse van verkoopgegevens is altijd binnen handbereik, zonder te hoeven wachten op rapporten van het datateam. |
+| Kwaliteit van communicatie | Professionele e-mails + AI-verfijning, probleemloze meertalige communicatie voor teams in de buitenlandse handel. |
+| Besluitvormingsondersteuning | Realtime beoordeling van winstkansen en suggesties voor de volgende stap verminderen het verlies van verkoopkansen door gemiste opvolging. |
+
+---
+
+## 6. Hoogtepunten
+
+**Modulair afbreekbaar** — Elk onderdeel is onafhankelijk ontworpen en kan afzonderlijk worden in- of uitgeschakeld. De minimale configuratie vereist slechts de twee kernmodules Klanten + Verkoopkansen; gebruik wat u nodig heeft, niets is verplicht.
+
+**Volledige verkoopcyclus** — Lead → Verkoopkans → Offerte → Order → Betaling → Customer Success. Gegevens zijn over de hele keten verbonden, waardoor u niet tussen meerdere systemen hoeft te schakelen.
+
+**Native integratie van AI-medewerkers** — Geen simpele "AI-knop", maar 5 AI-medewerkers die in elke bedrijfspagina zijn geïntegreerd, automatisch de huidige gegevenscontext verkrijgen en met één klik analyses en suggesties activeren.
+
+**Diepe e-mailintegratie** — E-mails worden automatisch gekoppeld aan klanten, contactpersonen en verkoopkansen. Ondersteunt Gmail en Outlook, met meerdere Engelse e-mailsjablonen voor veelvoorkomende verkoopscenario's.
+
+**Ondersteuning voor buitenlandse handel met meerdere valuta** — Ondersteunt CNY/USD/EUR/GBP/JPY, met configureerbare wisselkoersomrekening, geschikt voor buitenlandse handel en internationale verkoopteams.
+
+---
+
+## 7. Installatie en gebruik
+
+Gebruik de migratiebeheerfunctie van NocoBase om het CRM-toepassingspakket met één klik naar de doelomgeving te migreren.
+
+**Direct klaar voor gebruik:** Vooraf ingestelde collecties, workflows, dashboards en weergaven voor meerdere rollen (verkoopmanager/verkoopvertegenwoordiger/directie). 37 e-mailsjablonen dekken veelvoorkomende verkoopscenario's.
+
+---
+
+## 8. Toekomstige planning
+
+- **Automatisering van verkoopkansen**: Meldingen bij faseovergangen en automatische waarschuwingen bij stagnerende verkoopkansen om handmatige controle te verminderen.
+- **Goedkeuringsprocessen**: Workflow voor goedkeuring van offertes op meerdere niveaus, met ondersteuning voor mobiele goedkeuring.
+- **AI-automatisering**: AI-medewerkers ingebed in workflows, met ondersteuning voor automatische uitvoering op de achtergrond voor onbeheerde leadscoring en analyse van verkoopkansen.
+- **Mobiele aanpassing**: Mobielvriendelijke interface om klanten altijd en overal op te volgen.
+- **Ondersteuning voor multi-tenancy**: Horizontale uitbreiding naar meerdere ruimtes/applicaties voor onafhankelijk beheer door verschillende verkoopteams.
+
+---
+
+*Documentversie: v2.0 | Bijgewerkt op: 06-02-2026*

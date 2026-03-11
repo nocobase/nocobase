@@ -1,27 +1,31 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/template-print/syntax/formatters/date-formatting).
 :::
 
-### Datum Formatierung
+### Datumsformatierung
 
 #### 1. :formatD(patternOut, patternIn)
 
 ##### Syntax Erklärung
-Diese Funktion formatiert ein Datum. Sie akzeptiert ein Ausgabeformat `patternOut` und ein optionales Eingabeformat `patternIn` (standardmäßig ISO 8601).  
-Die Zeitzone und Sprache können Sie über `options.timezone` und `options.lang` anpassen.
+Diese Funktion formatiert ein Datum. Sie akzeptiert ein Ausgabeformat `patternOut` und ein Eingabeformat `patternIn` (standardmäßig ISO 8601).
 
-##### Beispiel
+##### Häufige Beispiele
 ```
-// Beispielumgebung: API-Optionen { "lang": "en-us", "timezone": "Europe/Paris" }
-'20160131':formatD(L)      // Ergibt 01/31/2016
-'20160131':formatD(LL)     // Ergibt January 31, 2016
-'20160131':formatD(LLLL)   // Ergibt Sunday, January 31, 2016 12:00 AM
-'20160131':formatD(dddd)   // Ergibt Sunday
+{d.createdAt:formatD(YYYY-MM-DD)}           // Ausgabe 2024-01-15
+{d.createdAt:formatD(YYYY年M月D日)}          // Ausgabe 2024年1月15日
+{d.updatedAt:formatD(YYYY年M月D日 HH:mm)}    // Ausgabe 2024年1月15日 14:30
+{d.orderDate:formatD(YYYY/MM/DD HH:mm:ss)}  // Ausgabe 2024/01/15 14:30:25
+{d.birthday:formatD(M月D日)}                 // Ausgabe 1月15日
+{d.meetingTime:formatD(HH:mm)}              // Ausgabe 14:30
+{d.deadline:formatD(YYYY年M月D日 dddd)}      // Ausgabe 2024年1月15日 Montag
+```
 
-// Französisches Beispiel:
-'2017-05-10T15:57:23.769561+03:00':formatD(LLLL)  // Ergibt mercredi 10 mai 2017 14:57
-'20160131':formatD(LLLL)   // Ergibt dimanche 31 janvier 2016 00:00
-1410715640:formatD(LLLL, X) // Ergibt dimanche 14 septembre 2014 19:27
+##### Weitere Formatbeispiele
+```
+'20160131':formatD(L)      // Ausgabe 01/31/2016
+'20160131':formatD(LL)     // Ausgabe January 31, 2016
+'20160131':formatD(LLLL)   // Ausgabe Sunday, January 31, 2016 12:00 AM
+'20160131':formatD(dddd)   // Ausgabe Sunday
 ```
 
 ##### Ergebnis
@@ -115,11 +119,11 @@ Diese Funktion berechnet die Differenz zwischen zwei Daten und gibt diese in der
 - `week(s)` oder `w` (Woche(n) oder W)
 - `quarter(s)` oder `Q` (Quartal(e) oder Q)
 - `month(s)` oder `M` (Monat(e) oder M)
-- `year(s)` oder `y` (Jahr(e) oder J)
-- `hour(s)` oder `h` (Stunde(n) oder H)
-- `minute(s)` oder `m` (Minute(n) oder M)
-- `second(s)` oder `s` (Sekunde(n) oder S)
-- `millisecond(s)` oder `ms` (Millisekunde(n) oder MS) (Standardeinheit)
+- `year(s)` oder `y` 
+- `hour(s)` oder `h` 
+- `minute(s)` oder `m` 
+- `second(s)` oder `s` 
+- `millisecond(s)` oder `ms`  (Standardeinheit)
 
 Parameter:
 - **toDate:** Das Zieldatum.
@@ -152,15 +156,11 @@ Parameter:
 
 ##### Beispiel
 ```
-// Beispielumgebung: API-Optionen { "lang": "en", "timezone": "Europe/Paris" }
-'20160131':convDate('YYYYMMDD', 'L')      // Ergibt "01/31/2016"
-'20160131':convDate('YYYYMMDD', 'LL')     // Ergibt "January 31, 2016"
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Ergibt "Sunday, January 31, 2016 12:00 AM"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Ergibt "Sunday"
-1410715640:convDate('X', 'LLLL')          // Ergibt "Sunday, September 14, 2014 7:27 PM"
-// Französisches Beispiel:
-'20160131':convDate('YYYYMMDD', 'LLLL')   // Ergibt "dimanche 31 janvier 2016 00:00"
-'20160131':convDate('YYYYMMDD', 'dddd')   // Ergibt "dimanche"
+'20160131':convDate('YYYYMMDD', 'L')      // Ausgabe "01/31/2016"
+'20160131':convDate('YYYYMMDD', 'LL')     // Ausgabe "January 31, 2016"
+'20160131':convDate('YYYYMMDD', 'LLLL')   // Ausgabe "Sunday, January 31, 2016 12:00 AM"
+'20160131':convDate('YYYYMMDD', 'dddd')   // Ausgabe "Sunday"
+1410715640:convDate('X', 'LLLL')          // Ausgabe "Sunday, September 14, 2014 7:27 PM"
 ```
 
 ##### Ergebnis

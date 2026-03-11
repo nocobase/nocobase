@@ -35,13 +35,13 @@ Po utworzeniu bazy wiedzy, na stronie listy baz wiedzy, proszę kliknąć nowo u
 
 ![20251023100458](https://static-docs.nocobase.com/20251023100458.png)
 
-![20251023100527](https://static-docs.nocobase.com/2025100527.png)
+![20251023100527](https://static-docs.nocobase.com/20251023100527.png)
 
 Proszę kliknąć przycisk `Upload`, aby przesłać dokumenty. Po przesłaniu dokumentów automatycznie rozpocznie się wektoryzacja. Proszę poczekać, aż `Status` zmieni się ze stanu `Pending` na `Success`.
 
 Obecnie baza wiedzy obsługuje następujące typy dokumentów: txt, pdf, doc, docx, ppt, pptx; pliki PDF obsługują wyłącznie czysty tekst.
 
-![20251023100901](https://static-docs.nocobase.com/2025100901.png)
+![20251023100901](https://static-docs.nocobase.com/20251023100901.png)
 
 ## Typy baz wiedzy
 
@@ -49,16 +49,16 @@ Obecnie baza wiedzy obsługuje następujące typy dokumentów: txt, pdf, doc, do
 
 Lokalna baza wiedzy to baza wiedzy przechowywana lokalnie w NocoBase. Zarówno dokumenty, jak i ich dane wektorowe są przechowywane lokalnie przez NocoBase.
 
-![20251023101620](https://static-docs.nocobase.com/2025101620.png)
+![20251023101620](https://static-docs.nocobase.com/20251023101620.png)
 
 ### Baza wiedzy tylko do odczytu
 
 Baza wiedzy tylko do odczytu to baza wiedzy, której dokumenty i dane wektorowe są utrzymywane zewnętrznie. W NocoBase tworzone jest jedynie połączenie z wektorową bazą danych (obecnie obsługiwany jest tylko PGVector).
 
-![20251023101743](https://static-docs.nocobase.com/2025101743.png)
+![20251023101743](https://static-docs.nocobase.com/20251023101743.png)
 
 ### Zewnętrzna baza wiedzy
 
 Zewnętrzna baza wiedzy to baza wiedzy, której dokumenty i dane wektorowe są utrzymywane zewnętrznie. Wyszukiwanie w wektorowej bazie danych wymaga rozszerzenia przez deweloperów, co umożliwia korzystanie z baz danych wektorowych, które nie są obecnie obsługiwane przez NocoBase.
 
-![20251023101949](https://static-docs.nocobase.com/2025101949.png)
+![20251023101949](https://static-docs.nocobase.com/20251023101949.png)

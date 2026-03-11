@@ -1,14 +1,18 @@
 ---
-displayName: "Multi-space"
+displayName: "Multi-workspace"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
-  Implements multiple independent data spaces within a single application instance through logical isolation.
+  Implementa più spazi dati indipendenti all'interno di una singola istanza dell'applicazione attraverso l'isolamento logico.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Multi-space
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-multi-space/index).
+:::
+
+# Multi-workspace

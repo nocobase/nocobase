@@ -1,5 +1,5 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/interface-builder/fields/specific/js-item) voor nauwkeurige informatie.
 :::
 
 # JS Item
@@ -32,7 +32,7 @@ JS Item gebruikt u voor 'aangepaste items' (niet gekoppeld aan een veld) in een 
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Kan worden gebruikt met AI-medewerker om scripts te genereren/wijzigen: [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- Kan worden gebruikt met AI-medewerker om scripts te genereren/wijzigen: [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Veelvoorkomend gebruik (vereenvoudigde voorbeelden)
 

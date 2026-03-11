@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Grafik (Kedaluwarsa)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Plugin yang telah kedaluwarsa, harap gunakan plugin visualisasi data sebagai gantinya.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-charts/index).
+:::
 
-> Note: This plugin is deprecated.
+# Grafik (Kedaluwarsa)
+
+> Catatan: Plugin ini telah kedaluwarsa (deprecated).

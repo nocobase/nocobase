@@ -12,7 +12,7 @@
 
 تهيئة الحقل:
 
-![alt text](https://static-docs.nocobase.com/a608ce54821172dad8e8ab760107ff4e.png)
+![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
 ## وصف المعلمات
 

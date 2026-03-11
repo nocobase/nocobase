@@ -30,7 +30,7 @@ Si le plugin est activé pour une sous-application, la clé est par défaut enre
 
 Utilise le chiffrement par enveloppe.
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Processus de création des clés
 1. Lors de la première création d'un champ chiffré, une `clé d'application` de 32 bits est automatiquement générée par le système et stockée dans le répertoire de stockage par défaut, encodée en Base64.

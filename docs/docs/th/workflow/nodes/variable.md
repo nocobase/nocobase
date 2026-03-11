@@ -15,7 +15,7 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 ในหน้าจอการตั้งค่าเวิร์กโฟลว์ ให้คลิกปุ่มเครื่องหมายบวก ("+") ในเวิร์กโฟลว์ เพื่อเพิ่มโหนด "ตัวแปร" ครับ/ค่ะ
 
-![เพิ่มโหนดตัวแปร](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![เพิ่มโหนดตัวแปร](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## การตั้งค่าโหนด
 

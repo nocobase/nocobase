@@ -1,0 +1,43 @@
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/integration/fdw/enable-federated) देखें।
+:::
+
+# MySQL में federated इंजन को कैसे सक्षम करें
+
+MySQL डेटाबेस में federated मॉड्यूल डिफ़ॉल्ट रूप से सक्षम नहीं होता है। आपको my.cnf कॉन्फ़िगरेशन को संशोधित करने की आवश्यकता है। यदि आप Docker वर्शन का उपयोग कर रहे हैं, तो आप volumes के माध्यम से एक्सटेंशन को हैंडल कर सकते हैं:
+
+```yml
+mysql:
+  image: mysql:8.1.0
+  volumes:
+    - ./storage/mysql-conf:/etc/mysql/conf.d
+  environment:
+    MYSQL_DATABASE: nocobase
+    MYSQL_USER: nocobase
+    MYSQL_PASSWORD: nocobase
+    MYSQL_ROOT_PASSWORD: nocobase
+  restart: always
+  networks:
+    - nocobase
+```
+
+एक नई `./storage/mysql-conf/federated.cnf` फ़ाइल बनाएं:
+
+```ini
+[mysqld]
+federated
+```
+
+MySQL को रीस्टार्ट करें:
+
+```bash
+docker compose up -d mysql
+```
+
+जांचें कि क्या federated सक्रिय (activated) हो गया है:
+
+```sql
+show engines
+```
+
+![Alt text](https://static-docs.nocobase.com/ac5d97cf902ad164e141633a41a23e46.png)

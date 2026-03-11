@@ -1,8 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/data-sources/data-source-kingbase/index).
 :::
 
 # Source de données - KingbaseES
@@ -44,7 +45,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
+    image: nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
@@ -75,7 +76,7 @@ services:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
+    image: nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -101,7 +102,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
    -e DB_DATABASE=kingbase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=UTC
 ```
 
 ### Utilisation en tant que base de données externe

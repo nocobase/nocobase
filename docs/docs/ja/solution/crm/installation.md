@@ -1,130 +1,137 @@
-# Installation Guide
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/solution/crm/installation)をご参照ください。
+:::
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# インストール方法
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> 現在のバージョンは**バックアップ・リストア**形式でデプロイされます。今後のバージョンでは、既存のシステムにソリューションを統合しやすくするため、**増分マイグレーション**形式に変更される可能性があります。
 
-Before you begin, please ensure:
+CRM 2.0 ソリューションをお客様自身の NocoBase 環境に迅速かつスムーズにデプロイしていただくために、2 つのリストア方法を提供しています。ユーザーエディションと技術的な背景に合わせて、最適なものを選択してください。
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+開始する前に、以下を確認してください：
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+- すでに基礎となる NocoBase 実行環境があること。メインシステムのインストールについては、詳細な[公式インストールドキュメント](https://docs-cn.nocobase.com/welcome/getting-started/installation)を参照してください。
+- NocoBase バージョン **v2.1.0-beta.2 以上**
+- CRM システムの対応するファイルをダウンロード済みであること：
+  - **バックアップファイル**：[nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - 方法 1 に適用
+  - **SQL ファイル**：[nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - 方法 2 に適用
+
+**重要事項**：
+- 本ソリューションは **PostgreSQL 16** データベースに基づいて作成されています。環境で PostgreSQL 16 を使用していることを確認してください。
+- **DB_UNDERSCORED は true にしないでください**：`docker-compose.yml` ファイルを確認し、`DB_UNDERSCORED` 環境変数が `true` に設定されていないことを確認してください。そうでない場合、ソリューションのバックアップと競合し、リストアに失敗します。
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## 方法 1：バックアップマネージャーを使用してリストア（プロフェッショナル/エンタープライズ版ユーザー推奨）
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+この方法は、NocoBase 内蔵の「[バックアップマネージャー](https://docs-cn.nocobase.com/handbook/backups)」（プロフェッショナル/エンタープライズ版）プラグインを使用してワンクリックでリストアを行うもので、操作が最も簡単です。ただし、環境とユーザーエディションに一定の要件があります。
 
-### Key Characteristics
+### 主な特徴
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **メリット**：
+  1. **操作が便利**：UI 画面で完結し、プラグインを含むすべての設定を完全にリストアできます。
+  2. **完全なリストア**：テンプレート印刷ファイルや、コレクション内のファイルフィールドでアップロードされたファイルなど、**すべてのシステムファイルをリストア可能**であり、機能の完全性を保証します。
+* **制限事項**：
+  1. **プロフェッショナル/エンタープライズ版限定**：「バックアップマネージャー」はエンタープライズ向けプラグインであり、プロフェッショナル/エンタープライズ版ユーザーのみ利用可能です。
+  2. **環境要件が厳格**：データベース環境（バージョン、大文字小文字の区別設定など）が、バックアップ作成時の環境と高度に互換性がある必要があります。
+  3. **プラグインの依存関係**：ソリューションにローカル環境にない商用プラグインが含まれている場合、リストアは失敗します。
 
-### Steps
+### 操作手順
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**ステップ 1：【強く推奨】 `full` イメージを使用してアプリケーションを起動する**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+データベースクライアントの欠如によるリストア失敗を避けるため、`full` バージョンの Docker イメージを使用することを強く推奨します。これには必要なすべての関連プログラムが内蔵されており、追加設定なしで使用できます。
+
+イメージをプルするコマンド例：
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+その後、このイメージを使用して NocoBase サービスを起動します。
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **注**：`full` イメージを使用しない場合、コンテナ内に `pg_dump` データベースクライアントを手動でインストールする必要があり、プロセスが煩雑で不安定になる可能性があります。
 
-**Step 2: Enable the "Backup Manager" plugin**
+**ステップ 2：「バックアップマネージャー」プラグインを有効にする**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. NocoBase システムにログインします。
+2. **`プラグイン管理`** に移動します。
+3. **`バックアップマネージャー`** プラグインを見つけて有効にします。
 
-**Step 3: Restore from local backup file**
+**ステップ 3：ローカルバックアップファイルからリストアする**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. プラグインを有効にした後、ページを更新します。
+2. 左側メニューの **`システム管理`** -> **`バックアップマネージャー`** に移動します。
+3. 右上の **`ローカルバックアップからリストア`** ボタンをクリックします。
+4. ダウンロードしたバックアップファイルをアップロードエリアにドラッグ＆ドロップします。
+5. **`送信`** をクリックし、システムがリストアを完了するまで待ちます。このプロセスには数十秒から数分かかる場合があります。
 
-### Notes
+### 注意事項
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **データベースの互換性**：これはこの方法で最も重要な点です。PostgreSQL データベースの**バージョン、文字セット、大文字小文字の区別設定**がバックアップ元のファイルと一致している必要があります。特に `schema` 名は一致している必要があります。
+* **商用プラグインの一致**：ソリューションに必要なすべての商用プラグインを所有し、有効にしていることを確認してください。そうでない場合、リストアは中断されます。
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
+## 方法 2：SQL ファイルを直接インポート（汎用、コミュニティ版に最適）
 
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
+この方法は、データベースを直接操作してデータをリストアするため、「バックアップマネージャー」プラグインを経由せず、プロフェッショナル/エンタープライズ版プラグインの制限もありません。
 
-### Key Characteristics
+### 主な特徴
 
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+* **メリット**：
+  1. **エディション制限なし**：コミュニティ版を含むすべての NocoBase ユーザーに適用されます。
+  2. **高い互換性**：アプリケーション内の `dump` ツールに依存せず、データベースに接続できれば操作可能です。
+  3. **高い耐障害性**：ソリューションに所有していない商用プラグインが含まれている場合、関連機能は有効になりませんが、他の機能の正常な使用には影響せず、アプリケーションは正常に起動できます。
+* **制限事項**：
+  1. **データベース操作能力が必要**：`.sql` ファイルの実行方法など、基礎的なデータベース操作能力が必要です。
+  2. **システムファイルの紛失**：**この方法では、すべてのシステムファイルが失われます**。これにはテンプレート印刷ファイルや、コレクション内のファイルフィールドでアップロードされたファイルなどが含まれます。
 
-### Steps
+### 操作手順
 
-**Step 1: Prepare a clean database**
+**ステップ 1：クリーンなデータベースを準備する**
 
-Create a brand new, empty database for the data you're about to import.
+インポートするデータのために、新しく空のデータベースを準備します。
 
-**Step 2: Import the `.sql` file into the database**
+**ステップ 2：`.sql` ファイルをデータベースにインポートする**
 
-* **Option A: Via server command line (Docker example)**
+ダウンロードしたデータベースファイル（通常は `.sql` 形式）を取得し、その内容を前のステップで準備したデータベースにインポートします。実行方法は環境によって異なります：
+
+* **オプション A：サーバーのコマンドライン経由（Docker を例に）**
+  Docker で NocoBase とデータベースをインストールしている場合、`.sql` ファイルをサーバーにアップロードし、`docker exec` コマンドを使用してインポートを実行できます。PostgreSQL コンテナ名が `my-nocobase-db`、ファイル名が `nocobase_crm_v2_sql_260223.sql` であると仮定します：
 
   ```bash
-  # Copy the sql file into the container
+  # sql ファイルをコンテナ内にコピー
   docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
+  # コンテナに入りインポートコマンドを実行
   docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
   ```
+* **オプション B：リモートデータベースクライアント経由（Navicat など）**
+  データベースのポートが公開されている場合、任意のグラフィカルデータベースクライアント（Navicat、DBeaver、pgAdmin など）を使用してデータベースに接続し、以下を行います：
+  1. ターゲットデータベースを右クリックします。
+  2. 「SQL ファイルの実行」または「SQL スクリプトの実行」を選択します。
+  3. ダウンロードした `.sql` ファイルを選択して実行します。
 
-* **Option B: Via a remote database client (Navicat, etc.)**
+**ステップ 3：データベースに接続してアプリケーションを起動する**
 
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
+NocoBase の起動パラメータ（環境変数 `DB_HOST`、`DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD` など）を、データをインポートしたばかりのデータベースを指すように設定します。その後、通常通り NocoBase サービスを起動します。
 
-**Step 3: Connect to the database and start the application**
+### 注意事項
 
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
+* **データベース権限**：この方法では、データベースを直接操作できるアカウントとパスワードが必要です。
+* **プラグインの状態**：インポート成功後、システムに含まれる商用プラグインのデータは存在しますが、ローカルに対応するプラグインがインストール・有効化されていない場合、関連機能は表示・使用できません。ただし、これによりアプリケーションがクラッシュすることはありません。
 
 ---
 
-## Summary & Comparison
+## まとめと比較
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
+| 特性            | 方法 1：バックアップマネージャー                                               | 方法 2：SQL ファイルを直接インポート                                                                                   |
+| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
+| **対象ユーザー**    | **プロフェッショナル/エンタープライズ版**ユーザー                                              | **すべてのユーザー**（コミュニティ版を含む）                                                                             |
+| **操作の容易さ**  | ⭐⭐⭐⭐⭐ (非常に簡単、UI 操作)                                   | ⭐⭐⭐ (基礎的なデータベース知識が必要)                                                                            |
+| **環境要件**    | **厳格**、データベースやシステムバージョンなどの高度な互換性が必要                           | **一般的**、データベースの互換性が必要                                                                               |
+| **プラグイン依存**    | **強い依存関係**、リストア時にプラグインがチェックされ、欠けていると**リストアに失敗**します。 | **機能はプラグインに強く依存**。データは独立してインポート可能で、システムは基礎機能を備えます。ただし、対応するプラグインがない場合、関連機能は**完全に利用不可**となります。 |
+| **システムファイル**    | **完全に保持**（印刷テンプレート、アップロードファイルなど）                          | **失われる**（印刷テンプレート、アップロードファイルなど）                                                                  |
+| **推奨シーン**   | エンタープライズユーザーで、環境が制御可能かつ一致しており、完全な機能を必要とする場合                     | 一部のプラグインが不足しており、高い互換性と柔軟性を求める場合、または非プロフェッショナル/エンタープライズ版ユーザーで、ファイル機能の欠如を許容できる場合                                |
 
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+このチュートリアルが CRM 2.0 システムの円滑なデプロイに役立つことを願っています。操作中に問題が発生した場合は、いつでもお気軽にお問い合わせください！

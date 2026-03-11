@@ -14,7 +14,7 @@ Nell'interfaccia di configurazione del flusso di lavoro, clicchi sul pulsante pi
 
 ## Configurazione del nodo
 
-![End Workflow_Node Configuration](https://static-docs.nocobase.com/bb6a597f25e9afb72836a140fe0683e.png)
+![End Workflow_Node Configuration](https://static-docs.nocobase.com/bb6a597f25e9afb72836a14a0fe0683e.png)
 
 ### Stato di conclusione
 

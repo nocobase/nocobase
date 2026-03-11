@@ -1,12 +1,16 @@
 ---
-displayName: "Calendar"
+displayName: "Kalender"
 packageName: '@nocobase/plugin-calendar'
 description: |
-  Provides callendar collection template and block for managing date data, typically for date/time related information such as events, appointments, tasks, and so on.
+  Menyediakan templat dan blok koleksi kalender untuk mengelola data tanggal, biasanya untuk informasi terkait tanggal/waktu seperti acara, janji temu, tugas, dan sebagainya.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Calendar
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-calendar/index).
+:::
+
+# Kalender

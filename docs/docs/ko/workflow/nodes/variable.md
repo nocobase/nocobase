@@ -16,7 +16,7 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 워크플로우 설정 화면에서 워크플로우 내의 더하기('+'') 버튼을 클릭하여 '변수' 노드를 추가합니다.
 
-![변수 노드 추가](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![변수 노드 추가](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## 노드 설정
 
@@ -79,6 +79,6 @@ pkg: '@nocobase/plugin-workflow-variable'
 
 이렇게 하면 반복 분기가 완료된 후 수신자 변수에 모든 게시글 작성자의 수신자 문자열이 저장됩니다. 그 다음, 반복 후에 HTTP 요청 노드를 사용하여 이메일 발송 API를 호출하고 수신자 변수의 값을 수신자 매개변수로 API에 전달할 수 있습니다.
 
-![요청 노드를 통해 수신자에게 메일 발송](https://static-docs.nocobase.com/37f71ae1a63e172bcb2dce10a250947e.png)
+![요청 노드를 통해 수신자에게 메일 발송](https://static-docs.nocobase.com/37f71aa1a63e172bcb2dce10a250947e.png)
 
 이로써 간단한 대량 이메일 발송 기능이 반복 및 변수 노드를 통해 구현되었습니다.

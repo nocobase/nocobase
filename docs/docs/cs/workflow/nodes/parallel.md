@@ -20,11 +20,11 @@ Jedná se o vestavěný plugin, který nevyžaduje instalaci.
 
 V rozhraní pro konfiguraci pracovního postupu klikněte na tlačítko plus („+“) v diagramu a přidejte uzel „Paralelní větev“:
 
-![Přidat paralelní větev](https://static-docs.nocobase.com/9e0f3faa0b9335270647a3047759eac.png)
+![Přidat paralelní větev](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
 
 Po přidání uzlu paralelní větve do pracovního postupu se ve výchozím nastavení přidají dvě podvětvě. Můžete také přidat libovolný počet dalších větví kliknutím na tlačítko pro přidání větve. Do každé větve lze přidat libovolný počet uzlů. Nepotřebné větve lze odebrat kliknutím na tlačítko pro smazání na začátku větve.
 
-![Správa paralelních větví](https://static-docs.nocobase.com/36088b8b7970c8a1771eb3ee9bc2a757.png)
+![Správa paralelních větví](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
 
 ## Konfigurace uzlu
 

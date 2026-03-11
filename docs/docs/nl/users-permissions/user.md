@@ -16,7 +16,7 @@ Deze plugin biedt een gebruikersbeheerinterface in het configuratiecentrum. Na h
 
 Daarnaast kunt u op de pagina verschillende blokken van de Gebruikers **collectie** toevoegen om gebruikers te beheren, zoals tabelblokken:
 
-![](https://static-docs.nocobase.com/76c5a4652f869541a9e8f18a4568a7c9.png)
+![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
 ## Gebruiker toevoegen
 
