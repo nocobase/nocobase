@@ -244,6 +244,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
   "Clicked row record": "Clicked row record",
   "Close": "Đóng",
+  "Close popup and redirect to": "Đóng popup và chuyển hướng đến",
   "Collapse": "Thu gọn",
   "Collapse all": "Thu gọn tất cả",
   "Collapse button": "Collapse",
@@ -395,6 +396,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Ngày/Tháng/Năm",
   "Default": "Mặc định",
+  "Default expanded": "Thu gọn mặc định",
+
   "Default collapse": "Thu gọn mặc định",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

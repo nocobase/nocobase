@@ -332,6 +332,22 @@ DetailsBlockModel.registerFlow({
   },
 });
 
+DetailsBlockModel.registerFlow({
+  key: 'initialPaginationChangeRefresh',
+  sort: 10001,
+  steps: {
+    refreshPaginationRelatedStates: {
+      async handler(ctx) {
+        if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
+          return;
+        }
+
+        await dispatchEventDeep(ctx.model, 'paginationChange');
+      },
+    },
+  },
+});
+
 DetailsBlockModel.define({
   label: tExpr('Details'),
   searchable: true,

@@ -133,6 +133,9 @@ function ensureDir(dir) {
 function generateForPlugin(dir, { isPro }) {
   const pkgJson = readJsonSafe(path.join(dir, 'package.json'));
   if (!pkgJson) return;
+  if (pkgJson.internal) {
+    return;
+  }
   const packageName = pkgJson.name || path.basename(dir);
   // Only handle @nocobase scoped plugins
   if (!packageName || !packageName.startsWith('@nocobase/')) return;
