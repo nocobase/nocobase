@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { joinUrlSearch } from '../joinUrlSearch';
 import { handleLinkNavigation, shouldDestroyViewAfterLinkNavigation } from '../LinkActionUtils';
 
 describe('handleLinkNavigation', () => {
@@ -57,6 +58,32 @@ describe('handleLinkNavigation', () => {
     expect(openWindow).toHaveBeenCalledWith(`${window.location.origin}/target-page`, '_blank');
     expect(navigate).not.toHaveBeenCalled();
     expect(setLocationHref).not.toHaveBeenCalled();
+  });
+});
+
+describe('joinUrlSearch', () => {
+  it('should append params into hash route', () => {
+    const result = joinUrlSearch('https://example.com/pcEmpAppCenter/#/usermassage', [{ name: 'exp', value: 'm' }]);
+
+    expect(result).toBe('https://example.com/pcEmpAppCenter/#/usermassage?exp=m');
+  });
+
+  it('should append params into hash route with existing hash query', () => {
+    const result = joinUrlSearch('https://example.com/pcEmpAppCenter/#/usermassage?a=1', [{ name: 'exp', value: 'm' }]);
+
+    expect(result).toBe('https://example.com/pcEmpAppCenter/#/usermassage?a=1&exp=m');
+  });
+
+  it('should append params before normal anchor hash', () => {
+    const result = joinUrlSearch('https://example.com/page#section', [{ name: 'exp', value: 'm' }]);
+
+    expect(result).toBe('https://example.com/page?exp=m#section');
+  });
+
+  it('should keep existing search params before normal anchor hash', () => {
+    const result = joinUrlSearch('https://example.com/page?a=1#section', [{ name: 'exp', value: 'm' }]);
+
+    expect(result).toBe('https://example.com/page?a=1&exp=m#section');
   });
 });
 
