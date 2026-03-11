@@ -52,7 +52,6 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    // @ts-ignore
     const primaryKeyField = collection.filterTargetKey;
 
     if (!primaryKeyField) {
