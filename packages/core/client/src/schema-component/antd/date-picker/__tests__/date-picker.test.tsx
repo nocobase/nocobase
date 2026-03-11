@@ -20,6 +20,7 @@ import App7 from '../demos/demo7';
 import App8 from '../demos/demo8';
 import App9 from '../demos/demo9';
 import dayjs from 'dayjs';
+import { resolveFilterPickerFormat } from '../DatePicker';
 
 dayjs.tz.setDefault('UTC');
 
@@ -91,6 +92,42 @@ describe('DatePicker', () => {
     expect(screen.getByText('2023/05/01 00:00:00', { selector: '.ant-description-date-picker' })).toBeInTheDocument();
     // Value
     expect(screen.getByText('2023-05-01')).toBeInTheDocument();
+  });
+});
+
+describe('resolveFilterPickerFormat', () => {
+  it('应优先使用筛选字段配置的日期格式', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        dateFormat: 'MM/DD/YY',
+        showTime: false,
+      }),
+    ).toBe('MM/DD/YY');
+  });
+
+  it('应避免在日期时间格式中重复拼接时间部分', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        format: 'MM/DD/YY HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      }),
+    ).toBe('MM/DD/YY HH:mm:ss');
+  });
+
+  it('切换 picker 时应回退到对应 picker 的默认格式', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'month',
+        picker: 'date',
+        dateFormat: 'MM/DD/YY',
+        showTime: false,
+      }),
+    ).toBe('YYYY-MM');
   });
 });
 
