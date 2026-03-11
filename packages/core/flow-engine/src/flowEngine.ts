@@ -84,7 +84,7 @@ export class FlowEngine {
    * Key is the model class name, value is the model loader entry.
    * @private
    */
-  private _modelEntries: Map<string, FlowModelLoaderEntry> = new Map();
+  private _modelLoaders: Map<string, FlowModelLoaderEntry> = new Map();
 
   /**
    * In-flight model loading promises.
@@ -425,11 +425,7 @@ export class FlowEngine {
    * @private
    */
   #registerModel(name: string, modelClass: ModelConstructor): void {
-    if (this._modelClasses.has(name)) {
-      console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
-    }
-    Object.defineProperty(modelClass, 'name', { value: name });
-    this._modelClasses.set(name, modelClass);
+    return this._registerModel(name, modelClass);
   }
 
   /**
@@ -469,10 +465,10 @@ export class FlowEngine {
    */
   public registerModelLoaders(loaders: FlowModelLoaderMap): void {
     for (const [name, entry] of Object.entries(loaders)) {
-      if (this._modelEntries.has(name)) {
+      if (this._modelLoaders.has(name)) {
         console.warn(`FlowEngine: Model loader with name '${name}' is already registered and will be overwritten.`);
       }
-      this._modelEntries.set(name, entry);
+      this._modelLoaders.set(name, entry);
     }
   }
 
@@ -487,12 +483,48 @@ export class FlowEngine {
   }
 
   /**
-   * Prepare FlowEngine for design mode.
+   * Prepare FlowEngine for flow settings mode.
    * @returns {Promise<EnsureBatchResult>} Batch ensure result
    * @internal
    */
-  public async prepareDesignMode(): Promise<EnsureBatchResult> {
+  public async prepareFlowSettingsMode(): Promise<EnsureBatchResult> {
     return this.preloadDesignModeModels();
+  }
+
+  /**
+   * Get a registered model class (constructor) asynchronously.
+   * This will first ensure the model loader entry is resolved.
+   * @param {string} name Model class name
+   * @returns {Promise<ModelConstructor | undefined>} Model constructor, or undefined if not found
+   */
+  public async getModelClassAsync(name: string): Promise<ModelConstructor | undefined> {
+    await this.ensureModel(name);
+    return this.getModelClass(name);
+  }
+
+  /**
+   * Get all registered model classes asynchronously.
+   * This will first ensure all registered model loader entries are resolved.
+   * @returns {Promise<Map<string, ModelConstructor>>} Model class map
+   */
+  public async getModelClassesAsync(): Promise<Map<string, ModelConstructor>> {
+    await this.ensureModels(Array.from(this._modelLoaders.keys()));
+    return this.getModelClasses();
+  }
+
+  /**
+   * Create and register a model instance asynchronously.
+   * This will first ensure all string-based model references in the model tree are resolved.
+   * @template T FlowModel subclass type, defaults to FlowModel.
+   * @param {CreateModelOptions} options Model creation options
+   * @returns {Promise<T>} Created model instance
+   */
+  public async createModelAsync<T extends FlowModel = FlowModel>(
+    options: CreateModelOptions,
+    extra?: { delegateToParent?: boolean; delegate?: FlowContext },
+  ): Promise<T> {
+    await this.prepareModelTree(options);
+    return this.createModel<T>(options, extra);
   }
 
   /**
@@ -580,7 +612,7 @@ export class FlowEngine {
       return inflight;
     }
 
-    const entry = this._modelEntries.get(name);
+    const entry = this._modelLoaders.get(name);
     if (!entry) {
       console.warn(`FlowEngine: Model entry '${name}' not found. Falling back to ErrorFlowModel when needed.`);
       return null;
@@ -704,7 +736,7 @@ export class FlowEngine {
     }
 
     this._designModelsPreloadPromise = (async () => {
-      const unresolved = Array.from(this._modelEntries.keys()).filter((name) => !this._modelClasses.has(name));
+      const unresolved = Array.from(this._modelLoaders.keys()).filter((name) => !this._modelClasses.has(name));
       const result = await this.ensureModels(unresolved);
       this._designModelsPreloaded = true;
       this._designModelsPreloadPromise = undefined;

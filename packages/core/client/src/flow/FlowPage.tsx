@@ -101,20 +101,14 @@ export const FlowRoute = () => {
     let cancelled = false;
 
     const syncFlowSettings = async () => {
-      // 移动端中不允许配置 UI
-      if (isMobileLayout) {
-        flowEngine.flowSettings.disable();
+      // 移动端中不允许配置 UI；非设计态也无需启用 flow settings
+      if (isMobileLayout || !designable) {
+        await flowEngine.flowSettings.disable();
         return;
       }
 
-      if (!designable) {
-        flowEngine.flowSettings.disable();
-        return;
-      }
-
-      await flowEngine.prepareDesignMode();
       if (!cancelled) {
-        flowEngine.flowSettings.enable();
+        await flowEngine.flowSettings.enable();
       }
     };
 

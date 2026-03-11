@@ -87,17 +87,16 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
 
     const syncFlowSettings = async () => {
       if (!designableValue) {
-        app.flowEngine?.flowSettings?.disable();
+        await app.flowEngine?.flowSettings?.disable();
         return;
       }
 
-      await app.flowEngine?.prepareDesignMode();
       if (!cancelled) {
-        app.flowEngine?.flowSettings?.enable();
+        await app.flowEngine?.flowSettings?.enable();
       }
     };
 
-    void syncFlowSettings();
+    syncFlowSettings();
     return () => {
       cancelled = true;
     };

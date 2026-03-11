@@ -114,7 +114,40 @@ describe('FlowEngine model loaders', () => {
     expect(childLoader).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps loader resolution idempotent across prepareModelTree and design preload', async () => {
+  it('supports async model creation and async getters', async () => {
+    class AsyncRootModel extends FlowModel {}
+    class AsyncChildModel extends FlowModel {}
+
+    const rootLoader = vi.fn(async () => ({ AsyncRootModel }));
+    const childLoader = vi.fn(async () => ({ AsyncChildModel }));
+
+    engine.registerModelLoaders({
+      AsyncRootModel: { loader: rootLoader },
+      AsyncChildModel: { loader: childLoader },
+    });
+
+    const rootClass = await engine.getModelClassAsync('AsyncRootModel');
+    const classes = await engine.getModelClassesAsync();
+    const model = await engine.createModelAsync({
+      uid: 'async-root',
+      use: 'AsyncRootModel',
+      subModels: {
+        child: {
+          use: 'AsyncChildModel',
+        },
+      },
+    });
+
+    expect(rootClass).toBe(AsyncRootModel);
+    expect(classes.get('AsyncRootModel')).toBe(AsyncRootModel);
+    expect(classes.get('AsyncChildModel')).toBe(AsyncChildModel);
+    expect(model).toBeInstanceOf(AsyncRootModel);
+    expect(model.subModels.child).toBeInstanceOf(AsyncChildModel);
+    expect(rootLoader).toHaveBeenCalledTimes(1);
+    expect(childLoader).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps loader resolution idempotent across prepareModelTree and flow settings preload', async () => {
     class RuntimeResolvedModel extends FlowModel {}
     class DesignResolvedModel extends FlowModel {}
 
@@ -130,8 +163,8 @@ describe('FlowEngine model loaders', () => {
       use: 'RuntimeResolvedModel',
     });
 
-    const firstPreload = await engine.prepareDesignMode();
-    const secondPreload = await engine.prepareDesignMode();
+    const firstPreload = await engine.prepareFlowSettingsMode();
+    const secondPreload = await engine.prepareFlowSettingsMode();
 
     expect(runtimeLoader).toHaveBeenCalledTimes(1);
     expect(designLoader).toHaveBeenCalledTimes(1);

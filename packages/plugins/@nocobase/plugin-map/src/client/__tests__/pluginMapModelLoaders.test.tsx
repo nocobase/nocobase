@@ -22,14 +22,14 @@ describe('PluginMapClient model loader pilot', () => {
     expect(app.flowEngine.getModelClass('PointFieldModel')).toBeDefined();
     expect(app.flowEngine.getModelClass('MapBlockModel')).toBeUndefined();
     expect(app.flowEngine.getModelClass('MapActionGroupModel')).toBeUndefined();
-    expect((app.flowEngine as any)._modelEntries.has('MapBlockModel')).toBe(true);
-    expect((app.flowEngine as any)._modelEntries.has('MapActionGroupModel')).toBe(true);
+    expect((app.flowEngine as any)._modelLoaders.has('MapBlockModel')).toBe(true);
+    expect((app.flowEngine as any)._modelLoaders.has('MapActionGroupModel')).toBe(true);
 
     await app.flowEngine.prepareModelTree({ use: 'MapBlockModel' });
 
     expect(app.flowEngine.getModelClass('MapBlockModel')).toBeDefined();
 
-    await app.flowEngine.prepareDesignMode();
+    await app.flowEngine.prepareFlowSettingsMode();
 
     expect(app.flowEngine.getModelClass('MapActionGroupModel')).toBeDefined();
   });

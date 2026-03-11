@@ -146,10 +146,10 @@ describe('FlowSettings', () => {
       expect(settingsItem?.sort).toBe(0);
     });
 
-    test('should set up observable properties', () => {
+    test('should set up observable properties', async () => {
       // Test that enabled property is reactive
       const initialEnabled = flowSettings.enabled;
-      flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).not.toBe(initialEnabled);
       expect(flowSettings.enabled).toBe(true);
     });
@@ -269,30 +269,30 @@ describe('FlowSettings', () => {
   });
 
   describe('Enable/Disable Functionality', () => {
-    test('should enable flow settings', () => {
+    test('should enable flow settings', async () => {
       expect(flowSettings.enabled).toBe(false);
 
-      flowSettings.enable();
+      await flowSettings.enable();
 
       expect(flowSettings.enabled).toBe(true);
     });
 
-    test('should disable flow settings', () => {
-      flowSettings.enable();
+    test('should disable flow settings', async () => {
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
-      flowSettings.disable();
+      await flowSettings.disable();
 
       expect(flowSettings.enabled).toBe(false);
     });
 
-    test('should handle multiple enable/disable calls', () => {
-      flowSettings.enable();
-      flowSettings.enable();
+    test('should handle multiple enable/disable calls', async () => {
+      await flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
-      flowSettings.disable();
-      flowSettings.disable();
+      await flowSettings.disable();
+      await flowSettings.disable();
       expect(flowSettings.enabled).toBe(false);
     });
   });
@@ -553,7 +553,7 @@ describe('FlowSettings', () => {
   });
 
   describe('Complex Integration Scenarios', () => {
-    test('should maintain state consistency during multiple operations', () => {
+    test('should maintain state consistency during multiple operations', async () => {
       // Initialize with components and scopes
       const TestComponent = () => 'TestComponent';
       const testScope = () => 'testScope';
@@ -569,7 +569,7 @@ describe('FlowSettings', () => {
       });
 
       // Enable/disable
-      flowSettings.enable();
+      await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
 
       // Verify all state is maintained
@@ -577,7 +577,7 @@ describe('FlowSettings', () => {
       expect(flowSettings.scopes.testScope).toBe(testScope);
       expect(flowSettings.getToolbarItems().find((item) => item.key === 'integration-test')).toBeDefined();
 
-      flowSettings.disable();
+      await flowSettings.disable();
       expect(flowSettings.enabled).toBe(false);
 
       // State should still be maintained after disable

@@ -125,11 +125,13 @@ export class FlowSettings {
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
   public enabled: boolean;
+  private engine: FlowEngine;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
+    this.engine = engine;
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
     this.enabled = false;
     engine.context.defineProperty('flowSettingsEnabled', {
@@ -341,13 +343,15 @@ export class FlowSettings {
   /**
    * 启用流程设置组件的显示
    * @example
-   * flowSettings.enable();
+   * await flowSettings.enable();
    */
-  public enable(): void {
+  public async enable(): Promise<void> {
+    await this.engine.prepareFlowSettingsMode();
     this.enabled = true;
   }
 
-  public forceEnable() {
+  public async forceEnable(): Promise<void> {
+    await this.engine.prepareFlowSettingsMode();
     this.#forceEnabled = true;
     this.enabled = true;
   }
@@ -355,16 +359,16 @@ export class FlowSettings {
   /**
    * 禁用流程设置组件的显示
    * @example
-   * flowSettings.disable();
+   * await flowSettings.disable();
    */
-  public disable(): void {
+  public async disable(): Promise<void> {
     if (this.#forceEnabled) {
       return;
     }
     this.enabled = false;
   }
 
-  public forceDisable() {
+  public async forceDisable(): Promise<void> {
     this.#forceEnabled = false;
     this.enabled = false;
   }
