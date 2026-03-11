@@ -95,6 +95,16 @@
   },
   "packageManager": "pnpm@10.29.1",
   "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "core-js-pure",
+      "core-js",
+      "esbuild",
+      "ghooks",
+      "javascript-obfuscator",
+      "sqlite3",
+      "tar"
+    ],
     "overrides": {
       "@ant-design/icons": "^5.6.1",
       "@formily/antd-v5": "1.2.3",
