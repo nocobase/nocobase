@@ -30,6 +30,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import React, { ReactNode } from 'react';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BasePageTabModel } from './PageTabModel';
 
@@ -372,6 +373,22 @@ export class PageModel extends FlowModel<PageModelStructure> {
     );
   }
 }
+
+PageModel.registerEvents({
+  beforeClose: {
+    title: tExpr('Before close'),
+    name: 'beforeClose',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: tExpr('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
+  },
+});
 
 PageModel.registerFlow({
   key: 'pageSettings',

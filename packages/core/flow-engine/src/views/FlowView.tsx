@@ -11,13 +11,23 @@ import { PopoverProps as AntdPopoverProps } from 'antd';
 import { FlowContext } from '../flowContext';
 import { ViewNavigation } from './ViewNavigation';
 
+export type FlowViewBeforeClosePayload = {
+  result?: any;
+  force?: boolean;
+};
+
+export type FlowViewBeforeCloseHandler = (
+  payload: FlowViewBeforeClosePayload,
+) => Promise<boolean | void> | boolean | void;
+
 export type FlowView = {
   type: 'drawer' | 'popover' | 'dialog' | 'embed';
   inputArgs: any;
   Header: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> | null;
   Footer: React.FC<{ children?: React.ReactNode }> | null;
-  close: (result?: any, force?: boolean) => void;
+  close: (result?: any, force?: boolean) => Promise<boolean | void> | boolean | void;
   update: (newConfig: any) => void;
+  beforeClose?: FlowViewBeforeCloseHandler;
   navigation?: ViewNavigation;
   /** 页面的销毁方法 */
   destroy?: () => void;

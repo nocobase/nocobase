@@ -13,6 +13,93 @@ import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
 import _ from 'lodash';
 
+type DirtyAwareFlowModel = FlowModel & {
+  getUserModifiedFields?: () => Set<string> | undefined;
+};
+
+type BeforeCloseDirtyState = {
+  hasDirtyForms: boolean;
+  formModelUids: string[];
+};
+
+function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
+  if (!model) {
+    return [];
+  }
+
+  const visited = new Set<string>();
+  const dirtyModelUids: string[] = [];
+
+  const walk = (current?: DirtyAwareFlowModel | null) => {
+    if (!current?.uid || visited.has(current.uid)) {
+      return;
+    }
+
+    visited.add(current.uid);
+
+    const userModifiedFields = current.getUserModifiedFields?.();
+    if (userModifiedFields?.size) {
+      dirtyModelUids.push(current.uid);
+    }
+
+    Object.values(current.subModels || {}).forEach((subModelValue) => {
+      _.castArray(subModelValue).forEach((subModel) => {
+        if (subModel && typeof subModel === 'object') {
+          walk(subModel as DirtyAwareFlowModel);
+        }
+      });
+    });
+  };
+
+  walk(model as DirtyAwareFlowModel);
+  return dirtyModelUids;
+}
+
+function createBeforeCloseDirtyState(model?: FlowModel | null): BeforeCloseDirtyState {
+  const formModelUids = collectDirtyFormModelUids(model);
+  return {
+    hasDirtyForms: formModelUids.length > 0,
+    formModelUids,
+  };
+}
+
+function createViewBeforeCloseHandler(pageModel: FlowModel) {
+  return async ({ result, force }: { result?: any; force?: boolean }) => {
+    if (force) {
+      return true;
+    }
+
+    const dirty = createBeforeCloseDirtyState(pageModel);
+
+    if (dirty.hasDirtyForms) {
+      const confirmed = await pageModel.context.modal.confirm({
+        title: pageModel.context.t('Unsaved changes'),
+        content: pageModel.context.t("Are you sure you don't want to save?"),
+        okText: pageModel.context.t('Confirm'),
+        cancelText: pageModel.context.t('Cancel'),
+      });
+
+      if (!confirmed) {
+        return false;
+      }
+    }
+
+    let prevented = false;
+    await pageModel.dispatchEvent('beforeClose', {
+      result,
+      force: false,
+      dirty,
+      controller: {
+        prevent() {
+          prevented = true;
+        },
+      },
+    });
+
+    return !prevented;
+  };
+}
+
 /**
  * 弹窗打开动作（openView）配置
  * - 当 params.uid !== ctx.model.uid：委托 ctx.openView 打开其它弹窗
@@ -312,6 +399,11 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
+              if (!pageModel) {
+                return;
+              }
+
+              currentView.beforeClose = createViewBeforeCloseHandler(pageModel);
               const defineProperties =
                 inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? {};
               const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? {};
