@@ -105,8 +105,10 @@ describe('RangePicker', () => {
     const endInput = getByPlaceholderText('End date');
 
     await userEvent.click(picker);
-    await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
-    await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
+    const startDate = await screen.findByTitle('2023-05-01');
+    await userEvent.click(startDate);
+    const endDate = await screen.findByTitle('2023-05-02');
+    await userEvent.click(endDate);
 
     await waitFor(
       () => {

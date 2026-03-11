@@ -193,7 +193,7 @@ export const FlowPage = React.memo((props: FlowPageProps & Record<string, unknow
           },
         };
       }
-      const data = await flowEngine.loadOrCreateModel(options);
+      const data = await flowEngine.loadOrCreateModel(options, { skipSave: !flowEngine.context.flowSettingsEnabled });
       if (data?.uid && onModelLoaded) {
         data.context.addDelegate(ctx);
         data.removeParentDelegate();

@@ -12,13 +12,31 @@ import { PageModel } from './PageModel';
 import { DragEndEvent } from '@dnd-kit/core';
 import { Button } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import React, { useMemo } from 'react';
+import React, { CSSProperties, useMemo } from 'react';
 import { PageHeader } from '@ant-design/pro-layout';
 
 export class ChildPageModel extends PageModel {
   tabBarExtraContent = {
     left: <BackButtonUsedInSubPage />,
   };
+
+  renderBackButtonWhenTabsDisabled() {
+    if (this.context?.view?.type !== 'embed') {
+      return null;
+    }
+
+    const token = this.context?.themeToken;
+    const style: CSSProperties = {
+      ...this.props.tabBarStyle,
+      paddingBlock: token?.paddingXS ?? 8,
+    };
+
+    return (
+      <div style={style}>
+        <BackButtonUsedInSubPage renderSpacerWhenNoBack={false} />
+      </div>
+    );
+  }
 
   createPageTabModelOptions = (): CreateModelOptions => {
     return {
@@ -40,7 +58,14 @@ export class ChildPageModel extends PageModel {
         {this.props.displayTitle && this.props.title && (
           <PageHeader title={this.props.title} style={this.props.headerStyle} />
         )}
-        {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
+        {this.props.enableTabs ? (
+          this.renderTabs()
+        ) : (
+          <>
+            {this.renderBackButtonWhenTabsDisabled()}
+            {this.renderFirstTab()}
+          </>
+        )}
       </>
     );
   }
@@ -51,7 +76,7 @@ export class ChildPageModel extends PageModel {
  * - embed 场景渲染返回按钮
  * - drawer/modal 等场景渲染占位元素以保持首个 tab 的左侧留白
  */
-const BackButtonUsedInSubPage = () => {
+const BackButtonUsedInSubPage = ({ renderSpacerWhenNoBack = true }: { renderSpacerWhenNoBack?: boolean }) => {
   const ctx = useFlowContext<any>();
   const token = ctx.themeToken;
   // tab item gutter, this is fixed value in antd
@@ -71,6 +96,9 @@ const BackButtonUsedInSubPage = () => {
 
   // 抽屉/弹窗没有返回按钮，但仍需保留首个 tab 的左侧留白。
   if (ctx.view.type !== 'embed') {
+    if (!renderSpacerWhenNoBack) {
+      return null;
+    }
     return <span aria-hidden="true" style={{ display: 'inline-block', width: tabNavPaddingInlineStart, height: 1 }} />;
   }
 

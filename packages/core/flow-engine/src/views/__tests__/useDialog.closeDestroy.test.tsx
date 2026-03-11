@@ -26,6 +26,7 @@ vi.mock('../../ViewScopedFlowEngine', () => ({
   createViewScopedEngine: (engine) => ({
     context: new FlowContext(),
     unlinkFromStack: vi.fn(),
+    setDestroyView: vi.fn(),
     // mimic real view stack linkage: previousEngine points to the last engine in chain
     previousEngine: (engine as any)?.nextEngine || engine,
   }),

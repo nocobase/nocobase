@@ -147,6 +147,13 @@ export class FlowEngine {
   private _previousEngine?: FlowEngine;
   private _nextEngine?: FlowEngine;
 
+  /**
+   * 视图销毁回调。由 useDrawer / useDialog 在创建弹窗视图时注册，
+   * 供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+   * embed 视图（usePage）不注册此回调，因此 destroyView() 会自然跳过。
+   */
+  private _destroyView?: () => void;
+
   private _resources = new Map<string, typeof FlowResource>();
 
   /**
@@ -310,6 +317,28 @@ export class FlowEngine {
     if (prev) {
       prev._nextEngine = undefined;
     }
+  }
+
+  /**
+   * 注册视图销毁回调（由 useDrawer / useDialog 调用）。
+   */
+  public setDestroyView(fn: () => void): void {
+    this._destroyView = fn;
+  }
+
+  /**
+   * 关闭当前引擎关联的弹窗视图。
+   * 路由触发的弹窗会先 navigation.back() 清理 URL，再 destroy() 移除元素；
+   * 非路由弹窗直接 destroy()。
+   * embed 视图不注册回调，调用时返回 false 自动跳过。
+   * @returns 是否成功执行
+   */
+  public destroyView(): boolean {
+    if (this._destroyView) {
+      this._destroyView();
+      return true;
+    }
+    return false;
   }
 
   // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API
@@ -1294,6 +1323,7 @@ export class FlowEngine {
   async loadOrCreateModel<T extends FlowModel = FlowModel>(
     options,
     extra?: {
+      skipSave?: boolean;
       delegateToParent?: boolean;
       delegate?: FlowContext;
     },
@@ -1321,7 +1351,9 @@ export class FlowEngine {
     } else {
       await this.ensureModelTree(options);
       model = this.createModel<T>(options, extra);
-      await model.save();
+      if (!extra?.skipSave) {
+        await model.save();
+      }
     }
     if (model.parent) {
       const subModel = model.parent.findSubModel(model.subKey, (m) => {

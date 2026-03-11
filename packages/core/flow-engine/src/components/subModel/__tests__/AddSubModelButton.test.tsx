@@ -1053,6 +1053,56 @@ describe('AddSubModelButton - toggle interactions', () => {
     const subModels = ((parent.subModels as any).items as FlowModel[]) || [];
     expect(subModels).toHaveLength(1);
   });
+
+  it('updates toggle state after external sub model removal', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+
+    class ToggleParent extends FlowModel {}
+    class ToggleChild extends FlowModel {}
+
+    engine.registerModels({ ToggleParent, ToggleChild });
+    const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-external-remove' });
+    const existing = engine.createModel<ToggleChild>({ use: 'ToggleChild', uid: 'toggle-child-external-remove' });
+    parent.addSubModel('items', existing);
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="items"
+              items={[
+                {
+                  key: 'toggle-child',
+                  label: 'Toggle Child',
+                  toggleable: true,
+                  useModel: 'ToggleChild',
+                  createModelOptions: { use: 'ToggleChild' },
+                },
+              ]}
+            >
+              Toggle Menu
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Toggle Menu'));
+    });
+
+    await waitFor(() => expect(screen.getByText('Toggle Child')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true'));
+
+    await act(async () => {
+      await existing.destroy();
+    });
+
+    await waitFor(() => expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false'));
+  });
 });
 
 // ========================

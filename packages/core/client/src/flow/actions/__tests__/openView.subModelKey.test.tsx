@@ -54,13 +54,16 @@ describe('openView action - subModelKey behavior', () => {
 
     // ensure container created with expected options
     expect(engine.loadOrCreateModel).toHaveBeenCalledTimes(1);
-    expect(engine.loadOrCreateModel).toHaveBeenCalledWith({
-      async: true,
-      parentId: 'parent-model-uid',
-      subKey: 'myContainer',
-      subType: 'object',
-      use: 'FlowModel',
-    });
+    expect(engine.loadOrCreateModel).toHaveBeenCalledWith(
+      {
+        async: true,
+        parentId: 'parent-model-uid',
+        subKey: 'myContainer',
+        subType: 'object',
+        use: 'FlowModel',
+      },
+      { skipSave: true },
+    );
 
     // ensure FlowPage receives container uid as parentId
     expect(capturedElement?.type).toBe(FlowPage);
