@@ -89,4 +89,22 @@ describe('DetailsBlockModel initial pagination refresh', () => {
 
     expect(dispatchSpy.mock.calls.filter(([eventName]) => eventName === 'paginationChange')).toHaveLength(0);
   });
+
+  it('uses a real single-record details model and emits root paginationChange after subsequent refresh', async () => {
+    const { model, resource } = setupDetailsBlockModel({ filterByTk: 1 });
+    expect(resource).toBeInstanceOf(SingleRecordResource);
+
+    const dispatchSpy = vi.spyOn(model, 'dispatchEvent');
+    vi.spyOn(resource, 'refresh').mockImplementation(async () => {
+      resource.setData({ id: 1, name: 'AA', title: 'foo' } as any);
+      resource.emit('refresh');
+    });
+
+    await model.dispatchEvent('beforeRender', undefined, { useCache: false });
+    expect(dispatchSpy.mock.calls.filter(([eventName]) => eventName === 'paginationChange')).toHaveLength(0);
+
+    await resource.refresh();
+
+    expect(dispatchSpy.mock.calls.filter(([eventName]) => eventName === 'paginationChange')).toHaveLength(1);
+  });
 });

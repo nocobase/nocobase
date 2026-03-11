@@ -35,6 +35,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
   static scene = BlockSceneEnum.oam;
+  private hadSingleRecordData = false;
 
   _defaultCustomModelClasses = {
     RecordActionGroupModel: 'RecordActionGroupModel',
@@ -63,6 +64,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
   onInit(options: any): void {
     super.onInit(options);
+    this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
@@ -72,6 +74,23 @@ export class DetailsBlockModel extends CollectionBlockModel<{
         () => this.getCurrentRecord(),
       ),
       meta: recordMeta,
+    });
+
+    this.resource.on('refresh', () => {
+      if (this.isMultiRecordResource()) {
+        void dispatchEventDeep(this, 'paginationChange');
+        return;
+      }
+
+      const hadDataBefore = this.hadSingleRecordData;
+      this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+
+      // 初次从“无数据”加载到“有数据”时不触发分页联动刷新，避免初始化阶段额外调度。
+      if (!hadDataBefore) {
+        return;
+      }
+
+      void dispatchEventDeep(this, 'paginationChange');
     });
   }
 
@@ -94,7 +113,6 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
-      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
@@ -339,6 +357,11 @@ DetailsBlockModel.registerFlow({
     refreshPaginationRelatedStates: {
       async handler(ctx) {
         if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
+          return;
+        }
+        // multi 详情在资源 refresh 后会自动分发 paginationChange；
+        // 仅在无数据场景兜底一次，避免初始化阶段重复分发。
+        if (ctx.model.resource?.hasData?.()) {
           return;
         }
 
