@@ -114,7 +114,7 @@ describe('openView action - beforeClose behavior', () => {
     );
   });
 
-  it('blocks close when dirty form confirmation is cancelled', async () => {
+  it('passes dirty form info into beforeClose event payload', async () => {
     const pageModel = createPageModel({
       subModels: {
         items: [
@@ -126,19 +126,20 @@ describe('openView action - beforeClose behavior', () => {
         ],
       },
     });
-    pageModel.context.modal.confirm.mockResolvedValue(false);
     const { currentView } = await openAndLoad(pageModel);
 
     const allowed = await currentView.beforeClose({ force: false });
 
-    expect(allowed).toBe(false);
-    expect(pageModel.context.modal.confirm).toHaveBeenCalledWith(
+    expect(allowed).toBe(true);
+    expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
+      'beforeClose',
       expect.objectContaining({
-        title: 'Unsaved changes',
-        content: "Are you sure you don't want to save?",
+        dirty: {
+          hasDirtyForms: true,
+          formModelUids: ['dirty-form-uid'],
+        },
       }),
     );
-    expect(pageModel.dispatchEvent).not.toHaveBeenCalled();
   });
 
   it('allows dynamic beforeClose flows to prevent closing after confirmation', async () => {

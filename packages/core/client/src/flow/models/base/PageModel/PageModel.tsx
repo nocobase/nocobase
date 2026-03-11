@@ -391,6 +391,34 @@ PageModel.registerEvents({
 });
 
 PageModel.registerFlow({
+  key: 'beforeCloseGuard',
+  title: tExpr('Before close guard'),
+  on: 'beforeClose',
+  steps: {
+    confirmUnsavedChanges: {
+      title: tExpr('Unsaved changes confirmation'),
+      async handler(ctx) {
+        if (!ctx.inputArgs?.dirty?.hasDirtyForms) {
+          return;
+        }
+
+        const confirmed = await ctx.modal.confirm({
+          title: ctx.t('Unsaved changes'),
+          content: ctx.t("Are you sure you don't want to save?"),
+          okText: ctx.t('Confirm'),
+          cancelText: ctx.t('Cancel'),
+        });
+
+        if (!confirmed) {
+          ctx.inputArgs?.controller?.prevent?.();
+          ctx.exitAll();
+        }
+      },
+    },
+  },
+});
+
+PageModel.registerFlow({
   key: 'pageSettings',
   title: tExpr('Page settings'),
   steps: {

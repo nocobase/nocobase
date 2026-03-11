@@ -71,19 +71,6 @@ function createViewBeforeCloseHandler(pageModel: FlowModel) {
 
     const dirty = createBeforeCloseDirtyState(pageModel);
 
-    if (dirty.hasDirtyForms) {
-      const confirmed = await pageModel.context.modal.confirm({
-        title: pageModel.context.t('Unsaved changes'),
-        content: pageModel.context.t("Are you sure you don't want to save?"),
-        okText: pageModel.context.t('Confirm'),
-        cancelText: pageModel.context.t('Cancel'),
-      });
-
-      if (!confirmed) {
-        return false;
-      }
-    }
-
     let prevented = false;
     await pageModel.dispatchEvent('beforeClose', {
       result,
