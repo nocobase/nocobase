@@ -52,9 +52,14 @@ function createWithACLMetaMiddleware() {
       return;
     }
 
-    // @ts-ignore
-    const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+    const filterTargetKey = collection.filterTargetKey;
 
+    // ensure we only proceed when there is a single string key
+    if (!filterTargetKey || typeof filterTargetKey !== 'string') {
+      return;
+    }
+
+    const primaryKeyField = filterTargetKey;
     let listData;
 
     if (ctx.body?.data) {
