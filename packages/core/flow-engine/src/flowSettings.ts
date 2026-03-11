@@ -346,12 +346,12 @@ export class FlowSettings {
    * await flowSettings.enable();
    */
   public async enable(): Promise<void> {
-    await this.engine.prepareFlowSettingsMode();
+    await this.engine.preloadModelLoaders();
     this.enabled = true;
   }
 
   public async forceEnable(): Promise<void> {
-    await this.engine.prepareFlowSettingsMode();
+    await this.engine.preloadModelLoaders();
     this.#forceEnabled = true;
     this.enabled = true;
   }

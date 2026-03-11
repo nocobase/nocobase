@@ -94,16 +94,16 @@ export class FlowEngine {
   private _loadingModelPromises: Map<string, Promise<ModelConstructor | null>> = new Map();
 
   /**
-   * Whether design-mode model preload has completed in this session.
+   * Whether model-loader preload has completed in this session.
    * @private
    */
-  private _designModelsPreloaded = false;
+  private _modelLoadersPreloaded = false;
 
   /**
-   * In-flight design-mode preload promise.
+   * In-flight model-loader preload promise.
    * @private
    */
-  private _designModelsPreloadPromise?: Promise<EnsureBatchResult>;
+  private _modelLoadersPreloadPromise?: Promise<EnsureBatchResult>;
 
   /**
    * Created model instances.
@@ -502,25 +502,6 @@ export class FlowEngine {
   }
 
   /**
-   * Prepare a model tree before synchronous model creation begins.
-   * @param {unknown} data Model tree data
-   * @returns {Promise<EnsureBatchResult>} Batch ensure result
-   * @internal
-   */
-  public async prepareModelTree(data: unknown): Promise<EnsureBatchResult> {
-    return this.ensureModelTree(data);
-  }
-
-  /**
-   * Prepare FlowEngine for flow settings mode.
-   * @returns {Promise<EnsureBatchResult>} Batch ensure result
-   * @internal
-   */
-  public async prepareFlowSettingsMode(): Promise<EnsureBatchResult> {
-    return this.preloadDesignModeModels();
-  }
-
-  /**
    * Get a registered model class (constructor) asynchronously.
    * This will first ensure the model loader entry is resolved.
    * @param {string} name Model class name
@@ -552,7 +533,7 @@ export class FlowEngine {
     options: CreateModelOptions,
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): Promise<T> {
-    await this.prepareModelTree(options);
+    await this.resolveModelTree(options);
     return this.createModel<T>(options, extra);
   }
 
@@ -699,12 +680,16 @@ export class FlowEngine {
   }
 
   /**
-   * Ensure all string-based model references in a model tree are available.
+   * Resolve all unresolved string-based model references in a model tree before synchronous creation begins.
+   *
+   * Use this when you already have a model tree object, such as repository-returned data or resolved
+   * `createModelOptions`, and you need to ensure every string `use` in that tree has been loaded and
+   * registered into `_modelClasses` before calling `createModel()`.
+   *
    * @param {unknown} data Model tree data
    * @returns {Promise<EnsureBatchResult>} Batch ensure result
-   * @private
    */
-  private async ensureModelTree(data: unknown): Promise<EnsureBatchResult> {
+  public async resolveModelTree(data: unknown): Promise<EnsureBatchResult> {
     const requested = new Set<string>();
     const loaded = new Set<string>();
     const failed = new Map<string, { name: string; error?: unknown }>();
@@ -752,27 +737,31 @@ export class FlowEngine {
   }
 
   /**
-   * Preload unresolved model loaders for design mode.
+   * Preload all currently registered unresolved model loaders.
+   *
+   * This method is intended for flow-settings/discovery style entry points that need registered model
+   * classes to exist before UI is rendered, without requiring callers to know which specific models
+   * will be touched next.
+   *
    * @returns {Promise<EnsureBatchResult>} Batch ensure result
-   * @private
    */
-  private async preloadDesignModeModels(): Promise<EnsureBatchResult> {
-    if (this._designModelsPreloaded) {
+  public async preloadModelLoaders(): Promise<EnsureBatchResult> {
+    if (this._modelLoadersPreloaded) {
       return { requested: [], loaded: [], failed: [] };
     }
-    if (this._designModelsPreloadPromise) {
-      return this._designModelsPreloadPromise;
+    if (this._modelLoadersPreloadPromise) {
+      return this._modelLoadersPreloadPromise;
     }
 
-    this._designModelsPreloadPromise = (async () => {
+    this._modelLoadersPreloadPromise = (async () => {
       const unresolved = Array.from(this._modelLoaders.keys()).filter((name) => !this._modelClasses.has(name));
       const result = await this.ensureModels(unresolved);
-      this._designModelsPreloaded = true;
-      this._designModelsPreloadPromise = undefined;
+      this._modelLoadersPreloaded = true;
+      this._modelLoadersPreloadPromise = undefined;
       return result;
     })();
 
-    return this._designModelsPreloadPromise;
+    return this._modelLoadersPreloadPromise;
   }
 
   registerResources(resources: Record<string, any>) {
@@ -1213,8 +1202,7 @@ export class FlowEngine {
       }
       if (existing) {
         const data = existing.serialize();
-        await this.ensureModelTree(data);
-        return this.createModel<T>(data as any, extra);
+        return this.createModelAsync<T>(data as any, extra);
       }
     }
 
@@ -1229,13 +1217,11 @@ export class FlowEngine {
       if (!localParent) {
         const parentData = parentFromPrev.serialize();
         delete (parentData as any).subModels;
-        await this.ensureModelTree(parentData);
-        localParent = this.createModel<FlowModel>(parentData as any, extra);
+        localParent = await this.createModelAsync<FlowModel>(parentData as any, extra);
       }
       // Create (or reuse) the sub-model instance in current engine.
       const modelData = modelFromPrev.serialize();
-      await this.ensureModelTree(modelData);
-      const localModel = this.createModel<T>(modelData as any, extra);
+      const localModel = await this.createModelAsync<T>(modelData as any, extra);
 
       // Mount under local parent if not mounted yet (so later lookups by parentId/subKey won't hit repo).
       const mounted = (localParent.subModels as any)?.[subKey];
@@ -1283,14 +1269,14 @@ export class FlowEngine {
     }
     const data = await this._modelRepository.findOne(options);
     if (!data?.uid) return null;
-    await this.ensureModelTree(data);
+    await this.resolveModelTree(data);
     if (refresh) {
       const existing = this.getModel(data.uid);
       if (existing) {
         this.removeModelWithSubModels(existing.uid);
       }
     }
-    return this.createModel<T>(data as any);
+    return this.createModelAsync<T>(data as any);
   }
 
   /**
@@ -1346,11 +1332,9 @@ export class FlowEngine {
     const data = await this._modelRepository.findOne(options);
     let model: T | null = null;
     if (data?.uid) {
-      await this.ensureModelTree(data);
-      model = this.createModel<T>(data as any, extra);
+      model = await this.createModelAsync<T>(data as any, extra);
     } else {
-      await this.ensureModelTree(options);
-      model = this.createModel<T>(options, extra);
+      model = await this.createModelAsync<T>(options, extra);
       if (!extra?.skipSave) {
         await model.save();
       }

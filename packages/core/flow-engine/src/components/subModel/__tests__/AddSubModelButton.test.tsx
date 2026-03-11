@@ -1056,7 +1056,7 @@ describe('AddSubModelButton - toggle interactions', () => {
 
   it('updates toggle state after external sub model removal', async () => {
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
 
     class ToggleParent extends FlowModel {}
     class ToggleChild extends FlowModel {}

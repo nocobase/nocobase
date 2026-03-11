@@ -25,11 +25,11 @@ describe('PluginMapClient model loader pilot', () => {
     expect((app.flowEngine as any)._modelLoaders.has('MapBlockModel')).toBe(true);
     expect((app.flowEngine as any)._modelLoaders.has('MapActionGroupModel')).toBe(true);
 
-    await app.flowEngine.prepareModelTree({ use: 'MapBlockModel' });
+    await app.flowEngine.resolveModelTree({ use: 'MapBlockModel' });
 
     expect(app.flowEngine.getModelClass('MapBlockModel')).toBeDefined();
 
-    await app.flowEngine.prepareFlowSettingsMode();
+    await app.flowEngine.preloadModelLoaders();
 
     expect(app.flowEngine.getModelClass('MapActionGroupModel')).toBeDefined();
   });

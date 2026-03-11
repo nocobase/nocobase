@@ -147,7 +147,7 @@ describe('FlowEngine model loaders', () => {
     expect(childLoader).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps loader resolution idempotent across prepareModelTree and flow settings preload', async () => {
+  it('keeps loader resolution idempotent across resolveModelTree and flow settings preload', async () => {
     class RuntimeResolvedModel extends FlowModel {}
     class DesignResolvedModel extends FlowModel {}
 
@@ -159,12 +159,12 @@ describe('FlowEngine model loaders', () => {
       DesignResolvedModel: { loader: designLoader },
     });
 
-    await engine.prepareModelTree({
+    await engine.resolveModelTree({
       use: 'RuntimeResolvedModel',
     });
 
-    const firstPreload = await engine.prepareFlowSettingsMode();
-    const secondPreload = await engine.prepareFlowSettingsMode();
+    const firstPreload = await engine.preloadModelLoaders();
+    const secondPreload = await engine.preloadModelLoaders();
 
     expect(runtimeLoader).toHaveBeenCalledTimes(1);
     expect(designLoader).toHaveBeenCalledTimes(1);
