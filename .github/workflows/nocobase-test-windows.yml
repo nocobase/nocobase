@@ -56,7 +56,7 @@ jobs:
       - name: Install project dependencies
         run: |
           pnpm install --prefer-offline
-          pnpm add sqlite3 -w
+          pnpm add sqlite3 --build-from-source -w
 
       - name: Test with Sqlite
         run: pnpm test --server --single-thread=false
