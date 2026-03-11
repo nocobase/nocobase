@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-mcp-server",
-  "version": "2.0.12",
+  "version": "2.1.0-alpha.7",
   "displayName": "AI: MCP server",
   "displayName.zh-CN": "AI: MCP 服务器",
   "description": "An MCP server for building NocoBase systems and supporting business workflows.",
