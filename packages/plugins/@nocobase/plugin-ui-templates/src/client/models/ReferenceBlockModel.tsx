@@ -9,7 +9,14 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, FlowContext, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowContext,
+  MultiRecordResource,
+  SingleRecordResource,
+  type FlowEngine,
+  type FlowModel,
+} from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -34,6 +41,7 @@ const TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH = Symbol.for('nocobase.referenceBloc
 const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
   'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
 );
+const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
 /**
  * ReferenceBlockModel（插件版）
@@ -148,11 +156,7 @@ export class ReferenceBlockModel extends BlockModel {
     if (!original) return;
     (target as any).getStepParams = original;
     delete (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS];
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
-    }
+    this._refreshTargetResourceState(target);
   }
 
   private _restoreTargetEventBridge(target?: FlowModel) {
@@ -264,6 +268,45 @@ export class ReferenceBlockModel extends BlockModel {
     return !!dataSourceMismatch;
   }
 
+  private _refreshTargetResourceState(target?: FlowModel) {
+    if (!target) return;
+    const init = (target.getStepParams?.('resourceSettings', 'init') || {}) as Record<string, any>;
+    const associationType = (target as any)?.association?.type;
+    const shouldUseSingle =
+      associationType === 'hasOne' || associationType === 'belongsTo' || Object.keys(init).includes('filterByTk');
+    const currentResource = target.context?.resource as any;
+    const currentAppends = currentResource?.getAppends?.() || [];
+    const shouldRecreate =
+      !currentResource ||
+      (shouldUseSingle && !(currentResource instanceof SingleRecordResource)) ||
+      (!shouldUseSingle && !(currentResource instanceof MultiRecordResource));
+
+    if (shouldRecreate) {
+      try {
+        target.context?.removeCache?.('resource');
+      } catch (_) {
+        // ignore
+      }
+    } else {
+      currentResource.setDataSourceKey?.(init.dataSourceKey);
+      currentResource.setResourceName?.(init.associationName || init.collectionName);
+      if (Object.prototype.hasOwnProperty.call(init, 'sourceId')) {
+        currentResource.setSourceId?.(init.sourceId);
+      } else if ('sourceId' in currentResource) {
+        currentResource.sourceId = null;
+      }
+      if (Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+        currentResource.setFilterByTk?.(init.filterByTk);
+      } else {
+        currentResource.removeRequestParameter?.('filterByTk');
+      }
+    }
+
+    if (currentAppends.length) {
+      target.context?.resource?.addAppends?.(currentAppends);
+    }
+  }
+
   private _applyTemplateFallbackPatchState(target?: FlowModel) {
     if (!target) return;
     const useTemplate = this.getStepParams('referenceSettings', 'useTemplate') || {};
@@ -279,33 +322,27 @@ export class ReferenceBlockModel extends BlockModel {
     }
 
     // Avoid double patch
-    if ((target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
-      return;
-    }
+    if (!(target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
+      const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
+      (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
 
-    const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
-    (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
-
-    const ref = this;
-    (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
-      const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
-      if (flowKey === 'resourceSettings' && stepKey === 'init') {
-        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
-          if (ref._shouldTemplateFallbackToList(res as any)) {
-            const next = { ...(res as any) };
-            delete (next as any).filterByTk;
-            return next;
+      const ref = this;
+      (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
+        const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
+        if (flowKey === 'resourceSettings' && stepKey === 'init') {
+          if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
+            if (ref._shouldTemplateFallbackToList(res as any)) {
+              const next = { ...(res as any) };
+              delete (next as any).filterByTk;
+              return next;
+            }
           }
         }
-      }
-      return res;
-    };
-
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
+        return res;
+      };
     }
+
+    this._refreshTargetResourceState(target);
   }
 
   private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {
@@ -363,11 +400,28 @@ export class ReferenceBlockModel extends BlockModel {
     // 这里桥接相关上下文属性到目标模型，避免“能找到模型实例但字段下拉为空”。
     const contextKeys = ['collection', 'dataSource', 'resource', 'association', 'resourceName'] as const;
     type ContextKey = (typeof contextKeys)[number];
-    const getTargetContext = () => this._targetModel?.context;
+    const getTargetOwnContextValue = (key: ContextKey) => {
+      const targetContext = this._targetModel?.context as FlowContext | undefined;
+      if (!targetContext || !targetContext.has(key)) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+
+      try {
+        return (targetContext as any)._getOwnProperty(key, (targetContext as any).createProxy?.() || targetContext);
+      } catch (_) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+    };
     contextKeys.forEach((key: ContextKey) => {
       this.context.defineProperty(key, {
         cache: false,
-        get: () => getTargetContext()?.[key],
+        get: () => {
+          const ownValue = getTargetOwnContextValue(key);
+          if (ownValue !== TARGET_OWN_CONTEXT_MISSING) {
+            return ownValue;
+          }
+          return this.parent?.context?.[key];
+        },
       });
     });
   }
