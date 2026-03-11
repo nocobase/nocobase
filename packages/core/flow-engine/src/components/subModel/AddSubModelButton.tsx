@@ -542,6 +542,22 @@ const AddSubModelButtonCore = function AddSubModelButton({
     [model, subModelKey, subModelType],
   );
 
+  React.useEffect(() => {
+    const handleSubModelChanged = () => {
+      setRefreshTick((x) => x + 1);
+    };
+
+    model.emitter?.on('onSubModelAdded', handleSubModelChanged);
+    model.emitter?.on('onSubModelRemoved', handleSubModelChanged);
+    model.emitter?.on('onSubModelReplaced', handleSubModelChanged);
+
+    return () => {
+      model.emitter?.off('onSubModelAdded', handleSubModelChanged);
+      model.emitter?.off('onSubModelRemoved', handleSubModelChanged);
+      model.emitter?.off('onSubModelReplaced', handleSubModelChanged);
+    };
+  }, [model]);
+
   // 点击处理逻辑
   const onClick = async (info: any) => {
     const clickedItem = info.originalItem || info;
