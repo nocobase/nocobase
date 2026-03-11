@@ -552,6 +552,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const resolved = React.useMemo<ResolvedFieldContext>(() => {
     // 1) 来自表单配置的字段：直接使用 itemModel 上下文
     if (itemModel) {
+      const itemModelAny = itemModel as any;
       const ctx = itemModel.context;
       const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = ctx;
       const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
@@ -572,7 +573,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
       const collectionFieldFromModel = fieldName
         ? (collection?.getField?.(fieldName) as CollectionField | undefined)
         : undefined;
-      const customCollectionField = itemModel?.customFieldModelInstance?.context?.collectionField as
+      const customCollectionField = itemModelAny?.customFieldModelInstance?.context?.collectionField as
         | CollectionField
         | undefined;
       const cf = collectionFieldFromModel || customCollectionField;
@@ -748,12 +749,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const [tempRoot, setTempRoot] = React.useState<any>(null);
   React.useEffect(() => {
     if (!fieldPath || !fieldName) return;
+    const itemModelAny = itemModel as any;
     const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
     if (!engine) return;
-    const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
+    const dataSourceManager = itemModelAny?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
     const effectiveCollection =
-      collection || getCollectionFromModel(itemModel) || getCollectionFromModel(flowCtx.model);
-    const originFieldModel = itemModel?.customFieldModelInstance || itemModel?.subModels?.field;
+      collection || getCollectionFromModel(itemModelAny) || getCollectionFromModel(flowCtx.model);
+    const originFieldModel = itemModelAny?.customFieldModelInstance || itemModelAny?.subModels?.field;
     const originCollectionField = (originFieldModel as any)?.context?.collectionField as CollectionField | undefined;
     const effectiveCollectionField = (cf as CollectionField | null) || originCollectionField || undefined;
     const effectiveDataSource =
@@ -783,8 +785,8 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     });
     if (!effectiveFieldModelUse) return;
 
-    const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
-    const customFieldProps = itemModel?.customFieldProps || customFieldSettings?.fieldModelProps || {};
+    const customFieldSettings = itemModelAny?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
+    const customFieldProps = itemModelAny?.customFieldProps || customFieldSettings?.fieldModelProps || {};
     const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
     const normalizedFieldPath = fieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
       ? customFieldName || fieldName
