@@ -39,6 +39,7 @@ export {
   resolveStepUiSchema,
   resolveStepDisabledInSettings,
   resolveUiMode,
+  shouldHideEventInSettings,
   shouldHideStepInSettings,
 } from './schema-utils';
 

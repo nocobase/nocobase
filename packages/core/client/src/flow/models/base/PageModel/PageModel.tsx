@@ -378,6 +378,9 @@ PageModel.registerEvents({
   beforeClose: {
     title: tExpr('Before close'),
     name: 'beforeClose',
+    hideInSettings(ctx) {
+      return !!ctx.view?.preventClose;
+    },
     uiSchema: {
       condition: {
         type: 'object',
