@@ -53,7 +53,11 @@ function createWithACLMetaMiddleware() {
     }
 
     // @ts-ignore
-    const primaryKeyField = Model.primaryKeyField || Model.primaryKeyAttribute;
+    const primaryKeyField = collection.filterTargetKey;
+
+    if (!primaryKeyField) {
+      return;
+    }
 
     let listData;
 
