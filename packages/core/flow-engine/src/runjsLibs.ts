@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import * as antdIcons from '@ant-design/icons';
 import { autorun } from '@formily/reactive';
 import type { FlowContext } from './flowContext';
 
@@ -158,14 +159,7 @@ const DEFAULT_RUNJS_LIBS: Array<{ name: string; cache: RunJSLibCache; loader: Ru
   { name: 'ReactDOM', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'ReactDOM') },
   { name: 'antd', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'antd') },
   { name: 'dayjs', cache: 'context', loader: (ctx) => __runjsGetCtxValue(ctx, 'dayjs') },
-  {
-    name: 'antdIcons',
-    cache: 'global',
-    loader: async () => {
-      const mod = await import('./runjsAntdIconsLoader');
-      return mod.loadRunJSAntdIcons();
-    },
-  },
+  { name: 'antdIcons', cache: 'global', loader: () => antdIcons },
   { name: 'lodash', cache: 'global', loader: () => import('lodash').then((m) => m.default || m) },
   { name: 'formula', cache: 'global', loader: () => import('@formulajs/formulajs').then((m) => m.default || m) },
   { name: 'math', cache: 'global', loader: () => import('mathjs').then((m) => m) },
@@ -204,15 +198,12 @@ export function setupRunJSLibs(ctx: FlowContext): void {
   // - 新增库应优先挂载到 ctx.libs.xxx（通过 registerRunJSLib）
   // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
   const libs: Record<string, unknown> = {};
-  const unresolvedSyncValues: Record<string, unknown> = {
-    antdIcons: {},
-  };
   for (const { name } of DEFAULT_RUNJS_LIBS) {
     Object.defineProperty(libs, name, {
       configurable: true,
       enumerable: true,
       get() {
-        const v = resolveRegisteredLibSync(ctx, name) ?? unresolvedSyncValues[name];
+        const v = resolveRegisteredLibSync(ctx, name);
         // Lazy materialize as writable data property on first access
         Object.defineProperty(libs, name, {
           configurable: true,
