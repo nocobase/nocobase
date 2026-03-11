@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ReferenceBlockModel } from '../ReferenceBlockModel';
 
@@ -861,6 +861,142 @@ describe('ReferenceBlockModel', () => {
   });
 
   describe('Props forwarding', () => {
+    it(
+      'reapplies relation appends after template fallback recreates target resource',
+      async () => {
+        class SwitchableDetailsBlockModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            this.context.defineProperty('association', {
+              get: () => this.getStepParams('mockSettings', 'association'),
+              cache: false,
+            });
+            this.context.defineProperty('blockModel', {
+              value: this,
+            });
+            this.context.defineProperty('resource', {
+              get: () => {
+                const init = this.getStepParams('resourceSettings', 'init') || {};
+                const associationType = this.context.association?.type;
+                const useSingle =
+                  associationType === 'hasOne' ||
+                  associationType === 'belongsTo' ||
+                  Object.keys(init).includes('filterByTk');
+                const resource = this.context.createResource(useSingle ? SingleRecordResource : MultiRecordResource);
+                resource.setDataSourceKey(init.dataSourceKey);
+                resource.setResourceName(init.associationName || init.collectionName);
+                if (Object.keys(init).includes('sourceId')) {
+                  resource.setSourceId(init.sourceId);
+                }
+                if (Object.keys(init).includes('filterByTk')) {
+                  resource.setFilterByTk(init.filterByTk);
+                }
+                if (resource instanceof MultiRecordResource) {
+                  resource.setPageSize(1);
+                }
+                return resource;
+              },
+            });
+          }
+
+          addAppends(fieldPath?: string) {
+            if (!fieldPath) {
+              return;
+            }
+            this.context.resource.addAppends(fieldPath);
+          }
+        }
+
+        class MockRelationFieldModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            const init = this.getStepParams('fieldSettings', 'init') || {};
+            this.context.blockModel?.addAppends?.(init.fieldPath);
+            this.context.blockModel?.addAppends?.(init.associationPathName);
+          }
+        }
+
+        engine.registerModels({
+          DetailsBlockModel: SwitchableDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+        scopedEngine.registerModels({
+          DetailsBlockModel: SwitchableDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        referenceBlockModel.context.defineProperty('view', {
+          value: {
+            inputArgs: {
+              dataSourceKey: 'main',
+              collectionName: 'B',
+              filterByTk: 1,
+            },
+          },
+        });
+
+        const target = scopedEngine.createModel<FlowModel>({
+          uid: 'target-with-relation-uid',
+          use: 'DetailsBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: 1,
+              },
+            },
+          },
+          subModels: {
+            grid: {
+              uid: 'target-with-relation-grid',
+              use: 'GridModel',
+              subKey: 'grid',
+              subType: 'object',
+              subModels: {
+                items: [
+                  {
+                    uid: 'target-with-relation-field',
+                    use: 'RelationFieldModel',
+                    subKey: 'items',
+                    subType: 'array',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          fieldPath: 'profile.nickname',
+                          associationPathName: 'profile',
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        });
+
+        expect(target.context.resource).toBeInstanceOf(SingleRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+
+        (referenceBlockModel as any)._applyTemplateFallbackPatchState(target);
+
+        expect(target.context.resource).toBeInstanceOf(MultiRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+      },
+      TEST_TIMEOUT,
+    );
+
     it(
       'should forward props mutations to target model after beforeRender',
       async () => {
