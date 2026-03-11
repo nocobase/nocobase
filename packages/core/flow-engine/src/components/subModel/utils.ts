@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { cloneDeep, merge } from 'lodash-es';
+import _ from 'lodash';
 import type { Collection } from '../../data-source';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModelMeta, ModelConstructor } from '../../types';
@@ -86,7 +86,7 @@ function buildSubModelChildren(M: ModelConstructor, ctx: FlowModelContext) {
               const defaultOpts = await resolveCreateModelOptions(meta?.createModelOptions, ctx, extraArg);
               const childOpts = await resolveCreateModelOptions(src, ctx, extraArg);
               // Merge with child options taking precedence over defaults.
-              return merge({}, cloneDeep(defaultOpts), childOpts);
+              return _.merge({}, _.cloneDeep(defaultOpts), childOpts);
             };
           }
           return node;

@@ -9,7 +9,7 @@
 
 import { observable } from '@formily/reactive';
 import { CascaderProps } from 'antd';
-import { cloneDeep, isUndefined, omit, omitBy, pick, sortBy, uniq } from 'lodash-es';
+import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { jioToJoiSchema } from './jioToJoiSchema';
 import { sortCollectionsByInherits } from './sortCollectionsByInherits';
@@ -307,7 +307,7 @@ export class CollectionManager {
   }
 
   getCollections(): Collection[] {
-    return sortBy(
+    return _.sortBy(
       Array.from(this.collections.values()).filter((collection) => !collection.hidden),
       'sort',
     );
@@ -369,7 +369,7 @@ export class CollectionManager {
           return getChildrenCollectionsInner(collectionKey);
         });
       }
-      return uniq(children);
+      return _.uniq(children);
     };
 
     this.childrenCollectionsName[cacheKey] = getChildrenCollectionsInner(name);
@@ -434,7 +434,7 @@ export class Collection {
   }
 
   clone() {
-    const newCollection = new Collection(cloneDeep(this.options));
+    const newCollection = new Collection(_.cloneDeep(this.options));
     newCollection.setDataSource(this.dataSource);
     return newCollection;
   }
@@ -455,7 +455,7 @@ export class Collection {
     if (Array.isArray(this.filterTargetKey) && this.filterTargetKey.length === 1) {
       return record[this.filterTargetKey[0]];
     }
-    return pick(record, this.filterTargetKey);
+    return _.pick(record, this.filterTargetKey);
   }
 
   get titleableFields() {
@@ -831,9 +831,9 @@ export class CollectionField {
 
   getComponentProps() {
     const { type, target } = this.options;
-    const componentProps = omitBy(
+    const componentProps = _.omitBy(
       {
-        ...omit(this.options.uiSchema?.['x-component-props'] || {}, 'fieldNames'),
+        ..._.omit(this.options.uiSchema?.['x-component-props'] || {}, 'fieldNames'),
         options: this.enum.length ? this.enum : undefined,
         mode: this.type === 'array' ? 'multiple' : undefined,
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
@@ -841,7 +841,7 @@ export class CollectionField {
         target: target,
         template: this.targetCollection?.template,
       },
-      isUndefined,
+      _.isUndefined,
     );
     if (this.validation) {
       // 初始化数据表字段jio验证规则

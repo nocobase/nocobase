@@ -7,12 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Popover } from 'antd';
 import DOMPurify from 'dompurify';
 import * as React from 'react';
-import { lazy } from '../lazy-helper';
 import usePatchElement from './usePatchElement';
-
-const { Popover } = lazy(() => import('antd'), 'Popover');
 
 let uuid = 0;
 

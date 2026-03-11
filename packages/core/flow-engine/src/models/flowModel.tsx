@@ -8,7 +8,7 @@
  */
 
 import { batch, define, observable, observe } from '@formily/reactive';
-import { castArray, cloneDeep, debounce, isEqual, mergeWith, omit } from 'lodash-es';
+import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
 import { Emitter } from '../emitter';
@@ -213,7 +213,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     this.observerDispose = observe(this.stepParams, (changed) => {
       // if doesn't change, skip
-      if (changed.type === 'set' && isEqual(changed.value, changed.oldValue)) {
+      if (changed.type === 'set' && _.isEqual(changed.value, changed.oldValue)) {
         return;
       }
 
@@ -439,10 +439,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           }
           return undefined;
         };
-        mergedSubModels = mergeWith(
+        mergedSubModels = _.mergeWith(
           {},
-          cloneDeep(metaCreate.subModels || {}),
-          cloneDeep(subModels || {}),
+          _.cloneDeep(metaCreate.subModels || {}),
+          _.cloneDeep(subModels || {}),
           replaceArrays,
         );
       }
@@ -790,7 +790,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
   }
 
-  private _dispatchEventWithDebounce = debounce(
+  private _dispatchEventWithDebounce = _.debounce(
     async function (
       this: FlowModel,
       eventName: string,
@@ -855,7 +855,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 如果之前没有执行过，则直接跳过
    * 使用 lodash debounce 避免频繁调用
    */
-  private _rerunLastAutoRun = debounce(async () => {
+  private _rerunLastAutoRun = _.debounce(async () => {
     if (this._lastAutoRunParams) {
       try {
         const [inputArgs] = this._lastAutoRunParams as any[];
@@ -1197,7 +1197,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: ArrayElementType<Structure['subModels'][K]>[] = [];
 
-    castArray(model)
+    _.castArray(model)
       .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
       .forEach((item, index) => {
         const result = (callback as (model: any, index: number) => boolean)(item, index);
@@ -1221,7 +1221,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
     const results: R[] = [];
 
-    castArray(model)
+    _.castArray(model)
       .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
       .forEach((item, index) => {
         const result = (callback as (model: any, index: number) => R)(item, index);
@@ -1236,7 +1236,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (!subModel) {
       return false;
     }
-    return castArray(subModel).length > 0;
+    return _.castArray(subModel).length > 0;
   }
 
   findSubModel<K extends keyof Structure['subModels'], R>(
@@ -1250,7 +1250,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     return (
-      (castArray(model).find((item) => {
+      (_.castArray(model).find((item) => {
         return (callback as (model: any) => R)(item);
       }) as ArrayElementType<Structure['subModels'][K]> | undefined) || null
     );
@@ -1443,7 +1443,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   serialize(): Record<string, any> {
     const data = {
       uid: this.uid,
-      ...omit(this._options, ['flowEngine']),
+      ..._.omit(this._options, ['flowEngine']),
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
       flowRegistry: {},

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import DragOutlined from '@ant-design/icons/es/icons/DragOutlined';
+import { DragOutlined } from '@ant-design/icons';
 import { DndContext, DndContextProps, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import React, { FC, useState } from 'react';
 import { createPortal } from 'react-dom';

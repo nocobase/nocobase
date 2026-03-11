@@ -20,17 +20,13 @@ import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 
-type DrawerRenderProps = {
-  children?: React.ReactNode;
-};
-
 export function useDrawer() {
   const holderRef = React.useRef(null);
   const drawerList = React.useMemo(() => observable.shallow({ value: [] }), []);
 
   const RenderNestedDrawer = React.memo((props: { index: number }) => {
     const { index } = props;
-    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType<DrawerRenderProps> | null>(null);
+    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType | null>(null);
 
     React.useEffect(() => {
       autorun(() => {
@@ -177,8 +173,8 @@ export function useDrawer() {
     registerPopupVariable(ctx, currentDrawer);
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext: React.FC<DrawerRenderProps> = React.memo(
-      observer<DrawerRenderProps>((props) => {
+    const DrawerWithContext: React.FC = React.memo(
+      observer((props) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         const rawContent = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
@@ -221,7 +217,7 @@ export function useDrawer() {
 
     DrawerWithContext.displayName = 'DrawerWithContext';
 
-    const RenderDrawer = React.memo(({ children }: DrawerRenderProps) => (
+    const RenderDrawer = React.memo(({ children }) => (
       <FlowEngineProvider engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DrawerWithContext>{children}</DrawerWithContext>
@@ -238,7 +234,7 @@ export function useDrawer() {
   const api = React.useMemo(() => ({ open }), []);
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement<React.ComponentType<DrawerRenderProps>>();
+      const [elements, patchElement] = usePatchElement<React.ElementType>();
       React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
 
       React.useEffect(() => {

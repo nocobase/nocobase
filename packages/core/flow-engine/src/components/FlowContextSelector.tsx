@@ -9,7 +9,7 @@
 
 import React, { useCallback, useRef, useMemo, useState, useEffect } from 'react';
 import { Button, Cascader, Input, Tooltip, theme } from 'antd';
-import QuestionCircleOutlined from '@ant-design/icons/es/icons/QuestionCircleOutlined';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 import { cx, css } from '@emotion/css';
 import type { ContextSelectorItem, FlowContextSelectorProps } from './variables/types';
 import {

@@ -8,11 +8,9 @@
  */
 
 // components/drawer/useDrawer/DrawerComponent.tsx
+import { Drawer } from 'antd';
 import * as React from 'react';
-import { lazy } from '../lazy-helper';
-
-const { Drawer } = lazy(() => import('antd'), 'Drawer');
-const { MobilePopup } = lazy(() => import('../components/MobilePopup'), 'MobilePopup');
+import { MobilePopup } from '../components/MobilePopup';
 
 const DrawerComponent = React.forwardRef((props: any, ref) => {
   const { children, footer: initialFooter, title, extra, hidden, isMobile, ...drawerProps } = props;

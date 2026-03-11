@@ -8,8 +8,8 @@
  */
 
 import { Card, Form, Tooltip } from 'antd';
-import LockOutlined from '@ant-design/icons/es/icons/LockOutlined';
-import { capitalize } from 'lodash-es';
+import { LockOutlined } from '@ant-design/icons';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionField } from '../data-source';
@@ -87,7 +87,7 @@ function FieldWithoutPermissionPlaceholder() {
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
       {
         name: nameValue,
-        actionName: t(capitalize(actionName)),
+        actionName: t(_.capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
   }, [nameValue, t]);

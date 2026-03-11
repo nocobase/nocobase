@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { get } from 'lodash-es';
+import _ from 'lodash';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
@@ -103,7 +103,7 @@ export class FlowExecutor {
     if (eventStep) {
       eventStep = { ...eventStep } as any; // clone to avoid side effects
       (eventStep as any).defaultParams = {
-        ...get(flow, 'on.defaultParams', {}),
+        ..._.get(flow, 'on.defaultParams', {}),
         ...(eventStep as any).defaultParams,
       };
     }

@@ -7,10 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Modal } from 'antd';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import { lazy } from '../lazy-helper';
-
-const { Modal } = lazy(() => import('antd'), 'Modal');
 
 interface DialogComponentProps extends React.ComponentProps<typeof Modal> {
   afterClose?: () => void;

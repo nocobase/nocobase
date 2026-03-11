@@ -8,7 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
-import { cloneDeep } from 'lodash-es';
+import _ from 'lodash';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { BaseRecordResource } from './baseRecordResource';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils/client';
@@ -236,7 +236,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     const sql = this._sql;
     const { sql: transformedSQL, bind, liquidContext } = await transformSQL(sql);
     const resolved = await this.context.resolveJsonTemplate({ bind, liquidContext });
-    const options = cloneDeep({
+    const options = _.cloneDeep({
       method: 'post',
       ...this.getRefreshRequestOptions(),
     });

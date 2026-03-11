@@ -8,7 +8,7 @@
  */
 
 import { AxiosRequestConfig } from 'axios';
-import { omit } from 'lodash-es';
+import _ from 'lodash';
 import { BaseRecordResource } from './baseRecordResource';
 
 export class SingleRecordResource<TData = any> extends BaseRecordResource<TData> {
@@ -31,7 +31,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   }
 
   async save(data: TData, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
-    const config = this.mergeRequestConfig(this.saveActionOptions, omit(options, ['refresh']));
+    const config = this.mergeRequestConfig(this.saveActionOptions, _.omit(options, ['refresh']));
     let actionName = 'create';
     const result = data;
     // 如果有 filterByTk，则表示是更新操作
