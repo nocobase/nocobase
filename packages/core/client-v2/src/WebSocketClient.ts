@@ -50,7 +50,7 @@ export class WebSocketClient {
   getSubAppName = (app: Application) => {
     const publicPath = app.getPublicPath();
     const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
-    const match = location.pathname.match(new RegExp(pattern));
+    const match = typeof location !== 'undefined' && location.pathname?.match(new RegExp(pattern));
     return match ? match[1] : null;
   };
 
