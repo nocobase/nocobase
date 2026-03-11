@@ -22,13 +22,15 @@ export class CheckpointCleaner {
     private readonly checkpointSaver: BaseCheckpointSaver,
   ) {}
 
-  async cleanOutdated() {
-    const expiredAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+  async cleanOutdated(expiredAt: Date) {
     const outdatedConversations = await this.aiConversationsModel.findAll({
       attributes: ['sessionId', 'thread'],
       where: {
         updatedAt: {
           [Op.lt]: expiredAt,
+        },
+        thread: {
+          [Op.ne]: 0,
         },
       },
       raw: true,
@@ -77,7 +79,7 @@ export class CheckpointCleaner {
         ? latestMessage.toolCalls.length > 0
         : !!latestMessage.toolCalls;
       if (latestMessageAt && latestMessageAt < expiredAt && !hasToolCalls) {
-        conversationsToClean.push(conversation.toJSON());
+        conversationsToClean.push(conversation as unknown as AIConversationsType);
       }
     }
 
@@ -89,12 +91,22 @@ export class CheckpointCleaner {
   }
 
   async clean(conversations: AIConversationsType[]): Promise<void> {
+    if (!conversations?.length) {
+      return;
+    }
     const threadIds = this.getThreadIds(conversations);
+    await this.aiConversationsModel.update(
+      { thread: 0 },
+      {
+        where: {
+          sessionId: {
+            [Op.in]: conversations.map((x) => x.sessionId),
+          },
+        },
+      },
+    );
     for (const threadId of threadIds) {
       await this.checkpointSaver.deleteThread(threadId);
-    }
-    for (const conversation of conversations) {
-      await this.aiConversationsModel.update({ thread: 0 }, { where: { sessionId: conversation.sessionId } });
     }
   }
 
