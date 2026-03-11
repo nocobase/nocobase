@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { PageModel } from '../PageModel';
+import { PageModel } from '@nocobase/client';
 
 const getConfirmUnsavedChangesHandler = () => {
   const flow = PageModel.globalFlowRegistry.getFlow('beforeCloseGuard');
