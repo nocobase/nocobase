@@ -62,18 +62,17 @@ export class FilterFormGridModel extends GridModel {
    */
   private getFullLayout() {
     const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
-    const rawCurrentRows = this.props.rows || {};
-    const rawSavedRows = params.rows || {};
+    const rawCurrentRows = (this.props.rows || {}) as Record<string, string[][]>;
+    const rawSavedRows = (params.rows || {}) as Record<string, string[][]>;
     const currentCount = Object.keys(rawCurrentRows).length;
     const savedCount = Object.keys(rawSavedRows).length;
-    const currentItemCount = Object.values(rawCurrentRows).reduce(
-      (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
-      0,
-    );
-    const savedItemCount = Object.values(rawSavedRows).reduce(
-      (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
-      0,
-    );
+    const getItemCount = (rows: Record<string, string[][]>) =>
+      Object.values(rows).reduce(
+        (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
+        0,
+      );
+    const currentItemCount = getItemCount(rawCurrentRows);
+    const savedItemCount = getItemCount(rawSavedRows);
     const useCurrentLayout =
       currentCount > savedCount || (currentCount === savedCount && currentItemCount >= savedItemCount);
     const sourceRows = this.mergeRowsWithItems(useCurrentLayout ? rawCurrentRows : rawSavedRows);
