@@ -101,10 +101,6 @@ export class PluginAIServer extends Plugin {
     this.registerWorkContextResolveStrategy();
   }
 
-  async setupBuiltIn() {
-    await this.builtInManager.createOrUpdateAIEmployee();
-  }
-
   registerLLMProviders() {
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
@@ -233,7 +229,6 @@ export class PluginAIServer extends Plugin {
     });
     this.workContextHandler.registerStrategy('code-editor', {
       resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
-      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
     });
   }
 
@@ -253,12 +248,9 @@ export class PluginAIServer extends Plugin {
       return;
     }
     await this.db.getRepository('aiSettings').create({});
-    await this.setupBuiltIn();
   }
 
-  async upgrade() {
-    await this.setupBuiltIn();
-  }
+  async upgrade() {}
 
   async afterEnable() {}
 

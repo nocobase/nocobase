@@ -78,9 +78,8 @@ export class AIEmployee {
     this.model = model;
     this.legacy = legacy;
 
-    const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
-    builtInManager.setupBuiltInInfo(ctx, locale, this.employee as unknown as AIEmployeeType);
+    builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
     this.protocol = ChatStreamProtocol.create(ctx);
   }
