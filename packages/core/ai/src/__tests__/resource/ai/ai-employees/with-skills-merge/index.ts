@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './ai-manager';
-export * from './ai-employee-manager';
-export * from './document-manager';
-export * from './tools-manager';
-export * from './skills-manager';
-export * from './loader';
+import { defineAIEmployee } from '@nocobase/ai';
+
+export default defineAIEmployee({
+  username: 'with-skills-merge',
+  nickname: 'With Skills Merge',
+  tools: [],
+  skills: ['configured-skill'],
+});

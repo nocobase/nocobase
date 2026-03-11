@@ -42,7 +42,8 @@ export default {
     },
     {
       name: 'defaultPrompt',
-      type: 'virtual',
+      type: 'text',
+      interface: 'textarea',
     },
     {
       name: 'greeting',
