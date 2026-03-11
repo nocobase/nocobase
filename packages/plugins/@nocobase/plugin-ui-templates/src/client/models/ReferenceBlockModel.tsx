@@ -9,7 +9,14 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { escapeT, FlowContext, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowContext,
+  MultiRecordResource,
+  SingleRecordResource,
+  type FlowEngine,
+  type FlowModel,
+} from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
@@ -30,9 +37,11 @@ import {
 } from './referenceShared';
 
 const TARGET_CONTEXT_BRIDGE_MARKER = Symbol.for('nocobase.referenceBlockTargetContextBridge');
+const TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH = Symbol.for('nocobase.referenceBlockTargetEventBridge.originalDispatch');
 const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
   'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
 );
+const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
 /**
  * ReferenceBlockModel（插件版）
@@ -147,11 +156,98 @@ export class ReferenceBlockModel extends BlockModel {
     if (!original) return;
     (target as any).getStepParams = original;
     delete (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS];
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
+    this._refreshTargetResourceState(target);
+  }
+
+  private _restoreTargetEventBridge(target?: FlowModel) {
+    if (!target) return;
+    const original = (target as any)[TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH] as FlowModel['dispatchEvent'] | undefined;
+    if (!original) return;
+    (target as any).dispatchEvent = original;
+    delete (target as any)[TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH];
+  }
+
+  private _getForwardedTargetEventFlows(eventName: string) {
+    if (!eventName || super.getEvent(eventName)) {
+      return new Map();
     }
+
+    return new Map(
+      Array.from(this.getFlows().entries()).filter(([, flow]) => {
+        const on = flow?.on;
+        if (!on) return false;
+        if (typeof on === 'string') return on === eventName;
+        if (typeof on === 'object') return on.eventName === eventName;
+        return false;
+      }),
+    );
+  }
+
+  private _shouldForwardTargetEvent(eventName: string, target?: FlowModel) {
+    if (!target || !eventName) return false;
+    if (super.getEvent(eventName)) return false;
+    return !!target.getEvent(eventName);
+  }
+
+  private _applyTargetEventBridge(target?: FlowModel) {
+    if (!target) return;
+    if ((target as any)[TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH]) return;
+
+    const originalDispatchEvent = (target as any).dispatchEvent as FlowModel['dispatchEvent'];
+    if (typeof originalDispatchEvent !== 'function') return;
+
+    (target as any)[TARGET_EVENT_BRIDGE_ORIGINAL_DISPATCH] = originalDispatchEvent;
+    const reference = this;
+
+    (target as any).dispatchEvent = async function (eventName: string, inputArgs?: Record<string, any>, options?: any) {
+      if (!reference._shouldForwardTargetEvent(eventName, target)) {
+        return originalDispatchEvent.call(this, eventName, inputArgs, options);
+      }
+
+      const forwardedFlows = reference._getForwardedTargetEventFlows(eventName);
+      if (!forwardedFlows.size) {
+        return originalDispatchEvent.call(this, eventName, inputArgs, options);
+      }
+
+      const originalGetFlows = this.getFlows?.bind(this);
+      const originalGetFlow = this.getFlow?.bind(this);
+      const originalGetStepParams = this.getStepParams?.bind(this);
+
+      this.getFlows = function () {
+        const merged = originalGetFlows ? originalGetFlows() : new Map();
+        for (const [flowKey, flow] of forwardedFlows.entries()) {
+          if (!merged.has(flowKey)) {
+            merged.set(flowKey, flow);
+          }
+        }
+        return merged;
+      };
+
+      this.getFlow = function (flowKey: string) {
+        if (forwardedFlows.has(flowKey)) {
+          return forwardedFlows.get(flowKey);
+        }
+        return originalGetFlow?.(flowKey);
+      };
+
+      this.getStepParams = function (flowKey: string, stepKey?: string) {
+        if (forwardedFlows.has(flowKey)) {
+          const params = reference.getStepParams(flowKey, stepKey as any);
+          if (params !== undefined) {
+            return params;
+          }
+        }
+        return originalGetStepParams?.(flowKey, stepKey as any);
+      };
+
+      try {
+        return await originalDispatchEvent.call(this, eventName, inputArgs, options);
+      } finally {
+        this.getFlows = originalGetFlows;
+        this.getFlow = originalGetFlow;
+        this.getStepParams = originalGetStepParams;
+      }
+    };
   }
 
   private _shouldTemplateFallbackToList(init: Record<string, any>): boolean {
@@ -172,6 +268,45 @@ export class ReferenceBlockModel extends BlockModel {
     return !!dataSourceMismatch;
   }
 
+  private _refreshTargetResourceState(target?: FlowModel) {
+    if (!target) return;
+    const init = (target.getStepParams?.('resourceSettings', 'init') || {}) as Record<string, any>;
+    const associationType = (target as any)?.association?.type;
+    const shouldUseSingle =
+      associationType === 'hasOne' || associationType === 'belongsTo' || Object.keys(init).includes('filterByTk');
+    const currentResource = target.context?.resource as any;
+    const currentAppends = currentResource?.getAppends?.() || [];
+    const shouldRecreate =
+      !currentResource ||
+      (shouldUseSingle && !(currentResource instanceof SingleRecordResource)) ||
+      (!shouldUseSingle && !(currentResource instanceof MultiRecordResource));
+
+    if (shouldRecreate) {
+      try {
+        target.context?.removeCache?.('resource');
+      } catch (_) {
+        // ignore
+      }
+    } else {
+      currentResource.setDataSourceKey?.(init.dataSourceKey);
+      currentResource.setResourceName?.(init.associationName || init.collectionName);
+      if (Object.prototype.hasOwnProperty.call(init, 'sourceId')) {
+        currentResource.setSourceId?.(init.sourceId);
+      } else if ('sourceId' in currentResource) {
+        currentResource.sourceId = null;
+      }
+      if (Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+        currentResource.setFilterByTk?.(init.filterByTk);
+      } else {
+        currentResource.removeRequestParameter?.('filterByTk');
+      }
+    }
+
+    if (currentAppends.length) {
+      target.context?.resource?.addAppends?.(currentAppends);
+    }
+  }
+
   private _applyTemplateFallbackPatchState(target?: FlowModel) {
     if (!target) return;
     const useTemplate = this.getStepParams('referenceSettings', 'useTemplate') || {};
@@ -187,33 +322,27 @@ export class ReferenceBlockModel extends BlockModel {
     }
 
     // Avoid double patch
-    if ((target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
-      return;
-    }
+    if (!(target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS]) {
+      const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
+      (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
 
-    const originalGetStepParams = (target as any).getStepParams as FlowModel['getStepParams'];
-    (target as any)[TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS] = originalGetStepParams;
-
-    const ref = this;
-    (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
-      const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
-      if (flowKey === 'resourceSettings' && stepKey === 'init') {
-        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
-          if (ref._shouldTemplateFallbackToList(res as any)) {
-            const next = { ...(res as any) };
-            delete (next as any).filterByTk;
-            return next;
+      const ref = this;
+      (target as any).getStepParams = function (this: FlowModel, flowKey?: any, stepKey?: any) {
+        const res = originalGetStepParams.call(this, flowKey as any, stepKey as any);
+        if (flowKey === 'resourceSettings' && stepKey === 'init') {
+          if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'filterByTk')) {
+            if (ref._shouldTemplateFallbackToList(res as any)) {
+              const next = { ...(res as any) };
+              delete (next as any).filterByTk;
+              return next;
+            }
           }
         }
-      }
-      return res;
-    };
-
-    try {
-      target.context?.removeCache?.('resource');
-    } catch (_) {
-      // ignore
+        return res;
+      };
     }
+
+    this._refreshTargetResourceState(target);
   }
 
   private _bridgeTargetContext(target: FlowModel, engine: FlowEngine) {
@@ -237,6 +366,26 @@ export class ReferenceBlockModel extends BlockModel {
     return this._targetModel?.title || super.title;
   }
 
+  public getEvents<TModel extends FlowModel = this>() {
+    const events = super.getEvents<TModel>();
+    const targetEvents = this._targetModel?.getEvents?.();
+    if (!targetEvents) {
+      return events;
+    }
+
+    for (const [name, event] of targetEvents.entries()) {
+      if (!events.has(name)) {
+        events.set(name, event as any);
+      }
+    }
+
+    return events;
+  }
+
+  public getEvent<TModel extends FlowModel = this>(name: string) {
+    return super.getEvent<TModel>(name) || (this._targetModel?.getEvent?.(name) as any);
+  }
+
   onInit(option) {
     super.onInit(option);
     // 保存本地 props，用于在目标未解析/被清空时回退到引用壳子自身
@@ -251,11 +400,28 @@ export class ReferenceBlockModel extends BlockModel {
     // 这里桥接相关上下文属性到目标模型，避免“能找到模型实例但字段下拉为空”。
     const contextKeys = ['collection', 'dataSource', 'resource', 'association', 'resourceName'] as const;
     type ContextKey = (typeof contextKeys)[number];
-    const getTargetContext = () => this._targetModel?.context;
+    const getTargetOwnContextValue = (key: ContextKey) => {
+      const targetContext = this._targetModel?.context as FlowContext | undefined;
+      if (!targetContext || !targetContext.has(key)) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+
+      try {
+        return (targetContext as any)._getOwnProperty(key, (targetContext as any).createProxy?.() || targetContext);
+      } catch (_) {
+        return TARGET_OWN_CONTEXT_MISSING;
+      }
+    };
     contextKeys.forEach((key: ContextKey) => {
       this.context.defineProperty(key, {
         cache: false,
-        get: () => getTargetContext()?.[key],
+        get: () => {
+          const ownValue = getTargetOwnContextValue(key);
+          if (ownValue !== TARGET_OWN_CONTEXT_MISSING) {
+            return ownValue;
+          }
+          return this.parent?.context?.[key];
+        },
       });
     });
   }
@@ -349,6 +515,7 @@ export class ReferenceBlockModel extends BlockModel {
       this._syncExtraTitle(false);
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTargetEventBridge(oldTarget);
         this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
@@ -367,6 +534,7 @@ export class ReferenceBlockModel extends BlockModel {
     this._syncExtraTitle(true);
     if (this._resolvedTargetUid === targetUid && this._targetModel) {
       this._invalidTargetUid = undefined;
+      this._applyTargetEventBridge(this._targetModel);
       this._applyTemplateFallbackPatchState(this._targetModel);
       // 目标未变化：确保 props 仍指向目标模型（避免 target.setProps 替换对象后指针失效）
       this.props = this._targetModel.props;
@@ -388,6 +556,7 @@ export class ReferenceBlockModel extends BlockModel {
     if (!target) {
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
+        this._restoreTargetEventBridge(oldTarget);
         this._restoreTemplateFallbackPatch(oldTarget);
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
         this._scopedEngine?.removeModel(oldTarget.uid);
@@ -407,9 +576,11 @@ export class ReferenceBlockModel extends BlockModel {
     const scopedEngine = this._ensureScopedEngine();
     target.setParent(this);
     this._bridgeTargetContext(target, scopedEngine);
+    this._applyTargetEventBridge(target);
     const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
     if (oldTarget?.uid !== target.uid) {
       if (oldTarget) {
+        this._restoreTargetEventBridge(oldTarget);
         this._restoreTemplateFallbackPatch(oldTarget);
       }
       this._applyTemplateFallbackPatchState(target);
@@ -434,6 +605,7 @@ export class ReferenceBlockModel extends BlockModel {
 
   async destroy(): Promise<boolean> {
     try {
+      this._restoreTargetEventBridge(this._targetModel);
       this._restoreTemplateFallbackPatch(this._targetModel);
       unlinkScopedEngine(this._scopedEngine);
     } finally {

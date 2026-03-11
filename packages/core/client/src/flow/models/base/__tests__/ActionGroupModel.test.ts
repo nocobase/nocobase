@@ -9,7 +9,8 @@
 
 // ActionGroupModel.test.tsx
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ActionGroupModel } from '../../..'; // 可解决循环依赖问题
+import { FlowEngine } from '@nocobase/flow-engine';
+import { ActionGroupModel, ActionModel, ActionSceneEnum } from '../../..'; // 可解决循环依赖问题
 
 describe('ActionGroupModel.registerActionModels', () => {
   class MockAction1 {}
@@ -92,5 +93,108 @@ describe('ActionGroupModel.registerActionModels', () => {
     // 各自 models 也只包含自己的
     expect(Array.from(SubActionA.models.keys())).toEqual(['A']);
     expect(Array.from(SubActionB.models.keys())).toEqual(['B']);
+  });
+
+  it('filters out unsupported action models by collection availableActions', async () => {
+    class SupportedActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+
+      getAclActionName() {
+        return 'create';
+      }
+    }
+
+    SupportedActionModel.define({
+      label: 'Supported action',
+      sort: 10,
+    });
+
+    class UnsupportedActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+
+      getAclActionName() {
+        return 'destroy';
+      }
+    }
+
+    UnsupportedActionModel.define({
+      label: 'Unsupported action',
+      sort: 20,
+    });
+
+    class TestCollectionActionGroupModel extends ActionGroupModel {
+      static baseClass = ActionModel;
+      static scene = ActionSceneEnum.collection;
+    }
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      TestCollectionActionGroupModel,
+      SupportedActionModel,
+      UnsupportedActionModel,
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'posts',
+      filterTargetKey: 'id',
+      availableActions: ['create'],
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+
+    const ctx = {
+      engine,
+      dataSourceManager: engine.dataSourceManager,
+      collection: ds.getCollection('posts'),
+    } as any;
+
+    const items = await TestCollectionActionGroupModel.defineChildren(ctx);
+
+    expect(items.map((item: any) => item.useModel)).toEqual(['SupportedActionModel']);
+  });
+
+  it('allows action models to opt out of capability filtering explicitly', async () => {
+    class NeutralActionModel extends ActionModel {
+      static scene = ActionSceneEnum.collection;
+      static capabilityActionName = null;
+
+      getAclActionName() {
+        return 'destroy';
+      }
+    }
+
+    NeutralActionModel.define({
+      label: 'Neutral action',
+      sort: 10,
+    });
+
+    class TestCollectionActionGroupModel extends ActionGroupModel {
+      static baseClass = ActionModel;
+      static scene = ActionSceneEnum.collection;
+    }
+
+    const engine = new FlowEngine();
+    engine.registerModels({
+      TestCollectionActionGroupModel,
+      NeutralActionModel,
+    });
+
+    const ds = engine.dataSourceManager.getDataSource('main');
+    ds.addCollection({
+      name: 'posts',
+      filterTargetKey: 'id',
+      availableActions: ['create'],
+      fields: [{ name: 'id', type: 'integer', interface: 'number' }],
+    });
+
+    const ctx = {
+      engine,
+      dataSourceManager: engine.dataSourceManager,
+      collection: ds.getCollection('posts'),
+    } as any;
+
+    const items = await TestCollectionActionGroupModel.defineChildren(ctx);
+
+    expect(items.map((item: any) => item.useModel)).toEqual(['NeutralActionModel']);
   });
 });

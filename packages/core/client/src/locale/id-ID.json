@@ -245,6 +245,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
   "Clicked row record": "Clicked row record",
   "Close": "Tutup",
+  "Close popup and redirect to": "Tutup popup dan alihkan ke",
   "Collapse": "Ciutkan",
   "Collapse all": "Ciutkan semua",
   "Collapse button": "Collapse",
@@ -396,6 +397,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Hari/Bulan/Tahun",
   "Default": "Default",
+  "Default expanded": "Ciutkan default",
+
   "Default collapse": "Ciutkan default",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

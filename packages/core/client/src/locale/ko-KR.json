@@ -247,6 +247,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "사용자 인터페이스 편집기 모드에 들어가려면 오른쪽 상단의 \"UI 편집기\" 아이콘을 클릭하십시오",
   "Clicked row record": "Clicked row record",
   "Close": "닫기",
+  "Close popup and redirect to": "팝업을 닫고 다음으로 리디렉션",
   "Collapse": "접기",
   "Collapse all": "모두 축소",
   "Collapse button": "Collapse",
@@ -399,6 +400,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "일/월/년",
   "Default": "기본값",
+  "Default expanded": "기본 축소",
+
   "Default collapse": "기본 축소",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

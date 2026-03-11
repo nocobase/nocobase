@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
+editionLevel: 2
 ---
 
 :::tip{title="การแจ้งเตือนการแปลด้วย AI"}

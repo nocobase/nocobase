@@ -140,4 +140,86 @@ describe('PageTabModel', () => {
     expect(call.url).toBe('desktopRoutes:updateOrCreate');
     expect(call.data.options.documentTitle).toBe('Tab doc title');
   });
+
+  it('should sync persisted route id after save', async () => {
+    const { RootPageTabModel } = await import('../PageTabModel');
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 123,
+          schemaUid: 'tab-1',
+          sort: 9,
+        },
+      },
+    });
+    const model = new RootPageTabModel({
+      props: {
+        route: {
+          schemaUid: 'tab-1',
+        },
+      },
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Tab title',
+          },
+        },
+      },
+      context: {
+        api: { request },
+        t: (value: string) => value,
+      },
+    } as any);
+
+    await model.save();
+
+    expect(model.props.route.id).toBe(123);
+    expect(model.props.route.sort).toBe(9);
+  });
+
+  it('should sync persisted route when updateOrCreate returns array', async () => {
+    const { RootPageTabModel } = await import('../PageTabModel');
+    const request = vi.fn().mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 456,
+            schemaUid: 'tab-1',
+            options: {
+              documentTitle: 'Server doc title',
+            },
+          },
+        ],
+      },
+    });
+    const model = new RootPageTabModel({
+      props: {
+        route: {
+          schemaUid: 'tab-1',
+          options: {
+            flowRegistry: {},
+          },
+        },
+      },
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Tab title',
+          },
+        },
+      },
+      context: {
+        api: { request },
+        t: (value: string) => value,
+      },
+    } as any);
+
+    await model.save();
+
+    expect(model.props.route.id).toBe(456);
+    expect(model.props.route.options).toMatchObject({
+      flowRegistry: {},
+      documentTitle: 'Server doc title',
+    });
+  });
 });
