@@ -1,4 +1,4 @@
-English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
+English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)| Français(./README.fr.md)
 
 https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13
 
