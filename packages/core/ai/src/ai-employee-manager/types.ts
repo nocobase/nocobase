@@ -58,5 +58,4 @@ export interface AIEmployeeManager {
   getEmployee(username: string): Promise<AIEmployeeEntry>;
   listEmployees(filter?: AIEmployeeFilter): Promise<AIEmployeeEntry[]>;
   registerEmployee(options: AIEmployeeOptions): Promise<void>;
-  persistence(): Promise<void>;
 }
