@@ -163,24 +163,39 @@ const cases = [
     expected: ['2025-04-01 00:00:00', '2025-04-30 23:59:59'],
   },
   {
+    title: 'past one quarter → 上季度整季',
+    input: { type: 'past', unit: 'quarter', number: 1, timezone: '+08:00' },
+    expected: ['2025-01-01 00:00:00', '2025-03-31 23:59:59'],
+  },
+  {
     title: 'past one calendar year → 去年',
     input: { type: 'past', unit: 'year', number: 1, timezone: '+08:00' },
     expected: ['2024-01-01 00:00:00', '2024-12-31 23:59:59'],
   },
   {
-    title: 'past one day + include today → 今天',
+    title: 'past one day + include today → 昨天到今天',
     input: { type: 'past', unit: 'day', number: 1, includeCurrent: true, timezone: '+08:00' },
-    expected: ['2025-05-22 00:00:00', '2025-05-22 23:59:59'],
+    expected: ['2025-05-21 00:00:00', '2025-05-22 23:59:59'],
   },
   {
-    title: 'past two calendar weeks + include this week → 本周和上周',
+    title: 'past two calendar weeks + include this week → 前两周加本周',
     input: { type: 'past', unit: 'week', number: 2, includeCurrent: true, timezone: '+08:00' },
+    expected: ['2025-05-05 00:00:00', '2025-05-25 23:59:59'],
+  },
+  {
+    title: 'past one iso week + include this week → 上周加本周',
+    input: { type: 'past', unit: 'isoWeek', number: 1, includeCurrent: true, timezone: '+08:00' },
     expected: ['2025-05-12 00:00:00', '2025-05-25 23:59:59'],
   },
   {
-    title: 'past one iso week + include this week → 本周',
-    input: { type: 'past', unit: 'isoWeek', number: 1, includeCurrent: true, timezone: '+08:00' },
-    expected: ['2025-05-19 00:00:00', '2025-05-25 23:59:59'],
+    title: 'past one quarter + include this quarter → 上季度加本季度',
+    input: { type: 'past', unit: 'quarter', number: 1, includeCurrent: true, timezone: '+08:00' },
+    expected: ['2025-01-01 00:00:00', '2025-06-30 23:59:59'],
+  },
+  {
+    title: 'past two minutes + include this minute → 前两分钟加本分钟',
+    input: { type: 'past', unit: 'minute', number: 2, includeCurrent: true, timezone: '+08:00' },
+    expected: ['2025-05-22 14:58:00', '2025-05-22 15:00:59'],
   },
   {
     title: 'next one calendar month → 下月整月',
@@ -188,19 +203,29 @@ const cases = [
     expected: ['2025-06-01 00:00:00', '2025-06-30 23:59:59'],
   },
   {
+    title: 'next one hour → 下一小时',
+    input: { type: 'next', unit: 'hour', number: 1, timezone: '+08:00' },
+    expected: ['2025-05-22 16:00:00', '2025-05-22 16:59:59'],
+  },
+  {
     title: 'next two calendar months → 下两个月整月',
     input: { type: 'next', unit: 'month', number: 2, timezone: '+08:00' },
     expected: ['2025-06-01 00:00:00', '2025-07-31 23:59:59'],
   },
   {
-    title: 'next one calendar month + include this month → 本月',
+    title: 'next one calendar month + include this month → 本月加下月',
     input: { type: 'next', unit: 'month', number: 1, includeCurrent: true, timezone: '+08:00' },
-    expected: ['2025-05-01 00:00:00', '2025-05-31 23:59:59'],
+    expected: ['2025-05-01 00:00:00', '2025-06-30 23:59:59'],
   },
   {
-    title: 'next two calendar years + include this year → 今年和明年',
+    title: 'next one hour + include this hour → 本小时加下一小时',
+    input: { type: 'next', unit: 'hour', number: 1, includeCurrent: true, timezone: '+08:00' },
+    expected: ['2025-05-22 15:00:00', '2025-05-22 16:59:59'],
+  },
+  {
+    title: 'next two calendar years + include this year → 今年加未来两年',
     input: { type: 'next', unit: 'year', number: 2, includeCurrent: true, timezone: '+08:00' },
-    expected: ['2025-01-01 00:00:00', '2026-12-31 23:59:59'],
+    expected: ['2025-01-01 00:00:00', '2027-12-31 23:59:59'],
   },
 ];
 

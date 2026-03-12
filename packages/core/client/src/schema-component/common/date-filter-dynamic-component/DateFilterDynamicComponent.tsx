@@ -90,8 +90,12 @@ export const DateFilterDynamicComponent = (props) => {
   const includeCurrentLabel = useMemo(() => {
     const labelMap = {
       day: t('Include today'),
+      hour: t('Include this hour'),
+      minute: t('Include this minute'),
       week: t('Include this week'),
+      isoWeek: t('Include this week'),
       month: t('Include this month'),
+      quarter: t('Include this quarter'),
       year: t('Include this year'),
     };
 
@@ -229,8 +233,11 @@ export const DateFilterDynamicComponent = (props) => {
             }}
             options={[
               { value: 'day', label: t('Day') },
+              { value: 'hour', label: t('Hour') },
+              { value: 'minute', label: t('Minute') },
               { value: 'week', label: t('Calendar week') },
               { value: 'month', label: t('Calendar Month') },
+              { value: 'quarter', label: t('Quarter') },
               { value: 'year', label: t('Calendar Year') },
             ]}
             popupMatchSelectWidth

@@ -10,7 +10,7 @@
 import { Dayjs, UnitType } from 'dayjs';
 import { dayjs } from './dayjs';
 
-type DateUnit = 'day' | 'week' | 'isoWeek' | 'month' | 'quarter' | 'year';
+type DateUnit = 'minute' | 'hour' | 'day' | 'week' | 'isoWeek' | 'month' | 'quarter' | 'year';
 type RangeType =
   | 'today'
   | 'yesterday'
@@ -52,7 +52,8 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
   const { type, unit = 'day' as any, number = 1, includeCurrent, timezone } = params;
   const now = getNow(timezone);
   const actualUnit: any = unit === 'week' ? 'isoWeek' : unit;
-  const shouldIncludeCurrent = includeCurrent && ['day', 'week', 'isoWeek', 'month', 'year'].includes(unit);
+  const shouldIncludeCurrent =
+    includeCurrent && ['minute', 'hour', 'day', 'week', 'isoWeek', 'month', 'quarter', 'year'].includes(unit);
   const safeNumber = typeof number === 'number' && Number.isFinite(number) ? Math.max(number, 1) : 1;
 
   let start: dayjs.Dayjs;
@@ -61,7 +62,8 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
   if (type === 'past') {
     const base = now.startOf(actualUnit);
     if (shouldIncludeCurrent) {
-      start = base.subtract(safeNumber - 1, unit).startOf(actualUnit);
+      // 勾选“包括当前周期”后，语义是“原有 N 个周期 + 当前周期”。
+      start = base.subtract(safeNumber, unit).startOf(actualUnit);
       end = base.endOf(actualUnit);
     } else {
       start = base.subtract(safeNumber, unit).startOf(actualUnit);
@@ -71,7 +73,7 @@ export const getOffsetRangeByParams = (params: RangeParams): [string, string] =>
     const base = now.startOf(actualUnit);
     if (shouldIncludeCurrent) {
       start = base.startOf(actualUnit);
-      end = start.add(safeNumber - 1, unit).endOf(actualUnit);
+      end = start.add(safeNumber, unit).endOf(actualUnit);
     } else {
       start = base.add(1, unit).startOf(actualUnit);
       end = start.add(safeNumber - 1, unit).endOf(actualUnit);

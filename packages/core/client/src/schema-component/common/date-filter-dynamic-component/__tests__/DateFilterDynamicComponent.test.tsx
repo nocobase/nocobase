@@ -46,6 +46,12 @@ describe('DateFilterDynamicComponent', () => {
     expect(screen.getByTestId('current-value')).toHaveTextContent('"type":"past"');
     expect(screen.getByTestId('current-value')).toHaveTextContent('"number":1');
     expect(screen.getByTestId('current-value')).toHaveTextContent('"unit":"day"');
+
+    await openTypeSelect(container);
+    await userEvent.click(screen.getByText('Next'));
+
+    await waitFor(() => expect(screen.getByTestId('current-value')).toHaveTextContent('"type":"next"'));
+    expect(screen.getByRole('checkbox', { name: 'Include today' })).toBeInTheDocument();
   });
 
   it('should keep includeCurrent and update label when unit changes', async () => {
@@ -55,11 +61,18 @@ describe('DateFilterDynamicComponent', () => {
     await waitFor(() => expect(screen.getByTestId('current-value')).toHaveTextContent('"includeCurrent":true'));
 
     await openUnitSelect(container);
-    await userEvent.click(screen.getByText('Calendar week'));
+    await userEvent.click(screen.getByText('Quarter'));
 
-    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Include this week' })).toBeInTheDocument());
-    expect(screen.getByRole('checkbox', { name: 'Include this week' })).toBeChecked();
-    expect(screen.getByTestId('current-value')).toHaveTextContent('"unit":"week"');
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Include this quarter' })).toBeInTheDocument());
+    expect(screen.getByRole('checkbox', { name: 'Include this quarter' })).toBeChecked();
+    expect(screen.getByTestId('current-value')).toHaveTextContent('"unit":"quarter"');
+
+    await openUnitSelect(container);
+    await userEvent.click(screen.getByText('Minute'));
+
+    await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Include this minute' })).toBeInTheDocument());
+    expect(screen.getByRole('checkbox', { name: 'Include this minute' })).toBeChecked();
+    expect(screen.getByTestId('current-value')).toHaveTextContent('"unit":"minute"');
   });
 
   it('should clear includeCurrent when switching to a fixed shortcut', async () => {

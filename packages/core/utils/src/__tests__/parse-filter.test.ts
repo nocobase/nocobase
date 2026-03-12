@@ -346,7 +346,7 @@ describe('parseFilter', () => {
     ).toEqual({ createdAt: { $dateOn: date.toISOString() } });
   });
 
-  test('relative date should support includeCurrent', async () => {
+  test('relative date should support includeCurrent with current period appended', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2025-05-22T07:00:00.000Z'));
 
@@ -366,7 +366,34 @@ describe('parseFilter', () => {
       },
     ).toEqual({
       createdAt: {
-        $dateOn: ['2025-05-22 00:00:00', '2025-05-22 23:59:59', '[]', '+08:00'],
+        $dateOn: ['2025-05-21 00:00:00', '2025-05-22 23:59:59', '[]', '+08:00'],
+      },
+    });
+
+    vi.useRealTimers();
+  });
+
+  test('relative date should support minute unit with includeCurrent', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-05-22T07:00:00.000Z'));
+
+    await expectParseFilter(
+      {
+        createdAt: {
+          $dateOn: {
+            type: 'past',
+            unit: 'minute',
+            number: 2,
+            includeCurrent: true,
+          },
+        },
+      },
+      {
+        timezone: '+08:00',
+      },
+    ).toEqual({
+      createdAt: {
+        $dateOn: ['2025-05-22 14:58:00', '2025-05-22 15:00:59', '[]', '+08:00'],
       },
     });
 
