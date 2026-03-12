@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   基于数据库的 foreign data wrapper（FDW） 实现的连接远程数据表，目前支持 MySQL 和 PostgreSQL 数据库。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

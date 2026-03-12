@@ -244,6 +244,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "點擊右上角的 \"介面設定\" 圖示進入介面設定模式",
   "Clicked row record": "Clicked row record",
   "Close": "關閉",
+  "Close popup and redirect to": "關閉彈窗並跳轉至",
   "Collapse": "摺疊",
   "Collapse all": "全部收起",
   "Collapse button": "Collapse",
@@ -395,6 +396,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "日/月/年",
   "Default": "預設",
+  "Default expanded": "預設展開",
+
   "Default collapse": "預設展開",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

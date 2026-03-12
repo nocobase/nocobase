@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   用于在工作流中创建自定义变量或对其赋值，来保存流程中的临时数据。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

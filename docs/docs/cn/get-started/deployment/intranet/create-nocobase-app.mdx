@@ -1,0 +1,380 @@
+# 内网环境安装和升级 NocoBase（create-nocobase-app 方式）
+
+内网环境无法直接访问 npm 官方源，需要在外网环境中创建项目并安装依赖，再将完整项目打包迁移到内网服务器部署。
+
+**整体流程**：外网创建项目 → 安装依赖并打包 → 拷贝到内网 → 解压配置并启动
+
+:::tip 前提条件
+
+- 外网、内网机器均需安装 **Node.js 20+**、**Yarn 1.22.x**
+- 数据库：MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ 任选其一（可部署在内网或外网）
+- 外网和内网机器的 **Node.js 版本、操作系统架构** 需一致，否则 `node_modules` 中部分原生模块可能不兼容
+- 外网和内网的项目 **安装路径必须相同**（如均为 `/app/my-nocobase-app`），否则迁移后无法运行
+
+:::
+
+## 外网环境
+
+在有外网的环境中创建项目并安装依赖。
+
+### 首次安装
+
+#### 1. 在外网环境创建项目
+
+在可访问 npm 的机器上执行。**重要**：请先切换到目标父目录（如 `cd /app`），确保项目创建后路径为 `/app/my-nocobase-app`，以便与内网部署路径一致。
+
+<Tabs>
+
+<Tab label="Latest 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha 版本">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning 参数说明
+
+- `--skip-dev-dependencies` 跳过开发依赖的安装（生产环境部署时，为了减少体积，可以只安装必要的依赖）
+- `APP_ENV=production` 设置应用环境为生产环境
+- `TZ` 用于设置应用的时区，默认为操作系统时区
+- `DB_*` 为数据库相关配置，请根据实际情况修改为你的数据库连接信息
+
+:::
+
+#### 2. 切换目录
+
+```bash
+cd my-nocobase-app
+```
+
+#### 3. 安装依赖
+
+```bash
+yarn install
+```
+
+:::tip 商业插件（可选）
+
+以下步骤 4-7 仅用于下载商业插件。若仅使用开源版，可跳过步骤 4-7，直接执行步骤 8 打包。
+
+:::
+
+#### 4. 安装 NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. 运行 NocoBase
+
+```bash
+yarn start
+```
+
+#### 6. 填写 License Key
+
+访问：
+
+```
+http://<外网服务器IP>:13000/admin/settings/license-settings
+```
+
+#### 7. 下载商业插件
+
+```bash
+yarn nocobase pkg download-pro
+```
+
+#### 8. 打包项目
+
+```bash
+# 在 my-nocobase-app 目录内执行，压缩包将生成在上级目录
+# 排除 .env（含敏感信息），仅打包 storage/plugins（商业插件等）
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+### 应用升级
+
+#### 1. 升级应用代码和插件
+
+```bash
+yarn nocobase upgrade
+```
+
+#### 2. 重新打包项目
+
+```bash
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+## 内网环境
+
+再将完整项目打包迁移到内网服务器。
+
+### 首次安装
+
+#### 1. 上传应用代码和插件
+
+将 `nocobase-app.tar.gz` 通过 U 盘、内网文件共享等方式拷贝到内网服务器后，执行解压（若 tar.gz 不在当前目录，请使用完整路径）：
+
+```bash
+mkdir -p /app/my-nocobase-app
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 2. 切换目录
+
+```bash
+cd /app/my-nocobase-app
+```
+
+#### 3. 配置 .env 文件
+
+在项目根目录创建 `.env` 文件，参考外网环境的配置，**重点修改**：
+
+- `DB_HOST`：改为内网数据库地址（若数据库在内网其他服务器）
+- `DB_PORT`、`DB_DATABASE`、`DB_USER`、`DB_PASSWORD`：与内网数据库实际配置一致
+- `APP_KEY`：建议与外网保持一致，否则已有 token 将失效
+
+可在外网项目根目录执行 `cat .env` 查看完整配置，复制后按内网环境修改。
+
+#### 4. 安装 NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. 启动 NocoBase
+
+```bash
+yarn start -d
+```
+
+#### 6. 登录 NocoBase
+
+访问 `http://<内网服务器IP>:13000` 使用初始化账号登录。
+
+#### 7. 填写 License Key
+
+商业版用户需填写 License Key。访问：
+
+```
+http://<内网服务器IP>:13000/admin/settings/license-settings
+```
+
+### 升级应用
+
+#### 1. 停止应用
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase pm2-stop
+```
+
+#### 2. 覆盖应用代码和插件
+
+将 `nocobase-app.tar.gz` 通过 U 盘、内网文件共享等方式拷贝到内网服务器后，执行解压：
+
+```bash
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 3. 升级应用
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase upgrade --skip-code-update
+```
+
+#### 4. 重启应用
+
+```bash
+yarn start -d
+```
+
+#### 5. 填写 License Key（如授权有变更）
+
+若 License 授权有变更，需重新填写。访问：
+
+```
+http://<内网服务器IP>:13000/admin/settings/license-settings
+```
+
+## 常见问题
+
+**Q：内网启动报错，提示找不到模块或二进制文件？**
+
+A：检查外网、内网的 Node.js 版本和操作系统架构是否一致（如均为 Linux x64、Node 20.x）。不一致时需在相同环境下重新执行 `yarn install` 并打包。
+
+**Q：解压后运行报错，提示路径相关错误？**
+
+A：确保内网解压路径与外网创建路径一致（如均为 `/app/my-nocobase-app`）。可在 `tar -xzf` 时指定 `-C` 到相同路径。
+
+**Q：数据库连接失败？**
+
+A：确认 `.env` 中 `DB_HOST` 已改为内网可访问的数据库地址，端口、防火墙规则正确。

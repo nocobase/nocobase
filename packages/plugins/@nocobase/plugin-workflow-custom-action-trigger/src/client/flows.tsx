@@ -8,11 +8,12 @@
  */
 
 import { ActionModel, ActionSceneEnum, CollectionActionModel, FormActionModel } from '@nocobase/client';
-import { tExpr, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
+import { tExpr, MultiRecordResource, useFlowContext, resolveExpressions } from '@nocobase/flow-engine';
 import { createTriggerWorkflowsSchema, TriggerWorkflowSelect } from '@nocobase/plugin-workflow/client';
 import { ButtonProps } from 'antd';
 import React, { useCallback } from 'react';
 import { CONTEXT_TYPE, EVENT_TYPE, NAMESPACE } from '../common/constants';
+import { ContextDataJsonInput } from './components';
 
 export class FormTriggerWorkflowActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
@@ -47,10 +48,12 @@ FormTriggerWorkflowActionModel.registerFlow({
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
 
         if (!ctx.blockModel) {
+          ctx.exit();
           return;
         }
 
@@ -67,7 +70,6 @@ FormTriggerWorkflowActionModel.registerFlow({
               data: values,
             });
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
           ctx.model.setProps('loading', false);
         } catch (error) {
           ctx.model.setProps('loading', false);
@@ -76,10 +78,12 @@ FormTriggerWorkflowActionModel.registerFlow({
         } finally {
           ctx.model.setProps('loading', false);
         }
-
-        if (ctx.view) {
-          ctx.view.close();
-        }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
       },
     },
   },
@@ -117,12 +121,14 @@ RecordTriggerWorkflowActionModel.registerFlow({
       async handler(ctx, params) {
         const { resource, collection } = ctx.blockModel;
         if (!resource || !collection) {
+          ctx.exit();
           return;
         }
         if (!params.group?.length) {
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         try {
@@ -134,10 +140,17 @@ RecordTriggerWorkflowActionModel.registerFlow({
               filterByTk: getRecordKey(ctx.record, collection),
             },
           });
-          ctx.message.success(ctx.t('Operation succeeded'));
         } catch (error) {
           console.error('Error triggering workflows:', error);
+          ctx.exit();
         }
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'previous',
       },
     },
   },
@@ -195,7 +208,7 @@ CollectionTriggerWorkflowActionModel.registerFlow({
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           enum: [
-            { label: `{{t('None', { ns: '${NAMESPACE}' })}}`, value: CONTEXT_TYPE.GLOBAL },
+            { label: `{{t('Custom context', { ns: '${NAMESPACE}' })}}`, value: CONTEXT_TYPE.GLOBAL },
             {
               label: `{{t('Multiple collection records', { ns: '${NAMESPACE}' })}}`,
               value: CONTEXT_TYPE.MULTIPLE_RECORDS,
@@ -217,13 +230,28 @@ CollectionTriggerWorkflowActionModel.registerFlow({
     },
     triggerWorkflows: {
       title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        WorkflowSelectComponent: CollectionActionWorkflowSelectComponent,
-        filter: {
-          type: EVENT_TYPE,
-        },
-        usingContext: false,
-      }),
+      uiSchema: (ctx) => {
+        const baseSchema = createTriggerWorkflowsSchema({
+          WorkflowSelectComponent: CollectionActionWorkflowSelectComponent,
+          filter: {
+            type: EVENT_TYPE,
+          },
+          usingContext: false,
+        })(ctx);
+        const { type } = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings?.setContextType ?? {};
+        if (!type) {
+          return {
+            ...baseSchema,
+            contextData: {
+              type: 'string',
+              title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
+              'x-decorator': 'FormItem',
+              'x-component': ContextDataJsonInput,
+            },
+          };
+        }
+        return baseSchema;
+      },
     },
   },
 });
@@ -239,21 +267,24 @@ CollectionTriggerWorkflowActionModel.registerFlow({
       async handler(ctx) {
         const step = ctx.model.stepParams.customCollectionTriggerWorkflowsActionSettings;
         const { type } = step.setContextType;
-        const { group } = step.triggerWorkflows ?? {};
+        const { group, contextData } = step.triggerWorkflows ?? {};
         if (!group?.length) {
           ctx.message.error(
             ctx.t('Button is not configured properly, please contact the administrator.', { ns: NAMESPACE }),
           );
+          ctx.exit();
           return;
         }
         if (type === CONTEXT_TYPE.MULTIPLE_RECORDS) {
           if (!ctx.blockModel?.resource) {
             ctx.message.error(ctx.t('No resource selected for deletion'));
+            ctx.exit();
             return;
           }
           const resource = ctx.blockModel.resource as MultiRecordResource;
           if (resource.getSelectedRows().length === 0) {
             ctx.message.warning(ctx.t('Please select at least one record.', { ns: NAMESPACE }));
+            ctx.exit();
             return;
           }
           try {
@@ -268,9 +299,18 @@ CollectionTriggerWorkflowActionModel.registerFlow({
             resource.setSelectedRows([]);
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
-        } else if (type === CONTEXT_TYPE.GLOBAL) {
+        } else if (!type) {
+          let values;
+          if (contextData) {
+            try {
+              values = await resolveExpressions(contextData, ctx);
+            } catch (e) {
+              // resolution error, ignore
+            }
+          }
           try {
             await ctx.api.request({
               url: 'workflows:trigger',
@@ -280,16 +320,23 @@ CollectionTriggerWorkflowActionModel.registerFlow({
                   ? group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
                   : undefined,
               },
+              data: { values },
             });
           } catch (error) {
             console.error('Error triggering workflows:', error);
+            ctx.exit();
             return;
           }
         } else {
           throw new Error('Invalid context type');
         }
-
-        ctx.message.success(ctx.t('Operation succeeded'));
+      },
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'previous',
       },
     },
   },
@@ -302,9 +349,67 @@ export class CollectionGlobalTriggerWorkflowActionModel extends ActionModel {
   };
 }
 
+export class WorkbenchTriggerWorkflowActionModel extends ActionModel {
+  defaultProps: ButtonProps = {
+    title: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+    icon: 'ThunderboltOutlined',
+  };
+}
+
 CollectionGlobalTriggerWorkflowActionModel.define({
   label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
 });
+
+WorkbenchTriggerWorkflowActionModel.define({
+  label: tExpr('Trigger global workflow', { ns: NAMESPACE }),
+});
+
+function globalTriggerWorkflowUiSchema(ctx) {
+  const baseSchema = createTriggerWorkflowsSchema({
+    filter: {
+      type: EVENT_TYPE,
+    },
+    optionFilter({ config }) {
+      return !config.type;
+    },
+    usingContext: false,
+  })(ctx);
+  return {
+    ...baseSchema,
+    contextData: {
+      type: 'string',
+      title: `{{t('Context data', { ns: '${NAMESPACE}' })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': ContextDataJsonInput,
+    },
+  };
+}
+
+async function globalTriggerWorkflowHandler(ctx, params) {
+  let values;
+  if (params.contextData) {
+    try {
+      values = await resolveExpressions(params.contextData, ctx);
+    } catch (e) {
+      // resolution error, ignore
+    }
+  }
+  try {
+    await ctx.api.request({
+      url: 'workflows:trigger',
+      method: 'post',
+      params: {
+        triggerWorkflows: params.group?.length
+          ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined,
+      },
+      data: { values },
+    });
+    ctx.message.success(ctx.t('Operation succeeded'));
+  } catch (error) {
+    console.error('Error triggering workflows:', error);
+  }
+}
 
 CollectionGlobalTriggerWorkflowActionModel.registerFlow({
   key: 'customCollectionGlobalTriggerWorkflowsActionSettings',
@@ -315,31 +420,38 @@ CollectionGlobalTriggerWorkflowActionModel.registerFlow({
       use: 'confirm',
     },
     triggerWorkflows: {
-      title: `{{t('Custom action event', { ns: '${NAMESPACE}' })}}`,
-      uiSchema: createTriggerWorkflowsSchema({
-        filter: {
-          type: EVENT_TYPE,
-        },
-        optionFilter({ config }) {
-          return config.type === CONTEXT_TYPE.GLOBAL;
-        },
-        usingContext: false,
-      }),
-      async handler(ctx, params) {
-        try {
-          await ctx.api.request({
-            url: 'workflows:trigger',
-            method: 'post',
-            params: {
-              triggerWorkflows: params.group?.length
-                ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-                : undefined,
-            },
-          });
-          ctx.message.success(ctx.t('Workflow triggered on selected records successfully'));
-        } catch (error) {
-          console.error('Error triggering workflows:', error);
-        }
+      title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
+      uiSchema: globalTriggerWorkflowUiSchema,
+      handler: globalTriggerWorkflowHandler,
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'previous',
+      },
+    },
+  },
+});
+
+WorkbenchTriggerWorkflowActionModel.registerFlow({
+  key: 'workbenchTriggerWorkflowsActionSettings',
+  on: 'click',
+  title: `{{t('Workflow', { ns: 'workflow' })}}`,
+  steps: {
+    confirm: {
+      use: 'confirm',
+    },
+    triggerWorkflows: {
+      title: `{{t('Bind workflows', { ns: 'workflow' })}}`,
+      uiSchema: globalTriggerWorkflowUiSchema,
+      handler: globalTriggerWorkflowHandler,
+    },
+    afterSuccess: {
+      use: 'afterSuccess',
+      defaultParams: {
+        successMessage: tExpr('Operation succeeded'),
+        actionAfterSuccess: 'previous',
       },
     },
   },

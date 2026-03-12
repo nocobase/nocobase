@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
   Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---

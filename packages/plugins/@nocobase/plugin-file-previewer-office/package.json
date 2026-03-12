@@ -6,7 +6,7 @@
   "description": "A powerful and flexible file preview plugin that supports multiple preview modes (Microsoft Online, kkFileView) for office documents and other file formats.",
   "description.ru-RU": "Мощный и гибкий плагин для предварительного просмотра файлов, поддерживающий несколько режимов (Microsoft Online, kkFileView) для офисных документов и других форматов файлов.",
   "description.zh-CN": "强大灵活的文件预览插件，支持多种预览模式（微软在线预览、kkFileView），适用于 Office 文档及其他多种文件格式。",
-  "version": "2.1.0-beta.7",
+  "version": "2.1.0-beta.8",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

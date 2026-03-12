@@ -13,54 +13,9 @@ import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
 import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
 import { ActionModel, ActionSceneEnum } from '../base';
-
-// 补全 URL
-function completeURL(url: string, origin = window.location.origin) {
-  if (!url) {
-    return '';
-  }
-  if (isURL(url)) {
-    return url;
-  }
-  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
-}
-
-export function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
-  if (!params?.length) return url;
-
-  const filtered = params.filter((p) => p.name && p.value !== undefined && p.value !== null && p.value !== '');
-  if (!filtered.length) return url;
-
-  try {
-    // 检测是否为绝对 URL
-    const isAbsolute = /^https?:\/\//i.test(url);
-
-    // 确定 base，用于 URL 构造器解析相对路径
-    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-
-    // 使用 URL 构造器自动处理 query、hash 等
-    const u = new URL(url, isAbsolute ? undefined : base);
-
-    for (const { name, value } of filtered) {
-      u.searchParams.set(name, String(value));
-    }
-
-    // 如果是相对路径（没有协议、域名），去掉 origin
-    if (!isAbsolute) {
-      // 组合 pathname + search + hash
-      return `${u.pathname}${u.search}${u.hash}`;
-    }
-
-    return u.toString();
-  } catch {
-    // fallback: 纯字符串拼接方式
-    const queryString = filtered.map((p) => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`).join('&');
-
-    const [path, hash = ''] = url.split('#');
-    const separator = path.includes('?') ? '&' : '?';
-    return `${path}${separator}${queryString}${hash ? `#${hash}` : ''}`;
-  }
-}
+import { joinUrlSearch } from './joinUrlSearch';
+import { handleLinkNavigation, shouldDestroyViewAfterLinkNavigation } from './LinkActionUtils';
+export { joinUrlSearch } from './joinUrlSearch';
 
 export class LinkActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
@@ -90,17 +45,23 @@ LinkActionModel.registerFlow({
         const link = joinUrlSearch(url, searchParams);
 
         if (link) {
-          if (openInNewWindow) {
-            window.open(completeURL(link), '_blank');
-          } else {
-            if (isURL(link)) {
-              window.location.href = link;
-            } else {
-              ctx.router.navigate(link, { replace: true });
-              if (ctx.view) {
-                ctx.view.close();
-              }
-            }
+          const isExternalLink = isURL(link);
+          handleLinkNavigation({
+            link,
+            openInNewWindow,
+            router: ctx.router,
+            isExternalLink,
+          });
+          // embed 是页面容器，不应销毁；仅弹窗视图在站内同窗口跳转后销毁。
+          if (
+            ctx.view &&
+            shouldDestroyViewAfterLinkNavigation({
+              openInNewWindow,
+              isExternalLink,
+              viewType: ctx.view.type,
+            })
+          ) {
+            ctx.view.destroy();
           }
         } else {
           console.error('link should be a string');

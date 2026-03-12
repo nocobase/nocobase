@@ -8,9 +8,9 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, observable, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton, observable } from '@nocobase/flow-engine';
 import React from 'react';
-import { CollectionBlockModel, GridModel } from '../../base';
+import { CollectionBlockModel, GRID_FLOW_KEY, GRID_STEP, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormItemModel } from './FilterFormItemModel';
 
@@ -43,40 +43,90 @@ export class FilterFormGridModel extends GridModel {
     },
   };
 
-  private hiddenRows: any = {};
   readonly loading = observable.ref(false);
 
+  private getAssociationFilterTargetKey(field: any) {
+    const filterTargetKey = field?.targetCollection?.filterTargetKey;
+
+    if (Array.isArray(filterTargetKey)) {
+      return filterTargetKey[0] || 'id';
+    }
+
+    return filterTargetKey || 'id';
+  }
+
+  /**
+   * 获取筛选表单当前“完整布局”。
+   * 折叠态会临时裁剪 props.rows，因此这里优先选取行数更多的那份布局，
+   * 避免拖拽排序或重新挂载后只拿到被裁剪过的运行时 rows。
+   */
+  private getFullLayout() {
+    const params = this.getStepParams(GRID_FLOW_KEY, GRID_STEP) || {};
+    const rawCurrentRows = (this.props.rows || {}) as Record<string, string[][]>;
+    const rawSavedRows = (params.rows || {}) as Record<string, string[][]>;
+    const currentCount = Object.keys(rawCurrentRows).length;
+    const savedCount = Object.keys(rawSavedRows).length;
+    const getItemCount = (rows: Record<string, string[][]>) =>
+      Object.values(rows).reduce(
+        (count, cells) => count + cells.reduce((cellCount, cell) => cellCount + cell.length, 0),
+        0,
+      );
+    const currentItemCount = getItemCount(rawCurrentRows);
+    const savedItemCount = getItemCount(rawSavedRows);
+    const useCurrentLayout =
+      currentCount > savedCount || (currentCount === savedCount && currentItemCount >= savedItemCount);
+    const sourceRows = this.mergeRowsWithItems(useCurrentLayout ? rawCurrentRows : rawSavedRows);
+    const sourceRowOrder = useCurrentLayout
+      ? this.props.rowOrder || params.rowOrder
+      : params.rowOrder || this.props.rowOrder;
+
+    return this.normalizeRowsWithOrder(sourceRows, sourceRowOrder);
+  }
+
+  /**
+   * 按“可视字段行数”裁剪布局，而不是只按 grid row 数裁剪。
+   * 这样即使拖拽后多个字段被排进同一个 cell，也仍然可以正确折叠。
+   */
+  private limitRowsByVisibleCount(
+    rows: Record<string, string[][]>,
+    rowOrder: string[],
+    visibleRows: number,
+  ): Record<string, string[][]> {
+    const limitedRows: Record<string, string[][]> = {};
+    let remainingRows = visibleRows;
+
+    rowOrder.forEach((rowKey) => {
+      if (remainingRows <= 0 || !rows[rowKey]) {
+        return;
+      }
+
+      const cells = rows[rowKey];
+      const rowHeight = cells.reduce((max, cell) => Math.max(max, cell.length), 0);
+      const visibleCount = Math.min(rowHeight, remainingRows);
+      const nextCells = cells.map((cell) => cell.slice(0, visibleCount));
+
+      if (nextCells.some((cell) => cell.length > 0)) {
+        limitedRows[rowKey] = nextCells;
+        remainingRows -= visibleCount;
+      }
+    });
+
+    return limitedRows;
+  }
+
   toggleFormFieldsCollapse(collapse: boolean, visibleRows: number) {
-    const gridRows = this.props.rows || {};
+    const { rows: fullRows, rowOrder } = this.getFullLayout();
 
     if (!collapse) {
-      // 展开：恢复所有隐藏的行
-      const restoredRows = { ...gridRows, ...this.hiddenRows };
-      this.setProps('rows', restoredRows);
-      this.hiddenRows = {};
-    } else {
-      // 折叠：只保留指定数量的行，其余行保存到 hiddenRows 中
-      const rowKeys = Object.keys(gridRows);
-
-      if (rowKeys.length > visibleRows) {
-        const visibleRowKeys = rowKeys.slice(0, visibleRows);
-        const hiddenRowKeys = rowKeys.slice(visibleRows);
-
-        // 保存要隐藏的行
-        this.hiddenRows = {};
-        hiddenRowKeys.forEach((key) => {
-          this.hiddenRows[key] = gridRows[key];
-        });
-
-        // 只保留可见的行
-        const visibleRowsData = {};
-        visibleRowKeys.forEach((key) => {
-          visibleRowsData[key] = gridRows[key];
-        });
-
-        this.setProps('rows', visibleRowsData);
-      }
+      this.setProps('rows', fullRows);
+      this.setProps('rowOrder', rowOrder);
+      return;
     }
+
+    const limitedRows = this.limitRowsByVisibleCount(fullRows, rowOrder, visibleRows);
+
+    this.setProps('rows', limitedRows);
+    this.setProps('rowOrder', rowOrder);
   }
 
   async onModelCreated(subModel: FilterFormItemModel) {
@@ -116,7 +166,7 @@ export class FilterFormGridModel extends GridModel {
           if (field?.target) {
             return {
               targetId: model.uid,
-              filterPaths: [`${fieldPath}.${field.targetKey}`],
+              filterPaths: [`${fieldPath}.${this.getAssociationFilterTargetKey(field)}`],
             };
           }
         }

@@ -10,6 +10,7 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { DragEndEvent } from '@dnd-kit/core';
+import { css } from '@emotion/css';
 import { uid } from '@formily/shared';
 import {
   AddSubModelButton,
@@ -38,6 +39,12 @@ type PageModelStructure = {
   };
 };
 
+const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
+  > .ant-tabs-nav .ant-tabs-tab {
+    min-width: 54px;
+  }
+`;
+
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
   private viewActivatedListener?: (_payload?: unknown) => void;
@@ -55,7 +62,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return this.props.tabActiveKey || this.getFirstTab()?.uid;
   }
 
-  private scheduleActiveLifecycleRefresh(): void {
+  private scheduleActiveLifecycleRefresh(forceRefresh = false): void {
     if (this.dirtyRefreshScheduled) return;
     this.dirtyRefreshScheduled = true;
     Promise.resolve()
@@ -66,7 +73,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
         if (getPageActive(this.context) === false) return;
         const activeKey = this.getActiveTabKey();
         if (activeKey) {
-          this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+          this.invokeTabModelLifecycleMethod(activeKey, 'onActive', forceRefresh);
         }
       })
       .catch(() => {
@@ -128,7 +135,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     super.onUnmount();
   }
 
-  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {
+  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive', forceRefresh = false) {
     if (method === 'onActive' && this.context?.pageInfo) {
       this.context.pageInfo.version = 'v2';
     }
@@ -141,7 +148,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
         tabModel.context.tabActive.value = isPageActive && method === 'onActive';
       }
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
-        item[method]?.();
+        item[method]?.(forceRefresh);
       });
     }
 
@@ -290,9 +297,37 @@ export class PageModel extends FlowModel<PageModelStructure> {
   }
 
   renderTabs() {
+    const tabNavPaddingInlineStart = this.context.themeToken?.paddingLG ?? 16;
+    const rootClassName = this.context.flowSettingsEnabled ? TABS_DESIGN_MODE_ROOT_CLASS_NAME : undefined;
+    const leftExtraContent =
+      this.tabBarExtraContent.left !== undefined ? (
+        this.tabBarExtraContent.left
+      ) : (
+        <span aria-hidden="true" style={{ display: 'inline-block', width: tabNavPaddingInlineStart, height: 1 }} />
+      );
+    const rightExtraContent =
+      this.tabBarExtraContent.right !== undefined ? (
+        this.tabBarExtraContent.right
+      ) : (
+        <AddSubModelButton
+          model={this}
+          subModelKey={'tabs'}
+          items={[
+            {
+              key: 'blank',
+              label: this.context.t('Blank tab'),
+              createModelOptions: this.createPageTabModelOptions,
+            },
+          ]}
+        >
+          <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
+        </AddSubModelButton>
+      );
+
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
+          className={rootClassName}
           activeKey={
             this.context.view?.navigation?.viewParams
               ? this.context.view.navigation.viewParams.tabUid || this.getFirstTab()?.uid
@@ -311,22 +346,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{
-            right: (
-              <AddSubModelButton
-                model={this}
-                subModelKey={'tabs'}
-                items={[
-                  {
-                    key: 'blank',
-                    label: this.context.t('Blank tab'),
-                    createModelOptions: this.createPageTabModelOptions,
-                  },
-                ]}
-              >
-                <FlowSettingsButton icon={<PlusOutlined />}>{this.context.t('Add tab')}</FlowSettingsButton>
-              </AddSubModelButton>
-            ),
-            ...this.tabBarExtraContent,
+            left: leftExtraContent,
+            right: rightExtraContent,
           }}
         />
       </DndProvider>
@@ -406,8 +427,6 @@ PageModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const token = ctx.themeToken;
-        const tabPaddingInline = token?.paddingLG ?? 16;
         ctx.model.setProps('displayTitle', params.displayTitle);
         if (ctx.model.context.closable) {
           ctx.model.setProps('title', ctx.t(params.title, { ns: 'lm-desktop-routes' }));
@@ -423,7 +442,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgContainer)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         } else {
@@ -432,7 +450,6 @@ PageModel.registerFlow({
           });
           ctx.model.setProps('tabBarStyle', {
             backgroundColor: 'var(--colorBgLayout)',
-            paddingInline: tabPaddingInline,
             marginBottom: 0,
           });
         }

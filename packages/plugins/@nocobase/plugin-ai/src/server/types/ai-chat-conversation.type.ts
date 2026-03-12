@@ -62,6 +62,6 @@ export type AIChatContextOptions = {
   userDecisions?: UserDecision[];
   tools?: any[];
   middleware?: any[];
-  getSystemPrompt?: () => Promise<string>;
+  getSystemPrompt?: (userMessages: AIMessageInput[]) => Promise<string>;
   formatMessages?: (messages: AIMessageInput[]) => Promise<any[]>;
 } & AIMessageQuery;

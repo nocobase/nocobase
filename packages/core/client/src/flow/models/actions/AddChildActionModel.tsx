@@ -12,6 +12,8 @@ import type { ButtonProps } from 'antd/es/button';
 import { RecordActionGroupModel, PopupActionModel } from '../base';
 
 export class AddChildActionModel extends PopupActionModel {
+  static capabilityActionName = null;
+
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Add child'),

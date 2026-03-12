@@ -42,4 +42,13 @@ features:
         details: Explore más tutoriales sobre el desarrollo de plugins.
         link: /development
 
+  - title: Soluciones
+    details: Plantillas de soluciones industriales construidas sobre NocoBase.
+    items:
+      - title: Solución de tickets
+        details: Plataforma de tickets inteligente impulsada por IA con acceso multicanal, gestión SLA, base de conocimientos y más.
+        link: /solution/ticket-system/
+      - title: CRM (Vista previa)
+        details: Plataforma de gestión de relaciones con clientes sin código y flexible, que cubre clientes, leads, oportunidades, pedidos y más.
+        link: /solution/crm/
 ---

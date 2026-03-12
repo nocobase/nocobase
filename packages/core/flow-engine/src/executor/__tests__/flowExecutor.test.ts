@@ -288,6 +288,32 @@ describe('FlowExecutor', () => {
     expect(handler).toHaveBeenCalledTimes(2); // 每个 flow 各 1 次，共 2 次
   });
 
+  it("dispatchEvent('beforeRender') keeps aborted flag on end event when cache hits", async () => {
+    const handler = vi.fn().mockImplementation((ctx) => {
+      ctx.exitAll();
+    });
+    const flows = {
+      abortFlow: { steps: { s: { handler } } },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+    const model = createModelWithFlows('m-br-cache-aborted', flows);
+
+    const endEvents: any[] = [];
+    const onEnd = (payload: any) => {
+      endEvents.push(payload);
+    };
+    engine.emitter.on('model:event:beforeRender:end', onEnd);
+
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+
+    engine.emitter.off('model:event:beforeRender:end', onEnd);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(endEvents).toHaveLength(2);
+    expect(endEvents[0]?.aborted).toBe(true);
+    expect(endEvents[1]?.aborted).toBe(true);
+  });
+
   it('dispatchEvent supports sequential execution order and exitAll break', async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number, opts?: { exitAll?: boolean }) => ({

@@ -76,7 +76,7 @@ interface FlowSQLRepository {
 
 | 参数 | 类型 | 说明 |
 |------|------|------|
-| `bind` | `Record<string, any>` \| `any[]` | 绑定变量。对象形式配合 `:name`，数组形式配合 `?` |
+| `bind` | `Record<string, any>` | 绑定变量。SQL 中使用 `$name`，bind 传对象 `{ name: value }` |
 | `type` | `'selectRows'` \| `'selectRow'` \| `'selectVar'` | 结果类型：多行、单行、单值，默认 `selectRows` |
 | `dataSourceKey` | `string` | 数据源标识，默认使用主数据源 |
 | `filter` | `Record<string, any>` | 额外筛选条件（视接口支持） |
@@ -86,7 +86,7 @@ interface FlowSQLRepository {
 | 参数 | 类型 | 说明 |
 |------|------|------|
 | `uid` | `string` | 模板唯一标识，保存后可用 `runById(uid, ...)` 执行 |
-| `sql` | `string` | SQL 内容，支持 `{{ctx.xxx}}` 模板变量和 `:name` / `?` 占位符 |
+| `sql` | `string` | SQL 内容，支持 `{{ctx.xxx}}` 模板变量和 `$name` 占位符 |
 | `dataSourceKey` | `string` | 可选，数据源标识 |
 
 ## SQL 模板变量与参数绑定
@@ -107,20 +107,12 @@ const user = await ctx.sql.run(
 
 ### 参数绑定
 
-- **命名参数**：SQL 中使用 `:name`，`bind` 传对象 `{ name: value }`
-- **位置参数**：SQL 中使用 `?`，`bind` 传数组 `[value1, value2]`
+- **参数**：SQL 中使用 `$name`，`bind` 传对象 `{ name: value }`
 
 ```js
-// 命名参数
 const users = await ctx.sql.run(
-  'SELECT * FROM users WHERE status = :status AND age > :minAge',
+  'SELECT * FROM users WHERE status = $status AND age > $minAge',
   { bind: { status: 'active', minAge: 18 }, type: 'selectRows' }
-);
-
-// 位置参数
-const count = await ctx.sql.run(
-  'SELECT COUNT(*) AS total FROM users WHERE city = ? AND status = ?',
-  { bind: ['Beijing', 'active'], type: 'selectVar' }
 );
 ```
 
@@ -134,7 +126,7 @@ const rows = await ctx.sql.run('SELECT * FROM users LIMIT 10');
 
 // 单行结果
 const user = await ctx.sql.run(
-  'SELECT * FROM users WHERE id = :id',
+  'SELECT * FROM users WHERE id = $id',
   { bind: { id: 1 }, type: 'selectRow' }
 );
 
@@ -162,7 +154,7 @@ const rows = await ctx.sql.run(
 // 保存（需 SQL 配置权限）
 await ctx.sql.save({
   uid: 'active-users-report',
-  sql: 'SELECT * FROM users WHERE status = :status ORDER BY created_at DESC',
+  sql: 'SELECT * FROM users WHERE status = $status ORDER BY created_at DESC',
 });
 
 // 登录用户均可执行
@@ -199,7 +191,7 @@ const meta = ctx.resource.getMeta();  // 含 page、pageSize 等
 
 ## 注意事项
 
-- 使用参数绑定（`:name` / `?`）而非字符串拼接，避免 SQL 注入
+- 使用参数绑定（`$name`）而非字符串拼接，避免 SQL 注入
 - `type: 'selectVar'` 时返回标量值，通常用于 `COUNT`、`SUM` 等
 - 模板变量 `{{ctx.xxx}}` 在执行前解析，确保上下文中已定义对应变量
 

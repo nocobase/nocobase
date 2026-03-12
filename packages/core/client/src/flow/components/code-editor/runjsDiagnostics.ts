@@ -24,6 +24,7 @@ import {
   createSafeNavigator,
   createSafeWindow,
   prepareRunJsCode,
+  shouldPreprocessRunJSTemplates,
 } from '@nocobase/flow-engine';
 
 export type RunJSIssue = {
@@ -55,6 +56,10 @@ export type DiagnoseRunJSResult = {
 export type PreviewRunJSResult = {
   success: boolean;
   message: string;
+};
+
+export type RunJSDiagnosticsOptions = {
+  version?: string;
 };
 
 export const MAX_MESSAGE_CHARS = 4000;
@@ -942,10 +947,16 @@ export function formatRunJSPreviewMessage(result: DiagnoseRunJSResult): string {
   return buildPreviewMessageWithTruncation(result);
 }
 
-export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<DiagnoseRunJSResult> {
+export async function diagnoseRunJS(
+  code: string,
+  ctx: FlowContext,
+  options: RunJSDiagnosticsOptions = {},
+): Promise<DiagnoseRunJSResult> {
   const src = typeof code === 'string' ? code : String(code ?? '');
   const logs: RunJSLog[] = [];
   const issues: RunJSIssue[] = [];
+  const version = options?.version;
+  const preprocessTemplates = shouldPreprocessRunJSTemplates({ version });
 
   // Lint: multi syntax errors (Lezer) + heuristics (acorn)
   issues.push(...collectLezerSyntaxIssues(src));
@@ -974,7 +985,7 @@ export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<Dia
 
     let prepared = src;
     try {
-      prepared = await prepareRunJsCode(src, { preprocessTemplates: true });
+      prepared = await prepareRunJsCode(src, { preprocessTemplates });
     } catch (e) {
       // Compilation/preprocess failure is treated as runtime issue
       const name = String((e as any)?.name || '');
@@ -995,7 +1006,11 @@ export async function diagnoseRunJS(code: string, ctx: FlowContext): Promise<Dia
     // - FlowRunJSContext / specific RunJSContext
     // - deprecation proxy behavior
     // - libs injection (React/antd/etc)
-    const runner: JSRunner = await (ctx as any).createJSRunner({ globals: baseGlobals, timeoutMs: PREVIEW_TIMEOUT_MS });
+    const runner: JSRunner = await (ctx as any).createJSRunner({
+      globals: baseGlobals,
+      timeoutMs: PREVIEW_TIMEOUT_MS,
+      version,
+    });
     // Capture ctx.logger.* into preview logs (and make deprecation warnings visible).
     // NOTE: user code runs with the JSRunner global `ctx` (RunJSContext), not the runtime `ctx` passed in here.
     const runjsCtx = (runner as any).globals.ctx;
@@ -1048,9 +1063,13 @@ function createPreviewFlowContext(ctx: FlowContext): FlowContext {
   return previewCtx;
 }
 
-export async function previewRunJS(code: string, ctx: FlowContext): Promise<PreviewRunJSResult> {
+export async function previewRunJS(
+  code: string,
+  ctx: FlowContext,
+  options: RunJSDiagnosticsOptions = {},
+): Promise<PreviewRunJSResult> {
   const previewCtx = createPreviewFlowContext(ctx);
-  const result = await diagnoseRunJS(code, previewCtx);
+  const result = await diagnoseRunJS(code, previewCtx, options);
   const success = result.issues.length === 0;
   const message = formatRunJSPreviewMessage(result);
   const final = message.length > MAX_MESSAGE_CHARS ? clampText(message, MAX_MESSAGE_CHARS) : message;

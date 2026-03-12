@@ -224,10 +224,12 @@ export class FlowExecutor {
           await this.emitModelEventIf(eventName, `flow:${flowKey}:step:${stepKey}:end`, {
             ...flowEventBasePayload,
             stepKey,
+            aborted: true,
           });
           await this.emitModelEventIf(eventName, `flow:${flowKey}:end`, {
             ...flowEventBasePayload,
             result: error,
+            aborted: true,
           });
           return Promise.resolve(error);
         }
@@ -316,9 +318,9 @@ export class FlowExecutor {
 
     // 记录本次 dispatchEvent 内注册的调度任务，用于在结束/错误后兜底清理未触发的任务
     const scheduledCancels: ScheduledCancel[] = [];
-
-    // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
-    const execute = async () => {
+    // 组装执行函数（返回值用于缓存，包含事件结果与是否被 exitAll 中止）
+    const execute = async (): Promise<{ result: any[]; abortedByExitAll: boolean }> => {
+      let abortedByExitAll = false;
       if (sequential) {
         // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
         const flowsWithIndex = flowsToRun.map((f, i) => ({ f, i }));
@@ -351,7 +353,7 @@ export class FlowExecutor {
             .map((f) => [f.key, f] as const),
         );
         const scheduled = new Set<string>();
-        const scheduleGroups = new Map<string, Array<{ flow: any; order: number }>>();
+        const scheduleGroups = new Map<string, Array<{ flow: any; order: number; shouldSkipOnAborted: boolean }>>();
         ordered.forEach((flow, indexInOrdered) => {
           const on = flow.on;
           const onObj = typeof on === 'object' ? (on as any) : undefined;
@@ -402,9 +404,11 @@ export class FlowExecutor {
           }
 
           if (!whenKey) return;
+          const shouldSkipOnAborted =
+            whenKey === `event:${eventName}:end` || phase === 'afterFlow' || phase === 'afterStep';
           scheduled.add(flow.key);
           const list = scheduleGroups.get(whenKey) || [];
-          list.push({ flow, order: indexInOrdered });
+          list.push({ flow, order: indexInOrdered, shouldSkipOnAborted });
           scheduleGroups.set(whenKey, list);
         });
 
@@ -417,6 +421,14 @@ export class FlowExecutor {
             return a.order - b.order;
           });
           for (const it of sorted) {
+            const when = it.shouldSkipOnAborted
+              ? Object.assign(
+                  (event: { type: string; aborted?: boolean }) => event.type === whenKey && event.aborted !== true,
+                  {
+                    __eventType: whenKey,
+                  },
+                )
+              : (whenKey as any);
             const cancel = model.scheduleModelOperation(
               model.uid,
               async (m) => {
@@ -426,7 +438,7 @@ export class FlowExecutor {
                 }
                 results.push(res);
               },
-              { when: whenKey as any },
+              { when },
             );
             scheduledCancels.push(cancel);
           }
@@ -441,12 +453,14 @@ export class FlowExecutor {
             const result = await this.runFlow(model, flow.key, inputArgs, runId, eventName);
             if (result instanceof FlowExitAllException) {
               logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
+              abortedByExitAll = true;
               break; // 终止后续
             }
             results.push(result);
           } catch (error) {
             if (error instanceof FlowExitAllException) {
               logger.debug(`[FlowEngine.dispatchEvent] ${error.message}`);
+              abortedByExitAll = true;
               break; // 终止后续
             }
             logger.error(
@@ -456,7 +470,7 @@ export class FlowExecutor {
             throw error;
           }
         }
-        return results;
+        return { result: results, abortedByExitAll };
       }
 
       // 并行
@@ -475,7 +489,11 @@ export class FlowExecutor {
           }
         }),
       );
-      return results.filter((x) => x !== undefined);
+      const filteredResults = results.filter((x) => x !== undefined);
+      if (filteredResults.some((x) => x instanceof FlowExitAllException)) {
+        abortedByExitAll = true;
+      }
+      return { result: filteredResults, abortedByExitAll };
     };
 
     // 缓存键：按事件+scope 统一管理（beforeRender 也使用事件名 beforeRender）
@@ -489,7 +507,7 @@ export class FlowExecutor {
       : null;
 
     try {
-      const result = await this.withApplyFlowCache(cacheKey, execute);
+      const { result, abortedByExitAll } = await this.withApplyFlowCache(cacheKey, execute);
       // 事件结束钩子
       try {
         await model.onDispatchEventEnd?.(eventName, options, inputArgs, result);
@@ -499,6 +517,7 @@ export class FlowExecutor {
       await this.emitModelEventIf(eventName, 'end', {
         ...eventBasePayload,
         result,
+        ...(abortedByExitAll ? { aborted: true } : {}),
       });
       return result;
     } catch (error) {

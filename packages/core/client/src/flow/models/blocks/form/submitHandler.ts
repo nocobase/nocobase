@@ -10,13 +10,20 @@
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { EditFormModel } from './EditFormModel';
 import type { FormBlockModel } from './FormBlockModel';
-import { omitHiddenModelValuesFromSubmit } from './submitValues';
+import { getValidationNamePathsExcludingHiddenModels, omitHiddenModelValuesFromSubmit } from './submitValues';
 
 export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
 
-  await blockModel.form.validateFields();
+  const validateNamePaths = ctx?.flowSettingsEnabled ? getValidationNamePathsExcludingHiddenModels(blockModel) : null;
+  if (Array.isArray(validateNamePaths)) {
+    if (validateNamePaths.length) {
+      await blockModel.form.validateFields(validateNamePaths as any);
+    }
+  } else {
+    await blockModel.form.validateFields();
+  }
   const rawValues = blockModel.form.getFieldsValue(true);
   const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
   if (resource instanceof SingleRecordResource) {

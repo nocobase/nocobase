@@ -30,7 +30,7 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
     containerStyle = { flex: 1, minWidth: 0 },
   } = props;
 
-  const current: RunJSValue = isRunJSValue(value) ? normalizeRunJSValue(value) : { code: '', version: 'v1' };
+  const current: RunJSValue = isRunJSValue(value) ? normalizeRunJSValue(value) : { code: '', version: 'v2' };
   const tip = t?.('Use return to output value') ?? 'Use return to output value';
   const placeholderText = `// ${tip}`;
 
@@ -39,6 +39,7 @@ export const RunJSValueEditor: React.FC<RunJSValueEditorProps> = (props) => {
       <CodeEditor
         value={current.code}
         onChange={(code) => onChange?.({ ...current, code })}
+        version={current.version}
         height={height}
         enableLinter
         placeholder={placeholderText}

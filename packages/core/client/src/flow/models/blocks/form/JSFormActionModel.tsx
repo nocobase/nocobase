@@ -57,7 +57,7 @@ JSFormActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: 'v1',
+          version: 'v2',
           code: `
 const values = ctx.form?.getFieldsValue?.() || {};
 ctx.message.success('Current form values: ' + JSON.stringify(values));

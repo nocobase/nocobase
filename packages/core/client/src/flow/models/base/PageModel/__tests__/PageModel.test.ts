@@ -180,6 +180,79 @@ describe('PageModel', () => {
       const tabsElement = result.props.children;
       expect(tabsElement.props.activeKey).toBe('tab-from-props');
     });
+
+    it('should apply tabs root className in flow settings mode', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: true,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(typeof tabsElement.props.className).toBe('string');
+      expect(tabsElement.props.className.length).toBeGreaterThan(0);
+    });
+
+    it('should not apply tabs root className in normal mode', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.className).toBeUndefined();
+    });
+
+    it('should inject default left spacing via tabBarExtraContent', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.left).toBeTruthy();
+    });
+
+    it('should preserve custom left extra content', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+      pageModel.tabBarExtraContent = { left: 'back' } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.left).toBe('back');
+    });
+
+    it('should preserve custom right extra content', () => {
+      // @ts-ignore
+      pageModel.context = {
+        t: (str: string) => str,
+        view: { navigation: null },
+        flowSettingsEnabled: false,
+      } as any;
+      pageModel.tabBarExtraContent = { right: 'custom-right' } as any;
+
+      const result = pageModel.renderTabs() as any;
+      const tabsElement = result.props.children;
+
+      expect(tabsElement.props.tabBarExtraContent.right).toBe('custom-right');
+    });
   });
 
   describe('render header spacing with tabs', () => {
@@ -244,7 +317,7 @@ describe('PageModel', () => {
       listeners['dataSource:dirty']({ dataSourceKey: 'main', resourceNames: ['posts'] });
       await Promise.resolve();
 
-      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive');
+      expect(invokeSpy).toHaveBeenCalledWith('tab1', 'onActive', false);
     });
 
     it('should invoke current tab onActive on mount when view:activated happened before PageModel mounted', () => {

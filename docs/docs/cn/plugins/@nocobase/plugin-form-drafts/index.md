@@ -5,8 +5,8 @@ supportedVersions:
   - 2.x
 description: |
   支持在填写表单时保存草稿，稍后可继续编辑与提交。
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
