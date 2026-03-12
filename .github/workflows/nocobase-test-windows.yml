@@ -56,7 +56,10 @@ jobs:
       - name: Install project dependencies
         run: |
           pnpm install --prefer-offline
-          pnpm add sqlite3 --build-from-source -w
+          # pnpm CLI doesn't support npm's "--build-from-source" flag.
+          # sqlite3 (node-pre-gyp/node-gyp) respects npm_config_build_from_source.
+          $env:npm_config_build_from_source = 'true'
+          pnpm rebuild sqlite3
 
       - name: Test with Sqlite
         run: pnpm test --server --single-thread=false
