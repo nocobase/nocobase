@@ -1,14 +1,17 @@
 {
   "name": "@nocobase/app",
-  "version": "2.1.0-alpha.7",
+  "version": "2.1.0-alpha.8",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "2.1.0-alpha.7",
-    "@nocobase/preset-nocobase": "2.1.0-alpha.7",
-    "@nocobase/server": "2.1.0-alpha.7",
+    "@nocobase/database": "2.1.0-alpha.8",
+    "@nocobase/preset-nocobase": "2.1.0-alpha.8",
+    "@nocobase/server": "2.1.0-alpha.8"
+  },
+  "devDependencies": {
+    "@nocobase/client": "2.1.0-alpha.8",
     "@rspack/core": "1.3.2",
     "@rspack/plugin-react-refresh": "1.6.1",
     "less-loader": "^12.2.0",
@@ -16,9 +19,6 @@
     "process": "^0.11.10",
     "querystring-es3": "^0.2.1",
     "react-refresh": "0.18.0"
-  },
-  "devDependencies": {
-    "@nocobase/client": "2.1.0-alpha.7"
   },
   "repository": {
     "type": "git",
