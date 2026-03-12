@@ -48,10 +48,6 @@ import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 
 export class PluginAIServer extends Plugin {
   declare app: any;
-  declare db: any;
-  declare log: any;
-  declare name: string;
-  declare ai: any;
 
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
