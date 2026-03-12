@@ -21,11 +21,21 @@ module.exports = (cli) => {
     const rawAppPublicPath = process.env.APP_PUBLIC_PATH || '/';
     const appPublicPath = resolvePublicPath(rawAppPublicPath);
     const v2PublicPath = resolveV2PublicPath(rawAppPublicPath);
+    const appPublicPathWithoutTrailingSlash = appPublicPath.replace(/\/$/, '');
+    const v2PublicPathWithoutTrailingSlash = v2PublicPath.replace(/\/$/, '');
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';
     if (appPublicPath !== '/') {
-      otherLocation = `location / {
+      otherLocation = `location = /v2 {
+        return 302 ${v2PublicPath}$is_args$args;
+    }
+
+    location /v2/ {
+        return 302 ${appPublicPathWithoutTrailingSlash}$uri$is_args$args;
+    }
+
+    location / {
         alias ${posix.resolve(process.cwd())}/node_modules/@nocobase/app/dist/client/;
         try_files $uri $uri/ /index.html;
     }`;
@@ -34,6 +44,7 @@ module.exports = (cli) => {
       .replace(/\{\{cwd\}\}/g, posix.resolve(process.cwd()))
       .replace(/\{\{publicPath\}\}/g, appPublicPath)
       .replace(/\{\{v2PublicPath\}\}/g, v2PublicPath)
+      .replace(/\{\{v2PublicPathNoTrailingSlash\}\}/g, v2PublicPathWithoutTrailingSlash)
       .replace(/\{\{apiPort\}\}/g, process.env.APP_PORT)
       .replace(/\{\{otherLocation\}\}/g, otherLocation);
     const targetFile = resolve(process.cwd(), 'storage', 'nocobase.conf');

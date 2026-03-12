@@ -29,7 +29,7 @@ import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-m
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
 import { IPCSocketServer } from './ipc-socket-server';
-import { resolvePublicPath, resolveV2PublicPath } from './utils';
+import { injectRuntimeScript, resolvePublicPath, resolveV2PublicPath, rewriteV2AssetPublicPath } from './utils';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
@@ -286,8 +286,8 @@ export class Gateway extends EventEmitter {
     return !extname(pathname);
   }
 
-  private getV2RuntimeConfigScript() {
-    const runtimeConfig = {
+  private getV2RuntimeConfig() {
+    return {
       __nocobase_public_path__: this.getV2PublicPath(),
       __nocobase_api_base_url__: process.env.API_BASE_URL || process.env.API_BASE_PATH,
       __nocobase_api_client_storage_prefix__: process.env.API_CLIENT_STORAGE_PREFIX,
@@ -298,11 +298,23 @@ export class Gateway extends EventEmitter {
       __esm_cdn_base_url__: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
       __esm_cdn_suffix__: process.env.ESM_CDN_SUFFIX || '',
     };
+  }
 
+  private getV2RuntimeConfigScript() {
+    const runtimeConfig = this.getV2RuntimeConfig();
     const scriptContent = Object.entries(runtimeConfig)
       .map(([key, value]) => `window['${key}'] = ${JSON.stringify(value)};`)
       .join('\n');
+
     return `<script>${scriptContent}</script>`;
+  }
+
+  private getV2AssetPublicPath() {
+    if (process.env.CDN_BASE_URL) {
+      return `${process.env.CDN_BASE_URL.replace(/\/+$/, '')}/v2/`;
+    }
+
+    return this.getV2PublicPath();
   }
 
   private getV2IndexTemplate() {
@@ -329,22 +341,12 @@ export class Gateway extends EventEmitter {
   }
 
   private renderV2IndexHtml() {
-    const html = this.getV2IndexTemplate();
-    if (!html) {
+    const template = this.getV2IndexTemplate();
+    if (!template) {
       return null;
     }
-    const injectScripts = this.getV2RuntimeConfigScript();
-    const moduleScriptMatch = html.match(/<script\b[^>]*type=["']module["'][^>]*>/i);
-
-    if (moduleScriptMatch?.[0]) {
-      return html.replace(moduleScriptMatch[0], `${injectScripts}\n${moduleScriptMatch[0]}`);
-    }
-
-    if (html.includes('</head>')) {
-      return html.replace('</head>', `${injectScripts}\n</head>`);
-    }
-
-    return `${injectScripts}\n${html}`;
+    const html = rewriteV2AssetPublicPath(template, this.getV2AssetPublicPath());
+    return injectRuntimeScript(html, this.getV2RuntimeConfigScript());
   }
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
