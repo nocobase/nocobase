@@ -355,6 +355,32 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(savedUids).toContain('grid-1');
   });
 
+  it('re-syncs delegated assignRules when grid submodel is added after block init', async () => {
+    const model = await setupFormModel();
+    const syncAssignRules = vi.fn();
+    model.formValueRuntime = { syncAssignRules } as any;
+
+    const grid = model.flowEngine.createModel({
+      uid: 'grid-assign-rules-late',
+      use: 'FlowModel',
+      parentId: model.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        formModelSettings: {
+          assignRules: { value: [{ key: 'r1', targetPath: 'status', mode: 'default', value: 'draft' }] },
+        },
+      },
+    });
+
+    model.setSubModel('grid', grid as any);
+    await Promise.resolve();
+
+    expect(syncAssignRules).toHaveBeenCalledWith([
+      { key: 'r1', targetPath: 'status', mode: 'default', value: 'draft' },
+    ]);
+  });
+
   it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
     const model = await setupFormModel();
     // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求
