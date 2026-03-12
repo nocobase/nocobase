@@ -18,7 +18,7 @@ import { resolve } from 'path';
 import { Application } from './application';
 import { getExposeChangelogUrl, getExposeReadmeUrl, InstallOptions } from './plugin-manager';
 import { checkAndGetCompatible, getPluginBasePath } from './plugin-manager/utils';
-import { SkillsLoader, ToolsLoader, AIEmployeeLoader } from '@nocobase/ai';
+import { SkillsLoader, ToolsLoader, AIEmployeeLoader, MCPLoader } from '@nocobase/ai';
 
 export interface PluginInterface {
   beforeLoad?: () => void;
@@ -228,6 +228,14 @@ export abstract class Plugin<O = any> implements PluginInterface {
       log: this.log,
     });
     await toolsLoader.load();
+    const mcpLoader = new MCPLoader(this.ai, {
+      scan: {
+        basePath,
+        pattern: ['mcp/*.ts', 'mcp/*.js', '!mcp/*.d.ts'],
+      },
+      log: this.log,
+    });
+    await mcpLoader.load();
     const skillsLoader = new SkillsLoader(this.ai, {
       scan: { basePath, pattern: ['**/skills/**/SKILLS.md'] },
       log: this.log,
