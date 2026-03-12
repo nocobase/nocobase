@@ -99,4 +99,28 @@ describe('AdminLayout (phase-1 host)', () => {
       expect(model.props.testFlag).toBe('v2');
     });
   });
+
+  it('should expose live engine currentRoute when active page changes', async () => {
+    const engine = new FlowEngine();
+    const model = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
+    });
+    (model as any).onMount();
+
+    model.registerRoutePage('page-1', {
+      active: true,
+      currentRoute: { title: 'Page 1' },
+    });
+    model.registerRoutePage('page-2', {
+      active: true,
+      currentRoute: { title: 'Page 2' },
+    });
+
+    (model as any).activePageUid = 'page-1';
+    expect(engine.context.currentRoute.title).toBe('Page 1');
+
+    (model as any).activePageUid = 'page-2';
+    expect(engine.context.currentRoute.title).toBe('Page 2');
+  });
 });

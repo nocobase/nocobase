@@ -68,9 +68,13 @@ export class AdminLayoutModel extends FlowModel {
     if (!this.routeDisposer) {
       this.flowEngine.context.defineProperty('currentRoute', {
         get: () => this.getCurrentRouteByActivePage(),
+        // 切页后需要立即读取当前激活页面的路由，不能复用首次访问时的缓存值。
+        cache: false,
       });
       this.flowEngine.context.defineProperty('layoutContentElement', {
         get: () => this.layoutContentElement,
+        // 布局容器 ref 会在挂载和卸载时变化，这里必须实时读取。
+        cache: false,
       });
       this.routeDisposer = reaction(
         () => this.flowEngine.context.route,
