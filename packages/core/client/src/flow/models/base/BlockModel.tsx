@@ -93,7 +93,8 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
    * @returns 'auto' | 'manual'
    */
   getDataLoadingMode(): 'auto' | 'manual' {
-    return this.getStepParams('dataLoadingModeSettings')?.mode || 'auto';
+    const flowParams = this.getStepParams('dataLoadingModeSettings');
+    return flowParams?.dataLoadingMode?.mode || 'auto';
   }
 
   static _getScene() {
