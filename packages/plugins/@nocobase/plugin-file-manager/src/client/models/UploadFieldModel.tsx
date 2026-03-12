@@ -13,10 +13,15 @@ import { Upload } from '@formily/antd-v5';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
-import React, { useState, useEffect } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client';
-import { FilePreviewRenderer, getPreviewThumbnailUrl } from '../previewer/filePreviewTypes';
+import { FilePreviewRenderer } from '../previewer/filePreviewTypes';
+import {
+  getUploadFieldPreviewIndex,
+  normalizeUploadFieldFileList,
+  shouldShowUploadActionSlot,
+} from './uploadFieldUtils';
 
 export const CardUpload = (props) => {
   const {
@@ -28,14 +33,16 @@ export const CardUpload = (props) => {
     quickUpload = true,
     showFileName,
   } = props;
-  const [fileList, setFileList] = useState(castArray(value || []));
+  const [fileList, setFileList] = useState(() => normalizeUploadFieldFileList(castArray(value || [])));
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
-  useEffect(() => {
-    setFileList(normalizedFileList(castArray(value || [])));
+  useLayoutEffect(() => {
+    // 在浏览器绘制前完成外部值同步，避免先闪出旧槽位再切换成新布局。
+    setFileList((previousFileList) => normalizeUploadFieldFileList(castArray(value || []), previousFileList));
   }, [value]);
+  const showActionSlot = shouldShowUploadActionSlot(multiple, fileList.length);
 
   const getBase64 = (file): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -45,7 +52,7 @@ export const CardUpload = (props) => {
       reader.onerror = (error) => reject(error);
     });
   const handlePreview = async (file) => {
-    const index = +file.uid;
+    const index = getUploadFieldPreviewIndex(fileList, file);
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
@@ -89,15 +96,6 @@ export const CardUpload = (props) => {
       });
   };
 
-  const normalizedFileList = (data) => {
-    return data.map((file) => {
-      return {
-        ...file,
-        thumbUrl: getPreviewThumbnailUrl(file),
-      };
-    });
-  };
-
   return (
     <FieldContext.Provider
       value={
@@ -118,6 +116,25 @@ export const CardUpload = (props) => {
           .ant-upload-select {
             margin: ${showFileName ? '8px 0px' : '0px'};
           }
+          ${!multiple
+            ? `
+              .ant-upload-list-item-container.ant-upload-animate-inline-appear,
+              .ant-upload-list-item-container.ant-upload-animate-inline-appear-active,
+              .ant-upload-list-item-container.ant-upload-animate-inline-enter,
+              .ant-upload-list-item-container.ant-upload-animate-inline-enter-active {
+                animation: none !important;
+                transition: none !important;
+                transform: none !important;
+                opacity: 1 !important;
+              }
+
+              .ant-upload.ant-upload-animate-inline-leave,
+              .ant-upload.ant-upload-animate-inline-leave-active {
+                animation: none !important;
+                transition: none !important;
+              }
+            `
+            : ''}
         `}
       >
         <Upload
@@ -126,7 +143,8 @@ export const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={(newFileList) => {
-            setFileList(newFileList);
+            // 保留上传组件生成的 uid，避免上传完成后回灌值把同一项渲染成两张不同的卡片。
+            setFileList((previousFileList) => normalizeUploadFieldFileList(newFileList, previousFileList));
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
             if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
               if (props.maxCount === 1) {
@@ -158,7 +176,7 @@ export const CardUpload = (props) => {
             );
           }}
         >
-          {quickUpload && <UploadOutlined style={{ fontSize: 20 }} />}
+          {quickUpload && showActionSlot ? <UploadOutlined style={{ fontSize: 20 }} /> : null}
         </Upload>
 
         {previewImage && (
@@ -173,7 +191,7 @@ export const CardUpload = (props) => {
             onDownload={onDownload}
           />
         )}
-        {allowSelectExistingRecord ? (
+        {allowSelectExistingRecord && showActionSlot ? (
           <div style={{ marginLeft: 5 }}>
             <Upload disabled={disabled} multiple={multiple} listType={'picture-card'} showUploadList={false}>
               <div
