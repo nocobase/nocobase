@@ -8,7 +8,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { normalizeUploadFieldFileList, shouldShowUploadActionSlot } from '../uploadFieldUtils';
+import {
+  getUploadFieldPreviewIndex,
+  normalizeUploadFieldFileList,
+  shouldShowUploadActionSlot,
+} from '../uploadFieldUtils';
 
 describe('shouldShowUploadActionSlot', () => {
   it('单值字段已有文件时应隐藏追加入口', () => {
@@ -70,5 +74,40 @@ describe('normalizeUploadFieldFileList', () => {
 
     expect(firstFileList[0].uid).toBe('id:2');
     expect(secondFileList[0].uid).toBe('id:2');
+  });
+
+  it('应保留上传组件已有的 thumbUrl，避免上传中缩略图被清空', () => {
+    const fileList = normalizeUploadFieldFileList([
+      {
+        id: 3,
+        url: '/files/thumb.png',
+        filename: 'thumb.png',
+        thumbUrl: 'data:image/png;base64,thumb',
+      },
+    ]);
+
+    expect(fileList[0].thumbUrl).toBe('data:image/png;base64,thumb');
+  });
+
+  it('应支持 id 为 0 的文件生成稳定标识', () => {
+    const fileList = normalizeUploadFieldFileList([
+      {
+        id: 0,
+        filename: 'zero.png',
+      },
+    ]);
+
+    expect(fileList[0].uid).toBe('id:0');
+  });
+});
+
+describe('getUploadFieldPreviewIndex', () => {
+  it('应按 uid 查找非数字 uid 的预览索引', () => {
+    const fileList = [
+      { uid: 'id:1', filename: 'first.png' },
+      { uid: 'id:2', filename: 'second.png' },
+    ];
+
+    expect(getUploadFieldPreviewIndex(fileList, { uid: 'id:2' })).toBe(1);
   });
 });

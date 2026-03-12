@@ -17,7 +17,11 @@ import React, { useLayoutEffect, useState } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel, RecordPickerContent } from '@nocobase/client';
 import { FilePreviewRenderer } from '../previewer/filePreviewTypes';
-import { normalizeUploadFieldFileList, shouldShowUploadActionSlot } from './uploadFieldUtils';
+import {
+  getUploadFieldPreviewIndex,
+  normalizeUploadFieldFileList,
+  shouldShowUploadActionSlot,
+} from './uploadFieldUtils';
 
 export const CardUpload = (props) => {
   const {
@@ -48,7 +52,7 @@ export const CardUpload = (props) => {
       reader.onerror = (error) => reject(error);
     });
   const handlePreview = async (file) => {
-    const index = +file.uid;
+    const index = getUploadFieldPreviewIndex(fileList, file);
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }

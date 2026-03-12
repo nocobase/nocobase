@@ -6,6 +6,7 @@ interface UploadFieldFile {
   url?: string;
   filename?: string;
   name?: string;
+  thumbUrl?: string;
   response?: UploadFieldFile;
 }
 
@@ -42,21 +43,25 @@ export const shouldShowUploadActionSlot = (multiple: boolean | undefined, fileCo
  */
 const getUploadFieldFileIdentity = (file: UploadFieldFile, index: number) => {
   const response = file?.response;
+  const id = file?.id ?? response?.id;
+  const url = file?.url ?? response?.url;
+  const filename = file?.filename ?? response?.filename;
+  const name = file?.name ?? response?.name;
 
-  if (file?.id ?? response?.id) {
-    return `id:${String(file?.id ?? response?.id)}`;
+  if (id != null) {
+    return `id:${String(id)}`;
   }
 
-  if (file?.url ?? response?.url) {
-    return `url:${file?.url ?? response?.url}`;
+  if (url != null) {
+    return `url:${url}`;
   }
 
-  if (file?.filename ?? response?.filename) {
-    return `filename:${file?.filename ?? response?.filename}:${index}`;
+  if (filename != null) {
+    return `filename:${filename}:${index}`;
   }
 
-  if (file?.name ?? response?.name) {
-    return `name:${file?.name ?? response?.name}:${index}`;
+  if (name != null) {
+    return `name:${name}:${index}`;
   }
 
   if (file?.uid) {
@@ -90,7 +95,24 @@ export const normalizeUploadFieldFileList = (data: UploadFieldFile[], previousFi
     return {
       ...file,
       uid: file.uid || previousUidMap.get(identity) || identity,
-      thumbUrl: getPreviewThumbnailUrl(file),
+      thumbUrl: file.thumbUrl ?? getPreviewThumbnailUrl(file),
     };
   });
+};
+
+/**
+ * 根据当前文件列表解析预览索引，避免把非数字 uid 强转成 NaN。
+ *
+ * @param fileList 当前文件列表
+ * @param targetFile 当前预览文件
+ * @returns 预览索引
+ * @example
+ * ```typescript
+ * getUploadFieldPreviewIndex([{ uid: 'id:1' }], { uid: 'id:1' });
+ * ```
+ */
+export const getUploadFieldPreviewIndex = (fileList: UploadFieldFile[], targetFile: UploadFieldFile) => {
+  const index = fileList.findIndex((file) => file.uid === targetFile?.uid);
+
+  return index >= 0 ? index : 0;
 };
