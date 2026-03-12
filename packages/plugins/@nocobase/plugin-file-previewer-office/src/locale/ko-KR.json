@@ -1,1 +1,16 @@
-{}
+{
+  "Office File Previewer": "Office 파일 미리보기",
+  "Configuration": "설정",
+  "Preview Type": "미리보기 유형",
+  "Microsoft Online": "Microsoft Online (기본값)",
+  "KKFileView": "KKFileView",
+  "KKFileView URL": "KKFileView URL",
+  "KKFileView server address (e.g., http://localhost:8012)": "KKFileView 서버 주소 (예: http://localhost:8012)",
+  "Open in new window": "새 창에서 열기",
+  "Download": "다운로드",
+  "Close": "닫기",
+  "Save": "저장",
+  "Settings saved successfully": "설정을 성공적으로 저장했습니다",
+  "Failed to save settings": "설정 저장에 실패했습니다",
+  "Select preview type": "미리보기 유형 선택"
+}

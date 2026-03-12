@@ -8,15 +8,35 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import * as collections from './collections';
 
 export class PluginFilePreviewerOfficeServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    // 注册 collections
+    Object.values(collections).forEach((collection: any) => {
+      this.db.collection(collection);
+    });
 
-  async install() {}
+    this.app.acl.allow('filePreviewer', 'list');
+  }
+
+  async install() {
+    // 创建默认配置
+    const repository = this.db.getRepository('filePreviewer');
+    const exists = await repository.findOne();
+    if (!exists) {
+      await repository.create({
+        values: {
+          previewType: 'microsoft',
+          kkFileViewUrl: 'http://localhost:8012',
+        },
+      });
+    }
+  }
 
   async afterEnable() {}
 
