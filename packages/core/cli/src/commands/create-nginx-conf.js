@@ -10,6 +10,7 @@
 const { resolve, posix } = require('path');
 const { Command } = require('commander');
 const { readFileSync, writeFileSync } = require('fs');
+const { resolvePublicPath, resolveV2PublicPath } = require('../util');
 
 /**
  *
@@ -17,8 +18,9 @@ const { readFileSync, writeFileSync } = require('fs');
  */
 module.exports = (cli) => {
   cli.command('create-nginx-conf').action(async (name, options) => {
-    const appPublicPath = process.env.APP_PUBLIC_PATH || '/';
-    const v2PublicPath = `${appPublicPath.replace(/\/$/, '')}/v2/`;
+    const rawAppPublicPath = process.env.APP_PUBLIC_PATH || '/';
+    const appPublicPath = resolvePublicPath(rawAppPublicPath);
+    const v2PublicPath = resolveV2PublicPath(rawAppPublicPath);
     const file = resolve(__dirname, '../../nocobase.conf.tpl');
     const data = readFileSync(file, 'utf-8');
     let otherLocation = '';

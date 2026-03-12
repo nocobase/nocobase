@@ -277,6 +277,32 @@ describe('FlowSettings', () => {
       expect(flowSettings.enabled).toBe(true);
     });
 
+    test('should preload model loaders before enabling flow settings', async () => {
+      const preloadSpy = vi.spyOn(engine, 'preloadModelLoaders').mockResolvedValue({
+        requested: [],
+        loaded: [],
+        failed: [],
+      });
+
+      await flowSettings.enable();
+
+      expect(preloadSpy).toHaveBeenCalledTimes(1);
+      expect(flowSettings.enabled).toBe(true);
+    });
+
+    test('should preload model loaders before force enabling flow settings', async () => {
+      const preloadSpy = vi.spyOn(engine, 'preloadModelLoaders').mockResolvedValue({
+        requested: [],
+        loaded: [],
+        failed: [],
+      });
+
+      await flowSettings.forceEnable();
+
+      expect(preloadSpy).toHaveBeenCalledTimes(1);
+      expect(flowSettings.enabled).toBe(true);
+    });
+
     test('should disable flow settings', async () => {
       await flowSettings.enable();
       expect(flowSettings.enabled).toBe(true);
@@ -292,6 +318,18 @@ describe('FlowSettings', () => {
       expect(flowSettings.enabled).toBe(true);
 
       await flowSettings.disable();
+      await flowSettings.disable();
+      expect(flowSettings.enabled).toBe(false);
+    });
+
+    test('forceDisable should clear force-enabled state and disable flow settings', async () => {
+      await flowSettings.forceEnable();
+      expect(flowSettings.enabled).toBe(true);
+
+      await flowSettings.forceDisable();
+
+      expect(flowSettings.enabled).toBe(false);
+
       await flowSettings.disable();
       expect(flowSettings.enabled).toBe(false);
     });

@@ -493,11 +493,17 @@ export class FlowEngine {
    * });
    */
   public registerModelLoaders(loaders: FlowModelLoaderMap): void {
+    let changed = false;
     for (const [name, entry] of Object.entries(loaders)) {
       if (this._modelLoaders.has(name)) {
         console.warn(`FlowEngine: Model loader with name '${name}' is already registered and will be overwritten.`);
       }
       this._modelLoaders.set(name, entry);
+      changed = true;
+    }
+    if (changed) {
+      this._modelLoadersPreloaded = false;
+      this._modelLoadersPreloadPromise = undefined;
     }
   }
 
@@ -746,7 +752,9 @@ export class FlowEngine {
    * @returns {Promise<EnsureBatchResult>} Batch ensure result
    */
   public async preloadModelLoaders(): Promise<EnsureBatchResult> {
-    if (this._modelLoadersPreloaded) {
+    const unresolved = Array.from(this._modelLoaders.keys()).filter((name) => !this._modelClasses.has(name));
+    if (unresolved.length === 0) {
+      this._modelLoadersPreloaded = true;
       return { requested: [], loaded: [], failed: [] };
     }
     if (this._modelLoadersPreloadPromise) {
@@ -754,9 +762,8 @@ export class FlowEngine {
     }
 
     this._modelLoadersPreloadPromise = (async () => {
-      const unresolved = Array.from(this._modelLoaders.keys()).filter((name) => !this._modelClasses.has(name));
       const result = await this.ensureModels(unresolved);
-      this._modelLoadersPreloaded = true;
+      this._modelLoadersPreloaded = result.failed.length === 0;
       this._modelLoadersPreloadPromise = undefined;
       return result;
     })();

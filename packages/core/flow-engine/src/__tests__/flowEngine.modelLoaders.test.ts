@@ -147,6 +147,22 @@ describe('FlowEngine model loaders', () => {
     expect(childLoader).toHaveBeenCalledTimes(1);
   });
 
+  it('createModelAsync degrades unresolved loader failures to ErrorFlowModel', async () => {
+    const invalidLoader = vi.fn(async () => ({ notAModel: {} }));
+
+    engine.registerModelLoaders({
+      BrokenRootModel: { loader: invalidLoader as any },
+    });
+
+    const model = await engine.createModelAsync({
+      uid: 'broken-root',
+      use: 'BrokenRootModel',
+    });
+
+    expect(model).toBeInstanceOf(ErrorFlowModel);
+    expect(invalidLoader).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps loader resolution idempotent across resolveModelTree and flow settings preload', async () => {
     class RuntimeResolvedModel extends FlowModel {}
     class DesignResolvedModel extends FlowModel {}
@@ -172,6 +188,32 @@ describe('FlowEngine model loaders', () => {
     expect(firstPreload.loaded).not.toContain('RuntimeResolvedModel');
     expect(secondPreload.loaded).toHaveLength(0);
     expect(secondPreload.failed).toHaveLength(0);
+  });
+
+  it('picks up newly registered loaders after preload has already completed', async () => {
+    class FirstModel extends FlowModel {}
+    class SecondModel extends FlowModel {}
+
+    const firstLoader = vi.fn(async () => ({ FirstModel }));
+    const secondLoader = vi.fn(async () => ({ SecondModel }));
+
+    engine.registerModelLoaders({
+      FirstModel: { loader: firstLoader },
+    });
+
+    await engine.preloadModelLoaders();
+    expect(firstLoader).toHaveBeenCalledTimes(1);
+    expect(engine.getModelClass('FirstModel')).toBe(FirstModel);
+
+    engine.registerModelLoaders({
+      SecondModel: { loader: secondLoader },
+    });
+
+    const result = await engine.preloadModelLoaders();
+
+    expect(secondLoader).toHaveBeenCalledTimes(1);
+    expect(result.loaded).toContain('SecondModel');
+    expect(engine.getModelClass('SecondModel')).toBe(SecondModel);
   });
 
   it('degrades unresolved loader failures to ErrorFlowModel instead of crashing runtime creation', async () => {

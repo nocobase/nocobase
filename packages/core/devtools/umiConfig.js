@@ -4,6 +4,7 @@ const packageJson = require('./package.json');
 const fs = require('fs');
 const glob = require('fast-glob');
 const path = require('path');
+const { resolvePublicPath, resolveV2PublicPath } = require('../cli/src/util');
 
 console.log('VERSION: ', packageJson.version);
 
@@ -17,7 +18,8 @@ function getUmiConfig() {
     APP_PUBLIC_PATH,
   } = process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
-  const V2_PUBLIC_PATH = `${(APP_PUBLIC_PATH || '/').replace(/\/$/, '')}/v2/`;
+  const normalizedAppPublicPath = resolvePublicPath(APP_PUBLIC_PATH || '/');
+  const V2_PUBLIC_PATH = resolveV2PublicPath(APP_PUBLIC_PATH || '/');
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
   const LOCAL_STORAGE_BASE_URL = 'storage/uploads/';
   const STATIC_PATH = 'static/';
@@ -28,11 +30,11 @@ function getUmiConfig() {
     }
 
     return {
-      [APP_PUBLIC_PATH + LOCAL_STORAGE_BASE_URL]: {
+      [normalizedAppPublicPath + LOCAL_STORAGE_BASE_URL]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
-      [APP_PUBLIC_PATH + STATIC_PATH]: {
+      [normalizedAppPublicPath + STATIC_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },

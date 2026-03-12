@@ -33,6 +33,7 @@ import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
 import { Duplex } from 'node:stream';
+import { resolvePublicPath, resolveV2PublicPath } from '@nocobase/cli/src/util';
 
 const compress = promisify(compression());
 
@@ -258,10 +259,11 @@ export class Gateway extends EventEmitter {
   }
 
   private getV2PublicPath() {
-    const appPublicPath = process.env.APP_PUBLIC_PATH || '/';
-    const withLeadingSlash = appPublicPath.startsWith('/') ? appPublicPath : `/${appPublicPath}`;
-    const withTrailingSlash = withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
-    return `${withTrailingSlash.replace(/\/$/, '')}/v2/`;
+    return resolveV2PublicPath(process.env.APP_PUBLIC_PATH || '/');
+  }
+
+  private getAppPublicPath() {
+    return resolvePublicPath(process.env.APP_PUBLIC_PATH || '/');
   }
 
   private isV2Request(pathname: string) {
@@ -347,7 +349,8 @@ export class Gateway extends EventEmitter {
 
   async requestHandler(req: IncomingMessage, res: ServerResponse) {
     const { pathname } = parse(req.url);
-    const { PLUGIN_STATICS_PATH, APP_PUBLIC_PATH } = process.env;
+    const { PLUGIN_STATICS_PATH } = process.env;
+    const APP_PUBLIC_PATH = this.getAppPublicPath();
 
     if (pathname.endsWith('/__umi/api/bundle-status')) {
       res.statusCode = 200;

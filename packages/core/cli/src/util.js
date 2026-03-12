@@ -282,11 +282,17 @@ function parseEnv(name) {
   }
 }
 
-function resolveV2PublicPath(appPublicPath = '/') {
+function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
   const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
-  const withTrailingSlash = withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
-  return `${withTrailingSlash.replace(/\/$/, '')}/v2/`;
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+exports.resolvePublicPath = resolvePublicPath;
+
+function resolveV2PublicPath(appPublicPath = '/') {
+  const publicPath = resolvePublicPath(appPublicPath);
+  return `${publicPath.replace(/\/$/, '')}/v2/`;
 }
 
 exports.resolveV2PublicPath = resolveV2PublicPath;
