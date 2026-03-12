@@ -176,6 +176,10 @@ describe('parseFilter', () => {
     };
   };
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test('timezone', async () => {
     await expectParseFilter(
       {
@@ -369,8 +373,6 @@ describe('parseFilter', () => {
         $dateOn: ['2025-05-21 00:00:00', '2025-05-22 23:59:59', '[]', '+08:00'],
       },
     });
-
-    vi.useRealTimers();
   });
 
   test('relative date should support minute unit with includeCurrent', async () => {
@@ -396,7 +398,5 @@ describe('parseFilter', () => {
         $dateOn: ['2025-05-22 14:58:00', '2025-05-22 15:00:59', '[]', '+08:00'],
       },
     });
-
-    vi.useRealTimers();
   });
 });
