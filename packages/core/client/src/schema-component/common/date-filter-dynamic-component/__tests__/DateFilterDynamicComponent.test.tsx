@@ -61,7 +61,7 @@ describe('DateFilterDynamicComponent', () => {
     await waitFor(() => expect(screen.getByTestId('current-value')).toHaveTextContent('"includeCurrent":true'));
 
     await openUnitSelect(container);
-    await userEvent.click(screen.getByText('Quarter'));
+    await userEvent.click(screen.getByText('Calendar Quarter'));
 
     await waitFor(() => expect(screen.getByRole('checkbox', { name: 'Include this quarter' })).toBeInTheDocument());
     expect(screen.getByRole('checkbox', { name: 'Include this quarter' })).toBeChecked();

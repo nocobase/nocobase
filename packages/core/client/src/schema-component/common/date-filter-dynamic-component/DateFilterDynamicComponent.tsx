@@ -237,7 +237,7 @@ export const DateFilterDynamicComponent = (props) => {
               { value: 'minute', label: t('Minute') },
               { value: 'week', label: t('Calendar week') },
               { value: 'month', label: t('Calendar Month') },
-              { value: 'quarter', label: t('Quarter') },
+              { value: 'quarter', label: t('Calendar Quarter') },
               { value: 'year', label: t('Calendar Year') },
             ]}
             popupMatchSelectWidth
