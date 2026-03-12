@@ -85,9 +85,6 @@ const parseString = (() => {
   const regex = /{{(\w|:|[\s-+.,@/()?=*_$])+}}/g;
 
   return (str) => {
-    if (typeof str !== 'string') {
-      return Template(() => str, []);
-    }
     let parameters = [];
     let templateFn = (context) => str;
 
