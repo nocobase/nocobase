@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.15](https://github.com/nocobase/nocobase/compare/v2.0.14...v2.0.15) - 2026-03-12
+
+### 🐛 修复
+
+- **[邮件管理]** 回复和回复全部的收件人调整，修复表格字段添加异常等问题 by @jiannx
+
+- **[迁移管理]** 修复系统表再自定义规则无法选中问题 by @cgyrock
+
 ## [v2.0.14](https://github.com/nocobase/nocobase/compare/v2.0.13...v2.0.14) - 2026-03-11
 
 ### 🚀 优化
