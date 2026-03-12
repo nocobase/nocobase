@@ -121,6 +121,8 @@ const fallbackStringOperators: OperatorMeta[] = [
   { value: '$notEmpty', label: 'is not empty', noValue: true },
 ];
 
+const KEYWORD_OPERATOR_VALUES = new Set(['$in', '$notIn']);
+
 export function mergeExtraMetaTreeWithBase(
   baseMetaTree: MetaTreeNode[] | undefined,
   extraMetaTree?: MetaTreeNode[],
@@ -321,7 +323,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const constantInputRenderer = useMemo(() => {
     const resolved = resolveOperatorComponent(model.context.app, selectedOperator, operatorMetadataList);
-    const shouldUseKeywordComponent = selectedOperator === '$in' || selectedOperator === '$notIn';
+    const shouldUseKeywordComponent = KEYWORD_OPERATOR_VALUES.has(selectedOperator);
     if (!resolved || !shouldUseKeywordComponent) {
       return staticInputRenderer;
     }
@@ -347,6 +349,12 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
           style={{ width: 200, ...(componentProps?.style || {}), ...(rest?.style || {}) }}
         />
       );
+
+      return staticInputRenderer({
+        ...rest,
+        value: Array.isArray(inputValue) ? inputValue.join('\n') : inputValue,
+        onChange,
+      });
     };
   }, [model.context.app, operatorMetadataList, selectedOperator, staticInputRenderer]);
 
@@ -429,12 +437,20 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
 
   const handleOperatorChange = useCallback(
     (operatorValue: string) => {
+      const previousOperator = value.operator;
       value.operator = operatorValue;
       const selectedOperatorMeta = operatorMetadataList.find((o) => o.value === operatorValue);
       if (selectedOperatorMeta?.noValue) {
         value.value = true;
         value.noValue = true;
       } else {
+        if (
+          KEYWORD_OPERATOR_VALUES.has(previousOperator) &&
+          !KEYWORD_OPERATOR_VALUES.has(operatorValue) &&
+          Array.isArray(value.value)
+        ) {
+          value.value = value.value.join('\n');
+        }
         value.noValue = false;
       }
     },

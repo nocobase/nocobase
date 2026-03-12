@@ -167,4 +167,72 @@ describe('LinkageFilterItem', () => {
       expect(value.value).toEqual(['alpha', 'beta']);
     });
   });
+
+  it('normalizes keyword arrays when switching back to a scalar operator', async () => {
+    const value = observable({ path: '', operator: '', value: 'foo\nbar' }) as any;
+    const { model, app } = createModel();
+
+    const MultipleKeywordsInput = ({
+      value: inputValue,
+      onChange,
+    }: {
+      value?: string[];
+      onChange?: (v: string[]) => void;
+    }) => {
+      return (
+        <button
+          type="button"
+          data-testid="keyword-input"
+          data-value={JSON.stringify(inputValue || [])}
+          onClick={() => onChange?.(['alpha', 'beta'])}
+        >
+          keyword-input
+        </button>
+      );
+    };
+    app.addComponents({ MultipleKeywordsInput });
+
+    (globalThis as any).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': 'Input',
+        'x-filter-operators': [
+          {
+            value: '$in',
+            label: 'contains any',
+            selected: true,
+            schema: {
+              'x-component': 'MultipleKeywordsInput',
+              'x-component-props': { fieldInterface: 'input' },
+            },
+          },
+          {
+            value: '$eq',
+            label: 'is',
+            schema: { 'x-component': 'Input' },
+          },
+        ],
+      },
+      paths: ['collection', 'name'],
+      name: 'name',
+      title: 'Name',
+      type: 'string',
+    };
+
+    const view = render(<LinkageFilterItem value={value} model={model} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+    fireEvent.click(await screen.findByTestId('keyword-input'));
+
+    await waitFor(() => {
+      expect(value.value).toEqual(['alpha', 'beta']);
+    });
+
+    fireEvent.mouseDown(view.container.querySelector('.ant-select-selector') as Element);
+    fireEvent.click(await screen.findByText('is'));
+
+    await waitFor(() => {
+      expect(value.operator).toBe('$eq');
+      expect(value.value).toBe('alpha\nbeta');
+    });
+  });
 });
