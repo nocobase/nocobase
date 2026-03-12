@@ -305,10 +305,14 @@ export class AdminLayoutRouteCoordinator {
 
     runtime.routeModel.context.defineProperty('currentRoute', {
       get: () => runtime.meta.currentRoute || {},
+      // 菜单切换后 route meta 会更新，不能缓存旧页面的路由对象。
+      cache: false,
     });
 
     runtime.routeModel.context.defineProperty('refreshDesktopRoutes', {
       get: () => runtime.meta.refreshDesktopRoutes,
+      // refresh 回调来自页面桥接层，切页后也需要读取最新引用。
+      cache: false,
     });
   }
 
