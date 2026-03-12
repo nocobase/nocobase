@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { observable } from '@formily/reactive';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { flowModelRendererSpy } = vi.hoisted(() => {
@@ -23,6 +24,12 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
     ...actual,
     FlowModelRenderer: (props: any) => {
       flowModelRendererSpy(props);
+      React.useEffect(() => {
+        props.model?.onMount?.();
+        return () => {
+          props.model?.onUnmount?.();
+        };
+      }, [props.model]);
       return <div data-testid="flow-model-renderer" />;
     },
   };
@@ -102,11 +109,23 @@ describe('AdminLayout (phase-1 host)', () => {
 
   it('should expose live engine currentRoute when active page changes', async () => {
     const engine = new FlowEngine();
-    const model = engine.createModel<AdminLayoutModel>({
-      uid: 'admin-layout-model',
-      use: AdminLayoutModel,
+    const routeRef = observable.ref({
+      params: { name: 'page-1' },
+      pathname: '/admin/page-1',
     });
-    (model as any).onMount();
+    engine.context.defineProperty('route', {
+      get: () => routeRef.value,
+      cache: false,
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <AdminLayout />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
 
     model.registerRoutePage('page-1', {
       active: true,
@@ -117,10 +136,19 @@ describe('AdminLayout (phase-1 host)', () => {
       currentRoute: { title: 'Page 2' },
     });
 
-    (model as any).activePageUid = 'page-1';
-    expect(engine.context.currentRoute.title).toBe('Page 1');
+    await waitFor(() => {
+      expect(engine.context.currentRoute.title).toBe('Page 1');
+    });
 
-    (model as any).activePageUid = 'page-2';
-    expect(engine.context.currentRoute.title).toBe('Page 2');
+    act(() => {
+      routeRef.value = {
+        params: { name: 'page-2' },
+        pathname: '/admin/page-2',
+      };
+    });
+
+    await waitFor(() => {
+      expect(engine.context.currentRoute.title).toBe('Page 2');
+    });
   });
 });
