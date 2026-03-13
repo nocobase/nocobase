@@ -228,7 +228,7 @@ ImportActionModel.registerFlow({
             if (!result) return null;
             const { successCount, meta } = result;
             if (successCount) {
-              return t('{{successCount}} records have been successfully imported', { successCount }, { ns: NAMESPACE });
+              return t('{{successCount}} records have been successfully imported', { successCount , ns: NAMESPACE });
             }
           };
 
