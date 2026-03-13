@@ -12,13 +12,10 @@
   },
   "devDependencies": {
     "@nocobase/client": "2.1.0-alpha.8",
-    "@rspack/core": "1.3.2",
-    "@rspack/plugin-react-refresh": "1.6.1",
-    "less-loader": "^12.2.0",
-    "path-browserify": "^1.0.1",
-    "process": "^0.11.10",
-    "querystring-es3": "^0.2.1",
-    "react-refresh": "0.18.0"
+    "@rsbuild/core": "1.7.3",
+    "@rsbuild/plugin-less": "^1.6.2",
+    "@rsbuild/plugin-node-polyfill": "1.4.4",
+    "@rsbuild/plugin-react": "1.4.6"
   },
   "repository": {
     "type": "git",

@@ -13,12 +13,12 @@ const { Command } = require('commander');
 const { run, nodeCheck, isPackageValid, buildIndexHtml } = require('../util');
 
 async function buildClientV2() {
-  const configPath = resolve(process.env.APP_PACKAGE_ROOT, 'client-v2/rspack.config.js');
+  const configPath = resolve(process.env.APP_PACKAGE_ROOT, 'client-v2/rsbuild.config.ts');
   if (!existsSync(configPath)) {
     console.log(`client-v2 config not found: ${configPath}`);
     return;
   }
-  await run('rspack', ['build', '--config', configPath], {
+  await run('rsbuild', ['build', '--config', configPath], {
     env: {
       ...process.env,
       APP_ENV: 'production',
