@@ -6,6 +6,7 @@
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
   "description.zh-CN": "在隔离环境中执行一段 JavaScript 代码。",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "1.x",
@@ -26,10 +27,6 @@
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
     "jshint": "^2.13.6",
-    "node-gyp": "^10.2.0"
-  },
-  "resolutions": {
-    "nan": "2.18.0",
     "node-gyp": "^10.2.0"
   },
   "keywords": [

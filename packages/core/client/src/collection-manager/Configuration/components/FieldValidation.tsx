@@ -15,7 +15,7 @@ import { useAntdToken } from 'antd-style';
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FIELDS_VALIDATION_OPTIONS, REQUIRED_RULE_KEY } from '../../constants';
-import { css } from '@nocobase/client';
+import { css } from '../../../index';
 import dayjs from 'dayjs';
 
 interface ValidationRule {

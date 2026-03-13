@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { logger } from '@nocobase/logger';
-import { findAllPlugins, PluginManager } from '@nocobase/server';
+import { findAllPlugins, PluginManager } from '.';
 import { importModule } from '@nocobase/utils';
 
 export async function runPluginStaticImports() {

@@ -9,6 +9,7 @@
   "version": "2.0.16",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/action-export",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-export",
   "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-export",

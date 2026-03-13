@@ -11,6 +11,7 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-manager",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "devDependencies": {
     "@ant-design/icons": "5.x",
     "@formily/antd-v5": "^1.x",

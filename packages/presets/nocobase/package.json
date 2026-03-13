@@ -3,6 +3,7 @@
   "version": "2.0.16",
   "license": "Apache-2.0",
   "main": "./lib/server/index.js",
+  "types": "./lib/server/index.d.ts",
   "dependencies": {
     "@formily/json-schema": "2.x",
     "@nocobase/plugin-acl": "2.0.16",

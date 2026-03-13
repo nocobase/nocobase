@@ -1,6 +1,6 @@
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
-import { SchemaComponent, Plugin, ISchema } from '@nocobase/client';
+import { SchemaComponent, Plugin, ISchema } from '../../../../../index';
 
 const schema: ISchema = {
   type: 'void',

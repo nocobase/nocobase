@@ -83,9 +83,9 @@ export class PluginAIClient extends Plugin {
     });
 
     this.flowEngine.registerModels({
-      AIEmployeeShortcutListModel,
-      AIEmployeeShortcutModel,
-      AIEmployeeButtonModel,
+      AIEmployeeShortcutListModel: AIEmployeeShortcutListModel as any,
+      AIEmployeeShortcutModel: AIEmployeeShortcutModel as any,
+      AIEmployeeButtonModel: AIEmployeeButtonModel as any,
     });
 
     this.addPluginSettings();

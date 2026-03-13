@@ -8,6 +8,7 @@
   "description.zh-CN": "以部门来组织用户，设定上下级关系，绑定角色控制权限，并支持作为变量用于工作流和表达式。",
   "version": "2.0.16",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",

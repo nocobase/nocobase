@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import '@nocobase/client';
+import '../../../../..';
 import { FilterFormItemModel } from '../FilterFormItemModel';
 
 describe('FilterFormItemModel getFilterValue', () => {

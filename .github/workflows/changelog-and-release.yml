@@ -21,11 +21,9 @@ on:
 
 jobs:
   get-plugins:
-    if: ${{ !startsWith(github.ref_name, 'v1.') }}
     uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
     secrets: inherit
   write-changelog-and-release:
-    if: ${{ !startsWith(github.ref_name, 'v1.') }}
     needs: get-plugins
     runs-on: ubuntu-latest
     steps:
@@ -91,7 +89,7 @@ jobs:
         with:
           node-version: 20
       - name: Install dependencies
-        run: yarn install
+        run: pnpm install
       - name: Run script
         shell: bash
         run: |

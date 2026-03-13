@@ -28,14 +28,14 @@ const getCurrentTimezone = () => {
 function getBasename(app: Application) {
   const publicPath = app.getPublicPath();
   const pattern = `^${publicPath}apps/([^/]*)/`;
-  const match = location.pathname.match(new RegExp(pattern));
+  const match = typeof location !== 'undefined' && location.pathname?.match(new RegExp(pattern));
   return match?.[0];
 }
 
 function getBasenameOfNewMultiApp(app: Application) {
   const publicPath = app.getPublicPath();
   const pattern = `^${publicPath}_app/([^/]*)/`;
-  const match = location.pathname.match(new RegExp(pattern));
+  const match = typeof location !== 'undefined' && location.pathname?.match(new RegExp(pattern));
   return match?.[0];
 }
 

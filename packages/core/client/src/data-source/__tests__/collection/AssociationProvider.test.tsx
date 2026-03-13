@@ -18,7 +18,7 @@ import {
   SchemaComponentProvider,
   DataSourceApplicationProvider,
   useParentCollection,
-} from '@nocobase/client';
+} from '../../../index';
 import collections from '../collections.json';
 
 function renderAppOptions(Demo: ComponentType, props: any = {}) {

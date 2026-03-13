@@ -1,6 +1,6 @@
 
 import { App as AntdApp } from 'antd';
-import { ActionProps, ISchema, SchemaComponent, Plugin } from '@nocobase/client';
+import { ActionProps, ISchema, SchemaComponent, Plugin } from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 import React from 'react';
 

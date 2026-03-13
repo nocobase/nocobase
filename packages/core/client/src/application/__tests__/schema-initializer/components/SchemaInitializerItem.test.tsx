@@ -9,7 +9,7 @@
 
 import { screen, userEvent, sleep, act } from '@nocobase/test/client';
 
-import { SchemaInitializerItem } from '@nocobase/client';
+import { SchemaInitializerItem } from '../../../../index';
 import React from 'react';
 import { createAndHover } from './fixtures/createAppAndHover';
 

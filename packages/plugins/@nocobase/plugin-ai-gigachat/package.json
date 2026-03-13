@@ -6,6 +6,7 @@
   "description.zh-CN": "支持接入 GigaChat LLM 服务。",
   "version": "2.0.16",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "2.x"

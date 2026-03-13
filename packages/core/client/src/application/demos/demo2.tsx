@@ -1,6 +1,6 @@
 
 
-import { Application, Plugin, RouterManager, useApp } from '@nocobase/client';
+import { Application, Plugin, RouterManager, useApp } from '../../index';
 import React, { useMemo } from 'react';
 import { Link, Navigate, Outlet, useParams } from 'react-router-dom';
 

@@ -15,6 +15,7 @@
     "inlineSources": true,
     "resolveJsonModule": true,
     "declaration": true,
+    "preserveSymlinks": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
     "baseUrl": "."
@@ -26,6 +27,8 @@
   },
   "include": [".dumi/**/*", ".dumirc.ts", "packages/**/*", "playwright.config.ts", "vitest.config.mts"],
   "exclude": [
+    "node_modules",
+    ".pnpm",
     "packages/**/node_modules",
     "packages/**/dist",
     "packages/**/public",

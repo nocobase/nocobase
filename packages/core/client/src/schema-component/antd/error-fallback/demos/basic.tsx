@@ -1,7 +1,7 @@
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ErrorFallback } from '../ErrorFallback';
-import { Plugin } from '@nocobase/client';
+import { Plugin } from '../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const App = () => {

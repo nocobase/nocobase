@@ -10,7 +10,7 @@
 import React from 'react';
 import { screen, userEvent, sleep, act, render, waitFor } from '@nocobase/test/client';
 
-import { SchemaSettingsItemType, SchemaSettings, Application, useSchemaSettingsRender } from '@nocobase/client';
+import { SchemaSettingsItemType, SchemaSettings, Application, useSchemaSettingsRender } from '../../../../../index';
 
 export async function createAndHover(items: SchemaSettingsItemType[], appOptions: any = {}) {
   const testSettings = new SchemaSettings({

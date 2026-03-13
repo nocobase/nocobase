@@ -9,7 +9,7 @@
 
 import { Application } from '@nocobase/client';
 import { NocoBaseClientPresetPlugin } from '@nocobase/preset-nocobase/client';
-import devDynamicImport from '../.plugins/index';
+import devDynamicImport from '../plugins/index';
 
 export const app = new Application({
   apiClient: {

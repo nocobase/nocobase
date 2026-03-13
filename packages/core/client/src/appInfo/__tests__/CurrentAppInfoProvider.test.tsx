@@ -8,7 +8,7 @@
  */
 
 import { renderHookWithApp, waitFor } from '@nocobase/test/client';
-import { CurrentAppInfoProvider, useCurrentAppInfo } from '@nocobase/client';
+import { CurrentAppInfoProvider, useCurrentAppInfo } from '../../index';
 
 describe('CurrentAppInfoProvider', () => {
   it('should work', async () => {

@@ -9,6 +9,7 @@
   "version": "2.0.16",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/workflow-aggregate",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-aggregate",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-aggregate",

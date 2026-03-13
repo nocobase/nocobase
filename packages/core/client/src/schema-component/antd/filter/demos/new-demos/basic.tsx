@@ -2,10 +2,10 @@
 
 import React from 'react';
 import { useField, observer, ISchema } from '@formily/react';
-import { FilterActionProps, useRequest } from '@nocobase/client';
+import { FilterActionProps, useRequest } from '../../../../../index';
 
 import { mockApp } from '@nocobase/client/demo-utils';
-import { SchemaComponent, Plugin } from '@nocobase/client';
+import { SchemaComponent, Plugin } from '../../../../../index';
 
 import { filterOptions } from './options';
 

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModelRenderer, FlowModelRendererProps } from '@nocobase/flow-engine';
+import { FlowModelRenderer, FlowModelRendererProps } from '../index';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useRef } from 'react';
 

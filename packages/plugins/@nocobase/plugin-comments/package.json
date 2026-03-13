@@ -6,6 +6,7 @@
   "description": "Provides comment collection template and block to add commenting functionality for any collection.",
   "description.zh-CN": "提供评论数据表模板和区块，为任意数据表的数据添加评论功能。",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "license": "Apache-2.0",
   "nocobase": {
     "supportedVersions": [

@@ -7,7 +7,7 @@ import {
   Plugin,
   ExtendCollectionsProvider,
   ISchema
-} from '@nocobase/client';
+} from '../../../../../index';
 import { mockApp } from '@nocobase/client/demo-utils';
 
 const bookCollection = {

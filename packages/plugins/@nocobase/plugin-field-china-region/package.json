@@ -8,6 +8,7 @@
   "description.zh-CN": "提供中国行政区划数据和字段类型。",
   "description.ru-RU": "Предоставляет данные и тип поля для административного деления Китая.",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/china-region",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/china-region",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/china-region",

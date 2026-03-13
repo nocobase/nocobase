@@ -12,7 +12,7 @@ import { ActionModel, ActionSceneEnum, Icon, usePlugin, useRequest } from '@noco
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Upload } from 'antd';
 import { UploadFile } from 'antd/es/upload/interface';
-import { filesize } from 'filesize';
+import filesize from 'filesize';
 import match from 'mime-match';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';

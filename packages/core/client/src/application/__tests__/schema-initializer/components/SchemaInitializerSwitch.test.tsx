@@ -9,7 +9,7 @@
 
 import { screen, userEvent, waitFor } from '@nocobase/test/client';
 
-import { SchemaInitializerSwitch, useCurrentSchema, useSchemaInitializer } from '@nocobase/client';
+import { SchemaInitializerSwitch, useCurrentSchema, useSchemaInitializer } from '../../../../index';
 import { useUpdate } from 'ahooks';
 import React from 'react';
 import { createAndHover } from './fixtures/createAppAndHover';

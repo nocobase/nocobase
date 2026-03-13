@@ -4,7 +4,7 @@
  * title: Password
  */
 import { FormItem } from '@formily/antd-v5';
-import { Password, SchemaComponent, SchemaComponentProvider } from '@nocobase/client';
+import { Password, SchemaComponent, SchemaComponentProvider } from '../../../../index';
 import React from 'react';
 
 const schema = {

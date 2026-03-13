@@ -50,7 +50,11 @@ function loadCompilerOptions(): ts.CompilerOptions {
   const options: ts.CompilerOptions = {
     ...parsedConfig.options,
   };
-  delete options.paths;
+  
+  // Disable paths mapping to force resolution via node_modules (pnpm handles this)
+  options.paths = undefined;
+  options.baseUrl = undefined;
+  
   return options;
 }
 

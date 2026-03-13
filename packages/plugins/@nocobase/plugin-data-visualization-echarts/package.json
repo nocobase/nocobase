@@ -8,6 +8,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization/echarts",
   "version": "2.0.16",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "nocobase": {
     "supportedVersions": [
       "1.x",

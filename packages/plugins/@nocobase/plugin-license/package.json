@@ -2,6 +2,7 @@
   "name": "@nocobase/plugin-license",
   "version": "2.0.16",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "displayName": "License settings",
   "displayName.ru-RU": "Настройки лицензии",
   "displayName.zh-CN": "授权设置",

@@ -6,6 +6,7 @@
   "description": "Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).",
   "description.zh-CN": "用于转换或计算复杂 JSON 对象的值（例如 HTTP 请求节点和 SQL 节点的结果）。",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/workflow-json-query",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-json-query",
   "keywords": [

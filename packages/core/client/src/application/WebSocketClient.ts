@@ -50,7 +50,7 @@ export class WebSocketClient {
   getSubAppName = (app: Application) => {
     const publicPath = app.getPublicPath();
     const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
-    const match = location.pathname.match(new RegExp(pattern));
+    const match = typeof location !== 'undefined' && location.pathname?.match(new RegExp(pattern));
     return match ? match[1] : null;
   };
 
@@ -74,8 +74,9 @@ export class WebSocketClient {
     if (this.options.url) {
       const url = new URL(this.options.url);
       if (url.hostname === 'localhost') {
-        const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-        return `${protocol}://${location.hostname}:${url.port}${wsPath}${queryString}`;
+        const protocol = typeof location !== 'undefined' && location.protocol === 'https:' ? 'wss' : 'ws';
+        const hostname = typeof location !== 'undefined' ? location.hostname : 'localhost';
+        return `${protocol}://${hostname}:${url.port}${wsPath}${queryString}`;
       }
       return `${this.options.url}${queryString}`;
     }
@@ -83,7 +84,9 @@ export class WebSocketClient {
       const url = new URL(apiBaseURL);
       return `${url.protocol === 'https:' ? 'wss' : 'ws'}://${url.host}${wsPath}${queryString}`;
     } catch (error) {
-      return `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}${wsPath}${queryString}`;
+      const protocol = typeof location !== 'undefined' && location.protocol === 'https:' ? 'wss' : 'ws';
+      const host = typeof location !== 'undefined' ? location.host : 'localhost';
+      return `${protocol}://${host}${wsPath}${queryString}`;
     }
   }
 

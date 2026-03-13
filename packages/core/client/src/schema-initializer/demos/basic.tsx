@@ -6,7 +6,7 @@ import {
   Plugin,
   SchemaInitializer,
   useSchemaInitializerRender,
-} from '@nocobase/client';
+} from '../../index';
 import React from 'react';
 
 const myInitializer = new SchemaInitializer({

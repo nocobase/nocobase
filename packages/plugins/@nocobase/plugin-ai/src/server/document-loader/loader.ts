@@ -69,7 +69,7 @@ export class DocumentLoader {
         }
         close(undefined, payload?.documents || []);
       });
-      worker.once('error', (error) => close(error));
+      worker.once('error', (error) => close(error instanceof Error ? error : new Error(String(error))));
       worker.once('exit', (code) => {
         if (!settled && code !== 0) {
           close(new Error(`Document loader worker exited with code ${code}`));

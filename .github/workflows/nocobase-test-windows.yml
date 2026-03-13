@@ -12,7 +12,7 @@ on:
       - develop
     paths:
       - 'package.json'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -25,7 +25,7 @@ on:
   pull_request:
     paths:
       - 'package.json'
-      - '**/yarn.lock'
+      - '**/pnpm-lock.yaml'
       - 'packages/core/acl/**'
       - 'packages/core/actions/**'
       - 'packages/core/database/**'
@@ -43,32 +43,28 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
-      - run: yarn config set network-timeout 600000 -g
-
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
-
-      - uses: actions/cache@v3
-        id: yarn-cache # use this to check for `cache-hit` (`steps.yarn-cache.outputs.cache-hit != 'true'`)
-        with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
+      - run: pnpm config set network-timeout 600000 -g
 
       - name: Install project dependencies
         run: |
-          yarn --prefer-offline
-          yarn add sqlite3 --no-save -W
+          pnpm install --prefer-offline
+          # Ensure sqlite3 is present (tests require it).
+          # pnpm does not support `pnpm add --no-save`, so we install and then restore manifests
+          # to keep sqlite3 optional for non-sqlite environments.
+          pnpm add sqlite3 -w
+          pnpm rebuild sqlite3
+          git restore --worktree --staged package.json pnpm-lock.yaml || true
 
       - name: Test with Sqlite
-        run: yarn test --server --single-thread=false
+        run: pnpm test --server --single-thread=false
         env:
           LOGGER_LEVEL: error
           DB_DIALECT: sqlite

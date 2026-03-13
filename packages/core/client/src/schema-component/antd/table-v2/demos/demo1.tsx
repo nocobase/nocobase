@@ -11,7 +11,7 @@ import {
   SchemaComponentProvider,
   useFormBlockContext,
   useTableBlockContext,
-} from '@nocobase/client';
+} from '../../../../index';
 import { notification } from 'antd';
 import { range } from 'lodash';
 import React from 'react';

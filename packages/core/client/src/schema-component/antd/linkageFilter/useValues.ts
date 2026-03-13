@@ -29,7 +29,7 @@ interface UseValuesReturn {
 }
 
 const findOption = (str, options) => {
-  if (!str) return null;
+  if (typeof str !== 'string') return null;
   const match = str.match(/\{\{\$(.*?)\}\}/);
   if (!match) return null;
 

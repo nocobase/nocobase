@@ -6,6 +6,7 @@
   "description": "Triggers after click a custom action button.",
   "description.zh-CN": "在点击绑定了自定义事件的按钮后触发。适用于对数据行的自定义操作编排。",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/workflow-custom-action-trigger",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-custom-action-trigger",
   "peerDependencies": {

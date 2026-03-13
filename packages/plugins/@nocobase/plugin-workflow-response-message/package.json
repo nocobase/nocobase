@@ -8,6 +8,7 @@
   "description.zh-CN": "用于在表单事件和请求拦截工作流中组装并向客户端显示响应消息。",
   "description.ru-RU": "Используется для формирования сообщения ответа и отображения его клиенту в рабочих процессах обработки событий формы и перехвата запросов.",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/workflow-response-message",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-response-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-response-message",

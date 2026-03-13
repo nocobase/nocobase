@@ -65,7 +65,7 @@ module.exports = (cli) => {
       descJson['resolutions'] = sourceJson['resolutions'];
       const json = deepmerge(descJson, sourceJson);
       await writeJSON(descPath, json, { spaces: 2, encoding: 'utf8' });
-      await run('yarn', ['install']);
+      await run('pnpm', ['install']);
       await downloadPro();
       rmAppDir();
     });

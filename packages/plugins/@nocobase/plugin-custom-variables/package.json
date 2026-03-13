@@ -6,6 +6,7 @@
   "description.zh-CN": "支持新增和使用自定义变量",
   "version": "2.0.16",
   "main": "./dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/custom-variables",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/custom-variables",
   "nocobase": {

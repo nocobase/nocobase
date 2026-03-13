@@ -12,6 +12,7 @@
   "license": "Apache-2.0",
   "version": "2.0.16",
   "main": "dist/server/index.js",
+  "types": "./dist/server/index.d.ts",
   "peerDependencies": {
     "@nocobase/actions": "2.x",
     "@nocobase/client": "2.x",

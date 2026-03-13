@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockSchemaComponentPlugin, TableV2, useTableBlockDecoratorProps } from '@nocobase/client';
+import { BlockSchemaComponentPlugin, TableV2, useTableBlockDecoratorProps } from '../../../../index';
 import { checkSchema, checkSettings, renderSettings, screen, waitFor } from '@nocobase/test/client';
 import { withSchema } from '@nocobase/test/web';
 

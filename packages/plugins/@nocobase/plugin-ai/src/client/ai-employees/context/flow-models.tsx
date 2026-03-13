@@ -34,9 +34,9 @@ const parseFlowModel = async (model: FlowModel) => {
     return {};
   }
   if (model instanceof FormBlockModel) {
-    return toSimplifyForm(model);
+    return toSimplifyForm(model as any);
   } else if (model instanceof CollectionBlockModel) {
-    return await toCollection(model);
+    return await toCollection(model as any);
   } else {
     return await toSimplifyComponentTree(model);
   }
@@ -48,7 +48,7 @@ const toSimplifyForm = (model: FormBlockModel) => {
     fields: [],
   };
   const duplicateFields = new Set();
-  FlowUtils.walkthrough(model, (model) => {
+  FlowUtils.walkthrough(model as any, (model: any) => {
     if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
       const collectionField = model.collectionField;
       result.fields.push({
@@ -69,11 +69,11 @@ const toSimplifyForm = (model: FormBlockModel) => {
 };
 
 const toCollection = async (model: CollectionBlockModel) => {
-  const collection = FlowUtils.getCollection(model);
+  const collection = FlowUtils.getCollection(model as any);
   if (model.resource instanceof MultiRecordResource) {
     return {
       dataScope: {
-        filter: model?.resource?.getFilter(),
+        filter: (model as any)?.resource?.getFilter(),
       },
       collection: {
         ...collection,
@@ -90,7 +90,7 @@ Unless the user explicitly requests it, do not directly output large amounts of 
       collection: {
         ...collection,
       },
-      data: await FlowUtils.getResource(model),
+      data: await FlowUtils.getResource(model as any),
     };
   }
 };
@@ -103,7 +103,7 @@ const toSimplifyComponentTree = async (model: FlowModel) => {
   };
 
   if (model instanceof FormItemModel) {
-    const collectionField = model.collectionField;
+    const collectionField = (model as any).collectionField;
     result.props = {
       readonly: collectionField.readonly,
       name: collectionField.name,
@@ -182,6 +182,6 @@ export const FlowModelsContext: WorkContextOptions = {
     if (!model) {
       return '';
     }
-    return await parseFlowModel(model);
+    return await parseFlowModel(model as any);
   },
 };
