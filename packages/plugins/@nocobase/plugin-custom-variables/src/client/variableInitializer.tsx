@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   ActionContextProvider,
   css,
@@ -30,6 +39,19 @@ function FilterDynamicComponent({ value, onChange, renderSchemaComponent }) {
 
 function defaultFilter() {
   return true;
+}
+
+/**
+ * 返回 body 容器，避免挂到带 transform 的应用容器后被外层配置弹窗遮挡。
+ *
+ * @returns 聚合变量抽屉的挂载节点
+ * @example
+ * ```typescript
+ * getDocumentBody();
+ * ```
+ */
+function getDocumentBody() {
+  return document.body;
 }
 
 const FieldsSelect = observer(
@@ -69,6 +91,7 @@ const getAggregateVariableSchema = (initialValues: any, action: string) => {
         'x-component': 'Action.Drawer',
         'x-component-props': {
           zIndex: 9999,
+          getContainer: getDocumentBody,
         },
         type: 'void',
         title: titleMap[action],
