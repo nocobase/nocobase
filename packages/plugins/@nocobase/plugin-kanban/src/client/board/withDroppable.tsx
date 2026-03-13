@@ -9,13 +9,42 @@
 
 import React from 'react';
 import { Droppable } from 'react-beautiful-dnd';
+import type { DroppableProps } from 'react-beautiful-dnd';
 
-function withDroppable(Component) {
-  const res = function WrapperComponent({ children, ...droppableProps }) {
+type WithDroppableProps = Omit<DroppableProps, 'children'> & {
+  children: React.ReactNode;
+};
+
+function withDroppable(Component: React.ComponentType<any>) {
+  const res = function WrapperComponent({
+    children,
+    ...restProps
+  }: WithDroppableProps & React.HTMLAttributes<HTMLElement>) {
+    const {
+      droppableId,
+      direction,
+      type,
+      isDropDisabled,
+      isCombineEnabled,
+      ignoreContainerClipping,
+      renderClone,
+      getContainerForClone,
+      ...componentProps
+    } = restProps;
+    const droppableProps: Omit<DroppableProps, 'children'> = {
+      droppableId,
+      direction,
+      type,
+      isDropDisabled,
+      isCombineEnabled,
+      ignoreContainerClipping,
+      renderClone,
+      getContainerForClone,
+    };
     return (
       <Droppable {...droppableProps}>
         {(provided) => (
-          <Component ref={provided.innerRef} {...provided.droppableProps}>
+          <Component ref={provided.innerRef} {...componentProps} {...provided.droppableProps}>
             {children}
             {provided.placeholder}
           </Component>
