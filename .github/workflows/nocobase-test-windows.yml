@@ -56,12 +56,12 @@ jobs:
       - name: Install project dependencies
         run: |
           pnpm install --prefer-offline
-          # pnpm CLI doesn't support npm's "--build-from-source" flag.
-          # sqlite3 (node-pre-gyp/node-gyp) respects npm_config_build_from_source.
-          $env:npm_config_build_from_source = 'true'
-          # Ensure sqlite3 is present (tests require it). This may update the lockfile in CI workspace, which is OK.
+          # Ensure sqlite3 is present (tests require it).
+          # pnpm does not support `pnpm add --no-save`, so we install and then restore manifests
+          # to keep sqlite3 optional for non-sqlite environments.
           pnpm add sqlite3 -w
           pnpm rebuild sqlite3
+          git restore --worktree --staged package.json pnpm-lock.yaml || true
 
       - name: Test with Sqlite
         run: pnpm test --server --single-thread=false
