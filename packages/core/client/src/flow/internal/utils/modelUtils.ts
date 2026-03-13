@@ -17,6 +17,12 @@ export interface CollectionLike {
   name?: string;
 }
 
+export const CUSTOM_FIELD_TARGET_PATH_PREFIX = '__custom__';
+
+export function buildCustomFieldTargetPath(customFieldName: string): string {
+  return `${CUSTOM_FIELD_TARGET_PATH_PREFIX}:${customFieldName}`;
+}
+
 export function isToManyAssociationField(field: unknown): boolean {
   if (!field || typeof field !== 'object') return false;
   const f = field as { isAssociationField?: () => boolean; type?: unknown; interface?: unknown };
@@ -48,7 +54,7 @@ function normalizePath(val: unknown): string {
   return typeof val === 'string' ? val.trim() : '';
 }
 
-function getFormItemFieldPathCandidates(model: unknown): string[] {
+export function getFormItemFieldPathCandidates(model: unknown): string[] {
   if (!model || typeof model !== 'object') return [];
   const record = model as Record<string, unknown>;
 
@@ -57,12 +63,20 @@ function getFormItemFieldPathCandidates(model: unknown): string[] {
       ? (record.getStepParams as (flowKey: string, stepKey: string) => unknown)('fieldSettings', 'init')
       : undefined;
   const initObj = init && typeof init === 'object' ? (init as Record<string, unknown>) : undefined;
+  const customSettings =
+    typeof record.getStepParams === 'function'
+      ? (record.getStepParams as (flowKey: string, stepKey: string) => unknown)('formItemSettings', 'fieldSettings')
+      : undefined;
+  const customSettingsObj =
+    customSettings && typeof customSettings === 'object' ? (customSettings as Record<string, unknown>) : undefined;
 
   const rawFieldPath = (initObj?.fieldPath as unknown) ?? record.fieldPath;
   const rawAssocPath = (initObj?.associationPathName as unknown) ?? record.associationPathName;
+  const rawCustomFieldName = customSettingsObj?.name;
 
   const fieldPath = normalizePath(rawFieldPath);
   const assocPath = normalizePath(rawAssocPath);
+  const customFieldName = normalizePath(rawCustomFieldName);
 
   const paths = new Set<string>();
   if (fieldPath) {
@@ -77,8 +91,16 @@ function getFormItemFieldPathCandidates(model: unknown): string[] {
       paths.add(`${assocPath}.${fieldPath}`);
     }
   }
+  if (customFieldName) {
+    paths.add(buildCustomFieldTargetPath(customFieldName));
+  }
 
   return Array.from(paths);
+}
+
+export function getFormItemPreferredFieldPath(model: unknown): string | undefined {
+  const candidates = getFormItemFieldPathCandidates(model);
+  return candidates[0];
 }
 
 function getSubModelItems(model: unknown): unknown[] {

@@ -979,8 +979,16 @@ const HighPerformanceTable = React.memo(
             `
           : undefined;
 
-      return classNames(baseClass, selectionPaddingClass);
-    }, [model.props.dragSort, model.props.dragSortBy]);
+      const tableBodyMinHeightClass = tableScroll?.y
+        ? css`
+            .ant-table-body {
+              min-height: ${tableScroll.y}px;
+            }
+          `
+        : undefined;
+
+      return classNames(baseClass, selectionPaddingClass, tableBodyMinHeightClass);
+    }, [model.props.dragSort, model.props.dragSortBy, tableScroll?.y]);
 
     return (
       <MemoizedTable

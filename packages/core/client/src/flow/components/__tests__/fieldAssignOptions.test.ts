@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { buildCustomFieldTargetPath } from '../../internal/utils/modelUtils';
 import { collectFieldAssignCascaderOptions } from '../fieldAssignOptions';
 
 describe('fieldAssignOptions', () => {
@@ -64,5 +65,33 @@ describe('fieldAssignOptions', () => {
 
     expect(options.some((o: any) => o?.value === 'users' && o?.isLeaf === false)).toBe(true);
     expect(options.some((o: any) => o?.value === 'title' && o?.label === 'Title' && o?.isLeaf === true)).toBe(true);
+  });
+
+  it('includes custom filter fields with stable target path token', () => {
+    const customItemModel = {
+      props: { label: 'Custom age' },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'formItemSettings' && stepKey === 'fieldSettings') {
+          return { name: 'custom_age' };
+        }
+        return {};
+      },
+      subModels: {
+        field: {},
+      },
+    };
+
+    const formBlockModel = {
+      context: { collection: null },
+      subModels: { grid: { subModels: { items: [customItemModel] } } },
+    };
+
+    const t = (s: string) => s;
+    const options = collectFieldAssignCascaderOptions({ formBlockModel, t });
+    const customTargetPath = buildCustomFieldTargetPath('custom_age');
+
+    expect(
+      options.some((o: any) => o?.value === customTargetPath && o?.label === 'Custom age' && o?.isLeaf === true),
+    ).toBe(true);
   });
 });
