@@ -29,34 +29,13 @@ import {
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { obfuscate } from './utils/obfuscationResult';
-import { RawSource } from '@rspack/core/compiled/webpack-sources';
+import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
 
-function rewritePluginClientPublicPath(source: string, packageName: string) {
-  // rspack 升级后，原来替换的方式无法生效了；跟 AI 协作编程了很久终于找到新的匹配方式。虽然不是很优雅，但在 Rspack 快速迭代的环境下，这是解决这个问题最稳定的手段。
-  const publicPathPattern = new RegExp(
-    String.raw`([A-Za-z_$][\w$]*)\.p=([A-Za-z_$][\w$]*)\.replace\(/\^blob:/,""\)\.replace\(/#\.\*\$/,""\)\.replace\(/\\\?\.\*\$/,""\)\.replace\(/\\\/\[\^\\\/\]\+\$/,"\/"\)`,
-  );
-
-  const rewritten = source.replace(
-    publicPathPattern,
-    `$1.p=(function(){var publicPath=window['__webpack_public_path__']||'/';if(publicPath.charAt(publicPath.length-1)!=='/'){publicPath+='/';}return publicPath+'static/plugins/${packageName}/dist/client/';})()`,
-  );
-
-  if (
-    rewritten === source &&
-    source.includes('Automatic publicPath is not supported in this browser') &&
-    source.includes('.u=function')
-  ) {
-    throw new Error(`Failed to rewrite plugin client publicPath for ${packageName}. Please review current Rspack runtime output.`);
-  }
-
-  return rewritten;
-}
 
 const external = [
   // nocobase
@@ -767,33 +746,7 @@ export async function buildPluginClient(
         'process.env.NODE_ENV': JSON.stringify('production'),
         'process.env.NODE_DEBUG': false,
       }),
-      {
-        apply(compiler) {
-          compiler.hooks.compilation.tap('CustomPublicPathPlugin', (compilation) => {
-            // 将原本的 publicPath 替换为动态生成的 publicPath.
-            compilation.hooks.processAssets.tap(
-              {
-                name: 'CustomPublicPathPlugin',
-                stage: rspack.Compilation.PROCESS_ASSETS_STAGE_OPTIMIZE_INLINE,
-              },
-              () => {
-                const asset = compilation.getAsset(outputFileName);
-                if (!asset) {
-                  return;
-                }
-
-                const source = asset.source.source().toString();
-                const rewritten = rewritePluginClientPublicPath(source, packageJson.name);
-                if (rewritten === source) {
-                  return;
-                }
-
-                compilation.updateAsset(outputFileName, new rspack.sources.RawSource(rewritten));
-              },
-            );
-          });
-        },
-      },
+      new AutoInjectPublicPathPlugin(packageJson.name),
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({
         // plugin options
