@@ -39,13 +39,12 @@ AddChildActionModel.registerFlow({
     addChildInit: {
       async handler(ctx, params) {
         ctx.model.onClick = (e) => {
-          ctx.resource.setSourceId(ctx.record.id);
-
           ctx.model.dispatchEvent(
             'click',
             {
               event: e,
               ...ctx.inputArgs,
+              sourceId: ctx.record.id,
               filterByTk: null,
             },
             {
