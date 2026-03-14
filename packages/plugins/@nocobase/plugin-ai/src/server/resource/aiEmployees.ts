@@ -20,14 +20,13 @@ export const list = async (ctx: Context, next: Next) => {
 
   await actions.list(ctx as Context, () => {});
 
-  const locale = ctx.getCurrentLocale();
   let data = ctx.body.rows;
   if (paginate === 'false' || paginate === false) {
     data = ctx.body;
   }
   data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row);
+      builtInManager.setupBuiltInInfo(ctx, row);
     }
   });
 
@@ -83,19 +82,18 @@ export const listByUser = async (ctx: Context, next: Next) => {
     ],
   });
 
-  const locale = ctx.getCurrentLocale();
   rows.forEach((row) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row as unknown as AIEmployee);
+      builtInManager.setupBuiltInInfo(ctx, row as unknown as AIEmployee);
     }
   });
 
   ctx.body = rows.map((row) => {
-    const skillSettings: { skills: { name: string; auto: boolean }[] } = row.skillSettings ?? { skills: [] };
+    const skillSettings: { tools: { name: string; autoCall: boolean }[] } = row.skillSettings ?? { tools: [] };
     for (const tool of tools) {
-      skillSettings.skills.push({
+      skillSettings.tools.push({
         name: tool.definition.name,
-        auto: tool.defaultPermission === 'ALLOW',
+        autoCall: tool.defaultPermission === 'ALLOW',
       });
     }
     return {

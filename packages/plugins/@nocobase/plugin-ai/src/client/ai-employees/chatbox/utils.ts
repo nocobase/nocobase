@@ -8,7 +8,7 @@
  */
 
 import { Application } from '@nocobase/client';
-import { ContextItem, TaskMessage } from '../types';
+import { ContextItem, SkillSettings, TaskMessage } from '../types';
 import PluginAIClient from '../..';
 
 async function replaceVariables(template, variables, localVariables = {}) {
@@ -57,9 +57,7 @@ export const parseTask = async (task: {
   message: TaskMessage;
   webSearch?: boolean;
   model?: any;
-  skillSettings?: {
-    skills?: string[];
-  };
+  skillSettings?: SkillSettings;
 }) => {
   let userMessage: any;
   const { message } = task;

@@ -9,13 +9,19 @@
 
 import { DocumentManager } from './document-manager';
 import { DefaultToolsManager, ToolsManager } from './tools-manager';
+import { DefaultSkillsManager, SkillsManager } from './skills-manager';
+import { AIEmployeeManager, DefaultAIEmployeeManager } from './ai-employee-manager';
 
 export class AIManager {
   documentManager: DocumentManager;
   toolsManager: ToolsManager;
+  skillsManager: SkillsManager;
+  employeeManager: AIEmployeeManager;
 
   constructor(protected readonly app: any) {
     this.documentManager = new DocumentManager();
     this.toolsManager = new DefaultToolsManager();
+    this.skillsManager = new DefaultSkillsManager(() => app.mainDataSource);
+    this.employeeManager = new DefaultAIEmployeeManager(app);
   }
 }
