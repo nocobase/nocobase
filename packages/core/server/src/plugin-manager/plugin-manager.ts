@@ -344,7 +344,7 @@ export class PluginManager {
     const P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
 
     if (!P) {
-      throw new Error(`plugin [${options.name}] load error`);
+      throw new Error(`plugin [${options?.name || 'unknown'}] load error`);
     }
 
     const instance: Plugin = new P(createAppProxy(this.app), options);
