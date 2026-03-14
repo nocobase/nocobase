@@ -10,6 +10,7 @@
 import { Plugin } from '@nocobase/server';
 import { collectMcpToolsFromSwagger } from './mcp-tools';
 import { McpServer } from './mcp-server';
+import { createCrudTool } from './crud-tool';
 
 export class PluginMcpServerServer extends Plugin {
   private mcpServer: McpServer;
@@ -17,7 +18,7 @@ export class PluginMcpServerServer extends Plugin {
     const apiTools = await collectMcpToolsFromSwagger({
       app: this.app,
     });
-    this.ai.mcpToolsManager.registerTools(apiTools);
+    this.ai.mcpToolsManager.registerTools([...apiTools, createCrudTool({ app: this.app })]);
   };
 
   async afterAdd() {}
