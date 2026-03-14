@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { APIClient as APIClientSDK } from '@nocobase/sdk';
+import { APIClient as APIClientSDK, hasHeaderValue } from '@nocobase/sdk';
 import { Result } from 'ahooks/es/useRequest/src/types';
 import { notification } from 'antd';
 import React from 'react';
@@ -119,7 +119,9 @@ export class APIClient extends APIClientSDK {
       config.headers['X-With-ACL-Meta'] = true;
       const headers = this.getHeaders();
       Object.keys(headers).forEach((key) => {
-        config.headers[key] = config.headers[key] || headers[key];
+        if (!hasHeaderValue(config.headers, key)) {
+          config.headers[key] = headers[key];
+        }
       });
       return config;
     });
