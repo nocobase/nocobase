@@ -68,6 +68,7 @@
     "@nocobase/plugin-mock-collections": "2.1.0-alpha.8",
     "@nocobase/plugin-multi-app-manager": "2.1.0-alpha.8",
     "@nocobase/plugin-multi-keyword-filter": "2.1.0-alpha.8",
+    "@nocobase/plugin-mcp-server": "2.1.0-alpha.8",
     "@nocobase/plugin-notification-email": "2.1.0-alpha.8",
     "@nocobase/plugin-notification-in-app-message": "2.1.0-alpha.8",
     "@nocobase/plugin-notification-manager": "2.1.0-alpha.8",
