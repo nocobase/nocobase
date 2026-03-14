@@ -24,6 +24,7 @@ export interface PluginSettingOptions {
    * @default Outlet
    */
   Component?: RouteType['Component'];
+  componentLoader?: RouteType['componentLoader'];
   icon?: string;
   /**
    * sort, the smaller the number, the higher the priority
@@ -109,6 +110,7 @@ export class PluginSettingsManager {
     this.app.router.add(this.getRouteName(name), {
       path: this.getRoutePath(name),
       Component: this.settings[name].Component,
+      componentLoader: this.settings[name].componentLoader,
     });
   }
 

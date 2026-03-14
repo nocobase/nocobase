@@ -40,8 +40,13 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
   routes?: Record<string, RouteType>;
 };
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
+export type ComponentLoaderResult =
+  | { default?: ComponentTypeAndString; Component?: ComponentTypeAndString }
+  | ComponentTypeAndString;
+export type ComponentLoader = () => Promise<ComponentLoaderResult>;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
+  componentLoader?: ComponentLoader;
   skipAuthCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
@@ -65,6 +70,45 @@ export class RouterManager {
     this.options = options;
     this.app = app;
     this.routes = options.routes || {};
+  }
+
+  protected resolveLoadedComponent(moduleOrComponent: ComponentLoaderResult): ComponentTypeAndString | undefined {
+    if (!moduleOrComponent) {
+      return undefined;
+    }
+    if (typeof moduleOrComponent === 'function' || typeof moduleOrComponent === 'string') {
+      return moduleOrComponent;
+    }
+    return moduleOrComponent.default || moduleOrComponent.Component;
+  }
+
+  protected createRouteLazyComponent(componentLoader: ComponentLoader): ComponentType {
+    const LazyComponent = React.lazy(() =>
+      componentLoader().then((moduleOrComponent) => {
+        const loadedComponent = this.resolveLoadedComponent(moduleOrComponent);
+        if (!loadedComponent) {
+          throw new Error('componentLoader must resolve to a React component or component module.');
+        }
+        if (typeof loadedComponent === 'string') {
+          const StringRouteComponent: ComponentType<any> = (props: Record<string, any>) =>
+            this.app.renderComponent(loadedComponent, props);
+          return {
+            default: StringRouteComponent,
+          };
+        }
+        return {
+          default: loadedComponent as ComponentType<any>,
+        };
+      }),
+    );
+
+    return function RouteLazyComponentWrapper(props: Record<string, any>) {
+      return (
+        <React.Suspense fallback={null}>
+          <LazyComponent {...props} />
+        </React.Suspense>
+      );
+    };
   }
 
   /**
@@ -96,9 +140,11 @@ export class RouterManager {
         if (Object.keys(item).length === 1 && item.children) {
           acc.push(...buildRoutesTree(item.children));
         } else {
-          const { Component, element, children, ...reset } = item;
+          const { Component, componentLoader, element, children, ...reset } = item;
           let ele = element;
-          if (Component) {
+          if (componentLoader) {
+            ele = React.createElement(this.createRouteLazyComponent(componentLoader));
+          } else if (Component) {
             if (typeof Component === 'string') {
               ele = this.app.renderComponent(Component);
             } else {

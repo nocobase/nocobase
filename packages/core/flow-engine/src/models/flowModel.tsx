@@ -11,8 +11,6 @@ import { batch, define, observable, observe } from '@formily/reactive';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
-import { openRequiredParamsStepFormDialog as openRequiredParamsStepFormDialogFn } from '../components/settings/wrappers/contextual/StepRequiredSettingsDialog';
-import { openStepSettingsDialog as openStepSettingsDialogFn } from '../components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from '../emitter';
 import { InstanceFlowRegistry } from '../flow-registry/InstanceFlowRegistry';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
@@ -36,7 +34,7 @@ import type {
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
 import { isInheritedFrom, setupRuntimeContextSteps } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
-import { Typography } from 'antd/lib';
+import { Typography } from 'antd';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
 import { buildSubModelItem } from '../components/subModel/utils';
 import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
@@ -87,6 +85,16 @@ type ExtraMenuItemEntry = {
 };
 
 const classMenuExtensions = new WeakMap<typeof FlowModel, Set<ExtraMenuItemEntry>>();
+
+async function loadOpenStepSettingsDialog() {
+  const mod = await import('../components/settings/wrappers/contextual/StepSettingsDialog');
+  return mod.openStepSettingsDialog;
+}
+
+async function loadOpenRequiredParamsStepFormDialog() {
+  const mod = await import('../components/settings/wrappers/contextual/StepRequiredSettingsDialog');
+  return mod.openRequiredParamsStepFormDialog;
+}
 
 export enum ModelRenderMode {
   ReactElement = 'reactElement',
@@ -1369,7 +1377,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @param {string} stepKey 步骤的唯一标识符
    * @returns {void}
    */
-  openStepSettingsDialog(flowKey: string, stepKey: string) {
+  async openStepSettingsDialog(flowKey: string, stepKey: string) {
     // 创建流程运行时上下文
     const flow = this.getFlow(flowKey);
     const step = flow?.steps?.[stepKey];
@@ -1383,7 +1391,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     setupRuntimeContextSteps(ctx, flow.steps, this, flowKey);
     ctx.defineProperty('currentStep', { value: step });
 
-    return openStepSettingsDialogFn({
+    const openStepSettingsDialog = await loadOpenStepSettingsDialog();
+
+    return openStepSettingsDialog({
       model: this,
       flowKey,
       stepKey,
@@ -1399,7 +1409,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {Promise<any>} 返回表单提交的值
    */
   async configureRequiredSteps(dialogWidth?: number | string, dialogTitle?: string) {
-    return openRequiredParamsStepFormDialogFn({
+    const openRequiredParamsStepFormDialog = await loadOpenRequiredParamsStepFormDialog();
+
+    return openRequiredParamsStepFormDialog({
       model: this,
       dialogWidth,
       dialogTitle,

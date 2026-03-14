@@ -35,6 +35,7 @@ import {
 import { FlowExitAllException } from './utils/exceptions';
 import { FlowStepContext } from './hooks/useFlowStep';
 import { GLOBAL_EMBED_CONTAINER_ID, EMBED_REPLACING_DATA_KEY } from './views';
+import { lazy } from './lazy-helper';
 
 const Panel = Collapse.Panel;
 
@@ -114,16 +115,23 @@ export interface FlowSettingsOpenOptions {
   onSaved?: () => void | Promise<void>;
 }
 
+export type FlowSettingsComponent = React.ComponentType<any>;
+export type FlowSettingsComponentModule = { default?: FlowSettingsComponent } | Record<string, FlowSettingsComponent>;
+export type FlowSettingsComponentLoader = () => Promise<FlowSettingsComponentModule | FlowSettingsComponent>;
+export type FlowSettingsComponentLoaderMap = Record<string, FlowSettingsComponentLoader>;
+
 export class FlowSettings {
   public components: Record<string, any> = {};
   public scopes: Record<string, any> = {};
   private antdComponentsLoaded = false;
   public enabled: boolean;
+  private engine: FlowEngine;
   #forceEnabled = false; // 强制启用状态，主要用于设计模式下的强制启用
   public toolbarItems: ToolbarItemConfig[] = [];
   #emitter: Emitter = new Emitter();
 
   constructor(engine: FlowEngine) {
+    this.engine = engine;
     // 初始默认为 false，由 SchemaComponentProvider 根据实际设计模式状态同步设置
     this.enabled = false;
     engine.context.defineProperty('flowSettingsEnabled', {
@@ -291,6 +299,30 @@ export class FlowSettings {
     });
   }
 
+  public registerComponentLoaders(loaders: FlowSettingsComponentLoaderMap): void {
+    Object.entries(loaders).forEach(([name, loader]) => {
+      if (this.components[name]) {
+        console.warn(`FlowSettings: Component with name '${name}' is already registered and will be overwritten.`);
+      }
+      this.components[name] = lazy(async () => {
+        const loaded = await loader();
+        if (typeof loaded === 'function') {
+          return { default: loaded };
+        }
+        if (loaded?.default && typeof loaded.default === 'function') {
+          return { default: loaded.default };
+        }
+        const namedComponent = loaded?.[name];
+        if (typeof namedComponent === 'function') {
+          return { default: namedComponent };
+        }
+        throw new Error(
+          `FlowSettings: component loader for '${name}' must resolve to a React component or a module exporting it.`,
+        );
+      });
+    });
+  }
+
   /**
    * 添加作用域到 FlowSettings 的作用域注册表中。
    * 这些作用域可以在 flow step 的 uiSchema 中使用。
@@ -311,13 +343,15 @@ export class FlowSettings {
   /**
    * 启用流程设置组件的显示
    * @example
-   * flowSettings.enable();
+   * await flowSettings.enable();
    */
-  public enable(): void {
+  public async enable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.enabled = true;
   }
 
-  public forceEnable() {
+  public async forceEnable(): Promise<void> {
+    await this.engine.preloadModelLoaders();
     this.#forceEnabled = true;
     this.enabled = true;
   }
@@ -325,16 +359,16 @@ export class FlowSettings {
   /**
    * 禁用流程设置组件的显示
    * @example
-   * flowSettings.disable();
+   * await flowSettings.disable();
    */
-  public disable(): void {
+  public async disable(): Promise<void> {
     if (this.#forceEnabled) {
       return;
     }
     this.enabled = false;
   }
 
-  public forceDisable() {
+  public async forceDisable(): Promise<void> {
     this.#forceEnabled = false;
     this.enabled = false;
   }
