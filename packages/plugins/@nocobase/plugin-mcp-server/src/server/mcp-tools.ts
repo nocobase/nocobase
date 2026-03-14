@@ -174,7 +174,6 @@ export async function collectMcpToolsFromSwagger(options: {
   const mcpTools = (await getToolsFromOpenApi(swagger)) as McpToolDefinitionWithBaseUrl[];
 
   return mcpTools.map((tool) => {
-    console.log(tool.name);
     return {
       name: tool.name,
       description: tool.description,
