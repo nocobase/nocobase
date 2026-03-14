@@ -818,7 +818,6 @@ const InternalNocoBaseTable = React.memo(
         className={cx(
           css`
             height: 100%;
-            overflow: hidden;
             .ant-table-wrapper {
               height: 100%;
               .ant-spin-nested-loading {
@@ -848,10 +847,6 @@ const InternalNocoBaseTable = React.memo(
                 }
               }
             }
-            .ant-table {
-              overflow-x: auto;
-              overflow-y: hidden;
-            }
           `,
           'nb-table-container',
         )}
@@ -872,6 +867,7 @@ const InternalNocoBaseTable = React.memo(
             scroll={scroll}
             columns={columns}
             expandable={expandable}
+            sticky={{ offsetHeader: 0, offsetScroll: 0 }}
           />
         </SortableWrapper>
         {field.errors.length > 0 && (
