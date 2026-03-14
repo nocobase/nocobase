@@ -29,8 +29,10 @@ import {
 } from '@nocobase/flow-engine';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
 import {
+  CUSTOM_FIELD_TARGET_PATH_PREFIX,
   findFormItemModelByFieldPath,
   getCollectionFromModel,
+  getFormItemPreferredFieldPath,
   isToManyAssociationField,
 } from '../internal/utils/modelUtils';
 import { RunJSValueEditor } from './RunJSValueEditor';
@@ -454,6 +456,31 @@ export function mergeItemMetaTreeForAssignValue(baseTree: MetaTreeNode[], extraT
   return out;
 }
 
+export function resolveAssignValueFieldPath(itemModel: any): string | undefined {
+  if (!itemModel) return undefined;
+  const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
+  return init?.fieldPath || getFormItemPreferredFieldPath(itemModel);
+}
+
+export function resolveAssignValueFieldModelUse(options: {
+  itemModel: any;
+  fieldModelUse?: string;
+  preferFormItemFieldModel?: boolean;
+}): string | undefined {
+  const { itemModel, fieldModelUse, preferFormItemFieldModel } = options;
+  if (!itemModel) return fieldModelUse;
+
+  const subField = itemModel?.subModels?.field;
+  const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
+  const customFieldSettings = itemModel?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
+  const customFieldModelUse = customFieldSettings?.fieldModel || itemModel?.customFieldModelInstance?.use;
+
+  if (preferFormItemFieldModel) {
+    return subFieldUse || customFieldModelUse || fieldModelUse;
+  }
+  return fieldModelUse || subFieldUse || customFieldModelUse;
+}
+
 /**
  * 根据所选字段渲染对应的赋值编辑器：
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
@@ -525,20 +552,31 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   const resolved = React.useMemo<ResolvedFieldContext>(() => {
     // 1) 来自表单配置的字段：直接使用 itemModel 上下文
     if (itemModel) {
+      const itemModelAny = itemModel as any;
       const ctx = itemModel.context;
       const { collection: ctxCollection, dataSource: ctxDataSource, blockModel } = ctx;
       const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
       const dataSourceManager = itemModel?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
+      const rootCollectionFallback = getCollectionFromModel(flowCtx.model);
       const collection =
         ctxCollection ||
         (init?.dataSourceKey && init?.collectionName
           ? dataSourceManager?.getCollection?.(init.dataSourceKey, init.collectionName)
-          : undefined);
+          : undefined) ||
+        rootCollectionFallback;
       const dataSource =
-        ctxDataSource || (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined);
-      const fieldPath: string | undefined = init?.fieldPath;
+        ctxDataSource ||
+        (init?.dataSourceKey ? dataSourceManager?.getDataSource?.(init.dataSourceKey) : undefined) ||
+        (collection?.dataSourceKey ? dataSourceManager?.getDataSource?.(collection.dataSourceKey) : undefined);
+      const fieldPath = resolveAssignValueFieldPath(itemModel);
       const fieldName = fieldPath?.split('.').slice(-1)[0];
-      const cf = fieldName ? (collection?.getField?.(fieldName) as CollectionField | undefined) : undefined;
+      const collectionFieldFromModel = fieldName
+        ? (collection?.getField?.(fieldName) as CollectionField | undefined)
+        : undefined;
+      const customCollectionField = itemModelAny?.customFieldModelInstance?.context?.collectionField as
+        | CollectionField
+        | undefined;
+      const cf = collectionFieldFromModel || customCollectionField;
       return {
         itemModel,
         collection: collection || null,
@@ -710,44 +748,75 @@ export const FieldAssignValueInput: React.FC<Props> = ({
   // 生成临时根模型 + 子字段模型
   const [tempRoot, setTempRoot] = React.useState<any>(null);
   React.useEffect(() => {
-    if (!collection || !fieldPath || !fieldName) return;
+    if (!fieldPath || !fieldName) return;
+    const itemModelAny = itemModel as any;
     const engine = resolved?.itemModel?.context?.engine || (flowCtx as any).model?.context?.engine;
+    if (!engine) return;
+    const dataSourceManager = itemModelAny?.context?.dataSourceManager || flowCtx.model?.context?.dataSourceManager;
+    const effectiveCollection =
+      collection || getCollectionFromModel(itemModelAny) || getCollectionFromModel(flowCtx.model);
+    const originFieldModel = itemModelAny?.customFieldModelInstance || itemModelAny?.subModels?.field;
+    const originCollectionField = (originFieldModel as any)?.context?.collectionField as CollectionField | undefined;
+    const effectiveCollectionField = (cf as CollectionField | null) || originCollectionField || undefined;
+    const effectiveDataSource =
+      dataSource ||
+      (effectiveCollection?.dataSourceKey
+        ? dataSourceManager?.getDataSource?.(effectiveCollection.dataSourceKey)
+        : null);
+    const originProps = ((originFieldModel as any)?.props || {}) as Record<string, any>;
+    const { value: _originValue, defaultValue: _originDefaultValue, ...originPropsWithoutValue } = originProps;
 
-    const fields = typeof collection.getFields === 'function' ? collection.getFields() || [] : [];
+    const fields = typeof effectiveCollection?.getFields === 'function' ? effectiveCollection.getFields() || [] : [];
     const f =
       fields.find((x: any) => x?.name === fieldName) ||
-      (typeof collection.getField === 'function' ? (collection.getField(fieldName) as any) : undefined) ||
-      cf;
+      (typeof effectiveCollection?.getField === 'function'
+        ? (effectiveCollection.getField(fieldName) as any)
+        : undefined) ||
+      effectiveCollectionField;
 
     const binding = f
       ? EditableItemModel.getDefaultBindingByField(resolved?.itemModel?.context || flowCtx.model?.context, f)
       : null;
     const fieldModelUse: string | undefined = binding?.modelName;
-
-    const subField = itemModel?.subModels?.field;
-    const subFieldUse = subField && !Array.isArray(subField) ? subField.use : undefined;
-    const effectiveFieldModelUse: string | undefined = preferFormItemFieldModel
-      ? subFieldUse || fieldModelUse
-      : fieldModelUse || subFieldUse;
+    const effectiveFieldModelUse = resolveAssignValueFieldModelUse({
+      itemModel,
+      fieldModelUse,
+      preferFormItemFieldModel,
+    });
     if (!effectiveFieldModelUse) return;
+
+    const customFieldSettings = itemModelAny?.getStepParams?.('formItemSettings', 'fieldSettings') || {};
+    const customFieldProps = itemModelAny?.customFieldProps || customFieldSettings?.fieldModelProps || {};
+    const customFieldName = typeof customFieldSettings?.name === 'string' ? customFieldSettings.name : undefined;
+    const normalizedFieldPath = fieldPath.startsWith(`${CUSTOM_FIELD_TARGET_PATH_PREFIX}:`)
+      ? customFieldName || fieldName
+      : fieldPath;
+    const tempFieldStepParams: Record<string, any> = {
+      ...(((originFieldModel as any)?.stepParams as Record<string, any>) || {}),
+    };
+    if (effectiveCollection?.name && normalizedFieldPath) {
+      tempFieldStepParams.fieldSettings = {
+        ...(tempFieldStepParams.fieldSettings || {}),
+        init: {
+          ...(tempFieldStepParams.fieldSettings?.init || {}),
+          dataSourceKey: effectiveCollection?.dataSourceKey,
+          collectionName: effectiveCollection?.name,
+          fieldPath: normalizedFieldPath,
+        },
+      };
+    }
 
     const created = engine?.createModel?.({
       use: 'VariableFieldFormModel',
       subModels: {
         fields: [
           {
-            use: effectiveFieldModelUse,
-            stepParams: {
-              fieldSettings: {
-                init: {
-                  dataSourceKey: collection?.dataSourceKey,
-                  collectionName: collection?.name,
-                  fieldPath,
-                },
-              },
-            },
+            use: (originFieldModel as any)?.use || effectiveFieldModelUse,
+            stepParams: tempFieldStepParams,
             props: {
               placeholder,
+              ...originPropsWithoutValue,
+              ...customFieldProps,
             },
           },
         ],
@@ -756,9 +825,10 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!created) return;
 
     // 注入上下文（集合/数据源/字段/区块/资源）
-    created.context?.defineProperty?.('collection', { value: collection });
-    if (dataSource) created.context?.defineProperty?.('dataSource', { value: dataSource });
-    if (cf) created.context?.defineProperty?.('collectionField', { value: cf });
+    if (effectiveCollection) created.context?.defineProperty?.('collection', { value: effectiveCollection });
+    if (effectiveDataSource) created.context?.defineProperty?.('dataSource', { value: effectiveDataSource });
+    if (effectiveCollectionField)
+      created.context?.defineProperty?.('collectionField', { value: effectiveCollectionField });
     if (blockModel) created.context?.defineProperty?.('blockModel', { value: blockModel });
     if (created.context) {
       Object.defineProperty(created.context, 'resource', {
@@ -770,7 +840,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({
 
     // 字段模型基础属性设定
     const fm = created?.subModels?.fields?.[0];
-    const multiple = isToManyAssociationField(cf);
+    const multiple = isToManyAssociationField(effectiveCollectionField);
     const nextStyle = withFullWidthStyle(pickStyle((fm as any)?.props?.style));
     const overrideLabel =
       typeof associationFieldNamesOverride?.label === 'string' && associationFieldNamesOverride.label
@@ -789,13 +859,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     });
     fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
     // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
-    ensureOptionsFromUiSchemaEnumIfAbsent(fm, cf);
+    ensureOptionsFromUiSchemaEnumIfAbsent(fm, effectiveCollectionField);
     // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
     // 仅当未显式传入 mode 时设置，避免覆盖外部自定义
     const modePropExists = typeof (fm as any)?.props?.mode !== 'undefined';
-    const modeFromSchema = (cf?.uiSchema as any)?.['x-component-props']?.mode;
+    const modeFromSchema = (effectiveCollectionField?.uiSchema as any)?.['x-component-props']?.mode;
     const nextMode =
-      cf?.interface === 'multipleSelect'
+      effectiveCollectionField?.interface === 'multipleSelect'
         ? typeof modeFromSchema === 'string'
           ? modeFromSchema
           : 'multiple'
@@ -805,13 +875,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({
     if (!modePropExists && nextMode) {
       fm?.setProps?.({ mode: nextMode });
     }
-    if (cf?.targetCollection) {
-      const targetCol = cf.targetCollection;
+    if (effectiveCollectionField?.targetCollection) {
+      const targetCol = effectiveCollectionField.targetCollection;
       const prevFieldNames = (fm?.props?.fieldNames as { label?: unknown; value?: unknown } | undefined) || {};
       const valueKey =
         (typeof associationFieldNamesOverride?.value === 'string' && associationFieldNamesOverride.value) ||
         (typeof prevFieldNames?.value === 'string' && prevFieldNames.value) ||
-        cf?.targetKey ||
+        effectiveCollectionField?.targetKey ||
         targetCol?.filterTargetKey ||
         'id';
       const inheritedLabel =

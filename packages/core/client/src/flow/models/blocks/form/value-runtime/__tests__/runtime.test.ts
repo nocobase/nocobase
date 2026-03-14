@@ -653,6 +653,68 @@ describe('FormValueRuntime (form assign rules)', () => {
     expect(formStub.getFieldValue(['a'])).toBeUndefined();
   });
 
+  it('syncs UI props for mode=default form assignment on configured fields', async () => {
+    const engineEmitter = new EventEmitter();
+    const blockEmitter = new EventEmitter();
+    const formStub = createFormStub();
+
+    const blockModel: any = {
+      uid: 'form-assign-default-ui-sync',
+      flowEngine: { emitter: engineEmitter },
+      emitter: blockEmitter,
+      dispatchEvent: vi.fn(),
+      getAclActionName: () => 'create',
+    };
+
+    const runtime = new FormValueRuntime({ model: blockModel, getForm: () => formStub as any });
+    runtime.mount({ sync: true });
+
+    const blockCtx = createFieldContext(runtime);
+    blockModel.context = blockCtx;
+
+    const fieldCtx = createFieldContext(runtime);
+    fieldCtx.defineProperty('blockModel', { value: blockModel });
+    fieldCtx.defineProperty('fieldPathArray', { value: ['color'] });
+
+    const colorFieldModel: any = {
+      setProps: vi.fn(),
+    };
+
+    const formItemModel: any = {
+      uid: 'form-item-color-default-ui-sync',
+      context: fieldCtx,
+      subModels: { field: colorFieldModel },
+      getStepParams: (flowKey: string, stepKey: string) => {
+        if (flowKey === 'fieldSettings' && stepKey === 'init') {
+          return { fieldPath: 'color' };
+        }
+        return undefined;
+      },
+      setProps: vi.fn(),
+    };
+    fieldCtx.defineProperty('model', { value: formItemModel });
+
+    blockCtx.defineProperty('engine', {
+      value: {
+        forEachModel: (visit: (model: any) => void) => visit(formItemModel),
+      },
+    });
+
+    runtime.syncAssignRules([
+      {
+        key: 'color-default',
+        enable: true,
+        targetPath: 'color',
+        mode: 'default',
+        condition: { logic: '$and', items: [] },
+        value: '#1677FF',
+      },
+    ]);
+
+    await waitFor(() => expect(formStub.getFieldValue(['color'])).toBe('#1677FF'));
+    expect(colorFieldModel.setProps).toHaveBeenCalledWith({ value: '#1677FF' });
+  });
+
   it('linkage assignment takes precedence over mode=assign form assignment', async () => {
     const engineEmitter = new EventEmitter();
     const blockEmitter = new EventEmitter();
