@@ -49,6 +49,7 @@ export default defineConfig({
       '@apidevtools/swagger-methods',
       '@jsdevtools/ono',
       'call-me-maybe',
+      'fast-uri',
     ];
     for (const packageName of packagesToCopy) {
       const source = getPackageRoot(packageName);
