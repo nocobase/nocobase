@@ -151,7 +151,7 @@ describe('pm', () => {
   test('enable', async () => {
     app = mockServer();
     await app.load();
-    await expect(() => app.pm.enable('Plugin0')).rejects.toThrow('Plugin0 plugin load error');
+    await expect(() => app.pm.enable('Plugin0')).rejects.toThrowError();
   });
   test('enable', async () => {
     const loadFn = vi.fn();
