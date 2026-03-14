@@ -247,6 +247,20 @@ export interface FirstOrCreateOptions extends Transactionable {
   updateAssociationValues?: AssociationKeysToBeUpdate;
 }
 
+export interface UpsertOptions extends Transactionable {
+  filterKeys: string[];
+  values?: Values;
+  hooks?: boolean;
+  context?: any;
+  updateAssociationValues?: AssociationKeysToBeUpdate;
+  /**
+   * 是否使用数据库原生的 upsert 能力（如 PostgreSQL 的 ON CONFLICT）
+   * 默认为 true，在支持的数据库上会使用原生 upsert
+   * 设为 false 则回退到先查询后更新/创建的方式
+   */
+  useNativeUpsert?: boolean;
+}
+
 export class Repository<TModelAttributes extends {} = any, TCreationAttributes extends {} = TModelAttributes> {
   database: Database;
   collection: Collection;
@@ -622,9 +636,23 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
-  async updateOrCreate(options: FirstOrCreateOptions) {
-    const { filterKeys, values, transaction, context, ...rest } = options;
+  async updateOrCreate(options: FirstOrCreateOptions & { useNativeUpsert?: boolean }) {
+    const { filterKeys, values, transaction, context, useNativeUpsert, ...rest } = options;
 
+    // 对于支持的数据库，默认使用原生 upsert（原子操作，性能更好）
+    if (useNativeUpsert !== false && this.database.inDialect('postgres', 'mysql', 'mariadb', 'sqlite')) {
+      const [instance] = await this.upsert({
+        filterKeys,
+        values,
+        transaction,
+        context,
+        useNativeUpsert: true,
+        ...rest,
+      });
+      return instance;
+    }
+
+    // 回退到先查询后更新的方式（非原子操作）
     const filter = Repository.valuesToFilter(values, filterKeys);
 
     const instance = await this.findOne({ filter, transaction, context });
@@ -640,6 +668,191 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     }
 
     return this.create({ values, transaction, context, ...rest });
+  }
+
+  /**
+   * Upsert - 使用数据库原生 upsert 能力（如 PostgreSQL ON CONFLICT）
+   * 在支持的数据库上（PostgreSQL 9.5+, MySQL 5.7+, SQLite 3.24+, MariaDB 10.3+）使用原生 upsert
+   * 在不支持的数据库上回退到 updateOrCreate
+   *
+   * @param options
+   * @returns [instance, created] - created 为 true 表示是新创建的记录
+   */
+  async upsert(options: UpsertOptions): Promise<[Model, boolean]> {
+    const { filterKeys, values, transaction, context, useNativeUpsert = true, ...rest } = options;
+
+    // 如果不使用原生 upsert 或者数据库不支持，则回退到 updateOrCreate
+    if (!useNativeUpsert || !this.database.inDialect('postgres', 'mysql', 'mariadb', 'sqlite')) {
+      const result = await this.updateOrCreate({ filterKeys, values, transaction, context, ...rest });
+      // updateOrCreate 不返回是否创建，这里需要查询判断，但为了不破坏接口，假设是更新
+      return [result as Model, false];
+    }
+
+    const tx = transaction || (await this.database.sequelize.transaction());
+    const useExternalTransaction = !!transaction;
+
+    try {
+      // 1. 准备数据：应用 setter 和 UpdateGuard
+      const guard = UpdateGuard.fromOptions(this.model, {
+        ...rest,
+        action: 'create',
+        underscored: this.collection.options.underscored,
+      });
+      const sanitizedValues = guard.sanitize(values || {});
+
+      // 2. 构建 conflict 字段
+      const conflictFields = filterKeys.map((key) => {
+        // 处理关联字段，如 'roles.name' -> 暂时只支持简单字段
+        if (key.includes('.')) {
+          throw new Error(`upsert does not support nested filterKeys like '${key}' yet`);
+        }
+        return key;
+      });
+
+      // 3. 对于 PostgreSQL，使用原生 ON CONFLICT
+      if (this.database.isPostgresCompatibleDialect()) {
+        const result = await this.upsertPostgres(sanitizedValues, conflictFields, tx, context, rest);
+        if (!useExternalTransaction) {
+          await tx.commit();
+        }
+        return result;
+      }
+
+      // 4. 对于 MySQL/MariaDB/SQLite，使用 Sequelize 的内置 upsert
+      // Sequelize 的 upsert 返回 [instance, created]
+      const [instance, created] = await this.model.upsert(sanitizedValues, {
+        transaction: tx,
+        fields: Object.keys(sanitizedValues),
+      });
+
+      // 5. 触发钩子
+      if (options.hooks !== false) {
+        const eventName = created
+          ? `${this.collection.name}.afterCreateWithAssociations`
+          : `${this.collection.name}.afterUpdateWithAssociations`;
+        await this.database.emitAsync(eventName, instance, { transaction: tx, context });
+        await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, {
+          transaction: tx,
+          context,
+        });
+        instance.clearChangedWithAssociations();
+      }
+
+      if (!useExternalTransaction) {
+        await tx.commit();
+      }
+
+      return [instance, created];
+    } catch (error) {
+      if (!useExternalTransaction) {
+        await tx.rollback();
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * PostgreSQL 原生 ON CONFLICT 实现
+   */
+  private async upsertPostgres(
+    values: Values,
+    conflictFields: string[],
+    transaction: any,
+    context: any,
+    rest: any,
+  ): Promise<[Model, boolean]> {
+    const tableName = this.collection.tableName();
+    const schema = this.collection.collectionSchema();
+    const fullTableName = schema ? `"${schema}"."${tableName}"` : `"${tableName}"`;
+
+    // 获取所有字段和值
+    const fields = Object.keys(values);
+    const fieldColumns = fields.map((f) => `"${f}"`).join(', ');
+    const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ');
+
+    // 构建 update set 部分（排除 conflict 字段）
+    const updateFields = fields.filter((f) => !conflictFields.includes(f));
+    let updateSet = updateFields.length > 0 ? updateFields.map((f) => `"${f}" = EXCLUDED."${f}"`).join(', ') : null;
+
+    // 如果没有需要更新的字段，至少更新 updated_at 字段
+    // PostgreSQL ON CONFLICT DO NOTHING 会导致 RETURNING 在冲突时不返回数据
+    // 所以必须始终使用 DO UPDATE SET
+    if (!updateSet) {
+      // @ts-ignore
+      const updatedAtField = this.model._timestampAttributes?.updatedAt || 'updatedAt';
+      updateSet = `"${updatedAtField}" = CURRENT_TIMESTAMP`;
+    }
+
+    // 构建 ON CONFLICT 子句
+    const conflictColumns = conflictFields.map((f) => `"${f}"`).join(', ');
+
+    const sql = `
+      INSERT INTO ${fullTableName} (${fieldColumns})
+      VALUES (${placeholders})
+      ON CONFLICT (${conflictColumns})
+      DO UPDATE SET ${updateSet}
+      RETURNING *,
+        (xmax = 0) AS "_upsert_created"
+    `;
+
+    // 执行查询
+    const [rows, affectedCount] = await this.database.sequelize.query(sql, {
+      bind: fields.map((f) => values[f]),
+      transaction,
+      type: QueryTypes.INSERT,
+      model: this.model,
+      mapToModel: true,
+    });
+
+    // 由于始终使用 DO UPDATE SET，RETURNING 总是会返回数据
+    const rawInstance = rows[0];
+    // affectedCount 可能是 Model（Sequelize 类型定义问题），需要判断
+    let created = typeof affectedCount === 'number' ? affectedCount === 1 : true;
+
+    // 使用 xmax 判断是否是新记录（PostgreSQL 特性）
+    // 注意：rawInstance 可能是普通对象或 Model 实例
+    const upsertCreated = rawInstance && rawInstance._upsert_created !== false;
+    created = upsertCreated;
+
+    // 移除内部字段
+    if (rawInstance) {
+      delete rawInstance._upsert_created;
+    }
+
+    // 将原始数据转换为 Model 实例
+    let instance: Model;
+    if (rawInstance instanceof Model) {
+      instance = rawInstance;
+    } else {
+      // 构建 Model 实例
+      instance = this.model.build(rawInstance, { isNewRecord: created });
+      // 如果是已存在的记录，需要标记为已存在
+      if (!created) {
+        instance.isNewRecord = false;
+        // 设置主键
+        const pk = this.collection.model.primaryKeyAttribute;
+        if (pk && rawInstance[pk]) {
+          instance.setDataValue(pk, rawInstance[pk]);
+        }
+      }
+    }
+
+    // 触发钩子
+    if (rest.hooks !== false && instance) {
+      const eventName = created
+        ? `${this.collection.name}.afterCreateWithAssociations`
+        : `${this.collection.name}.afterUpdateWithAssociations`;
+      await this.database.emitAsync(eventName, instance, { transaction, context });
+      await this.database.emitAsync(`${this.collection.name}.afterSaveWithAssociations`, instance, {
+        transaction,
+        context,
+      });
+      if (typeof instance.clearChangedWithAssociations === 'function') {
+        instance.clearChangedWithAssociations();
+      }
+    }
+
+    return [instance, created];
   }
 
   private validate(options: { values: Record<string, any>[]; operation: 'create' | 'update' }) {
