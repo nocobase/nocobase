@@ -11,54 +11,51 @@ import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowEngine, useFlowEngineContext } from '@nocobase/flow-engine';
+import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, Badge, ConfigProvider, Grid, Popover, Result, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import {
-  ACLRolesCheckProvider,
-  CurrentAppInfoProvider,
+  AdminDynamicPage,
+  AdminShellProvider,
+  KeepAlive,
+  NocoBaseDesktopRoute,
+  NocoBaseDesktopRouteType,
+  NocoBaseRouteContext,
+  MobileLayoutProvider,
+  useAllAccessDesktopRoutes,
+  useCurrentRoute,
+  useKeepAlive,
+  useMobileLayout,
+  findFirstPageRoute,
+} from '../../../admin-shell';
+import {
   DndContext,
   Icon,
   ParentRouteContext,
   PinnedPluginList,
-  RemoteCollectionManagerProvider,
-  RemoteSchemaComponent,
   RemoteSchemaTemplateManagerPlugin,
-  RemoteSchemaTemplateManagerProvider,
   SortableItem,
   useDesignable,
   useGlobalTheme,
   useMenuDragEnd,
   useParseURLAndParams,
-  useRequest,
   useRouterBasename,
   useSchemaInitializerRender,
   useSystemSettings,
   useToken,
 } from '../../../';
-import {
-  CurrentPageUidContext,
-  CurrentPageUidProvider,
-  CurrentTabUidProvider,
-  IsSubPageClosedByPageMenuProvider,
-  useCurrentPageUid,
-  useLocationNoUpdate,
-  useNavigateNoUpdate,
-} from '../../../application/CustomRouterContextProvider';
+import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { Plugin } from '../../../application/Plugin';
 import { navigateWithinSelf } from '../../../block-provider/hooks';
-import { AppNotFound } from '../../../common/AppNotFound';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 import { VariableScope } from '../../../variables/VariableScope';
-import { KeepAlive, useKeepAlive } from './KeepAlive';
-import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType } from './convertRoutesToSchema';
 import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
@@ -66,112 +63,20 @@ import { useApplications } from './useApplications';
 import { AdminLayoutModel } from './AdminLayoutModel';
 
 export * from './useDeleteRouteSchema';
-export { KeepAlive, NocoBaseDesktopRouteType, useKeepAlive };
-
-export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
-NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
+export {
+  AdminDynamicPage,
+  KeepAlive,
+  NocoBaseDesktopRouteType,
+  NocoBaseRouteContext,
+  findFirstPageRoute,
+  findRouteBySchemaUid,
+  useAllAccessDesktopRoutes,
+  useCurrentRoute,
+  useKeepAlive,
+  useMobileLayout,
+} from '../../../admin-shell';
 
 const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';
-
-export const CurrentRouteProvider: FC<{ uid: string }> = memo(({ children, uid }) => {
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const routeNode = useMemo(() => findRouteBySchemaUid(uid, allAccessRoutes), [uid, allAccessRoutes]);
-  return <NocoBaseRouteContext.Provider value={routeNode}>{children}</NocoBaseRouteContext.Provider>;
-});
-
-export const useCurrentRoute = () => {
-  return useContext(NocoBaseRouteContext) || {};
-};
-
-const emptyArray = [];
-const AllAccessDesktopRoutesContext = createContext<{
-  allAccessRoutes: NocoBaseDesktopRoute[];
-  refresh: () => void;
-}>({
-  allAccessRoutes: emptyArray,
-  refresh: () => {},
-});
-AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
-
-export const useAllAccessDesktopRoutes = () => {
-  return useContext(AllAccessDesktopRoutesContext);
-};
-
-const RoutesRequestProvider: FC = ({ children }) => {
-  const ctx = useFlowEngineContext();
-  const mountedRef = useRef(false);
-  const { data, refresh, loading } = useRequest<any>(
-    {
-      url: `/desktopRoutes:listAccessible`,
-      params: { tree: true, sort: 'sort' },
-    },
-    {
-      onSuccess(data) {
-        ctx.routeRepository.setRoutes(data?.data || emptyArray);
-      },
-    },
-  );
-
-  const allAccessRoutesValue = useMemo(() => {
-    return {
-      allAccessRoutes: data?.data || emptyArray,
-      refresh,
-    };
-  }, [data?.data, refresh]);
-
-  // Only valid on first load
-  if (loading && !mountedRef.current) {
-    return null;
-  } else {
-    mountedRef.current = true;
-  }
-
-  return (
-    <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>
-      {children}
-    </AllAccessDesktopRoutesContext.Provider>
-  );
-};
-
-const noAccessPermission = (currentPageUid: string, allAccessRoutes: NocoBaseDesktopRoute[]) => {
-  if (!currentPageUid) {
-    return false;
-  }
-
-  const routeNode = findRouteBySchemaUid(currentPageUid, allAccessRoutes);
-  if (!routeNode) {
-    return true;
-  }
-
-  return false;
-};
-
-export const AdminDynamicPage = () => {
-  const currentPageUid = useCurrentPageUid();
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-
-  // Group page should not request schema data
-  if (isGroup(currentPageUid, allAccessRoutes)) {
-    return null;
-  }
-
-  // 404 page
-  if (noAccessPermission(currentPageUid, allAccessRoutes)) {
-    return <AppNotFound />;
-  }
-
-  return (
-    <KeepAlive uid={currentPageUid}>
-      {(uid) => (
-        <CurrentPageUidContext.Provider value={uid}>
-          <CurrentRouteProvider uid={uid}>
-            <RemoteSchemaComponent uid={uid} />
-          </CurrentRouteProvider>
-        </CurrentPageUidContext.Provider>
-      )}
-    </KeepAlive>
-  );
-};
 
 const layoutContentClass = css`
   display: flex;
@@ -722,26 +627,6 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
 };
 
-const IsMobileLayoutContext = React.createContext<{
-  isMobileLayout: boolean;
-  setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
-}>({
-  isMobileLayout: false,
-  setIsMobileLayout: () => {},
-});
-
-const MobileLayoutProvider: FC = (props) => {
-  const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
-
-  return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
-};
-
-export const useMobileLayout = () => {
-  const { isMobileLayout, setIsMobileLayout } = useContext(IsMobileLayoutContext);
-  return { isMobileLayout, setIsMobileLayout };
-};
-
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
 const appContainerStyle: React.CSSProperties = {
   flex: 1,
@@ -928,83 +813,7 @@ function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
   return props.children;
 }
 
-const NavigateToDefaultPage: FC = (props) => {
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const location = useLocationNoUpdate();
-
-  const defaultPageUid = findFirstPageRoute(allAccessRoutes)?.schemaUid;
-
-  return (
-    <>
-      {props.children}
-      {defaultPageUid && (location.pathname === '/admin' || location.pathname === '/admin/') && (
-        <Navigate replace to={`/admin/${defaultPageUid}`} />
-      )}
-    </>
-  );
-};
-
-const findRouteByMenuSchemaUid = (schemaUid: string, routes: NocoBaseDesktopRoute[]) => {
-  if (!routes) return;
-
-  for (const route of routes) {
-    if (route.menuSchemaUid === schemaUid) {
-      return route;
-    }
-
-    if (route.children?.length) {
-      const result = findRouteByMenuSchemaUid(schemaUid, route.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-};
-
-/**
- * Compatibility with legacy page routes
- * @param props
- * @returns
- */
-const LegacyRouteCompat: FC = (props) => {
-  const currentPageUid = useCurrentPageUid();
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const route = findRouteByMenuSchemaUid(currentPageUid, allAccessRoutes);
-    if (route) {
-      navigate(location.pathname.replace(currentPageUid, route.schemaUid) + location.search);
-    }
-  }, [allAccessRoutes, currentPageUid, location.pathname, location.search, navigate]);
-
-  return <>{props.children}</>;
-};
-
-export const AdminProvider = (props) => {
-  return (
-    <CurrentPageUidProvider>
-      <CurrentTabUidProvider>
-        <IsSubPageClosedByPageMenuProvider>
-          <ACLRolesCheckProvider>
-            <RoutesRequestProvider>
-              <NavigateToDefaultPage>
-                <LegacyRouteCompat>
-                  <RemoteCollectionManagerProvider>
-                    <CurrentAppInfoProvider>
-                      <RemoteSchemaTemplateManagerProvider>{props.children}</RemoteSchemaTemplateManagerProvider>
-                    </CurrentAppInfoProvider>
-                  </RemoteCollectionManagerProvider>
-                </LegacyRouteCompat>
-              </NavigateToDefaultPage>
-            </RoutesRequestProvider>
-          </ACLRolesCheckProvider>
-        </IsSubPageClosedByPageMenuProvider>
-      </CurrentTabUidProvider>
-    </CurrentPageUidProvider>
-  );
-};
+export const AdminProvider = AdminShellProvider;
 
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();
@@ -1044,24 +853,6 @@ export class AdminLayoutPlugin extends Plugin {
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
     this.app.use(MobileLayoutProvider);
   }
-}
-
-export function findRouteBySchemaUid(schemaUid: string, treeArray: any[]) {
-  if (!treeArray) return;
-
-  for (const node of treeArray) {
-    if (schemaUid === node.schemaUid || schemaUid === node.menuSchemaUid) {
-      return node;
-    }
-
-    if (node.children?.length) {
-      const result = findRouteBySchemaUid(schemaUid, node.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-  return null;
 }
 
 const MenuDesignerButton: FC<{ testId: string }> = (props) => {
@@ -1198,40 +989,4 @@ function convertRoutesToLayout(
   }
 
   return result;
-}
-
-function isGroup(groupId: string, allAccessRoutes: NocoBaseDesktopRoute[]) {
-  const route = findRouteById(groupId, allAccessRoutes);
-  return route?.type === NocoBaseDesktopRouteType.group;
-}
-
-function findRouteById(id: string, treeArray: any[]) {
-  for (const node of treeArray) {
-    if (Number(id) === Number(node.id)) {
-      return node;
-    }
-
-    if (node.children?.length) {
-      const result = findRouteById(id, node.children);
-      if (result) {
-        return result;
-      }
-    }
-  }
-  return null;
-}
-
-export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
-  if (!routes) return;
-
-  for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
-      return route;
-    }
-
-    if (route.type === NocoBaseDesktopRouteType.group && route.children?.length) {
-      const result = findFirstPageRoute(route.children);
-      if (result) return result;
-    }
-  }
 }

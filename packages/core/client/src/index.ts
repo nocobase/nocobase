@@ -25,6 +25,7 @@ export * from '@emotion/css';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
+export * from './admin-shell';
 export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
