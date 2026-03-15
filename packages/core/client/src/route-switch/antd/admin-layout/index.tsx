@@ -59,6 +59,7 @@ import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
 import { AdminLayoutModel } from './AdminLayoutModel';
+import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
 
 export * from './useDeleteRouteSchema';
@@ -552,6 +553,8 @@ const GlobalStyle = () => {
 };
 
 export const InternalAdminLayout = (props) => {
+  const flowEngine = useFlowEngine();
+  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
   const screens = Grid.useBreakpoint();
@@ -570,12 +573,17 @@ export const InternalAdminLayout = (props) => {
   const { Component: AppsComponent } = useApplications();
 
   const route = useMemo(() => {
-    const children = convertRoutesToLayout(allAccessRoutes, { designable, isMobile: isMobileSider, t });
+    adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
+    const children = convertMenuModelsToLayout(adminLayoutModel?.subModels.menu?.subModels.items || [], {
+      designable,
+      isMobile: isMobileSider,
+      t,
+    });
     return {
       path: '/',
       children: Array.isArray(children) ? children : [],
     };
-  }, [allAccessRoutes, designable, isMobileSider, t]);
+  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -751,7 +759,13 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
-    this.app.flowEngine.registerModels({ AdminLayoutModel, AdminLayoutContentModel, AdminLayoutHeaderActionsModel });
+    this.app.flowEngine.registerModels({
+      AdminLayoutModel,
+      AdminLayoutMenuTreeModel,
+      AdminLayoutMenuItemModel,
+      AdminLayoutContentModel,
+      AdminLayoutHeaderActionsModel,
+    });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
     this.app.use(MobileLayoutProvider);
@@ -785,11 +799,11 @@ export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; is
   return depth > 1 || (isMobile && depth > 0);
 };
 
-function convertRoutesToLayout(
-  routes: NocoBaseDesktopRoute[],
+function convertMenuModelsToLayout(
+  menuModels: AdminLayoutMenuItemModel[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
 ) {
-  if (!routes || !Array.isArray(routes)) return [];
+  if (!menuModels || !Array.isArray(menuModels)) return [];
 
   const getInitializerButton = (testId: string) => {
     return {
@@ -803,8 +817,11 @@ function convertRoutesToLayout(
     };
   };
 
-  const result: any[] = routes
-    .map((item) => {
+  const result: any[] = menuModels
+    .map((menuModel) => {
+      const item = menuModel.props.route as NocoBaseDesktopRoute;
+      const menuParentRoute = (menuModel.props.parentRoute as NocoBaseDesktopRoute | undefined) || parentRoute;
+
       if (!item || typeof item !== 'object') {
         return null;
       }
@@ -820,7 +837,7 @@ function convertRoutesToLayout(
           path: '/',
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: parentRoute,
+          _parentRoute: menuParentRoute,
           _depth: depth,
         };
       }
@@ -833,7 +850,7 @@ function convertRoutesToLayout(
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: parentRoute,
+          _parentRoute: menuParentRoute,
           _depth: depth,
         };
       }
@@ -846,15 +863,17 @@ function convertRoutesToLayout(
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: parentRoute,
+          _parentRoute: menuParentRoute,
           _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.group) {
         const itemChildren = Array.isArray(item.children) ? item.children : [];
+        const childModels = menuModel.subModels.items || [];
         const children =
-          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) || [];
+          convertMenuModelsToLayout(childModels, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) ||
+          [];
 
         // add a designer button
         if (designable && depth === 0) {

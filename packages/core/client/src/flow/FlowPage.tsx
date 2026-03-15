@@ -12,10 +12,10 @@ import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useRef } from 'react';
 import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
+import { useAdminLayoutRoutePage } from './admin-shell/useAdminLayoutRoutePage';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { useDesignable } from '../schema-component';
 import { deviceType } from 'react-device-detect';
-import { AdminLayoutModel } from '../route-switch/antd/admin-layout/AdminLayoutModel';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -45,18 +45,6 @@ export const FlowRoute = () => {
   const { active } = useKeepAlive();
   const layoutContentRef = useRef<HTMLDivElement>(null);
   const pageUid = pageUidRef.current;
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
-  const activeRef = useRef(active);
-  const currentRouteRef = useRef(currentRoute);
-  const refreshRef = useRef(refresh);
-
-  activeRef.current = active;
-  currentRouteRef.current = currentRoute;
-  refreshRef.current = refresh;
-
-  if (!adminLayoutModel) {
-    throw new Error('[NocoBase] FlowRoute requires admin-layout-model. Please render FlowRoute under AdminLayout.');
-  }
 
   if (!pageUid) {
     throw new Error('[NocoBase] FlowRoute requires route.params.name.');
@@ -106,31 +94,14 @@ export const FlowRoute = () => {
     }
   }, [designable, flowEngine, isMobileLayout]);
 
-  useEffect(() => {
-    adminLayoutModel.registerRoutePage(pageUid, {
-      active: activeRef.current,
-      currentRoute: currentRouteRef.current,
-      refreshDesktopRoutes: refreshRef.current,
-      layoutContentElement: layoutContentRef.current,
-    });
-    return () => {
-      adminLayoutModel.unregisterRoutePage(pageUid);
-    };
-  }, [adminLayoutModel, pageUid]);
-
-  useEffect(() => {
-    adminLayoutModel.updateRoutePage(pageUid, {
-      active,
-    });
-  }, [adminLayoutModel, pageUid, active]);
-
-  useEffect(() => {
-    adminLayoutModel.updateRoutePage(pageUid, {
-      currentRoute,
-      refreshDesktopRoutes: refresh,
-      layoutContentElement: layoutContentRef.current,
-    });
-  }, [adminLayoutModel, pageUid, currentRoute, refresh]);
+  useAdminLayoutRoutePage({
+    flowEngine,
+    pageUid,
+    active,
+    currentRoute,
+    refreshDesktopRoutes: refresh,
+    layoutContentRef,
+  });
 
   return <div ref={layoutContentRef} />;
 };

@@ -9,14 +9,17 @@
 
 import { reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
+import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
+import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
+import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import React from 'react';
 import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
-import { AdminLayoutRouteCoordinator, type RoutePageMeta } from './AdminLayoutRouteCoordinator';
 
 type AdminLayoutStructure = {
   subModels: {
     layoutContent?: AdminLayoutContentModel;
     headerActions?: AdminLayoutHeaderActionsModel;
+    menu?: AdminLayoutMenuTreeModel;
   };
 };
 
@@ -73,6 +76,13 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
         use: AdminLayoutHeaderActionsModel,
       });
     }
+
+    if (!this.subModels.menu) {
+      this.setSubModel('menu', {
+        uid: `${this.uid}-menu`,
+        use: AdminLayoutMenuTreeModel,
+      });
+    }
   }
 
   onInit(options) {
@@ -106,6 +116,16 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
       this.activePageUid = '';
     }
     this.getCoordinator().unregisterPage(pageUid);
+  }
+
+  /**
+   * 使用当前可访问菜单路由刷新 Layout 菜单树。
+   *
+   * @param {NocoBaseDesktopRoute[]} routes 当前用户可访问的桌面路由
+   */
+  syncMenuRoutes(routes: NocoBaseDesktopRoute[]) {
+    this.ensureShellSubModels();
+    this.subModels.menu?.syncRoutes(routes);
   }
 
   setLayoutContentElement(element: HTMLElement | null) {
