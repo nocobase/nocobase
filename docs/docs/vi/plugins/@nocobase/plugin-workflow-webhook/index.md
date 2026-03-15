@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: Webhook"
+displayName: "Workflow: Webhook Trigger"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
@@ -12,4 +12,8 @@ defaultEnabled: false
 editionLevel: 2
 ---
 
-# Workflow: Webhook
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-workflow-webhook/index).
+:::
+
+# Workflow: Webhook Trigger

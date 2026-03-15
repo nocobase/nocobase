@@ -34,7 +34,7 @@ Em seguida, selecione o modo de interceptação. Você pode optar por intercepta
 
 ### Modo de Interceptação
 
-![Configuração do Evento Interceptor_Modo de Interceptação](https://static-docs.nocobase.com/145a7f7c3db440bb6ca93a5ee84f16e2.png)
+![Configuração do Evento Interceptor_Modo de Interceptação](https://static-docs.nocobase.com/145a7f7c3ba440bb6ca93a5ee84f16e2.png)
 
 Os tipos de ação atualmente suportados são "Criar", "Atualizar" e "Excluir". Vários tipos de ação podem ser selecionados simultaneamente.
 
@@ -99,7 +99,7 @@ Combinando as instruções básicas acima, vamos usar um cenário de "Envio de P
 
 Outras etapas são as mesmas das instruções. No entanto, como um pedido envolve vários produtos, além de adicionar um relacionamento muitos-para-muitos "Pedido" <-- M:1 -- "Item do Pedido" -- 1:M --> "Produto" no modelo de dados, você também precisa adicionar um nó "Loop" no **fluxo de trabalho** "Evento Antes da Ação" para verificar iterativamente se o estoque de cada produto é suficiente:
 
-![Exemplo_Fluxo de Trabalho de Verificação de Loop](https://static-docs.nocobase.com/8307de47d5629595ab6cf00f8aa898e2.png)
+![Exemplo_Fluxo de Trabalho de Verificação de Loop](https://static-docs.nocobase.com/8307de47d5629595ab6cf00f8aa898e3.png)
 
 O objeto para o loop é selecionado como o array "Item do Pedido" dos dados do pedido enviados:
 

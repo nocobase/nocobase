@@ -26,7 +26,7 @@ Der Rollenbezeichner (eine systemweit eindeutige Kennung) ermöglicht es Ihnen, 
 
 Die Standardrolle wird neuen Benutzern automatisch zugewiesen, wenn bei deren Erstellung keine spezifische Rolle festgelegt wurde.
 
-![](https://static-docs.nocobase.com/f41b4f7ff55ca28715c486dc45bc1708.png)
+![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
 ## Persönlicher Bereich
 

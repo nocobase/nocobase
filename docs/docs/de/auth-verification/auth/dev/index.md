@@ -168,7 +168,7 @@ Wenn Sie von der Anmeldeseite zur Registrierungsseite wechseln möchten, müssen
 
 ### Admin-Einstellungen-Formular
 
-![](https://static-docs.nocobase.com/f4b544b5b0f4f4ee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 Oben sehen Sie die allgemeine Authentifikator-Konfiguration, unten den Teil des benutzerdefinierten Konfigurationsformulars, der registriert werden kann.
 

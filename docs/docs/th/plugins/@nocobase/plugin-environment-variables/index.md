@@ -1,12 +1,16 @@
 ---
-displayName: "Variables and secrets"
+displayName: "ตัวแปรและข้อมูลลับ"
 packageName: '@nocobase/plugin-environment-variables'
 description: |
-  Centralized management of environment variables and secrets, used for sensitive data storage, configuration data reuse, multi-environment isolation, and more.
+  การจัดการตัวแปรสภาพแวดล้อมและข้อมูลลับแบบรวมศูนย์ ใช้สำหรับการจัดเก็บข้อมูลที่ละเอียดอ่อน การนำข้อมูลการกำหนดค่ามาใช้ซ้ำ การแยกสภาพแวดล้อมที่หลากหลาย และอื่นๆ
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Variables and secrets
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-environment-variables/index)
+:::
+
+# ตัวแปรและข้อมูลลับ

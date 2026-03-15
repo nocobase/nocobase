@@ -1,94 +1,96 @@
 # ctx.exitAll()
 
-Stops the current event flow and all **subsequent** event flows that were triggered in the same event dispatch. Use when a global error or permission check requires stopping every flow for that event.
+Terminates the current event flow and all subsequent event flows triggered in the same event dispatch. It is commonly used when all event flows under the current event need to be aborted immediately due to a global error or permission validation failure.
 
 ## Use Cases
 
-Use `ctx.exitAll()` in JS-capable contexts when you need to **stop both the current flow and any later flows for the same event**:
+`ctx.exitAll()` is generally used in JS-executable contexts where it is necessary to **simultaneously abort the current event flow and subsequent event flows triggered by that event**:
 
 | Scenario | Description |
-|----------|-------------|
-| **Event flow** | Main flow fails (e.g. no permission); stop it and any subsequent flows for that event |
-| **Linkage rules** | When linkage validation fails and you want to stop current and subsequent linkage |
-| **Action events** | Pre-action check fails (e.g. delete permission); block the action and later steps |
+|------|------|
+| **Event Flow** | Main event flow validation fails (e.g., insufficient permissions), requiring the termination of the main flow and any subsequent flows under the same event that have not yet executed. |
+| **Linkage Rules** | When linkage validation fails, the current linkage and subsequent linkages triggered by the same event must be terminated. |
+| **Action Events** | Pre-action validation fails (e.g., permission check before deletion), requiring the prevention of the main action and subsequent steps. |
 
-> Difference from `ctx.exit()`: `ctx.exit()` only stops the current flow; `ctx.exitAll()` also stops **subsequent** flows for that event.
+> Difference from `ctx.exit()`: `ctx.exit()` only terminates the current event flow; `ctx.exitAll()` terminates the current event flow and any **unexecuted** subsequent event flows in the same event dispatch.
 
-## Type
+## Type Definition
 
 ```ts
 exitAll(): never;
 ```
 
-Calling `ctx.exitAll()` throws an internal `FlowExitAllException`, which the engine uses to stop the current flow instance and subsequent flows for the same event. The rest of the current JS does not run.
+Calling `ctx.exitAll()` throws an internal `FlowExitAllException`, which is caught by the FlowEngine to stop the current event flow instance and subsequent event flows under the same event. Once called, the remaining statements in the current JS code will not be executed.
 
 ## Comparison with ctx.exit()
 
 | Method | Scope |
-|--------|--------|
-| `ctx.exit()` | Stops only the current flow; later flows still run |
-| `ctx.exitAll()` | Stops the current flow and **subsequent** flows for the same event |
+|------|----------|
+| `ctx.exit()` | Only terminates the current event flow; subsequent event flows are unaffected. |
+| `ctx.exitAll()` | Terminates the current event flow and aborts subsequent event flows executed **sequentially** under the same event. |
 
-## Execution mode
+## Execution Mode
 
-- **Sequential**: flows for the same event run one after another; after any flow calls `ctx.exitAll()`, later flows do not run.
-- **Parallel**: flows run in parallel; one flow calling `ctx.exitAll()` does not stop other already-running flows.
+- **Sequential Execution**: Event flows under the same event are executed in order. After any event flow calls `ctx.exitAll()`, subsequent event flows will not execute.
+- **Parallel Execution**: Event flows under the same event are executed in parallel. Calling `ctx.exitAll()` in one event flow will not interrupt other concurrent event flows (as they are independent).
 
 ## Examples
 
-### Stop all flows on permission failure
+### Terminate all event flows when permission validation fails
 
 ```ts
+// Abort the main event flow and subsequent event flows when permissions are insufficient
 if (!hasPermission(ctx)) {
-  ctx.notification.error({ message: 'No permission' });
+  ctx.notification.error({ message: 'No operation permission' });
   ctx.exitAll();
 }
 ```
 
-### Stop on global pre-check failure
+### Terminate when global pre-validation fails
 
 ```ts
+// Example: If associated data is found to be non-deletable before deletion, prevent the main event flow and subsequent actions
 const canDelete = await checkDeletable(ctx.model?.getValue?.());
 if (!canDelete) {
-  ctx.message.error('Cannot delete: related data exists');
+  ctx.message.error('Cannot delete: associated data exists');
   ctx.exitAll();
 }
 ```
 
-### When to use ctx.exit() vs ctx.exitAll()
+### Choosing between ctx.exit() and ctx.exitAll()
 
 ```ts
-// Only this flow → ctx.exit()
+// Only the current event flow needs to exit -> Use ctx.exit()
 if (!params.valid) {
-  ctx.message.error('Invalid params');
-  ctx.exit();
+  ctx.message.error('Invalid parameters');
+  ctx.exit();  // Subsequent event flows are unaffected
 }
 
-// This and all subsequent flows → ctx.exitAll()
+// Need to terminate all subsequent event flows under the current event -> Use ctx.exitAll()
 if (!ctx.model?.context?.getPermission?.()) {
-  ctx.notification.warning({ message: 'No permission' });
-  ctx.exitAll();
+  ctx.notification.warning({ message: 'Insufficient permissions' });
+  ctx.exitAll();  // Both the main event flow and subsequent event flows under the same event are terminated
 }
 ```
 
-### Message then exit
+### Prompt before terminating
 
 ```ts
 if (!isValidInput(ctx.form?.getValues?.())) {
-  ctx.message.warning('Please fix form errors first');
+  ctx.message.warning('Please correct the errors in the form first');
   ctx.exitAll();
 }
 ```
 
 ## Notes
 
-- After `ctx.exitAll()`, the rest of the current JS does not run; explain to the user with `ctx.message`, `ctx.notification`, or a dialog before calling.
-- You usually do not need to catch `FlowExitAllException`; the engine handles it.
-- To stop only the current flow, use `ctx.exit()`.
-- In parallel mode, `ctx.exitAll()` only stops the current flow; it does not cancel other concurrent flows.
+- After calling `ctx.exitAll()`, subsequent code in the current JS will not execute. It is recommended to explain the reason to the user via `ctx.message`, `ctx.notification`, or a modal before calling it.
+- Business code usually does not need to catch `FlowExitAllException`; let the FlowEngine handle it.
+- If you only need to stop the current event flow without affecting subsequent ones, use `ctx.exit()`.
+- In parallel mode, `ctx.exitAll()` only terminates the current event flow and does not interrupt other concurrent event flows.
 
 ## Related
 
-- [ctx.exit()](./exit.md): stop only the current flow
-- [ctx.message](./message.md): message API
-- [ctx.modal](./modal.md): confirm dialog
+- [ctx.exit()](./exit.md): Terminates only the current event flow
+- [ctx.message](./message.md): Message prompts
+- [ctx.modal](./modal.md): Confirmation modal

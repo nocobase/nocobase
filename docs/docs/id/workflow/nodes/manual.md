@@ -104,11 +104,11 @@ Untuk penanganan manual, Anda juga perlu menambahkan daftar tugas yang perlu dit
 
 Anda dapat memilih "Tugas Alur Kerja yang Perlu Ditindaklanjuti" dari blok di halaman untuk menambahkan blok daftar tugas yang perlu ditindaklanjuti:
 
-![Node Manual_Menambahkan Blok Tugas yang Perlu Ditindaklanjuti](https://static-docs.nocobase.com/198b41754cd73b704267bf30fe5e647.png)
+![Node Manual_Menambahkan Blok Tugas yang Perlu Ditindaklanjuti](https://static-docs.nocobase.com/198b417454cd73b704267bf30fe5e647.png)
 
 Contoh blok daftar tugas yang perlu ditindaklanjuti:
 
-![Node Manual_Daftar Tugas yang Perlu Ditindaklanjuti](https://static-docs.nocobase.com/cfefb0533deebff6b3f6ef4408066e688.png)
+![Node Manual_Daftar Tugas yang Perlu Ditindaklanjuti](https://static-docs.nocobase.com/cfefb0d2c6a91c5c9dfa550d6b220f34.png)
 
 ### Detail Tugas yang Perlu Ditindaklanjuti
 

@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Log",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Log server",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Log server, Log audit, Riwayat rekaman",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Telemetri",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Panduan penggunaan",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eksportir",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

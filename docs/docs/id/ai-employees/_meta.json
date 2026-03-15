@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "Mulai Cepat",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Pengenalan Fitur",
     "items": [
       {
         "type": "custom-link",
         "label": "Konfigurasi Layanan LLM",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "Buat Staf AI",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "Aktifkan Karyawan AI",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
-        "label": "Kolaborasi dengan Staf AI",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Staf AI Bawaan",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Ikhtisar",
-        "link": "/ai-employees/built-in/index"
+        "label": "Berkolaborasi dengan Karyawan AI",
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: Analis Wawasan",
-        "link": "/ai-employees/built-in/viz"
+        "label": "Tambahkan Konteks - Blok",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
-        "label": "Orin: Spesialis Pemodelan Data",
-        "link": "/ai-employees/built-in/data-modeling"
+        "label": "Pencarian Web",
+        "link": "/ai-employees/features/web-search"
       },
       {
         "type": "custom-link",
-        "label": "Dex: Spesialis Pengelolaan Data",
-        "link": "/ai-employees/built-in/data-organizer"
+        "label": "Gunakan Keterampilan",
+        "link": "/ai-employees/features/tool"
       },
       {
         "type": "custom-link",
-        "label": "Nathan: Insinyur Frontend",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "Lanjutan",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Pilih Blok",
-        "link": "/ai-employees/advanced/pick-block"
+        "label": "Tugas Pintasan",
+        "link": "/ai-employees/features/task"
       },
       {
         "type": "custom-link",
-        "label": "Sumber Data",
-        "link": "/ai-employees/advanced/datasource"
+        "label": "Karyawan AI Bawaan",
+        "link": "/ai-employees/features/built-in-employee"
       },
       {
         "type": "custom-link",
-        "label": "Keterampilan",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "Tugas",
-        "link": "/ai-employees/advanced/task"
-      },
-      {
-        "type": "custom-link",
-        "label": "Pencarian Online",
-        "link": "/ai-employees/advanced/web-search"
+        "label": "Karyawan AI Baru",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "Manajemen File",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "Alur Kerja",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "Node LLM",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Dialog Teks",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Dialog Multimodal",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "Output Terstruktur",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "Dokumen Aplikasi",
+    "label": "Alur Kerja",
     "items": [
       {
         "type": "custom-link",
-        "label": "Skenario",
+        "label": "Node LLM",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: Konfigurasi Skenario CRM",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "Konfigurasi",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "Konfigurasi Admin",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "Obrolan Teks",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "Panduan Prompt",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "Obrolan Multimodal",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Output Terstruktur",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Praktik Aplikasi",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: Konfigurasi Skenario CRM",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "Panduan Prompt",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

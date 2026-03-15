@@ -26,7 +26,7 @@ Nell'interfaccia di configurazione del flusso di lavoro, clicchi sul pulsante pi
 
 ## Configurazione del nodo
 
-![Nodo Richiesta HTTP_Configurazione](https://static-docs.nocobase.com/2fcb29af66b892fa704add252e2974a52.png)
+![Nodo Richiesta HTTP_Configurazione](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 ### Metodo di richiesta
 

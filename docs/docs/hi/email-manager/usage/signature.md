@@ -12,15 +12,15 @@ pkg: "@nocobase/plugin-email-manager"
 ## हस्ताक्षर कॉन्फ़िगरेशन
 
 मेल प्रबंधन केंद्र में जाएँ और सेटिंग्स बटन पर क्लिक करें:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_34_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM.png)
 
 हस्ताक्षर पैनल पर स्विच करें:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_51_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_08_PM%20(1)
 
 आप यहाँ हस्ताक्षर प्रबंधित कर सकते हैं। किसी हस्ताक्षर के सामने वाले विकल्प को चेक करके उसे डिफ़ॉल्ट हस्ताक्षर के रूप में सेट कर सकते हैं:
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_05_37_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_09_PM.png)
 
 ## हस्ताक्षर का उपयोग
 
 मेल के मुख्य भाग (बॉडी) में, अपनी इच्छित हस्ताक्षर चुनने के लिए हस्ताक्षर आइकन पर क्लिक करें:
-![](https://static-docs.nocobase.com/email-manager/Loading--10-31-2025_05_40_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_11_PM.png)

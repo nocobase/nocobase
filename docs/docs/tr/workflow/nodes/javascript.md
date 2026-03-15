@@ -1,21 +1,22 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
 ---
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/workflow/nodes/javascript) bakın.
 :::
 
 # JavaScript Betiği
 
 ## Giriş
 
-JavaScript Betiği düğümü, kullanıcıların bir iş akışı içinde özel bir sunucu tarafı JavaScript betiği çalıştırmasına olanak tanır. Betiğin içinde, iş akışının önceki adımlarından gelen değişkenleri parametre olarak kullanabilirsiniz. Ayrıca, betiğin dönüş değerini sonraki düğümlerin kullanımına sunabilirsiniz.
+JavaScript betiği düğümü, kullanıcıların bir iş akışı içinde özel bir sunucu tarafı JavaScript betiği yürütmesine olanak tanır. Betikte, iş akışının üst akışındaki değişkenler parametre olarak kullanılabilir ve betiğin dönüş değeri alt akış düğümlerinin kullanımına sunulabilir.
 
-Betiğiniz, NocoBase uygulamasının sunucu tarafında ayrı bir iş parçacığında (worker thread) çalışır ve Node.js özelliklerinin çoğunu destekler. Ancak, yerel (native) yürütme ortamından bazı farklılıkları vardır. Ayrıntılar için [Özellik Listesi](#özellik-listesi) bölümüne bakabilirsiniz.
+Betik, NocoBase uygulamasının sunucu tarafında bir iş parçacığında (worker thread) yürütülür ve Node.js özelliklerinin çoğunu destekler, ancak yerel yürütme ortamıyla bazı farklılıklar vardır; ayrıntılar için bkz. [Özellik Listesi](#özellik-listesi).
 
 ## Düğüm Oluşturma
 
-İş akışı yapılandırma arayüzünde, iş akışındaki artı (“+”) düğmesine tıklayarak bir “JavaScript” düğümü ekleyebilirsiniz:
+İş akışı yapılandırma arayüzünde, akıştaki artı ("+") düğmesine tıklayarak "JavaScript" düğümü ekleyin:
 
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
 
@@ -25,26 +26,26 @@ Betiğiniz, NocoBase uygulamasının sunucu tarafında ayrı bir iş parçacığ
 
 ### Parametreler
 
-Betiğe, iş akışı bağlamından değişkenler veya statik değerler aktarmak için kullanılır. Bu değerler, betiğin içindeki kod mantığı tarafından kullanılır. `name` alanı parametre adını belirtir; bu ad, betiğe aktarıldığında bir değişken adı olarak kullanılır. `value` ise parametre değeridir; burada bir değişken seçebilir veya sabit bir değer girebilirsiniz.
+Kod mantığında kullanılmak üzere iş akışı bağlamından değişkenleri veya statik değerleri betiğe aktarmak için kullanılır. Burada `name` parametre adıdır ve betiğe aktarıldıktan sonra değişken adı olarak kullanılır. `value` parametre değeridir; bir değişken seçebilir veya bir sabit girebilirsiniz.
 
-### Betiğin İçeriği
+### Betik İçeriği
 
-Betiğin içeriği bir fonksiyon olarak düşünülebilir. Node.js ortamında desteklenen herhangi bir JavaScript kodunu yazabilirsiniz. Ayrıca, `return` ifadesini kullanarak düğümün çalışma sonucu olarak bir değer döndürebilirsiniz. Bu değer, sonraki düğümler tarafından bir değişken olarak kullanılabilir.
+Betik içeriği bir fonksiyon olarak görülebilir; Node.js ortamında desteklenen herhangi bir JavaScript kodu yazılabilir ve sonraki düğümlerin değişken olarak kullanabilmesi için düğümün çalışma sonucu olarak bir değer döndürmek üzere `return` ifadesi kullanılabilir.
 
-Kodu yazdıktan sonra, düzenleyici kutusunun altındaki test düğmesine tıklayarak bir test yürütme iletişim kutusu açabilirsiniz. Burada parametreleri statik değerlerle doldurarak simüle edilmiş bir çalıştırma yapabilirsiniz. Çalıştırma sonrasında, iletişim kutusunda dönüş değerini ve çıktı (log) içeriğini görebilirsiniz.
+Kod yazıldıktan sonra, düzenleme kutusunun altındaki test düğmesi aracılığıyla test yürütme iletişim kutusu açılabilir ve parametreler statik değerlerle doldurularak simüle edilmiş bir yürütme gerçekleştirilebilir. Yürütmeden sonra, iletişim kutusunda dönüş değerini ve çıktı (günlük) içeriğini görebilirsiniz.
 
 ![20241202203833](https://static-docs.nocobase.com/20241202203833.png)
 
 ### Zaman Aşımı Ayarı
 
-Birim milisaniyedir. `0` olarak ayarlandığında, zaman aşımı belirlenmez.
+Birim milisaniyedir; `0` olarak ayarlandığında zaman aşımı ayarlanmadığı anlamına gelir.
 
-### Hata Durumunda Akışı Sürdür
+### Hata Sonrası Akışa Devam Et
 
-Bu seçenek işaretlendiğinde, betik bir hatayla karşılaşsa veya zaman aşımına uğrasa bile sonraki düğümler çalışmaya devam eder.
+İşaretlendiğinde, betik hatası veya zaman aşımı hatası durumunda bile sonraki düğümler yürütülmeye devam eder.
 
-:::info{title="Not"}
-Betiğin bir hata vermesi durumunda, herhangi bir dönüş değeri olmayacaktır. Düğümün sonucu hata mesajıyla doldurulur. Eğer sonraki düğümler betik düğümünün sonuç değişkenini kullanıyorsa, bu durumu dikkatli bir şekilde ele almanız gerekir.
+:::info{title="İpucu"}
+Betik hatasından sonra dönüş değeri olmayacak ve düğümün sonucu hata mesajıyla doldurulacaktır. Sonraki düğümlerde betik düğümünün sonuç değişkeni kullanılıyorsa, dikkatli olunmalıdır.
 :::
 
 ## Özellik Listesi
@@ -55,35 +56,35 @@ Ana uygulamanın çalıştığı Node.js sürümüyle aynıdır.
 
 ### Modül Desteği
 
-Betiğin içinde modülleri sınırlı bir şekilde kullanabilirsiniz. CommonJS ile uyumlu olarak, kodunuzda `require()` yönergesini kullanarak modülleri dahil edersiniz.
+Betikte modüller kısıtlı bir şekilde kullanılabilir; CommonJS ile tutarlı olarak, modülleri içe aktarmak için kodda `require()` komutu kullanılır.
 
-Node.js'in yerel modülleri ve `node_modules` içinde yüklü olan modüller (NocoBase tarafından zaten kullanılan bağımlılıklar dahil) desteklenir. Kodunuzda kullanmak istediğiniz modüllerin uygulamanın `WORKFLOW_SCRIPT_MODULES` ortam değişkeninde tanımlanması gerekir. Birden fazla paket adı, virgülle ayrılarak belirtilir, örneğin:
+Node.js yerel modülleri ve `node_modules` içinde yüklü olan modüller (NocoBase tarafından kullanılan bağımlılık paketleri dahil) desteklenir. Kodun kullanımına sunulacak modüllerin, uygulama ortam değişkeni `WORKFLOW_SCRIPT_MODULES` içinde bildirilmesi gerekir; birden fazla paket adı virgülle ayrılır, örneğin:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 ```
 
-:::info{title="Not"}
-`WORKFLOW_SCRIPT_MODULES` ortam değişkeninde tanımlanmamış modüller, Node.js'in yerel modülleri veya `node_modules` içinde yüklü olsalar bile, betiklerde **kullanılamazlar**. Bu politika, operasyonel düzeyde kullanıcıların kullanabileceği modül listesini kontrol etmek için kullanılabilir. Böylece, bazı senaryolarda betiklerin aşırı yetkilere sahip olması engellenir.
+:::info{title="İpucu"}
+`WORKFLOW_SCRIPT_MODULES` ortam değişkeninde bildirilmemiş modüller, Node.js yerel modülleri olsalar veya `node_modules` içinde yüklü olsalar bile betikte **kullanılamaz**. Bu strateji, operasyonel düzeyde kullanıcıların kullanabileceği modül listesini kontrol etmek ve bazı senaryolarda betik yetkilerinin çok yüksek olmasını önlemek için kullanılabilir.
 :::
 
-Kaynak koddan dağıtım yapılmayan bir ortamda, eğer bir modül `node_modules` içinde yüklü değilse, ihtiyaç duyduğunuz paketi `storage` dizinine manuel olarak yükleyebilirsiniz. Örneğin, `exceljs` paketini kullanmanız gerektiğinde, aşağıdaki adımları uygulayabilirsiniz:
+Kaynak kod tabanlı olmayan dağıtım ortamlarında, eğer bir modül `node_modules` içinde yüklü değilse, gerekli paket `storage` dizinine manuel olarak yüklenebilir. Örneğin, `exceljs` paketini kullanmanız gerektiğinde şu işlemleri yapabilirsiniz:
 
 ```shell
 cd storage
 npm i --no-save --no-package-lock --prefix . exceljs
 ```
 
-Ardından, bu paketin uygulamanın CWD'sine (mevcut çalışma dizini) göreceli (veya mutlak) yolunu `WORKFLOW_SCRIPT_MODULES` ortam değişkenine ekleyin:
+Ardından, bu paketin uygulamanın CWD'sine (geçerli çalışma dizini) göreli (veya mutlak) yolunu `WORKFLOW_SCRIPT_MODULES` ortam değişkenine ekleyin:
 
 ```ini
 WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
 ```
 
-Böylece `exceljs` paketini betiğinizde kullanabilirsiniz:
+Böylece betikte `exceljs` paketini kullanabilirsiniz (`require` adı, ortam değişkeninde tanımlananla tamamen aynı olmalıdır):
 
 ```js
-const ExcelJS = require('exceljs');
+const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
 
@@ -97,29 +98,29 @@ console.log(global); // will throw error: "global is not defined"
 
 ### Giriş Parametreleri
 
-Düğümde yapılandırılan parametreler, betiğin içinde global değişkenler olarak doğrudan kullanılabilir. Betiğe aktarılan parametreler yalnızca `boolean`, `number`, `string`, `object` ve diziler gibi temel türleri destekler. Bir `Date` nesnesi aktarıldığında, ISO formatında bir dizgeye dönüştürülür. Özel sınıf örnekleri gibi diğer karmaşık türler doğrudan aktarılamaz.
+Düğümde yapılandırılan parametreler betikte global değişkenler olarak işlev görür ve doğrudan kullanılabilir. Betiğe aktarılan parametreler yalnızca `boolean`, `number`, `string`, `object` ve diziler gibi temel türleri destekler. `Date` nesnesi aktarıldıktan sonra ISO formatında bir dizeye dönüştürülür. Özel sınıf örnekleri gibi diğer karmaşık türler doğrudan aktarılamaz.
 
 ### Dönüş Değeri
 
-`return` ifadesini kullanarak temel veri türlerini (parametre kurallarıyla aynı) düğüme sonuç olarak döndürebilirsiniz. Eğer kodda `return` ifadesi çağrılmazsa, düğüm yürütmesinin bir dönüş değeri olmaz.
+`return` ifadesi aracılığıyla, temel türdeki veriler (parametre kurallarıyla aynı) sonuç olarak düğüme döndürülebilir. Kodda `return` ifadesi çağrılmazsa, düğüm yürütmesinin dönüş değeri olmaz.
 
 ```js
 return 123;
 ```
 
-### Çıktı (Log)
+### Çıktı (Günlük)
 
-Logları `console` kullanarak çıktı vermeniz **desteklenir**.
+Günlük çıktısı için `console` kullanımı **desteklenir**.
 
 ```js
 console.log('hello world!');
 ```
 
-İş akışı çalıştırıldığında, betik düğümünün çıktısı da ilgili iş akışının log dosyasına kaydedilir.
+İş akışı yürütüldüğünde, betik düğümünün çıktısı ilgili iş akışının günlük dosyasına da kaydedilir.
 
 ### Asenkron
 
-`async` kullanarak asenkron fonksiyonlar tanımlamanız ve `await` ile asenkron fonksiyonları çağırmanız **desteklenir**. `Promise` global nesnesini kullanmanız da **desteklenir**.
+Asenkron fonksiyonları tanımlamak için `async` ve asenkron fonksiyonları çağırmak için `await` kullanımı **desteklenir**. `Promise` global nesnesinin kullanımı **desteklenir**.
 
 ```js
 async function test() {
@@ -132,7 +133,7 @@ return value;
 
 ### Zamanlayıcılar
 
-`setTimeout`, `setInterval` veya `setImmediate` gibi metotları kullanmak isterseniz, bunları Node.js'in `timers` paketinden dahil etmeniz gerekir.
+`setTimeout`, `setInterval` veya `setImmediate` gibi yöntemleri kullanmanız gerekirse, bunları Node.js'in `timers` paketi aracılığıyla içe aktarmanız gerekir.
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');

@@ -20,15 +20,15 @@ pkg: '@nocobase/plugin-auth'
 
 صفحة التسجيل
 
-![](https://static-docs.nocobase.com/ac3c342df28cb7c6dc70b24e99e7f7.png)
+![](https://static-docs.nocobase.com/ac3c3ab42df28cb7c6dc70b24e99e7f7.png)
 
 عند عدم السماح بالتسجيل، لن تعرض صفحة تسجيل الدخول رابطًا لإنشاء حساب.
 
-![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a3745121.png)
+![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
 عند عدم السماح بالتسجيل، لا يمكن الوصول إلى صفحة التسجيل.
 
-![](https://static-docs.nocobase.com/09325c4b07e09f84dff8430556.png)
+![](https://static-docs.nocobase.com/09325c4b07e09f88f80a14dff8430556.png)
 
 ## إعدادات نموذج التسجيل<Badge>v1.4.0-beta.7+</Badge>
 

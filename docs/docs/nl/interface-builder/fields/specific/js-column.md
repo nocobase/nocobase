@@ -1,5 +1,5 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/interface-builder/fields/specific/js-column) voor nauwkeurige informatie.
 :::
 
 # JS Column
@@ -23,7 +23,7 @@ Bij het renderen van elke cel biedt de JS Column de volgende context API's:
 - `ctx.openView(options)`: Opent een geconfigureerde weergave (modaal venster/lade/pagina).
 - `ctx.i18n.t()` / `ctx.t()`: Internationalisatie.
 - `ctx.onRefReady(ctx.ref, cb)`: Rendert nadat de container gereed is.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Ingebouwde bibliotheken zoals React, ReactDOM, Ant Design, Ant Design-pictogrammen en dayjs voor JSX-rendering en datum-/tijdhulpprogramma's. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` blijven behouden voor compatibiliteit.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Ingebouwde algemene bibliotheken zoals React, ReactDOM, Ant Design, Ant Design-pictogrammen, dayjs, lodash, math.js en formula.js voor JSX-rendering, tijdsverwerking, gegevensmanipulatie en wiskundige berekeningen. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` blijven behouden voor compatibiliteit.)
 - `ctx.render(vnode)`: Rendert een React-element/HTML/DOM naar de standaardcontainer `ctx.element` (de huidige cel). Meerdere renders zullen de Root hergebruiken en de bestaande inhoud van de container overschrijven.
 
 ## Editor en Snippets
@@ -37,7 +37,7 @@ De scripteditor voor JS Column ondersteunt syntaxismarkering, foutmeldingen en i
 
 U kunt ook een AI-medewerker gebruiken om code te genereren:
 
-- [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Veelvoorkomend Gebruik
 

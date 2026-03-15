@@ -1,5 +1,5 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/fields/specific/js-column).
 :::
 
 # JS Column
@@ -23,7 +23,7 @@ Quando ogni cella della JS Column viene renderizzata, sono disponibili le seguen
 - `ctx.openView(options)`: Apre una vista configurata (modale/drawer/pagina).
 - `ctx.i18n.t()` / `ctx.t()`: Internazionalizzazione.
 - `ctx.onRefReady(ctx.ref, cb)`: Esegue il rendering dopo che il contenitore è pronto.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Librerie integrate come React, ReactDOM, Ant Design, icone di Ant Design e dayjs, utili per il rendering JSX e la gestione di date/ore. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenute per compatibilità.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Librerie integrate come React, ReactDOM, Ant Design, icone di Ant Design, dayjs, lodash, math.js e formula.js, utili per il rendering JSX, la gestione di date/ore, la manipolazione dei dati e le operazioni matematiche. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenute per compatibilità.)
 - `ctx.render(vnode)`: Esegue il rendering di un elemento React/HTML/DOM nel contenitore predefinito `ctx.element` (la cella corrente). Renderizzazioni multiple riutilizzeranno il Root e sovrascriveranno il contenuto esistente del contenitore.
 
 ## Editor e Snippet
@@ -37,7 +37,7 @@ L'editor di script della JS Column supporta l'evidenziazione della sintassi, i s
 
 È anche possibile utilizzare un AI Employee per generare codice:
 
-- [AI Employee · Nathan: Ingegnere Frontend](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Ingegnere Frontend](/ai-employees/features/built-in-employee)
 
 ## Usi comuni
 

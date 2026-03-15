@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Aggregate node"
+displayName: "Workflow: Agrega sorgu Node'u"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
-  Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.
+  İş akışında veritabanı üzerinde sayım, toplam, ortalama gibi agrega sorguları gerçekleştirmek için kullanılır.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Aggregate node
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-aggregate/index) bakın.
+:::
+
+# Workflow: Agrega sorgu Node'u

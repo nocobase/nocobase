@@ -39,7 +39,7 @@ Kullanıcı işlemi sonrasında hemen yürütülmesi ve sonuç döndürmesi gere
 
 İş akışı tuvaline girin, yapılandırma açılır penceresini açmak için tetikleyiciye tıklayın ve öncelikle bağlanacak koleksiyonu seçmeniz gerekir:
 
-![工作流配置_选择数据表](https://static-docs.nocobase.com/35c49a71eba731127edcf76719c97634.png)
+![工作流配置_选择数据表](https://static-docs.nocobase.com/35c49a91eba731127edcf76719c97634.png)
 
 ### Tetikleme Modunu Seçme
 
@@ -177,7 +177,7 @@ Eğer olay global modda yapılandırılmışsa, ilgili iş akışını belirtmek
 
 Aşağıdaki şekilde gösterildiği gibi:
 
-![操作执行顺序](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![操作执行顺序](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Koleksiyon Olayından Farkı
 

@@ -1,714 +1,708 @@
-# CRM 2.0 System Design
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/solution/crm/design).
+:::
 
-## 1. System Overview & Design Philosophy
+# Detailní návrh systému CRM 2.0
 
-### 1.1 System Positioning
 
-This system is a **CRM 2.0 Sales Management Platform** built on the NocoBase no-code platform. The core goal is:
+## 1. Přehled systému a filozofie návrhu
+
+### 1.1 Pozicování systému
+
+Tento systém je **platforma pro správu prodeje CRM 2.0** postavená na no-code platformě NocoBase. Hlavním cílem je:
 
 ```
-Let salespeople focus on building customer relationships,
-not data entry and repetitive analysis.
+Umožnit obchodníkům soustředit se na budování vztahů se zákazníky, nikoli na zadávání dat a opakující se analýzy.
 ```
 
-The system automates routine tasks through workflows and leverages AI to assist with lead scoring, opportunity analysis, and more — helping sales teams work more efficiently.
+Systém automatizuje běžné úkoly prostřednictvím pracovních postupů a využívá AI k asistenci při skórování leadů, analýze obchodních případů a dalších činnostech, čímž pomáhá prodejním týmům zvyšovat efektivitu.
 
-### 1.2 Design Philosophy
+### 1.2 Filozofie návrhu
 
-#### Principle 1: Complete Sales Funnel
+#### Filozofie 1: Kompletní prodejní trychtýř
 
-**End-to-end sales flow:**
+**End-to-end prodejní proces:**
+![design-2026-02-24-00-05-26](https://static-docs.nocobase.com/design-2026-02-24-00-05-26.png)
 
-![design_en-2026-02-24-00-22-45](https://static-docs.nocobase.com/design_en-2026-02-24-00-22-45.png)
+**Proč tento návrh?**
 
-**Why design it this way?**
+| Tradiční způsob | Integrované CRM |
+|---------|-----------|
+| Používání více systémů pro různé fáze | Jediný systém pokrývající celý životní cyklus |
+| Manuální přenos dat mezi systémy | Automatizovaný tok dat a konverze |
+| Nejednotné pohledy na zákazníka | Jednotný 360stupňový pohled na zákazníka |
+| Fragmentovaná analýza dat | End-to-end analýza prodejní pipeline |
 
-| Traditional Approach | Integrated CRM |
-|---------------------|----------------|
-| Multiple systems for different stages | Single system covering the full lifecycle |
-| Manual data transfer between systems | Automatic data flow and conversion |
-| Inconsistent customer views | Unified 360° customer view |
-| Fragmented data analysis | End-to-end pipeline analysis |
+#### Filozofie 2: Konfigurovatelná prodejní pipeline
+![design-2026-02-24-00-06-04](https://static-docs.nocobase.com/design-2026-02-24-00-06-04.png)
 
-#### Principle 2: Configurable Sales Pipeline
+Různá odvětví si mohou přizpůsobit fáze prodejní pipeline bez nutnosti úpravy kódu.
 
-![design_en-2026-02-24-00-23-08](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-08.png)
+#### Filozofie 3: Modulární design
 
-Different industries can customize pipeline stages without modifying code.
-
-#### Principle 3: Modular Design
-
-- Core modules (Customers + Opportunities) are required; all others are optional
-- Disabling a module requires no code changes — configure via the NocoBase admin UI
-- Each module is independently designed to minimize coupling
+- Základní moduly (Zákazníci + Obchodní případy) jsou povinné; ostatní moduly lze povolit podle potřeby.
+- Deaktivace modulů nevyžaduje změny v kódu; provádí se prostřednictvím konfigurace rozhraní NocoBase.
+- Každý modul je navržen nezávisle, aby se snížila provázanost (coupling).
 
 ---
 
-## 2. Module Architecture & Customization
+## 2. Architektura modulů a přizpůsobení
 
-### 2.1 Module Overview
+### 2.1 Přehled modulů
 
-The CRM system uses a **modular architecture** — each module can be independently enabled or disabled based on business needs.
+Systém CRM využívá **modulární architekturu** – každý modul lze nezávisle povolit nebo zakázat na základě obchodních požadavků.
+![design-2026-02-24-00-06-14](https://static-docs.nocobase.com/design-2026-02-24-00-06-14.png)
 
-![design_en-2026-02-24-00-23-19](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-19.png)
+### 2.2 Závislosti modulů
 
-### 2.2 Module Dependencies
+| Modul | Povinný | Závislosti | Podmínka pro deaktivaci |
+|-----|---------|--------|---------|
+| **Správa zákazníků** | ✅ Ano | - | Nelze zakázat (jádro) |
+| **Správa obchodních případů** | ✅ Ano | Správa zákazníků | Nelze zakázat (jádro) |
+| **Správa leadů** | Volitelný | - | Pokud není vyžadováno získávání leadů |
+| **Správa cenových nabídek** | Volitelný | Obchodní případy, Produkty | Jednoduché transakce nevyžadující formální nabídky |
+| **Správa objednávek** | Volitelný | Obchodní případy (nebo Nabídky) | Pokud není vyžadováno sledování objednávek/plateb |
+| **Správa produktů** | Volitelný | - | Pokud není vyžadován katalog produktů |
+| **Integrace e-mailu** | Volitelný | Zákazníci, Kontakty | Při používání externího e-mailového systému |
 
-| Module | Required | Depends On | When to Disable |
-|--------|:--------:|-----------|----------------|
-| **Customer Management** | ✅ Yes | — | Cannot be disabled (core) |
-| **Opportunity Management** | ✅ Yes | Customer Management | Cannot be disabled (core) |
-| **Lead Management** | Optional | — | No lead capture needed |
-| **Quotation Management** | Optional | Opportunity, Product | Simple deals with no formal quotes |
-| **Order Management** | Optional | Opportunity (or Quotation) | No order/payment tracking needed |
-| **Product Management** | Optional | — | No product catalog needed |
-| **Email Integration** | Optional | Customer, Contact | Using an external email system |
+### 2.3 Předkonfigurované verze
 
-### 2.3 Pre-configured Editions
+| Verze | Obsažené moduly | Scénář použití | Počet kolekcí |
+|-----|---------|---------|-----------|
+| **Lite** | Zákazníci + Obchodní případy | Sledování jednoduchých transakcí | 6 |
+| **Standard** | Lite + Leady + Nabídky + Objednávky + Produkty | Kompletní prodejní cyklus | 15 |
+| **Enterprise** | Standard + Integrace e-mailu | Plná funkčnost včetně e-mailu | 17 |
 
-| Edition | Modules Included | Use Case | Table Count |
-|---------|-----------------|----------|-------------|
-| **Lite** | Customer + Opportunity | Simple deal tracking | 6 |
-| **Standard** | Lite + Lead + Quotation + Order + Product | Full sales cycle | 15 |
-| **Enterprise** | Standard + Email Integration | Full feature set with email | 17 |
+### 2.4 Mapování modulů na kolekce
 
-### 2.4 Module–Table Mapping
+#### Kolekce hlavních modulů (vždy vyžadovány)
 
-#### Core Module Tables (Always Required)
+| Kolekce | Modul | Popis |
+|-------|------|------|
+| nb_crm_customers | Správa zákazníků | Záznamy zákazníků/společností |
+| nb_crm_contacts | Správa zákazníků | Kontakty |
+| nb_crm_customer_shares | Správa zákazníků | Oprávnění ke sdílení zákazníků |
+| nb_crm_opportunities | Správa obchodních případů | Prodejní obchodní případy |
+| nb_crm_opportunity_stages | Správa obchodních případů | Konfigurace fází |
+| nb_crm_opportunity_users | Správa obchodních případů | Spolupracovníci na obchodním případu |
+| nb_crm_activities | Správa aktivit | Záznamy aktivit |
+| nb_crm_comments | Správa aktivit | Komentáře/poznámky |
+| nb_crm_tags | Jádro | Sdílené štítky |
+| nb_cbo_currencies | Základní data | Číselník měn |
+| nb_cbo_regions | Základní data | Číselník zemí/regionů |
 
-| Table | Module | Description |
-|-------|--------|-------------|
-| nb_crm_customers | Customer Management | Customer/company records |
-| nb_crm_contacts | Customer Management | Contacts |
-| nb_crm_customer_shares | Customer Management | Customer sharing permissions |
-| nb_crm_opportunities | Opportunity Management | Sales opportunities |
-| nb_crm_opportunity_stages | Opportunity Management | Stage configuration |
-| nb_crm_opportunity_users | Opportunity Management | Opportunity collaborators |
-| nb_crm_activities | Activity Management | Activity records |
-| nb_crm_comments | Activity Management | Comments / notes |
-| nb_crm_tags | Core | Shared tags |
-| nb_cbo_currencies | Base Data | Currency dictionary |
-| nb_cbo_regions | Base Data | Country/region dictionary |
+### 2.5 Jak zakázat moduly
 
-### 2.5 How to Disable a Module
-
-Simply hide the module's menu entry in the NocoBase admin panel. No code changes or table deletions required.
+Stačí skrýt položku menu pro daný modul v administraci NocoBase; není třeba upravovat kód ani mazat kolekce.
 
 ---
 
-## 3. Core Entities & Data Model
+## 3. Hlavní entity a datový model
 
-### 3.1 Entity Relationship Overview
-![design_en-2026-02-24-00-23-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-33.png)
-### 3.2 Core Table Details
+### 3.1 Přehled vztahů mezi entitami
+![design-2026-02-24-00-06-40](https://static-docs.nocobase.com/design-2026-02-24-00-06-40.png)
 
-#### 3.2.1 Leads Table (nb_crm_leads)
+### 3.2 Podrobnosti o hlavních kolekcích
 
-Lead management with a simplified 4-stage workflow.
+#### 3.2.1 Leady (nb_crm_leads)
 
-**Stage flow:**
+Správa leadů využívající zjednodušený pracovní postup o 4 fázích.
+
+**Proces fází:**
 ```
-New → Working → Qualified → Converted (Customer/Opportunity)
-        ↓            ↓
-   Unqualified   Unqualified
+Nový → V řešení → Kvalifikovaný → Převeden na zákazníka/obchodní případ
+         ↓            ↓
+    Nekvalifikovaný Nekvalifikovaný
 ```
 
-**Key fields:**
+**Klíčová pole:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| lead_no | VARCHAR | Lead number (auto-generated) |
-| name | VARCHAR | Contact name |
-| company | VARCHAR | Company name |
-| title | VARCHAR | Job title |
-| email | VARCHAR | Email address |
-| phone | VARCHAR | Phone number |
-| mobile_phone | VARCHAR | Mobile number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| source | VARCHAR | Lead source: website/ads/referral/exhibition/telemarketing/email/social |
-| industry | VARCHAR | Industry |
-| annual_revenue | VARCHAR | Annual revenue range |
-| number_of_employees | VARCHAR | Employee count range |
-| status | VARCHAR | Status: new/working/qualified/unqualified |
-| rating | VARCHAR | Rating: hot/warm/cold |
-| owner_id | BIGINT | Owner (FK → users) |
-| ai_score | INTEGER | AI quality score 0–100 |
-| ai_convert_prob | DECIMAL | AI conversion probability |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_tags | JSONB | AI-generated tags |
-| ai_scored_at | TIMESTAMP | AI scoring timestamp |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| is_converted | BOOLEAN | Conversion flag |
-| converted_at | TIMESTAMP | Conversion timestamp |
-| converted_customer_id | BIGINT | Converted customer ID |
-| converted_contact_id | BIGINT | Converted contact ID |
-| converted_opportunity_id | BIGINT | Created opportunity ID |
-| lost_reason | TEXT | Loss reason |
-| disqualification_reason | TEXT | Disqualification reason |
-| description | TEXT | Description |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| lead_no | VARCHAR | Číslo leadu (automaticky generováno) |
+| name | VARCHAR | Jméno kontaktu |
+| company | VARCHAR | Název společnosti |
+| title | VARCHAR | Pracovní pozice |
+| email | VARCHAR | E-mail |
+| phone | VARCHAR | Telefon |
+| mobile_phone | VARCHAR | Mobil |
+| website | TEXT | Webové stránky |
+| address | TEXT | Adresa |
+| source | VARCHAR | Zdroj leadu: web/reklama/doporučení/veletrh/telemarketing/email/sociální sítě |
+| industry | VARCHAR | Odvětví |
+| annual_revenue | VARCHAR | Rozsah ročních tržeb |
+| number_of_employees | VARCHAR | Rozsah počtu zaměstnanců |
+| status | VARCHAR | Stav: new/working/qualified/unqualified |
+| rating | VARCHAR | Hodnocení: hot/warm/cold |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| ai_score | INTEGER | AI skóre kvality 0-100 |
+| ai_convert_prob | DECIMAL | AI pravděpodobnost konverze |
+| ai_best_contact_time | VARCHAR | AI doporučený čas kontaktu |
+| ai_tags | JSONB | AI generované štítky |
+| ai_scored_at | TIMESTAMP | Čas AI skórování |
+| ai_next_best_action | TEXT | AI návrh dalšího nejlepšího kroku |
+| ai_nba_generated_at | TIMESTAMP | Čas generování AI návrhu |
+| is_converted | BOOLEAN | Příznak převedení |
+| converted_at | TIMESTAMP | Čas převedení |
+| converted_customer_id | BIGINT | ID převedeného zákazníka |
+| converted_contact_id | BIGINT | ID převedeného kontaktu |
+| converted_opportunity_id | BIGINT | ID vytvořeného obchodního případu |
+| lost_reason | TEXT | Důvod ztráty |
+| disqualification_reason | TEXT | Důvod diskvalifikace |
+| description | TEXT | Popis |
 
-#### 3.2.2 Customers Table (nb_crm_customers)
+#### 3.2.2 Zákazníci (nb_crm_customers)
 
-Customer/company management with foreign trade support.
+Správa zákazníků/společností podporující mezinárodní obchod.
 
-**Key fields:**
+**Klíčová pole:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| name | VARCHAR | Customer name (required) |
-| account_number | VARCHAR | Account number (auto-generated, unique) |
-| phone | VARCHAR | Phone number |
-| website | TEXT | Website |
-| address | TEXT | Address |
-| industry | VARCHAR | Industry |
-| type | VARCHAR | Type: prospect/customer/partner/competitor |
-| number_of_employees | VARCHAR | Employee count range |
-| annual_revenue | VARCHAR | Annual revenue range |
-| level | VARCHAR | Level: normal/important/vip |
-| status | VARCHAR | Status: potential/active/dormant/churned |
-| country | VARCHAR | Country |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| name | VARCHAR | Název zákazníka (povinné) |
+| account_number | VARCHAR | Číslo účtu/zákazníka (automatické, unikátní) |
+| phone | VARCHAR | Telefon |
+| website | TEXT | Webové stránky |
+| address | TEXT | Adresa |
+| industry | VARCHAR | Odvětví |
+| type | VARCHAR | Typ: prospect/customer/partner/competitor |
+| number_of_employees | VARCHAR | Rozsah počtu zaměstnanců |
+| annual_revenue | VARCHAR | Rozsah ročních tržeb |
+| level | VARCHAR | Úroveň: normal/important/vip |
+| status | VARCHAR | Stav: potential/active/dormant/churned |
+| country | VARCHAR | Země |
 | region_id | BIGINT | Region (FK → nb_cbo_regions) |
-| preferred_currency | VARCHAR | Preferred currency: CNY/USD/EUR |
-| owner_id | BIGINT | Owner (FK → users) |
-| parent_id | BIGINT | Parent company (FK → self) |
-| source_lead_id | BIGINT | Source lead ID |
-| ai_health_score | INTEGER | AI health score 0–100 |
-| ai_health_grade | VARCHAR | AI health grade: A/B/C/D |
-| ai_churn_risk | DECIMAL | AI churn risk 0–100% |
-| ai_churn_risk_level | VARCHAR | AI churn risk level: low/medium/high |
-| ai_health_dimensions | JSONB | AI health dimension scores |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_health_assessed_at | TIMESTAMP | AI health assessment timestamp |
-| ai_tags | JSONB | AI-generated tags |
-| ai_best_contact_time | VARCHAR | AI-recommended contact time |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| description | TEXT | Description |
-| is_deleted | BOOLEAN | Soft delete flag |
+| preferred_currency | VARCHAR | Preferovaná měna: CNY/USD/EUR |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| parent_id | BIGINT | Mateřská společnost (FK → self) |
+| source_lead_id | BIGINT | ID zdrojového leadu |
+| ai_health_score | INTEGER | AI skóre zdraví 0-100 |
+| ai_health_grade | VARCHAR | AI stupeň zdraví: A/B/C/D |
+| ai_churn_risk | DECIMAL | AI riziko odchodu 0-100% |
+| ai_churn_risk_level | VARCHAR | AI úroveň rizika odchodu: low/medium/high |
+| ai_health_dimensions | JSONB | AI skóre jednotlivých dimenzí zdraví |
+| ai_recommendations | JSONB | Seznam AI doporučení |
+| ai_health_assessed_at | TIMESTAMP | Čas AI posouzení zdraví |
+| ai_tags | JSONB | AI generované štítky |
+| ai_best_contact_time | VARCHAR | AI doporučený čas kontaktu |
+| ai_next_best_action | TEXT | AI návrh dalšího nejlepšího kroku |
+| ai_nba_generated_at | TIMESTAMP | Čas generování AI návrhu |
+| description | TEXT | Popis |
+| is_deleted | BOOLEAN | Příznak smazání (soft delete) |
 
-#### 3.2.3 Opportunities Table (nb_crm_opportunities)
+#### 3.2.3 Obchodní případy (nb_crm_opportunities)
 
-Sales opportunity management with configurable pipeline stages.
+Správa prodejních obchodních případů s konfigurovatelnými fázemi pipeline.
 
-**Key fields:**
+**Klíčová pole:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| opportunity_no | VARCHAR | Opportunity number (auto-generated, unique) |
-| name | VARCHAR | Opportunity name (required) |
-| amount | DECIMAL | Expected amount |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| amount_usd | DECIMAL | USD equivalent |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Primary contact (FK) |
-| stage | VARCHAR | Stage code (FK → stages.code) |
-| stage_sort | INTEGER | Stage sort order (denormalized for sorting) |
-| stage_entered_at | TIMESTAMP | Time entered current stage |
-| days_in_stage | INTEGER | Days in current stage |
-| win_probability | DECIMAL | Manual win probability |
-| ai_win_probability | DECIMAL | AI-predicted win probability |
-| ai_analyzed_at | TIMESTAMP | AI analysis timestamp |
-| ai_confidence | DECIMAL | AI prediction confidence |
-| ai_trend | VARCHAR | AI trend: up/stable/down |
-| ai_risk_factors | JSONB | AI-identified risk factors |
-| ai_recommendations | JSONB | AI recommendation list |
-| ai_predicted_close | DATE | AI-predicted close date |
-| ai_next_best_action | TEXT | AI next best action suggestion |
-| ai_nba_generated_at | TIMESTAMP | AI suggestion generated timestamp |
-| expected_close_date | DATE | Expected close date |
-| actual_close_date | DATE | Actual close date |
-| owner_id | BIGINT | Owner (FK → users) |
-| last_activity_at | TIMESTAMP | Last activity timestamp |
-| stagnant_days | INTEGER | Days without activity |
-| loss_reason | TEXT | Loss reason |
-| competitor_id | BIGINT | Competitor (FK) |
-| lead_source | VARCHAR | Lead source |
-| campaign_id | BIGINT | Campaign ID |
-| expected_revenue | DECIMAL | Expected revenue = amount × probability |
-| description | TEXT | Description |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| opportunity_no | VARCHAR | Číslo obchodního případu (automatické, unikátní) |
+| name | VARCHAR | Název obchodního případu (povinné) |
+| amount | DECIMAL | Předpokládaná částka |
+| currency | VARCHAR | Měna |
+| exchange_rate | DECIMAL | Směnný kurz |
+| amount_usd | DECIMAL | Ekvivalentní částka v USD |
+| customer_id | BIGINT | Zákazník (FK) |
+| contact_id | BIGINT | Hlavní kontakt (FK) |
+| stage | VARCHAR | Kód fáze (FK → stages.code) |
+| stage_sort | INTEGER | Pořadí fáze (redundantní pro snadné řazení) |
+| stage_entered_at | TIMESTAMP | Čas vstupu do aktuální fáze |
+| days_in_stage | INTEGER | Počet dní v aktuální fázi |
+| win_probability | DECIMAL | Manuální pravděpodobnost výhry |
+| ai_win_probability | DECIMAL | AI předpověď pravděpodobnosti výhry |
+| ai_analyzed_at | TIMESTAMP | Čas AI analýzy |
+| ai_confidence | DECIMAL | Spolehlivost AI předpovědi |
+| ai_trend | VARCHAR | AI trend předpovědi: up/stable/down |
+| ai_risk_factors | JSONB | AI identifikované rizikové faktory |
+| ai_recommendations | JSONB | Seznam AI doporučení |
+| ai_predicted_close | DATE | AI předpokládané datum uzavření |
+| ai_next_best_action | TEXT | AI návrh dalšího nejlepšího kroku |
+| ai_nba_generated_at | TIMESTAMP | Čas generování AI návrhu |
+| expected_close_date | DATE | Očekávané datum uzavření |
+| actual_close_date | DATE | Skutečné datum uzavření |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| last_activity_at | TIMESTAMP | Čas poslední aktivity |
+| stagnant_days | INTEGER | Počet dní bez aktivity |
+| loss_reason | TEXT | Důvod ztráty |
+| competitor_id | BIGINT | Konkurent (FK) |
+| lead_source | VARCHAR | Zdroj leadu |
+| campaign_id | BIGINT | ID marketingové kampaně |
+| expected_revenue | DECIMAL | Očekávaný výnos = částka × pravděpodobnost |
+| description | TEXT | Popis |
 
-#### 3.2.4 Quotations Table (nb_crm_quotations)
+#### 3.2.4 Cenové nabídky (nb_crm_quotations)
 
-Quotation management with multi-currency and approval workflow support.
+Správa cenových nabídek s podporou více měn a schvalovacích pracovních postupů.
 
-**Status flow:**
+**Tok stavů:**
 ```
-Draft → Pending Approval → Approved → Sent → Accepted / Rejected / Expired
-              ↓
-          Rejected → Revise → Draft
+Koncept → Čeká na schválení → Schváleno → Odesláno → Přijato/Odmítnuto/Expirováno
+               ↓
+           Odmítnuto → Upravit → Koncept
 ```
 
-**Key fields:**
+**Klíčová pole:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| quotation_no | VARCHAR | Quotation number (auto-generated, unique) |
-| name | VARCHAR | Quotation name |
-| version | INTEGER | Version number |
-| opportunity_id | BIGINT | Opportunity (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency_id | BIGINT | Currency (FK → nb_cbo_currencies) |
-| exchange_rate | DECIMAL | Exchange rate |
-| subtotal | DECIMAL | Subtotal |
-| discount_rate | DECIMAL | Discount rate |
-| discount_amount | DECIMAL | Discount amount |
-| shipping_handling | DECIMAL | Shipping & handling |
-| tax_rate | DECIMAL | Tax rate |
-| tax_amount | DECIMAL | Tax amount |
-| total_amount | DECIMAL | Total amount |
-| total_amount_usd | DECIMAL | USD equivalent |
-| status | VARCHAR | Status: draft/pending_approval/approved/sent/accepted/rejected/expired |
-| submitted_at | TIMESTAMP | Submission timestamp |
-| approved_by | BIGINT | Approver (FK → users) |
-| approved_at | TIMESTAMP | Approval timestamp |
-| rejected_at | TIMESTAMP | Rejection timestamp |
-| sent_at | TIMESTAMP | Send timestamp |
-| customer_response_at | TIMESTAMP | Customer response timestamp |
-| expired_at | TIMESTAMP | Expiry timestamp |
-| valid_until | DATE | Valid until date |
-| payment_terms | TEXT | Payment terms |
-| terms_condition | TEXT | Terms & conditions |
-| address | TEXT | Shipping address |
-| description | TEXT | Description |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| quotation_no | VARCHAR | Číslo nabídky (automatické, unikátní) |
+| name | VARCHAR | Název nabídky |
+| version | INTEGER | Číslo verze |
+| opportunity_id | BIGINT | Obchodní případ (FK, povinné) |
+| customer_id | BIGINT | Zákazník (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| currency_id | BIGINT | Měna (FK → nb_cbo_currencies) |
+| exchange_rate | DECIMAL | Směnný kurz |
+| subtotal | DECIMAL | Mezisoučet |
+| discount_rate | DECIMAL | Sazba slevy |
+| discount_amount | DECIMAL | Částka slevy |
+| shipping_handling | DECIMAL | Doprava a balné |
+| tax_rate | DECIMAL | Sazba daně |
+| tax_amount | DECIMAL | Částka daně |
+| total_amount | DECIMAL | Celková částka |
+| total_amount_usd | DECIMAL | Ekvivalentní částka v USD |
+| status | VARCHAR | Stav: draft/pending_approval/approved/sent/accepted/rejected/expired |
+| submitted_at | TIMESTAMP | Čas odeslání ke schválení |
+| approved_by | BIGINT | Schvalovatel (FK → users) |
+| approved_at | TIMESTAMP | Čas schválení |
+| rejected_at | TIMESTAMP | Čas zamítnutí |
+| sent_at | TIMESTAMP | Čas odeslání zákazníkovi |
+| customer_response_at | TIMESTAMP | Čas reakce zákazníka |
+| expired_at | TIMESTAMP | Čas vypršení platnosti |
+| valid_until | DATE | Platnost do |
+| payment_terms | TEXT | Platební podmínky |
+| terms_condition | TEXT | Smluvní podmínky |
+| address | TEXT | Dodací adresa |
+| description | TEXT | Popis |
 
-#### 3.2.5 Orders Table (nb_crm_orders)
+#### 3.2.5 Objednávky (nb_crm_orders)
 
-Order management with payment tracking.
+Správa objednávek včetně sledování plateb.
 
-**Key fields:**
+**Klíčová pole:**
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| currency | VARCHAR | Currency |
-| exchange_rate | DECIMAL | Exchange rate |
-| order_amount | DECIMAL | Order amount |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| status | VARCHAR | Status: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| order_no | VARCHAR | Číslo objednávky (automatické, unikátní) |
+| customer_id | BIGINT | Zákazník (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| opportunity_id | BIGINT | Obchodní případ (FK) |
+| quotation_id | BIGINT | Nabídka (FK) |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| currency | VARCHAR | Měna |
+| exchange_rate | DECIMAL | Směnný kurz |
+| order_amount | DECIMAL | Částka objednávky |
+| paid_amount | DECIMAL | Zaplacená částka |
+| unpaid_amount | DECIMAL | Nezaplacená částka |
+| status | VARCHAR | Stav: pending/confirmed/in_progress/shipped/delivered/completed/cancelled |
+| payment_status | VARCHAR | Stav platby: unpaid/partial/paid |
+| order_date | DATE | Datum objednávky |
+| delivery_date | DATE | Předpokládané datum doručení |
+| actual_delivery_date | DATE | Skutečné datum doručení |
+| shipping_address | TEXT | Dodací adresa |
+| logistics_company | VARCHAR | Logistická společnost |
+| tracking_no | VARCHAR | Sledovací číslo |
+| terms_condition | TEXT | Smluvní podmínky |
+| description | TEXT | Popis |
 
-### 3.3 Table Summary
+### 3.3 Souhrn kolekcí
 
-#### CRM Business Tables
+#### Obchodní kolekce CRM
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_crm_leads | Lead management | Business |
-| 2 | nb_crm_customers | Customers/companies | Business |
-| 3 | nb_crm_contacts | Contacts | Business |
-| 4 | nb_crm_opportunities | Sales opportunities | Business |
-| 5 | nb_crm_opportunity_stages | Stage configuration | Config |
-| 6 | nb_crm_opportunity_users | Opportunity collaborators (sales team) | Relation |
-| 7 | nb_crm_quotations | Quotations | Business |
-| 8 | nb_crm_quotation_items | Quotation line items | Business |
-| 9 | nb_crm_quotation_approvals | Approval records | Business |
-| 10 | nb_crm_orders | Orders | Business |
-| 11 | nb_crm_order_items | Order line items | Business |
-| 12 | nb_crm_payments | Payment records | Business |
-| 13 | nb_crm_products | Product catalog | Business |
-| 14 | nb_crm_product_categories | Product categories | Config |
-| 15 | nb_crm_price_tiers | Tiered pricing | Config |
-| 16 | nb_crm_activities | Activity records | Business |
-| 17 | nb_crm_comments | Comments / notes | Business |
-| 18 | nb_crm_competitors | Competitors | Business |
-| 19 | nb_crm_tags | Tags | Config |
-| 20 | nb_crm_lead_tags | Lead–tag relation | Relation |
-| 21 | nb_crm_contact_tags | Contact–tag relation | Relation |
-| 22 | nb_crm_customer_shares | Customer sharing permissions | Relation |
-| 23 | nb_crm_exchange_rates | Exchange rate history | Config |
+| Č. | Název kolekce | Popis | Typ |
+|-----|------|------|------|
+| 1 | nb_crm_leads | Správa leadů | Obchodní |
+| 2 | nb_crm_customers | Zákazníci/Společnosti | Obchodní |
+| 3 | nb_crm_contacts | Kontakty | Obchodní |
+| 4 | nb_crm_opportunities | Prodejní obchodní případy | Obchodní |
+| 5 | nb_crm_opportunity_stages | Konfigurace fází | Konfigurační |
+| 6 | nb_crm_opportunity_users | Spolupracovníci (prodejní tým) | Asociační |
+| 7 | nb_crm_quotations | Cenové nabídky | Obchodní |
+| 8 | nb_crm_quotation_items | Položky nabídky | Obchodní |
+| 9 | nb_crm_quotation_approvals | Záznamy o schválení | Obchodní |
+| 10 | nb_crm_orders | Objednávky | Obchodní |
+| 11 | nb_crm_order_items | Položky objednávky | Obchodní |
+| 12 | nb_crm_payments | Záznamy o platbách | Obchodní |
+| 13 | nb_crm_products | Katalog produktů | Obchodní |
+| 14 | nb_crm_product_categories | Kategorie produktů | Konfigurační |
+| 15 | nb_crm_price_tiers | Stupňovité ceny | Konfigurační |
+| 16 | nb_crm_activities | Záznamy aktivit | Obchodní |
+| 17 | nb_crm_comments | Komentáře/poznámky | Obchodní |
+| 18 | nb_crm_competitors | Konkurenti | Obchodní |
+| 19 | nb_crm_tags | Štítky | Konfigurační |
+| 20 | nb_crm_lead_tags | Vazba Lead-Štítek | Asociační |
+| 21 | nb_crm_contact_tags | Vazba Kontakt-Štítek | Asociační |
+| 22 | nb_crm_customer_shares | Oprávnění ke sdílení zákazníků | Asociační |
+| 23 | nb_crm_exchange_rates | Historie směnných kurzů | Konfigurační |
 
-#### Base Data Tables (Shared Module)
+#### Kolekce základních dat (společné moduly)
 
-| # | Table | Description | Type |
-|---|-------|-------------|------|
-| 1 | nb_cbo_currencies | Currency dictionary | Config |
-| 2 | nb_cbo_regions | Country/region dictionary | Config |
+| Č. | Název kolekce | Popis | Typ |
+|-----|------|------|------|
+| 1 | nb_cbo_currencies | Číselník měn | Konfigurační |
+| 2 | nb_cbo_regions | Číselník zemí/regionů | Konfigurační |
 
-### 3.4 Supporting Tables
+### 3.4 Pomocné kolekce
 
-#### 3.4.1 Comments Table (nb_crm_comments)
+#### 3.4.1 Komentáře (nb_crm_comments)
 
-General-purpose comment/note table, linkable to multiple business objects.
+Univerzální kolekce komentářů/poznámek, kterou lze přiřadit k různým obchodním objektům.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| content | TEXT | Comment content |
-| lead_id | BIGINT | Related lead (FK) |
-| customer_id | BIGINT | Related customer (FK) |
-| opportunity_id | BIGINT | Related opportunity (FK) |
-| order_id | BIGINT | Related order (FK) |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| content | TEXT | Obsah komentáře |
+| lead_id | BIGINT | Související lead (FK) |
+| customer_id | BIGINT | Související zákazník (FK) |
+| opportunity_id | BIGINT | Související obchodní případ (FK) |
+| order_id | BIGINT | Související objednávka (FK) |
 
-#### 3.4.2 Customer Shares Table (nb_crm_customer_shares)
+#### 3.4.2 Sdílení zákazníků (nb_crm_customer_shares)
 
-Enables multi-user collaboration and permission sharing on customers.
+Umožňuje spolupráci více osob a sdílení oprávnění k zákazníkům.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| customer_id | BIGINT | Customer (FK, required) |
-| shared_with_user_id | BIGINT | Recipient user (FK, required) |
-| shared_by_user_id | BIGINT | Sharing initiator (FK) |
-| permission_level | VARCHAR | Permission level: read/write/full |
-| shared_at | TIMESTAMP | Share timestamp |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| customer_id | BIGINT | Zákazník (FK, povinné) |
+| shared_with_user_id | BIGINT | Sdíleno s uživatelem (FK, povinné) |
+| shared_by_user_id | BIGINT | Sdílel uživatel (FK) |
+| permission_level | VARCHAR | Úroveň oprávnění: read/write/full |
+| shared_at | TIMESTAMP | Čas sdílení |
 
-#### 3.4.3 Opportunity Collaborators Table (nb_crm_opportunity_users)
+#### 3.4.3 Spolupracovníci na obchodním případu (nb_crm_opportunity_users)
 
-Supports sales team collaboration on opportunities.
+Podporuje spolupráci prodejního týmu na obchodních případech.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| opportunity_id | BIGINT | Opportunity (FK, composite PK) |
-| user_id | BIGINT | User (FK, composite PK) |
+| Pole | Typ | Popis |
+|-----|------|------|
+| opportunity_id | BIGINT | Obchodní případ (FK, složený PK) |
+| user_id | BIGINT | Uživatel (FK, složený PK) |
 | role | VARCHAR | Role: owner/collaborator/viewer |
 
-#### 3.4.4 Regions Table (nb_cbo_regions)
+#### 3.4.4 Regiony (nb_cbo_regions)
 
-Country/region base data dictionary.
+Základní číselník zemí a regionů.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code_alpha2 | VARCHAR | ISO 3166-1 alpha-2 code (unique) |
-| code_alpha3 | VARCHAR | ISO 3166-1 alpha-3 code (unique) |
-| code_numeric | VARCHAR | ISO 3166-1 numeric code |
-| name | VARCHAR | Country/region name |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
-
----
-
-## 4. Lead Lifecycle
-
-Lead management uses a simplified 4-stage workflow. When a new lead is created, a workflow can automatically trigger AI scoring to help sales quickly identify high-quality leads.
-
-### 4.1 Status Definitions
-
-| Status | Name | Description |
-|--------|------|-------------|
-| new | New | Just created, awaiting contact |
-| working | Working | Actively being followed up |
-| qualified | Qualified | Ready for conversion |
-| unqualified | Unqualified | Not a good fit |
-
-### 4.2 Status Flow
-
-
-![design_en-2026-02-24-00-23-51](https://static-docs.nocobase.com/design_en-2026-02-24-00-23-51.png)
-
-### 4.3 Lead Conversion Flow
-
-The conversion UI presents three options simultaneously; users can create or link:
-
-- **Customer**: Create a new customer or link to an existing one
-- **Contact**: Create a new contact (linked to the customer)
-- **Opportunity**: Must create an opportunity
-![design_en-2026-02-24-00-24-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-24-30.png)
-
-
-**Fields recorded after conversion:**
-- `converted_customer_id`: Linked customer ID
-- `converted_contact_id`: Linked contact ID
-- `converted_opportunity_id`: Created opportunity ID
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| code_alpha2 | VARCHAR | ISO 3166-1 Alpha-2 kód (unikátní) |
+| code_alpha3 | VARCHAR | ISO 3166-1 Alpha-3 kód (unikátní) |
+| code_numeric | VARCHAR | ISO 3166-1 číselný kód |
+| name | VARCHAR | Název země/regionu |
+| is_active | BOOLEAN | Je aktivní |
+| sort_order | INTEGER | Pořadí řazení |
 
 ---
 
-## 5. Opportunity Lifecycle
+## 4. Životní cyklus leadu
 
-Opportunity management uses configurable pipeline stages. When a stage changes, a workflow can automatically trigger AI win probability prediction to help sales identify risks and opportunities.
+Správa leadů využívá zjednodušený pracovní postup o 4 fázích. Při vytvoření nového leadu může pracovní postup automaticky spustit AI skórování, které obchodníkům pomůže rychle identifikovat vysoce kvalitní leady.
 
-### 5.1 Configurable Stages
+### 4.1 Definice stavů
 
-Stages are stored in `nb_crm_opportunity_stages` and can be customized:
+| Stav | Název | Popis |
+|-----|------|------|
+| new | Nový | Právě vytvořen, čeká na kontaktování |
+| working | V řešení | Aktivní následná komunikace |
+| qualified | Kvalifikovaný | Připraven ke konverzi |
+| unqualified | Nekvalifikovaný | Nevhodný kandidát |
 
-| Code | Name | Order | Default Win % |
-|------|------|:-----:|:-------------:|
-| prospecting | Prospecting | 1 | 10% |
-| analysis | Analysis | 2 | 30% |
-| proposal | Proposal | 3 | 60% |
-| negotiation | Negotiation | 4 | 80% |
-| won | Won | 5 | 100% |
-| lost | Lost | 6 | 0% |
+### 4.2 Diagram stavů
 
-### 5.2 Pipeline Flow
+![design-2026-02-24-00-25-32](https://static-docs.nocobase.com/design-2026-02-24-00-25-32.png)
 
-![design_en-2026-02-24-00-25-52](https://static-docs.nocobase.com/design_en-2026-02-24-00-25-52.png)
+### 4.3 Proces konverze leadu
 
-### 5.3 Stagnation Detection
+Rozhraní pro konverzi nabízí tři možnosti současně; uživatelé si mohou vybrat, co vytvořit nebo přiřadit:
 
-Opportunities with no activity will be flagged:
+- **Zákazník**: Vytvořit nového zákazníka NEBO přiřadit ke stávajícímu.
+- **Kontakt**: Vytvořit nový kontakt (přiřazený k zákazníkovi).
+- **Obchodní případ**: Obchodní případ musí být vytvořen.
+![design-2026-02-24-00-25-22](https://static-docs.nocobase.com/design-2026-02-24-00-25-22.png)
 
-| Days Inactive | Action |
-|---------------|--------|
-| 7 days | Yellow warning |
-| 14 days | Orange reminder to owner |
-| 30 days | Red alert to manager |
+**Záznamy po konverzi:**
+- `converted_customer_id`: ID přiřazeného zákazníka
+- `converted_contact_id`: ID přiřazeného kontaktu
+- `converted_opportunity_id`: ID vytvořeného obchodního případu
+
+---
+
+## 5. Životní cyklus obchodního případu
+
+Správa obchodních případů využívá konfigurovatelné fáze prodejní pipeline. Při změně fáze může dojít k automatickému spuštění AI předpovědi pravděpodobnosti výhry, což obchodníkům pomáhá identifikovat rizika a příležitosti.
+
+### 5.1 Konfigurovatelné fáze
+
+Fáze jsou uloženy v kolekci `nb_crm_opportunity_stages` a lze je přizpůsobit:
+
+| Kód | Název | Pořadí | Výchozí pravděpodobnost výhry |
+|-----|------|------|---------|
+| prospecting | Vyhledávání | 1 | 10% |
+| analysis | Analýza potřeb | 2 | 30% |
+| proposal | Návrh / Cenová nabídka | 3 | 60% |
+| negotiation | Vyjednávání / Revize | 4 | 80% |
+| won | Uzavřeno - Získáno | 5 | 100% |
+| lost | Uzavřeno - Ztraceno | 6 | 0% |
+
+### 5.2 Průběh pipeline
+![design-2026-02-24-00-20-31](https://static-docs.nocobase.com/design-2026-02-24-00-20-31.png)
+
+### 5.3 Detekce stagnace
+
+Obchodní případy bez aktivity budou označeny:
+
+| Dny bez aktivity | Akce |
+|-----------|------|
+| 7 dní | Žluté varování |
+| 14 dní | Oranžové připomenutí vlastníkovi |
+| 30 dní | Červené připomenutí manažerovi |
 
 ```sql
--- Calculate stagnation days
+-- Výpočet dní stagnace
 UPDATE nb_crm_opportunities
 SET stagnant_days = EXTRACT(DAY FROM NOW() - last_activity_at)
 WHERE stage NOT IN ('won', 'lost');
 ```
 
-### 5.4 Won / Lost Handling
+### 5.4 Zpracování výhry/ztráty
 
-**When Won:**
-1. Update stage to 'won'
-2. Record actual close date
-3. Update customer status to 'active'
-4. Trigger order creation (if quotation was accepted)
+**Při výhře (Won):**
+1. Aktualizace fáze na 'won'.
+2. Záznam skutečného data uzavření.
+3. Aktualizace stavu zákazníka na 'active'.
+4. Spuštění vytvoření objednávky (pokud byla přijata cenová nabídka).
 
-**When Lost:**
-1. Update stage to 'lost'
-2. Record loss reason
-3. Record competitor ID (if lost to a competitor)
-4. Notify manager
+**Při ztrátě (Lost):**
+1. Aktualizace fáze na 'lost'.
+2. Záznam důvodu ztráty.
+3. Záznam ID konkurenta (pokud bylo ztraceno ve prospěch konkurence).
+4. Upozornění manažera.
 
 ---
 
-## 6. Quotation Lifecycle
+## 6. Životní cyklus cenové nabídky
 
-### 6.1 Status Definitions
+### 6.1 Definice stavů
 
-| Status | Name | Description |
-|--------|------|-------------|
-| draft | Draft | Being prepared |
-| pending_approval | Pending Approval | Awaiting approval |
-| approved | Approved | Ready to send |
-| sent | Sent | Sent to customer |
-| accepted | Accepted | Customer accepted |
-| rejected | Rejected | Customer rejected |
-| expired | Expired | Past validity date |
+| Stav | Název | Popis |
+|-----|------|------|
+| draft | Koncept | V přípravě |
+| pending_approval | Čeká na schválení | Čeká na schválení nadřízeným |
+| approved | Schváleno | Připraveno k odeslání |
+| sent | Odesláno | Odesláno zákazníkovi |
+| accepted | Přijato | Zákazník nabídku přijal |
+| rejected | Odmítnuto | Zákazník nabídku odmítl |
+| expired | Expirováno | Po datu platnosti |
 
-### 6.2 Approval Rules (To Be Refined)
+### 6.2 Pravidla schvalování (k dopracování)
 
-Approval flow is triggered based on the following conditions:
+Schvalovací pracovní postupy se spouštějí na základě následujících podmínek:
 
-| Condition | Approval Level |
-|-----------|---------------|
-| Discount > 10% | Sales Manager |
-| Discount > 20% | Sales Director |
-| Amount > $100K | Finance + CEO |
+| Podmínka | Úroveň schválení |
+|------|---------|
+| Sleva > 10% | Manažer prodeje |
+| Sleva > 20% | Ředitel prodeje |
+| Částka > $100K | Finanční oddělení + Generální ředitel |
 
-![design_en-2026-02-24-00-26-05](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-05.png)
+### 6.3 Podpora více měn
 
-### 6.3 Multi-Currency Support
+#### Filozofie návrhu
 
-#### Design Rationale
+Použití **USD jako jednotné základní měny** pro všechny reporty a analýzy. Každý záznam částky ukládá:
+- Původní měnu a částku (to, co vidí zákazník)
+- Směnný kurz v době transakce
+- Ekvivalentní částku v USD (pro interní porovnání)
 
-**USD is used as the unified base currency** for all reports and analysis. Each monetary record stores:
-- Original currency and amount (what the customer sees)
-- Exchange rate at the time of transaction
-- USD equivalent (for internal comparison)
+#### Číselník měn (nb_cbo_currencies)
 
-#### Currency Dictionary (nb_cbo_currencies)
+Konfigurace měn využívá společnou kolekci základních dat podporující dynamickou správu. Pole `current_rate` ukládá aktuální směnný kurz, který je aktualizován plánovanou úlohou z nejnovějšího záznamu v `nb_crm_exchange_rates`.
 
-Currency configuration uses a shared base data table for dynamic management. The `current_rate` field stores the current exchange rate, synced by a scheduled task from the latest record in `nb_crm_exchange_rates`.
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| code | VARCHAR | Kód měny (unikátní): USD/CNY/EUR/GBP/JPY |
+| name | VARCHAR | Název měny |
+| symbol | VARCHAR | Symbol měny |
+| decimal_places | INTEGER | Počet desetinných míst |
+| current_rate | DECIMAL | Aktuální kurz vůči USD (synchronizováno z historie) |
+| is_active | BOOLEAN | Je aktivní |
+| sort_order | INTEGER | Pořadí řazení |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| code | VARCHAR | Currency code (unique): USD/CNY/EUR/GBP/JPY |
-| name | VARCHAR | Currency name |
-| symbol | VARCHAR | Currency symbol |
-| decimal_places | INTEGER | Decimal places |
-| current_rate | DECIMAL | Current rate vs. USD (synced from exchange rate history) |
-| is_active | BOOLEAN | Active flag |
-| sort_order | INTEGER | Sort order |
+#### Historie směnných kurzů (nb_crm_exchange_rates)
 
-#### Exchange Rate History (nb_crm_exchange_rates)
+Zaznamenává historická data směnných kurzů. Plánovaná úloha synchronizuje nejnovější kurzy do `nb_cbo_currencies.current_rate`.
 
-Records historical exchange rate data. A scheduled task syncs the latest rate to `nb_cbo_currencies.current_rate`.
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| currency_code | VARCHAR | Kód měny (CNY/EUR/GBP/JPY) |
+| rate_to_usd | DECIMAL(10,6) | Kurz vůči USD |
+| effective_date | DATE | Datum účinnosti |
+| source | VARCHAR | Zdroj: manual/api |
+| createdAt | TIMESTAMP | Čas vytvoření |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| currency_code | VARCHAR | Currency code (CNY/EUR/GBP/JPY) |
-| rate_to_usd | DECIMAL(10,6) | Rate vs. USD |
-| effective_date | DATE | Effective date |
-| source | VARCHAR | Rate source: manual/api |
-| createdAt | TIMESTAMP | Created timestamp |
+> **Poznámka**: Cenové nabídky jsou propojeny s kolekcí `nb_cbo_currencies` přes cizí klíč `currency_id` a směnný kurz je získáván přímo z pole `current_rate`. Obchodní případy a objednávky používají pole `currency` typu VARCHAR pro uložení kódu měny.
 
-> **Note**: Quotations link to `nb_cbo_currencies` via `currency_id` FK and read the rate directly from `current_rate`. Opportunities and orders use a `currency` VARCHAR field for the currency code.
+#### Vzor polí pro částky
 
-#### Monetary Field Pattern
+Kolekce obsahující částky následují tento vzor:
 
-Tables with monetary amounts follow this pattern:
+| Pole | Typ | Popis |
+|-----|------|------|
+| currency | VARCHAR | Měna transakce |
+| amount | DECIMAL | Původní částka |
+| exchange_rate | DECIMAL | Směnný kurz vůči USD v době transakce |
+| amount_usd | DECIMAL | Ekvivalent v USD (vypočteno) |
 
-| Field | Type | Description |
-|-------|------|-------------|
-| currency | VARCHAR | Transaction currency |
-| amount | DECIMAL | Original currency amount |
-| exchange_rate | DECIMAL | Rate vs. USD at time of transaction |
-| amount_usd | DECIMAL | USD equivalent (calculated) |
-
-**Applied to:**
+**Aplikováno na:**
 - `nb_crm_opportunities.amount` → `amount_usd`
 - `nb_crm_quotations.total_amount` → `total_amount_usd`
 
-#### Workflow Integration
+#### Integrace do pracovního postupu
+![design-2026-02-24-00-21-00](https://static-docs.nocobase.com/design-2026-02-24-00-21-00.png)
 
-![design_en-2026-02-24-00-26-33](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-33.png)
+**Logika získávání směnného kurzu:**
+1. Během obchodních operací se směnný kurz získá přímo z `nb_cbo_currencies.current_rate`.
+2. Transakce v USD: Kurz = 1.0, vyhledávání není nutné.
+3. `current_rate` je synchronizován plánovanou úlohou z nejnovějšího záznamu `nb_crm_exchange_rates`.
 
-**Exchange rate fetch logic:**
-1. Business operations read rate directly from `nb_cbo_currencies.current_rate`
-2. USD transactions: rate = 1.0, no lookup needed
-3. `current_rate` is synced by scheduled task from the latest `nb_crm_exchange_rates` record
+### 6.4 Správa verzí
 
-### 6.4 Version Management
-
-When a quotation is rejected or expires, it can be copied as a new version:
+Pokud je cenová nabídka odmítnuta nebo vyprší její platnost, lze ji duplikovat jako novou verzi:
 
 ```
-QT-20260119-001 v1 → Rejected
-QT-20260119-001 v2 → Sent
-QT-20260119-001 v3 → Accepted
+QT-20260119-001 v1 → Odmítnuto
+QT-20260119-001 v2 → Odesláno
+QT-20260119-001 v3 → Přijato
 ```
 
 ---
 
-## 7. Order Lifecycle
+## 7. Životní cyklus objednávky
 
-### 7.1 Order Overview
+### 7.1 Přehled objednávek
 
-Orders are created when a quotation is accepted, representing a confirmed business commitment.
+Objednávky se vytvářejí při přijetí cenové nabídky a představují potvrzený obchodní závazek.
+![design-2026-02-24-00-21-21](https://static-docs.nocobase.com/design-2026-02-24-00-21-21.png)
 
-![design_en-2026-02-24-00-26-47](https://static-docs.nocobase.com/design_en-2026-02-24-00-26-47.png)
+### 7.2 Definice stavů objednávky
 
-### 7.2 Order Status Definitions
+| Stav | Kód | Popis | Povolené akce |
+|-----|------|------|---------|
+| Koncept | `draft` | Objednávka vytvořena, dosud nepotvrzena | Upravit, Potvrdit, Zrušit |
+| Potvrzeno | `confirmed` | Objednávka potvrzena, čeká na vyřízení | Zahájit plnění, Zrušit |
+| V řešení | `in_progress` | Objednávka se zpracovává/vyrábí | Aktualizovat stav, Odeslat, Zrušit (vyžaduje schválení) |
+| Odesláno | `shipped` | Produkty odeslány zákazníkovi | Označit jako doručené |
+| Doručeno | `delivered` | Zákazník zboží převzal | Dokončit objednávku |
+| Dokončeno | `completed` | Objednávka plně dokončena | Žádné |
+| Zrušeno | `cancelled` | Objednávka byla zrušena | Žádné |
 
-| Status | Code | Description | Allowed Actions |
-|--------|------|-------------|----------------|
-| Draft | `draft` | Created, not yet confirmed | Edit, Confirm, Cancel |
-| Confirmed | `confirmed` | Confirmed, awaiting fulfillment | Start fulfillment, Cancel |
-| In Progress | `in_progress` | Being processed/manufactured | Update progress, Ship, Cancel (approval required) |
-| Shipped | `shipped` | Product shipped to customer | Mark as Delivered |
-| Delivered | `delivered` | Customer received | Complete order |
-| Completed | `completed` | Fully complete | None |
-| Cancelled | `cancelled` | Order cancelled | None |
-
-### 7.3 Order Data Model
+### 7.3 Datový model objednávky
 
 #### nb_crm_orders
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_no | VARCHAR | Order number (auto-generated, unique) |
-| customer_id | BIGINT | Customer (FK) |
-| contact_id | BIGINT | Contact (FK) |
-| opportunity_id | BIGINT | Opportunity (FK) |
-| quotation_id | BIGINT | Quotation (FK) |
-| owner_id | BIGINT | Owner (FK → users) |
-| status | VARCHAR | Order status |
-| payment_status | VARCHAR | Payment status: unpaid/partial/paid |
-| order_date | DATE | Order date |
-| delivery_date | DATE | Expected delivery date |
-| actual_delivery_date | DATE | Actual delivery date |
-| currency | VARCHAR | Order currency |
-| exchange_rate | DECIMAL | Rate vs. USD |
-| order_amount | DECIMAL | Order total |
-| paid_amount | DECIMAL | Amount paid |
-| unpaid_amount | DECIMAL | Amount outstanding |
-| shipping_address | TEXT | Shipping address |
-| logistics_company | VARCHAR | Logistics company |
-| tracking_no | VARCHAR | Tracking number |
-| terms_condition | TEXT | Terms & conditions |
-| description | TEXT | Description |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| order_no | VARCHAR | Číslo objednávky (automatické, unikátní) |
+| customer_id | BIGINT | Zákazník (FK) |
+| contact_id | BIGINT | Kontakt (FK) |
+| opportunity_id | BIGINT | Obchodní případ (FK) |
+| quotation_id | BIGINT | Nabídka (FK) |
+| owner_id | BIGINT | Vlastník (FK → users) |
+| status | VARCHAR | Stav objednávky |
+| payment_status | VARCHAR | Stav platby: unpaid/partial/paid |
+| order_date | DATE | Datum objednávky |
+| delivery_date | DATE | Předpokládané datum doručení |
+| actual_delivery_date | DATE | Skutečné datum doručení |
+| currency | VARCHAR | Měna objednávky |
+| exchange_rate | DECIMAL | Kurz vůči USD |
+| order_amount | DECIMAL | Celková částka objednávky |
+| paid_amount | DECIMAL | Zaplacená částka |
+| unpaid_amount | DECIMAL | Nezaplacená částka |
+| shipping_address | TEXT | Dodací adresa |
+| logistics_company | VARCHAR | Logistická společnost |
+| tracking_no | VARCHAR | Sledovací číslo |
+| terms_condition | TEXT | Smluvní podmínky |
+| description | TEXT | Popis |
 
 #### nb_crm_order_items
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | FK | Parent order |
-| product_id | FK | Product reference |
-| product_name | VARCHAR | Product name snapshot |
-| quantity | INT | Quantity ordered |
-| unit_price | DECIMAL | Unit price |
-| discount_percent | DECIMAL | Discount percentage |
-| line_total | DECIMAL | Line item total |
-| notes | TEXT | Line item notes |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| order_id | FK | Nadřazená objednávka |
+| product_id | FK | Odkaz na produkt |
+| product_name | VARCHAR | Název produktu (snapshot) |
+| quantity | INT | Objednané množství |
+| unit_price | DECIMAL | Jednotková cena |
+| discount_percent | DECIMAL | Procento slevy |
+| line_total | DECIMAL | Celkem za položku |
+| notes | TEXT | Poznámky k položce |
 
-### 7.4 Payment Tracking
+### 7.4 Sledování plateb
 
 #### nb_crm_payments
 
-| Field | Type | Description |
-|-------|------|-------------|
-| id | BIGINT | Primary key |
-| order_id | BIGINT | Related order (FK, required) |
-| customer_id | BIGINT | Customer (FK) |
-| payment_no | VARCHAR | Payment number (auto-generated, unique) |
-| amount | DECIMAL | Payment amount (required) |
-| currency | VARCHAR | Payment currency |
-| payment_method | VARCHAR | Payment method: transfer/check/cash/credit_card/lc |
-| payment_date | DATE | Payment date |
-| bank_account | VARCHAR | Bank account number |
-| bank_name | VARCHAR | Bank name |
-| notes | TEXT | Payment notes |
+| Pole | Typ | Popis |
+|-----|------|------|
+| id | BIGINT | Primární klíč |
+| order_id | BIGINT | Související objednávka (FK, povinné) |
+| customer_id | BIGINT | Zákazník (FK) |
+| payment_no | VARCHAR | Číslo platby (automatické, unikátní) |
+| amount | DECIMAL | Částka platby (povinné) |
+| currency | VARCHAR | Měna platby |
+| payment_method | VARCHAR | Metoda: převod/šek/hotovost/karta/akreditiv |
+| payment_date | DATE | Datum platby |
+| bank_account | VARCHAR | Číslo bankovního účtu |
+| bank_name | VARCHAR | Název banky |
+| notes | TEXT | Poznámky k platbě |
 
 ---
 
-## 8. Customer Lifecycle
+## 8. Životní cyklus zákazníka
 
-### 8.1 Customer Overview
+### 8.1 Přehled zákazníků
 
-Customers are created upon lead conversion or opportunity win. The system tracks the full lifecycle from acquisition to advocacy.
+Zákazníci se vytvářejí během konverze leadu nebo při vyhraném obchodním případu. Systém sleduje celý životní cyklus od akvizice až po loajálního ambasadora.
+![design-2026-02-24-00-21-34](https://static-docs.nocobase.com/design-2026-02-24-00-21-34.png)
 
-![design_en-2026-02-24-00-27-30](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-30.png)
+### 8.2 Definice stavů zákazníka
 
-### 8.2 Customer Status Definitions
+| Stav | Kód | Zdraví | Popis |
+|-----|------|--------|------|
+| Potenciální | `prospect` | N/A | Převedený lead, zatím bez objednávek |
+| Aktivní | `active` | ≥70 | Platící zákazník, dobrá interakce |
+| Rostoucí | `growing` | ≥80 | Zákazník s příležitostmi k expanzi |
+| Ohrožený | `at_risk` | <50 | Zákazník vykazující známky odchodu |
+| Ztracený | `churned` | N/A | Již není aktivní |
+| Znovuzískání | `win_back` | N/A | Bývalý zákazník v procesu reaktivace |
+| Ambasador | `advocate` | ≥90 | Vysoká spokojenost, poskytuje doporučení |
 
-| Status | Code | Health Score | Description |
-|--------|------|:------------:|-------------|
-| Prospect | `prospect` | N/A | Converted lead, no orders yet |
-| Active | `active` | ≥70 | Paying customer, good engagement |
-| Growing | `growing` | ≥80 | Customer with expansion opportunities |
-| At Risk | `at_risk` | <50 | Showing signs of churn |
-| Churned | `churned` | N/A | No longer active |
-| Win Back | `win_back` | N/A | Former customer being re-engaged |
-| Advocate | `advocate` | ≥90 | High satisfaction, providing referrals |
+### 8.3 Skórování zdraví zákazníka
 
-### 8.3 Customer Health Score
+Zdraví zákazníka se vypočítává na základě několika faktorů:
 
-Health score is calculated from multiple factors:
+| Faktor | Váha | Metrika |
+|-----|------|---------|
+| Recence nákupu | 25% | Počet dní od poslední objednávky |
+| Frekvence nákupů | 20% | Počet objednávek za období |
+| Peněžní hodnota | 20% | Celková a průměrná hodnota objednávek |
+| Angažovanost | 15% | Míra otevření e-mailů, účast na schůzkách |
+| Zdraví podpory | 10% | Objem požadavků a míra jejich vyřešení |
+| Používání produktu | 10% | Metriky aktivního používání (pokud jsou k dispozici) |
 
-| Factor | Weight | Metric |
-|--------|:------:|--------|
-| Purchase Recency | 25% | Days since last order |
-| Purchase Frequency | 20% | Orders per period |
-| Monetary Value | 20% | Total and average order value |
-| Engagement | 15% | Email open rate, meeting attendance |
-| Support Health | 10% | Ticket volume and resolution rate |
-| Product Usage | 10% | Active usage metrics (if applicable) |
-
-**Health score thresholds:**
+**Prahové hodnoty zdraví:**
 
 ```javascript
 if (health_score >= 90) status = 'advocate';
@@ -717,218 +711,217 @@ else if (health_score >= 50) status = 'growing';
 else status = 'at_risk';
 ```
 
-### 8.4 Customer Segmentation
+### 8.4 Segmentace zákazníků
 
-#### Automatic Segmentation
+#### Automatizovaná segmentace
 
-| Segment | Condition | Recommended Action |
-|---------|-----------|-------------------|
-| VIP | Lifetime value > $100K | White-glove service, executive sponsorship |
-| Enterprise | Company size > 500 employees | Dedicated account manager |
-| Mid-market | Company size 50–500 employees | Regular check-ins, scaled support |
-| Startup | Company size < 50 employees | Self-service resources, community |
-| Dormant | 90+ days inactive | Re-engagement campaign |
-
----
-
-## 9. Email Integration
-
-### 9.1 Overview
-
-NocoBase provides a built-in email integration plugin supporting Gmail and Outlook. Once emails are synced, workflows can automatically trigger AI analysis of email sentiment and intent, helping sales quickly understand customer attitudes.
-
-### 9.2 Email Sync
-
-**Supported mailboxes:**
-- Gmail (via OAuth 2.0)
-- Outlook / Microsoft 365 (via OAuth 2.0)
-
-**Sync behavior:**
-- Bidirectional sync for sent and received emails
-- Automatic association to CRM records (leads, contacts, opportunities)
-- Attachments stored in the NocoBase file system
-
-### 9.3 Email–CRM Association (To Be Refined)
-
-![design_en-2026-02-24-00-27-41](https://static-docs.nocobase.com/design_en-2026-02-24-00-27-41.png)
-
-### 9.4 Email Templates
-
-Sales can use pre-built templates:
-
-| Category | Examples |
-|----------|---------|
-| Initial Outreach | Cold email, warm introduction, event follow-up |
-| Follow-up | Meeting follow-up, proposal follow-up, no-reply nudge |
-| Quotation | Quote attached, quote revised, quote expiring soon |
-| Order | Order confirmation, shipping notification, delivery confirmation |
-| Customer Success | Welcome, check-in, review request |
+| Segment | Podmínka | Navrhovaná akce |
+|-----|------|---------|
+| VIP | LTV > $100K | Prémiový servis (white-glove), exekutivní sponzoring |
+| Enterprise | Velikost spol. > 500 | Vyhrazený Account Manager |
+| Střední trh | Velikost spol. 50-500 | Pravidelné kontroly, škálovaná podpora |
+| Startup | Velikost spol. < 50 | Samoobslužné zdroje, komunita |
+| Spící | 90+ dní bez aktivity | Reaktivní marketing |
 
 ---
 
-## 10. AI Capabilities
+## 9. Integrace e-mailu
 
-### 10.1 AI Employee Team
+### 9.1 Přehled
 
-The CRM integrates the NocoBase AI plugin, using the following built-in AI employees with CRM-specific tasks configured:
+NocoBase poskytuje vestavěný plugin pro integraci e-mailu podporující Gmail a Outlook. Po synchronizaci e-mailů mohou pracovní postupy automaticky spustit AI analýzu sentimentu a záměru e-mailu, což obchodníkům pomůže rychle pochopit postoje zákazníků.
 
-| ID | Name | Built-in Role | CRM Extended Capabilities |
-|----|------|--------------|--------------------------|
-| viz | Viz | Data Analyst | Sales data analysis, pipeline forecasting |
-| dara | Dara | Chart Expert | Data visualization, report charts, dashboard design |
-| ellis | Ellis | Editor | Email reply drafting, communication summaries, business email composition |
-| lexi | Lexi | Translator | Multilingual customer communication, content translation |
-| orin | Orin | Organizer | Daily priorities, next-best-action suggestions, follow-up planning |
+### 9.2 Synchronizace e-mailů
 
-### 10.2 AI Task List
+**Podporovaní poskytovatelé:**
+- Gmail (přes OAuth 2.0)
+- Outlook/Microsoft 365 (přes OAuth 2.0)
 
-AI capabilities are divided into two independent categories:
+**Chování synchronizace:**
+- Obousměrná synchronizace odeslaných a přijatých e-mailů.
+- Automatické přiřazení e-mailů k záznamům v CRM (Leady, Kontakty, Obchodní případy).
+- Přílohy uložené v souborovém systému NocoBase.
 
-#### 1. AI Employees (Frontend — User-Triggered)
+### 9.3 Vazba E-mail-CRM (k dopracování)
+![design-2026-02-24-00-21-51](https://static-docs.nocobase.com/design-2026-02-24-00-21-51.png)
 
-Users interact directly with AI employees via frontend blocks to get analysis and recommendations.
+### 9.4 E-mailové šablony
 
-| Employee | Task | Description |
-|----------|------|-------------|
-| Viz | Sales Data Analysis | Analyze pipeline trends and conversion rates |
-| Viz | Pipeline Forecast | Revenue forecast based on weighted pipeline |
-| Dara | Chart Generation | Generate sales report charts |
-| Dara | Dashboard Design | Design data dashboard layouts |
-| Ellis | Reply Drafting | Generate professional email replies |
-| Ellis | Communication Summary | Summarize email threads |
-| Ellis | Business Email Composition | Draft meeting invitations, follow-ups, thank-you emails |
-| Orin | Daily Priorities | Generate today's prioritized task list |
-| Orin | Next Best Action | Recommend next steps for each opportunity |
-| Lexi | Content Translation | Translate marketing materials, proposals, emails |
+Obchodníci mohou používat přednastavené šablony:
 
-#### 2. Workflow LLM Nodes (Backend — Auto-Executed)
+| Kategorie šablon | Příklady |
+|---------|------|
+| Prvotní oslovení | Cold email, vřelé představení, follow-up po akci |
+| Následná komunikace | Follow-up po schůzce, follow-up po nabídce, urgence při neodpovídání |
+| Nabídka | Nabídka v příloze, revize nabídky, končící platnost nabídky |
+| Objednávka | Potvrzení objednávky, oznámení o odeslání, potvrzení doručení |
+| Úspěch zákazníka | Uvítání, kontrolní dotaz, žádost o recenzi |
 
-LLM nodes embedded in workflows, triggered automatically via table events, action events, or scheduled tasks — independent of AI employees.
+---
 
-| Task | Trigger | Description | Fields Written |
-|------|---------|-------------|---------------|
-| Lead Scoring | Table event (create/update) | Evaluate lead quality | ai_score, ai_convert_prob |
-| Win Probability | Table event (stage change) | Predict opportunity success | ai_win_probability, ai_risk_factors |
+## 10. Funkce s podporou AI
 
-> **Note**: Workflow LLM nodes use prompts with schema-defined output to produce structured JSON, which is then parsed and written to business data fields — no user interaction required.
+### 10.1 Tým AI zaměstnanců
 
-### 10.3 AI Fields in the Database
+Systém CRM integruje AI plugin NocoBase a využívá následující vestavěné AI zaměstnance nakonfigurované pro specifické úkoly v CRM:
 
-| Table | AI Field | Description |
-|-------|----------|-------------|
-| nb_crm_leads | ai_score | AI score 0–100 |
-| | ai_convert_prob | Conversion probability |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_scored_at | Scoring timestamp |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_opportunities | ai_win_probability | AI-predicted win probability |
-| | ai_analyzed_at | Analysis timestamp |
-| | ai_confidence | Prediction confidence |
+| ID | Název | Vestavěná role | Rozšířené schopnosti pro CRM |
+|----|------|---------|-------------|
+| viz | Viz | Datový analytik | Analýza prodejních dat, prognózování pipeline |
+| dara | Dara | Expert na grafy | Vizualizace dat, vývoj reportů, návrh nástěnek |
+| ellis | Ellis | Editor | Koncepty odpovědí na e-maily, shrnutí komunikace, psaní obchodních e-mailů |
+| lexi | Lexi | Překladatel | Vícejazyčná komunikace se zákazníky, překlad obsahu |
+| orin | Orin | Organizátor | Denní priority, návrhy dalších kroků, plánování následných aktivit |
+
+### 10.2 Seznam AI úkolů
+
+Schopnosti AI jsou rozděleny do dvou nezávislých kategorií:
+
+#### I. AI zaměstnanci (spouštěno front-endovým blokem)
+
+Uživatelé komunikují přímo s AI prostřednictvím front-endových bloků AI zaměstnanců za účelem získání analýz a návrhů.
+
+| Zaměstnanec | Úkol | Popis |
+|------|------|------|
+| Viz | Analýza prodejních dat | Analýza trendů v pipeline a konverzních poměrů |
+| Viz | Prognózování pipeline | Předpověď výnosů na základě vážené pipeline |
+| Dara | Generování grafů | Generování grafů pro prodejní reporty |
+| Dara | Návrh nástěnek | Návrh rozvržení datových nástěnek |
+| Ellis | Koncepty odpovědí | Generování profesionálních odpovědí na e-maily |
+| Ellis | Shrnutí komunikace | Shrnutí e-mailových vláken |
+| Ellis | Psaní obchodních e-mailů | Pozvánky na schůzky, follow-upy, děkovné e-maily atd. |
+| Orin | Denní priority | Generování prioritního seznamu úkolů pro daný den |
+| Orin | Další nejlepší krok | Doporučení dalších kroků pro každý obchodní případ |
+| Lexi | Překlad obsahu | Překlad marketingových materiálů, návrhů a e-mailů |
+
+#### II. LLM uzly v pracovním postupu (automatické spuštění na pozadí)
+
+LLM uzly vložené do pracovních postupů, spouštěné automaticky událostmi v kolekcích, akcemi nebo plánovanými úlohami, nezávisle na AI zaměstnancích.
+
+| Úkol | Metoda spuštění | Popis | Cílové pole |
+|------|---------|------|---------|
+| Skórování leadů | Událost v kolekci (Vytvoření/Aktualizace) | Posouzení kvality leadu | ai_score, ai_convert_prob |
+| Předpověď výhry | Událost v kolekci (Změna fáze) | Předpověď pravděpodobnosti úspěchu obchodního případu | ai_win_probability, ai_risk_factors |
+
+> **Poznámka**: LLM uzly v pracovním postupu využívají prompty a Schema výstup pro strukturovaný JSON, který je analyzován a zapsán do polí obchodních dat bez zásahu uživatele.
+
+### 10.3 AI pole v databázi
+
+| Tabulka | AI pole | Popis |
+|----|--------|------|
+| nb_crm_leads | ai_score | AI skóre 0-100 |
+| | ai_convert_prob | Pravděpodobnost konverze |
+| | ai_best_contact_time | Nejlepší čas pro kontakt |
+| | ai_tags | AI generované štítky (JSONB) |
+| | ai_scored_at | Čas skórování |
+| | ai_next_best_action | AI návrh dalšího nejlepšího kroku |
+| | ai_nba_generated_at | Čas generování návrhu |
+| nb_crm_opportunities | ai_win_probability | AI předpověď pravděpodobnosti výhry |
+| | ai_analyzed_at | Čas analýzy |
+| | ai_confidence | Spolehlivost předpovědi |
 | | ai_trend | Trend: up/stable/down |
-| | ai_risk_factors | Risk factors (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_predicted_close | Predicted close date |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
-| nb_crm_customers | ai_health_score | Health score 0–100 |
-| | ai_health_grade | Health grade: A/B/C/D |
-| | ai_churn_risk | Churn risk 0–100% |
-| | ai_churn_risk_level | Churn risk level: low/medium/high |
-| | ai_health_dimensions | Dimension scores (JSONB) |
-| | ai_recommendations | Recommendation list (JSONB) |
-| | ai_health_assessed_at | Health assessment timestamp |
-| | ai_tags | AI-generated tags (JSONB) |
-| | ai_best_contact_time | AI-recommended contact time |
-| | ai_next_best_action | Next best action suggestion |
-| | ai_nba_generated_at | Suggestion generated timestamp |
+| | ai_risk_factors | Rizikové faktory (JSONB) |
+| | ai_recommendations | Seznam doporučení (JSONB) |
+| | ai_predicted_close | Předpokládané datum uzavření |
+| | ai_next_best_action | AI návrh dalšího nejlepšího kroku |
+| | ai_nba_generated_at | Čas generování návrhu |
+| nb_crm_customers | ai_health_score | Skóre zdraví 0-100 |
+| | ai_health_grade | Stupeň zdraví: A/B/C/D |
+| | ai_churn_risk | Riziko odchodu 0-100% |
+| | ai_churn_risk_level | Úroveň rizika odchodu: low/medium/high |
+| | ai_health_dimensions | Skóre dimenzí (JSONB) |
+| | ai_recommendations | Seznam doporučení (JSONB) |
+| | ai_health_assessed_at | Čas posouzení zdraví |
+| | ai_tags | AI generované štítky (JSONB) |
+| | ai_best_contact_time | Nejlepší čas pro kontakt |
+| | ai_next_best_action | AI návrh dalšího nejlepšího kroku |
+| | ai_nba_generated_at | Čas generování návrhu |
 
 ---
 
-## 11. Workflow Engine
+## 11. Engine pracovních postupů
 
-### 11.1 Implemented Workflows
+### 11.1 Implementované pracovní postupy
 
-| Workflow Name | Trigger Type | Status | Description |
-|--------------|-------------|--------|-------------|
-| Leads Created | Table event | Enabled | Triggered when a lead is created |
-| CRM Overall Analytics | AI employee event | Enabled | CRM-wide data analysis |
-| Lead Conversion | Post-action event | Enabled | Lead conversion flow |
-| Lead Assignment | Table event | Enabled | Automatic lead assignment |
-| Lead Scoring | Table event | Disabled | Lead scoring (pending refinement) |
-| Follow-up Reminder | Scheduled task | Disabled | Follow-up reminders (pending refinement) |
+| Název pracovního postupu | Typ spouštěče | Stav | Popis |
+|-----------|---------|------|------|
+| Leads Created | Událost v kolekci | Povoleno | Spustí se při vytvoření leadu |
+| CRM Overall Analytics | Událost AI zaměstnance | Povoleno | Celková analýza dat CRM |
+| Lead Conversion | Událost po akci | Povoleno | Proces konverze leadu |
+| Lead Assignment | Událost v kolekci | Povoleno | Automatické přidělování leadů |
+| Lead Scoring | Událost v kolekci | Zakázáno | Skórování leadů (k dopracování) |
+| Follow-up Reminder | Plánovaná úloha | Zakázáno | Připomenutí následných aktivit (k dopracování) |
 
-### 11.2 Planned Workflows
+### 11.2 Pracovní postupy k implementaci
 
-| Workflow | Trigger Type | Description |
-|----------|-------------|-------------|
-| Opportunity Stage Advance | Table event | Update win probability and record timestamp on stage change |
-| Stagnation Detection | Scheduled task | Detect inactive opportunities and send reminders |
-| Quotation Approval | Post-action event | Multi-level approval flow |
-| Order Generation | Post-action event | Auto-create order when quotation is accepted |
-
----
-
-## 12. Menu & Interface Design
-
-### 12.1 Admin Menu Structure
-
-
-| Menu | Type | Description |
-|------|------|-------------|
-| **Dashboards** | Group | Dashboards |
-| - Dashboard | Page | Default dashboard |
-| - SalesManager | Page | Sales manager view |
-| - SalesRep | Page | Sales rep view |
-| - Executive | Page | Executive view |
-| **Leads** | Page | Lead management |
-| **Customers** | Page | Customer management |
-| **Opportunities** | Page | Opportunity management |
-| - Table | Tab | Opportunity list |
-| **Products** | Page | Product management |
-| - Categories | Tab | Product categories |
-| **Orders** | Page | Order management |
-| **Settings** | Group | Settings |
-| - Stage Settings | Page | Opportunity stage configuration |
-| - Exchange Rate | Page | Exchange rate settings |
-| - Activity | Page | Activity records |
-| - Emails | Page | Email management |
-| - Contacts | Page | Contact management |
-| - Data Analysis | Page | Data analysis |
-
-### 12.2 Dashboard Views
-
-#### Sales Manager View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Pipeline Value | KPI Card | Total pipeline value by stage |
-| Team Leaderboard | Table | Rep performance ranking |
-| Risk Alerts | Alert List | High-risk opportunities |
-| Win Rate Trend | Line Chart | Monthly win rate |
-| Stagnant Deals | List | Deals needing attention |
-
-#### Sales Rep View
-
-| Component | Type | Data |
-|-----------|------|------|
-| My Quota Progress | Progress Bar | Monthly actual vs. quota |
-| Open Opportunities | KPI Card | My open opportunity count |
-| Closing This Week | List | Deals closing soon |
-| Overdue Activities | Alert | Overdue tasks |
-| Quick Actions | Buttons | Log activity, Create opportunity |
-
-#### Executive View
-
-| Component | Type | Data |
-|-----------|------|------|
-| Annual Revenue | KPI Card | Year-to-date revenue |
-| Pipeline Value | KPI Card | Total pipeline |
-| Win Rate | KPI Card | Overall win rate |
-| Customer Health | Distribution Chart | Health score distribution |
-| Forecast | Chart | Monthly revenue forecast |
+| Pracovní postup | Typ spouštěče | Popis |
+|-------|---------|------|
+| Posun fáze obchodního případu | Událost v kolekci | Aktualizace pravděpodobnosti výhry a záznam času při změně fáze |
+| Detekce stagnace obchodního případu | Plánovaná úloha | Detekce neaktivních obchodních případů a zasílání připomenutí |
+| Schvalování cenové nabídky | Událost po akci | Víceúrovňový schvalovací proces |
+| Generování objednávky | Událost po akci | Automatické generování objednávky po přijetí nabídky |
 
 ---
 
-*Document Version: v2.0 | Last Updated: 2026-02-06*
+## 12. Návrh menu a rozhraní
+
+### 12.1 Struktura administrace
+
+| Menu | Typ | Popis |
+|------|------|------|
+| **Nástěnky** | Skupina | Nástěnky |
+| - Nástěnka | Stránka | Výchozí nástěnka |
+| - Manažer prodeje | Stránka | Pohled pro manažera prodeje |
+| - Obchodní zástupce | Stránka | Pohled pro obchodního zástupce |
+| - Vedení | Stránka | Pohled pro vedení společnosti |
+| **Leady** | Stránka | Správa leadů |
+| **Zákazníci** | Stránka | Správa zákazníků |
+| **Obchodní případy** | Stránka | Správa obchodních případů |
+| - Tabulka | Karta | Seznam obchodních případů |
+| **Produkty** | Stránka | Správa produktů |
+| - Kategorie | Karta | Kategorie produktů |
+| **Objednávky** | Stránka | Správa objednávek |
+| **Nastavení** | Skupina | Nastavení |
+| - Nastavení fází | Stránka | Konfigurace fází obchodních případů |
+| - Směnný kurz | Stránka | Nastavení směnných kurzů |
+| - Aktivity | Stránka | Záznamy aktivit |
+| - E-maily | Stránka | Správa e-mailů |
+| - Kontakty | Stránka | Správa kontaktů |
+| - Analýza dat | Stránka | Analýza dat |
+
+### 12.2 Zobrazení nástěnek
+
+#### Pohled pro manažera prodeje
+
+| Komponenta | Typ | Data |
+|-----|------|------|
+| Hodnota pipeline | KPI karta | Celková částka v pipeline podle fází |
+| Žebříček týmu | Tabulka | Pořadí výkonu obchodních zástupců |
+| Riziková varování | Seznam varování | Vysoce rizikové obchodní případy |
+| Trend míry výher | Čárový graf | Měsíční míra výher |
+| Stagnující obchody | Seznam | Obchody vyžadující pozornost |
+
+#### Pohled pro obchodního zástupce
+
+| Komponenta | Typ | Data |
+|-----|------|------|
+| Plnění mé kvóty | Ukazatel průběhu | Měsíční skutečnost vs. kvóta |
+| Nevyřízené obchodní případy | KPI karta | Počet mých nevyřízených obchodních případů |
+| Uzavírané tento týden | Seznam | Obchody, které mají být brzy uzavřeny |
+| Aktivity po termínu | Varování | Úkoly po termínu platnosti |
+| Rychlé akce | Tlačítka | Zaznamenat aktivitu, Vytvořit obchodní případ |
+
+#### Pohled pro vedení (Executive)
+
+| Komponenta | Typ | Data |
+|-----|------|------|
+| Roční výnosy | KPI karta | Výnosy od začátku roku (YTD) |
+| Hodnota pipeline | KPI karta | Celková částka v pipeline |
+| Míra výher | KPI karta | Celková míra výher |
+| Zdraví zákazníků | Distribuce | Rozdělení skóre zdraví |
+| Prognóza | Graf | Měsíční prognóza výnosů |
+
+
+---
+
+*Verze dokumentu: v2.0 | Aktualizováno: 2026-02-06*

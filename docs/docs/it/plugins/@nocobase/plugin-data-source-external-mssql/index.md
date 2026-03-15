@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External SQL Server"
+displayName: "Origine dati: SQL Server esterno"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external SQL Server databases as data sources.
+  Utilizza database SQL Server esterni come origini dati.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: External SQL Server
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-data-source-external-mssql/index).
+:::
+
+# Origine dati: SQL Server esterno

@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Collection Field: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Collection के डेटा को सॉर्ट करने के लिए उपयोग किया जाता है।
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-field-sort/index) देखें।
+:::
+
+# Collection Field: Sort

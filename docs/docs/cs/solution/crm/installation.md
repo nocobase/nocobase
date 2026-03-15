@@ -1,130 +1,129 @@
-# Installation Guide
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/solution/crm/installation).
+:::
 
-> The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# Jak nainstalovat
 
-To help you deploy the CRM 2.0 solution smoothly to your own NocoBase environment, we provide two restoration methods. Choose the one that best suits your edition and technical background.
+> Aktuální verze využívá pro nasazení formu **zálohování a obnovy**. V budoucích verzích můžeme přejít na formu **přírůstkové migrace**, aby bylo snazší integrovat řešení do vašich stávajících systémů.
 
-Before you begin, please ensure:
+Abychom vám umožnili rychle a hladce nasadit řešení CRM 2.0 do vašeho vlastního prostředí NocoBase, nabízíme dva způsoby obnovy. Vyberte si ten, který nejlépe odpovídá vaší verzi uživatele a technickému zázemí.
 
-- You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
-- NocoBase version **v2.1.0-beta.2 or above**
-- You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+Než začnete, ujistěte se, že:
 
-**Important notes**:
-- This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Check your `docker-compose.yml` and ensure `DB_UNDERSCORED` is not set to `true`, otherwise the restoration will fail.
+- Již máte základní běžící prostředí NocoBase. Ohledně instalace hlavního systému se prosím podívejte na podrobnější [oficiální instalační dokumentaci](https://docs-cn.nocobase.com/welcome/getting-started/installation).
+- Verze NocoBase je **v2.1.0-beta.2 a vyšší**.
+- Již jste si stáhli příslušné soubory systému CRM:
+  - **Záložní soubor**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) – vhodný pro Metodu 1
+  - **SQL soubor**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) – vhodný pro Metodu 2
+
+**Důležité upozornění**:
+- Toto řešení je vytvořeno na databázi **PostgreSQL 16**, ujistěte se, že vaše prostředí používá PostgreSQL 16.
+- **DB_UNDERSCORED nesmí být true**: Zkontrolujte prosím svůj soubor `docker-compose.yml` a ujistěte se, že proměnná prostředí `DB_UNDERSCORED` není nastavena na `true`, jinak dojde ke konfliktu se zálohou řešení a obnova selže.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## Metoda 1: Obnova pomocí Správce záloh (doporučeno pro uživatele verzí Pro/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration. It is the simplest option but has some environment and edition requirements.
+Tento způsob využívá vestavěný plugin NocoBase "[Správce záloh](https://docs-cn.nocobase.com/handbook/backups)" (verze Pro/Enterprise) pro obnovu jedním kliknutím, což je nejjednodušší operace. Má však určité požadavky na prostředí a verzi uživatele.
 
-### Key Characteristics
+### Klíčové vlastnosti
 
-* **Advantages**:
-  1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
-* **Limitations**:
-  1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
-  3. **Plugin dependency**: If the solution includes commercial plugins not available in your environment, the restoration will fail.
+* **Výhody**:
+  1. **Pohodlné ovládání**: Vše lze dokončit v rozhraní UI, lze kompletně obnovit všechny konfigurace včetně pluginů.
+  2. **Kompletní obnova**: **Umožňuje obnovit všechny systémové soubory**, včetně souborů šablon tisku, souborů nahraných prostřednictvím polí typu soubor v kolekcích atd., což zajišťuje plnou integritu funkcí.
+* **Omezení**:
+  1. **Pouze pro verze Pro/Enterprise**: "Správce záloh" je plugin na podnikové úrovni, který je dostupný pouze uživatelům verzí Pro/Enterprise.
+  2. **Přísné požadavky na prostředí**: Vyžaduje, aby vaše databázové prostředí (verze, nastavení citlivosti na velikost písmen atd.) bylo vysoce kompatibilní s prostředím, ve kterém jsme zálohu vytvořili.
+  3. **Závislost na pluginech**: Pokud řešení obsahuje komerční pluginy, které ve vašem lokálním prostředí chybí, obnova selže.
 
-### Steps
+### Postup
 
-**Step 1: (Strongly recommended) Start the application with the `full` image**
+**Krok 1: 【Důrazně doporučeno】 Spusťte aplikaci pomocí obrazu `full`**
 
-To avoid restoration failures due to a missing database client, we strongly recommend using the `full` Docker image, which bundles all required tools.
+Abyste se vyhnuli selhání obnovy kvůli chybějícímu databázovému klientovi, důrazně doporučujeme používat Docker obraz ve verzi `full`. Obsahuje všechny potřebné doprovodné programy, takže nemusíte provádět žádnou další konfiguraci.
+
+Příklad příkazu pro stažení obrazu:
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then start your NocoBase service using this image.
+Poté pomocí tohoto obrazu spusťte svou službu NocoBase.
 
-> **Note**: Without the `full` image, you may need to manually install the `pg_dump` client inside the container, which is error-prone.
+> **Poznámka**: Pokud nepoužijete obraz `full`, možná budete muset uvnitř kontejneru ručně nainstalovat databázového klienta `pg_dump`, což je zdlouhavý a nestabilní proces.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**Krok 2: Zapněte plugin "Správce záloh"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. Přihlaste se do svého systému NocoBase.
+2. Přejděte do **`Správa pluginů`**.
+3. Najděte a povolte plugin **`Správce záloh`**.
 
-**Step 3: Restore from local backup file**
+**Krok 3: Obnova z lokálního záložního souboru**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait for the restoration to complete. This may take anywhere from a few seconds to a few minutes.
+1. Po povolení pluginu obnovte stránku.
+2. V levém menu přejděte na **`Správa systému`** -> **`Správce záloh`**.
+3. Klikněte na tlačítko **`Obnovit z lokální zálohy`** v pravém horním rohu.
+4. Přetáhněte stažený záložní soubor do oblasti pro nahrávání.
+5. Klikněte na **`Odeslat`** a trpělivě počkejte, až systém dokončí obnovu; tento proces může trvat od několika desítek sekund až po několik minut.
 
-### Notes
+### Poznámky
 
-* **Database compatibility**: This is the most critical point. Your PostgreSQL database **version, character set, and case sensitivity settings** must match those of the backup source. In particular, the `schema` name must be consistent.
-* **Commercial plugin matching**: Ensure you have enabled all commercial plugins required by the solution, otherwise the restoration will be interrupted.
+* **Kompatibilita databáze**: Toto je nejdůležitější bod této metody. **Verze, znaková sada a nastavení citlivosti na velikost písmen** vaší databáze PostgreSQL musí odpovídat zdrojovému souboru zálohy. Zejména název `schema` musí být shodný.
+* **Shoda komerčních pluginů**: Ujistěte se, že vlastníte a máte zapnuté všechny komerční pluginy vyžadované řešením, jinak bude obnova přerušena.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, Better for Community Edition)
+## Metoda 2: Přímý import SQL souboru (univerzální, vhodnější pro komunitní verzi)
 
-This method restores data by directly operating the database, bypassing the Backup Manager plugin — no Pro/Enterprise edition required.
+Tento způsob obnovuje data přímou operací s databází, čímž obchází plugin "Správce záloh", a proto nemá žádná omezení pro verze Pro/Enterprise.
 
-### Key Characteristics
+### Klíčové vlastnosti
 
-* **Advantages**:
-  1. **No edition restriction**: Works for all NocoBase users, including Community Edition.
-  2. **High compatibility**: Does not depend on the in-app `dump` tool — as long as you can connect to the database, you can operate.
-  3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
-* **Limitations**:
-  1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+* **Výhody**:
+  1. **Bez omezení verzí**: Vhodné pro všechny uživatele NocoBase, včetně komunitní verze.
+  2. **Vysoká kompatibilita**: Nezávisí na nástroji `dump` uvnitř aplikace; pokud se lze připojit k databázi, lze operaci provést.
+  3. **Vysoká tolerance chyb**: Pokud řešení obsahuje komerční pluginy, které nemáte, související funkce nebudou povoleny, ale neovlivní to běžné používání ostatních funkcí a aplikaci lze úspěšně spustit.
+* **Omezení**:
+  1. **Vyžaduje schopnost práce s databází**: Vyžaduje, aby uživatel měl základní schopnosti práce s databází, například jak spustit `.sql` soubor.
+  2. **Ztráta systémových souborů**: **Tato metoda způsobí ztrátu všech systémových souborů**, včetně souborů šablon tisku, souborů nahraných prostřednictvím polí typu soubor v kolekcích atd.
 
-### Steps
+### Postup
 
-**Step 1: Prepare a clean database**
+**Krok 1: Připravte čistou databázi**
 
-Create a brand new, empty database for the data you're about to import.
+Připravte si zcela novou, prázdnou databázi pro data, která se chystáte importovat.
 
-**Step 2: Import the `.sql` file into the database**
+**Krok 2: Importujte `.sql` soubor do databáze**
 
-* **Option A: Via server command line (Docker example)**
+Získejte stažený databázový soubor (obvykle ve formátu `.sql`) a importujte jeho obsah do databáze, kterou jste si připravili v předchozím kroku. Existuje několik způsobů provedení v závislosti na vašem prostředí:
+
+* **Varianta A: Přes příkazový řádek serveru (příklad s Dockerem)**
+  Pokud k instalaci NocoBase a databáze používáte Docker, můžete `.sql` soubor nahrát na server a poté k provedení importu použít příkaz `docker exec`. Předpokládejme, že váš kontejner PostgreSQL se jmenuje `my-nocobase-db` a název souboru je `nocobase_crm_v2_sql_260223.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # Zkopírujte sql soubor do kontejneru
   docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import
+  # Vstupte do kontejneru a proveďte příkaz pro import
   docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
   ```
+* **Varianta B: Přes vzdáleného databázového klienta (Navicat atd.)**
+  Pokud má vaše databáze otevřený port, můžete k připojení k databázi použít jakéhokoli grafického databázového klienta (jako Navicat, DBeaver, pgAdmin atd.) a poté:
+  1. Klikněte pravým tlačítkem na cílovou databázi.
+  2. Vyberte "Spustit SQL soubor" nebo "Provést SQL skript".
+  3. Vyberte stažený `.sql` soubor a spusťte jej.
 
-* **Option B: Via a remote database client (Navicat, etc.)**
+**Krok 3: Připojte databázi a spusťte aplikaci**
 
-  Connect to the database using any GUI client (Navicat, DBeaver, pgAdmin, etc.), then:
-  1. Right-click the target database
-  2. Select "Run SQL File" or "Execute SQL Script"
-  3. Select the downloaded `.sql` file and execute
+Nakonfigurujte spouštěcí parametry NocoBase (jako proměnné prostředí `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD` atd.) tak, aby směřovaly na databázi, do které jste právě importovali data. Poté normálně spusťte službu NocoBase.
 
-**Step 3: Connect to the database and start the application**
+### Poznámky
 
-Configure your NocoBase startup parameters (e.g., `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`) to point to the database you just imported. Then start the NocoBase service normally.
-
-### Notes
-
-* **Database permissions**: This method requires credentials with direct database access.
-* **Plugin status**: After a successful import, data for commercial plugins exists in the system, but if the corresponding plugin is not installed and enabled locally, related features will not be visible or usable — this will not cause the application to crash.
+* **Oprávnění k databázi**: Tato metoda vyžaduje, abyste měli účet a heslo s oprávněním přímo manipulovat s databází.
+* **Stav pluginů**: Po úspěšném importu sice data komerčních pluginů obsažených v systému existují, ale pokud nemáte lokálně nainstalovány a povoleny odpovídající pluginy, související funkce nebudou zobrazeny ani použitelné, což však nezpůsobí pád aplikace.
 
 ---
 
-## Summary & Comparison
+## Shrnutí a porovnání
 
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :------ | :----------------------- | :--------------------------- |
-| **Applicable users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of use** | ⭐⭐⭐⭐⭐ (very simple, UI-based) | ⭐⭐⭐ (requires basic database knowledge) |
-| **Environment requirements** | **Strict** — database and system versions must be highly compatible | **Moderate** — requires database compatibility |
-| **Plugin dependency** | **Strong** — any missing plugin causes restoration failure | **Feature-dependent** — data imports independently; missing plugins disable related features but won't crash the app |
-| **System files** | **Fully preserved** (print templates, uploaded files, etc.) | **Lost** (print templates, uploaded files, etc.) |
-| **Recommended for** | Enterprise users with a controlled, consistent environment needing full functionality | Missing some plugins, prioritizing compatibility and flexibility, or Community Edition users who can accept missing file features |
-
-We hope this guide helps you deploy CRM 2.0 successfully. If you run into any issues, feel free to reach out!
+| Vlastnost | Metoda 1: Správce záloh | Metoda 2: Přímý import SQL |
+| :-------------- | :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------

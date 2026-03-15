@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Peristiwa Tabel Data",
+        "label": "Peristiwa Koleksi",
         "link": "/workflow/triggers/collection"
       },
       {
@@ -35,17 +35,17 @@
       },
       {
         "type": "custom-link",
-        "label": "Peristiwa Sebelum Aksi",
+        "label": "Peristiwa Sebelum Tindakan",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "Peristiwa Setelah Aksi",
+        "label": "Peristiwa Setelah Tindakan",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "Peristiwa Aksi Kustom",
+        "label": "Peristiwa Tindakan Kustom",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -72,11 +72,11 @@
       },
       {
         "type": "custom-link",
-        "label": "AI",
+        "label": "Kecerdasan Buatan",
         "items": [
           {
             "type": "custom-link",
-            "label": "LLM",
+            "label": "Model Bahasa Besar",
             "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
@@ -127,7 +127,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Tunda",
+            "label": "Penundaan",
             "link": "/workflow/nodes/delay"
           },
           {
@@ -191,11 +191,11 @@
       },
       {
         "type": "custom-link",
-        "label": "Penanganan Manual",
+        "label": "Pemrosesan Manual",
         "items": [
           {
             "type": "custom-link",
-            "label": "Penanganan Manual",
+            "label": "Pemrosesan Manual",
             "link": "/workflow/nodes/manual"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Perluas Tipe",
+        "label": "Tipe Ekstensi",
         "items": [
           {
             "type": "custom-link",
@@ -255,8 +255,8 @@
   },
   {
     "type": "custom-link",
-    "label": "Catatan Eksekusi",
-    "link": "/workflow/advanced/execution"
+    "label": "Riwayat Eksekusi",
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",
@@ -279,12 +279,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Perluas Tipe Pemicu",
+        "label": "Ekstensi Tipe Pemicu",
         "link": "/workflow/development/trigger"
       },
       {
         "type": "custom-link",
-        "label": "Perluas Tipe Node",
+        "label": "Ekstensi Tipe Node",
         "link": "/workflow/development/node"
       },
       {

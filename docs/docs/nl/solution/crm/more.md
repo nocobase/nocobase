@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/solution/crm/more) voor nauwkeurige informatie.
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Meer inhoud
 
-Content coming soon...
+> De huidige CRM-oplossing is uitsluitend bedoeld als preview. Toekomstige versies zullen volledig worden herbouwd op basis van NocoBase 2.0. Tegen die tijd zal er uitgebreidere documentatie beschikbaar worden gesteld.
+
+Inhoud volgt binnenkort...

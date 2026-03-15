@@ -1,15 +1,19 @@
 ---
-displayName: "Workflow: date calculation node"
+displayName: "เวิร์กโฟลว์: โหนดการคำนวณวันที่"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used to do date calculation in workflows, such as manipulating, comparing and formatting, etc.
+  สามารถใช้เพื่อดำเนินการและประเมินผลวันที่ในเวิร์กโฟลว์ เช่น การบวกและลบ การเปรียบเทียบ และการจัดรูปแบบ เป็นต้นครับ
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: date calculation node
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-workflow-date-calculation/index)
+:::
+
+# เวิร์กโฟลว์: โหนดการคำนวณวันที่

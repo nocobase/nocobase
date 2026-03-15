@@ -1,3 +1,7 @@
-# More Content
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/ticket-system/more).
+:::
 
-Content coming soon...
+# תוכן נוסף
+
+התוכן יתווסף בקרוב...

@@ -1,7 +1,6 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/template-print/syntax/formatters/time-interval-formatting).
 :::
-
 
 ### Formátování časových intervalů
 
@@ -18,7 +17,6 @@ Parametry:
 
 ##### Příklad
 ```
-// Příkladové prostředí: Možnosti API { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // Výstup: 2
 2000:formatI('seconds')      // Výstup: 2
 2000:formatI('s')            // Výstup: 2
@@ -26,12 +24,7 @@ Parametry:
 3600000:formatI('hour')      // Výstup: 1
 2419200000:formatI('days')   // Výstup: 28
 
-// Příklad ve francouzštině:
-2000:formatI('human')        // Výstup: "quelques secondes"
-2000:formatI('human+')       // Výstup: "dans quelques secondes"
--2000:formatI('human+')      // Výstup: "il y a quelques secondes"
-
-// Příklad v angličtině:
+// Humanizované zobrazení:
 2000:formatI('human')        // Výstup: "a few seconds"
 2000:formatI('human+')       // Výstup: "in a few seconds"
 -2000:formatI('human+')      // Výstup: "a few seconds ago"

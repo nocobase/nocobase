@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Action panel"
+displayName: "Blok: Actiepaneel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |
-  Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.
+  Beheert en toont centraal verschillende acties, waardoor gebruikers efficiënt taken kunnen uitvoeren. Het ondersteunt uitbreidbaarheid, met huidige actietypen waaronder pop-ups, links, scannen en aangepaste verzoeken.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Action panel
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-block-workbench/index) voor nauwkeurige informatie.
+:::
+
+# Blok: Actiepaneel

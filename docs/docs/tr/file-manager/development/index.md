@@ -1,12 +1,12 @@
-:::tip
-Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/file-manager/development/index) bakın.
 :::
 
 # Uzantı Geliştirme
 
-## Depolama motorlarını genişletme
+## Depolama Motorunu Genişletme
 
-### Sunucu tarafı
+### Sunucu Tarafı
 
 1. **`StorageType`'ı miras alma**
    
@@ -48,7 +48,7 @@ export class CustomStorageType extends StorageType {
 }
 ```
 
-4. **Yeni türü kaydetme**  
+4. **Yeni Türü Kaydetme**  
    Yeni depolama uygulamasını eklentinin `beforeLoad` veya `load` yaşam döngüsüne enjekte edin:
 
 ```ts
@@ -68,13 +68,13 @@ export default class MyStoragePluginServer extends Plugin {
 Kayıt tamamlandıktan sonra depolama yapılandırması, yerleşik türler gibi `storages` kaynağında görünür. `StorageType.defaults()` tarafından sağlanan yapılandırma, formları otomatik doldurmak veya varsayılan kayıtları başlatmak için kullanılabilir.
 
 <!--
-### İstemci tarafı yapılandırma ve yönetim arayüzü
+### İstemci Tarafı Yapılandırma ve Yönetim Arayüzü
 İstemci tarafında dosya yöneticisine yapılandırma formunun nasıl oluşturulacağını ve özel yükleme mantığı olup olmadığını bildirmeniz gerekir. Her depolama türü nesnesi aşağıdaki özellikleri içerir:
 -->
 
-## Ön uçta dosya türlerini genişletme
+## Ön Uç Dosya Türlerini Genişletme
 
-Yüklenmiş dosyalar için, dosya türüne göre ön uç arayüzünde farklı önizleme içerikleri gösterebilirsiniz. Dosya yöneticisinin ek alanı, tarayıcı tabanlı (iframe içinde) yerleşik bir dosya önizlemesi içerir ve çoğu formatı (resimler, videolar, sesler ve PDF'ler gibi) doğrudan tarayıcıda önizlemeyi destekler. Bir format tarayıcı tarafından desteklenmiyorsa veya özel önizleme etkileşimleri gerekiyorsa, dosya türüne dayalı önizleme bileşenini genişletebilirsiniz.
+Yüklenmiş dosyalar için, dosya türüne göre ön uç arayüzünde farklı önizleme içerikleri gösterebilirsiniz. Dosya yöneticisinin Attachment alanı, tarayıcı tabanlı (iframe içinde) yerleşik bir dosya önizlemesi içerir ve çoğu formatı (resimler, videolar, sesler ve PDF'ler gibi) doğrudan tarayıcıda önizlemeyi destekler. Bir format tarayıcı tarafından desteklenmiyorsa veya özel önizleme etkileşimleri gerekiyorsa, dosya türüne dayalı önizleme bileşenini genişletebilirsiniz.
 
 ### Örnek
 
@@ -150,7 +150,7 @@ Dosya türleri kaydına yeni bir dosya türü tanım nesnesi kaydeder. Tanım ne
 
 ##### `match()`
 
-Dosya biçimi eşleştirme yöntemi.
+Dosya formatı eşleştirme yöntemi.
 
 Giriş parametresi `file`, yüklenen dosyanın veri nesnesidir ve tür kontrolü için kullanılabilecek özellikler içerir:
 
@@ -163,7 +163,7 @@ Eşleşme olup olmadığını belirten bir `boolean` döndürür.
 
 ##### `getThumbnailURL`
 
-Dosya listesindeki küçük resim URL'sini döndürür. Dönüş değeri boşsa yerleşik yer tutucu görüntü kullanılır.
+Dosya listesindeki thumbnail URL'sini döndürür. Dönüş değeri boşsa yerleşik yer tutucu görüntü kullanılır.
 
 ##### `Previewer`
 
@@ -174,4 +174,3 @@ Gelen Props:
 * `file`: mevcut dosya nesnesi (string URL veya `url`/`preview` içeren bir nesne olabilir)
 * `index`: listedeki dosyanın indeksi
 * `list`: dosya listesi
-

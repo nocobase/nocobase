@@ -1,24 +1,29 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/get-started/installation/create-nocobase-app) bakın.
 :::
-
 
 # create-nocobase-app Kurulumu
 
-:::ipucu Ön Koşullar
+:::tip Ön Koşullar
 
-- Node.js 20+ ve Yarn 1.22.x yüklü olmalıdır.
-- Gerekli veritabanlarından biri (MySQL 8.0.17+, MariaDB 10.9+ veya PostgreSQL 10+) yapılandırılmış ve çalışır durumda olmalıdır.
+- Node.js 20+, Yarn 1.22.x yüklü olmalıdır
+- MySQL 8.0.17+, MariaDB 10.9+, PostgreSQL 10+ veritabanlarından birini yapılandırın ve başlatın
+- Ağ ortamı nedenlerinden dolayı, yerel bir ayna (mirror) kullanmanız önerilir (zorunlu değildir)
+
+```bash
+$ yarn config set disable-self-update-check true
+$ yarn config set registry https://registry.npmmirror.com/
+```
 
 :::
 
-## 1. NocoBase Projesi Oluşturma
+## 1. NocoBase Projesi Oluşturun
 
-NocoBase sürümünü ([Sürüm Karşılaştırması](../quickstart.md)) ve veritabanı türünü seçin, ardından ilgili komutu çalıştırın.
+NocoBase sürümünü ([Sürüm karşılaştırması](../quickstart.md)) ve veritabanı türünü seçin, ilgili komutu çalıştırın.
 
 <Tabs>
 
-<Tab label="Latest sürümü">
+<Tab label="Latest Sürümü">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -30,7 +35,7 @@ yarn create nocobase-app my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -44,7 +49,7 @@ yarn create nocobase-app my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -58,7 +63,7 @@ yarn create nocobase-app my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -66,7 +71,7 @@ yarn create nocobase-app my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="Beta sürümü">
+<Tab label="Beta Sürümü">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -78,7 +83,7 @@ npx create-nocobase-app@beta my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -92,7 +97,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -106,7 +111,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -114,7 +119,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="Alpha sürümü">
+<Tab label="Alpha Sürümü">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -126,7 +131,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d postgres \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -140,7 +145,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mysql \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -154,7 +159,7 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
    -e DB_DATABASE=nocobase \
    -e DB_USER=nocobase \
    -e DB_PASSWORD=nocobase \
-   -e TZ=Asia/Shanghai
+   -e TZ=Europe/Istanbul
 ```
 
 </Tab>
@@ -164,31 +169,31 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 
 </Tabs>
 
-:::uyarı Ortam Değişkenleri
+:::warning Ortam Değişkenleri Açıklaması
 
-- `TZ`, uygulamanın saat dilimini ayarlamak için kullanılır ve varsayılan olarak işletim sisteminin saat dilimidir.
-- `APP_KEY`, kullanıcı token'ları oluşturmak için kullanılan uygulamanın gizli anahtarıdır (APP_KEY değiştirilirse, eski token'lar geçersiz hale gelir). Herhangi bir rastgele dize olabilir. **Lütfen kendi gizli anahtarınızla değiştirin ve dışarıya sızmadığından emin olun.**
-- `DB_*` veritabanı ile ilgili yapılandırmalardır. Lütfen gerçek kurulumunuza göre veritabanı bağlantı bilgilerinizle eşleşecek şekilde değiştirin.
+- `TZ`, uygulamanın saat dilimini ayarlamak için kullanılır, varsayılan olarak işletim sisteminin saat dilimidir
+- `APP_KEY`, uygulamanın gizli anahtarıdır; kullanıcı token'ları vb. oluşturmak için kullanılır (APP_KEY değiştirilirse eski token'lar da geçersiz kalır). Herhangi bir rastgele dize olabilir. **Lütfen kendi gizli anahtarınızla değiştirin ve dışarıya sızmadığından emin olun**
+- `DB_*`, veritabanı ile ilgili yapılandırmalardır; lütfen gerçek durumunuza göre veritabanı bağlantı bilgilerinizle değiştirin
 
 :::
 
-## 2. Dizin Değiştirme
+## 2. Dizini Değiştirin
 
 ```bash
 cd my-nocobase-app
 ```
 
-## 3. Bağımlılıkları Yükleme
+## 3. Bağımlılıkları Yükleyin
 
-📢 Ağ ortamınız, sistem yapılandırmanız ve diğer faktörlere bağlı olarak bu adım on dakikadan fazla sürebilir.
+📢 Ağ ortamı, sistem yapılandırması vb. faktörlerin etkisiyle bu adım on dakikadan fazla sürebilir.
 
 ```bash
 yarn install
 ```
 
-:::ipucu Üretim Ortamı İpucu
+:::tip Üretim Ortamı İpucu
 
-Üretim ortamında dağıtım yaparken, boyutu azaltmak için yalnızca gerekli bağımlılıkları yükleyebilirsiniz:
+Üretim ortamına dağıtım yaparken, boyutu azaltmak için yalnızca gerekli bağımlılıkları yükleyebilirsiniz:
 
 ```bash
 yarn install --production
@@ -196,34 +201,34 @@ yarn install --production
 
 :::
 
-## 4. NocoBase Kurulumu
+## 4. NocoBase'i Kurun
 
 ```bash
 yarn nocobase install --lang=tr-TR
 ```
 
-Kurulum süreci, veritabanı tablo yapısını otomatik olarak oluşturacak ve başlangıç verilerini başlatacaktır.
+Kurulum işlemi otomatik olarak veritabanı tablo yapısını oluşturacak ve verileri başlatacaktır.
 
-## 5. NocoBase'i Başlatma
+## 5. NocoBase'i Başlatın
 
-**Geliştirme Ortamı**
+**Geliştirme ortamı**
 
 ```bash
 yarn dev
 ```
 
-**Üretim Ortamı**
+**Üretim ortamı**
 
 ```bash
 yarn start
 ```
 
-## 6. NocoBase'e Giriş Yapma
+## 6. NocoBase'e Giriş Yapın
 
-Tarayıcınızda [http://localhost:13000](http://localhost:13000) adresini açın. Başlangıç hesabı ve parolası `admin@nocobase.com` ve `admin123`'tür.
+Tarayıcıyı kullanarak [http://localhost:13000](http://localhost:13000) adresini açın; başlangıç hesabı ve şifresi `admin@nocobase.com` ve `admin123`'tür.
 
-:::uyarı Hesap Güvenliği Uyarısı
+:::warning Hesap Güvenliği Uyarısı
 
-İlk girişinizden sonra, sistem güvenliğini sağlamak için lütfen varsayılan parolayı hemen değiştirin.
+İlk girişten sonra, sistem güvenliğini sağlamak için lütfen varsayılan şifreyi zamanında değiştirin.
 
 :::

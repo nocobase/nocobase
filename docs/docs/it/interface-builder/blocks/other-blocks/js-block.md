@@ -1,52 +1,52 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/interface-builder/blocks/other-blocks/js-block).
 :::
 
 # JS Block
 
 ## Introduzione
 
-Il JS Block è un "blocco di rendering personalizzato" altamente flessibile che Le permette di scrivere direttamente codice JavaScript per generare interfacce, associare eventi, richiamare API di dati o integrare librerie di terze parti. È ideale per visualizzazioni personalizzate, esperimenti temporanei ed estensioni leggere che i blocchi predefiniti difficilmente possono coprire.
+JS Block è un "blocco di rendering personalizzato" altamente flessibile, che supporta la scrittura diretta di script JavaScript per generare interfacce, associare eventi, chiamare interfacce dati o integrare librerie di terze parti. È adatto per visualizzazioni personalizzate, esperimenti temporanei ed estensioni leggere che i blocchi integrati difficilmente coprono.
 
 ## API del Contesto di Runtime
 
-Nel contesto di runtime del JS Block sono state iniettate le funzionalità più comuni, che può utilizzare direttamente:
+Nel contesto di runtime del JS Block sono state iniettate le funzionalità comuni, utilizzabili direttamente:
 
--   `ctx.element`: Il contenitore DOM del blocco (incapsulato in modo sicuro come ElementProxy), che supporta `innerHTML`, `querySelector`, `addEventListener`, ecc.;
--   `ctx.requireAsync(url)`: Carica in modo asincrono una libreria AMD/UMD tramite URL;
--   `ctx.importAsync(url)`: Importa dinamicamente un modulo ESM tramite URL;
--   `ctx.openView`: Apre una vista configurata (popup/drawer/pagina);
--   `ctx.useResource(...)` + `ctx.resource`: Accede ai dati come risorsa;
--   `ctx.i18n.t()` / `ctx.t()`: Funzionalità di internazionalizzazione integrata;
--   `ctx.onRefReady(ctx.ref, cb)`: Esegue il rendering dopo che il contenitore è pronto per evitare problemi di tempistica;
--   `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Librerie integrate come React, ReactDOM, Ant Design, icone di Ant Design e dayjs, utilizzate per il rendering JSX e la gestione di data e ora. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenute per compatibilità.)
--   `ctx.render(vnode)`: Esegue il rendering di un elemento React, di una stringa HTML o di un nodo DOM nel contenitore predefinito `ctx.element`; chiamate multiple riutilizzeranno la stessa React Root e sovrascriveranno il contenuto esistente del contenitore.
+- `ctx.element`: il contenitore DOM del blocco (incapsulato in modo sicuro come ElementProxy), supporta `innerHTML`, `querySelector`, `addEventListener`, ecc.;
+- `ctx.requireAsync(url)`: carica in modo asincrono una libreria AMD/UMD tramite URL;
+- `ctx.importAsync(url)`: importa dinamicamente un modulo ESM tramite URL;
+- `ctx.openView`: apre una vista configurata (popup/drawer/pagina);
+- `ctx.useResource(...)` + `ctx.resource`: accede ai dati come risorsa;
+- `ctx.i18n.t()` / `ctx.t()`: funzionalità di internazionalizzazione integrata;
+- `ctx.onRefReady(ctx.ref, cb)`: esegue il rendering dopo che il contenitore è pronto, per evitare problemi di tempistica;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: librerie integrate come React / ReactDOM / Ant Design / icone di Ant Design / dayjs / lodash / math.js / formula.js per il rendering JSX, la gestione del tempo, la manipolazione dei dati e le operazioni matematiche. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` sono mantenuti per compatibilità.)
+- `ctx.render(vnode)`: esegue il rendering di un elemento React, di una stringa HTML o di un nodo DOM nel contenitore predefinito `ctx.element`; chiamate multiple riutilizzeranno la stessa React Root e sovrascriveranno il contenuto esistente del contenitore.
 
 ## Aggiungere un Blocco
 
-Può aggiungere un JS Block a una pagina o a un popup.
+- Può aggiungere un JS Block a una pagina o a un popup.
 ![jsblock-add-20251029](https://static-docs.nocobase.com/jsblock-add-20251029.png)
 
 ## Editor e Snippet
 
-L'editor di script del JS Block supporta l'evidenziazione della sintassi, i suggerimenti di errore e gli snippet di codice integrati (Snippets), che Le permettono di inserire rapidamente esempi comuni, come: rendering di grafici, associazione di eventi a pulsanti, caricamento di librerie esterne, rendering di componenti React/Vue, timeline, schede informative, ecc.
+L'editor di script del JS Block supporta l'evidenziazione della sintassi, i suggerimenti di errore e i frammenti di codice integrati (Snippets), che permettono di inserire rapidamente esempi comuni, come: rendering di grafici, associazione di eventi a pulsanti, caricamento di librerie esterne, rendering di componenti React/Vue, timeline, schede informative, ecc.
 
--   `Snippets`: Apre l'elenco degli snippet di codice integrati. Può cercare e inserire uno snippet selezionato nell'editor di codice nella posizione corrente del cursore con un solo clic.
--   `Run`: Esegue direttamente il codice nell'editor corrente e visualizza i log di esecuzione nel pannello `Logs` in basso. Supporta la visualizzazione di `console.log/info/warn/error`; gli errori verranno evidenziati e sarà possibile individuare la riga e la colonna specifiche.
+- `Snippets`: apre l'elenco dei frammenti di codice integrati, permette di cercare e inserire con un clic il frammento selezionato nella posizione corrente del cursore nell'area di modifica del codice.
+- `Run`: esegue direttamente il codice nell'editor corrente e ne emette i log di esecuzione nel pannello `Logs` in basso. Supporta la visualizzazione di `console.log/info/warn/error`, gli errori vengono evidenziati e possono essere localizzati alla riga e colonna specifiche.
 
 ![jsblock-toolbars-20251029](https://static-docs.nocobase.com/jsblock-toolbars-20251029.png)
 
-Inoltre, dall'angolo in alto a destra dell'editor, può richiamare direttamente il dipendente AI "Ingegnere Frontend · Nathan", che La aiuterà a scrivere o modificare script basati sul contesto attuale. Può quindi "Apply to editor" (Applica all'editor) con un clic ed eseguire il codice per vederne l'effetto. Per maggiori dettagli, consulti:
+Inoltre, dall'angolo in alto a destra dell'editor, può richiamare direttamente il dipendente AI "Ingegnere Frontend · Nathan", per fargli scrivere o modificare script basati sul contesto attuale; dopo aver applicato le modifiche all'editor con un clic tramite "Apply to editor", può eseguire il codice per vederne l'effetto. Per i dettagli, consulti:
 
--   [Dipendente AI · Nathan: Ingegnere Frontend](/ai-employees/built-in/ai-coding)
+- [AI Employee · Nathan: Ingegnere Frontend](/ai-employees/features/built-in-employee)
 
 ## Ambiente di Runtime e Sicurezza
 
--   **Contenitore**: Il sistema fornisce un contenitore DOM sicuro `ctx.element` (ElementProxy) per lo script, che influisce solo sul blocco corrente e non interferisce con altre aree della pagina.
--   **Sandbox**: Lo script viene eseguito in un ambiente controllato. `window`/`document`/`navigator` utilizzano oggetti proxy sicuri, consentendo l'uso di API comuni e limitando i comportamenti rischiosi.
--   **Ri-rendering**: Il blocco si ri-renderizza automaticamente quando viene nascosto e poi mostrato di nuovo (per evitare di eseguire nuovamente lo script di montaggio iniziale).
+- Contenitore: il sistema fornisce un contenitore DOM sicuro `ctx.element` (ElementProxy) per lo script, che influisce solo sul blocco corrente e non interferisce con altre aree della pagina.
+- Sandbox: lo script viene eseguito in un ambiente controllato, `window`/`document`/`navigator` utilizzano oggetti proxy sicuri, le API comuni sono disponibili, i comportamenti a rischio sono limitati.
+- Ri-rendering: il blocco viene ri-renderizzato automaticamente dopo essere stato nascosto e poi mostrato (per evitare esecuzioni duplicate al primo montaggio).
 
-## Casi d'Uso Comuni (Esempi Semplificati)
+## Usi Comuni (Esempi Semplificati)
 
 ### 1) Rendering di React (JSX)
 
@@ -61,7 +61,7 @@ ctx.render(
 );
 ```
 
-### 2) Modello di Richiesta API
+### 2) Modello di richiesta API
 
 ```js
 const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
@@ -69,7 +69,7 @@ ctx.message.success(ctx.t('Request finished'));
 console.log(ctx.t('Response data:'), resp?.data);
 ```
 
-### 3) Caricare ECharts ed Eseguire il Rendering
+### 3) Caricamento di ECharts e rendering
 
 ```js
 const container = document.createElement('div');
@@ -83,14 +83,14 @@ chart.setOption({ title: { text: ctx.t('ECharts') }, xAxis: {}, yAxis: {}, serie
 chart.resize();
 ```
 
-### 4) Aprire una Vista (Drawer)
+### 4) Apertura di una vista (Drawer)
 
 ```js
 const popupUid = ctx.model.uid + '-1';
 await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Sample drawer'), size: 'large' });
 ```
 
-### 5) Leggere una Risorsa ed Eseguire il Rendering JSON
+### 5) Lettura di una risorsa e rendering JSON
 
 ```js
 const resource = ctx.createResource('SingleRecordResource');
@@ -100,14 +100,14 @@ await resource.refresh();
 ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JSON.stringify(resource.getData(), null, 2)}</pre>`);
 ```
 
-## Note Importanti
+## Note
 
--   Si consiglia di utilizzare CDN affidabili per il caricamento di librerie esterne.
--   **Consigli sull'uso dei selettori**: Dia priorità all'uso di selettori di attributo `class` o `[name=...]`; eviti di usare `id` fissi per prevenire conflitti dovuti a `id` duplicati quando si utilizzano più blocchi o popup.
--   **Pulizia degli eventi**: Poiché il blocco potrebbe essere ri-renderizzato più volte, i listener di eventi dovrebbero essere puliti o deduplicati prima di essere associati per evitare attivazioni ripetute. Può adottare un approccio "rimuovi e poi aggiungi", un listener monouso o un flag per prevenire duplicati.
+- Si consiglia di utilizzare CDN affidabili per il caricamento di librerie esterne.
+- Consigli sull'uso dei selettori: dia la priorità all'uso di selettori di attributo `class` o `[name=...]`; eviti di usare `id` fissi, per evitare che la comparsa di `id` duplicati in più blocchi/popup causi conflitti di stile o di eventi.
+- Pulizia degli eventi: il blocco potrebbe essere ri-renderizzato più volte, prima di associare gli eventi è necessario pulirli o rimuovere i duplicati per evitare attivazioni ripetute. Si può adottare la modalità "prima remove poi add", oppure listener una tantum, o aggiungere flag per prevenire la ripetizione.
 
 ## Documenti Correlati
 
--   [Variabili e Contesto](/interface-builder/variables)
--   [Regole di Collegamento](/interface-builder/linkage-rule)
--   [Viste e Popup](/interface-builder/actions/types/view)
+- [Variabili e contesto](/interface-builder/variables)
+- [Regole di collegamento](/interface-builder/linkage-rule)
+- [Viste e popup](/interface-builder/actions/types/view)

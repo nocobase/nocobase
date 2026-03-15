@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "ฟิลด์ Collection: เรียงลำดับ"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  ใช้สำหรับเรียงลำดับข้อมูลใน Collection
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-field-sort/index)
+:::
+
+# ฟิลด์ Collection: เรียงลำดับ

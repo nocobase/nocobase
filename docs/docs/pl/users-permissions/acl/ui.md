@@ -36,7 +36,7 @@ Pełny proces konfiguracji przedstawiono poniżej:
 
 W interfejsie użytkownika w bloku kolekcji "Zamówienia" widoczne są tylko pola, dla których skonfigurowano uprawnienia. Pola systemowe (Id, CreatedAt, LastUpdatedAt) zachowują uprawnienia do podglądu nawet bez specjalnej konfiguracji.
 
-![](https://static-docs.nocobase.com/40cc43b517efe701147fd2e799e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **Edycja**: Kontroluje, czy pola mogą być edytowane i zapisywane (aktualizowane).
 

@@ -162,7 +162,7 @@ Solitamente si tratta di un pulsante di accesso di terze parti, ma può essere q
 
 ### Modulo di registrazione
 
-![](https://static-docs.nocobase.com/f5c53431bf21ec312fcfd51923f0b42.png)
+![](https://static-docs.nocobase.com/f95c53431bf21ec312fcfd51923f0b42.png)
 
 Se è necessario passare dalla pagina di accesso a quella di registrazione, dovrà gestire questo passaggio autonomamente nel componente di accesso.
 

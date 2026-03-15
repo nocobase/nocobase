@@ -45,7 +45,7 @@ Następnie należy zainstalować i aktywować wtyczkę za pomocą menedżera wty
 
 W menu rozwijanym „Zarządzanie kolekcjami > Utwórz kolekcję” proszę wybrać opcję „Połącz z danymi zewnętrznymi”.
 
-![Połącz z danymi zewnętrznymi](https://static-docs.nocobase.com/029d946a6d067d1c35a397551219d623c.png)
+![Połącz z danymi zewnętrznymi](https://static-docs.nocobase.com/029d946a6d067d1c35a39755219d623c.png)
 
 W menu rozwijanym „Usługa bazy danych” proszę wybrać istniejącą usługę bazy danych lub opcję „Utwórz usługę bazy danych”.
 
@@ -73,4 +73,4 @@ Synchronizacja zdalnej kolekcji danych
 
 Na koniec, wyświetlanie w interfejsie.
 
-![Wyświetlanie w interfejsie](https://static-docs.nocobase.com/368fca27a9938080530949357.png)
+![Wyświetlanie w interfejsie](https://static-docs.nocobase.com/368fca27a99277d9360ca81350949357.png)

@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Chia sẻ Collection Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Chia sẻ Collection Multi-app
+
+> Lưu ý: Plugin này đã bị ngừng hỗ trợ (deprecated).

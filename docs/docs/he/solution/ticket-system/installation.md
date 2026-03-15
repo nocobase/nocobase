@@ -1,130 +1,112 @@
-# Installation Guide
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/solution/ticket-system/installation).
+:::
 
-> The current version uses **backup restoration** for deployment. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
+# איך להתקין
 
-To help you quickly and smoothly deploy the Ticketing Solution to your own NocoBase environment, we provide two restoration methods. Please choose the one that best suits your user version and technical background.
+> הגרסה הנוכחית משתמשת בפורמט של **גיבוי ושחזור** לצורך פריסה. בגרסאות עתידיות, ייתכן שנעבור לפורמט של **הגירה מצטברת** (incremental migration), כדי להקל על שילוב הפתרון במערכות הקיימות שלכם.
 
-Before you begin, please ensure:
+כדי לאפשר לכם לפרוס את פתרון מערכת הפניות (工单方案) בסביבת ה-NocoBase שלכם בצורה מהירה וחלקה, סיפקנו שתי שיטות שחזור. אנא בחרו את השיטה המתאימה ביותר עבורכם בהתאם לגרסת המשתמש והרקע הטכני שלכם.
 
-- You already have a basic NocoBase running environment. For main system installation, please refer to the detailed [official installation documentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
-- NocoBase version **2.0.0-beta.5 or above**
-- You have downloaded the corresponding files for the Ticketing System:
-  - **Backup file**: [nocobase_tts_alpha_backup_260107_01.nbdata](https://static-docs.nocobase.com/nocobase_tts_alpha_backup_260107_01.nbdata) - For Method 1
-  - **SQL file**: [nocobase_tts_alpha_sql_inserts_260107_01.zip](https://static-docs.nocobase.com/nocobase_tts_alpha_sql_inserts_260107_01.zip) - For Method 2
+לפני שתתחילו, ודאו ש:
 
-**Important Notes**:
-- This solution is built on **PostgreSQL 16** database. Please ensure your environment uses PostgreSQL 16.
-- **DB_UNDERSCORED must not be true**: Please check your `docker-compose.yml` file and ensure the `DB_UNDERSCORED` environment variable is not set to `true`, otherwise it will conflict with the solution backup and cause restoration failure.
+- כבר יש לכם סביבת עבודה בסיסית של NocoBase. לגבי התקנת המערכת הראשית, אנא עיינו ב[תיעוד ההתקנה הרשמי](https://docs-cn.nocobase.com/welcome/getting-started/installation) המפורט.
+- גרסת NocoBase היא **2.0.0-beta.5 ומעלה**
+- כבר הורדתם את הקבצים המתאימים של מערכת הפניות:
+  - **קובץ גיבוי**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - מתאים לשיטה 1
+  - **קובץ SQL**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - מתאים לשיטה 2
+
+**הערות חשובות**:
+- פתרון זה מבוסס על מסד נתונים **PostgreSQL 16**, אנא ודאו שהסביבה שלכם משתמשת ב-PostgreSQL 16.
+- **DB_UNDERSCORED לא יכול להיות true**: אנא בדקו את קובץ ה-`docker-compose.yml` שלכם וודאו שמשתנה הסביבה `DB_UNDERSCORED` אינו מוגדר כ-`true`, אחרת הדבר יתנגש עם גיבוי הפתרון ויגרום לכישלון השחזור.
 
 ---
 
-## Method 1: Restore Using Backup Manager (Recommended for Pro/Enterprise Users)
+## שיטה 1: שחזור באמצעות מנהל הגיבויים (מומלץ למשתמשי גרסת Pro/Enterprise)
 
-This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.com/handbook/backups)" (Pro/Enterprise) plugin for one-click restoration, which is the simplest operation. However, it has certain requirements for environment and user version.
+שיטה זו מתבצעת באמצעות תוסף "[מנהל הגיבויים](https://docs-cn.nocobase.com/handbook/backups)" (גרסת Pro/Enterprise) המובנה ב-NocoBase לשחזור בלחיצה אחת, והיא הפשוטה ביותר לתפעול. עם זאת, יש לה דרישות מסוימות לגבי הסביבה וגרסת המשתמש.
 
-### Key Features
+### מאפיינים עיקריים
 
-* **Advantages**:
-  1. **Easy Operation**: Can be completed through the UI interface, with complete restoration of all configurations including plugins.
-  2. **Complete Restoration**: **Can restore all system files**, including print template files, files uploaded to file fields in tables, ensuring complete functionality.
-* **Limitations**:
-  1. **Pro/Enterprise Only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
-  2. **Strict Environment Requirements**: Requires your database environment (version, case sensitivity settings, etc.) to be highly compatible with our backup creation environment.
-  3. **Plugin Dependencies**: If the solution contains commercial plugins not present in your local environment, restoration will fail.
+* **יתרונות**:
+  1. **תפעול נוח**: ניתן להשלים את הפעולה דרך ממשק המשתמש (UI), וניתן לשחזר באופן מלא את כל ההגדרות כולל תוספים.
+  2. **שחזור מלא**: **מסוגל לשחזר את כל קבצי המערכת**, כולל קבצי תבניות הדפסה, קבצים שהועלו לשדות קבצים בטבלאות וכו', מה שמבטיח שלמות פונקציונלית.
+* **מגבלות**:
+  1. **מוגבל לגרסת Pro/Enterprise**: "מנהל הגיבויים" הוא תוסף ברמת הארגון, הזמין רק למשתמשי Pro/Enterprise.
+  2. **דרישות סביבה מחמירות**: דורש שסביבת מסד הנתונים שלכם (גרסה, הגדרות רגישות לאותיות רישיות וכו') תהיה תואמת מאוד לסביבה שבה נוצר הגיבוי.
+  3. **תלות בתוספים**: אם הפתרון כולל תוספים מסחריים שאינם קיימים בסביבה המקומית שלכם, השחזור ייכשל.
 
-### Steps
+### שלבי ביצוע
 
-**Step 1: [Strongly Recommended] Start the application using the `full` image**
+**שלב 1: 【מומלץ מאוד】 הפעלת האפליקציה באמצעות אימג' `full`**
 
-To avoid restoration failures due to missing database clients, we strongly recommend using the `full` version of the Docker image. It includes all necessary supporting programs, eliminating the need for additional configuration.
+כדי למנוע כישלון בשחזור עקב מחסור בלקוח מסד נתונים, אנו ממליצים בחום להשתמש בגרסת ה-`full` של אימג' ה-Docker. הוא כולל את כל התוכניות הנלוות הדרושות, כך שלא תצטרכו לבצע הגדרות נוספות.
 
-Example command to pull the image:
+דוגמה לפקודה למשיכת האימג':
 
 ```bash
 docker pull nocobase/nocobase:beta-full
 ```
 
-Then use this image to start your NocoBase service.
+לאחר מכן השתמשו באימג' זה כדי להפעיל את שירות ה-NocoBase שלכם.
 
-> **Note**: If you don't use the `full` image, you may need to manually install the `pg_dump` database client inside the container, which is cumbersome and unstable.
+> **הערה**: אם לא תשתמשו באימג' `full`, ייתכן שתצטרכו להתקין ידנית את לקוח מסד הנתונים `pg_dump` בתוך הקונטיינר, תהליך שהוא מסורבל ולא יציב.
 
-**Step 2: Enable the "Backup Manager" plugin**
+**שלב 2: הפעלת תוסף "מנהל הגיבויים"**
 
-1. Log in to your NocoBase system.
-2. Go to **`Plugin Management`**.
-3. Find and enable the **`Backup Manager`** plugin.
+1. התחברו למערכת NocoBase שלכם.
+2. היכנסו ל-**`ניהול תוספים`**.
+3. מצאו והפעילו את התוסף **`מנהל הגיבויים`**.
 
-**Step 3: Restore from local backup file**
+**שלב 3: שחזור מקובץ גיבוי מקומי**
 
-1. After enabling the plugin, refresh the page.
-2. Go to **`System Management`** -> **`Backup Manager`** in the left menu.
-3. Click the **`Restore from Local Backup`** button in the upper right corner.
-4. Drag the downloaded backup file to the upload area.
-5. Click **`Submit`** and wait patiently for the system to complete the restoration, which may take from a few seconds to a few minutes.
+1. לאחר הפעלת התוסף, רעננו את הדף.
+2. היכנסו בתפריט השמאלי ל-**`ניהול מערכת`** -> **`מנהל הגיבויים`**.
+3. לחצו על הכפתור **`שחזור מגיבוי מקומי`** בפינה הימנית העליונה.
+4. גררו את קובץ הגיבוי שהורדתם לאזור ההעלאה.
+5. לחצו על **`הגשה`**, והמתינו בסבלנות עד שהמערכת תשלים את השחזור. תהליך זה עשוי לקחת בין כמה עשרות שניות לכמה דקות.
 
-### Notes
+### נקודות לתשומת לב
 
-* **Database Compatibility**: This is the most critical point for this method. Your PostgreSQL database **version, character set, and case sensitivity settings** must match the backup source file. In particular, the `schema` name must be consistent.
-* **Commercial Plugin Matching**: Please ensure you have and have enabled all commercial plugins required by the solution, otherwise restoration will be interrupted.
+* **תאימות מסד נתונים**: זוהי הנקודה הקריטית ביותר בשיטה זו. **הגרסה, סט התווים והגדרות הרגישות לאותיות רישיות** של מסד הנתונים PostgreSQL שלכם חייבים להתאים לקובץ המקור של הגיבוי. במיוחד שם ה-`schema` חייב להיות זהה.
+* **התאמת תוספים מסחריים**: אנא ודאו שיש ברשותכם והפעלתם את כל התוספים מסחריים הנדרשים לפתרון, אחרת השחזור יופסק.
 
 ---
 
-## Method 2: Direct SQL File Import (Universal, More Suitable for Community Edition)
+## שיטה 2: ייבוא ישיר של קובץ SQL (כללי, מתאים יותר לגרסת הקהילה)
 
-This method restores data by directly operating the database, bypassing the "Backup Manager" plugin, thus having no Pro/Enterprise plugin restrictions.
+שיטה זו משחזרת נתונים באמצעות פעולה ישירה על מסד הנתונים, תוך עקיפת תוסף "מנהל הגיבויים", ולכן אין לה מגבלות של תוספי Pro/Enterprise.
 
-### Key Features
+### מאפיינים עיקריים
 
-* **Advantages**:
-  1. **No Version Restrictions**: Applicable to all NocoBase users, including Community Edition.
-  2. **High Compatibility**: Does not depend on the application's `dump` tool, can operate as long as you can connect to the database.
-  3. **High Fault Tolerance**: If the solution contains commercial plugins you don't have, related features won't be enabled but won't affect other features, and the application can start successfully.
-* **Limitations**:
-  1. **Requires Database Operation Skills**: Users need basic database operation skills, such as how to execute a `.sql` file.
-  2. **System Files Lost**: **This method will lose all system files**, including print template files, files uploaded to file fields in tables.
+* **יתרונות**:
+  1. **ללא הגבלת גרסה**: מתאים לכל משתמשי NocoBase, כולל גרסת הקהילה.
+  2. **תאימות גבוהה**: אינו תלוי בכלי ה-`dump` בתוך האפליקציה, וניתן לביצוע כל עוד ניתן להתחבר למסד הנתונים.
+  3. **עמידות גבוהה לשגיאות**: אם הפתרון כולל תוספים מסחריים שאין לכם, הפונקציות הרלוונטיות פשוט לא יופעלו, אך זה לא ישפיע על השימוש הרגיל בפונקציות אחרות והאפליקציה תוכל לעלות בהצלחה.
+* **מגבלות**:
+  1. **דורש יכולת תפעול מסד נתונים**: המשתמש צריך להיות בעל יכולות בסיסיות בתפעול מסד נתונים, כגון כיצד להריץ קובץ `.sql`.
+  2. **אובדן קבצי מערכת**: **שיטה זו תגרום לאובדן של כל קבצי המערכת**, כולל קבצי תבניות הדפסה, קבצים שהועלו לשדות קבצים בטבלאות וכו'.
 
-### Steps
+### שלבי ביצוע
 
-**Step 1: Prepare a clean database**
+**שלב 1: הכנת מסד נתונים נקי**
 
-Prepare a brand new, empty database for the data you're about to import.
+הכינו מסד נתונים חדש וריק עבור הנתונים שאתם עומדים לייבא.
 
-**Step 2: Import the `.sql` file into the database**
+**שלב 2: ייבוא קובץ ה-`.sql` למסד הנתונים**
 
-Get the downloaded database file (usually in `.sql` format) and import its contents into the database you prepared in the previous step. There are multiple ways to do this, depending on your environment:
+השיגו את קובץ מסד הנתונים שהורדתם (בדרך כלל בפורמט `.sql`), וייבאו את תוכנו למסד הנתונים שהכנתם בשלב הקודם. ישנן מספר דרכים לביצוע, תלוי בסביבה שלכם:
 
-* **Option A: Via server command line (Docker example)**
-  If you use Docker to install NocoBase and the database, you can upload the `.sql` file to the server and then use the `docker exec` command to execute the import. Assuming your PostgreSQL container is named `my-nocobase-db` and the file is named `ticket_system.sql`:
+* **אפשרות א': דרך שורת הפקודה בשרת (לדוגמה ב-Docker)**
+  אם אתם משתמשים ב-Docker להתקנת NocoBase ומסד הנתונים, תוכלו להעלות את קובץ ה-`.sql` לשרת, ואז להשתמש בפקודת `docker exec` כדי לבצע את הייבוא. נניח ששם קונטיינר ה-PostgreSQL שלכם הוא `my-nocobase-db`, ושם הקובץ הוא `ticket_system.sql`:
 
   ```bash
-  # Copy the sql file into the container
+  # העתקת קובץ ה-sql לתוך הקונטיינר
   docker cp ticket_system.sql my-nocobase-db:/tmp/
-  # Enter the container and execute the import command
+  # כניסה לקונטיינר וביצוע פקודת הייבוא
   docker exec -it my-nocobase-db psql -U your_username -d your_database_name -f /tmp/ticket_system.sql
   ```
-* **Option B: Via remote database client**
-  If your database exposes a port, you can use any graphical database client (such as DBeaver, Navicat, pgAdmin, etc.) to connect to the database, create a new query window, paste all the contents of the `.sql` file, and execute.
+* **אפשרות ב': דרך לקוח מסד נתונים מרחוק**
+  אם מסד הנתונים שלכם חשוף בפורט מסוים, תוכלו להשתמש בכל לקוח מסד נתונים גרפי (כגון DBeaver, Navicat, pgAdmin וכו') כדי להתחבר למסד הנתונים, לפתוח חלון שאילתה חדש, להדביק את כל התוכן של קובץ ה-`.sql` ולהריץ אותו.
 
-**Step 3: Connect to the database and start the application**
-
-Configure your NocoBase startup parameters (such as environment variables `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`, etc.) to point to the database you just imported data into. Then, start the NocoBase service normally.
-
-### Notes
-
-* **Database Permissions**: This method requires you to have an account and password that can directly operate the database.
-* **Plugin Status**: After successful import, although the commercial plugin data exists in the system, if you haven't installed and enabled the corresponding plugins locally, related features (such as Echarts charts, specific fields, etc.) won't be displayed and usable, but this won't cause the application to crash.
-
----
-
-## Summary and Comparison
-
-| Feature | Method 1: Backup Manager | Method 2: Direct SQL Import |
-| :-------------- | :--------------------------------------------------------------- | :----------------------------------------------------------------------------------------------------- |
-| **Target Users** | **Pro/Enterprise** users | **All users** (including Community Edition) |
-| **Ease of Use** | Very easy (UI operation) | Moderate (requires basic database knowledge) |
-| **Environment Requirements** | **Strict**, database and system versions must be highly compatible | **General**, database compatibility required |
-| **Plugin Dependencies** | **Strong dependency**, plugins are verified during restoration, missing any plugin will cause **restoration failure**. | **Features depend on plugins**. Data can be imported independently, system has basic functionality. But without corresponding plugins, related features will be **completely unusable**. |
-| **System Files** | **Fully preserved** (print templates, uploaded files, etc.) | **Will be lost** (print templates, uploaded files, etc.) |
-| **Recommended Scenarios** | Enterprise users with controlled, consistent environment, need complete functionality | Missing some plugins, seeking high compatibility and flexibility, non-Pro/Enterprise users, can accept missing file functionality |
-
-We hope this tutorial helps you successfully deploy the Ticketing System. If you encounter any problems during the process, please feel free to contact us!
+**שלב 3: חי

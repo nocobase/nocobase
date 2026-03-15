@@ -1,15 +1,19 @@
 ---
-displayName: "Redis queue adapter"
+displayName: "Redis meddelandekö-adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with Redis.
+  Används för att hantera applikationens meddelandekö med Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis queue adapter
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-queue-adapter-redis/index).
+:::
+
+# Redis meddelandekö-adapter

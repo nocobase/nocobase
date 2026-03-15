@@ -1,14 +1,18 @@
 ---
-displayName: "App supervisor"
+displayName: "مراقب التطبيقات"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  The App Supervisor plugin provides unified supervision and orchestration of multiple NocoBase application instances, offering application discovery and runtime management capabilities.
+  تُستخدم إضافة "مراقب التطبيقات" للإشراف الموحد وجدولة عدة مثيلات من تطبيقات NocoBase، مما يوفر قدرات اكتشاف التطبيقات وإدارة تشغيلها.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# App supervisor
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-app-supervisor/index).
+:::
+
+# مراقب التطبيقات

@@ -1,7 +1,6 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/template-print/syntax/formatters/number-formatting).
 :::
-
 
 ### Định dạng số
 
@@ -15,7 +14,6 @@ Tham số:
 
 ##### Ví dụ
 ```
-// Môi trường ví dụ: Tùy chọn API { "lang": "en-us" }
 '10':formatN()         // Kết quả "10.000"
 '1000.456':formatN()   // Kết quả "1,000.456"
 ```

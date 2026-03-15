@@ -22,13 +22,13 @@ Cấu hình quyền toàn cục:
 
 Cấu hình quyền riêng lẻ cho **bộ sưu tập** Đơn hàng:
 
-![](https://static-docs.nocobase.com/a88c7a41247001c1610bf402a4a2c1.png)
+![](https://static-docs.nocobase.com/a88caba1cad47001c1610bf402a4a2c1.png)
 
 Trên giao diện người dùng, tất cả các khối trong **bộ sưu tập** Đơn hàng đều không hiển thị.
 
 Quy trình cấu hình hoàn chỉnh như sau:
 
-![](https://static-docs.nocobase.com/b283c004ffe0a746fddbffcf4f27b1df.gif)
+![](https://static-docs.nocobase.com/b283c004ffe0b746fddbffcf4f27b1df.gif)
 
 ## Quyền của trường
 
@@ -44,7 +44,7 @@ Trên giao diện người dùng, chỉ những trường có quyền được c
 
   Như hình minh họa, cấu hình quyền chỉnh sửa cho các trường của **bộ sưu tập** Đơn hàng (số lượng và các mặt hàng liên quan có quyền chỉnh sửa):
 
-  ![](https://static-docs.nocobase.com/6531ca4124887547b5719e2146ba93.png)
+  ![](https://static-docs.nocobase.com/6531ca4122f0887547b5719e2146ba93.png)
 
   Trên giao diện người dùng, trong khối biểu mẫu thao tác chỉnh sửa của khối **bộ sưu tập** Đơn hàng, chỉ hiển thị các trường có quyền chỉnh sửa.
 
@@ -139,7 +139,7 @@ Như hình minh họa bên dưới, trường liên kết "Khách hàng" trong *
 
 Cấu hình quyền riêng lẻ cho **bộ sưu tập** Đơn hàng, trong đó trường liên kết "Khách hàng" có tất cả các quyền trường:
 
-![](https://static-docs.nocobase.com/3a3ab972f14a7b3a35361219d67fa40.png)
+![](https://static-docs.nocobase.com/3a3ab9722f14a7b3a35361219d67fa40.png)
 
 Cấu hình quyền riêng lẻ cho **bộ sưu tập** Khách hàng, trong đó các trường chỉ có quyền xem:
 

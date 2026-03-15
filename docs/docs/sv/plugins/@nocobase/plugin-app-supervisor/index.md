@@ -1,14 +1,18 @@
 ---
-displayName: "App supervisor"
+displayName: "App-övervakare"
 packageName: '@nocobase/plugin-app-supervisor'
 supportedVersions:
   - 2.x
 description: |
-  The App Supervisor plugin provides unified supervision and orchestration of multiple NocoBase application instances, offering application discovery and runtime management capabilities.
+  Pluginet App-övervakare används för enhetlig övervakning och schemaläggning av flera NocoBase-applikationsinstanser, och tillhandahåller funktioner för applikationsidentifiering och hantering av applikationskörning.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# App supervisor
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-app-supervisor/index).
+:::
+
+# App-övervakare

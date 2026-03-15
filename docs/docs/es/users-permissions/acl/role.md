@@ -34,6 +34,6 @@ El rol predeterminado es el que se asigna automáticamente a los nuevos usuarios
 
 Se puede asignar múltiples roles a un usuario. Cuando un usuario tiene varios roles, puede cambiarlos en el Centro Personal.
 
-![](https://static-docs.nocobase.com/e31bba7ff55ca28715c486dc45bc1708.png)
+![](https://static-docs.nocobase.com/e331d11ec1ca3b8b7e0472105b167819.png)
 
 El rol predeterminado al iniciar sesión se determina por el rol que se cambió más recientemente (este valor se actualiza con cada cambio) o, si no aplica, por el primer rol (el rol predeterminado del sistema).

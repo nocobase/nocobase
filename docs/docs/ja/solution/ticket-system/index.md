@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="AI翻訳通知"}
+このドキュメントはAIによって翻訳されました。正確な情報については[英語版](/solution/ticket-system/index)をご参照ください。
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# チケット管理ソリューションの概要
 
-## 1. Background (Why)
+> **ヒント**：現在のバージョンは早期プレビュー版であり、機能はまだ不十分な点があります。現在継続的に改善を行っております。フィードバックやご提案を歓迎します！
 
-### Industry/Role/Management Problems Solved
+## 1. 背景（Why）
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### 解決する業界 / 職種 / 管理上の課題
 
-**Typical Business Scenarios:**
+企業は日常業務において、機器の修理、ITサポート、顧客からの苦情、相談や提案など、多種多様なサービスリクエストに直面しています。これらのリクエストは、CRMシステム、現場エンジニア、メール、公開フォームなど、発生源が分散しており、処理フローも異なるため、統一された追跡・管理メカニズムが不足しています。
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**典型的なビジネスシーンの例：**
 
-### Target User Profile
+- **機器修理**：アフターサービスチームが機器の修理依頼を処理する際、シリアル番号、故障コード、予備部品などの固有情報を記録する必要があります。
+- **IT サポート**：IT部門が社内従業員のパスワードリセット、ソフトウェアのインストール、ネットワーク障害などのリクエストに対応します。
+- **顧客の苦情**：カスタマーサービスチームがマルチチャネルからの苦情を処理します。感情的になっている顧客には優先的な対応が求められます。
+- **顧客セルフサービス**：エンドユーザーがサービスリクエストを簡単に提出し、処理状況を把握できるようにします。
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### ターゲットユーザー像
 
-### Pain Points of Current Mainstream Solutions
+| 次元 | 説明 |
+|------|------|
+| 企業規模 | 中小企業から中堅・大企業まで、一定量のカスタマーサービス需要がある企業 |
+| ロール構成 | カスタマーサービスチーム、ITサポート、アフターサービスチーム、運用管理担当者 |
+| デジタル成熟度 | 初級から中級。Excelやメール管理からシステム化された管理へのアップグレードを検討している |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### 既存の主な解決策の課題（ペインポイント）
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **高コスト / カスタマイズの遅さ**：SaaS型のチケットシステムは価格が高く、独自のカスタマイズ開発には長い期間を要します。
+- **システムの断片化、データの孤立**：各種業務データが異なるシステムに分散しており、統一された分析や意思決定が困難です。
+- **ビジネスの変化が速く、システムが追随できない**：ビジネス要件が変化した際、システムを迅速に調整することが困難です。
+- **サービスレスポンスの遅延**：リクエストが異なるシステム間を流れるため、タイムリーな割り当てができません。
+- **プロセスの不透明さ**：顧客がチケットの進捗を追跡できず、頻繁な問い合わせがカスタマーサービスの負担を増大させます。
+- **品質保証の難しさ**：SLAモニタリングが不足しており、期限切れや低評価に対するタイムリーな警告ができません。
 
 ---
 
-## 3. Design Principles
+## 2. 参考製品とベンチマーク（Benchmark）
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### 市場の主要製品
+
+- **SaaS**：Salesforce、Zendesk、Odoo など
+- **カスタムシステム / 社内システム**
+
+### 比較の次元
+
+- 機能のカバー範囲
+- 柔軟性
+- 拡張性
+- AIの活用方法
+
+### NocoBase ソリューションの差別化ポイント
+
+**プラットフォームレベルの優位性：**
+
+- **設定優先（Configuration-First）**：基盤となるデータテーブルから、業務タイプ、SLA、スキルベースのルーティングまで、すべて設定を通じて管理可能です。
+- **ローコードによる迅速な構築**：自社開発よりも速く、SaaSよりも柔軟です。
+
+**従来のシステムでは不可能、またはコストが非常に高い点：**
+
+- **AIネイティブな統合**：NocoBaseのAIプラグインを活用し、インテリジェントな分類、入力補助、ナレッジの推奨を実現します。
+- **すべての設計がユーザーによって複製可能**：ユーザーはテンプレートに基づいて独自に拡張できます。
+- **T型データアーキテクチャ**：メインテーブル ＋ 業務付随テーブルの構成により、新しい業務タイプを追加する際は付随テーブルを追加するだけで済みます。
 
 ---
 
-## 4. Solution Overview
+## 3. 設計原則（Principles）
 
-### Summary Introduction
+- **低い認知コスト**
+- **技術よりもビジネスを優先**
+- **一度きりの完成ではなく、進化可能であること**
+- **設定を優先し、コードで補完する**
+- **AIが人に代わるのではなく、人とAIが協調する**
+- **すべての設計はユーザーが複製可能であるべき**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. ソリューションの概要（Solution Overview）
 
-### Ticket Processing Flow
+### 概要紹介
+
+NocoBase ローコードプラットフォームに基づいて構築された汎用的なチケット管理ミドルウェアは、以下を実現します：
+
+- **統合された入り口**：マルチソースからの入力を受け付け、標準化された処理を行います。
+- **インテリジェントな配信**：AIによる分類補助と、負荷分散に基づいた割り当てを行います。
+- **多態的なビジネス形態**：コアとなるメインテーブル ＋ 業務付随テーブルにより、柔軟な拡張が可能です。
+- **フィードバックのループ化**：SLAモニタリング、顧客評価、低評価への対応フローを完備しています。
+
+### チケット処理フロー
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+多様なチャネルからの入力 → 前処理/AI分析 → インテリジェントな割り当て → 手動実行 → フィードバックループ
+    ↓                      ↓                      ↓                    ↓                ↓
+ 重複チェック           意図解釈               スキルマッチング      ステータス遷移      満足度評価
+                       感情分析               負荷分散              SLAモニタリング   低評価への対応
+                       自動返信               キュー管理            コメントによる対話  データアーカイブ
 ```
 
-### Core Module List
+### コアモジュール一覧
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| モジュール | 説明 |
+|------|------|
+| チケット受付 | 公開フォーム、顧客ポータル、代理入力、API/Webhook、メール解析 |
+| チケット管理 | チケットのCRUD、ステータス遷移、割り当て/転送、コメント対話、操作ログ |
+| 業務拡張 | 機器修理、ITサポート、顧客の苦情などの業務別付随テーブル |
+| SLA 管理 | SLA設定、期限切れ警告、期限切れエスカレーション |
+| 顧客管理 | 顧客メインテーブル、連絡先管理、顧客ポータル |
+| 評価システム | 多次元スコアリング、クイックタグ、NPS、低評価アラート |
+| AI 補助 | 意図分類、感情分析、ナレッジ推奨、返信補助、トーンの調整 |
 
-### Core Interface Display
+### 主要画面の表示
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. AI 社員（AI Employee）
 
-### AI Employee Types and Scenarios
+### AI 社員のタイプとシナリオ
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **カスタマーサービスアシスタント**、**セールスアシスタント**、**データ分析員**、**監査員**
+- 人間に代わるのではなく、人間を補助します。
 
-### AI Employee Value Quantification
+### AI 社員の価値の定量化
 
-In this solution, AI employees can:
+このソリューションにおいて、AI社員は以下の価値を提供します：
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| 価値の次元 | 具体的な効果 |
+|----------|----------|
+| 効率の向上 | 自動分類により手動の仕分け時間を50%以上削減。ナレッジ推奨により問題解決を加速。 |
+| コストの削減 | 簡単な質問への自動返信により、有人対応のワークロードを軽減。 |
+| 従業員へのエンパワーメント | 感情アラートにより担当者が事前準備を可能に。返信内容の調整によりコミュニケーションの質を向上。 |
+| 顧客満足度の向上 | より迅速なレスポンス、正確な割り当て、専門的な回答。 |
 
 ---
 
-## 7. Installation & Deployment
+## 6. 特徴（Highlights）
 
-### How to Install and Use
+### 1. T 型データアーキテクチャ
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- すべてのチケットがメインテーブルを共有し、共通のフローロジックを使用します。
+- 業務付随テーブルが固有のフィールドを保持し、柔軟な拡張を可能にします。
+- 新しい業務タイプの追加は付随テーブルを追加するだけでよく、メインフローには影響しません。
+
+### 2. チケットのライフサイクル全体をカバー
+
+- 新規作成 → 割り当て → 処理中 → 保留 → 解決 → 完了
+- 転送、差し戻し、再オープンなどの複雑なシナリオをサポート。
+- SLAの計時は保留・一時停止の状態まで正確に反映。
+
+### 3. マルチチャネルの統合受付
+
+- 公開フォーム、顧客ポータル、API、メール、代理入力に対応。
+- 冪等性（べきとうせい）チェックにより、重複作成を防止。
+
+### 4. AI ネイティブな統合
+
+- 単に「AIボタンを追加する」のではなく、すべてのプロセスにAIが組み込まれています。
+- 意図解釈、感情分析、ナレッジ推奨、返信内容の調整など。
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. ロードマップ（継続的に更新中）
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **システムへの埋め込み**：チケットモジュールをERPやCRMなどの異なる業務システムに埋め込む機能をサポート。
+- **チケットの相互接続**：アップストリーム/ダウンストリームシステムとのチケット連携とステータス・コールバックを実現し、システムを跨いだチケット協調を実現。
+- **AI 自動化**：AI社員をワークフローに組み込み、バックグラウンドでの自動実行をサポート。無人での処理を実現。
+- **マルチテナント対応**：マルチスペース/マルチアプリによる水平拡張を通じて、異なるカスタマーサービスチームへの独立した運用配布を可能に。
+- **ナレッジベース RAG**：チケット、顧客、製品などの全データを自動的にベクトル化し、インテリジェントな検索とナレッジ推奨を実現。
+- **多言語サポート**：インターフェースとコンテンツの多言語切り替えに対応し、グローバル/多地域チームのコラボレーション需要に対応。

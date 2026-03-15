@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: Nó de processamento manual"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  Usado para fluxos onde parte das decisões é controlada manualmente.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/plugins/@nocobase/plugin-workflow-manual/index).
+:::
+
+# Workflow: Nó de processamento manual

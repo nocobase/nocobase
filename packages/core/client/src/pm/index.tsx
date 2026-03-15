@@ -16,14 +16,17 @@ import { BlockTemplatesPane } from '../schema-templates';
 import { SystemSettingsPane } from '../system-settings';
 import { PluginManager } from './PluginManager';
 import { PluginManagerLink, SettingsCenterDropdown } from './PluginManagerLink';
+import { AdminSettingsLayoutModel } from './AdminSettingsLayoutModel';
 import { AdminSettingsLayout } from './PluginSetting';
 
+export * from './AdminSettingsLayoutModel';
 export * from './PluginManager';
 export * from './PluginManagerLink';
 export * from './PluginSetting';
 
 export class PMPlugin extends Plugin {
   async load() {
+    this.app.flowEngine.registerModels({ AdminSettingsLayoutModel });
     this.addComponents();
     this.addRoutes();
     this.addSettings();

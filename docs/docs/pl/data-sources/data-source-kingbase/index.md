@@ -1,16 +1,16 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/data-sources/data-source-kingbase/index).
 :::
 
-
-# Źródło danych - Baza danych KingbaseES
+# Źródło danych - KingbaseES
 
 ## Wprowadzenie
 
-Baza danych KingbaseES może być używana jako źródło danych, zarówno jako główna, jak i zewnętrzna baza danych.
+Użycie bazy danych KingbaseES jako źródła danych; może ona służyć jako główna baza danych lub jako zewnętrzna baza danych.
 
 :::warning
 Obecnie obsługiwane są wyłącznie bazy danych KingbaseES działające w trybie pg.
@@ -20,14 +20,14 @@ Obecnie obsługiwane są wyłącznie bazy danych KingbaseES działające w trybi
 
 ### Użycie jako główna baza danych
 
-Procedura instalacji jest opisana w dokumentacji instalacji; główna różnica polega na zmiennych środowiskowych.
+Proces instalacji opisano w dokumentacji instalacji, a różnica polega głównie na zmiennych środowiskowych.
 
 #### Zmienne środowiskowe
 
-Należy edytować plik .env, aby dodać lub zmodyfikować następujące konfiguracje zmiennych środowiskowych:
+Należy zmodyfikować plik .env, aby dodać lub zmienić poniższe konfiguracje zmiennych środowiskowych:
 
 ```bash
-# Dostosuj parametry bazy danych według potrzeb.
+# Dostosuj parametry DB zgodnie z rzeczywistą sytuacją
 DB_DIALECT=kingbase
 DB_HOST=localhost
 DB_PORT=54321
@@ -107,7 +107,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
 
 ### Użycie jako zewnętrzna baza danych
 
-Należy wykonać polecenie instalacji lub aktualizacji:
+Wykonaj polecenie instalacji lub aktualizacji
 
 ```bash
 yarn nocobase install
@@ -115,11 +115,11 @@ yarn nocobase install
 yarn nocobase upgrade
 ```
 
-Aktywacja wtyczki
+Aktywuj wtyczkę
 
 ![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
 
 ## Instrukcja obsługi
 
-- Główna baza danych: Proszę zapoznać się z [Głównym źródłem danych](/data-sources/data-source-main/)
-- Zewnętrzna baza danych: Proszę zapoznać się z [Źródło danych / Zewnętrzna baza danych](/data-sources/data-source-manager/external-database)
+- Główna baza danych: Proszę sprawdzić Główne źródło danych
+- Zewnętrzna baza danych: Proszę sprawdzić [Źródło danych / Zewnętrzna baza danych](/data-sources/data-source-manager/external-database)

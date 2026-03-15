@@ -1,5 +1,5 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/file-manager/development/index).
 :::
 
 # Desarrollo de Extensiones
@@ -74,7 +74,7 @@ En el lado del cliente, debe informar al gestor de archivos cómo renderizar el 
 
 ## Extender tipos de archivo en el frontend
 
-Para los archivos ya cargados, puede mostrar distintos contenidos de vista previa en la interfaz según el tipo de archivo. El campo de adjuntos del gestor de archivos incluye una vista previa integrada basada en el navegador (incrustada en un iframe), que permite previsualizar la mayoría de los formatos (como imágenes, videos, audio y PDF) directamente en el navegador. Cuando un formato no está soportado por el navegador o se requieren interacciones especiales de vista previa, puede extender el componente de vista previa por tipo de archivo.
+Para los archivos ya cargados, puede mostrar distintos contenidos de vista previa en la interfaz según el tipo de archivo. El Field de Attachment del gestor de archivos incluye una vista previa integrada basada en el navegador (incrustada en un iframe), que permite previsualizar la mayoría de los formatos (como imágenes, videos, audio y PDF) directamente en el navegador. Cuando un formato no está soportado por el navegador o se requieren interacciones especiales de vista previa, puede extender el componente de vista previa por tipo de archivo.
 
 ### Ejemplo
 
@@ -112,7 +112,7 @@ Aquí, `filePreviewTypes` es el objeto de entrada proporcionado por `@nocobase/p
 
 Cada tipo de archivo debe implementar un método `match()` para comprobar si cumple los requisitos. En el ejemplo, se usa `matchMimetype` para verificar el atributo `mimetype` del archivo. Si coincide con el tipo `docx`, se considera el tipo a manejar. Si no coincide, se utilizará el manejo de tipos integrado.
 
-La propiedad `Previewer` del descriptor de tipo es el componente usado para la vista previa. Cuando el tipo coincide, se renderiza este componente en el cuadro de vista previa. Puede devolver cualquier vista React (como un iframe, un reproductor o un gráfico).
+La propiedad `Previewer` del descriptor de tipo es el componente usado para la vista previa. Cuando el tipo coincide, se renderiza este componente en el modal de vista previa. Puede devolver cualquier vista React (como un iframe, un reproductor o un gráfico).
 
 ### API
 
@@ -174,4 +174,3 @@ Las props de entrada son:
 * `file`: el objeto de archivo actual (puede ser una URL en string o un objeto que contiene `url`/`preview`)
 * `index`: índice del archivo en la lista
 * `list`: lista de archivos
-

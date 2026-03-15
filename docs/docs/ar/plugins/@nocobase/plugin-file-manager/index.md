@@ -1,12 +1,16 @@
 ---
-displayName: "File manager"
+displayName: "مدير الملفات"
 packageName: '@nocobase/plugin-file-manager'
 description: |
-  Provides files storage services with files collection template and attachment field.
+  يوفر خدمات تخزين الملفات، ويقدم قوالب جداول بيانات (Collection) وحقول المرفقات (Attachment).
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# File manager
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/plugins/@nocobase/plugin-file-manager/index).
+:::
+
+# مدير الملفات

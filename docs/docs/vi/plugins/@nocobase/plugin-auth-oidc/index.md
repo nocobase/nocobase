@@ -1,15 +1,19 @@
 ---
-displayName: "Auth: OIDC"
+displayName: "Xác thực: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  OIDC (OpenID Connect) authentication.
+  Xác thực danh tính thông qua giao thức OIDC (OpenID Connect).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Auth: OIDC
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-auth-oidc/index).
+:::
+
+# Xác thực: OIDC

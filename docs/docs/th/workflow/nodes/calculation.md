@@ -11,7 +11,7 @@
 
 ในหน้าจอการตั้งค่าเวิร์กโฟลว์ ให้คลิกปุ่มเครื่องหมายบวก ("+") ในโฟลว์เพื่อเพิ่มโหนด "การคำนวณ" ครับ/ค่ะ:
 
-![Calculation Node_Add](https://static-docs.nocobase.com/58a445540d26945251cd143eb4b16579.png)
+![Calculation Node_Add](https://static-docs.nocobase.com/58a455540d26945251cd143eb4b16579.png)
 
 ## การตั้งค่าโหนด
 

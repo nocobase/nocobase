@@ -18,7 +18,7 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 ### API कुंजी जोड़ें
 
-![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e9f81dfe14a0a8.png)
+![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
 
 **ध्यान दें**
 

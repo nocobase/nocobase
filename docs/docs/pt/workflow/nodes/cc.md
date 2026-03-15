@@ -1,10 +1,10 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
 ---
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
 
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/workflow/nodes/cc).
+:::
 
 # CC <Badge>v1.8.2+</Badge>
 
@@ -39,6 +39,18 @@ Os destinatários são a coleção de usuários-alvo para o CC, podendo ser um o
 Os destinatários precisam visualizar o conteúdo enviado em CC no menu "CC para mim" da Central de Tarefas. Você pode configurar os resultados do gatilho e de qualquer nó no contexto do fluxo de trabalho como blocos de conteúdo.
 
 ![Interface do Usuário](https://static-docs.nocobase.com/20250710225400.png)
+
+### Cartão de Tarefa <Badge>2.0+</Badge>
+
+Pode ser usado para configurar os cartões de tarefa na lista "CC para mim" da Central de Tarefas.
+
+![20260213010947](https://static-docs.nocobase.com/20260213010947.png)
+
+No cartão, você pode configurar livremente os campos de negócio que deseja exibir (exceto campos de relacionamento).
+
+Após a criação da tarefa de CC no fluxo de trabalho, o cartão de tarefa personalizado poderá ser visualizado na lista da Central de Tarefas:
+
+![20260214124325](https://static-docs.nocobase.com/20260214124325.png)
 
 ### Título da Tarefa
 

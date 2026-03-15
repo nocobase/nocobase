@@ -1,15 +1,19 @@
 ---
-displayName: "Backup manager"
+displayName: "Správce záloh"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Provides backup and restore functionality, supports scheduled backups, and ensures data security and quick recovery.
+  Poskytuje funkce zálohování a obnovení, podporuje plánované zálohy a zajišťuje bezpečnost dat a jejich rychlou obnovu.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Backup manager
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-backups/index).
+:::
+
+# Správce záloh

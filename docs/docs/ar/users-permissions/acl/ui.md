@@ -50,7 +50,7 @@ pkg: '@nocobase/plugin-acl'
 
   عملية التكوين الكاملة هي كما يلي:
 
-![](https://static-docs.nocobase.com/1dbe559a4579c2e052e194e50edc74a7.gif)
+![](https://static-docs.nocobase.com/1dbe559a9579c2e052e194e50edc74a7.gif)
 
 - **إضافة**: يحدد ما إذا كان يمكن إضافة (إنشاء) الحقول.
 
@@ -137,7 +137,7 @@ pkg: '@nocobase/plugin-acl'
 
 تكوين الأذونات الفردية لـ **مجموعة** الطلبات، حيث يمتلك حقل الارتباط "العميل" جميع أذونات الحقول:
 
-![](https://static-docs.nocobase.com/3a3ab972f14a7b3a35361219d67fa40.png)
+![](https://static-docs.nocobase.com/3a3ab9722f14a7b3a35361219d67fa40.png)
 
 تكوين الأذونات الفردية لـ **مجموعة** العملاء، حيث تمتلك الحقول في **مجموعة** العملاء أذونات العرض فقط:
 

@@ -1,8 +1,8 @@
 ---
-displayName: "Charts (deprecated)"
+displayName: "Grafikler (kaldırıldı)"
 packageName: '@nocobase/plugin-charts'
 description: |
-  The plugin has been deprecated, please use the data visualization plugin instead.
+  Kullanımdan kaldırılmış eklenti, lütfen bunun yerine veri görselleştirme eklentisini kullanın.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Charts (deprecated)
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-charts/index) bakın.
+:::
 
-> Note: This plugin is deprecated.
+# Grafikler (kaldırıldı)
+
+> Not: Bu eklenti kullanımdan kaldırılmıştır (deprecated).

@@ -7,83 +7,56 @@
   {
     "type": "custom-link",
     "label": "빠른 시작",
+    "link": "/ai-employees/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "기능 소개",
     "items": [
       {
         "type": "custom-link",
         "label": "LLM 서비스 구성",
-        "link": "/ai-employees/quick-start/llm-service"
+        "link": "/ai-employees/features/llm-service"
       },
       {
         "type": "custom-link",
-        "label": "AI 직원 생성",
-        "link": "/ai-employees/quick-start/ai-employees"
+        "label": "AI 직원 활성화",
+        "link": "/ai-employees/features/enable-ai-employee"
       },
       {
         "type": "custom-link",
         "label": "AI 직원과 협업",
-        "link": "/ai-employees/quick-start/collaborate"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "내장 AI 직원",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "개요",
-        "link": "/ai-employees/built-in/index"
+        "link": "/ai-employees/features/collaborate"
       },
       {
         "type": "custom-link",
-        "label": "Viz: 인사이트 분석가",
-        "link": "/ai-employees/built-in/viz"
-      },
-      {
-        "type": "custom-link",
-        "label": "Orin: 데이터 모델링 전문가",
-        "link": "/ai-employees/built-in/data-modeling"
-      },
-      {
-        "type": "custom-link",
-        "label": "Dex: 데이터 정리 전문가",
-        "link": "/ai-employees/built-in/data-organizer"
-      },
-      {
-        "type": "custom-link",
-        "label": "Nathan: 프론트엔드 엔지니어",
-        "link": "/ai-employees/built-in/ai-coding"
-      }
-    ]
-  },
-  {
-    "type": "custom-link",
-    "label": "고급",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "블록 선택",
-        "link": "/ai-employees/advanced/pick-block"
-      },
-      {
-        "type": "custom-link",
-        "label": "데이터 소스",
-        "link": "/ai-employees/advanced/datasource"
-      },
-      {
-        "type": "custom-link",
-        "label": "스킬",
-        "link": "/ai-employees/advanced/skill"
-      },
-      {
-        "type": "custom-link",
-        "label": "작업",
-        "link": "/ai-employees/advanced/task"
+        "label": "컨텍스트 추가 - 블록",
+        "link": "/ai-employees/features/pick-block"
       },
       {
         "type": "custom-link",
         "label": "웹 검색",
-        "link": "/ai-employees/advanced/web-search"
+        "link": "/ai-employees/features/web-search"
+      },
+      {
+        "type": "custom-link",
+        "label": "스킬 사용",
+        "link": "/ai-employees/features/tool"
+      },
+      {
+        "type": "custom-link",
+        "label": "빠른 작업",
+        "link": "/ai-employees/features/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "내장 AI 직원",
+        "link": "/ai-employees/features/built-in-employee"
+      },
+      {
+        "type": "custom-link",
+        "label": "새로운 AI 직원 생성",
+        "link": "/ai-employees/features/new-ai-employees"
       }
     ]
   },
@@ -96,33 +69,6 @@
     "type": "custom-link",
     "label": "파일 관리",
     "link": "/ai-employees/file-manager"
-  },
-  {
-    "type": "custom-link",
-    "label": "워크플로우",
-    "items": [
-      {
-        "type": "custom-link",
-        "label": "LLM 노드",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "텍스트 대화",
-            "link": "/ai-employees/workflow/nodes/llm/chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "멀티모달 대화",
-            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
-          },
-          {
-            "type": "custom-link",
-            "label": "구조화된 출력",
-            "link": "/ai-employees/workflow/nodes/llm/structured-output"
-          }
-        ]
-      }
-    ]
   },
   {
     "type": "custom-link",
@@ -157,34 +103,44 @@
   },
   {
     "type": "custom-link",
-    "label": "애플리케이션 문서",
+    "label": "워크플로우",
     "items": [
       {
         "type": "custom-link",
-        "label": "시나리오",
+        "label": "LLM 노드",
         "items": [
           {
             "type": "custom-link",
-            "label": "Viz: CRM 시나리오 구성",
-            "link": "/ai-employees/scenarios/viz-crm"
-          }
-        ]
-      },
-      {
-        "type": "custom-link",
-        "label": "구성",
-        "items": [
-          {
-            "type": "custom-link",
-            "label": "관리자 구성",
-            "link": "/ai-employees/configuration/admin-configuration"
+            "label": "텍스트 대화",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           },
           {
             "type": "custom-link",
-            "label": "프롬프트 가이드",
-            "link": "/ai-employees/configuration/prompt-engineering-guide"
+            "label": "멀티모달 대화",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "구조화된 출력",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "애플리케이션 실습",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Viz: CRM 시나리오 구성",
+        "link": "/ai-employees/scenarios/viz-crm"
+      },
+      {
+        "type": "custom-link",
+        "label": "프롬프트 가이드",
+        "link": "/ai-employees/configuration/prompt-engineering-guide"
       }
     ]
   }

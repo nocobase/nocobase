@@ -1,12 +1,16 @@
 ---
-displayName: "Data visualization"
+displayName: "Vizualizace dat"
 packageName: '@nocobase/plugin-data-visualization'
 description: |
-  Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.
+  Poskytuje funkce pro vizualizaci dat, včetně bloku grafu a bloku filtru grafu, podporuje spojnicové, plošné a sloupcové grafy a více než tucet dalších druhů grafů, můžete také přidávat další typy grafů.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data visualization
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/plugins/@nocobase/plugin-data-visualization/index).
+:::
+
+# Vizualizace dat

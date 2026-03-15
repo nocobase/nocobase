@@ -1,14 +1,18 @@
 ---
-displayName: "Record history"
+displayName: "रिकॉर्ड इतिहास"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
-  Tracks and stores the change history of collection records.
+  संग्रह रिकॉर्ड के परिवर्तन इतिहास को ट्रैक और संग्रहीत करता है।
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# Record history
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/plugins/@nocobase/plugin-record-history/index) देखें।
+:::
+
+# रिकॉर्ड इतिहास

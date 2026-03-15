@@ -13,7 +13,7 @@ ER Diyagramı:
 
 Alan Yapılandırması:
 
-![alt text](https://static-docs.nocobase.com/a608ce44821172dad7e8ab760107ff4e.png)
+![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
 
 ## Parametre Açıklamaları
 

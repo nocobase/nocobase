@@ -177,7 +177,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 
 ดังที่แสดงในภาพด้านล่างครับ/ค่ะ:
 
-![ลำดับการดำเนินการ](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![ลำดับการดำเนินการ](https://static-docs.nocobase.com/20251219234806.png)
 
 ### ความแตกต่างจากเหตุการณ์ คอลเลกชัน
 

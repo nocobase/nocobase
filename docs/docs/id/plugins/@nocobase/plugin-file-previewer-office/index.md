@@ -1,12 +1,16 @@
 ---
-displayName: "Office File Previewer"
+displayName: "Pratinjau File Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |
-  A plugin for previewing office files via Microsoft live preview service.
+  Plugin untuk pratinjau file Office berdasarkan layanan online Microsoft.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Office File Previewer
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-file-previewer-office/index).
+:::
+
+# Pratinjau File Office

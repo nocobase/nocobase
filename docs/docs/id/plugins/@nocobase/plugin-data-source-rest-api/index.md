@@ -1,5 +1,5 @@
 ---
-displayName: "Data source: REST API"
+displayName: "Data Source: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:
   - 1.x
@@ -12,4 +12,8 @@ defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: REST API
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-data-source-rest-api/index).
+:::
+
+# Data Source: REST API

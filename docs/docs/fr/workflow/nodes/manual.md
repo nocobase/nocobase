@@ -60,7 +60,7 @@ Les blocs de données peuvent afficher les données de déclenchement ou les ré
 
 Les blocs de données de nœud fonctionnent de manière similaire : vous pouvez sélectionner le résultat des données d'un nœud en amont pour l'afficher en détail. Par exemple, le résultat d'un nœud de calcul en amont peut servir d'information de référence contextuelle pour la tâche à faire du responsable.
 
-![Nœud manuel_Configuration du nœud_Configuration de l'interface_Bloc de données_Données du nœud](https://static-docs.nocobase.com/a583e26e508e954f45db310a72c2d0a404c.png)
+![Nœud manuel_Configuration du nœud_Configuration de l'interface_Bloc de données_Données du nœud](https://static-docs.nocobase.com/a583e26e508e954b47e5ddff80d998c4.png)
 
 :::info{title=Remarque}
 Étant donné que le flux de travail n'est pas en cours d'exécution lors de la configuration de l'interface, aucun bloc de données n'affiche de données spécifiques. Les données pertinentes pour une instance de flux de travail donnée ne seront visibles dans la fenêtre contextuelle des tâches à faire qu'après le déclenchement et l'exécution du flux de travail.
@@ -84,7 +84,7 @@ Les boutons de soumission du formulaire peuvent être configurés selon trois ty
 - Soumettre et terminer le flux de travail
 - Enregistrer uniquement les valeurs du formulaire
 
-![Nœud manuel_Configuration du nœud_Configuration de l'interface_Boutons du formulaire](https://static-docs.nocobase.com/6b45995b14152e831019037001445.png)
+![Nœud manuel_Configuration du nœud_Configuration de l'interface_Boutons du formulaire](https://static-docs.nocobase.com/6b45995b14152e85a821dff6f6e3189a.png)
 
 Ces trois boutons représentent les trois statuts possibles d'un nœud dans le flux de travail. Après la soumission, le statut du nœud passe à « Terminé », « Rejeté » ou reste en « Attente ». Un formulaire doit obligatoirement configurer au moins l'un des deux premiers boutons pour déterminer la suite du déroulement du flux de travail.
 

@@ -1,12 +1,12 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/interface-builder/blocks/other-blocks/js-block).
 :::
 
 # JS Block
 
 ## Wprowadzenie
 
-JS Block to wysoce elastyczny „niestandardowy blok renderujący”, który umożliwia bezpośrednie pisanie skryptów JavaScript do generowania interfejsów, wiązania zdarzeń, wywoływania API danych lub integrowania bibliotek zewnętrznych. Jest idealny do spersonalizowanych wizualizacji, tymczasowych eksperymentów i lekkich rozszerzeń, których trudno osiągnąć za pomocą wbudowanych bloków.
+JS Block to wysoce elastyczny „niestandardowy blok renderujący”, który umożliwia bezpośrednie pisanie skryptów JavaScript do generowania interfejsów, wiązania zdarzeń, wywoływania API danych lub integrowania bibliotek zewnętrznych. Jest idealny do spersonalizowanych wizualizacji, tymczasowych eksperymentów i lekkich rozszerzeń, które trudno osiągnąć za pomocą wbudowanych bloków.
 
 ## API kontekstu wykonawczego
 
@@ -38,7 +38,7 @@ Edytor skryptów JS Block obsługuje podświetlanie składni, podpowiedzi błęd
 
 Ponadto, w prawym górnym rogu edytora można bezpośrednio wywołać pracownika AI „Inżyniera Frontendowego · Nathana”, który pomoże Panu/Pani napisać lub zmodyfikować skrypty w oparciu o bieżący kontekst. Następnie, jednym kliknięciem „Apply to editor” można zastosować zmiany w edytorze i uruchomić kod, aby zobaczyć efekt. Szczegóły znajdą Państwo w:
 
-- [Pracownik AI · Nathan: Inżynier Frontendowy](/ai-employees/built-in/ai-coding)
+- [Pracownik AI · Nathan: Inżynier Frontendowy](/ai-employees/features/built-in-employee)
 
 ## Środowisko wykonawcze i bezpieczeństwo
 

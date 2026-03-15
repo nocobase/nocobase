@@ -1,36 +1,73 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/ai-employees/index).
 :::
 
+# Przegląd
 
+![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
 
-# Pracownicy AI · Wprowadzenie
+Pracownicy AI (`AI Employees`) to możliwości agentów inteligentnych głęboko zintegrowane z systemami biznesowymi NocoBase.
 
-W NocoBase Pracownicy AI nie są chatbotami ani odizolowanymi agentami — to inteligentni współpracownicy, bezproblemowo zintegrowani z Państwa systemem biznesowym, zdolni do rozumienia kontekstu biznesowego i bezpośredniego wykonywania zadań.
+Nie są to roboty „potrafiące tylko rozmawiać”, lecz „cyfrowi współpracownicy”, którzy mogą bezpośrednio rozumieć kontekst i wykonywać operacje w interfejsie biznesowym:
 
-Pojawiają się wszędzie tam, gdzie ich Państwo potrzebują — obok tabel i formularzy — dzięki czemu mogą ich Państwo bez trudu przywołać.
+- **Rozumieją kontekst biznesowy**: postrzegają bieżącą stronę, bloki, strukturę danych i wybraną treść.
+- **Mogą bezpośrednio wykonywać działania**: mogą wywoływać umiejętności w celu realizacji zadań takich jak zapytania, analiza, wypełnianie, konfiguracja i generowanie.
+- **Współpraca oparta na rolach**: możliwość konfigurowania przez Państwa różnych pracowników według stanowisk i przełączania modeli w celu współpracy w ramach rozmowy.
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+## 5-minutowa ścieżka rozpoczęcia
 
-Mogą ich Państwo również przywołać z listy pracowników znajdującej się w prawym dolnym rogu strony.
+Prosimy najpierw zapoznać się z sekcją [Szybki start](/ai-employees/quick-start) i wykonać minimalną konfigurację w następującej kolejności:
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+1. Skonfigurować co najmniej jedną [usługę LLM](/ai-employees/features/llm-service).
+2. Włączyć co najmniej jednego [Pracownika AI](/ai-employees/features/enable-ai-employee).
+3. Otworzyć rozmowę i rozpocząć [współpracę z Pracownikami AI](/ai-employees/features/collaborate).
+4. Włączyć [wyszukiwanie w sieci](/ai-employees/features/web-search) i [szybkie zadania](/ai-employees/features/task) zgodnie z Państwa potrzebami.
 
-Automatycznie pobierają dane jako kontekst — na przykład **Viz** obok bloku tabeli automatycznie pobiera dane z tabeli i wywołuje odpowiednie narzędzia do ich przetworzenia. Oznacza to, że nie muszą Państwo już kopiować danych do chatbota.
+## Mapa funkcji
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.13.35-2025-11-02-12-13-46.mp4" type="video/mp4"></video>
+### A. Podstawowa konfiguracja (Administrator)
 
-Mogą również automatycznie rozumieć struktury stron jako kontekst — na przykład **Dex** obok bloku formularza automatycznie pobiera strukturę pól formularza i wywołuje odpowiednie narzędzia do operowania na stronie. Oznacza to, że nie muszą Państwo kopiować danych z powrotem z chatbota.
+- [Konfiguracja usługi LLM](/ai-employees/features/llm-service): podłączanie dostawców (Provider), konfigurowanie i zarządzanie dostępnymi modelami.
+- [Włączanie Pracowników AI](/ai-employees/features/enable-ai-employee): włączanie/wyłączanie wbudowanych pracowników i kontrolowanie zakresu ich dostępności.
+- [Tworzenie nowego Pracownika AI](/ai-employees/features/new-ai-employees): definiowanie roli, osobowości (Role setting), wiadomości powitalnej i granic możliwości.
+- [Korzystanie z umiejętności](/ai-employees/features/tool): konfigurowanie uprawnień do umiejętności (`Ask` / `Allow`) i kontrolowanie ryzyka wykonania.
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.16.07-2025-11-02-12-16-21.mp4" type="video/mp4"></video>
+### B. Codzienna współpraca (Użytkownik biznesowy)
 
-Mogą Państwo również bezpośrednio wybierać elementy na stronie i wysyłać je do Pracownika AI, co pozwoli im automatycznie wyodrębnić odpowiednie dane i strukturę.
+- [Współpraca z Pracownikami AI](/ai-employees/features/collaborate): przełączanie pracowników i modeli wewnątrz rozmowy w celu ciągłej współpracy.
+- [Dodawanie kontekstu - Bloki](/ai-employees/features/pick-block): wysyłanie bloków strony jako kontekstu do AI.
+- [Szybkie zadania](/ai-employees/features/task): wstępne ustawianie typowych zadań na stronach/blokach i ich wykonywanie jednym kliknięciem.
+- [Wyszukiwanie w sieci](/ai-employees/features/web-search): włączanie wyszukiwania w celu uzyskania aktualnych informacji, gdy jest to potrzebne.
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.17.25-2025-11-02-12-17-44.mp4" type="video/mp4"></video>
+### C. Zaawansowane możliwości (Rozszerzenia)
 
-Mogą Państwo wstępnie ustawić zadania dla każdego Pracownika AI w bieżącej lokalizacji, umożliwiając użytkownikom ich uruchomienie jednym kliknięciem — bez konieczności wprowadzania jakichkolwiek danych.
+- [Wbudowani Pracownicy AI](/ai-employees/features/built-in-employee): zrozumienie pozycjonowania i scenariuszy zastosowania wstępnie ustawionych pracowników.
+- [Kontrola uprawnień](/ai-employees/permission): kontrolowanie dostępu do pracowników, umiejętności i danych zgodnie z modelem uprawnień organizacji.
+- [Baza wiedzy AI](/ai-employees/knowledge-base/index): wprowadzanie wiedzy korporacyjnej w celu poprawy stabilności i identyfikowalności odpowiedzi.
+- [Węzeł LLM w przepływie pracy](/ai-employees/workflow/nodes/llm/chat): orkiestracja możliwości AI w zautomatyzowanych procesach.
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
+## Kluczowe pojęcia (zalecane wcześniejsze ujednolicenie)
+
+Poniższe terminy są zgodne ze słownikiem; zaleca się, aby Państwo używali ich jednolicie w zespole:
+
+- **Pracownik AI (AI Employee)**: wykonywalny agent składający się z ustawień roli (Role setting) i umiejętności (Tool / Skill).
+- **Usługa LLM (LLM Service)**: jednostka dostępu do modeli i konfiguracji możliwości, służąca do zarządzania dostawcami (Provider) i listami modeli.
+- **Dostawca (Provider)**: dostawca modelu stojący za usługą LLM.
+- **Włączone modele (Enabled Models)**: zestaw modeli, które bieżąca usługa LLM pozwala wybrać w rozmowie.
+- **Przełącznik Pracowników AI (AI Employee Switcher)**: przełączanie aktualnie współpracującego pracownika wewnątrz rozmowy.
+- **Przełącznik modeli (Model Switcher)**: przełączanie modeli wewnątrz rozmowy i zapamiętywanie preferencji dla każdego pracownika.
+- **Umiejętność (Tool / Skill)**: jednostka możliwości wykonawczych, którą AI może wywołać.
+- **Uprawnienia umiejętności (Permission: Ask / Allow)**: określenie, czy przed wywołaniem umiejętności wymagane jest potwierdzenie przez człowieka.
+- **Kontekst (Context)**: informacje o środowisku biznesowym, takie jak strony, bloki, struktury danych itp.
+- **Rozmowa (Chat)**: proces ciągłej interakcji między użytkownikiem a Pracownikiem AI.
+- **Wyszukiwanie w sieci (Web Search)**: możliwość uzupełniania odpowiedzi o informacje w czasie rzeczywistym na podstawie wyszukiwania zewnętrznego.
+- **Baza wiedzy (Knowledge Base / RAG)**: wprowadzanie wiedzy korporacyjnej poprzez generowanie wspomagane wyszukiwaniem.
+- **Magazyn wektorowy (Vector Store)**: zbiór danych wektorowych zapewniający możliwości wyszukiwania semantycznego dla bazy wiedzy.
+
+## Instrukcja instalacji
+
+Pracownicy AI to wbudowana wtyczka NocoBase (`@nocobase/plugin-ai`), gotowa do użycia bez konieczności oddzielnej instalacji.

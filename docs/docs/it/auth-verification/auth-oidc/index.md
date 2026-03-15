@@ -44,7 +44,7 @@ Aggiungi - OIDC
 
 ### Mappatura dei campi
 
-![](https://static-docs.nocobase.com/92d63c8f6082b50d9f475674cb5650.png)
+![](https://static-docs.nocobase.com/92d63c8f6f4082b50d9f475674cb5650.png)
 
 | Configurazione                            | Descrizione                                                                                                                                                      |
 | :---------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------- |

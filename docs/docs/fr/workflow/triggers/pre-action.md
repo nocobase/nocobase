@@ -28,7 +28,7 @@ Lors de la création d'un flux de travail, sélectionnez le type "Événement av
 
 Dans le déclencheur d'un flux de travail d'interception, la première chose à configurer est la collection (table de données) correspondant à l'opération :
 
-![Configuration de l'événement d'interception_Collection](https://static-docs.nocobase.com/8f712caca8159d334cf776f838d53d6.png)
+![Configuration de l'événement d'interception_Collection](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 Ensuite, sélectionnez le mode d'interception. Vous pouvez choisir d'intercepter uniquement le bouton d'action lié à ce flux de travail, ou d'intercepter toutes les opérations sélectionnées pour cette collection (indépendamment du formulaire d'origine et sans nécessiter de liaison avec le flux de travail correspondant) :
 
@@ -91,7 +91,7 @@ La configuration du flux de travail correspondant est maintenant terminée. Vous
 
 Si le nœud "Fin de flux de travail" est configuré pour se terminer avec un statut "Succès", la requête d'opération sera toujours interceptée lorsque ce nœud est exécuté, mais le message de réponse renvoyé s'affichera avec un statut "Succès" (plutôt que "Erreur") :
 
-![Message de réponse avec statut de succès](https://static-docs.nocobase.com/9559bbf56076144759451294b18c790e.png)
+![Message de réponse avec statut de succès](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## Exemple
 
@@ -111,7 +111,7 @@ Le nœud de condition dans le flux de travail en boucle est utilisé pour déter
 
 Les autres configurations sont identiques à celles de l'utilisation de base. Lors de la soumission finale de la commande, si le stock d'un produit est insuffisant, la soumission de la commande sera interceptée et un message d'information correspondant sera renvoyé. Lors des tests, essayez de soumettre une commande avec plusieurs produits, dont un avec un stock insuffisant et un autre avec un stock suffisant. Vous pourrez alors voir le message de réponse renvoyé :
 
-![Exemple_Message de réponse après soumission](https://static-docs.nocobase.com/dd81084aa237bda0241d399ac19270.png)
+![Exemple_Message de réponse après soumission](https://static-docs.nocobase.com/dd9e81084aa237bda0241d399ac19270.png)
 
 Comme vous pouvez le constater, le message de réponse n'indique pas que le stock du premier produit, "iPhone 15 Pro", est insuffisant, mais seulement celui du second produit, "iPhone 14 Pro". Cela s'explique par le fait que, dans la boucle, le premier produit avait un stock suffisant et n'a donc pas été intercepté, tandis que le second produit avait un stock insuffisant, ce qui a entraîné l'interception de la soumission de la commande.
 

@@ -178,7 +178,7 @@ Si el evento está configurado en modo global, no necesita usar el parámetro UR
 
 Como se muestra en la siguiente figura:
 
-![Orden de ejecución de la acción](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Orden de ejecución de la acción](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Diferencia con el Evento de Colección
 

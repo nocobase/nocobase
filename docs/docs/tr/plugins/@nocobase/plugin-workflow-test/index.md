@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: test kit"
+displayName: "Workflow: Test Kiti"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: test kit
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-workflow-test/index) bakın.
+:::
+
+# Workflow: Test Kiti

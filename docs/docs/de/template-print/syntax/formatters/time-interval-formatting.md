@@ -1,5 +1,5 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/template-print/syntax/formatters/time-interval-formatting).
 :::
 
 ### Zeitintervall-Formatierung
@@ -17,7 +17,6 @@ Parameter:
 
 ##### Beispiele
 ```
-// Beispielumgebung: API-Optionen { "lang": "en", "timezone": "Europe/Paris" }
 2000:formatI('second')       // Ergibt 2
 2000:formatI('seconds')      // Ergibt 2
 2000:formatI('s')            // Ergibt 2
@@ -25,12 +24,7 @@ Parameter:
 3600000:formatI('hour')      // Ergibt 1
 2419200000:formatI('days')   // Ergibt 28
 
-// Beispiel auf Französisch:
-2000:formatI('human')        // Ergibt "quelques secondes"
-2000:formatI('human+')       // Ergibt "dans quelques secondes"
--2000:formatI('human+')      // Ergibt "il y a quelques secondes"
-
-// Beispiel auf Englisch:
+// Benutzerfreundliche Anzeige:
 2000:formatI('human')        // Ergibt "a few seconds"
 2000:formatI('human+')       // Ergibt "in a few seconds"
 -2000:formatI('human+')      // Ergibt "a few seconds ago"

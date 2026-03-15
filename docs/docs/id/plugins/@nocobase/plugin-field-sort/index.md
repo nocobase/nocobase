@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Sort"
+displayName: "Field Collection: Sort"
 packageName: '@nocobase/plugin-field-sort'
 description: |
-  Used to sort the data in a collection.
+  Digunakan untuk mengurutkan data dalam Collection.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Sort
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-field-sort/index).
+:::
+
+# Field Collection: Sort

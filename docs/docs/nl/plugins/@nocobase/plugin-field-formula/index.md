@@ -1,12 +1,16 @@
 ---
-displayName: "Collection field: Formula"
+displayName: "Collectieveld: Formule"
 packageName: '@nocobase/plugin-field-formula'
 description: |
-  Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.
+  U kunt de resultaten van berekeningen tussen meerdere veldwaarden in hetzelfde record configureren en opslaan, met ondersteuning voor zowel Math.js als Excel formula functions engines.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection field: Formula
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-field-formula/index) voor nauwkeurige informatie.
+:::
+
+# Collectieveld: Formule

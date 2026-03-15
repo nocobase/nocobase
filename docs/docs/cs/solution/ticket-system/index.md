@@ -1,177 +1,181 @@
-# Ticketing Solution Overview
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Představení řešení pro tickety
 
-## 1. Background (Why)
+> **Poznámka**: Tato verze je raný náhled (preview). Funkce nejsou zatím kompletní a neustále pracujeme na vylepšeních. Zpětná vazba je vítána!
 
-### Industry/Role/Management Problems Solved
+## 1. Kontext (Proč)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Jaké problémy v odvětvích, pozicích a managementu řešíme
 
-**Typical Business Scenarios:**
+Firmy čelí v každodenním provozu různým typům servisních požadavků: opravy zařízení, IT podpora, stížnosti zákazníků, konzultace atd. Tyto požadavky přicházejí z rozptýlených zdrojů (CRM systémy, technici v terénu, e-maily, veřejné formuláře atd.), mají různé pracovní postupy a postrádají jednotný mechanismus sledování a správy.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Příklady typických obchodních scénářů:**
 
-### Target User Profile
+- **Opravy zařízení**: Poprodejní tým řeší požadavky na opravu zařízení, přičemž potřebuje zaznamenávat specifické informace, jako jsou sériová čísla, kódy chyb, náhradní díly atd.
+- **IT podpora**: IT oddělení řeší požadavky interních zaměstnanců na resetování hesla, instalaci softwaru, problémy se sítí atd.
+- **Stížnosti zákazníků**: Tým zákaznických služeb řeší stížnosti z více kanálů; někteří emočně vypjatí zákazníci vyžadují prioritní řešení.
+- **Samoobsluha pro zákazníky**: Koncoví zákazníci chtějí mít možnost pohodlně odesílat požadavky na služby a sledovat průběh jejich zpracování.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### Profil cílového uživatele
 
-### Pain Points of Current Mainstream Solutions
+| Dimenze | Popis |
+|------|------|
+| Velikost firmy | Malé a střední podniky až středně velké a velké podniky s výraznou potřebou zákaznického servisu |
+| Struktura rolí | Týmy zákaznických služeb, IT podpora, poprodejní týmy, provozní manažeři |
+| Digitální zralost | Začátečníci až středně pokročilí, kteří hledají způsob, jak přejít ze správy v Excelu/e-mailu na systémové řízení |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### Problémy stávajících hlavních řešení
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Vysoké náklady / pomalé přizpůsobení**: SaaS systémy pro tickety jsou drahé a cykly vlastního vývoje jsou dlouhé.
+- **Fragmentace systémů, datová sila**: Různé typy obchodních dat jsou rozptýleny v různých systémech, což ztěžuje jednotnou analýzu a rozhodování.
+- **Rychlé změny v podnikání, obtížný vývoj**: Když se změní obchodní požadavky, je obtížné systémy rychle upravit.
+- **Pomalá odezva služeb**: Požadavky proudící mezi různými systémy nelze včas přidělit.
+- **Netransparentní proces**: Zákazníci nemohou sledovat průběh ticketu, což vede k častým dotazům a zvyšuje tlak na zákaznický servis.
+- **Obtížné zajištění kvality**: Chybí monitorování SLA, na prodlevy a negativní hodnocení nelze včas upozornit.
 
 ---
 
-## 3. Design Principles
+## 2. Srovnání produktů a řešení (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Hlavní produkty na trhu
+
+- **SaaS**: např. Salesforce, Zendesk, Odoo atd.
+- **Vlastní systémy / interní systémy**
+
+### Dimenze srovnání
+
+- Pokrytí funkcí
+- Flexibilita
+- Rozšiřitelnost
+- Způsob využití AI
+
+### Rozdíly v řešení NocoBase
+
+**Výhody na úrovni platformy:**
+
+- **Priorita konfigurace**: Od podkladových datových tabulek po typy obchodních případů, SLA a směrování podle dovedností – vše se spravuje pomocí konfigurace.
+- **Rychlé sestavení s low-code**: Rychlejší než vlastní vývoj, flexibilnější než SaaS.
+
+**Co tradiční systémy nedokážou nebo co je v nich extrémně nákladné:**
+
+- **Nativní integrace AI**: S využitím AI pluginů NocoBase lze dosáhnout inteligentní klasifikace, pomoci při vyplňování formulářů a doporučování znalostí.
+- **Všechny návrhy mohou uživatelé replikovat**: Uživatelé mohou systém sami rozšiřovat na základě šablon.
+- **Datová architektura ve tvaru T**: Hlavní tabulka + rozšiřující tabulky pro konkrétní agendy. Přidání nového typu agendy vyžaduje pouze přidání rozšiřující tabulky.
 
 ---
 
-## 4. Solution Overview
+## 3. Principy návrhu (Principles)
 
-### Summary Introduction
+- **Nízké kognitivní náklady**
+- **Business má přednost před technologií**
+- **Vyvíjející se systém, nikoli jednorázové dokončení**
+- **Nejprve konfigurace, kód jako záloha**
+- **Spolupráce člověka a AI, nikoli nahrazení člověka AI**
+- **Všechny návrhy by měly být pro uživatele replikovatelné**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Přehled řešení (Solution Overview)
 
-### Ticket Processing Flow
+### Stručné představení
+
+Univerzální centrála pro tickety postavená na low-code platformě NocoBase umožňuje:
+
+- **Jednotný vstup**: Přístup z více zdrojů, standardizované zpracování.
+- **Inteligentní distribuce**: Klasifikace s podporou AI, přidělování s vyvažováním zátěže.
+- **Polymorfní agenda**: Jádro v hlavní tabulce + rozšiřující tabulky pro agendy, flexibilní rozšiřitelnost.
+- **Uzavřená smyčka zpětné vazby**: Monitorování SLA, hodnocení zákazníků, řešení negativní zpětné vazby.
+
+### Proces zpracování ticketu
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Vícezdrojový vstup → Předzpracování/AI analýza → Inteligentní přidělení → Ruční provedení → Smyčka zpětné vazby
+        ↓                      ↓                          ↓                    ↓                ↓
+ Kontrola duplicit      Rozpoznání záměru          Shoda dovedností      Tok stavů        Hodnocení spokojenosti
+                        Analýza sentimentu         Vyvažování zátěže     Monitorování SLA Následná kontrola stížností
+                        Automatická odpověď        Správa front          Komunikace       Archivace dat
 ```
 
-### Core Module List
+### Seznam hlavních modulů
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Modul | Popis |
+|------|------|
+| Příjem ticketů | Veřejné formuláře, zákaznický portál, záznam operátorem, API/Webhook, parsování e-mailů |
+| Správa ticketů | CRUD operace ticketů, tok stavů, přidělení/předání, komunikace v komentářích, protokoly operací |
+| Rozšíření agendy | Rozšiřující tabulky pro opravy zařízení, IT podporu, stížnosti zákazníků atd. |
+| Správa SLA | Konfigurace SLA, upozornění na prodlevu, eskalace při prodlevě |
+| Správa zákazníků | Hlavní tabulka zákazníků, správa kontaktů, zákaznický portál |
+| Systém hodnocení | Vícerozměrné bodování, rychlé štítky, NPS, upozornění na negativní zpětnou vazbu |
+| AI asistence | Klasifikace záměru, analýza sentimentu, doporučování znalostí, pomoc s odpovědí, úprava tónu |
 
-### Core Interface Display
+### Ukázka hlavního rozhraní
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. AI zaměstnanci (AI Employee)
 
-### AI Employee Types and Scenarios
+### Typy AI zaměstnanců a scénáře
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Asistent zákaznického servisu**, **Asistent prodeje**, **Datový analytik**, **Auditor**
+- Pomáhají lidem, nenahrazují je.
 
-### AI Employee Value Quantification
+### Kvantifikace hodnoty AI zaměstnanců
 
-In this solution, AI employees can:
+V tomto řešení mohou AI zaměstnanci:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Dimenze hodnoty | Konkrétní efekt |
+|----------|----------|
+| Zvýšení efektivity | Automatická klasifikace zkracuje čas ručního třídění o více než 50 %; doporučování znalostí urychluje řešení problémů |
+| Snížení nákladů | Automatické odpovědi na jednoduché dotazy snižují pracovní zátěž lidských operátorů |
+| Posílení lidských zaměstnanců | Varování před emocemi pomáhá operátorům se předem připravit; úprava odpovědí zvyšuje kvalitu komunikace |
+| Zvýšení spokojenosti zákazníků | Rychlejší odezva, přesnější přidělení, profesionálnější odpovědi |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Hlavní přednosti (Highlights)
 
-### How to Install and Use
+### 1. Datová architektura ve tvaru T
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Všechny tickety sdílejí hlavní tabulku s jednotnou logikou toku.
+- Rozšiřující tabulky nesou specifická pole pro daný typ agendy, což umožňuje flexibilní rozšíření.
+- Přidání nového typu agendy vyžaduje pouze přidání rozšiřující tabulky a neovlivňuje hlavní proces.
+
+### 2. Kompletní životní cyklus ticketu
+
+- Nový → Přidělen → Zpracovává se → Pozastaven → Vyřešen → Uzavřen.
+- Podpora složitých scénářů, jako je předání, vrácení nebo znovuotevření.
+- Časování SLA je přesné a zohledňuje pozastavení (pending).
+
+### 3. Jednotný přístup z více kanálů
+
+- Veřejné formuláře, zákaznický portál, API, e-mail, záznam operátorem.
+- Kontrola idempotence zabraňuje duplicitnímu vytváření požadavků.
+
+### 4. Nativní integrace AI
+
+- Nejde jen o „přidání tlačítka AI“, ale o integraci do každého kroku procesu.
+- Rozpoznání záměru, analýza sentimentu, doporučování znalostí, úprava odpovědí.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Instalace a nasazení
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+### Jak nainstalovat a používat
+
+Použijte správu migrací k migraci a integraci různých dílčích aplikací do jiných aplikací.
+
+---
+
+## 8. Roadmap (průběžně aktualizováno)
+
+- **Vnoření do systému**: Podpora vnoření modulu ticketů do různých podnikových systémů, jako jsou ERP, CRM atd.
+- **Propojení ticketů**: Integrace ticketů s navazujícími a předcházejícími systémy a zpětná volání stavu pro spolupráci na ticketech napříč systémy.
+- **AI automatizace**: AI zaměstnanci vnoření do pracovních postupů s podporou automatického spouštění na pozadí pro bezobslužné zpracování.
+- **Podpora více nájemců (Multi-tenancy)**: Horizontální škálování prostřednictvím architektury více prostorů/aplikací, umožňující distribuci různým servisním týmům pro nezávislý provoz.
+- **Znalostní báze RAG**: Automatická vektorizace všech dat (tickety, zákazníci, produkty atd.) pro inteligentní vyhledávání a doporučování znalostí.
+- **Podpora více jazyků**: Rozhraní a obsah podporují přepínání mezi více jazyky, což vyhovuje potřebám nadnárodních a regionálních týmů.

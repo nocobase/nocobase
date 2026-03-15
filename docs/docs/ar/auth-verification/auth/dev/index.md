@@ -167,7 +167,7 @@ class CustomAuthPlugin extends Plugin {
 
 ### نموذج إعدادات المسؤول
 
-![](https://static-docs.nocobase.com/f4b44b5b0f5afee5621ad4abf66b24f.png)
+![](https://static-docs.nocobase.com/f4b544b5b0f5afee5621ad4abf66b24f.png)
 
 الجزء العلوي هو التكوين العام للمصادقة، والجزء السفلي هو جزء نموذج التكوين المخصص الذي يمكن تسجيله.
 

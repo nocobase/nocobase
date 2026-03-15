@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="AI अनुवाद सूचना"}
+यह दस्तावेज़ AI द्वारा अनुवादित है। सटीक जानकारी के लिए कृपया [अंग्रेज़ी संस्करण](/solution/ticket-system/index) देखें।
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# टिकट समाधान का परिचय
 
-## 1. Background (Why)
+> **सुझाव**: वर्तमान संस्करण एक प्रारंभिक पूर्वावलोकन (early preview) है, सुविधाएँ अभी पूरी तरह से विकसित नहीं हैं और हम इनमें लगातार सुधार कर रहे हैं। आपके फीडबैक और सुझावों का स्वागत है!
 
-### Industry/Role/Management Problems Solved
+## 1. पृष्ठभूमि (Why)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### किन उद्योगों / भूमिकाओं / प्रबंधन समस्याओं का समाधान करता है
 
-**Typical Business Scenarios:**
+कंपनियों को अपने दैनिक संचालन में कई प्रकार के सेवा अनुरोधों (service requests) का सामना करना पड़ता है: उपकरण मरम्मत, आईटी सहायता, ग्राहक शिकायतें, परामर्श और सुझाव आदि। ये अनुरोध अलग-अलग स्रोतों (CRM सिस्टम, फील्ड इंजीनियर, ईमेल, सार्वजनिक फॉर्म आदि) से आते हैं, इनकी प्रसंस्करण प्रक्रियाएं (processing workflows) अलग होती हैं, और इनमें एकीकृत ट्रैकिंग और प्रबंधन तंत्र की कमी होती है।
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**विशिष्ट व्यावसायिक परिदृश्यों के उदाहरण:**
 
-### Target User Profile
+- **उपकरण मरम्मत**: बिक्री के बाद की टीम (after-sales team) उपकरण मरम्मत के अनुरोधों को संभालती है, जिसमें सीरियल नंबर, फॉल्ट कोड और स्पेयर पार्ट्स जैसी विशिष्ट जानकारी रिकॉर्ड करने की आवश्यकता होती है।
+- **आईटी सहायता**: आईटी विभाग आंतरिक कर्मचारियों के पासवर्ड रीसेट, सॉफ्टवेयर इंस्टॉलेशन और नेटवर्क समस्याओं जैसे अनुरोधों को संभालता है।
+- **ग्राहक शिकायतें**: ग्राहक सेवा टीम विभिन्न चैनलों से आने वाली शिकायतों को संभालती है, जहाँ कुछ उत्तेजित ग्राहकों के मामलों को प्राथमिकता के आधार पर निपटाने की आवश्यकता होती है।
+- **ग्राहक स्वयं-सेवा**: अंतिम ग्राहक आसानी से सेवा अनुरोध सबमिट करना चाहते हैं और उनकी प्रगति के बारे में जानना चाहते हैं।
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### लक्षित उपयोगकर्ता प्रोफ़ाइल (Target User Profile)
 
-### Pain Points of Current Mainstream Solutions
+| आयाम | विवरण |
+|------|------|
+| कंपनी का आकार | मध्यम से बड़े उद्यम, जिनमें ग्राहक सेवा की पर्याप्त मांग है |
+| भूमिका संरचना | ग्राहक सेवा टीम, आईटी सहायता, बिक्री के बाद की टीम, संचालन प्रबंधक |
+| डिजिटल परिपक्वता | प्राथमिक से मध्यम, जो Excel/ईमेल प्रबंधन से व्यवस्थित सिस्टम प्रबंधन पर अपग्रेड करना चाहते हैं |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### मौजूदा मुख्यधारा के समाधानों की कमियाँ
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **उच्च लागत / धीमी कस्टमाइज़ेशन**: SaaS टिकट सिस्टम महंगे होते हैं और कस्टम विकास चक्र लंबा होता है।
+- **सिस्टम विखंडन, डेटा साइलो**: विभिन्न व्यावसायिक डेटा अलग-अलग प्रणालियों में बिखरा होता है, जिससे एकीकृत विश्लेषण और निर्णय लेना कठिन हो जाता है।
+- **तेजी से बदलते व्यवसाय, सिस्टम का विकास कठिन**: जब व्यावसायिक आवश्यकताएं बदलती हैं, तो सिस्टम को जल्दी से समायोजित करना मुश्किल होता है।
+- **धीमी सेवा प्रतिक्रिया**: विभिन्न प्रणालियों के बीच अनुरोधों के प्रवाह के कारण समय पर असाइनमेंट नहीं हो पाता।
+- **प्रक्रिया में पारदर्शिता की कमी**: ग्राहक टिकट की प्रगति को ट्रैक नहीं कर पाते, जिससे बार-बार पूछताछ बढ़ती है और ग्राहक सेवा पर दबाव पड़ता है।
+- **गुणवत्ता सुनिश्चित करना कठिन**: SLA निगरानी की कमी के कारण, समय सीमा समाप्त होने (timeout) और खराब फीडबैक की समय पर चेतावनी नहीं मिल पाती।
 
 ---
 
-## 3. Design Principles
+## 2. संदर्भ उत्पाद और समाधान तुलना (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### बाजार में मुख्यधारा के उत्पाद
+
+- **SaaS**: जैसे Salesforce, Zendesk, Odoo आदि।
+- **कस्टम सिस्टम / आंतरिक सिस्टम**
+
+### तुलना के आयाम
+
+- फीचर कवरेज
+- लचीलापन
+- विस्तार क्षमता (Extensibility)
+- AI का उपयोग करने का तरीका
+
+### NocoBase समाधान के अंतर के बिंदु
+
+**प्लेटफ़ॉर्म-स्तर के लाभ:**
+
+- **कॉन्फ़िगरेशन को प्राथमिकता**: अंतर्निहित डेटा टेबल से लेकर व्यावसायिक प्रकार, SLA और स्किल रूटिंग तक सब कुछ कॉन्फ़िगरेशन के माध्यम से प्रबंधित किया जाता है।
+- **लो-कोड त्वरित निर्माण**: यह कस्टम विकास से तेज़ और SaaS से अधिक लचीला है।
+
+**पारंपरिक सिस्टम जो नहीं कर सकते या जिनकी लागत बहुत अधिक है:**
+
+- **AI-नेटिव एकीकरण**: NocoBase के AI प्लगइन की मदद से इंटेलिजेंट वर्गीकरण, फॉर्म भरने में सहायता और ज्ञान (knowledge) अनुशंसा प्राप्त करें।
+- **सभी डिज़ाइन उपयोगकर्ताओं द्वारा कॉपी किए जा सकते हैं**: उपयोगकर्ता टेम्प्लेट के आधार पर स्वयं विस्तार कर सकते हैं।
+- **T-आकार का डेटा आर्किटेक्चर**: मुख्य तालिका + व्यावसायिक सहायक तालिकाएं; नए व्यावसायिक प्रकार जोड़ने के लिए केवल सहायक तालिका जोड़ने की आवश्यकता होती है।
 
 ---
 
-## 4. Solution Overview
+## 3. डिज़ाइन सिद्धांत (Principles)
 
-### Summary Introduction
+- **कम संज्ञानात्मक लागत (Low cognitive cost)**
+- **तकनीक से पहले व्यवसाय**
+- **विकासशील, न कि एक बार में पूरा होने वाला कार्य**
+- **कॉन्फ़िगरेशन को प्राथमिकता, कोड का बैकअप**
+- **मानव और AI का सहयोग, न कि AI द्वारा मानव का प्रतिस्थापन**
+- **सभी डिज़ाइन उपयोगकर्ताओं द्वारा कॉपी करने योग्य होने चाहिए**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. समाधान अवलोकन (Solution Overview)
 
-### Ticket Processing Flow
+### संक्षिप्त परिचय
+
+NocoBase लो-कोड प्लेटफ़ॉर्म पर निर्मित एक सार्वभौमिक टिकट मिडिल-एंड, जो निम्नलिखित प्राप्त करता है:
+
+- **एकीकृत प्रवेश द्वार**: बहु-स्रोत एक्सेस, मानकीकृत प्रसंस्करण।
+- **इंटेलिजेंट वितरण**: AI-सहायता प्राप्त वर्गीकरण, लोड-बैलेंस्ड असाइनमेंट।
+- **बहुरूपी व्यवसाय (Polymorphic Business)**: कोर मुख्य तालिका + व्यावसायिक सहायक तालिकाएं, लचीला विस्तार।
+- **क्लोज्ड-लूप फीडबैक**: SLA निगरानी, ग्राहक मूल्यांकन, खराब फीडबैक का समाधान।
+
+### टिकट प्रसंस्करण वर्कफ़्लो
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+बहु-स्रोत एक्सेस → प्री-प्रोसेसिंग/AI विश्लेषण → इंटेलिजेंट वितरण → मैन्युअल निष्पादन → फीडबैक लूप
+    ↓                  ↓                     ↓                ↓                ↓
+ डुप्लीकेट जाँच      इरादे की पहचान         स्किल मैचिंग      स्थिति प्रवाह      संतुष्टि मूल्यांकन
+                    भावना विश्लेषण          लोड बैलेंसिंग      SLA निगरानी       खराब फीडबैक फॉलो-अप
+                    स्वचालित उत्तर          कतार प्रबंधन       कमेंट संचार       डेटा आर्काइविंग
 ```
 
-### Core Module List
+### मुख्य मॉड्यूल सूची
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| मॉड्यूल | विवरण |
+|------|------|
+| टिकट इनटेक | सार्वजनिक फॉर्म, ग्राहक पोर्टल, एजेंट द्वारा प्रविष्टि, API/Webhook, ईमेल पार्सिंग |
+| टिकट प्रबंधन | टिकट CRUD, स्थिति प्रवाह, असाइनमेंट/ट्रांसफर, कमेंट संचार, ऑपरेशन लॉग |
+| व्यावसायिक विस्तार | उपकरण मरम्मत, आईटी सहायता, ग्राहक शिकायतें आदि के लिए व्यावसायिक सहायक तालिकाएं |
+| SLA प्रबंधन | SLA कॉन्फ़िगरेशन, टाइमआउट चेतावनी, टाइमआउट एस्केलेशन |
+| ग्राहक प्रबंधन | ग्राहक मुख्य तालिका, संपर्क प्रबंधन, ग्राहक पोर्टल |
+| मूल्यांकन प्रणाली | बहु-आयामी स्कोरिंग, त्वरित टैग, NPS, खराब फीडबैक चेतावनी |
+| AI सहायता | इरादा वर्गीकरण, भावना विश्लेषण, ज्ञान अनुशंसा, उत्तर सहायता, टोन पॉलिशिंग |
 
-### Core Interface Display
+### मुख्य इंटरफ़ेस प्रदर्शन
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. AI कर्मचारी (AI Employee)
 
-### AI Employee Types and Scenarios
+### AI कर्मचारी के प्रकार और परिदृश्य
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **ग्राहक सेवा सहायक**, **बिक्री सहायक**, **डेटा विश्लेषक**, **ऑडिटर**
+- मनुष्यों की सहायता करना, न कि उन्हें बदलना
 
-### AI Employee Value Quantification
+### AI कर्मचारी के मूल्य का मात्रात्मक निर्धारण
 
-In this solution, AI employees can:
+इस समाधान में, AI कर्मचारी निम्नलिखित कर सकते हैं:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| मूल्य आयाम | विशिष्ट प्रभाव |
+|----------|----------|
+| दक्षता में सुधार | स्वचालित वर्गीकरण से मैन्युअल छंटाई के समय में 50%+ की कमी; ज्ञान अनुशंसा से समस्या समाधान में तेज़ी |
+| लागत में कमी | सरल प्रश्नों के स्वचालित उत्तर, जिससे मानव ग्राहक सेवा का कार्यभार कम होता है |
+| मानव कर्मचारियों को सशक्त बनाना | भावना चेतावनी से ग्राहक सेवा को पहले से तैयारी करने में मदद मिलती है; उत्तर पॉलिशिंग से संचार की गुणवत्ता बढ़ती है |
+| ग्राहक संतुष्टि में वृद्धि | तेज़ प्रतिक्रिया, अधिक सटीक असाइनमेंट, अधिक पेशेवर उत्तर |
 
 ---
 
-## 7. Installation & Deployment
+## 6. मुख्य विशेषताएँ (Highlights)
 
-### How to Install and Use
+### 1. T-आकार का डेटा आर्किटेक्चर
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- सभी टिकट एक ही मुख्य तालिका साझा करते हैं, जिससे प्रवाह तर्क (flow logic) एकीकृत रहता है।
+- व्यावसायिक सहायक तालिकाएं विशिष्ट फ़ील्ड रखती हैं, जिससे लचीला विस्तार संभव है।
+- नए व्यावसायिक प्रकार जोड़ने के लिए केवल सहायक तालिका जोड़ने की आवश्यकता होती है, जिससे मुख्य प्रक्रिया प्रभावित नहीं होती।
+
+### 2. पूर्ण टिकट जीवनचक्र
+
+- नया → असाइन किया गया → प्रसंस्करण → लंबित → हल किया गया → बंद।
+- ट्रांसफर, रिटर्न, री-ओपन जैसे जटिल परिदृश्यों का समर्थन करता है।
+- SLA टाइमिंग लंबित (pending) स्थिति में रुकने तक सटीक रहती है।
+
+### 3. बहु-चैनल एकीकृत एक्सेस
+
+- सार्वजनिक फॉर्म, ग्राहक पोर्टल, API, ईमेल, एजेंट प्रविष्टि।
+- इडेम्पोटेंसी (Idempotency) जाँच डुप्लीकेट निर्माण को रोकती है।
+
+### 4. AI-नेटिव एकीकरण
+
+- यह केवल "एक AI बटन जोड़ना" नहीं है, बल्कि इसे हर चरण में शामिल किया गया है।
+- इरादे की पहचान, भावना विश्लेषण, ज्ञान अनुशंसा, उत्तर पॉलिशिंग।
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. रोडमैप (Roadmap - निरंतर अपडेटेड)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **सिस्टम एम्बेडिंग**: टिकट मॉड्यूल को ERP, CRM जैसे विभिन्न व्यावसायिक प्रणालियों में एम्बेड करने का समर्थन।
+- **टिकट इंटरकनेक्शन**: क्रॉस-सिस्टम टिकट सहयोग प्राप्त करने के लिए अपस्ट्रीम/डाउनस्ट्रीम सिस्टम टिकट एक्सेस और स्टेटस कॉलबैक।
+- **AI ऑटोमेशन**: वर्कफ़्लो में एम्बेडेड AI कर्मचारी, जो बिना किसी मानवीय हस्तक्षेप के प्रसंस्करण के लिए बैकग्राउंड ऑटो-एग्जीक्यूशन का समर्थन करते हैं।
+- **मल्टी-टेनेंसी समर्थन**: मल्टी-स्पेस/मल्टी-ऐप आर्किटेक्चर के माध्यम से क्षैतिज विस्तार, जिससे विभिन्न ग्राहक सेवा टीमों को स्वतंत्र संचालन के लिए वितरित किया जा सके।
+- **नॉलेज बेस RAG**: इंटेलिजेंट रिट्रीवल और ज्ञान अनुशंसा प्राप्त करने के लिए टिकट, ग्राहक, उत्पाद आदि जैसे सभी डेटा का स्वचालित वेक्टराइजेशन।
+- **बहु-भाषा समर्थन**: इंटरफ़ेस और सामग्री के लिए बहु-भाषी स्विचिंग का समर्थन, जो बहुराष्ट्रीय/बहु-क्षेत्रीय टीम सहयोग की आवश्यकताओं को पूरा करता है।

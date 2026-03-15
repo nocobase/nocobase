@@ -14,7 +14,7 @@ Der Löschen-Knoten unterstützt derzeit kein Löschen Zeile für Zeile; er füh
 
 In der Workflow-Konfigurationsoberfläche klicken Sie auf das Plus-Symbol („+“) im Workflow, um einen „Daten löschen“-Knoten hinzuzufügen:
 
-![Löschen-Knoten erstellen](https://static-docs.nocobase.com/e13b6b728251fcdbed6c7f50e5570da2.png)
+![Löschen-Knoten erstellen](https://static-docs.nocobase.com/e1d6b8728251fcdbed6c7f50e5570da2.png)
 
 ## Knotenkonfiguration
 

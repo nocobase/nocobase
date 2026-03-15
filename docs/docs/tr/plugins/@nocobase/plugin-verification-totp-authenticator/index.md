@@ -1,15 +1,19 @@
 ---
-displayName: "Verification: TOTP authenticator"
+displayName: "Doğrulama: TOTP kimlik doğrulayıcı"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support users in binding a TOTP authenticator and verifying their identity using time-based one-time codes (TOTP).
+  Kullanıcıların bir TOTP kimlik doğrulayıcı bağlamasını ve zamana dayalı tek kullanımlık kodlar (TOTP) kullanarak kimliklerini doğrulamalarını destekler.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Verification: TOTP authenticator
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-verification-totp-authenticator/index) bakın.
+:::
+
+# Doğrulama: TOTP kimlik doğrulayıcı

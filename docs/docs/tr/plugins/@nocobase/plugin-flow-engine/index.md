@@ -1,5 +1,5 @@
 ---
-displayName: "Flow engine"
+displayName: "Frontend Flow Engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Flow engine
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-flow-engine/index) bakın.
+:::
+
+# Frontend Flow Engine

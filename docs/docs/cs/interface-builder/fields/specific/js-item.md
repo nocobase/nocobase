@@ -1,39 +1,38 @@
-:::tip
-Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
+:::tip{title="Upozornění na AI překlad"}
+Tento dokument byl přeložen pomocí AI. Pro přesné informace se podívejte na [anglickou verzi](/interface-builder/fields/specific/js-item).
 :::
 
-
-# JS Položka
+# JS Item
 
 ## Úvod
 
-JS Položka se používá pro „vlastní položky“ (které nejsou vázány na pole) ve formuláři. Můžete použít JavaScript/JSX k vykreslení libovolného obsahu (například tipů, statistik, náhledů, tlačítek atd.) a interagovat s kontextem formuláře a záznamu. Je vhodná pro scénáře, jako jsou náhledy v reálném čase, instruktážní tipy a malé interaktivní komponenty.
+JS Item se používá pro „vlastní položky“ ve formulářích (nejsou vázány na pole). Můžete použít JavaScript/JSX k vykreslení libovolného obsahu (nápovědy, statistiky, náhledy, tlačítka atd.) a interagovat s kontextem formuláře a záznamu. Je vhodný pro scénáře jako náhledy v reálném čase, vysvětlující nápovědy, malé interaktivní komponenty atd.
 
 ![jsitem-add-20251929](https://static-docs.nocobase.com/jsitem-add-20251929.png)
 
 ## API kontextu běhového prostředí (často používané)
 
-- `ctx.element`: DOM kontejner (ElementProxy) aktuální položky, podporující `innerHTML`, `querySelector`, `addEventListener` atd.
-- `ctx.form`: Instance formuláře AntD, umožňující operace jako `getFieldValue / getFieldsValue / setFieldsValue / validateFields` atd.
-- `ctx.blockModel`: Model bloku formuláře, do kterého patří, který může naslouchat `formValuesChange` pro implementaci propojení.
-- `ctx.record` / `ctx.collection`: Aktuální záznam a meta informace o **kolekci** (dostupné v některých scénářích).
-- `ctx.requireAsync(url)`: Asynchronně načte knihovnu AMD/UMD pomocí URL.
-- `ctx.importAsync(url)`: Dynamicky importuje modul ESM pomocí URL.
-- `ctx.openView(viewUid, options)`: Otevře nakonfigurované zobrazení (šuplík/dialog/stránka).
-- `ctx.message` / `ctx.notification`: Globální zpráva a oznámení.
-- `ctx.t()` / `ctx.i18n.t()`: Internacionalizace.
-- `ctx.onRefReady(ctx.ref, cb)`: Vykreslí po připravenosti kontejneru.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Vestavěné knihovny React, ReactDOM, Ant Design, ikon Ant Design a dayjs pro vykreslování JSX a práci s časem. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou zachovány pro kompatibilitu.)
-- `ctx.render(vnode)`: Vykreslí React element/HTML/DOM do výchozího kontejneru `ctx.element`. Vícenásobné vykreslení znovu použije Root a přepíše stávající obsah kontejneru.
+- `ctx.element`: DOM kontejner (ElementProxy) aktuální položky, podporuje `innerHTML`, `querySelector`, `addEventListener` atd.;
+- `ctx.form`: Instance AntD Form, umožňuje `getFieldValue / getFieldsValue / setFieldsValue / validateFields` atd.;
+- `ctx.blockModel`: Model bloku formuláře, ve kterém se nachází; lze naslouchat `formValuesChange` pro realizaci propojení;
+- `ctx.record` / `ctx.collection`: Aktuální záznam a metadata kolekce (dostupné v některých scénářích);
+- `ctx.requireAsync(url)`: Asynchronní načítání knihoven AMD/UMD podle URL;
+- `ctx.importAsync(url)`: Dynamický import ESM modulů podle URL;
+- `ctx.openView(viewUid, options)`: Otevření nakonfigurovaného zobrazení (šuplík/dialog/stránka);
+- `ctx.message` / `ctx.notification`: Globální nápovědy a oznámení;
+- `ctx.t()` / `ctx.i18n.t()`: Internacionalizace;
+- `ctx.onRefReady(ctx.ref, cb)`: Vykreslení po připravenosti kontejneru;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Vestavěné knihovny React / ReactDOM / Ant Design / Ant Design ikony / dayjs / lodash / math.js / formula.js pro vykreslování JSX, zpracování času, manipulaci s daty a matematické výpočty. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` jsou stále zachovány pro kompatibilitu.)
+- `ctx.render(vnode)`: Vykreslí React prvek/HTML/DOM do výchozího kontejneru `ctx.element`; vícenásobné vykreslení znovu použije Root a přepíše stávající obsah kontejneru.
 
-## Editor a fragmenty kódu
+## Editor a fragmenty
 
-- `Snippets`: Otevře seznam vestavěných fragmentů kódu, které můžete vyhledávat a vložit jedním kliknutím na aktuální pozici kurzoru.
-- `Run`: Spustí aktuální kód přímo a vypíše protokoly spuštění do spodního panelu `Logs`. Podporuje `console.log/info/warn/error` a zvýraznění chyb.
+- `Snippets`: Otevře seznam vestavěných fragmentů kódu, které lze vyhledat a vložit jedním kliknutím na aktuální pozici kurzoru.
+- `Run`: Přímo spustí aktuální kód a vypíše protokoly spuštění do spodního panelu `Logs`; podporuje `console.log/info/warn/error` a zvýraznění chyb.
 
 ![jsitem-toolbars-20251029](https://static-docs.nocobase.com/jsitem-toolbars-20251029.png)
 
-- Lze použít s AI zaměstnancem k generování/úpravě skriptů: [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/built-in/ai-coding)
+- Lze kombinovat s AI zaměstnancem pro generování/úpravu skriptů: [AI zaměstnanec · Nathan: Frontend inženýr](/ai-employees/features/built-in-employee)
 
 ## Běžné použití (zjednodušené příklady)
 
@@ -67,7 +66,7 @@ ctx.render(
 );
 ```
 
-### 3) Načtení a vykreslení externích knihoven
+### 3) Načtení externí knihovny a vykreslení
 
 ```js
 // AMD/UMD
@@ -81,9 +80,9 @@ ctx.render(<span>{he.encode(String(ctx.form.getFieldValue('title') ?? ''))}</spa
 
 ## Důležité poznámky
 
-- Pro načítání externích knihoven se doporučuje používat důvěryhodné CDN a mít připravený záložní plán pro případ selhání (např. `if (!lib) return;`).
-- Pro selektory se doporučuje upřednostňovat `class` nebo `[name=...]` a vyhnout se používání pevných `id`, aby se zabránilo duplicitním `id` v několika blocích/vyskakovacích oknech.
-- Čištění událostí: Časté změny hodnot formuláře spustí vícenásobné vykreslení. Před navázáním události by měla být vyčištěna nebo deduplikována (např. nejprve `remove` a poté `add`, nebo použít `{ once: true }`, nebo značku `dataset` pro zabránění duplikace).
+- Pro načítání externích knihoven se doporučuje používat důvěryhodné CDN a v případě selhání zajistit náhradní řešení (např. `if (!lib) return;`).
+- Pro selektory se doporučuje upřednostňovat `class` nebo `[name=...]` a vyhnout se používání pevných `id`, aby se zabránilo duplicitním `id` v případě více bloků nebo vyskakovacích oken.
+- Čištění událostí: Časté změny hodnot formuláře spustí vícenásobné vykreslení. Před navázáním události by měla být vyčištěna nebo deduplikována (např. nejprve `remove` a poté `add`, nebo použít `{ once: true }`, nebo značku `dataset` pro zabránění duplicity).
 
 ## Související dokumentace
 

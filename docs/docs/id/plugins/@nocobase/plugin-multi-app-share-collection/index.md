@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Berbagi Collection Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Berbagi Collection Multi-app
+
+> Catatan: Plugin ini telah dihentikan (deprecated).

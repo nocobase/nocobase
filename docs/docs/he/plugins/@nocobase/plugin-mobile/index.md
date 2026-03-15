@@ -1,12 +1,16 @@
 ---
-displayName: "Mobile (deprecated)"
+displayName: "מובייל (מיושן)"
 packageName: '@nocobase/plugin-mobile'
 description: |
-  Since version 2.0, the mobile plugin has been replaced by the new ui-layout plugin, which is still under development.
+  החל מגרסה 2.0, תוסף המובייל הוחלף בתוסף ui-layout החדש, שנמצא עדיין בפיתוח.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Mobile (deprecated)
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-mobile/index).
+:::
+
+# מובייל (מיושן)

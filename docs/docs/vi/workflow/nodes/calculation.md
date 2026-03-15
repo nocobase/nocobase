@@ -15,7 +15,7 @@ Trong giao diện cấu hình luồng công việc, hãy nhấp vào nút dấu 
 
 ## Cấu hình nút
 
-![Nút Tính toán_Cấu hình](https://static-docs.nocobase.com/6a155de3f883d8cd1881b2d9c33874.png)
+![Nút Tính toán_Cấu hình](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Công cụ tính toán
 

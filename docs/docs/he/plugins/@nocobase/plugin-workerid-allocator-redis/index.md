@@ -1,15 +1,19 @@
 ---
-displayName: "Redis worker ID allocator"
+displayName: "מקצה מזהי עובד (worker ID) של Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Worker id allocator based on Redis.
+  מקצה מזהי עובד (worker ID) המבוסס על Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis worker ID allocator
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-workerid-allocator-redis/index).
+:::
+
+# מקצה מזהי עובד (worker ID) של Redis

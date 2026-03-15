@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Konten Selengkapnya
 
-Content coming soon...
+> Solusi CRM saat ini hanya untuk pratinjau. Versi mendatang akan dibangun ulang sepenuhnya berdasarkan NocoBase 2.0. Dokumentasi yang lebih lengkap akan disediakan pada saat itu.
+
+Konten segera hadir...

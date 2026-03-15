@@ -2,12 +2,12 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "Lösningsöversikt"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "Detailed Design"
+    "label": "Detaljerad design"
   },
   {
     "type": "file",
@@ -17,6 +17,6 @@
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "Mer innehåll"
   }
 ]

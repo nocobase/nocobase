@@ -11,27 +11,27 @@ pkg: "@nocobase/plugin-email-manager"
 
 ## نظرة عامة على الإرسال بالجملة
 يمكنك إرسال رسائل بريد إلكتروني إلى عدة أشخاص دفعة واحدة (سيتلقى كل مستلم رسالة بريد إلكتروني منفصلة).
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_06_10_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Loading--12-31-2025_10_15_PM.png)
 
 ## الإرسال بالجملة عبر الجدول
 يمكنك أيضًا إرسال رسائل بريد إلكتروني بالجملة عبر جدول:
 
 1.  أضف زر إرسال بريد إلكتروني إلى الجدول
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_14_PM.png)
+    ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_04_PM.png)
 
 2.  قم بتكوين حقل البريد الإلكتروني في الجدول (يُستخدم لتحليل عناوين البريد الإلكتروني بعد تحديد صفوف الجدول)
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_13_PM.png)
+    ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_17_PM%20(1)
 
 3.  حدد بيانات الجدول لإرسال رسائل البريد الإلكتروني
-    ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_15_PM.png)
+    ![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
 إذا كنت بحاجة إلى إرسال رسائل بريد إلكتروني إلى جميع العناوين في الجدول بأكمله، فيمكنك تمكين ميزة **تحديد جميع السجلات في الجدول الحالي كمستلمين افتراضيًا**:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_16_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_18_PM%20(1)
 
 بعد تحرير محتوى البريد الإلكتروني، انقر على زر الإرسال بالجملة للإرسال:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_06_17_PM.png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_19_PM.png)
 
 ## تتبع إرسال البريد الإلكتروني
 يمكنك عرض وتتبع حالة إرسال البريد الإلكتروني المحددة في مركز إدارة البريد الإلكتروني:
-![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM%20(1).png)
+![](https://static-docs.nocobase.com/email-manager/User-12-31-2025_10_20_PM.png).png)
 ![](https://static-docs.nocobase.com/email-manager/Users-10-31-2025_08_24_PM.png)

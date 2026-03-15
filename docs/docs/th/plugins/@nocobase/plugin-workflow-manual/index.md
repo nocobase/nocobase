@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Manual node"
+displayName: "Workflow: โหนด Manual"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |
-  Could be used for workflows which some of decisions are made by users.
+  ใช้สำหรับกระบวนการที่ต้องการการตัดสินใจโดยมนุษย์ในบางส่วน
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Manual node
+:::tip{title="การแจ้งเตือนการแปลด้วย AI"}
+เอกสารนี้แปลโดย AI สำหรับข้อมูลที่ถูกต้อง กรุณาดู[เวอร์ชันภาษาอังกฤษ](/plugins/@nocobase/plugin-workflow-manual/index)
+:::
+
+# Workflow: โหนด Manual

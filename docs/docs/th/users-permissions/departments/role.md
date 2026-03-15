@@ -17,7 +17,7 @@ pkg: '@nocobase/plugin-departments'
 
 วิธีที่สองคือการเพิ่มแผนกให้กับบทบาทที่เกี่ยวข้องในหน้าการจัดการบทบาทครับ/ค่ะ
 
-![](https://static-docs.nocobase.com/f2a77bec937cf2f179ce868a92b98416d.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 แผนกที่มีบทบาทนี้อยู่แล้วจะไม่สามารถเลือกได้ครับ/ค่ะ
 

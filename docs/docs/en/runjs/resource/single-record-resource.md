@@ -1,83 +1,83 @@
 # SingleRecordResource
 
-Resource for **single records**: data is one object; supports get by primary key, create/update (save), and destroy. Use for detail, form, and other "single record" scenarios. Unlike [MultiRecordResource](./multi-record-resource.md), SingleRecordResource's `getData()` returns a single object; use `setFilterByTk(id)` for primary key; `save()` auto-calls create or update based on `isNewRecord`.
+A Resource oriented towards a **single record**: data is a single object, supporting retrieval by primary key, creation/updating (save), and deletion. It is suitable for "single record" scenarios such as details and forms. Unlike [MultiRecordResource](./multi-record-resource.md), the `getData()` method of `SingleRecordResource` returns a single object. You specify the primary key via `setFilterByTk(id)`, and `save()` will automatically call `create` or `update` based on the `isNewRecord` state.
 
 **Inheritance**: FlowResource → APIResource → BaseRecordResource → SingleRecordResource.
 
-**Create with**: `ctx.makeResource('SingleRecordResource')` or `ctx.initResource('SingleRecordResource')`. Before use call `setResourceName('collectionName')`; for operations by primary key call `setFilterByTk(id)`; RunJS injects `ctx.api`.
+**Creation**: `ctx.makeResource('SingleRecordResource')` or `ctx.initResource('SingleRecordResource')`. You must call `setResourceName('collectionName')` before use. When performing operations by primary key, call `setFilterByTk(id)`. In RunJS, `ctx.api` is injected by the runtime environment.
 
 ---
 
-## Use cases
+## Use Scenarios
 
 | Scenario | Description |
-|----------|-------------|
-| **Detail block** | Detail block uses SingleRecordResource by default; loads single record by primary key |
-| **Form block** | Create/edit forms use SingleRecordResource; `save()` auto-distinguishes create vs update |
-| **JSBlock detail** | Load single user, order, etc. in JSBlock and render custom UI |
-| **Association resources** | Load associated single record with `users.profile`; requires `setSourceId(parentRecordId)` |
+|------|------|
+| **Details Block** | The Details block uses `SingleRecordResource` by default to load a single record by its primary key. |
+| **Form Block** | Create/Edit forms use `SingleRecordResource`, where `save()` automatically distinguishes between `create` and `update`. |
+| **JSBlock Details** | Load a single user, order, etc., in a JSBlock and customize the display. |
+| **Association Resources** | Load associated single records using the format `users.profile`, requiring `setSourceId(parentRecordID)`. |
 
 ---
 
-## Data format
+## Data Format
 
-- `getData()` returns a **single record object**, i.e. the get API `data` field
-- `getMeta()` returns metadata (if any)
+- `getData()` returns a **single record object**, which corresponds to the `data` field of the `get` API response.
+- `getMeta()` returns metadata (if available).
 
 ---
 
-## Resource name and primary key
+## Resource Name and Primary Key
 
 | Method | Description |
-|--------|-------------|
-| `setResourceName(name)` / `getResourceName()` | Resource name, e.g. `'users'`, `'users.profile'` (association) |
-| `setSourceId(id)` / `getSourceId()` | Parent record id for association resources (e.g. `users.profile` needs users primary key) |
-| `setDataSourceKey(key)` / `getDataSourceKey()` | Data source key (for multiple data sources) |
-| `setFilterByTk(tk)` / `getFilterByTk()` | Current record primary key; after set, `isNewRecord` is false |
+|------|------|
+| `setResourceName(name)` / `getResourceName()` | Resource name, e.g., `'users'`, `'users.profile'` (association resource). |
+| `setSourceId(id)` / `getSourceId()` | The parent record ID for association resources (e.g., `users.profile` requires the primary key of the `users` record). |
+| `setDataSourceKey(key)` / `getDataSourceKey()` | Data source identifier (used in multi-data source environments). |
+| `setFilterByTk(tk)` / `getFilterByTk()` | The primary key of the current record; once set, `isNewRecord` becomes `false`. |
 
 ---
 
 ## State
 
 | Property/Method | Description |
-|-----------------|-------------|
-| `isNewRecord` | Whether in "create" state (true when filterByTk not set or just created) |
+|----------|------|
+| `isNewRecord` | Whether it is in a "New" state (true if `filterByTk` is not set or if it was just created). |
 
 ---
 
-## Request params (filter / fields)
+## Request Parameters (Filter / Fields)
 
 | Method | Description |
-|--------|-------------|
-| `setFilter(filter)` / `getFilter()` | Filter (when not new) |
-| `setFields(fields)` / `getFields()` | Requested fields |
-| `setAppends(appends)` / `getAppends()` / `addAppends` / `removeAppends` | Association expansion |
+|------|------|
+| `setFilter(filter)` / `getFilter()` | Filter (available when not in "New" state). |
+| `setFields(fields)` / `getFields()` | Requested fields. |
+| `setAppends(appends)` / `getAppends()` / `addAppends` / `removeAppends` | Association loading (appends). |
 
 ---
 
 ## CRUD
 
 | Method | Description |
-|--------|-------------|
-| `refresh()` | Request get with current `filterByTk`; update `getData()`. No request when in new state. |
-| `save(data, options?)` | Create when new, otherwise update; optional `{ refresh: false }` to skip auto refresh |
-| `destroy(options?)` | Delete by current `filterByTk` and clear local data |
-| `runAction(actionName, options)` | Call any resource action |
+|------|------|
+| `refresh()` | Requests `get` based on the current `filterByTk` and updates `getData()`; does nothing in "New" state. |
+| `save(data, options?)` | Calls `create` when in "New" state, otherwise calls `update`; optional `{ refresh: false }` prevents automatic refreshing. |
+| `destroy(options?)` | Deletes the record based on the current `filterByTk` and clears local data. |
+| `runAction(actionName, options)` | Calls any resource action. |
 
 ---
 
-## Config and events
+## Configuration and Events
 
 | Method | Description |
-|--------|-------------|
-| `setSaveActionOptions(options)` | Request config for save |
-| `on('refresh', fn)` / `on('saved', fn)` | Fired when refresh completes or after save |
+|------|------|
+| `setSaveActionOptions(options)` | Request configuration for the `save` action. |
+| `on('refresh', fn)` / `on('saved', fn)` | Triggered after refresh is complete or after saving. |
 
 ---
 
 ## Examples
 
-### Basic get and update
+### Basic Retrieval and Update
 
 ```js
 ctx.initResource('SingleRecordResource');
@@ -87,27 +87,27 @@ await ctx.resource.refresh();
 const user = ctx.resource.getData();
 
 // Update
-await ctx.resource.save({ name: 'Jane' });
+await ctx.resource.save({ name: 'John Doe' });
 ```
 
-### Create record
+### Create New Record
 
 ```js
 const newRes = ctx.makeResource('SingleRecordResource');
 newRes.setResourceName('users');
-await newRes.save({ name: 'Bob', email: 'bob@example.com' });
+await newRes.save({ name: 'Jane Smith', email: 'janesmith@example.com' });
 ```
 
-### Delete record
+### Delete Record
 
 ```js
 ctx.resource.setResourceName('users');
 ctx.resource.setFilterByTk(1);
 await ctx.resource.destroy();
-// After destroy, getData() is null
+// After destroy, getData() returns null
 ```
 
-### Association expansion and fields
+### Association Loading and Fields
 
 ```js
 ctx.resource.setResourceName('users');
@@ -118,25 +118,25 @@ await ctx.resource.refresh();
 const user = ctx.resource.getData();
 ```
 
-### Association resource (e.g. users.profile)
+### Association Resources (e.g., users.profile)
 
 ```js
 const res = ctx.makeResource('SingleRecordResource');
 res.setResourceName('users.profile');
 res.setSourceId(ctx.record?.id); // Parent record primary key
-res.setFilterByTk(profileId);    // Can omit filterByTk if profile is hasOne
+res.setFilterByTk(profileId);    // filterByTk can be omitted if profile is a hasOne relationship
 await res.refresh();
 const profile = res.getData();
 ```
 
-### save without auto refresh
+### Save Without Auto-Refresh
 
 ```js
 await ctx.resource.save({ status: 'active' }, { refresh: false });
-// After save, no refresh; getData() keeps previous value
+// getData() retains the old value as refresh is not triggered after saving
 ```
 
-### Listen to refresh / saved events
+### Listening to refresh / saved Events
 
 ```js
 ctx.resource?.on?.('refresh', () => {
@@ -144,7 +144,7 @@ ctx.resource?.on?.('refresh', () => {
   ctx.render(<div>User: {data?.nickname}</div>);
 });
 ctx.resource?.on?.('saved', (savedData) => {
-  ctx.message.success('Saved');
+  ctx.message.success('Saved successfully');
 });
 await ctx.resource?.refresh?.();
 ```
@@ -153,17 +153,17 @@ await ctx.resource?.refresh?.();
 
 ## Notes
 
-- **setResourceName required**: Must call `setResourceName('collectionName')` before use; otherwise request URL cannot be built.
-- **filterByTk and isNewRecord**: When `setFilterByTk` is not set, `isNewRecord` is true; `refresh()` does not send request; `save()` does create.
-- **Association resources**: When resource name is `parent.child` (e.g. `users.profile`), call `setSourceId(parentPrimaryKey)` first.
-- **getData is object**: Single record API returns `data` as record object; `getData()` returns that object; after `destroy()` it is null.
+- **setResourceName is Required**: You must call `setResourceName('collectionName')` before use, otherwise the request URL cannot be constructed.
+- **filterByTk and isNewRecord**: If `setFilterByTk` is not called, `isNewRecord` is `true`, and `refresh()` will not initiate a request; `save()` will execute a `create` action.
+- **Association Resources**: When the resource name is in `parent.child` format (e.g., `users.profile`), you must call `setSourceId(parentPrimaryKey)` first.
+- **getData Returns an Object**: The `data` returned by single-record APIs is a record object; `getData()` returns this object directly. It becomes `null` after `destroy()`.
 
 ---
 
 ## Related
 
-- [ctx.resource](../context/resource.md) - Resource instance in current context
-- [ctx.initResource()](../context/init-resource.md) - Initialize and bind to ctx.resource
-- [ctx.makeResource()](../context/make-resource.md) - Create resource instance without binding
-- [APIResource](./api-resource.md) - Generic API resource, request by URL
-- [MultiRecordResource](./multi-record-resource.md) - For data tables/lists, CRUD, pagination
+- [ctx.resource](../context/resource.md) - The resource instance in the current context
+- [ctx.initResource()](../context/init-resource.md) - Initialize and bind to `ctx.resource`
+- [ctx.makeResource()](../context/make-resource.md) - Create a new resource instance without binding
+- [APIResource](./api-resource.md) - General API resource requested by URL
+- [MultiRecordResource](./multi-record-resource.md) - Oriented towards collections/lists, supporting CRUD and pagination

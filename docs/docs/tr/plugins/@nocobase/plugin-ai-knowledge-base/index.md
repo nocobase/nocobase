@@ -1,14 +1,18 @@
 ---
-displayName: "AI: Knowledge base"
+displayName: "AI: Bilgi tabanı"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
-  Supports integration with vector databases to vectorize documents, providing AI employees with intelligent search and knowledge support.
+  Belgeleri vektörleştirmek için vektör veritabanlarıyla entegrasyonu destekler; AI çalışanlarına akıllı arama ve bilgi desteği sağlar.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
 
-# AI: Knowledge base
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-ai-knowledge-base/index) bakın.
+:::
+
+# AI: Bilgi tabanı

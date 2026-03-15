@@ -1,15 +1,19 @@
 ---
-displayName: "Two-factor authentication (2FA)"
+displayName: "Autenticazione a due fattori (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Support enabling two-factor authentication (2FA) for password sign-in.
+  Supporta l'abilitazione dell'autenticazione a due fattori (2FA) per l'accesso tramite password.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Two-factor authentication (2FA)
+:::tip{title="Avviso di traduzione IA"}
+Questo documento è stato tradotto dall'IA. Per informazioni accurate, consultare la [versione inglese](/plugins/@nocobase/plugin-two-factor-authentication/index).
+:::
+
+# Autenticazione a due fattori (2FA)

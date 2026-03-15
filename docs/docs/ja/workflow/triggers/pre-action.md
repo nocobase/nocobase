@@ -34,7 +34,7 @@ pkg: '@nocobase/plugin-workflow-request-interceptor'
 
 ### インターセプトモード
 
-![Interceptor Event Configuration_Interception Mode](https://static-docs.nocobase.com/145f7c3ba440bb6ca93a5ee84f16e2.png)
+![Interceptor Event Configuration_Interception Mode](https://static-docs.nocobase.com/145a7f7c3ba440bb6ca93a5ee84f16e2.png)
 
 現在サポートされている操作タイプは「作成」、「更新」、「削除」です。複数の操作タイプを同時に選択できます。
 
@@ -91,7 +91,7 @@ pkg: '@nocobase/plugin-workflow-request-interceptor'
 
 「ワークフローを終了」ノードが「成功」ステータスで終了するように設定されており、このノードが実行された場合、その操作のリクエストは引き続きインターセプトされますが、返される応答メッセージは「成功」（「エラー」ではなく）ステータスで表示されます。
 
-![Success Status Response Message](https://static-docs.nocobase.com/9559bbf5607144759451294b18c790e.png)
+![Success Status Response Message](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## 例
 

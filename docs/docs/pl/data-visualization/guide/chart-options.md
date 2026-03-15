@@ -90,7 +90,7 @@ return {
 - W trybie Custom, po zakończeniu edycji, mogą Państwo kliknąć przycisk „Podgląd” po prawej stronie, aby zaktualizować podgląd wykresu.
 - Na dole proszę kliknąć „Zapisz”, aby zastosować i utrwalić konfigurację; proszę kliknąć „Anuluj”, aby cofnąć wszystkie wprowadzone zmiany.
 
-![20251026192816](https://static-docs.nocobase.com/clipboard-image-1761473695.png)
+![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
 > Więcej informacji na temat opcji wykresów znajdą Państwo w sekcji Zaawansowane — Niestandardowa konfiguracja wykresów.

@@ -1,10 +1,10 @@
-:::tip
-Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/file-manager/development/index).
 :::
 
 # Phát triển mở rộng
 
-## Mở rộng công cụ lưu trữ
+## Mở rộng Storage Engine
 
 ### Phía máy chủ
 
@@ -74,7 +74,7 @@ Sau khi đăng ký, cấu hình lưu trữ sẽ xuất hiện trong tài nguyên
 
 ## Mở rộng loại tệp ở frontend
 
-Đối với các tệp đã tải lên, bạn có thể hiển thị nội dung xem trước khác nhau trên giao diện frontend dựa trên loại tệp. Trường đính kèm của trình quản lý tệp có xem trước dựa trên trình duyệt (nhúng trong iframe), hỗ trợ xem trước hầu hết định dạng (như hình ảnh, video, âm thanh và PDF) trực tiếp trong trình duyệt. Khi định dạng tệp không được trình duyệt hỗ trợ hoặc cần tương tác xem trước đặc biệt, bạn có thể mở rộng thành phần xem trước theo loại tệp.
+Đối với các tệp đã tải lên, bạn có thể hiển thị nội dung xem trước khác nhau trên giao diện frontend dựa trên loại tệp. Trường Attachment của File Manager có xem trước dựa trên trình duyệt (nhúng trong iframe), hỗ trợ xem trước hầu hết định dạng (như hình ảnh, video, âm thanh và PDF) trực tiếp trong trình duyệt. Khi định dạng tệp không được trình duyệt hỗ trợ hoặc cần tương tác xem trước đặc biệt, bạn có thể mở rộng thành phần xem trước theo loại tệp.
 
 ### Ví dụ
 
@@ -108,11 +108,11 @@ class MyPlugin extends Plugin {
 }
 ```
 
-Ở đây `filePreviewTypes` là đối tượng đầu vào do `@nocobase/plugin-file-manager/client` cung cấp để mở rộng xem trước tệp. Dùng phương thức `add` để thêm đối tượng mô tả loại tệp.
+Ở đây `filePreviewTypes` là đối tượng entry do `@nocobase/plugin-file-manager/client` cung cấp để mở rộng xem trước tệp. Dùng phương thức `add` để thêm đối tượng mô tả loại tệp.
 
 Mỗi loại tệp phải triển khai phương thức `match()` để kiểm tra xem loại tệp có đáp ứng yêu cầu hay không. Trong ví dụ, `matchMimetype` được dùng để kiểm tra thuộc tính `mimetype` của tệp. Nếu khớp với loại `docx` thì được coi là loại cần xử lý. Nếu không khớp, sẽ dùng xử lý loại tích hợp sẵn.
 
-Thuộc tính `Previewer` trong đối tượng mô tả loại là thành phần dùng để xem trước. Khi loại tệp khớp, thành phần này sẽ được render trong hộp thoại xem trước. Bạn có thể trả về bất kỳ React view nào (như iframe, trình phát hoặc biểu đồ).
+Thuộc tính `Previewer` trong đối tượng mô tả loại là thành phần dùng để xem trước. Khi loại tệp khớp, thành phần này sẽ được render trong modal xem trước. Bạn có thể trả về bất kỳ React view nào (như iframe, trình phát hoặc biểu đồ).
 
 ### API
 
@@ -172,6 +172,5 @@ Thành phần React để xem trước tệp.
 Các props đầu vào:
 
 * `file`: đối tượng tệp hiện tại (có thể là URL dạng chuỗi hoặc đối tượng chứa `url`/`preview`)
-* `index`: chỉ số của tệp trong danh sách
+* `index`: index của tệp trong danh sách
 * `list`: danh sách tệp
-

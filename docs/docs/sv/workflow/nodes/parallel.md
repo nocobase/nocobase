@@ -18,11 +18,11 @@ Inbyggd plugin, ingen installation krävs.
 
 I gränssnittet för arbetsflödeskonfiguration klickar ni på plusknappen ("+") i flödet för att lägga till en nod för "Parallell gren":
 
-![Lägg till parallell gren](https://static-docs.nocobase.com/9e0f3faa0b9335270647a3047759eac.png)
+![Lägg till parallell gren](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
 
 När ni har lagt till en nod för parallell gren i arbetsflödet läggs två undergrenar till som standard. Ni kan också lägga till fler grenar genom att klicka på knappen för att lägga till gren. Valfritt antal noder kan läggas till i varje gren. Onödiga grenar kan tas bort genom att klicka på borttagningsknappen i början av grenen.
 
-![Hantera parallella grenar](https://static-docs.nocobase.com/36089b8b79711eb3ee9bc2a757.png)
+![Hantera parallella grenar](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
 
 ## Nodkonfiguration
 

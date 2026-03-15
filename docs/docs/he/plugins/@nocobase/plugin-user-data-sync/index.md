@@ -1,12 +1,16 @@
 ---
-displayName: "User data synchronization"
+displayName: "סנכרון נתוני משתמשים"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |
-  Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.
+  רישום וניהול מקורות סנכרון נתוני משתמשים הניתנים להרחבה, מספק HTTP API כברירת מחדל. תומך בסנכרון נתונים למשאבים כגון משתמשים ומחלקות.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# User data synchronization
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-user-data-sync/index).
+:::
+
+# סנכרון נתוני משתמשים

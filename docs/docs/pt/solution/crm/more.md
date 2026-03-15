@@ -1,5 +1,9 @@
-# More Content
+:::tip{title="Aviso de tradução por IA"}
+Este documento foi traduzido por IA. Para informações precisas, consulte a [versão em inglês](/solution/crm/more).
+:::
 
-> The current CRM solution is for preview only. Future versions will be completely rebuilt based on NocoBase 2.0. More complete documentation will be provided then.
+# Mais conteúdo
 
-Content coming soon...
+> A solução de CRM atual é apenas para visualização prévia. Versões futuras serão completamente reconstruídas com base no NocoBase 2.0. Uma documentação mais completa será fornecida nessa ocasião.
+
+Conteúdo em breve...

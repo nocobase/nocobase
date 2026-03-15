@@ -1,3 +1,7 @@
-# More Content
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/solution/ticket-system/more).
+:::
 
-Content coming soon...
+# Mer innehåll
+
+Innehåll kommer snart...

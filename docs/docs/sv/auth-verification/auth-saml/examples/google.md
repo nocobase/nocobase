@@ -33,7 +33,7 @@ Kopiera sedan SP Issuer/EntityID och ACS URL från avsnittet "Usage".
 
 Gå tillbaka till Googles konsol. På sidan **Information om tjänsteleverantör** anger du den ACS-URL och det entitets-ID du kopierade tidigare, och markerar **Signerat svar**.
 
-![](https://static-docs.nocobase.com/1536268bf8df4a5ebc4834317172191.png)
+![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
 ![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 

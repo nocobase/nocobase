@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "İşlem: Kaydı çoğalt"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  Bir kaydı çoğaltın; bir forma kopyalayıp düzenledikten sonra gönderebilir veya doğrudan çoğaltarak yeni bir kayıt oluşturabilirsiniz.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-action-duplicate/index) bakın.
+:::
+
+# İşlem: Kaydı çoğalt

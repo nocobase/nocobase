@@ -1,5 +1,5 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/interface-builder/blocks/other-blocks/js-block) voor nauwkeurige informatie.
 :::
 
 # JS Block
@@ -19,7 +19,7 @@ De runtime context van het JS Block is voorzien van veelgebruikte functionalitei
 - `ctx.useResource(...)` + `ctx.resource`: Geeft toegang tot gegevens als een resource.
 - `ctx.i18n.t()` / `ctx.t()`: Ingebouwde internationaliseringsfunctionaliteit.
 - `ctx.onRefReady(ctx.ref, cb)`: Rendert nadat de container gereed is om timingproblemen te voorkomen.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Ingebouwde bibliotheken zoals React, ReactDOM, Ant Design, Ant Design Icons en dayjs voor JSX-rendering en tijdbeheer. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` blijven behouden voor compatibiliteit.)
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Ingebouwde bibliotheken zoals React, ReactDOM, Ant Design, Ant Design Icons, dayjs, lodash, math.js en formula.js voor JSX-rendering, tijdbeheer, gegevensbewerking en wiskundige berekeningen. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` blijven behouden voor compatibiliteit.)
 - `ctx.render(vnode)`: Rendert een React-element, HTML-string of DOM-knooppunt naar de standaardcontainer `ctx.element`. Meerdere aanroepen hergebruiken dezelfde React Root en overschrijven de bestaande inhoud van de container.
 
 ## Een blok toevoegen
@@ -38,7 +38,7 @@ De scripteditor van het JS Block ondersteunt syntaxiskleuring, foutmeldingen en 
 
 Bovendien kunt u rechtsboven in de editor direct de AI-medewerker 'Frontend Engineer · Nathan' oproepen. Nathan kan u helpen scripts te schrijven of te wijzigen op basis van de huidige context. U kunt vervolgens met één klik 'Apply to editor' toepassen en de code uitvoeren om het effect te bekijken. Zie voor meer details:
 
-- [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI-medewerker · Nathan: Frontend Engineer](/ai-employees/features/built-in-employee)
 
 ## Runtime-omgeving en beveiliging
 

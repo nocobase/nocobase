@@ -1,12 +1,16 @@
 ---
-displayName: "Block: iframe"
+displayName: "בלוק: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
-  Create an iframe block on the page to embed and display external web pages or content.
+  יצירה וניהול של בלוק iframe בדף, המשמש להטמעה והצגה של דפי אינטרנט או תוכן חיצוניים.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: iframe
+:::tip{title="הודעת תרגום AI"}
+מסמך זה תורגם על ידי AI. למידע מדויק, אנא עיינו ב[גרסה באנגלית](/plugins/@nocobase/plugin-block-iframe/index).
+:::
+
+# בלוק: iframe

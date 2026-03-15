@@ -1,15 +1,19 @@
 ---
-displayName: "Data source: External PostgreSQL"
+displayName: "Veri kaynağı: Harici PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Use external PostgreSQL databases as data sources.
+  Harici PostgreSQL veritabanlarını veri kaynağı olarak kullanın.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
 
-# Data source: External PostgreSQL
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-data-source-external-postgres/index) bakın.
+:::
+
+# Veri kaynağı: Harici PostgreSQL

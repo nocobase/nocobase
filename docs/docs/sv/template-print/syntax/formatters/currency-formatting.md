@@ -1,5 +1,5 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/template-print/syntax/formatters/currency-formatting).
 :::
 
 ### Valutaformatering
@@ -7,50 +7,45 @@ Detta dokument har översatts av AI. För eventuella felaktigheter, se [den enge
 #### 1. :formatC(precisionOrFormat, targetCurrency)
 
 ##### Syntaxförklaring
-Formaterar ett valutanummer och låter dig ange antalet decimaler eller ett specifikt utdataformat.
+Formaterar ett valutanummer, Ni kan ange antal decimaler eller ett specifikt utdataformat.  
 Parametrar:
-- **precisionOrFormat:** En valfri parameter som antingen kan vara ett nummer (som anger antalet decimaler) eller en formatspecifikation:
-  - Ett heltal: ändrar standardprecisionen för decimaler.
-  - `'M'`: visar endast huvudvalutans namn.
-  - `'L'`: visar numret tillsammans med valutasymbolen (standard).
-  - `'LL'`: visar numret tillsammans med huvudvalutans namn.
-- **targetCurrency:** Valfritt; målets valutakod (i versaler, t.ex. USD, EUR) som åsidosätter de globala inställningarna.
+- precisionOrFormat: Valfri parameter, kan antingen vara ett nummer (anger antal decimaler) eller en specifik formatidentifierare:
+  - Heltal: ändrar standardprecision för decimaler
+  - `'M'`: matar endast ut huvudvalutans namn
+  - `'L'`: matar ut numret tillsammans med valutasymbolen (standard)
+  - `'LL'`: matar ut numret tillsammans med huvudvalutans namn
+- targetCurrency: Valfritt, målets valutakod (stora bokstäver, t.ex. USD, EUR), åsidosätter globala inställningar
 
 ##### Exempel
 ```
-// Exempelmiljö: API-alternativ { "lang": "en-us", "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-'1000.456':formatC()      // Visar "$2,000.91"
-'1000.456':formatC('M')    // Visar "dollars"
-'1':formatC('M')           // Visar "dollar"
-'1000':formatC('L')        // Visar "$2,000.00"
-'1000':formatC('LL')       // Visar "2,000.00 dollars"
-
-// Franskt exempel (när miljöinställningarna skiljer sig åt):
-'1000.456':formatC()      // Visar "2 000,91 ..."  
-'1000.456':formatC()      // När käll- och målvalutorna är desamma, visas "1 000,46 €"
+'1000.456':formatC()      // Utdata "$2,000.91"
+'1000.456':formatC('M')    // Utdata "dollars"
+'1':formatC('M')           // Utdata "dollar"
+'1000':formatC('L')        // Utdata "$2,000.00"
+'1000':formatC('LL')       // Utdata "2,000.00 dollars"
 ```
 
 ##### Resultat
-Resultatet beror på API-alternativen och växelkursinställningarna.
+Utdata beror på API-alternativ och växelkursinställningar.
+
 
 #### 2. :convCurr(target, source)
 
 ##### Syntaxförklaring
-Konverterar ett nummer från en valuta till en annan. Växelkursen kan skickas via API-alternativ eller ställas in globalt.
-Om inga parametrar anges utförs konverteringen automatiskt från `options.currencySource` till `options.currencyTarget`.
+Konverterar ett nummer från en valuta till en annan. Växelkursen kan skickas via API-alternativ eller ställas in globalt.  
+Om inga parametrar anges, sker konverteringen automatiskt från `options.currencySource` till `options.currencyTarget`.  
 Parametrar:
-- **target:** Valfritt; målets valutakod (standard är `options.currencyTarget`).
-- **source:** Valfritt; källans valutakod (standard är `options.currencySource`).
+- target: Valfritt, målets valutakod (standard är `options.currencyTarget`)
+- source: Valfritt, källans valutakod (standard är `options.currencySource`)
 
 ##### Exempel
 ```
-// Exempelmiljö: API-alternativ { "currency": { "source": "EUR", "target": "USD", "rates": { "EUR": 1, "USD": 2 } } }
-10:convCurr()              // Visar 20
-1000:convCurr()            // Visar 2000
-1000:convCurr('EUR')        // Visar 1000
-1000:convCurr('USD')        // Visar 2000
-1000:convCurr('USD', 'USD') // Visar 1000
+10:convCurr()              // Utdata 20
+1000:convCurr()            // Utdata 2000
+1000:convCurr('EUR')        // Utdata 1000
+1000:convCurr('USD')        // Utdata 2000
+1000:convCurr('USD', 'USD') // Utdata 1000
 ```
 
 ##### Resultat
-Resultatet är det konverterade valutavärdet.
+Utdata är det konverterade valutavärdet.

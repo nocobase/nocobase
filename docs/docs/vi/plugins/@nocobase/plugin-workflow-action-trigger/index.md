@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: Post-action event"
+displayName: "Luồng công việc: Sự kiện sau thao tác"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
-  Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or "submit to workflow". Suitable for data processing, sending notifications, etc., after actions are completed.
+  Được kích hoạt sau khi hoàn tất yêu cầu được gửi thông qua nút thao tác hoặc API, ví dụ như sau khi thêm mới, cập nhật, xóa dữ liệu hoặc "Gửi đến luồng công việc". Phù hợp để xử lý dữ liệu, gửi thông báo, v.v. sau khi thao tác hoàn tất.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: Post-action event
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-workflow-action-trigger/index).
+:::
+
+# Luồng công việc: Sự kiện sau thao tác

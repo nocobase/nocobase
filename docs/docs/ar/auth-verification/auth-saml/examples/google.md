@@ -35,7 +35,7 @@
 
 ![](https://static-docs.nocobase.com/1536268bf8df4a5ebc72384317172191.png)
 
-![](https://static-docs.nocobase.com/c7de1f8b84df4a5ebc72384317172191.png)
+![](https://static-docs.nocobase.com/c7de1f8b84c1335de110e5a7c96255c4.png)
 
 تحت قسم **تعيين السمات (Attribute Mapping)**، أضف تعيينات للسمات المقابلة.
 

@@ -25,7 +25,7 @@ Quyền hạn thao tác toàn cục áp dụng cho tất cả các **bộ sưu t
 
 ## Quyền hạn Thao tác Bộ sưu tập
 
-![](https://static-docs.nocobase.com/6a6e028139cecdea5b5218e6173c5d7.png)
+![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 

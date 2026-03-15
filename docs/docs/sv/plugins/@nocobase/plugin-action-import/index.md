@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Import records"
+displayName: "Åtgärd: Importera poster"
 packageName: '@nocobase/plugin-action-import'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Import records using excel templates. You can configure which fields to import and templates will be generated automatically.
+  Importera poster med hjälp av Excel-mallar. Du kan konfigurera vilka fält som ska importeras och mallar genereras automatiskt.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Import records
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-action-import/index).
+:::
+
+# Åtgärd: Importera poster

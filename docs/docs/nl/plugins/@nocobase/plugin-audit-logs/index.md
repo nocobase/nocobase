@@ -1,8 +1,8 @@
 ---
-displayName: "Audit logs (deprecated)"
+displayName: "Audit-logs (verouderd)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
-  This plugin is deprecated. There will be a new audit log plugin in the future.
+  Deze plugin is verouderd en mag niet meer worden gebruikt. Er komt in de toekomst een nieuwe audit-log plugin.
 isFree: true
 builtIn: true
 defaultEnabled: false
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Audit logs (deprecated)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-audit-logs/index) voor nauwkeurige informatie.
+:::
 
-> Note: This plugin is deprecated.
+# Audit-logs (verouderd)
+
+> Let op: Deze plugin is verouderd (deprecated).

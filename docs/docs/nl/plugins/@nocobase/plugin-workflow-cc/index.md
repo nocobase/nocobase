@@ -2,11 +2,15 @@
 displayName: "Workflow: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
+  Biedt een CC-functie in workflows om goedkeuringen of andere informatie naar specifieke gebruikers te sturen.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
+
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/plugins/@nocobase/plugin-workflow-cc/index) voor nauwkeurige informatie.
+:::
 
 # Workflow: CC

@@ -1,11 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
+
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/ai-employees/workflow/nodes/llm/chat).
 :::
-
-
 
 # Conversación de texto
 
@@ -23,7 +22,7 @@ Dado que las conversaciones con los servicios LLM suelen consumir mucho tiempo, 
 
 ## Seleccionar modelo
 
-Primero, seleccione un servicio LLM conectado. Si aún no ha conectado ningún servicio LLM, primero deberá añadir una configuración de servicio LLM. Consulte: [Gestión de servicios LLM](/ai-employees/quick-start/llm-service)
+Primero, seleccione un servicio LLM conectado. Si aún no ha conectado ningún servicio LLM, primero deberá añadir una configuración de servicio LLM. Consulte: [Gestión de servicios LLM](/ai-employees/features/llm-service)
 
 Después de seleccionar un servicio, la aplicación intentará recuperar una lista de modelos disponibles del servicio LLM para que usted elija. Algunos servicios LLM en línea pueden tener APIs para obtener modelos que no se ajustan a los protocolos API estándar; en estos casos, los usuarios también pueden introducir manualmente el ID del modelo.
 
@@ -35,9 +34,9 @@ Puede ajustar los parámetros para invocar el modelo LLM según sea necesario.
 
 ![](https://static-docs.nocobase.com/202503041014778.png)
 
-### Formato de respuesta
+### Response format
 
-Cabe destacar la configuración de **Formato de respuesta**. Esta opción se utiliza para indicar al modelo grande el formato de su respuesta, que puede ser texto o JSON. Si selecciona el modo JSON, tenga en cuenta lo siguiente:
+Cabe destacar la configuración de **Response format**. Esta opción se utiliza para indicar al modelo grande el formato de su respuesta, que puede ser texto o JSON. Si selecciona el modo JSON, tenga en cuenta lo siguiente:
 
 - El modelo LLM correspondiente debe admitir ser invocado en modo JSON. Además, el usuario debe indicar explícitamente al LLM que responda en formato JSON en el `Prompt`, por ejemplo: "Tell me a joke about cats, respond in JSON with \`setup\` and \`punchline\` keys". De lo contrario, podría no haber respuesta, resultando en un error `400 status code (no body)`.
 - La respuesta será una cadena JSON. El usuario necesita analizarla utilizando las capacidades de otros nodos del flujo de trabajo para poder utilizar su contenido estructurado. También puede utilizar la función de [Salida estructurada](/ai-employees/workflow/nodes/llm/structured-output).

@@ -73,4 +73,4 @@ MySQL использует движок `federated`, который необхо
 
 Наконец, отображение в интерфейсе.
 
-![Отображение в интерфейсе](https://static-docs.nocobase.com/368fca27a9933889fb3fcc4d85a6f4ad.png)
+![Отображение в интерфейсе](https://static-docs.nocobase.com/368fca27a99277d9360ca81350949357.png)

@@ -1,53 +1,52 @@
-:::tip
-Detta dokument har översatts av AI. För eventuella felaktigheter, se [den engelska versionen](/en)
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/interface-builder/blocks/other-blocks/js-block).
 :::
 
-# JS Block
+# JS Block 区块
 
 ## Introduktion
 
-JS Block är ett mycket flexibelt "anpassat renderingsblock" som låter dig skriva JavaScript-skript direkt för att generera gränssnitt, binda händelser, anropa data-API:er eller integrera tredjepartsbibliotek. Det är idealiskt för personliga visualiseringar, tillfälliga experiment och lätta utökningar som är svåra att uppnå med inbyggda block.
+JS Block är ett mycket flexibelt "anpassat renderingsblock" som stöder direkt skrivande av JavaScript-skript för att generera gränssnitt, binda händelser, anropa datagränssnitt eller integrera tredjepartsbibliotek. Det är lämpligt för personlig visualisering, tillfälliga experiment och lätta utökningar som är svåra att täcka med inbyggda block.
 
 ## API för körtidskontext
 
-JS Blockets körtidskontext har vanliga funktioner injicerade och kan användas direkt:
+JS Blockets körtidskontext har injicerats med vanliga funktioner som kan användas direkt:
 
-- `ctx.element`: Blockets DOM-behållare (säkert inkapslad som ElementProxy), med stöd för `innerHTML`, `querySelector`, `addEventListener` med mera;
-- `ctx.requireAsync(url)`: Laddar asynkront ett AMD/UMD-bibliotek via URL;
-- `ctx.importAsync(url)`: Importerar dynamiskt en ESM-modul via URL;
-- `ctx.openView`: Öppnar en konfigurerad vy (popup/låda/sida);
+- `ctx.element`: Blockets DOM-behållare (säkerhetsinkapslad, ElementProxy), stöder `innerHTML`, `querySelector`, `addEventListener` etc.;
+- `ctx.requireAsync(url)`: Laddar asynkront AMD/UMD-bibliotek via URL;
+- `ctx.importAsync(url)`: Importerar dynamiskt ESM-moduler via URL;
+- `ctx.openView`: Öppnar konfigurerade vyer (popup/låda/sida);
 - `ctx.useResource(...)` + `ctx.resource`: Åtkomst till data som en resurs;
 - `ctx.i18n.t()` / `ctx.t()`: Inbyggd internationaliseringsfunktion;
-- `ctx.onRefReady(ctx.ref, cb)`: Renderar när behållaren är redo för att undvika tidsproblem;
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Inbyggda generella bibliotek som React, ReactDOM, Ant Design, Ant Design-ikoner och dayjs, för JSX-rendering och tidshantering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls för kompatibilitet.)
-- `ctx.render(vnode)`: Renderar ett React-element, HTML-sträng eller DOM-nod till standardbehållaren `ctx.element`. Flera anrop återanvänder samma React Root och skriver över behållarens befintliga innehåll.
+- `ctx.onRefReady(ctx.ref, cb)`: Renderar efter att behållaren är redo för att undvika tidsproblem;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Inbyggda React / ReactDOM / Ant Design / Ant Design-ikoner / dayjs / lodash / math.js / formula.js och andra generella bibliotek för JSX-rendering, tidshantering, datamanipulering och matematiska beräkningar. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` behålls fortfarande för kompatibilitet.)
+- `ctx.render(vnode)`: Renderar React-element, HTML-strängar eller DOM-noder till standardbehållaren `ctx.element`; flera anrop återanvänder samma React Root och skriver över behållarens befintliga innehåll.
 
-## Lägga till ett block
+## Lägga till区块
 
-Ni kan lägga till ett JS Block på en sida eller i en popup.
-
+- Ni kan lägga till JS Block på en sida eller i en popup.
 ![jsblock-add-20251029](https://static-docs.nocobase.com/jsblock-add-20251029.png)
 
 ## Redigerare och kodsnuttar
 
-JS Blockets skriptredigerare stöder syntaxmarkering, felmeddelanden och inbyggda kodsnuttar (Snippets), vilket gör att ni snabbt kan infoga vanliga exempel, som rendering av diagram, bindning av knapphändelser, laddning av externa bibliotek, rendering av React/Vue-komponenter, tidslinjer, informationskort med mera.
+JS Blockets skriptredigerare stöder syntaxmarkering, felmeddelanden och inbyggda kodsnuttar (Snippets), vilket gör att ni snabbt kan infoga vanliga exempel, såsom: rendering av diagram, bindning av knapphändelser, laddning av externa bibliotek, rendering av React/Vue-komponenter, tidslinjer, informationskort etc.
 
-- `Snippets`: Öppnar listan över inbyggda kodsnuttar. Ni kan söka och infoga en vald snutt i kodredigeraren vid den aktuella markörpositionen med ett klick.
-- `Run`: Kör koden direkt i den aktuella redigeraren och matar ut körloggarna till `Logs`-panelen längst ner. Den stöder visning av `console.log/info/warn/error`, och fel kommer att markeras med länkar till den specifika raden och kolumnen.
+- `Snippets`: Öppnar listan över inbyggda kodsnuttar, där ni kan söka och med ett klick infoga vald snutt vid markörens aktuella position i kodredigeraren.
+- `Run`: Kör koden i den aktuella redigeraren direkt och matar ut körloggar till `Logs`-panelen längst ner. Stöder visning av `console.log/info/warn/error`, och fel markeras och kan lokaliseras till specifik rad och kolumn.
 
 ![jsblock-toolbars-20251029](https://static-docs.nocobase.com/jsblock-toolbars-20251029.png)
 
-Dessutom kan ni direkt kalla på AI-medarbetaren "Frontend Engineer · Nathan" från redigerarens övre högra hörn. Han kan hjälpa er att skriva eller modifiera skript baserat på den aktuella kontexten. Ni kan sedan "Apply to editor" med ett klick och köra koden för att se effekten. För mer information, se:
+Dessutom kan ni i redigerarens övre högra hörn direkt kalla på AI-medarbetaren "Frontend-ingenjör · Nathan", och låta honom hjälpa er att skriva eller ändra skript baserat på den aktuella kontexten. Använd "Apply to editor" för att applicera till redigeraren och kör sedan för att se effekten. Se:
 
-- [AI-medarbetare · Nathan: Frontend Engineer](/ai-employees/built-in/ai-coding)
+- [AI-medarbetare · Nathan: Frontend-ingenjör](/ai-employees/features/built-in-employee)
 
 ## Körtidsmiljö och säkerhet
 
-- **Behållare**: Systemet tillhandahåller en säker DOM-behållare `ctx.element` (ElementProxy) för skriptet, som endast påverkar det aktuella blocket och inte stör andra delar av sidan.
-- **Sandlåda**: Skriptet körs i en kontrollerad miljö. `window`/\`document\`/\`navigator\` använder säkra proxyobjekt, vilket tillåter vanliga API:er samtidigt som riskfyllda beteenden begränsas.
-- **Omrendering**: Blocket återrenderas automatiskt när det döljs och sedan visas igen (för att undvika att det initiala monteringsskriptet körs flera gånger).
+- Behållare: Systemet tillhandahåller en säker DOM-behållare `ctx.element` (ElementProxy) för skriptet, vilket endast påverkar det aktuella blocket och inte stör andra delar av sidan.
+- Sandlåda: Skriptet körs i en kontrollerad miljö, där `window`/`document`/`navigator` använder säkra proxyobjekt; vanliga API:er är tillgängliga medan riskfyllda beteenden begränsas.
+- Omrendering: Blocket återrenderas automatiskt när det visas igen efter att ha varit dolt (för att undvika upprepad körning vid första montering).
 
-## Vanliga användningsområden (förenklade exempel)
+## Vanliga användningsområden (精简示例)
 
 ### 1) Rendera React (JSX)
 
@@ -84,14 +83,14 @@ chart.setOption({ title: { text: ctx.t('ECharts') }, xAxis: {}, yAxis: {}, serie
 chart.resize();
 ```
 
-### 4) Öppna en vy (låda)
+### 4) Öppna vy (låda)
 
 ```js
 const popupUid = ctx.model.uid + '-1';
 await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Sample drawer'), size: 'large' });
 ```
 
-### 5) Läs en resurs och rendera JSON
+### 5) Resursläsning och rendering av JSON
 
 ```js
 const resource = ctx.createResource('SingleRecordResource');
@@ -101,11 +100,11 @@ await resource.refresh();
 ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JSON.stringify(resource.getData(), null, 2)}</pre>`);
 ```
 
-## Att tänka på
+## 注意事项
 
-- Det rekommenderas att använda betrodda CDN:er för att ladda externa bibliotek.
-- **Råd för användning av väljare**: Prioritera att använda `class` eller `[name=...]\`-attributväljare. Undvik att använda fasta `id`:n för att förhindra konflikter från dubbla `id`:n när flera block eller popuper används, vilket kan leda till stil- eller händelsekonflikter.
-- **Rensning av händelser**: Eftersom blocket kan återrenderas flera gånger bör händelselyssnare rensas eller dedupliceras innan de binds för att undvika upprepade utlösningar. Ni kan använda en "ta bort sedan lägg till"-metod, en engångslyssnare eller en flagga för att förhindra dubbletter.
+- Det rekommenderas att använda betrodda CDN:er för laddning av externa bibliotek.
+- Råd för användning av väljare: Prioritera användning av `class` eller `[name=...]`-attributväljare; undvik att använda fasta `id` för att förhindra att dubbla `id` i flera block/popuper leder till stil- eller händelsekonflikter.
+- Rensning av händelser: Blocket kan återrenderas flera gånger. Innan händelser binds bör de rensas eller dedupliceras för att undvika upprepad utlösning. Ni kan använda metoden "ta bort först, lägg sedan till", engångslyssnare eller markörer för att förhindra dubbletter.
 
 ## Relaterade dokument
 

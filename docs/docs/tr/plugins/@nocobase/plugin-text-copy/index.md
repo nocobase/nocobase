@@ -1,12 +1,16 @@
 ---
-displayName: "Text copy"
+displayName: "Metin kopyalama"
 packageName: '@nocobase/plugin-text-copy'
 description: |
-  Add copy button to text fields
+  Metin alanlarına kopyalama düğmesi ekler
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Text copy
+:::tip{title="AI Çeviri Bildirimi"}
+Bu belge yapay zeka tarafından çevrilmiştir. Doğru bilgi için [İngilizce sürüme](/plugins/@nocobase/plugin-text-copy/index) bakın.
+:::
+
+# Metin kopyalama

@@ -1,5 +1,5 @@
-:::tip
-Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
+:::tip{title="Pemberitahuan Terjemahan AI"}
+Dokumen ini diterjemahkan oleh AI. Untuk informasi yang akurat, silakan merujuk ke [versi bahasa Inggris](/ai-employees/knowledge-base/vector-store).
 :::
 
 # Penyimpanan Vektor
@@ -16,11 +16,11 @@ Buka halaman konfigurasi plugin Karyawan AI, klik tab `Vector store`, lalu pilih
 
 ![20251023003023](https://static-docs.nocobase.com/20251023003023.png)
 
-Klik tombol `Add new` di pojok kanan atas untuk menambahkan penyimpanan vektor baru:
+Klik tombol `Add New` di pojok kanan atas untuk menambahkan penyimpanan vektor baru:
 
 - Pada kolom input `Name`, masukkan nama penyimpanan vektor;
 - Pada `Vector store`, pilih database vektor yang sudah dikonfigurasi. Lihat: [Database Vektor](/ai-employees/knowledge-base/vector-database);
-- Pada `LLM service`, pilih layanan LLM yang sudah dikonfigurasi. Lihat: [Manajemen Layanan LLM](/ai-employees/quick-start/llm-service);
+- Pada `LLM service`, pilih layanan LLM yang sudah dikonfigurasi. Lihat: [Manajemen Layanan LLM](/ai-employees/features/llm-service);
 - Pada kolom input `Embedding model`, masukkan nama model `Embedding` yang akan digunakan;
 
 Klik tombol `Submit` untuk menyimpan informasi penyimpanan vektor.

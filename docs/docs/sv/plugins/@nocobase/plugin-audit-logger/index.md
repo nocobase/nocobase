@@ -1,15 +1,19 @@
 ---
-displayName: "Audit logs"
+displayName: "Granskningsloggar"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Track and document user activities and resource actions across the system
+  Spåra och dokumentera användaraktiviteter och resursåtgärder i hela systemet
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Audit logs
+:::tip{title="AI-översättningsmeddelande"}
+Detta dokument har översatts av AI. För korrekt information, se [den engelska versionen](/plugins/@nocobase/plugin-audit-logger/index).
+:::
+
+# Granskningsloggar

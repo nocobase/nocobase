@@ -1,12 +1,16 @@
 ---
-displayName: "Collection: Tree"
+displayName: "Collection: Cây"
 packageName: '@nocobase/plugin-collection-tree'
 description: |
-  Provides tree collection template
+  Cung cấp mẫu Collection dạng cây
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Collection: Tree
+:::tip{title="Thông báo dịch bằng AI"}
+Tài liệu này được dịch bằng AI. Để biết thông tin chính xác, vui lòng tham khảo [phiên bản tiếng Anh](/plugins/@nocobase/plugin-collection-tree/index).
+:::
+
+# Collection: Cây

@@ -1,177 +1,173 @@
-# Ticketing Solution Overview
+:::tip{title="إشعار الترجمة بالذكاء الاصطناعي"}
+تمت ترجمة هذا المستند بواسطة الذكاء الاصطناعي. للحصول على معلومات دقيقة، يرجى الرجوع إلى [النسخة الإنجليزية](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# مقدمة عن حلول نظام التذاكر
 
-## 1. Background (Why)
+> **تنبيه**: هذا الإصدار هو نسخة معاينة أولية، والميزات لا تزال قيد التحسين ونحن نعمل باستمرار على تطويرها. نرحب بملاحظاتكم واقتراحاتكم!
 
-### Industry/Role/Management Problems Solved
+## 1. الخلفية (لماذا)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### ما هي المشكلات التي يحلها في الصناعة / الأدوار الوظيفية / الإدارة؟
 
-**Typical Business Scenarios:**
+تواجه المؤسسات أنواعاً مختلفة من طلبات الخدمة في عملياتها اليومية: صيانة المعدات، الدعم الفني (IT)، شكاوى العملاء، الاستشارات والاقتراحات، وغيرها. تأتي هذه الطلبات من مصادر مشتتة (أنظمة CRM، مهندسو الموقع، البريد الإلكتروني، النماذج العامة، إلخ)، وتختلف إجراءات معالجتها، كما تفتقر إلى آليات تتبع وإدارة موحدة.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**أمثلة على سيناريوهات الأعمال النموذجية:**
 
-### Target User Profile
+- **صيانة المعدات**: يتعامل فريق ما بعد البيع مع طلبات إصلاح المعدات، ويحتاج إلى تسجيل معلومات خاصة مثل الأرقام التسلسلية للمعدات، وأكواد الأعطال، وقطع الغيار.
+- **الدعم الفني (IT)**: يتعامل قسم تقنية المعلومات مع طلبات الموظفين الداخليين مثل إعادة تعيين كلمات المرور، وتثبيت البرامج، وأعطال الشبكة.
+- **شكاوى العملاء**: يتعامل فريق خدمة العملاء مع الشكاوى الواردة من قنوات متعددة، مع ضرورة منح الأولوية للعملاء الغاضبين ومعالجة طلباتهم بشكل عاجل.
+- **الخدمة الذاتية للعملاء**: يرغب العملاء النهائيون في تقديم طلبات الخدمة بسهولة ومتابعة تقدم المعالجة بأنفسهم.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### ملف المستخدم المستهدف
 
-### Pain Points of Current Mainstream Solutions
+| البعد | الوصف |
+|------|------|
+| حجم المؤسسة | الشركات الصغيرة والمتوسطة إلى الشركات الكبيرة التي لديها حجم كبير من طلبات خدمة العملاء |
+| هيكل الأدوار | فرق خدمة العملاء، الدعم الفني، فرق ما بعد البيع، مديرو العمليات |
+| النضج الرقمي | من مبتدئ إلى متوسط، يسعون للترقية من إدارة Excel/البريد الإلكتروني إلى الإدارة النظامية |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### نقاط الألم في الحلول السائدة الحالية
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **تكلفة عالية / تخصيص بطيء**: أنظمة التذاكر بنظام SaaS باهظة الثمن، ودورات التطوير المخصصة طويلة.
+- **تشتت الأنظمة وجزر البيانات المنعزلة**: بيانات الأعمال مشتتة في أنظمة مختلفة، مما يصعب عملية التحليل الموحد واتخاذ القرار.
+- **تغيرات الأعمال السريعة وصعوبة تطور النظام**: عندما تتغير متطلبات العمل، يصعب تعديل النظام بسرعة.
+- **استجابة بطيئة للخدمة**: الطلبات التي تتنقل بين أنظمة مختلفة لا يمكن توزيعها في الوقت المناسب.
+- **عدم شفافية العملية**: لا يستطيع العملاء تتبع تقدم التذكرة، مما يزيد من ضغط الاستفسارات المتكررة على خدمة العملاء.
+- **صعوبة ضمان الجودة**: نقص مراقبة اتفاقية مستوى الخدمة (SLA)، وعدم وجود تنبيهات فورية عند تجاوز الوقت المحدد أو تلقي تقييمات سلبية.
 
 ---
 
-## 3. Design Principles
+## 2. مقارنة المنتجات والحلول (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### المنتجات الرائدة في السوق
+
+- **SaaS**: مثل Salesforce، Zendesk، Odoo، إلخ.
+- **الأنظمة المخصصة / الأنظمة الداخلية**
+
+### أبعاد المقارنة
+
+- تغطية الميزات
+- المرونة
+- القابلية للتوسع
+- طريقة استخدام الذكاء الاصطناعي
+
+### نقاط تميز حل NocoBase
+
+**مزايا على مستوى المنصة:**
+
+- **الأولوية للتكوين (Configuration)**: من جداول البيانات الأساسية إلى أنواع الأعمال، واتفاقيات مستوى الخدمة (SLA)، وتوجيه المهارات، يتم كل ذلك عبر الإعدادات.
+- **بناء سريع باستخدام الكود المنخفض (Low-code)**: أسرع من التطوير الذاتي وأكثر مرونة من أنظمة SaaS.
+
+**ما لا تستطيع الأنظمة التقليدية فعله أو تفعله بتكلفة باهظة:**
+
+- **تكامل أصيل مع الذكاء الاصطناعي**: الاستفادة من "إضافة" الذكاء الاصطناعي في NocoBase لتحقيق التصنيف الذكي، والمساعدة في ملء النماذج، وتوصيات المعرفة.
+- **جميع التصاميم قابلة للنسخ من قبل المستخدمين**: يمكن للمستخدمين التوسع بناءً على القوالب بأنفسهم.
+- **بنية بيانات على شكل حرف T**: جدول رئيسي + جداول أعمال فرعية، إضافة نوع عمل جديد يتطلب فقط إضافة جدول فرعي.
 
 ---
 
-## 4. Solution Overview
+## 3. مبادئ التصميم (Principles)
 
-### Summary Introduction
+- **تكلفة إدراكية منخفضة**
+- **العمل يسبق التقنية**
+- **قابل للتطور، وليس عملاً لمرة واحدة**
+- **التكوين أولاً، والكود كحل أخير**
+- **التعاون بين الإنسان والذكاء الاصطناعي، وليس استبدال الإنسان**
+- **يجب أن تكون جميع التصاميم قابلة للنسخ من قبل المستخدمين**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. نظرة عامة على الحل (Solution Overview)
 
-### Ticket Processing Flow
+### مقدمة موجزة
+
+مركز تذاكر موحد مبني على منصة NocoBase ذات الكود المنخفض، يحقق:
+
+- **مدخل موحد**: وصول من مصادر متعددة، ومعالجة معيارية.
+- **توزيع ذكي**: تصنيف مدعوم بالذكاء الاصطناعي، وتوزيع متوازن للأحمال.
+- **أعمال متعددة الأشكال**: جدول رئيسي أساسي + جداول أعمال فرعية، توسع مرن.
+- **حلقة تغذية راجعة مغلقة**: مراقبة SLA، تقييمات العملاء، معالجة التقييمات السلبية.
+
+### سير عمل معالجة التذاكر
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+وصول من مصادر متعددة ← معالجة مسبقة/تحليل الذكاء الاصطناعي ← توزيع ذكي ← تنفيذ بشري ← حلقة التغذية الراجعة
+    ↓                        ↓                          ↓              ↓                ↓
+ فحص التكرار             التعرف على النية             مطابقة المهارات    تدفق الحالة      تقييم الرضا
+                         تحليل المشاعر                توازن الأحمال     مراقبة SLA       متابعة التقييمات السلبية
+                         رد تلقائي                    إدارة الطوابير    التواصل بالتعليقات  أرشفة البيانات
 ```
 
-### Core Module List
+### قائمة الوحدات الأساسية
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| الوحدة | الوصف |
+|------|------|
+| استقبال التذاكر | النماذج العامة، بوابة العملاء، التسجيل بواسطة الوكيل، API/Webhook، تحليل البريد الإلكتروني |
+| إدارة التذاكر | عمليات CRUD للتذاكر، تدفق الحالة، التوزيع/التحويل، التواصل عبر التعليقات، سجلات العمليات |
+| توسعة الأعمال | جداول فرعية خاصة بصيانة المعدات، الدعم الفني، شكاوى العملاء، إلخ |
+| إدارة SLA | تكوين اتفاقية مستوى الخدمة (SLA)، تنبيهات تجاوز الوقت، تصعيد التجاوز |
+| إدارة العملاء | الجدول الرئيسي للعملاء، إدارة جهات الاتصال، بوابة العملاء |
+| نظام التقييم | تقييم متعدد الأبعاد، تسميات سريعة، NPS، تنبيهات التقييمات السلبية |
+| مساعد الذكاء الاصطناعي | تصنيف النوايا، تحليل المشاعر، توصية المعرفة، المساعدة في الرد، تحسين أسلوب الكتابة |
 
-### Core Interface Display
+### عرض الواجهة الأساسية
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. الموظف الآلي (AI Employee)
 
-### AI Employee Types and Scenarios
+### أنواع الموظفين الآليين وسيناريوهاتهم
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **مساعد خدمة العملاء**، **مساعد مبيعات**، **محلل بيانات**، **مدقق**
+- مساعدة البشر، وليس استبدالهم
 
-### AI Employee Value Quantification
+### قياس قيمة الموظف الآلي
 
-In this solution, AI employees can:
+في هذا الحل، يمكن للموظف الآلي القيام بما يلي:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| بعد القيمة | التأثير المحدد |
+|----------|----------|
+| زيادة الكفاءة | التصنيف التلقائي يقلل وقت الفرز اليدوي بنسبة +50%؛ توصيات المعرفة تسرع حل المشكلات |
+| تقليل التكاليف | الرد التلقائي على الأسئلة البسيطة، مما يقلل عبء العمل على موظفي خدمة العملاء |
+| تمكين الموظفين البشر | تنبيهات المشاعر تساعد الموظفين على الاستعداد المسبق؛ تحسين الردود يرفع جودة التواصل |
+| تحسين رضا العملاء | استجابة أسرع، توزيع أدق، وردود أكثر احترافية |
 
 ---
 
-## 7. Installation & Deployment
+## 6. أبرز المميزات (Highlights)
 
-### How to Install and Use
+### 1. بنية بيانات على شكل حرف T
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- تشترك جميع التذاكر في جدول رئيسي واحد، مع منطق تدفق موحد.
+- تحمل الجداول الفرعية للأعمال الحقول الخاصة بكل نوع، مما يتيح توسعاً مرناً.
+- إضافة نوع عمل جديد يتطلب فقط إضافة جدول فرعي، دون التأثير على العملية الرئيسية.
+
+### 2. دورة حياة كاملة للتذكرة
+
+- إنشاء ← توزيع ← معالجة ← تعليق ← حل ← إغلاق.
+- دعم السيناريوهات المعقدة مثل التحويل، الإرجاع، وإعادة الفتح.
+- توقيت SLA دقيق يحسب فترات التعليق والتوقف.
+
+### 3. وصول موحد متعدد القنوات
+
+- النماذج العامة، بوابة العملاء، API، البريد الإلكتروني، التسجيل بواسطة الوكيل.
+- فحص "تكرار العمليات" (Idempotency) لمنع تكرار إنشاء التذاكر.
+
+### 4. تكامل أصيل مع الذكاء الاصطناعي
+
+- ليس مجرد "إضافة زر ذكاء اصطناعي"، بل هو مدمج في كل خطوة.
+- التعرف على النية، تحليل المشاعر، توصية المعرفة، وتحسين أسلوب الرد.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. خارطة الطريق (تحدث باستمرار)
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+- **دمج النظام**: دعم دمج وحدة التذاكر في أنظمة الأعمال المختلفة مثل ERP و CRM.
+- **ترابط التذاكر**: استقبال التذاكر من الأنظمة الصاعدة والهابطة مع استدعاءات الحالة (Callbacks)، لتحقيق التعاون عبر الأنظمة.
+- **أتمتة الذكاء الاصطناعي**: دمج الموظفين الآليين في "سير العمل"، ودعم التشغيل التلقائي في الخلفية للمعالجة غير المأهولة.
+- **دعم تعدد المستأجرين**: التوسع الأفقي من خلال تعدد المساحات/التطبيقات، مما يسمح بالتوزيع لفرق خدمة عملاء مختلفة لتعمل بشكل مستقل.
+- **قاعدة المعرفة RAG**: تحويل كافة البيانات (التذاكر، العملاء، المنتجات) إلى متجهات تلقائياً لتحقيق البحث الذكي وتوصيات المعرفة.
+- **دعم لغات متعددة**: دعم تبديل اللغات للواجهة والمحتوى لتلبية احتياجات التعاون بين الفرق العابرة للحدود والمناطق.

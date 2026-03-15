@@ -1,8 +1,8 @@
-:::tip
-Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
+:::tip{title="AI-vertaalmelding"}
+Dit document is vertaald door AI. Raadpleeg de [Engelse versie](/interface-builder/fields/specific/sub-table) voor nauwkeurige informatie.
 :::
 
-# Subtabel
+# Subtabel (inline bewerken)
 
 ## Introductie
 
@@ -12,23 +12,23 @@ De subtabel is geschikt voor het beheren van 'één-op-veel' relatievelden. U ku
 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
-Verschillende veldtypen in de subtabel tonen verschillende veldcomponenten. Grote velden (zoals Rich Text, JSON, en meerregelige tekst) bewerkt u via een pop-upvenster.
+Verschillende veldtypen in de subtabel tonen verschillende veldcomponenten. Grote velden (zoals Rich Text, JSON, en Long Text) bewerkt u via een pop-upvenster.
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
 
 Relatievelden in de subtabel.
 
-Orders (Eén-op-veel) > Orderproducten (Eén-op-één) > Opportunity
+Orders (One-to-Many) > Orderproducten (One-to-One) > Opportunity
 
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
-De standaardcomponent voor een relatieveld is de Dropdown (ondersteunt Dropdown/Gegevenskiezer).
+De standaardcomponent voor een relatieveld is de Single select (ondersteunt Single select/Gegevenskiezer).
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
 
 ## Veldconfiguratie-opties
 
-### Bestaande gegevens selecteren toestaan (standaard uitgeschakeld)
+### Bestaande gegevens selecteren toestaan (standaard ingeschakeld)
 
 Hiermee kunt u bestaande gegevens selecteren en koppelen.
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
@@ -37,7 +37,7 @@ Hiermee kunt u bestaande gegevens selecteren en koppelen.
 
 ### Veldcomponent
 
-[Veldcomponent](/interface-builder/fields/association-field): Schakel over naar andere relatieveldcomponenten, zoals Dropdown, Gegevenskiezer, enz.
+[Veldcomponent](/interface-builder/fields/association-field): Schakel over naar andere relatieveldcomponenten, zoals Single select, Gegevenskiezer, enz.
 
 ### Ontkoppelen van bestaande gegevens toestaan
 

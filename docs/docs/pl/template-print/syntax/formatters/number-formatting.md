@@ -1,32 +1,31 @@
-:::tip
-Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
+:::tip{title="Powiadomienie o tłumaczeniu AI"}
+Ten dokument został przetłumaczony przez AI. Aby uzyskać dokładne informacje, zapoznaj się z [wersją angielską](/template-print/syntax/formatters/number-formatting).
 :::
 
-### Formatowanie liczb
+### Cyfrowe formatowanie
 
 #### 1. :formatN(precision)
 
 ##### Opis składni
-Formatuje liczbę zgodnie z ustawieniami lokalizacji.
+Formatuje liczbę zgodnie z ustawieniami lokalizacji.  
 Parametr:
-- **precision:** Liczba miejsc po przecinku.
-  W przypadku formatów ODS/XLSX liczba wyświetlanych miejsc po przecinku jest określana przez edytor tekstu; dla pozostałych formatów używany jest ten parametr.
+- precision: liczba miejsc po przecinku  
+  W przypadku formatów ODS/XLSX liczba wyświetlanych miejsc po przecinku jest określana przez edytor tekstu; inne formaty zależą od tego parametru.
 
 ##### Przykład
 ```
-// Przykładowe środowisko: opcje API { "lang": "en-us" }
 '10':formatN()         // Wynik: "10.000"
 '1000.456':formatN()   // Wynik: "1,000.456"
 ```
 
 ##### Wynik
-Liczba jest wyświetlana zgodnie z określoną precyzją i formatem lokalizacji.
+Liczba jest wyprowadzana zgodnie z określoną precyzją i formatem lokalizacji.
 
 
 #### 2. :round(precision)
 
 ##### Opis składni
-Zaokrągla liczbę do określonej liczby miejsc po przecinku.
+Wykonuje zaokrąglanie liczby, parametr określa liczbę miejsc po przecinku.
 
 ##### Przykład
 ```
@@ -35,15 +34,15 @@ Zaokrągla liczbę do określonej liczby miejsc po przecinku.
 ```
 
 ##### Wynik
-Wynikiem jest liczba zaokrąglona do podanej precyzji.
+Wynikiem jest zaokrąglona wartość liczbowa.
 
 
 #### 3. :add(value)
 
 ##### Opis składni
-Dodaje określoną wartość do bieżącej liczby.
+Dodaje określoną wartość do bieżącej liczby.  
 Parametr:
-- **value:** Liczba do dodania.
+- value: liczba do dodania
 
 ##### Przykład
 ```
@@ -52,15 +51,15 @@ Parametr:
 ```
 
 ##### Wynik
-Wynikiem jest suma bieżącej liczby i podanej wartości.
+Wynikiem jest zsumowana wartość liczbowa.
 
 
 #### 4. :sub(value)
 
 ##### Opis składni
-Odejmuje określoną wartość od bieżącej liczby.
+Odejmuje określoną wartość od bieżącej liczby.  
 Parametr:
-- **value:** Liczba do odjęcia.
+- value: odjemnik
 
 ##### Przykład
 ```
@@ -69,15 +68,15 @@ Parametr:
 ```
 
 ##### Wynik
-Wynikiem jest bieżąca liczba pomniejszona o podaną wartość.
+Wynikiem jest odjęta wartość liczbowa.
 
 
 #### 5. :mul(value)
 
 ##### Opis składni
-Mnoży bieżącą liczbę przez określoną wartość.
+Mnoży bieżącą liczbę przez określoną wartość.  
 Parametr:
-- **value:** Mnożnik.
+- value: mnożnik
 
 ##### Przykład
 ```
@@ -86,15 +85,15 @@ Parametr:
 ```
 
 ##### Wynik
-Wynikiem jest iloczyn bieżącej liczby i podanej wartości.
+Wynikiem jest pomnożona wartość liczbowa.
 
 
 #### 6. :div(value)
 
 ##### Opis składni
-Dzieli bieżącą liczbę przez określoną wartość.
+Dzieli bieżącą liczbę przez określoną wartość.  
 Parametr:
-- **value:** Dzielnik.
+- value: dzielnik
 
 ##### Przykład
 ```
@@ -103,15 +102,15 @@ Parametr:
 ```
 
 ##### Wynik
-Wynikiem jest rezultat dzielenia.
+Wynikiem jest podzielona wartość liczbowa.
 
 
 #### 7. :mod(value)
 
 ##### Opis składni
-Oblicza resztę z dzielenia bieżącej liczby przez określoną wartość (modulo).
+Oblicza modulo (resztę z dzielenia) bieżącej liczby przez określoną wartość.  
 Parametr:
-- **value:** Dzielnik modulo.
+- value: dzielnik modulo
 
 ##### Przykład
 ```
@@ -120,7 +119,7 @@ Parametr:
 ```
 
 ##### Wynik
-Wynikiem jest reszta z operacji modulo.
+Wynikiem jest rezultat operacji modulo.
 
 
 #### 8. :abs
@@ -137,13 +136,13 @@ Zwraca wartość bezwzględną liczby.
 ```
 
 ##### Wynik
-Wynikiem jest wartość bezwzględna liczby wejściowej.
+Wynikiem jest wartość bezwzględna.
 
 
 #### 9. :ceil
 
 ##### Opis składni
-Zaokrągla liczbę w górę do najbliższej liczby całkowitej, czyli zwraca najmniejszą liczbę całkowitą większą lub równą bieżącej liczbie.
+Zaokrągla w górę, czyli zwraca najmniejszą liczbę całkowitą większą lub równą bieżącej liczbie.
 
 ##### Przykład
 ```
@@ -153,13 +152,13 @@ Zaokrągla liczbę w górę do najbliższej liczby całkowitej, czyli zwraca naj
 ```
 
 ##### Wynik
-Wynikiem jest liczba zaokrąglona w górę do najbliższej liczby całkowitej.
+Wynikiem jest zaokrąglona liczba całkowita.
 
 
 #### 10. :floor
 
 ##### Opis składni
-Zaokrągla liczbę w dół do najbliższej liczby całkowitej, czyli zwraca największą liczbę całkowitą mniejszą lub równą bieżącej liczbie.
+Zaokrągla w dół, czyli zwraca największą liczbę całkowitą mniejszą lub równą bieżącej liczbie.
 
 ##### Przykład
 ```
@@ -169,7 +168,7 @@ Zaokrągla liczbę w dół do najbliższej liczby całkowitej, czyli zwraca najw
 ```
 
 ##### Wynik
-Wynikiem jest liczba zaokrąglona w dół do najbliższej liczby całkowitej.
+Wynikiem jest zaokrąglona liczba całkowita.
 
 
 #### 11. :int
@@ -184,7 +183,7 @@ Zależy od konkretnego przypadku konwersji.
 #### 12. :toEN
 
 ##### Opis składni
-Konwertuje liczbę do formatu angielskiego (używając `.` jako separatora dziesiętnego). Niezalecane.
+Konwertuje liczbę do formatu angielskiego (kropka jako separator dziesiętny '.'), niezalecane.
 
 ##### Przykład i wynik
 Zależy od konkretnego przypadku konwersji.
@@ -193,7 +192,7 @@ Zależy od konkretnego przypadku konwersji.
 #### 13. :toFixed
 
 ##### Opis składni
-Konwertuje liczbę na ciąg znaków, zachowując tylko określoną liczbę miejsc po przecinku. Niezalecane.
+Konwertuje liczbę na ciąg znaków, zachowując tylko określoną liczbę miejsc po przecinku, niezalecane.
 
 ##### Przykład i wynik
 Zależy od konkretnego przypadku konwersji.
@@ -202,7 +201,7 @@ Zależy od konkretnego przypadku konwersji.
 #### 14. :toFR
 
 ##### Opis składni
-Konwertuje liczbę do formatu francuskiego (używając `,` jako separatora dziesiętnego). Niezalecane.
+Konwertuje liczbę do formatu francuskiego (przecinek jako separator dziesiętny ','), niezalecane.
 
 ##### Przykład i wynik
 Zależy od konkretnego przypadku konwersji.
