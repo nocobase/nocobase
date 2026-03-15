@@ -26,7 +26,7 @@ export const editFormModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'EditFormModel',
   title: 'Form (Edit)',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: {
     ...formBlockBaseStepParamsSchema,
     properties: {

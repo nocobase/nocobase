@@ -19,7 +19,7 @@ export const actionModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'ActionModel',
   title: 'Action',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: {
     type: 'object',
     properties: {

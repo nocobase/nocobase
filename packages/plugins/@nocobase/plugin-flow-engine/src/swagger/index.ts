@@ -492,6 +492,33 @@ export default {
         },
         additionalProperties: false,
       },
+      FlowSchemaBundleHint: {
+        type: 'object',
+        required: ['kind', 'message'],
+        properties: {
+          kind: { type: 'string' },
+          path: { type: 'string' },
+          message: { type: 'string' },
+          'x-flow': {
+            type: 'object',
+            properties: {
+              slotRules: {
+                type: 'object',
+                properties: {
+                  slotKey: { type: 'string' },
+                  type: { type: 'string', enum: ['object', 'array'] },
+                  allowedUses: { type: 'array', items: { type: 'string' } },
+                },
+                additionalProperties: false,
+              },
+              unresolvedReason: { type: 'string' },
+              recommendedFallback: {},
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
       FlowSchemaPattern: {
         type: 'object',
         required: ['title'],
@@ -603,7 +630,7 @@ export default {
           hash: { type: 'string' },
           source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
           coverage: { $ref: '#/components/schemas/FlowSchemaCoverage' },
-          dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowDynamicHint' } },
+          dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaBundleHint' } },
           minimalExample: {},
           skeleton: {},
           commonPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
@@ -617,10 +644,8 @@ export default {
       },
       FlowModelSchemaBundleDocument: {
         type: 'object',
-        required: ['generatedAt', 'summary', 'items'],
+        required: ['items'],
         properties: {
-          generatedAt: { type: 'string' },
-          summary: { $ref: '#/components/schemas/FlowSchemaRegistrySummary' },
           items: { type: 'array', items: { $ref: '#/components/schemas/FlowModelSchemaBundleItem' } },
         },
         additionalProperties: false,

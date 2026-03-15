@@ -402,7 +402,7 @@ describe('flow schema manifest provider', () => {
     expect(builtin.status).toBe(200);
     expect(builtin.body?.data?.coverage).toMatchObject({
       source: 'official',
-      strict: false,
+      strict: true,
       status: 'manual',
     });
     expect(builtin.body?.data?.dynamicHints).toEqual(
@@ -419,8 +419,9 @@ describe('flow schema manifest provider', () => {
     });
 
     expect(bundle.status).toBe(200);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(1);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(1);
+    expect(bundle.body?.data).not.toHaveProperty('generatedAt');
+    expect(bundle.body?.data).not.toHaveProperty('summary');
+    expect(JSON.stringify(bundle.body?.data)).not.toContain('contextRequirements');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -432,16 +433,20 @@ describe('flow schema manifest provider', () => {
     );
   });
 
-  it('should expose inventory-driven coverage summary for plugin contributions', async () => {
+  it('should expose lightweight schema bundles for plugin contributions', async () => {
     const bundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['ProviderManifestModel', 'ProviderArrayModel'],
     });
 
     expect(bundle.status).toBe(200);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(1);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(1);
-    expect(bundle.body?.data?.summary?.missingModelUses).toContain('ProviderPluginMissingModel');
-    expect(bundle.body?.data?.summary?.missingActionNames).toContain('providerPluginMissingAction');
+    expect(bundle.body?.data).not.toHaveProperty('generatedAt');
+    expect(bundle.body?.data).not.toHaveProperty('summary');
+    expect(bundle.body?.data?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ use: 'ProviderManifestModel' }),
+        expect.objectContaining({ use: 'ProviderArrayModel' }),
+      ]),
+    );
   });
 
   it('should preserve existing merge semantics across plugin providers', async () => {
@@ -518,8 +523,8 @@ describe('flow schema manifest provider', () => {
       });
 
       expect(bundle.status).toBe(200);
-      expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(15);
-      expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(15);
+      expect(bundle.body?.data).not.toHaveProperty('generatedAt');
+      expect(bundle.body?.data).not.toHaveProperty('summary');
       expect(bundle.body?.data?.items).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ use: 'BulkUpdateActionModel', source: 'plugin' }),

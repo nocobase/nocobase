@@ -8,82 +8,18 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema } from '../shared';
+import { pageTabUses } from '../shared';
 
 export const pageModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'PageModel',
   title: 'Page',
   source: 'official',
-  strict: false,
+  strict: true,
   subModelSlots: {
     tabs: {
       type: 'array',
-      uses: ['BasePageTabModel', 'RootPageTabModel', 'PageTabModel'],
+      uses: pageTabUses,
       description: 'Page tabs.',
-      childSchemaPatch: {
-        BasePageTabModel: {
-          subModelSlots: {
-            grid: {
-              type: 'object',
-              use: 'BlockGridModel',
-              description: 'Tab content grid container.',
-            },
-          },
-        },
-        RootPageTabModel: {
-          subModelSlots: {
-            grid: {
-              type: 'object',
-              use: 'BlockGridModel',
-              description: 'Tab content grid container.',
-            },
-          },
-        },
-        PageTabModel: {
-          subModelSlots: {
-            grid: {
-              type: 'object',
-              use: 'BlockGridModel',
-              description: 'Tab content grid container.',
-            },
-          },
-        },
-      },
-      descendantSchemaPatches: [
-        {
-          path: [
-            {
-              slotKey: 'grid',
-              use: 'BlockGridModel',
-            },
-          ],
-          patch: {
-            subModelSlots: {
-              items: {
-                type: 'array',
-                dynamic: true,
-                schema: genericModelNodeSchema,
-                description: 'Page tab grid items are resolved from runtime block registries.',
-              },
-            },
-            dynamicHints: [
-              {
-                kind: 'dynamic-children',
-                path: 'BlockGridModel.subModels.items',
-                message: 'Grid items depend on runtime block registries and collection-aware factories.',
-                'x-flow': {
-                  slotRules: {
-                    slotKey: 'items',
-                    type: 'array',
-                  },
-                  contextRequirements: ['block registry', 'collection metadata'],
-                  unresolvedReason: 'runtime-block-grid-items',
-                },
-              },
-            ],
-          },
-        },
-      ],
     },
   },
   stepParamsSchema: {
@@ -188,7 +124,7 @@ export const pageModelSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'tabs',
             type: 'array',
-            allowedUses: ['BasePageTabModel', 'RootPageTabModel', 'PageTabModel'],
+            allowedUses: pageTabUses,
           },
           contextRequirements: ['route context', 'page tab model class'],
           unresolvedReason: 'runtime-page-tabs',

@@ -8,20 +8,23 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema } from '../shared';
+import { coreBlockGridItemUses, genericModelNodeSchema } from '../shared';
 
 export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'BlockGridModel',
   title: 'Block grid',
   source: 'official',
-  strict: false,
+  strict: true,
   exposure: 'internal',
+  allowDirectUse: false,
+  suggestedUses: ['PageModel', 'RootPageModel'],
   subModelSlots: {
     items: {
       type: 'array',
+      uses: coreBlockGridItemUses,
       dynamic: true,
       schema: genericModelNodeSchema,
-      description: 'Block grid items are resolved from runtime block registries.',
+      description: 'Block grid items are resolved from runtime block registries and plugin block providers.',
     },
   },
   skeleton: {
@@ -41,6 +44,7 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'items',
             type: 'array',
+            allowedUses: coreBlockGridItemUses,
           },
           contextRequirements: ['block registry', 'collection metadata'],
           unresolvedReason: 'runtime-block-grid-items',

@@ -14,13 +14,14 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
   use: 'AssignFormGridModel',
   title: 'Assign form grid',
   source: 'official',
-  strict: false,
+  strict: true,
   exposure: 'internal',
   allowDirectUse: false,
   suggestedUses: ['UpdateRecordActionModel'],
   subModelSlots: {
     items: {
       type: 'array',
+      uses: ['AssignFormItemModel'],
       dynamic: true,
       schema: genericModelNodeSchema,
       description: 'Assign form items are resolved from runtime collection field factories.',
@@ -43,6 +44,7 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
           slotRules: {
             slotKey: 'items',
             type: 'array',
+            allowedUses: ['AssignFormItemModel'],
           },
           contextRequirements: ['collection fields', 'editable field bindings'],
           unresolvedReason: 'runtime-assign-form-items',

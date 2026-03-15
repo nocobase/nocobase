@@ -22,7 +22,7 @@ export const createFormModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'CreateFormModel',
   title: 'Form (Add new)',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: formBlockBaseStepParamsSchema,
   subModelSlots: createFormBlockSubModelSlots(),
   skeleton: createFormBlockSkeleton('CreateFormModel'),

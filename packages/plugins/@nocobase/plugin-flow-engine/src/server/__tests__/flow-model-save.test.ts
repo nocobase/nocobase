@@ -277,11 +277,10 @@ describe('flow-model save', () => {
     });
 
     expect(bundle.status).toBe(200);
-    expect(bundle.body?.data?.summary?.registeredModels).toBeGreaterThanOrEqual(2);
-    expect(bundle.body?.data?.summary?.registeredActions).toBeGreaterThanOrEqual(1);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(10);
-    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(10);
-    expect(bundle.body?.data?.summary?.missingModelUses).toEqual([]);
+    expect(bundle.body?.data).not.toHaveProperty('generatedAt');
+    expect(bundle.body?.data).not.toHaveProperty('summary');
+    expect(JSON.stringify(bundle.body?.data)).not.toContain('missing-model-manifest');
+    expect(JSON.stringify(bundle.body?.data)).not.toContain('contextRequirements');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

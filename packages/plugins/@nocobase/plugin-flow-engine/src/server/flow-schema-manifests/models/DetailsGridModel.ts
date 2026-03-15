@@ -8,17 +8,20 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema } from '../shared';
+import { detailsGridItemUses, genericModelNodeSchema } from '../shared';
 
 export const detailsGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'DetailsGridModel',
   title: 'Details grid',
   source: 'official',
-  strict: false,
+  strict: true,
   exposure: 'internal',
+  allowDirectUse: false,
+  suggestedUses: ['DetailsBlockModel'],
   subModelSlots: {
     items: {
       type: 'array',
+      uses: detailsGridItemUses,
       dynamic: true,
       schema: genericModelNodeSchema,
       description: 'Details grid items depend on field metadata and runtime item factories.',
@@ -41,6 +44,7 @@ export const detailsGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'items',
             type: 'array',
+            allowedUses: detailsGridItemUses,
           },
           contextRequirements: ['details field metadata', 'details item factories'],
           unresolvedReason: 'runtime-details-grid-items',

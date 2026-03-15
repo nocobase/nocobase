@@ -10,6 +10,7 @@
 import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { flowSchemaActionManifests } from './actions';
 import { flowSchemaModelManifests } from './models';
+import { publicBlockRootUses } from './shared';
 
 export * from './actions';
 export * from './models';
@@ -31,12 +32,56 @@ const publicFlowActionNames = Array.from(
   new Set([...flowSchemaActionManifests.map((manifest) => manifest.name)]),
 ).sort();
 
+const coreDescendantModelUses = [
+  'AddChildActionModel',
+  'AddNewActionModel',
+  'AssignFormGridModel',
+  'AssignFormItemModel',
+  'AssignFormModel',
+  'BasePageTabModel',
+  'BlockGridModel',
+  'BulkDeleteActionModel',
+  'DeleteActionModel',
+  'DetailsGridModel',
+  'DetailsItemModel',
+  'EditActionModel',
+  'ExpandCollapseActionModel',
+  'FilterActionModel',
+  'FilterFormCollapseActionModel',
+  'FilterFormCustomFieldModel',
+  'FilterFormGridModel',
+  'FilterFormItemModel',
+  'FilterFormJSActionModel',
+  'FilterFormResetActionModel',
+  'FilterFormSubmitActionModel',
+  'FormAssociationItemModel',
+  'FormGridModel',
+  'FormItemModel',
+  'JSCollectionActionModel',
+  'JSFormActionModel',
+  'JSRecordActionModel',
+  'FormSubmitActionModel',
+  'JSColumnModel',
+  'LinkActionModel',
+  'PageTabModel',
+  'PopupCollectionActionModel',
+  'RefreshActionModel',
+  'RootPageTabModel',
+  'TableActionsColumnModel',
+  'TableColumnModel',
+  'TableCustomColumnModel',
+  'ViewActionModel',
+].sort();
+
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   actions: flowSchemaActionManifests,
   models: flowSchemaModelManifests,
   inventory: {
     publicModels: publicFlowModelUses,
     publicActions: publicFlowActionNames,
+    publicTreeRoots: Array.from(new Set(publicBlockRootUses)).sort(),
+    expectedDescendantModels: coreDescendantModelUses,
+    expectedDescendantActions: publicFlowActionNames,
   },
   defaults: {
     source: 'official',

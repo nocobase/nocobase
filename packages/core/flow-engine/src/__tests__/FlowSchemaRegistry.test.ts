@@ -408,6 +408,7 @@ describe('FlowSchemaRegistry', () => {
 
     const doc = registry.getModelDocument('SchemaRegistryManifestModel');
     const bundle = registry.getSchemaBundle(['SchemaRegistryManifestModel']);
+    const summary = registry.getCoverageSummary();
 
     expect(doc.minimalExample).toMatchObject({
       use: 'SchemaRegistryManifestModel',
@@ -435,14 +436,16 @@ describe('FlowSchemaRegistry', () => {
         }),
       ]),
     );
-    expect(bundle.summary.registeredModels).toBe(1);
-    expect(bundle.summary.registeredActions).toBe(1);
-    expect(bundle.summary.publicOfficialModelsTotal).toBe(2);
-    expect(bundle.summary.publicOfficialModelsCovered).toBe(1);
-    expect(bundle.summary.publicOfficialStrictModels).toBe(0);
-    expect(bundle.summary.publicOfficialUnresolvedModels).toBe(0);
-    expect(bundle.summary.missingModelUses).toEqual(['SchemaRegistryMissingModel']);
-    expect(bundle.summary.missingActionNames).toEqual(['schemaRegistryMissingAction']);
+    expect(summary.registeredModels).toBe(1);
+    expect(summary.registeredActions).toBe(1);
+    expect(summary.publicOfficialModelsTotal).toBe(2);
+    expect(summary.publicOfficialModelsCovered).toBe(1);
+    expect(summary.publicOfficialStrictModels).toBe(0);
+    expect(summary.publicOfficialUnresolvedModels).toBe(0);
+    expect(summary.missingModelUses).toEqual(['SchemaRegistryMissingModel']);
+    expect(summary.missingActionNames).toEqual(['schemaRegistryMissingAction']);
+    expect(bundle).not.toHaveProperty('generatedAt');
+    expect(bundle).not.toHaveProperty('summary');
     expect(bundle.items[0]).toMatchObject({
       use: 'SchemaRegistryManifestModel',
       dynamicHints: expect.arrayContaining([
@@ -456,6 +459,7 @@ describe('FlowSchemaRegistry', () => {
         }),
       ]),
     });
+    expect(JSON.stringify(bundle)).not.toContain('contextRequirements');
     expect(bundle.items[0]?.keyEnums?.['#/properties/use']).toEqual(['SchemaRegistryManifestModel']);
   });
 
@@ -487,8 +491,8 @@ describe('FlowSchemaRegistry', () => {
     expect(registry.isDirectUseAllowed('SchemaRegistryInternalBaseModel')).toBe(false);
     expect(registry.getSuggestedUses('SchemaRegistryInternalBaseModel')).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.listModelUses({ publicOnly: true })).toEqual(['SchemaRegistryPublicModel']);
-    expect(registry.getSchemaBundle().summary.registeredModels).toBe(1);
-    expect(registry.getSchemaBundle().summary.publicOfficialModelsTotal).toBe(0);
+    expect(registry.getCoverageSummary({ publicOnly: true }).registeredModels).toBe(1);
+    expect(registry.getCoverageSummary({ publicOnly: true }).publicOfficialModelsTotal).toBe(0);
     expect(registry.getSchemaBundle().items.map((item) => item.use)).toEqual(['SchemaRegistryPublicModel']);
   });
 
@@ -776,15 +780,26 @@ describe('FlowSchemaRegistry', () => {
       (registry.getModelDocument('SchemaRegistryLegacyParentModel').jsonSchema.properties?.subModels as any)?.properties
         ?.body,
     ).toMatchObject({
-      properties: {
-        use: {
-          const: 'SchemaRegistryLegacyChildModel',
-        },
-        stepParams: {
-          required: ['title'],
-          additionalProperties: false,
-        },
-      },
+      anyOf: expect.arrayContaining([
+        expect.objectContaining({
+          properties: expect.objectContaining({
+            use: {
+              const: 'SchemaRegistryLegacyChildModel',
+            },
+            stepParams: expect.objectContaining({
+              required: ['title'],
+              additionalProperties: false,
+            }),
+          }),
+        }),
+        expect.objectContaining({
+          properties: expect.objectContaining({
+            use: {
+              type: 'string',
+            },
+          }),
+        }),
+      ]),
     });
   });
 

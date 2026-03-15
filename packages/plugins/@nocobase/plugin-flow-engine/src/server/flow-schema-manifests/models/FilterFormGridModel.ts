@@ -8,17 +8,20 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema } from '../shared';
+import { filterFormGridItemUses, genericModelNodeSchema } from '../shared';
 
 export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'FilterFormGridModel',
   title: 'Filter form grid',
   source: 'official',
-  strict: false,
+  strict: true,
   exposure: 'internal',
+  allowDirectUse: false,
+  suggestedUses: ['FilterFormBlockModel'],
   subModelSlots: {
     items: {
       type: 'array',
+      uses: filterFormGridItemUses,
       dynamic: true,
       schema: genericModelNodeSchema,
       description: 'Filter form items are resolved from runtime filter field registries.',
@@ -41,6 +44,7 @@ export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
           slotRules: {
             slotKey: 'items',
             type: 'array',
+            allowedUses: filterFormGridItemUses,
           },
           contextRequirements: ['target block registry', 'filter field factories'],
           unresolvedReason: 'runtime-filter-form-items',

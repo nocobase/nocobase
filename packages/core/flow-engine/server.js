@@ -8,7 +8,7 @@
  */
 
 try {
-  module.exports = require('./lib/server');
-} catch (error) {
   module.exports = require('./src/server.ts');
+} catch (error) {
+  module.exports = require('./lib/server');
 }

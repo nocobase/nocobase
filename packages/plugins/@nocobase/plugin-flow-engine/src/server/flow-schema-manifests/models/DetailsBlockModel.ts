@@ -9,8 +9,9 @@
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
 import {
-  dataScopeParamsSchema,
   genericModelNodeSchema,
+  recordActionUses,
+  dataScopeParamsSchema,
   layoutParamsSchema,
   linkageRuleValueSchema,
   linkageRulesRefreshParamsSchema,
@@ -21,7 +22,7 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'DetailsBlockModel',
   title: 'Details block',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: {
     type: 'object',
     properties: {
@@ -54,6 +55,7 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
     },
     actions: {
       type: 'array',
+      uses: recordActionUses,
       dynamic: true,
       schema: genericModelNodeSchema,
       description: 'Details actions depend on runtime record-action registries.',
@@ -135,6 +137,7 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'actions',
             type: 'array',
+            allowedUses: recordActionUses,
           },
           contextRequirements: ['record action registry', 'collection metadata'],
           unresolvedReason: 'runtime-details-actions',

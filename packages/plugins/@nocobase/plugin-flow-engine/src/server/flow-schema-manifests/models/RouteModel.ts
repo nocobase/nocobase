@@ -13,7 +13,7 @@ export const routeModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'RouteModel',
   title: 'Route',
   source: 'official',
-  strict: false,
+  strict: true,
   subModelSlots: {
     page: {
       type: 'object',

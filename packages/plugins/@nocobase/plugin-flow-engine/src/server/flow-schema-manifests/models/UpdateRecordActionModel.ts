@@ -23,7 +23,7 @@ export const updateRecordActionModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'UpdateRecordActionModel',
   title: 'Update record action',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: {
     type: 'object',
     properties: {

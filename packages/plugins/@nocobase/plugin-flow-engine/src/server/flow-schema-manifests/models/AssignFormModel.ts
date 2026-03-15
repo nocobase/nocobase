@@ -14,7 +14,7 @@ export const assignFormModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'AssignFormModel',
   title: 'Field assignments',
   source: 'official',
-  strict: false,
+  strict: true,
   exposure: 'internal',
   allowDirectUse: false,
   suggestedUses: ['UpdateRecordActionModel'],

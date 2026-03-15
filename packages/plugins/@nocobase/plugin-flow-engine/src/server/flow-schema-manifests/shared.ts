@@ -158,7 +158,680 @@ export const openViewParamsSchema: FlowJsonSchema = {
   additionalProperties: true,
 };
 
-export const formBlockActionUses = ['FormActionGroupModel', 'ActionModel'];
+export const publicBlockRootUses = [
+  'CreateFormModel',
+  'DetailsBlockModel',
+  'EditFormModel',
+  'FilterFormBlockModel',
+  'TableBlockModel',
+];
+
+export const pageTabUses = ['BasePageTabModel', 'RootPageTabModel', 'PageTabModel'];
+
+export const tableColumnUses = [
+  'TableColumnModel',
+  'TableActionsColumnModel',
+  'JSColumnModel',
+  'TableCustomColumnModel',
+];
+
+export const coreBlockGridItemUses = [...publicBlockRootUses];
+
+export const collectionActionUses = [
+  'AddNewActionModel',
+  'BulkDeleteActionModel',
+  'ExpandCollapseActionModel',
+  'FilterActionModel',
+  'JSCollectionActionModel',
+  'LinkActionModel',
+  'PopupCollectionActionModel',
+  'RefreshActionModel',
+];
+
+export const recordActionUses = [
+  'AddChildActionModel',
+  'DeleteActionModel',
+  'EditActionModel',
+  'JSRecordActionModel',
+  'LinkActionModel',
+  'PopupCollectionActionModel',
+  'UpdateRecordActionModel',
+  'ViewActionModel',
+];
+
+export const formBlockActionUses = ['FormSubmitActionModel', 'JSFormActionModel'];
+
+export const filterFormActionUses = [
+  'FilterFormSubmitActionModel',
+  'FilterFormResetActionModel',
+  'FilterFormCollapseActionModel',
+  'FilterFormJSActionModel',
+];
+
+export const formGridItemUses = ['FormItemModel', 'FormAssociationItemModel'];
+
+export const detailsGridItemUses = ['DetailsItemModel'];
+
+export const filterFormGridItemUses = ['FilterFormItemModel', 'FilterFormCustomFieldModel'];
+
+export const fieldBindingInitSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    dataSourceKey: { type: 'string' },
+    collectionName: { type: 'string' },
+    fieldPath: { type: 'string' },
+    associationPathName: { type: 'string' },
+  },
+  required: ['dataSourceKey', 'collectionName', 'fieldPath'],
+  additionalProperties: true,
+};
+
+export const filterFieldMetadataSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    title: { type: 'string' },
+    interface: { type: 'string' },
+    type: { type: 'string' },
+  },
+  additionalProperties: true,
+};
+
+export const runtimeFieldModelSlotSchema: FlowSubModelSlotSchema = {
+  type: 'object',
+  dynamic: true,
+  schema: genericModelNodeSchema,
+  description: 'Field renderer model is resolved from runtime field bindings.',
+};
+
+export const showLabelStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    showLabel: { type: 'boolean' },
+  },
+  additionalProperties: false,
+};
+
+export const labelStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    label: { type: 'string' },
+    title: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+export const tooltipStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    tooltip: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+export const descriptionStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    description: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+export const defaultValueStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    defaultValue: {},
+  },
+  additionalProperties: false,
+};
+
+export const tableColumnWidthStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    width: {
+      type: 'number',
+    },
+  },
+  additionalProperties: false,
+};
+
+export const tableColumnEditableStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    editable: { type: 'boolean' },
+  },
+  additionalProperties: false,
+};
+
+export const tableColumnSorterStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    sorter: { type: 'boolean' },
+  },
+  additionalProperties: false,
+};
+
+export const filterFormItemInitStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    filterField: filterFieldMetadataSchema,
+    defaultTargetUid: { type: 'string' },
+  },
+  additionalProperties: true,
+};
+
+export const actionButtonGeneralStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    title: { type: 'string' },
+    tooltip: { type: 'string' },
+    type: {
+      type: 'string',
+      enum: ['default', 'primary', 'dashed', 'link', 'text'],
+    },
+    danger: { type: 'boolean' },
+    icon: { type: 'string' },
+    color: { type: 'string' },
+  },
+  additionalProperties: true,
+};
+
+export const actionButtonSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    buttonSettings: {
+      type: 'object',
+      properties: {
+        general: actionButtonGeneralStepParamsSchema,
+        linkageRules: linkageRuleValueSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export function createActionStepParamsSchema(extraProperties: Record<string, FlowJsonSchema> = {}): FlowJsonSchema {
+  return {
+    type: 'object',
+    properties: {
+      ...(actionButtonSettingsStepParamsSchema.properties || {}),
+      ...extraProperties,
+    },
+    additionalProperties: true,
+  };
+}
+
+export const confirmStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    enable: { type: 'boolean' },
+    title: { type: 'string' },
+    content: { type: 'string' },
+  },
+  additionalProperties: false,
+};
+
+export const popupActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    openView: openViewParamsSchema,
+  },
+  additionalProperties: true,
+};
+
+export const runJsActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    runJs: {
+      type: 'object',
+      properties: {
+        version: { type: 'string' },
+        code: { type: 'string' },
+      },
+      required: ['code'],
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const deleteActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    confirm: confirmStepParamsSchema,
+  },
+  additionalProperties: true,
+};
+
+export const refreshActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    refresh: {
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const expandCollapseActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    expandCollapse: {
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const filterActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    position: {
+      type: 'object',
+      properties: {
+        position: {
+          type: 'string',
+          enum: ['left', 'right'],
+        },
+      },
+      additionalProperties: false,
+    },
+    filterableFieldNames: {
+      type: 'object',
+      properties: {
+        filterableFieldNames: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+        },
+      },
+      additionalProperties: false,
+    },
+    defaultFilter: {
+      type: 'object',
+      properties: {
+        defaultFilter: genericFilterSchema,
+      },
+      additionalProperties: false,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const linkActionSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    editLink: {
+      type: 'object',
+      properties: {
+        url: { type: 'string' },
+        searchParams: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              value: { type: 'string' },
+            },
+            additionalProperties: true,
+          },
+        },
+        openInNewWindow: { type: 'boolean' },
+      },
+      required: ['url'],
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const formSubmitSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    confirm: {
+      type: 'object',
+      properties: {
+        enable: { type: 'boolean' },
+        title: { type: 'string' },
+        content: { type: 'string' },
+      },
+      additionalProperties: true,
+    },
+    saveResource: {
+      type: 'object',
+      additionalProperties: true,
+    },
+    refreshAndClose: {
+      type: 'object',
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const filterFormCollapseSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    toggle: {
+      type: 'object',
+      properties: {
+        collapsedRows: {
+          type: 'number',
+        },
+      },
+      additionalProperties: false,
+    },
+    defaultCollapsed: {
+      type: 'object',
+      properties: {
+        value: { type: 'boolean' },
+      },
+      additionalProperties: false,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const pageTabSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    pageTabSettings: {
+      type: 'object',
+      properties: {
+        tab: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            documentTitle: { type: 'string' },
+            icon: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const detailItemStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    fieldSettings: {
+      type: 'object',
+      properties: {
+        init: fieldBindingInitSchema,
+      },
+      additionalProperties: true,
+    },
+    detailItemSettings: {
+      type: 'object',
+      properties: {
+        showLabel: showLabelStepParamsSchema,
+        label: labelStepParamsSchema,
+        aclCheck: emptyObjectSchema,
+        init: emptyObjectSchema,
+        tooltip: tooltipStepParamsSchema,
+        description: descriptionStepParamsSchema,
+        model: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        fieldNames: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+    paginationChange: {
+      type: 'object',
+      properties: {
+        aclCheckRefresh: aclCheckRefreshParamsSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const formItemStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    fieldSettings: {
+      type: 'object',
+      properties: {
+        init: fieldBindingInitSchema,
+      },
+      additionalProperties: true,
+    },
+    editItemSettings: {
+      type: 'object',
+      properties: {
+        showLabel: showLabelStepParamsSchema,
+        label: labelStepParamsSchema,
+        aclCheck: emptyObjectSchema,
+        init: emptyObjectSchema,
+        tooltip: tooltipStepParamsSchema,
+        description: descriptionStepParamsSchema,
+        initialValue: defaultValueStepParamsSchema,
+        validation: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        required: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        model: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        pattern: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        titleField: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+    paginationChange: {
+      type: 'object',
+      properties: {
+        aclCheckRefresh: aclCheckRefreshParamsSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const assignFormItemStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    fieldSettings: {
+      type: 'object',
+      properties: {
+        init: fieldBindingInitSchema,
+        assignValue: {
+          type: 'object',
+          properties: {
+            value: {},
+          },
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+    editItemSettings: {
+      type: 'object',
+      properties: {
+        showLabel: showLabelStepParamsSchema,
+        label: labelStepParamsSchema,
+        init: emptyObjectSchema,
+        tooltip: tooltipStepParamsSchema,
+        description: descriptionStepParamsSchema,
+        validation: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        required: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const filterFormItemStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    fieldSettings: {
+      type: 'object',
+      properties: {
+        init: fieldBindingInitSchema,
+      },
+      additionalProperties: true,
+    },
+    filterFormItemSettings: {
+      type: 'object',
+      properties: {
+        init: filterFormItemInitStepParamsSchema,
+        label: labelStepParamsSchema,
+        showLabel: showLabelStepParamsSchema,
+        tooltip: tooltipStepParamsSchema,
+        description: descriptionStepParamsSchema,
+        initialValue: defaultValueStepParamsSchema,
+        model: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        connectFields: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        defaultOperator: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        operatorComponentProps: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        customizeFilterRender: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        initField: emptyObjectSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export const tableColumnStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    fieldSettings: {
+      type: 'object',
+      properties: {
+        init: fieldBindingInitSchema,
+      },
+      additionalProperties: true,
+    },
+    tableColumnSettings: {
+      type: 'object',
+      properties: {
+        init: emptyObjectSchema,
+        title: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+          },
+          additionalProperties: false,
+        },
+        tooltip: tooltipStepParamsSchema,
+        width: tableColumnWidthStepParamsSchema,
+        aclCheck: emptyObjectSchema,
+        quickEdit: tableColumnEditableStepParamsSchema,
+        model: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        sorter: tableColumnSorterStepParamsSchema,
+        fixed: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        fieldNames: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export function createFieldBoundStepParamsSchema(
+  bindingFlowKey: string,
+  bindingFlowSchema: FlowJsonSchema,
+  extraProperties: Record<string, FlowJsonSchema> = {},
+): FlowJsonSchema {
+  return {
+    type: 'object',
+    properties: {
+      fieldSettings: {
+        type: 'object',
+        properties: {
+          init: fieldBindingInitSchema,
+          ...(bindingFlowKey === 'fieldSettings' ? extraProperties : {}),
+        },
+        additionalProperties: true,
+      },
+      ...(bindingFlowKey === 'fieldSettings' ? {} : { [bindingFlowKey]: bindingFlowSchema }),
+      ...(bindingFlowKey === 'fieldSettings' ? {} : extraProperties),
+    },
+    additionalProperties: true,
+  };
+}
+
+export function createRuntimeFieldDynamicHint(
+  modelUse: string,
+  path: string,
+  contextRequirements: string[],
+  unresolvedReason: string,
+): FlowDynamicHint {
+  return {
+    kind: 'dynamic-children',
+    path,
+    message: `${modelUse} field renderer depends on runtime field bindings and collection metadata.`,
+    'x-flow': {
+      slotRules: {
+        slotKey: 'field',
+        type: 'object',
+      },
+      contextRequirements,
+      unresolvedReason,
+      recommendedFallback: {
+        uid: 'runtime-field-uid',
+        use: 'RuntimeFieldModel',
+      },
+    },
+  };
+}
 
 export const formBlockBaseStepParamsSchema: FlowJsonSchema = {
   type: 'object',
@@ -192,6 +865,7 @@ export function createFormGridDynamicHints(): FlowDynamicHint[] {
         slotRules: {
           slotKey: 'items',
           type: 'array',
+          allowedUses: formGridItemUses,
         },
         contextRequirements: ['form field tree', 'field model factories'],
         unresolvedReason: 'runtime-form-grid-items',
@@ -206,22 +880,12 @@ export function createFormBlockSubModelSlots(): Record<string, FlowSubModelSlotS
       type: 'object',
       use: 'FormGridModel',
       description: 'Primary form grid container.',
-      childSchemaPatch: {
-        subModelSlots: {
-          items: {
-            type: 'array',
-            dynamic: true,
-            schema: genericModelNodeSchema,
-            description: 'Form grid items are resolved from runtime field model registries.',
-          },
-        },
-        dynamicHints: createFormGridDynamicHints(),
-      },
     },
     actions: {
       type: 'array',
       uses: formBlockActionUses,
-      description: 'Form action groups or action models.',
+      schema: genericModelNodeSchema,
+      description: 'Form actions are resolved from the runtime form action registry.',
     },
   };
 }

@@ -110,6 +110,10 @@ function collectSlotSuggestedUses(slot?: FlowSubModelSlotSchema): string[] | und
   return undefined;
 }
 
+function slotAllowsUnknownUses(slot?: FlowSubModelSlotSchema): boolean {
+  return !!slot?.schema;
+}
+
 export class FlowSchemaService {
   readonly registry = new FlowSchemaRegistry();
   private readonly ajv = new Ajv({
@@ -629,8 +633,9 @@ export class FlowSchemaService {
   }): FlowSchemaContextEdge[] {
     const childUse = String(options?.value?.use || '').trim();
     const allowedUses = collectSlotSuggestedUses(options.slotSchema) || [];
+    const allowUnknownUses = slotAllowsUnknownUses(options.slotSchema);
 
-    if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse)) {
+    if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse) && !allowUnknownUses) {
       options.issues.push({
         level: options.strict ? 'error' : 'warning',
         jsonPointer: `${options.jsonPointer}/use`,

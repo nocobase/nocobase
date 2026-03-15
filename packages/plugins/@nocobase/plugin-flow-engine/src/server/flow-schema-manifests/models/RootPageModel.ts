@@ -40,7 +40,7 @@ export const rootPageModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'RootPageModel',
   title: 'Root page',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: pageSettingsStepParamsSchema,
   subModelSlots: {
     tabs: {

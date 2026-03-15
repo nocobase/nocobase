@@ -9,6 +9,11 @@
 
 import type { FlowJsonSchema, FlowModelSchemaManifest, FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 
+const emptyObjectSchema: FlowJsonSchema = {
+  type: 'object',
+  additionalProperties: false,
+};
+
 const genericFilterSchema: FlowJsonSchema = {
   type: 'object',
   properties: {
@@ -33,6 +38,17 @@ const commentItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'plugin',
   strict: false,
   exposure: 'internal',
+  stepParamsSchema: emptyObjectSchema,
+  skeleton: {
+    uid: 'comment-item-uid',
+    use: 'CommentItemModel',
+  },
+  docs: {
+    minimalExample: {
+      uid: 'comment-item-1',
+      use: 'CommentItemModel',
+    },
+  },
 };
 
 const commentsBlockModelSchemaManifest: FlowModelSchemaManifest = {
@@ -111,6 +127,8 @@ const commentsBlockModelSchemaManifest: FlowModelSchemaManifest = {
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['CommentsBlockModel'],
+    publicTreeRoots: ['CommentsBlockModel'],
+    expectedDescendantModels: ['CommentItemModel'],
   },
   models: [commentItemModelInternalSchemaManifest, commentsBlockModelSchemaManifest],
   defaults: {

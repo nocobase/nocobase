@@ -8,7 +8,7 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema, layoutParamsSchema } from '../shared';
+import { filterFormActionUses, genericModelNodeSchema, layoutParamsSchema } from '../shared';
 
 const filterFormDefaultValuesParamsSchema = {
   type: 'object',
@@ -28,7 +28,7 @@ export const filterFormBlockModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'FilterFormBlockModel',
   title: 'Filter form block',
   source: 'official',
-  strict: false,
+  strict: true,
   stepParamsSchema: {
     type: 'object',
     properties: {
@@ -51,6 +51,7 @@ export const filterFormBlockModelSchemaManifest: FlowModelSchemaManifest = {
     },
     actions: {
       type: 'array',
+      uses: filterFormActionUses,
       dynamic: true,
       schema: genericModelNodeSchema,
       description: 'Filter form actions depend on runtime filter-form action registries.',
@@ -120,6 +121,7 @@ export const filterFormBlockModelSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'actions',
             type: 'array',
+            allowedUses: filterFormActionUses,
           },
           contextRequirements: ['filter form action registry'],
           unresolvedReason: 'runtime-filter-form-actions',

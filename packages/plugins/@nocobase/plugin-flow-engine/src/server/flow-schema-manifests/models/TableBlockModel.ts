@@ -8,18 +8,33 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { dataScopeParamsSchema, sortingRuleParamsSchema } from '../shared';
+import {
+  collectionActionUses,
+  dataScopeParamsSchema,
+  genericModelNodeSchema,
+  sortingRuleParamsSchema,
+  tableColumnUses,
+} from '../shared';
 
 export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
   use: 'TableBlockModel',
   title: 'Table block',
   source: 'official',
-  strict: false,
+  strict: true,
   subModelSlots: {
     columns: {
       type: 'array',
-      uses: ['TableColumnModel', 'TableActionsColumnModel', 'JSColumnModel', 'TableCustomColumnModel'],
+      uses: tableColumnUses,
+      dynamic: true,
+      schema: genericModelNodeSchema,
       description: 'Table columns or action columns.',
+    },
+    actions: {
+      type: 'array',
+      uses: collectionActionUses,
+      dynamic: true,
+      schema: genericModelNodeSchema,
+      description: 'Collection actions depend on runtime action registries and table capabilities.',
     },
   },
   stepParamsSchema: {
@@ -121,6 +136,7 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
     },
     subModels: {
       columns: [],
+      actions: [],
     },
   },
   docs: {
@@ -145,6 +161,7 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
       },
       subModels: {
         columns: [],
+        actions: [],
       },
     },
     commonPatterns: [
@@ -177,10 +194,24 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'columns',
             type: 'array',
-            allowedUses: ['TableColumnModel', 'TableActionsColumnModel', 'JSColumnModel', 'TableCustomColumnModel'],
+            allowedUses: tableColumnUses,
           },
           contextRequirements: ['collection fields', 'column factories'],
           unresolvedReason: 'runtime-table-columns',
+        },
+      },
+      {
+        kind: 'dynamic-children',
+        path: 'TableBlockModel.subModels.actions',
+        message: 'Collection actions depend on runtime action registries and collection capabilities.',
+        'x-flow': {
+          slotRules: {
+            slotKey: 'actions',
+            type: 'array',
+            allowedUses: collectionActionUses,
+          },
+          contextRequirements: ['collection action registry', 'collection capabilities'],
+          unresolvedReason: 'runtime-table-collection-actions',
         },
       },
     ],

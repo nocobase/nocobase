@@ -122,8 +122,20 @@ export interface FlowSchemaRegistrySummary {
   publicOfficialModelsCovered: number;
   publicOfficialStrictModels: number;
   publicOfficialUnresolvedModels: number;
+  publicOfficialDescendantModelsTotal: number;
+  publicOfficialDescendantModelsCovered: number;
+  publicOfficialDescendantStrictModels: number;
+  publicOfficialDescendantUnresolvedModels: number;
   missingModelUses: string[];
   missingActionNames: string[];
+  missingDescendantModelUses: string[];
+  missingDescendantActionNames: string[];
+}
+
+export type FlowSchemaBundleHintMetadata = Omit<FlowDynamicHintMetadata, 'contextRequirements'>;
+
+export interface FlowSchemaBundleHint extends Omit<FlowDynamicHint, 'x-flow'> {
+  'x-flow'?: FlowSchemaBundleHintMetadata;
 }
 
 export interface FlowSchemaBundleItem {
@@ -132,7 +144,7 @@ export interface FlowSchemaBundleItem {
   hash: string;
   source: FlowSchemaCoverage['source'];
   coverage: FlowSchemaCoverage;
-  dynamicHints: FlowDynamicHint[];
+  dynamicHints: FlowSchemaBundleHint[];
   minimalExample?: any;
   skeleton: any;
   commonPatterns: FlowSchemaPattern[];
@@ -141,8 +153,6 @@ export interface FlowSchemaBundleItem {
 }
 
 export interface FlowSchemaBundleDocument {
-  generatedAt: string;
-  summary: FlowSchemaRegistrySummary;
   items: FlowSchemaBundleItem[];
 }
 
@@ -236,6 +246,9 @@ export interface FlowSchemaManifestDefaults {
 export interface FlowSchemaInventoryContribution {
   publicModels?: string[];
   publicActions?: string[];
+  publicTreeRoots?: string[];
+  expectedDescendantModels?: string[];
+  expectedDescendantActions?: string[];
 }
 
 export interface FlowSchemaManifestContribution {
