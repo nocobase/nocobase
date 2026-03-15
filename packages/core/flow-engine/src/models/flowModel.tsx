@@ -43,6 +43,7 @@ import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
+import { globalFlowSchemaRegistry } from '../FlowSchemaRegistry';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 import type { DispatchEventOptions, EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
@@ -362,6 +363,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   public static registerAction<TModel extends FlowModel = FlowModel>(definition: ActionDefinition<TModel>): void {
     this.actionRegistry.registerAction(definition);
+    globalFlowSchemaRegistry.registerAction(definition as ActionDefinition);
   }
 
   /**
@@ -371,6 +373,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     actions: Record<string, ActionDefinition<TModel>>,
   ): void {
     this.actionRegistry.registerActions(actions);
+    globalFlowSchemaRegistry.registerActions(actions as Record<string, ActionDefinition>);
   }
 
   /**
@@ -539,6 +542,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   static define(meta: FlowModelMeta) {
     modelMetas.set(this, meta);
+    globalFlowSchemaRegistry.registerModelClass(this.name, this as unknown as ModelConstructor);
   }
 
   /**

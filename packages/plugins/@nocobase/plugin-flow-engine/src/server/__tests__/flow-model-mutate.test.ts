@@ -8,7 +8,27 @@
  */
 
 import { MockServer, createMockServer } from '@nocobase/test';
+import { FlowModel } from '@nocobase/flow-engine';
 import FlowModelRepository from '../repository';
+
+class MutateSchemaStrictModel extends FlowModel {}
+
+MutateSchemaStrictModel.define({
+  label: 'Mutate schema strict model',
+  schema: {
+    propsSchema: {
+      type: 'object',
+      properties: {
+        title: {
+          type: 'string',
+        },
+      },
+      required: ['title'],
+      additionalProperties: false,
+    },
+    source: 'official',
+  },
+});
 
 describe('flow-model mutate', () => {
   let app: MockServer;
@@ -23,6 +43,11 @@ describe('flow-model mutate', () => {
     app = await createMockServer({
       registerActions: true,
       plugins: ['flow-engine'],
+    });
+    (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
+      models: {
+        MutateSchemaStrictModel,
+      },
     });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     agent = app.agent();
@@ -172,5 +197,60 @@ describe('flow-model mutate', () => {
     expect(m1?.uid).toBe('mut-target3');
     expect(m2?.uid).toBe('mut-target3');
     expect(m1?.subModels?.inner?.uid).toBe(m2?.subModels?.inner?.uid);
+  });
+
+  it('should validate resolved $ref payloads before commit and rollback atomically', async () => {
+    const res = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'seed',
+            type: 'upsert',
+            params: {
+              values: {
+                uid: 'mut-ref-seed',
+                use: 'LooseSourceModel',
+                props: {
+                  title: 123,
+                },
+              },
+            },
+          },
+          {
+            opId: 'strict',
+            type: 'upsert',
+            params: {
+              values: {
+                uid: 'mut-ref-strict',
+                use: 'MutateSchemaStrictModel',
+                props: {
+                  title: '$ref:seed.props.title',
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUid: 'mut-ref-strict',
+          modelUse: 'MutateSchemaStrictModel',
+          section: 'props',
+          expectedType: 'string',
+          schemaHash: expect.any(String),
+        }),
+      ]),
+    );
+
+    const seeded = await repository.findModelById('mut-ref-seed', { includeAsyncNode: true });
+    const strict = await repository.findModelById('mut-ref-strict', { includeAsyncNode: true });
+    expect(seeded).toBeNull();
+    expect(strict).toBeNull();
   });
 });

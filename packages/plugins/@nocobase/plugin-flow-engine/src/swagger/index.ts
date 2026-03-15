@@ -58,11 +58,86 @@ export default {
         },
       },
     },
+    '/flowModels:schema': {
+      get: {
+        tags: ['flowModels'],
+        description:
+          'Get the server-side JSON Schema document for a specific flow model use. Use this discovery endpoint before composing flowModels:save/ensure/mutate payloads.',
+        parameters: [{ name: 'use', in: 'query', required: true, schema: { type: 'string' } }],
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
+              },
+            },
+          },
+          400: {
+            description: 'Bad Request',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+          },
+        },
+      },
+    },
+    '/flowModels:schemas': {
+      post: {
+        tags: ['flowModels'],
+        description:
+          'Batch fetch flow model JSON Schema documents. When uses is empty or omitted, returns the current schema index visible to the server.',
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/FlowModelSchemasRequest' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/flowModels:schemaBundle': {
+      post: {
+        tags: ['flowModels'],
+        description:
+          'Fetch a compact schema bootstrap bundle for LLM prompts. Returns coverage stats, minimal examples, skeletons, common patterns, and key enums.',
+        requestBody: {
+          required: false,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/FlowModelSchemasRequest' },
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'OK',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/FlowModelSchemaBundleDocument' },
+              },
+            },
+          },
+        },
+      },
+    },
     '/flowModels:save': {
       post: {
         tags: ['flowModels'],
         description:
-          'Upsert a flow model tree. By default returns the saved model snapshot; use query param return=uid to get only the root uid string.',
+          'Upsert a flow model tree. Discover model-specific JSON Schema first via flowModels:schema / flowModels:schemas. By default returns the saved model snapshot; use query param return=uid to get only the root uid string.',
         parameters: [
           {
             name: 'return',
@@ -184,7 +259,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Ensure a flow model exists (create if missing). Supports ensure by uid, or ensure an object child model by parentId+subKey+subType=object. Returns the model snapshot (no need for findOne→save).',
+          'Ensure a flow model exists (create if missing). Supports ensure by uid, or ensure an object child model by parentId+subKey+subType=object. Discover model-specific JSON Schema first via flowModels:schema / flowModels:schemas.',
         parameters: [
           {
             name: 'includeAsyncNode',
@@ -251,7 +326,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Run multiple flowModels operations in one HTTP request and one transaction. Supports $ref chaining across ops outputs.',
+          'Run multiple flowModels operations in one HTTP request and one transaction. Supports $ref chaining across ops outputs. Discover model-specific JSON Schema first via flowModels:schema / flowModels:schemas.',
         parameters: [
           {
             name: 'includeAsyncNode',
@@ -333,6 +408,15 @@ export default {
           details: { type: 'object', additionalProperties: true },
           opId: { type: 'string' },
           opIndex: { type: 'number' },
+          jsonPointer: { type: 'string' },
+          modelUid: { type: 'string' },
+          modelUse: { type: 'string' },
+          section: { type: 'string' },
+          keyword: { type: 'string' },
+          expectedType: { oneOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }] },
+          allowedValues: { type: 'array', items: {} },
+          suggestedUses: { type: 'array', items: { type: 'string' } },
+          schemaHash: { type: 'string' },
         },
         additionalProperties: true,
       },
@@ -377,6 +461,155 @@ export default {
             additionalProperties: true,
           },
         ],
+      },
+      FlowDynamicHint: {
+        type: 'object',
+        required: ['kind', 'message'],
+        properties: {
+          kind: { type: 'string' },
+          path: { type: 'string' },
+          message: { type: 'string' },
+          'x-flow': {
+            type: 'object',
+            properties: {
+              slotRules: {
+                type: 'object',
+                properties: {
+                  slotKey: { type: 'string' },
+                  type: { type: 'string', enum: ['object', 'array'] },
+                  allowedUses: { type: 'array', items: { type: 'string' } },
+                },
+                additionalProperties: false,
+              },
+              contextRequirements: { type: 'array', items: { type: 'string' } },
+              unresolvedReason: { type: 'string' },
+              recommendedFallback: {},
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: false,
+      },
+      FlowSchemaPattern: {
+        type: 'object',
+        required: ['title'],
+        properties: {
+          title: { type: 'string' },
+          description: { type: 'string' },
+          snippet: {},
+        },
+        additionalProperties: false,
+      },
+      FlowSchemaCoverage: {
+        type: 'object',
+        required: ['status', 'source'],
+        properties: {
+          status: { type: 'string', enum: ['auto', 'manual', 'mixed', 'unresolved'] },
+          source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
+          strict: { type: 'boolean' },
+          issues: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+      FlowModelSchemasRequest: {
+        type: 'object',
+        properties: {
+          uses: { type: 'array', items: { type: 'string' } },
+        },
+        additionalProperties: false,
+      },
+      FlowSchemaRegistrySummary: {
+        type: 'object',
+        required: [
+          'registeredModels',
+          'registeredActions',
+          'strictModels',
+          'unresolvedModels',
+          'officialModels',
+          'pluginModels',
+          'thirdPartyModels',
+        ],
+        properties: {
+          registeredModels: { type: 'number' },
+          registeredActions: { type: 'number' },
+          strictModels: { type: 'number' },
+          unresolvedModels: { type: 'number' },
+          officialModels: { type: 'number' },
+          pluginModels: { type: 'number' },
+          thirdPartyModels: { type: 'number' },
+        },
+        additionalProperties: false,
+      },
+      FlowModelSchemaDocument: {
+        type: 'object',
+        required: [
+          'use',
+          'jsonSchema',
+          'coverage',
+          'dynamicHints',
+          'examples',
+          'commonPatterns',
+          'antiPatterns',
+          'skeleton',
+          'hash',
+          'source',
+        ],
+        properties: {
+          use: { type: 'string' },
+          title: { type: 'string' },
+          jsonSchema: { type: 'object', additionalProperties: true },
+          coverage: { $ref: '#/components/schemas/FlowSchemaCoverage' },
+          dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowDynamicHint' } },
+          examples: { type: 'array', items: { type: 'object', additionalProperties: true } },
+          minimalExample: {},
+          commonPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
+          antiPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
+          skeleton: {},
+          hash: { type: 'string' },
+          source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
+        },
+        additionalProperties: false,
+      },
+      FlowModelSchemaBundleItem: {
+        type: 'object',
+        required: [
+          'use',
+          'hash',
+          'source',
+          'coverage',
+          'dynamicHints',
+          'commonPatterns',
+          'antiPatterns',
+          'skeleton',
+          'keyEnums',
+        ],
+        properties: {
+          use: { type: 'string' },
+          title: { type: 'string' },
+          hash: { type: 'string' },
+          source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
+          coverage: { $ref: '#/components/schemas/FlowSchemaCoverage' },
+          dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowDynamicHint' } },
+          minimalExample: {},
+          skeleton: {},
+          commonPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
+          antiPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
+          keyEnums: {
+            type: 'object',
+            additionalProperties: { type: 'array', items: {} },
+          },
+        },
+        additionalProperties: false,
+      },
+      FlowModelSchemaBundleDocument: {
+        type: 'object',
+        required: ['generatedAt', 'summary', 'items'],
+        properties: {
+          generatedAt: { type: 'string' },
+          summary: { $ref: '#/components/schemas/FlowSchemaRegistrySummary' },
+          items: { type: 'array', items: { $ref: '#/components/schemas/FlowModelSchemaBundleItem' } },
+        },
+        additionalProperties: false,
       },
       FlowModelsMutateOp: {
         type: 'object',

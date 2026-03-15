@@ -12,6 +12,7 @@ import FlowModelRepository from '../repository';
 
 describe('flow-model ensure', () => {
   let app: MockServer;
+  let agent: any;
   let repository: FlowModelRepository;
 
   afterEach(async () => {
@@ -24,6 +25,7 @@ describe('flow-model ensure', () => {
       plugins: ['flow-engine'],
     });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
+    agent = app.agent();
   });
 
   it('should ensure by uid (create when missing, return when exists)', async () => {
@@ -66,5 +68,26 @@ describe('flow-model ensure', () => {
     const parent = await repository.findModelById('ensure-parent', { includeAsyncNode: true });
     expect(parent.subModels?.page).toBeTruthy();
     expect(parent.subModels.page.uid).toBe(a.uid);
+  });
+
+  it('should allow ensure object child payloads without uid through schema validation', async () => {
+    await repository.insertModel({ uid: 'ensure-api-parent', use: 'ParentModel' } as any);
+
+    const res = await agent.resource('flowModels').ensure({
+      values: {
+        parentId: 'ensure-api-parent',
+        subKey: 'page',
+        subType: 'object',
+        use: 'RootPageModel',
+        async: true,
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.parentId).toBe('ensure-api-parent');
+    expect(res.body?.data?.subKey).toBe('page');
+    expect(res.body?.data?.subType).toBe('object');
+    expect(res.body?.data?.use).toBe('RootPageModel');
+    expect(res.body?.data?.uid).toBeTruthy();
   });
 });

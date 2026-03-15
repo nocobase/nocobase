@@ -16,6 +16,7 @@ import { FlowContext, FlowEngineContext, FlowRuntimeContext } from './flowContex
 import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
+import { globalFlowSchemaRegistry } from './FlowSchemaRegistry';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { Emitter } from './emitter';
 import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
@@ -326,6 +327,10 @@ export class FlowEngine {
     return this._modelRepository;
   }
 
+  get schemaRegistry() {
+    return globalFlowSchemaRegistry;
+  }
+
   /**
    * Internationalization translation method, calls the context's t method.
    * @param {string} keyOrTemplate Translation key or template string
@@ -342,6 +347,7 @@ export class FlowEngine {
    */
   registerActions(actions: Record<string, ActionDefinition>): void {
     this._actionRegistry.registerActions(actions);
+    this.schemaRegistry.registerActions(actions);
   }
 
   /**
@@ -413,6 +419,7 @@ export class FlowEngine {
     for (const [name, modelClass] of Object.entries(models)) {
       this.#registerModel(name, modelClass);
     }
+    this.schemaRegistry.registerModels(models as Record<string, ModelConstructor>);
   }
 
   registerResources(resources: Record<string, any>) {

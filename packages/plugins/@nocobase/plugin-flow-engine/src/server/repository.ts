@@ -12,6 +12,7 @@ import { Repository, Transaction, Transactionable } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 import { default as _, default as lodash } from 'lodash';
 import { createHash } from 'node:crypto';
+import { QueryTypes } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
 
 export interface GetJsonSchemaOptions {
@@ -1706,7 +1707,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     }
 
     const treeTable = this.flowModelTreePathTableName;
-    const existingChildren = await this.database.sequelize.query(
+    const existingChildren = await this.database.sequelize.query<{ uid: string }>(
       `SELECT TreeTable.descendant as uid
        FROM ${treeTable} as TreeTable
                 LEFT JOIN ${treeTable} as NodeInfo
@@ -1717,7 +1718,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
          AND NodeInfo.type = :type
        ORDER BY TreeTable.sort ASC`,
       {
-        type: 'SELECT',
+        type: QueryTypes.SELECT,
         replacements: {
           ancestor: parentIdValue,
           type: subKeyValue,
@@ -1735,7 +1736,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         });
       }
 
-      const childUid = String(existingChildren[0]?.uid || '').trim();
+      const existingChild = existingChildren.at(0);
+      const childUid = String(existingChild?.uid ?? '').trim();
       if (!childUid) {
         throw new FlowModelOperationError({
           status: 500,
@@ -1815,7 +1817,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       if (isUniqueConstraint(error)) {
         const treeTable = this.flowModelTreePathTableName;
-        const existing = await this.database.sequelize.query(
+        const existing = await this.database.sequelize.query<{ uid: string }>(
           `SELECT TreeTable.descendant as uid
            FROM ${treeTable} as TreeTable
                     LEFT JOIN ${treeTable} as NodeInfo
@@ -1826,7 +1828,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
              AND NodeInfo.type = :type
            ORDER BY TreeTable.sort ASC`,
           {
-            type: 'SELECT',
+            type: QueryTypes.SELECT,
             replacements: {
               ancestor: parentIdValue,
               type: subKeyValue,
@@ -1835,7 +1837,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
           },
         );
         if (existing?.length) {
-          const childUid = String(existing[0]?.uid || '').trim();
+          const existingChild = existing.at(0);
+          const childUid = String(existingChild?.uid ?? '').trim();
           if (childUid) {
             return await this.findModelById(childUid, { transaction, includeAsyncNode });
           }

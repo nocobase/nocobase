@@ -14,7 +14,9 @@ import { tval, uid } from '@nocobase/utils';
 import _ from 'lodash';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
+import { FlowSchemaService, type FlowSchemaValidationIssue } from './flow-schema-service';
 import { FlowSchemaModel } from './model';
+import { officialFlowActionSchemaManifests, officialFlowModelSchemaManifests } from './official-flow-schema-manifests';
 import FlowModelRepository, { FlowModelOperationError } from './repository';
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
@@ -42,6 +44,8 @@ function extractFields(obj) {
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
+  protected readonly flowSchemaService = new FlowSchemaService();
+
   registerRepository() {
     this.app.db.registerRepositories({
       FlowModelRepository,
@@ -55,6 +59,8 @@ export class PluginUISchemaStorageServer extends Plugin {
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
+    this.flowSchemaService.registerActionManifests(officialFlowActionSchemaManifests);
+    this.flowSchemaService.registerModelManifests(officialFlowModelSchemaManifests);
 
     this.app.acl.registerSnippet({
       name: 'ui.flowModels',
@@ -131,6 +137,34 @@ export class PluginUISchemaStorageServer extends Plugin {
           ctx.body = duplicated;
           await next();
         },
+        schema: async (ctx, next) => {
+          const { use } = ctx.action.params as any;
+          const modelUse = String(use || '').trim();
+          if (!modelUse) {
+            ctx.throw(400, {
+              code: 'INVALID_PARAMS',
+              message: "flowModels:schema requires non-empty 'use'",
+            });
+          }
+          ctx.body = this.flowSchemaService.getDocument(modelUse);
+          await next();
+        },
+        schemas: async (ctx, next) => {
+          const payload = (ctx.action.params as any)?.values ?? (ctx.action.params as any) ?? {};
+          const uses = Array.isArray(payload?.uses)
+            ? payload.uses.map((item) => String(item || '').trim()).filter(Boolean)
+            : [];
+          ctx.body = this.flowSchemaService.getDocuments(uses);
+          await next();
+        },
+        schemaBundle: async (ctx, next) => {
+          const payload = (ctx.action.params as any)?.values ?? (ctx.action.params as any) ?? {};
+          const uses = Array.isArray(payload?.uses)
+            ? payload.uses.map((item) => String(item || '').trim()).filter(Boolean)
+            : [];
+          ctx.body = this.flowSchemaService.getBundle(uses);
+          await next();
+        },
         attach: async (ctx, next) => {
           const { uid, parentId, subKey, subType, position } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
@@ -154,17 +188,26 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { values } = ctx.action.params;
           const { return: returnType = 'model', includeAsyncNode = false } = ctx.action.params as any;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
-          const uid = await repository.upsertModel(values);
-          if (returnType && returnType !== 'model' && returnType !== 'uid') {
-            ctx.throw(400, {
-              code: 'INVALID_PARAMS',
-              message: `Invalid query param 'return': ${returnType}`,
-            });
-          }
-          if (returnType === 'uid') {
-            ctx.body = uid;
-          } else {
-            ctx.body = await repository.findModelById(uid, { includeAsyncNode });
+          try {
+            this.assertValidFlowModelSchema(values);
+            const uid = await repository.upsertModel(values);
+            if (returnType && returnType !== 'model' && returnType !== 'uid') {
+              ctx.throw(400, {
+                code: 'INVALID_PARAMS',
+                message: `Invalid query param 'return': ${returnType}`,
+              });
+            }
+            if (returnType === 'uid') {
+              ctx.body = uid;
+            } else {
+              ctx.body = await repository.findModelById(uid, { includeAsyncNode });
+            }
+          } catch (error) {
+            if (error instanceof FlowModelOperationError) {
+              this.respondWithFlowModelOperationError(ctx, error);
+              return;
+            }
+            throw error;
           }
           await next();
         },
@@ -173,14 +216,12 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { values } = ctx.action.params as any;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           try {
+            this.assertValidFlowModelSchema(values, { allowRootObjectLocator: true });
             ctx.body = await repository.ensureModel(values, { includeAsyncNode });
           } catch (error) {
             if (error instanceof FlowModelOperationError) {
-              ctx.throw(error.status, {
-                code: error.code,
-                message: error.message,
-                details: error.details,
-              });
+              this.respondWithFlowModelOperationError(ctx, error);
+              return;
             }
             throw error;
           }
@@ -297,6 +338,7 @@ export class PluginUISchemaStorageServer extends Plugin {
                 let output: any;
 
                 if (type === 'ensure') {
+                  this.assertValidFlowModelSchema(params, { allowRootObjectLocator: true });
                   output = await repository.ensureModel(params, { transaction, includeAsyncNode });
                 } else if (type === 'upsert') {
                   const modelValues = params?.values;
@@ -308,6 +350,7 @@ export class PluginUISchemaStorageServer extends Plugin {
                       message: "flowModels:mutate upsert requires 'params.values.uid' for retry-safety",
                     });
                   }
+                  this.assertValidFlowModelSchema(modelValues);
                   await repository.upsertModel(modelValues, { transaction });
                   output = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
                 } else if (type === 'destroy') {
@@ -398,11 +441,8 @@ export class PluginUISchemaStorageServer extends Plugin {
           } catch (error) {
             await transaction.rollback();
             if (error instanceof FlowModelOperationError) {
-              ctx.throw(error.status, {
-                code: error.code,
-                message: error.message,
-                details: error.details,
-              });
+              this.respondWithFlowModelOperationError(ctx, error);
+              return;
             }
             throw error;
           }
@@ -449,6 +489,117 @@ export class PluginUISchemaStorageServer extends Plugin {
       { name: 'flowModels:insertAdjacent', getSourceAndTarget: getSourceAndTargetForInsertAdjacentAction },
       { name: 'flowModels:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
     ]);
+  }
+
+  registerFlowSchemas(options: {
+    models?: Record<string, any>;
+    actions?: Record<string, any>;
+    modelManifests?: any[] | Record<string, any>;
+    actionManifests?: any[] | Record<string, any>;
+  }) {
+    if (options?.models) {
+      this.flowSchemaService.registerModels(options.models);
+    }
+    if (options?.actions) {
+      this.flowSchemaService.registerActions(options.actions);
+    }
+    if (options?.modelManifests) {
+      this.flowSchemaService.registerModelManifests(options.modelManifests);
+    }
+    if (options?.actionManifests) {
+      this.flowSchemaService.registerActionManifests(options.actionManifests);
+    }
+  }
+
+  private assertValidFlowModelSchema(
+    values: any,
+    options: {
+      allowRootObjectLocator?: boolean;
+    } = {},
+  ) {
+    const issues = this.flowSchemaService.validateModelTree(values, options);
+    const errors = issues.filter((item) => item.level === 'error');
+    const warnings = issues.filter((item) => item.level === 'warning');
+
+    if (warnings.length) {
+      warnings.forEach((warning) => {
+        this.app.logger.warn(warning.message, {
+          type: 'flow-model-schema-warning',
+          ...warning,
+        });
+      });
+    }
+
+    if (!errors.length) {
+      return;
+    }
+
+    throw new FlowModelOperationError({
+      status: 400,
+      code: 'INVALID_FLOW_MODEL_SCHEMA',
+      message: 'Flow model payload does not match registered JSON schema.',
+      details: {
+        errors: errors.map((item) => this.toValidationError(item)),
+      },
+    });
+  }
+
+  private toValidationError(issue: FlowSchemaValidationIssue) {
+    return {
+      jsonPointer: issue.jsonPointer,
+      modelUid: issue.modelUid,
+      modelUse: issue.modelUse,
+      section: issue.section,
+      keyword: issue.keyword,
+      message: issue.message,
+      expectedType: issue.expectedType,
+      allowedValues: issue.allowedValues,
+      suggestedUses: issue.suggestedUses,
+      schemaHash: issue.schemaHash,
+    };
+  }
+
+  private respondWithFlowModelOperationError(ctx: any, error: FlowModelOperationError) {
+    const responseError: {
+      message: string;
+      code: string;
+      details?: any;
+      opId?: string;
+      opIndex?: number;
+    } = {
+      message: error.message,
+      code: error.code,
+    };
+
+    if (typeof error.details !== 'undefined') {
+      responseError.details = error.details;
+    }
+
+    const opId =
+      typeof error.details?.opId === 'string'
+        ? error.details.opId
+        : typeof (error as any)?.opId === 'string'
+          ? (error as any).opId
+          : undefined;
+    if (opId) {
+      responseError.opId = opId;
+    }
+
+    const opIndex =
+      typeof error.details?.opIndex === 'number'
+        ? error.details.opIndex
+        : typeof (error as any)?.opIndex === 'number'
+          ? (error as any).opIndex
+          : undefined;
+    if (typeof opIndex === 'number') {
+      responseError.opIndex = opIndex;
+    }
+
+    ctx.status = error.status;
+    ctx.withoutDataWrapping = true;
+    ctx.body = {
+      errors: [responseError],
+    };
   }
 }
 

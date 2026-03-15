@@ -845,30 +845,6 @@ ReferenceBlockModel.registerFlow({
         const templateUid = (params?.templateUid || '').trim();
         const engine = ctx.engine;
 
-        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
-        if (templateUid) {
-          const use = String((duplicated as any)?.use || '');
-          const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
-          if (isSupported) {
-            const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
-            if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
-              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
-              const filterByTk = viewArgs?.filterByTk;
-              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-              const viewDataSourceKey = viewArgs?.dataSourceKey;
-              const hasViewDataSourceKey =
-                viewDataSourceKey !== undefined &&
-                viewDataSourceKey !== null &&
-                String(viewDataSourceKey).trim() !== '';
-              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
-                delete (init as any).filterByTk;
-              }
-            }
-          }
-        }
-
         // 2) 计算父模型与原位置
         const oldModel = ctx.model as FlowModel;
         const parent = oldModel.parent as FlowModel | undefined;
@@ -966,6 +942,30 @@ ReferenceBlockModel.registerFlow({
         }
 
         if (!duplicated) return;
+
+        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
+        if (templateUid) {
+          const use = String((duplicated as any)?.use || '');
+          const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
+          if (isSupported) {
+            const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
+            if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
+              const filterByTk = viewArgs?.filterByTk;
+              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+              const viewDataSourceKey = viewArgs?.dataSourceKey;
+              const hasViewDataSourceKey =
+                viewDataSourceKey !== undefined &&
+                viewDataSourceKey !== null &&
+                String(viewDataSourceKey).trim() !== '';
+              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+                delete (init as any).filterByTk;
+              }
+            }
+          }
+        }
 
         let insertIndex = -1;
         if (subType === 'array') {
