@@ -17,7 +17,6 @@
 
 import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import {
-  FlowModel,
   FlowSchemaRegistry,
   type ActionDefinition,
   type FlowActionSchemaManifest,
@@ -29,7 +28,7 @@ import {
   type FlowSchemaDocument,
   type ModelConstructor,
   type FlowSubModelSlotSchema,
-} from '@nocobase/flow-engine';
+} from '@nocobase/flow-engine/server';
 
 export interface FlowSchemaValidationIssue {
   level: 'error' | 'warning';
@@ -119,10 +118,13 @@ export class FlowSchemaService {
   private readonly validatorCache = new Map<string, ValidateFunction>();
 
   constructor() {
-    this.registry.registerModels({ FlowModel });
     this.registry.registerModel('FlowModel', {
-      modelClass: FlowModel,
       title: 'FlowModel',
+      coverage: {
+        status: 'manual',
+        source: 'official',
+        strict: false,
+      },
       exposure: 'internal',
       allowDirectUse: false,
     });
