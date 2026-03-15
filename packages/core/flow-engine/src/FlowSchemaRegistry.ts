@@ -25,6 +25,7 @@ import type {
   FlowDescendantSchemaPatch,
   FlowSchemaDocs,
   FlowDynamicHint,
+  FlowSchemaInventoryContribution,
   FlowJsonSchema,
   FlowModelSchemaPatch,
   FlowModelSchemaManifest,
@@ -684,6 +685,8 @@ export class FlowSchemaRegistry {
   private readonly modelSchemas = new Map<string, RegisteredModelSchema>();
   private readonly actionSchemas = new Map<string, RegisteredActionSchema>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
+  private readonly publicModelInventory = new Map<string, FlowSchemaCoverage['source']>();
+  private readonly publicActionInventory = new Map<string, FlowSchemaCoverage['source']>();
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
     const name = String(action?.name || '').trim();
@@ -888,6 +891,20 @@ export class FlowSchemaRegistry {
     }
   }
 
+  registerInventory(inventory: FlowSchemaInventoryContribution | undefined, source: FlowSchemaCoverage['source']) {
+    if (!inventory) {
+      return;
+    }
+
+    for (const use of normalizeStringArray(inventory.publicModels)) {
+      this.publicModelInventory.set(use, source);
+    }
+
+    for (const name of normalizeStringArray(inventory.publicActions)) {
+      this.publicActionInventory.set(name, source);
+    }
+  }
+
   getAction(name: string): RegisteredActionSchema | undefined {
     return this.actionSchemas.get(name);
   }
@@ -981,6 +998,37 @@ export class FlowSchemaRegistry {
   getCoverageSummary(options: { publicOnly?: boolean } = {}): FlowSchemaRegistrySummary {
     const { publicOnly = false } = options;
     const models = Array.from(this.modelSchemas.values()).filter((model) => !publicOnly || this.isPublicModel(model));
+    const inventoryModelEntries = Array.from(this.publicModelInventory.entries()).filter(([, source]) =>
+      this.isOfficialInventorySource(source),
+    );
+    const inventoryActionEntries = Array.from(this.publicActionInventory.entries()).filter(([, source]) =>
+      this.isOfficialInventorySource(source),
+    );
+    const missingModelUses: string[] = [];
+    const unresolvedModelUses: string[] = [];
+    const coveredInventoryModels: RegisteredModelSchema[] = [];
+
+    for (const [use] of inventoryModelEntries) {
+      const model = this.modelSchemas.get(use);
+      if (!model || !this.isPublicModel(model) || model.allowDirectUse === false) {
+        missingModelUses.push(use);
+        continue;
+      }
+      if (model.coverage.status === 'unresolved') {
+        unresolvedModelUses.push(use);
+        continue;
+      }
+      coveredInventoryModels.push(model);
+    }
+
+    const missingActionNames = inventoryActionEntries
+      .map(([name]) => name)
+      .filter((name) => {
+        const action = this.actionSchemas.get(name);
+        return !action || action.coverage.status === 'unresolved';
+      })
+      .sort();
+
     return {
       registeredModels: models.length,
       registeredActions: this.actionSchemas.size,
@@ -989,6 +1037,12 @@ export class FlowSchemaRegistry {
       officialModels: models.filter((item) => item.coverage.source === 'official').length,
       pluginModels: models.filter((item) => item.coverage.source === 'plugin').length,
       thirdPartyModels: models.filter((item) => item.coverage.source === 'third-party').length,
+      publicOfficialModelsTotal: inventoryModelEntries.length,
+      publicOfficialModelsCovered: coveredInventoryModels.length,
+      publicOfficialStrictModels: coveredInventoryModels.filter((item) => item.coverage.strict).length,
+      publicOfficialUnresolvedModels: unresolvedModelUses.length,
+      missingModelUses: missingModelUses.sort(),
+      missingActionNames,
     };
   }
 
@@ -1019,6 +1073,10 @@ export class FlowSchemaRegistry {
 
   getModelDocument(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowSchemaDocument {
     return this.buildModelDocument(use, contextChain, new Set<string>());
+  }
+
+  private isOfficialInventorySource(source: FlowSchemaCoverage['source']) {
+    return source === 'official' || source === 'plugin';
   }
 
   private buildModelDocument(
@@ -1400,6 +1458,9 @@ export class FlowSchemaRegistry {
         status: 'unresolved',
         source: 'third-party',
       },
+      exposure: 'internal',
+      allowDirectUse: true,
+      suggestedUses: [],
     };
 
     const directPatch = this.resolveChildSchemaPatch(slot, '');

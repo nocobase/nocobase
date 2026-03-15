@@ -21,6 +21,7 @@ import {
   FlowSchemaRegistry,
   type ActionDefinition,
   type FlowActionSchemaManifest,
+  type FlowSchemaInventoryContribution,
   type FlowModelSchemaManifest,
   type FlowSchemaBundleDocument,
   type FlowSchemaContextEdge,
@@ -141,6 +142,13 @@ export class FlowSchemaService {
 
   registerModelManifests(manifests: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>) {
     this.registry.registerModelManifests(manifests);
+  }
+
+  registerInventory(
+    inventory: FlowSchemaInventoryContribution | undefined,
+    source: 'official' | 'plugin' | 'third-party',
+  ) {
+    this.registry.registerInventory(inventory, source);
   }
 
   getDocument(use: string): FlowSchemaDocument | undefined {
@@ -768,7 +776,8 @@ export class FlowSchemaService {
     base: Omit<FlowSchemaValidationIssue, 'keyword' | 'message'>,
   ) {
     for (const error of errors || []) {
-      const errorPath = (error as ErrorObject & { instancePath?: string }).instancePath || error.dataPath || '';
+      const legacyDataPath = (error as ErrorObject & { dataPath?: string }).dataPath;
+      const errorPath = error.instancePath || legacyDataPath || '';
       const params = (error.params || {}) as Record<string, any>;
       issues.push({
         ...base,

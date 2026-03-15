@@ -10,6 +10,7 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import type {
   FlowActionSchemaManifest,
+  FlowSchemaInventoryContribution,
   FlowModelSchemaManifest,
   FlowSchemaManifestContribution,
   FlowSchemaManifestProvider,
@@ -111,6 +112,30 @@ function normalizeModelManifests(
       source: manifest.source ?? defaults.source,
       strict: manifest.strict ?? defaults.strict,
     }));
+}
+
+function normalizeInventoryContribution(
+  inventory: FlowSchemaManifestContribution['inventory'],
+): FlowSchemaInventoryContribution | undefined {
+  if (!inventory) {
+    return undefined;
+  }
+
+  const publicModels = Array.isArray(inventory.publicModels)
+    ? inventory.publicModels.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+  const publicActions = Array.isArray(inventory.publicActions)
+    ? inventory.publicActions.map((item) => String(item || '').trim()).filter(Boolean)
+    : [];
+
+  if (!publicModels.length && !publicActions.length) {
+    return undefined;
+  }
+
+  return {
+    ...(publicModels.length ? { publicModels: _.uniq(publicModels) } : {}),
+    ...(publicActions.length ? { publicActions: _.uniq(publicActions) } : {}),
+  };
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
@@ -553,12 +578,16 @@ export class PluginUISchemaStorageServer extends Plugin {
       };
       const actionManifests = normalizeActionManifests(contribution.actions, defaults);
       const modelManifests = normalizeModelManifests(contribution.models, defaults);
+      const inventory = normalizeInventoryContribution(contribution.inventory);
 
       if (actionManifests.length > 0) {
         this.flowSchemaService.registerActionManifests(actionManifests);
       }
       if (modelManifests.length > 0) {
         this.flowSchemaService.registerModelManifests(modelManifests);
+      }
+      if (inventory) {
+        this.flowSchemaService.registerInventory(inventory, defaults.source);
       }
     }
   }
@@ -597,6 +626,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     actions?: Record<string, any>;
     modelManifests?: any[] | Record<string, any>;
     actionManifests?: any[] | Record<string, any>;
+    inventory?: FlowSchemaInventoryContribution;
   }) {
     if (options?.models) {
       this.flowSchemaService.registerModels(options.models);
@@ -609,6 +639,9 @@ export class PluginUISchemaStorageServer extends Plugin {
     }
     if (options?.actionManifests) {
       this.flowSchemaService.registerActionManifests(options.actionManifests);
+    }
+    if (options?.inventory) {
+      this.flowSchemaService.registerInventory(options.inventory, 'third-party');
     }
   }
 

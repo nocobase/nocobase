@@ -279,6 +279,9 @@ describe('flow-model save', () => {
     expect(bundle.status).toBe(200);
     expect(bundle.body?.data?.summary?.registeredModels).toBeGreaterThanOrEqual(2);
     expect(bundle.body?.data?.summary?.registeredActions).toBeGreaterThanOrEqual(1);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(10);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(10);
+    expect(bundle.body?.data?.summary?.missingModelUses).toEqual([]);
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -326,6 +329,39 @@ describe('flow-model save', () => {
       expect.arrayContaining(['CreateFormModel', 'EditFormModel']),
     );
     expect((formBundle.body?.data?.items || []).map((item) => item.use)).not.toContain('FormBlockModel');
+
+    const details = await agent.get('/flowModels:schema').query({
+      use: 'DetailsBlockModel',
+    });
+    expect(details.status).toBe(200);
+    expect(details.body?.data?.minimalExample).toMatchObject({
+      use: 'DetailsBlockModel',
+    });
+
+    const filterForm = await agent.get('/flowModels:schema').query({
+      use: 'FilterFormBlockModel',
+    });
+    expect(filterForm.status).toBe(200);
+    expect(filterForm.body?.data?.minimalExample).toMatchObject({
+      use: 'FilterFormBlockModel',
+    });
+
+    const rootPage = await agent.get('/flowModels:schema').query({
+      use: 'RootPageModel',
+    });
+    expect(rootPage.status).toBe(200);
+    expect(rootPage.body?.data?.minimalExample).toMatchObject({
+      use: 'RootPageModel',
+    });
+
+    const updateRecord = await agent.get('/flowModels:schema').query({
+      use: 'UpdateRecordActionModel',
+    });
+    expect(updateRecord.status).toBe(200);
+    expect(updateRecord.body?.data?.minimalExample).toMatchObject({
+      use: 'UpdateRecordActionModel',
+    });
+    expect(updateRecord.body?.data?.jsonSchema?.properties?.subModels?.properties?.assignForm).toBeDefined();
   });
 
   it('should hide internal base models from discovery and reject direct use', async () => {

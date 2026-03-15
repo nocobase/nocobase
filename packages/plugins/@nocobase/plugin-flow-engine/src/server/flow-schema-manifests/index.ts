@@ -14,9 +14,30 @@ import { flowSchemaModelManifests } from './models';
 export * from './actions';
 export * from './models';
 
+const publicFlowModelUses = [
+  'ActionModel',
+  'CreateFormModel',
+  'DetailsBlockModel',
+  'EditFormModel',
+  'FilterFormBlockModel',
+  'PageModel',
+  'RootPageModel',
+  'RouteModel',
+  'TableBlockModel',
+  'UpdateRecordActionModel',
+];
+
+const publicFlowActionNames = Array.from(
+  new Set([...flowSchemaActionManifests.map((manifest) => manifest.name)]),
+).sort();
+
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   actions: flowSchemaActionManifests,
   models: flowSchemaModelManifests,
+  inventory: {
+    publicModels: publicFlowModelUses,
+    publicActions: publicFlowActionNames,
+  },
   defaults: {
     source: 'official',
   },

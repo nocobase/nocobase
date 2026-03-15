@@ -10,6 +10,17 @@
 import { type FlowSchemaManifestContribution, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { MockServer, createMockServer } from '@nocobase/test';
+import { PluginActionBulkEditServer } from '../../../../plugin-action-bulk-edit/src/server/plugin';
+import { PluginActionBulkUpdateServer } from '../../../../plugin-action-bulk-update/src/server/plugin';
+import { PluginActionDuplicateServer } from '../../../../plugin-action-duplicate/src/server/plugin';
+import { PluginActionExportServer } from '../../../../plugin-action-export/src/server';
+import { flowSchemaManifestContribution as actionExportFlowSchemaManifestContribution } from '../../../../plugin-action-export/src/server/flow-schema-manifests';
+import { PluginActionImportServer } from '../../../../plugin-action-import/src/server';
+import { flowSchemaManifestContribution as actionImportFlowSchemaManifestContribution } from '../../../../plugin-action-import/src/server/flow-schema-manifests';
+import { PluginBlockIframeServer } from '../../../../plugin-block-iframe/src/server/plugin';
+import { PluginBlockMarkdownServer } from '../../../../plugin-block-markdown/src/server/plugin';
+import { flowSchemaManifestContribution as dataVisualizationFlowSchemaManifestContribution } from '../../../../plugin-data-visualization/src/server/flow-schema-manifests';
+import { PluginDataVisualizationServer } from '../../../../plugin-data-visualization/src/server/plugin';
 
 class ProviderActionHostModel extends FlowModel {}
 
@@ -38,6 +49,10 @@ class RecordManifestPlugin extends Plugin {
     return {
       defaults: {
         strict: true,
+      },
+      inventory: {
+        publicModels: ['ProviderManifestModel', 'ProviderMissingModel'],
+        publicActions: ['providerRecordAction', 'providerMissingAction'],
       },
       actions: {
         providerRecordAction: {
@@ -105,6 +120,10 @@ class ArrayManifestPlugin extends Plugin {
       defaults: {
         source: 'plugin',
         strict: false,
+      },
+      inventory: {
+        publicModels: ['ProviderArrayModel', 'ProviderPluginMissingModel'],
+        publicActions: ['providerArrayAction', 'providerPluginMissingAction'],
       },
       actions: [
         {
@@ -280,7 +299,10 @@ describe('flow schema manifest provider', () => {
   });
 
   afterEach(async () => {
-    await app.destroy();
+    if (app) {
+      await app.destroy();
+      app = null as any;
+    }
   });
 
   it('should collect plugin provider manifests and apply defaults', async () => {
@@ -397,6 +419,8 @@ describe('flow schema manifest provider', () => {
     });
 
     expect(bundle.status).toBe(200);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(1);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(1);
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -406,6 +430,18 @@ describe('flow schema manifest provider', () => {
         }),
       ]),
     );
+  });
+
+  it('should expose inventory-driven coverage summary for plugin contributions', async () => {
+    const bundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: ['ProviderManifestModel', 'ProviderArrayModel'],
+    });
+
+    expect(bundle.status).toBe(200);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(1);
+    expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(1);
+    expect(bundle.body?.data?.summary?.missingModelUses).toContain('ProviderPluginMissingModel');
+    expect(bundle.body?.data?.summary?.missingActionNames).toContain('providerPluginMissingAction');
   });
 
   it('should preserve existing merge semantics across plugin providers', async () => {
@@ -450,5 +486,60 @@ describe('flow schema manifest provider', () => {
 
     expect(uses).toContain('ProviderManifestModel');
     expect(uses).not.toContain('DisabledProviderModel');
+  });
+
+  it('should collect manifests from official plugin providers', async () => {
+    await app.destroy();
+    app = null as any;
+
+    const officialApp = await createMockServer({
+      registerActions: true,
+      plugins: [
+        'flow-engine',
+        PluginActionBulkUpdateServer,
+        PluginActionBulkEditServer,
+        PluginActionDuplicateServer,
+        PluginBlockMarkdownServer,
+        PluginBlockIframeServer,
+      ],
+    });
+
+    try {
+      const officialAgent = officialApp.agent();
+
+      const bundle = await officialAgent.post('/flowModels:schemaBundle').send({
+        uses: [
+          'BulkUpdateActionModel',
+          'BulkEditActionModel',
+          'DuplicateActionModel',
+          'MarkdownBlockModel',
+          'IframeBlockModel',
+        ],
+      });
+
+      expect(bundle.status).toBe(200);
+      expect(bundle.body?.data?.summary?.publicOfficialModelsTotal).toBeGreaterThanOrEqual(15);
+      expect(bundle.body?.data?.summary?.publicOfficialModelsCovered).toBeGreaterThanOrEqual(15);
+      expect(bundle.body?.data?.items).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ use: 'BulkUpdateActionModel', source: 'plugin' }),
+          expect.objectContaining({ use: 'BulkEditActionModel', source: 'plugin' }),
+          expect.objectContaining({ use: 'DuplicateActionModel', source: 'plugin' }),
+          expect.objectContaining({ use: 'MarkdownBlockModel', source: 'plugin' }),
+          expect.objectContaining({ use: 'IframeBlockModel', source: 'plugin' }),
+        ]),
+      );
+    } finally {
+      await officialApp.destroy();
+    }
+  });
+
+  it('should expose manifest bundles for additional official plugin packages', () => {
+    expect(actionExportFlowSchemaManifestContribution.inventory?.publicModels).toContain('ExportActionModel');
+    expect(actionImportFlowSchemaManifestContribution.inventory?.publicModels).toContain('ImportActionModel');
+    expect(dataVisualizationFlowSchemaManifestContribution.inventory?.publicModels).toContain('ChartBlockModel');
+    expect(typeof PluginActionExportServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginActionImportServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginDataVisualizationServer.prototype.getFlowSchemaManifests).toBe('function');
   });
 });

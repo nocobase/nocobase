@@ -7,12 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 import { LoggerOptions, Logger } from '@nocobase/logger';
+import { flowSchemaManifestContribution } from './flow-schema-manifests';
 
 export class PluginActionExportServer extends Plugin {
   logger: Logger;
+
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return flowSchemaManifestContribution;
+  }
+
   beforeLoad() {
     this.app.on('afterInstall', async () => {
       if (!this.app.db.getRepository('roles')) {

@@ -292,6 +292,14 @@ describe('FlowSchemaRegistry', () => {
   it('should build bundle-friendly documents from pure data manifests', () => {
     const registry = new FlowSchemaRegistry();
 
+    registry.registerInventory(
+      {
+        publicModels: ['SchemaRegistryManifestModel', 'SchemaRegistryMissingModel'],
+        publicActions: ['schemaRegistryManifestAction', 'schemaRegistryMissingAction'],
+      },
+      'official',
+    );
+
     registry.registerActionManifest({
       name: 'schemaRegistryManifestAction',
       title: 'Manifest action',
@@ -429,6 +437,12 @@ describe('FlowSchemaRegistry', () => {
     );
     expect(bundle.summary.registeredModels).toBe(1);
     expect(bundle.summary.registeredActions).toBe(1);
+    expect(bundle.summary.publicOfficialModelsTotal).toBe(2);
+    expect(bundle.summary.publicOfficialModelsCovered).toBe(1);
+    expect(bundle.summary.publicOfficialStrictModels).toBe(0);
+    expect(bundle.summary.publicOfficialUnresolvedModels).toBe(0);
+    expect(bundle.summary.missingModelUses).toEqual(['SchemaRegistryMissingModel']);
+    expect(bundle.summary.missingActionNames).toEqual(['schemaRegistryMissingAction']);
     expect(bundle.items[0]).toMatchObject({
       use: 'SchemaRegistryManifestModel',
       dynamicHints: expect.arrayContaining([
@@ -474,6 +488,7 @@ describe('FlowSchemaRegistry', () => {
     expect(registry.getSuggestedUses('SchemaRegistryInternalBaseModel')).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.listModelUses({ publicOnly: true })).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.getSchemaBundle().summary.registeredModels).toBe(1);
+    expect(registry.getSchemaBundle().summary.publicOfficialModelsTotal).toBe(0);
     expect(registry.getSchemaBundle().items.map((item) => item.use)).toEqual(['SchemaRegistryPublicModel']);
   });
 

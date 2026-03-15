@@ -11,8 +11,11 @@ import type { FlowActionSchemaManifest } from '@nocobase/flow-engine';
 import { aclCheckSchemaManifest } from './aclCheck';
 import { aclCheckRefreshSchemaManifest } from './aclCheckRefresh';
 import { actionLinkageRulesSchemaManifest } from './actionLinkageRules';
+import { confirmSchemaManifest } from './confirm';
 import { dataScopeSchemaManifest } from './dataScope';
+import { detailsFieldLinkageRulesSchemaManifest } from './detailsFieldLinkageRules';
 import { fieldLinkageRulesSchemaManifest } from './fieldLinkageRules';
+import { filterFormDefaultValuesSchemaManifest } from './filterFormDefaultValues';
 import { formAssignRulesSchemaManifest } from './formAssignRules';
 import { layoutSchemaManifest } from './layout';
 import { linkageRulesRefreshSchemaManifest } from './linkageRulesRefresh';
@@ -23,8 +26,11 @@ export {
   aclCheckSchemaManifest,
   aclCheckRefreshSchemaManifest,
   actionLinkageRulesSchemaManifest,
+  confirmSchemaManifest,
   dataScopeSchemaManifest,
+  detailsFieldLinkageRulesSchemaManifest,
   fieldLinkageRulesSchemaManifest,
+  filterFormDefaultValuesSchemaManifest,
   formAssignRulesSchemaManifest,
   layoutSchemaManifest,
   linkageRulesRefreshSchemaManifest,
@@ -39,8 +45,11 @@ export const flowSchemaActionManifests: FlowActionSchemaManifest[] = [
   formAssignRulesSchemaManifest,
   fieldLinkageRulesSchemaManifest,
   actionLinkageRulesSchemaManifest,
+  detailsFieldLinkageRulesSchemaManifest,
   aclCheckSchemaManifest,
   aclCheckRefreshSchemaManifest,
   linkageRulesRefreshSchemaManifest,
   openViewSchemaManifest,
+  confirmSchemaManifest,
+  filterFormDefaultValuesSchemaManifest,
 ];

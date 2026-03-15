@@ -118,6 +118,12 @@ export interface FlowSchemaRegistrySummary {
   officialModels: number;
   pluginModels: number;
   thirdPartyModels: number;
+  publicOfficialModelsTotal: number;
+  publicOfficialModelsCovered: number;
+  publicOfficialStrictModels: number;
+  publicOfficialUnresolvedModels: number;
+  missingModelUses: string[];
+  missingActionNames: string[];
 }
 
 export interface FlowSchemaBundleItem {
@@ -227,9 +233,15 @@ export interface FlowSchemaManifestDefaults {
   strict?: boolean;
 }
 
+export interface FlowSchemaInventoryContribution {
+  publicModels?: string[];
+  publicActions?: string[];
+}
+
 export interface FlowSchemaManifestContribution {
   models?: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>;
   actions?: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>;
+  inventory?: FlowSchemaInventoryContribution;
   defaults?: FlowSchemaManifestDefaults;
 }
 

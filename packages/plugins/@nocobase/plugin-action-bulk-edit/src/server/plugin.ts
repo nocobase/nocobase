@@ -7,8 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
+import { flowSchemaManifestContribution } from './flow-schema-manifests';
 
-export class PluginActionBulkEditServer extends Plugin {}
+export class PluginActionBulkEditServer extends Plugin {
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return flowSchemaManifestContribution;
+  }
+}
 
 export default PluginActionBulkEditServer;

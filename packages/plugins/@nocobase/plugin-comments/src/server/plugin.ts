@@ -16,10 +16,16 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
+import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
+import { flowSchemaManifestContribution } from './flow-schema-manifests';
 
 export class PluginCommentServer extends Plugin {
   async afterAdd() {}
+
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return flowSchemaManifestContribution;
+  }
 
   async beforeLoad() {}
 
