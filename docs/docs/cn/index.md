@@ -28,6 +28,9 @@ features:
       - title: 安装与升级插件
         details: 了解如何添加、管理和更新插件，扩展系统能力。
         link: /get-started/install-upgrade-plugins
+      - title: 教程
+        details: 从零开始，跟着教程一步步搭建真实项目。
+        link: /tutorials/v2/
 
   - title: 进阶
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。

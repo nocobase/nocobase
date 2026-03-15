@@ -1,0 +1,10 @@
+[
+  {"type":"file","name":"index","label":"Tutorial Overview"},
+  {"type":"file","name":"01-getting-started","label":"Chapter 1: Getting Started — Build a Working System in 5 Minutes"},
+  {"type":"file","name":"02-data-modeling","label":"Chapter 2: Data Modeling — Two Tables for a Complete Ticket System"},
+  {"type":"file","name":"03-building-pages","label":"Chapter 3: Building Pages — From Blank to Functional"},
+  {"type":"file","name":"04-forms-and-details","label":"Chapter 4: Forms & Details — Input, Display, All in One"},
+  {"type":"file","name":"05-roles-and-permissions","label":"Chapter 5: Users & Permissions — Who Sees What"},
+  {"type":"file","name":"06-workflows","label":"Chapter 6: Workflows — Let the System Do the Work"},
+  {"type":"file","name":"07-dashboard","label":"Chapter 7: Dashboard — The Big Picture at a Glance"}
+]

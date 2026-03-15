@@ -1,0 +1,10 @@
+[
+  {"type":"file","name":"index","label":"教程简介"},
+  {"type":"file","name":"01-getting-started","label":"第 1 章：认识 NocoBase — 5 分钟跑起来"},
+  {"type":"file","name":"02-data-modeling","label":"第 2 章：数据建模 — 两张表搞定工单系统"},
+  {"type":"file","name":"03-building-pages","label":"第 3 章：搭建页面 — 从空白到可用"},
+  {"type":"file","name":"04-forms-and-details","label":"第 4 章：表单与详情 — 录入、展示、一步到位"},
+  {"type":"file","name":"05-roles-and-permissions","label":"第 5 章：用户与权限 — 谁能看什么"},
+  {"type":"file","name":"06-workflows","label":"第 6 章：工作流 — 让系统自动干活"},
+  {"type":"file","name":"07-dashboard","label":"第 7 章：仪表盘 — 一眼看全局"}
+]

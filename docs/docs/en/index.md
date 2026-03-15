@@ -27,6 +27,9 @@ features:
       - title: Install & Upgrade Plugins
         details: Learn how to add, manage and update plugins to extend system capabilities.
         link: /get-started/install-upgrade-plugins
+      - title: Tutorials
+        details: Step-by-step tutorials to build real projects with NocoBase from scratch.
+        link: /tutorials/v2/
 
   - title: Advanced
     details: Deep dive into NocoBase core concepts and master configuration and development capabilities.
