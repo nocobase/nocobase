@@ -448,19 +448,11 @@ describe('FlowSchemaRegistry', () => {
     expect(bundle).not.toHaveProperty('summary');
     expect(bundle.items[0]).toMatchObject({
       use: 'SchemaRegistryManifestModel',
-      dynamicHints: expect.arrayContaining([
-        expect.objectContaining({
-          path: 'SchemaRegistryManifestModel.subModels.body',
-          'x-flow': expect.objectContaining({
-            slotRules: expect.objectContaining({
-              allowedUses: ['SchemaRegistryChildModel'],
-            }),
-          }),
-        }),
-      ]),
+      skeleton: expect.objectContaining({
+        use: 'SchemaRegistryManifestModel',
+      }),
     });
-    expect(JSON.stringify(bundle)).not.toContain('contextRequirements');
-    expect(bundle.items[0]?.keyEnums?.['#/properties/use']).toEqual(['SchemaRegistryManifestModel']);
+    expect(Object.keys(bundle.items[0] || {}).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
   });
 
   it('should filter internal models from public discovery helpers', () => {

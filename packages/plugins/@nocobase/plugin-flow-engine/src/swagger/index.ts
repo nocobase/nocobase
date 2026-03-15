@@ -116,7 +116,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Fetch a compact schema bootstrap bundle for LLM prompts. Returns coverage stats, minimal examples, skeletons, common patterns, and key enums.',
+          'Fetch a lightweight model directory and minimal skeleton bundle for LLM prompts. For full schema details and validation rules, use flowModels:schema or flowModels:schemas.',
         requestBody: {
           required: false,
           content: {
@@ -492,33 +492,6 @@ export default {
         },
         additionalProperties: false,
       },
-      FlowSchemaBundleHint: {
-        type: 'object',
-        required: ['kind', 'message'],
-        properties: {
-          kind: { type: 'string' },
-          path: { type: 'string' },
-          message: { type: 'string' },
-          'x-flow': {
-            type: 'object',
-            properties: {
-              slotRules: {
-                type: 'object',
-                properties: {
-                  slotKey: { type: 'string' },
-                  type: { type: 'string', enum: ['object', 'array'] },
-                  allowedUses: { type: 'array', items: { type: 'string' } },
-                },
-                additionalProperties: false,
-              },
-              unresolvedReason: { type: 'string' },
-              recommendedFallback: {},
-            },
-            additionalProperties: false,
-          },
-        },
-        additionalProperties: false,
-      },
       FlowSchemaPattern: {
         type: 'object',
         required: ['title'],
@@ -613,32 +586,11 @@ export default {
       },
       FlowModelSchemaBundleItem: {
         type: 'object',
-        required: [
-          'use',
-          'hash',
-          'source',
-          'coverage',
-          'dynamicHints',
-          'commonPatterns',
-          'antiPatterns',
-          'skeleton',
-          'keyEnums',
-        ],
+        required: ['use', 'skeleton'],
         properties: {
           use: { type: 'string' },
           title: { type: 'string' },
-          hash: { type: 'string' },
-          source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
-          coverage: { $ref: '#/components/schemas/FlowSchemaCoverage' },
-          dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaBundleHint' } },
-          minimalExample: {},
           skeleton: {},
-          commonPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
-          antiPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
-          keyEnums: {
-            type: 'object',
-            additionalProperties: { type: 'array', items: {} },
-          },
         },
         additionalProperties: false,
       },

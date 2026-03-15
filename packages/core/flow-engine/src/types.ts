@@ -132,24 +132,10 @@ export interface FlowSchemaRegistrySummary {
   missingDescendantActionNames: string[];
 }
 
-export type FlowSchemaBundleHintMetadata = Omit<FlowDynamicHintMetadata, 'contextRequirements'>;
-
-export interface FlowSchemaBundleHint extends Omit<FlowDynamicHint, 'x-flow'> {
-  'x-flow'?: FlowSchemaBundleHintMetadata;
-}
-
 export interface FlowSchemaBundleItem {
   use: string;
   title?: string;
-  hash: string;
-  source: FlowSchemaCoverage['source'];
-  coverage: FlowSchemaCoverage;
-  dynamicHints: FlowSchemaBundleHint[];
-  minimalExample?: any;
   skeleton: any;
-  commonPatterns: FlowSchemaPattern[];
-  antiPatterns: FlowSchemaPattern[];
-  keyEnums: Record<string, any[]>;
 }
 
 export interface FlowSchemaBundleDocument {

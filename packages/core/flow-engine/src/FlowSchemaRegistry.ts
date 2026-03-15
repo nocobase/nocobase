@@ -21,7 +21,6 @@ import type {
   ActionDefinition,
   FlowActionSchemaManifest,
   FlowSchemaBundleDocument,
-  FlowSchemaBundleHint,
   FlowSchemaContextEdge,
   FlowDescendantSchemaPatch,
   FlowSchemaDocs,
@@ -180,40 +179,6 @@ function normalizeSchemaHints(hints?: FlowDynamicHint[]): FlowDynamicHint[] {
   return Array.isArray(hints)
     ? _.uniqBy(
         hints.map((item) => normalizeFlowHint(item)),
-        (item) => `${item.kind}:${item.path || ''}:${item.message}`,
-      )
-    : [];
-}
-
-function normalizeBundleHint(hint: FlowDynamicHint): FlowSchemaBundleHint {
-  const normalizedHint = normalizeFlowHint(hint);
-  const bundleHint: FlowSchemaBundleHint = {
-    kind: normalizedHint.kind,
-    path: normalizedHint.path,
-    message: normalizedHint.message,
-  };
-
-  if (normalizedHint['x-flow']) {
-    const flowMetadata = _.pickBy(
-      {
-        slotRules: normalizedHint['x-flow'].slotRules,
-        unresolvedReason: normalizedHint['x-flow'].unresolvedReason,
-        recommendedFallback: normalizedHint['x-flow'].recommendedFallback,
-      },
-      (value) => value !== undefined,
-    );
-    if (Object.keys(flowMetadata).length > 0) {
-      bundleHint['x-flow'] = flowMetadata;
-    }
-  }
-
-  return bundleHint;
-}
-
-function normalizeBundleHints(hints?: FlowDynamicHint[]): FlowSchemaBundleHint[] {
-  return Array.isArray(hints)
-    ? _.uniqBy(
-        hints.map((item) => normalizeBundleHint(item)),
         (item) => `${item.kind}:${item.path || ''}:${item.message}`,
       )
     : [];
@@ -1102,15 +1067,7 @@ export class FlowSchemaRegistry {
       items: documents.map((document) => ({
         use: document.use,
         title: document.title,
-        hash: document.hash,
-        source: document.source,
-        coverage: document.coverage,
-        dynamicHints: normalizeBundleHints(document.dynamicHints || []),
-        minimalExample: _.cloneDeep(document.minimalExample),
         skeleton: _.cloneDeep(document.skeleton),
-        commonPatterns: _.cloneDeep(document.commonPatterns || []),
-        antiPatterns: _.cloneDeep(document.antiPatterns || []),
-        keyEnums: collectKeyEnums(document.jsonSchema),
       })),
     };
   }

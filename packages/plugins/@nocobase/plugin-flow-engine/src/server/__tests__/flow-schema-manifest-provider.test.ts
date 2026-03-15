@@ -421,16 +421,23 @@ describe('flow schema manifest provider', () => {
     expect(bundle.status).toBe(200);
     expect(bundle.body?.data).not.toHaveProperty('generatedAt');
     expect(bundle.body?.data).not.toHaveProperty('summary');
-    expect(JSON.stringify(bundle.body?.data)).not.toContain('contextRequirements');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           use: 'PageModel',
-          source: 'official',
-          dynamicHints: expect.any(Array),
+          skeleton: expect.objectContaining({
+            use: 'PageModel',
+          }),
         }),
       ]),
     );
+    for (const item of bundle.body?.data?.items || []) {
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(item).not.toHaveProperty('dynamicHints');
+      expect(item).not.toHaveProperty('coverage');
+      expect(item).not.toHaveProperty('hash');
+      expect(item).not.toHaveProperty('source');
+    }
   });
 
   it('should expose lightweight schema bundles for plugin contributions', async () => {
@@ -447,6 +454,9 @@ describe('flow schema manifest provider', () => {
         expect.objectContaining({ use: 'ProviderArrayModel' }),
       ]),
     );
+    for (const item of bundle.body?.data?.items || []) {
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+    }
   });
 
   it('should preserve existing merge semantics across plugin providers', async () => {
@@ -527,13 +537,16 @@ describe('flow schema manifest provider', () => {
       expect(bundle.body?.data).not.toHaveProperty('summary');
       expect(bundle.body?.data?.items).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ use: 'BulkUpdateActionModel', source: 'plugin' }),
-          expect.objectContaining({ use: 'BulkEditActionModel', source: 'plugin' }),
-          expect.objectContaining({ use: 'DuplicateActionModel', source: 'plugin' }),
-          expect.objectContaining({ use: 'MarkdownBlockModel', source: 'plugin' }),
-          expect.objectContaining({ use: 'IframeBlockModel', source: 'plugin' }),
+          expect.objectContaining({ use: 'BulkUpdateActionModel' }),
+          expect.objectContaining({ use: 'BulkEditActionModel' }),
+          expect.objectContaining({ use: 'DuplicateActionModel' }),
+          expect.objectContaining({ use: 'MarkdownBlockModel' }),
+          expect.objectContaining({ use: 'IframeBlockModel' }),
         ]),
       );
+      for (const item of bundle.body?.data?.items || []) {
+        expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      }
     } finally {
       await officialApp.destroy();
     }

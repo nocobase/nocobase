@@ -280,7 +280,6 @@ describe('flow-model save', () => {
     expect(bundle.body?.data).not.toHaveProperty('generatedAt');
     expect(bundle.body?.data).not.toHaveProperty('summary');
     expect(JSON.stringify(bundle.body?.data)).not.toContain('missing-model-manifest');
-    expect(JSON.stringify(bundle.body?.data)).not.toContain('contextRequirements');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -292,32 +291,28 @@ describe('flow-model save', () => {
         }),
         expect.objectContaining({
           use: 'TableBlockModel',
-          dynamicHints: expect.arrayContaining([
-            expect.objectContaining({
-              path: 'TableBlockModel.subModels.columns',
-              'x-flow': expect.objectContaining({
-                slotRules: expect.objectContaining({
-                  slotKey: 'columns',
-                  type: 'array',
-                }),
-                unresolvedReason: 'runtime-table-columns',
-              }),
-            }),
-          ]),
+          skeleton: expect.objectContaining({
+            use: 'TableBlockModel',
+          }),
         }),
         expect.objectContaining({
           use: 'PageModel',
-          dynamicHints: expect.arrayContaining([
-            expect.objectContaining({
-              path: 'PageModel.subModels.tabs.subModels.grid.subModels.items',
-              'x-flow': expect.objectContaining({
-                unresolvedReason: 'runtime-block-grid-items',
-              }),
-            }),
-          ]),
+          skeleton: expect.objectContaining({
+            use: 'PageModel',
+          }),
         }),
       ]),
     );
+    for (const item of bundle.body?.data?.items || []) {
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(item).not.toHaveProperty('dynamicHints');
+      expect(item).not.toHaveProperty('commonPatterns');
+      expect(item).not.toHaveProperty('antiPatterns');
+      expect(item).not.toHaveProperty('keyEnums');
+      expect(item).not.toHaveProperty('coverage');
+      expect(item).not.toHaveProperty('hash');
+      expect(item).not.toHaveProperty('source');
+    }
 
     const formBundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['CreateFormModel', 'EditFormModel', 'FormBlockModel'],
@@ -328,6 +323,9 @@ describe('flow-model save', () => {
       expect.arrayContaining(['CreateFormModel', 'EditFormModel']),
     );
     expect((formBundle.body?.data?.items || []).map((item) => item.use)).not.toContain('FormBlockModel');
+    for (const item of formBundle.body?.data?.items || []) {
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+    }
 
     const details = await agent.get('/flowModels:schema').query({
       use: 'DetailsBlockModel',
