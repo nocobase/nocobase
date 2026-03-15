@@ -219,5 +219,22 @@ describe('FlowEngine', () => {
       expect((parent.subModels as any).page).toBe(child);
       expect(repo.save).not.toHaveBeenCalled();
     });
+
+    it('should not persist through ensure when skipSave is true', async () => {
+      repo.findOneResult = null;
+
+      const model = await engine.loadOrCreateModel(
+        {
+          uid: 'c5',
+          use: 'FlowModel',
+        },
+        { skipSave: true },
+      );
+
+      expect(model).toBeTruthy();
+      expect(model?.uid).toBe('c5');
+      expect(repo.ensureCalls).toBe(0);
+      expect(repo.save).not.toHaveBeenCalled();
+    });
   });
 });

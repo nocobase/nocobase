@@ -45,9 +45,6 @@ export const dataLoadingMode = defineAction({
       return;
     }
 
-    // 保存配置到 stepParams
-    blockModel.setStepParams('dataLoadingModeSettings', { mode: params.mode });
-
     // 如果切换到 manual 模式且当前没有活跃的筛选条件，清空数据
     if (params.mode === 'manual' && !blockModel.hasActiveFilters()) {
       resource.setData([]);

@@ -33,6 +33,10 @@ export function buildJoiSchema(validation: ValidationOptions, options: { label?:
   if (rules) {
     rules.forEach((rule) => {
       const args = _.cloneDeep(rule.args);
+      if (rule.name === 'precision') {
+        // Keep precision validation strict even when convert is enabled at validate-time.
+        schema = schema.strict();
+      }
       if (!_.isEmpty(args)) {
         if (rule.name === 'pattern' && !_.isRegExp(args.regex)) {
           const lastSlash = args.regex.lastIndexOf('/');

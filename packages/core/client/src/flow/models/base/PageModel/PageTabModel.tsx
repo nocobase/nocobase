@@ -20,7 +20,7 @@ import { BlockGridModel } from '../BlockGridModel';
 function PageTabChildrenRenderer({ ctx, options }) {
   const { data, loading } = useRequest(
     async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options);
+      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { skipSave: !ctx.flowSettingsEnabled });
       model.context.addDelegate(ctx);
       return model;
     },
