@@ -8,15 +8,20 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
+import type {
+  FlowActionSchemaManifest,
+  FlowModelSchemaManifest,
+  FlowSchemaManifestContribution,
+  FlowSchemaManifestProvider,
+} from '@nocobase/flow-engine';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
-import { tval, uid } from '@nocobase/utils';
+import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { FlowSchemaService, type FlowSchemaValidationIssue } from './flow-schema-service';
 import { FlowSchemaModel } from './model';
-import { officialFlowActionSchemaManifests, officialFlowModelSchemaManifests } from './official-flow-schema-manifests';
 import FlowModelRepository, { FlowModelOperationError } from './repository';
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
@@ -43,6 +48,71 @@ function extractFields(obj) {
   return fields.filter((value) => value !== undefined && value !== '');
 }
 
+type FlowSchemaPluginProvider = Plugin & Partial<FlowSchemaManifestProvider>;
+
+function inferFlowSchemaManifestSource(plugin: Plugin) {
+  const packageName = String(plugin?.options?.packageName || '').trim();
+  if (plugin?.name === 'flow-engine' || packageName === '@nocobase/plugin-flow-engine') {
+    return 'official' as const;
+  }
+  if (packageName.startsWith('@nocobase/')) {
+    return 'plugin' as const;
+  }
+  return 'third-party' as const;
+}
+
+function normalizeActionManifests(
+  manifests: FlowSchemaManifestContribution['actions'],
+  defaults: NonNullable<FlowSchemaManifestContribution['defaults']>,
+): FlowActionSchemaManifest[] {
+  if (!manifests) {
+    return [];
+  }
+
+  if (Array.isArray(manifests)) {
+    return manifests.filter(Boolean).map((manifest) => ({
+      ...manifest,
+      source: manifest.source ?? defaults.source,
+      strict: manifest.strict ?? defaults.strict,
+    }));
+  }
+
+  return Object.entries(manifests)
+    .filter(([, manifest]) => !!manifest)
+    .map(([name, manifest]) => ({
+      ...manifest,
+      name: manifest.name || name,
+      source: manifest.source ?? defaults.source,
+      strict: manifest.strict ?? defaults.strict,
+    }));
+}
+
+function normalizeModelManifests(
+  manifests: FlowSchemaManifestContribution['models'],
+  defaults: NonNullable<FlowSchemaManifestContribution['defaults']>,
+): FlowModelSchemaManifest[] {
+  if (!manifests) {
+    return [];
+  }
+
+  if (Array.isArray(manifests)) {
+    return manifests.filter(Boolean).map((manifest) => ({
+      ...manifest,
+      source: manifest.source ?? defaults.source,
+      strict: manifest.strict ?? defaults.strict,
+    }));
+  }
+
+  return Object.entries(manifests)
+    .filter(([, manifest]) => !!manifest)
+    .map(([use, manifest]) => ({
+      ...manifest,
+      use: manifest.use || use,
+      source: manifest.source ?? defaults.source,
+      strict: manifest.strict ?? defaults.strict,
+    }));
+}
+
 export class PluginUISchemaStorageServer extends Plugin {
   protected readonly flowSchemaService = new FlowSchemaService();
 
@@ -59,8 +129,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
-    this.flowSchemaService.registerActionManifests(officialFlowActionSchemaManifests);
-    this.flowSchemaService.registerModelManifests(officialFlowModelSchemaManifests);
+    await this.collectPluginFlowSchemaManifests();
 
     this.app.acl.registerSnippet({
       name: 'ui.flowModels',
@@ -122,7 +191,7 @@ export class PluginUISchemaStorageServer extends Plugin {
       actions: {
         findOne: async (ctx, next) => {
           const { uid, parentId, subKey, includeAsyncNode = false } = ctx.action.params;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           if (uid) {
             ctx.body = await repository.findModelById(uid, { includeAsyncNode });
           } else if (parentId) {
@@ -132,7 +201,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         },
         duplicate: async (ctx, next) => {
           const { uid } = ctx.action.params;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           const duplicated = await repository.duplicate(uid);
           ctx.body = duplicated;
           await next();
@@ -141,12 +210,17 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { use } = ctx.action.params as any;
           const modelUse = String(use || '').trim();
           if (!modelUse) {
-            ctx.throw(400, {
+            ctx.throw(400, "flowModels:schema requires non-empty 'use'", {
               code: 'INVALID_PARAMS',
-              message: "flowModels:schema requires non-empty 'use'",
             });
           }
-          ctx.body = this.flowSchemaService.getDocument(modelUse);
+          const document = this.flowSchemaService.getDocument(modelUse);
+          if (!document) {
+            ctx.throw(404, `No public flow schema document found for use "${modelUse}"`, {
+              code: 'FLOW_MODEL_SCHEMA_NOT_FOUND',
+            });
+          }
+          ctx.body = document;
           await next();
         },
         schemas: async (ctx, next) => {
@@ -167,7 +241,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         },
         attach: async (ctx, next) => {
           const { uid, parentId, subKey, subType, position } = ctx.action.params;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           const attached = await repository.attach(String(uid || '').trim(), {
             parentId: String(parentId || '').trim(),
             subKey: String(subKey || '').trim(),
@@ -179,7 +253,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         },
         move: async (ctx, next) => {
           const { sourceId, targetId, position } = ctx.action.params;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           await repository.move({ sourceId, targetId, position });
           ctx.body = 'ok';
           await next();
@@ -187,14 +261,13 @@ export class PluginUISchemaStorageServer extends Plugin {
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
           const { return: returnType = 'model', includeAsyncNode = false } = ctx.action.params as any;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
             this.assertValidFlowModelSchema(values);
             const uid = await repository.upsertModel(values);
             if (returnType && returnType !== 'model' && returnType !== 'uid') {
-              ctx.throw(400, {
+              ctx.throw(400, `Invalid query param 'return': ${returnType}`, {
                 code: 'INVALID_PARAMS',
-                message: `Invalid query param 'return': ${returnType}`,
               });
             }
             if (returnType === 'uid') {
@@ -214,7 +287,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         ensure: async (ctx, next) => {
           const { includeAsyncNode = false } = ctx.action.params as any;
           const { values } = ctx.action.params as any;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
             this.assertValidFlowModelSchema(values, { allowRootObjectLocator: true });
             ctx.body = await repository.ensureModel(values, { includeAsyncNode });
@@ -230,22 +303,20 @@ export class PluginUISchemaStorageServer extends Plugin {
         mutate: async (ctx, next) => {
           const { includeAsyncNode = false } = ctx.action.params as any;
           const { values } = ctx.action.params as any;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
 
           const atomic = values?.atomic;
           const ops = values?.ops;
           const returnModels = values?.returnModels;
 
           if (atomic !== true) {
-            ctx.throw(400, {
+            ctx.throw(400, "flowModels:mutate requires 'atomic=true'", {
               code: 'INVALID_PARAMS',
-              message: "flowModels:mutate requires 'atomic=true'",
             });
           }
           if (!Array.isArray(ops) || ops.length === 0) {
-            ctx.throw(400, {
+            ctx.throw(400, "flowModels:mutate requires non-empty 'ops' array", {
               code: 'INVALID_PARAMS',
-              message: "flowModels:mutate requires non-empty 'ops' array",
             });
           }
 
@@ -253,15 +324,13 @@ export class PluginUISchemaStorageServer extends Plugin {
           for (let i = 0; i < ops.length; i++) {
             const opId = String(ops[i]?.opId || '').trim();
             if (!opId) {
-              ctx.throw(400, {
+              ctx.throw(400, `flowModels:mutate ops[${i}].opId is required`, {
                 code: 'INVALID_PARAMS',
-                message: `flowModels:mutate ops[${i}].opId is required`,
               });
             }
             if (seenOpIds.has(opId)) {
-              ctx.throw(400, {
+              ctx.throw(400, `flowModels:mutate duplicate opId '${opId}'`, {
                 code: 'INVALID_PARAMS',
-                message: `flowModels:mutate duplicate opId '${opId}'`,
               });
             }
             seenOpIds.add(opId);
@@ -451,7 +520,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         },
         destroy: async (ctx, next) => {
           const { filterByTk } = ctx.action.params;
-          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           await repository.remove(filterByTk);
           ctx.body = 'ok';
           await next();
@@ -460,6 +529,38 @@ export class PluginUISchemaStorageServer extends Plugin {
     });
 
     this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
+  }
+
+  protected async collectPluginFlowSchemaManifests() {
+    for (const plugin of this.app.pm.getPlugins().values()) {
+      if (!plugin?.enabled) {
+        continue;
+      }
+
+      const provider = plugin as FlowSchemaPluginProvider;
+      if (typeof provider.getFlowSchemaManifests !== 'function') {
+        continue;
+      }
+
+      const contribution = await provider.getFlowSchemaManifests();
+      if (!contribution) {
+        continue;
+      }
+
+      const defaults = {
+        source: contribution.defaults?.source ?? inferFlowSchemaManifestSource(plugin),
+        strict: contribution.defaults?.strict,
+      };
+      const actionManifests = normalizeActionManifests(contribution.actions, defaults);
+      const modelManifests = normalizeModelManifests(contribution.models, defaults);
+
+      if (actionManifests.length > 0) {
+        this.flowSchemaService.registerActionManifests(actionManifests);
+      }
+      if (modelManifests.length > 0) {
+        this.flowSchemaService.registerModelManifests(modelManifests);
+      }
+    }
   }
 
   async load() {

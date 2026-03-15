@@ -78,6 +78,8 @@ export interface FlowSchemaCoverage {
   issues?: string[];
 }
 
+export type FlowModelSchemaExposure = 'public' | 'internal';
+
 export interface FlowSchemaPattern {
   title: string;
   description?: string;
@@ -138,6 +140,33 @@ export interface FlowSchemaBundleDocument {
   items: FlowSchemaBundleItem[];
 }
 
+export interface FlowSchemaContextEdge {
+  parentUse: string;
+  slotKey: string;
+  childUse: string;
+}
+
+export interface FlowSubModelContextPathStep {
+  slotKey: string;
+  use?: string | string[];
+}
+
+export interface FlowModelSchemaPatch {
+  stepParamsSchema?: FlowJsonSchema;
+  flowRegistrySchema?: FlowJsonSchema;
+  subModelSlots?: Record<string, FlowSubModelSlotSchema>;
+  flowRegistrySchemaPatch?: FlowJsonSchema;
+  docs?: FlowSchemaDocs;
+  examples?: any[];
+  skeleton?: any;
+  dynamicHints?: FlowDynamicHint[];
+}
+
+export interface FlowDescendantSchemaPatch {
+  path: FlowSubModelContextPathStep[];
+  patch: FlowModelSchemaPatch;
+}
+
 export interface FlowSubModelSlotSchema {
   type: 'object' | 'array';
   use?: string;
@@ -145,11 +174,12 @@ export interface FlowSubModelSlotSchema {
   required?: boolean;
   dynamic?: boolean;
   schema?: FlowJsonSchema;
+  childSchemaPatch?: FlowModelSchemaPatch | Record<string, FlowModelSchemaPatch>;
+  descendantSchemaPatches?: FlowDescendantSchemaPatch[];
   description?: string;
 }
 
 export interface FlowModelSchemaMeta {
-  propsSchema?: FlowJsonSchema;
   stepParamsSchema?: FlowJsonSchema;
   flowRegistrySchema?: FlowJsonSchema;
   subModelSlots?: Record<string, FlowSubModelSlotSchema>;
@@ -160,6 +190,9 @@ export interface FlowModelSchemaMeta {
   dynamicHints?: FlowDynamicHint[];
   source?: FlowSchemaCoverage['source'];
   strict?: boolean;
+  exposure?: FlowModelSchemaExposure;
+  allowDirectUse?: boolean;
+  suggestedUses?: string[];
 }
 
 export interface FlowActionSchemaManifest {
@@ -174,7 +207,6 @@ export interface FlowActionSchemaManifest {
 export interface FlowModelSchemaManifest {
   use: string;
   title?: string;
-  propsSchema?: FlowJsonSchema;
   stepParamsSchema?: FlowJsonSchema;
   flowRegistrySchema?: FlowJsonSchema;
   subModelSlots?: Record<string, FlowSubModelSlotSchema>;
@@ -185,6 +217,27 @@ export interface FlowModelSchemaManifest {
   dynamicHints?: FlowDynamicHint[];
   source?: FlowSchemaCoverage['source'];
   strict?: boolean;
+  exposure?: FlowModelSchemaExposure;
+  allowDirectUse?: boolean;
+  suggestedUses?: string[];
+}
+
+export interface FlowSchemaManifestDefaults {
+  source?: FlowSchemaCoverage['source'];
+  strict?: boolean;
+}
+
+export interface FlowSchemaManifestContribution {
+  models?: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>;
+  actions?: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>;
+  defaults?: FlowSchemaManifestDefaults;
+}
+
+export interface FlowSchemaManifestProvider {
+  getFlowSchemaManifests():
+    | FlowSchemaManifestContribution
+    | undefined
+    | Promise<FlowSchemaManifestContribution | undefined>;
 }
 
 /**

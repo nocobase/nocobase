@@ -10,12 +10,15 @@ const antd = require.resolve('antd');
 export default defineConfig({
   afterBuild: async (log) => {
     const localeDir = path.resolve(__dirname, './dist/locale');
+    const builtClientLocaleDir = path.resolve(client, 'lib', 'locale');
+    const sourceClientLocaleDir = path.resolve(client, 'src', 'locale');
+    const clientLocaleDir = existsSync(builtClientLocaleDir) ? builtClientLocaleDir : sourceClientLocaleDir;
     if (existsSync(localeDir)) {
       await fs.rm(localeDir, { recursive: true });
     }
 
     log('coping client locale');
-    await fs.cp(path.resolve(client, 'lib', 'locale'), localeDir, {
+    await fs.cp(clientLocaleDir, localeDir, {
       recursive: true,
       force: true,
     });

@@ -172,7 +172,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!basePath) {
       return { beforeLoad: [], afterSync: [], afterLoad: [] };
     }
-    const directory = resolve(basePath, 'server/migrations');
+    const directory = await this.resolvePluginRuntimeDirectory(basePath, 'server/migrations');
     return await this.app.loadMigrations({
       directory,
       namespace: this.options.packageName,
@@ -198,7 +198,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!basePath) {
       return;
     }
-    const directory = resolve(basePath, 'server/collections');
+    const directory = await this.resolvePluginRuntimeDirectory(basePath, 'server/collections');
     if (await fsExists(directory)) {
       this.app.log.trace(`load plugin collections [${this.name}]`);
       await this.db.import({
@@ -216,7 +216,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     if (!pluginRoot) {
       return;
     }
-    const basePath = resolve(pluginRoot, 'ai');
+    const basePath = await this.resolvePluginRuntimeDirectory(pluginRoot, 'ai');
     if (!(await fsExists(basePath))) {
       return;
     }
@@ -293,6 +293,20 @@ export abstract class Plugin<O = any> implements PluginInterface {
     }
 
     return results;
+  }
+
+  private async resolvePluginRuntimeDirectory(basePath: string, relativePath: string) {
+    const preferred = resolve(basePath, relativePath);
+    if (await fsExists(preferred)) {
+      return preferred;
+    }
+
+    const sourceFallback = resolve(basePath, 'src', relativePath);
+    if (await fsExists(sourceFallback)) {
+      return sourceFallback;
+    }
+
+    return preferred;
   }
 }
 

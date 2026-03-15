@@ -24,6 +24,42 @@ describe('flow-model ensure', () => {
       registerActions: true,
       plugins: ['flow-engine'],
     });
+    (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
+      modelManifests: [
+        {
+          use: 'EnsureContextualChildModel',
+          source: 'official',
+          strict: true,
+          stepParamsSchema: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        {
+          use: 'EnsureContextualParentModel',
+          source: 'official',
+          strict: true,
+          subModelSlots: {
+            body: {
+              type: 'object',
+              use: 'EnsureContextualChildModel',
+              childSchemaPatch: {
+                stepParamsSchema: {
+                  type: 'object',
+                  properties: {
+                    alpha: {
+                      type: 'string',
+                    },
+                  },
+                  required: ['alpha'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
+      ],
+    });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     agent = app.agent();
   });
@@ -89,5 +125,53 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.subType).toBe('object');
     expect(res.body?.data?.use).toBe('RootPageModel');
     expect(res.body?.data?.uid).toBeTruthy();
+  });
+
+  it('should validate nested child schema with parent context during ensure', async () => {
+    const pass = await agent.resource('flowModels').ensure({
+      values: {
+        uid: 'ensure-context-root-pass',
+        use: 'EnsureContextualParentModel',
+        subModels: {
+          body: {
+            uid: 'ensure-context-child-pass',
+            use: 'EnsureContextualChildModel',
+            stepParams: {
+              alpha: 'ok',
+            },
+          },
+        },
+      },
+    });
+
+    expect(pass.status).toBe(200);
+
+    const fail = await agent.resource('flowModels').ensure({
+      values: {
+        uid: 'ensure-context-root-fail',
+        use: 'EnsureContextualParentModel',
+        subModels: {
+          body: {
+            uid: 'ensure-context-child-fail',
+            use: 'EnsureContextualChildModel',
+            stepParams: {
+              beta: 1,
+            },
+          },
+        },
+      },
+    });
+
+    expect(fail.status).toBe(400);
+    expect(fail.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+    expect(fail.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUid: 'ensure-context-child-fail',
+          modelUse: 'EnsureContextualChildModel',
+          section: 'stepParams',
+        }),
+      ]),
+    );
   });
 });

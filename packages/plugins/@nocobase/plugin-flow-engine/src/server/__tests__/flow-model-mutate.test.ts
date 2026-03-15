@@ -16,7 +16,7 @@ class MutateSchemaStrictModel extends FlowModel {}
 MutateSchemaStrictModel.define({
   label: 'Mutate schema strict model',
   schema: {
-    propsSchema: {
+    stepParamsSchema: {
       type: 'object',
       properties: {
         title: {
@@ -48,6 +48,40 @@ describe('flow-model mutate', () => {
       models: {
         MutateSchemaStrictModel,
       },
+      modelManifests: [
+        {
+          use: 'MutateContextualChildModel',
+          source: 'official',
+          strict: true,
+          stepParamsSchema: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        {
+          use: 'MutateContextualParentModel',
+          source: 'official',
+          strict: true,
+          subModelSlots: {
+            body: {
+              type: 'object',
+              use: 'MutateContextualChildModel',
+              childSchemaPatch: {
+                stepParamsSchema: {
+                  type: 'object',
+                  properties: {
+                    alpha: {
+                      type: 'string',
+                    },
+                  },
+                  required: ['alpha'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
+      ],
     });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
     agent = app.agent();
@@ -211,7 +245,7 @@ describe('flow-model mutate', () => {
               values: {
                 uid: 'mut-ref-seed',
                 use: 'LooseSourceModel',
-                props: {
+                stepParams: {
                   title: 123,
                 },
               },
@@ -224,8 +258,8 @@ describe('flow-model mutate', () => {
               values: {
                 uid: 'mut-ref-strict',
                 use: 'MutateSchemaStrictModel',
-                props: {
-                  title: '$ref:seed.props.title',
+                stepParams: {
+                  title: '$ref:seed.stepParams.title',
                 },
               },
             },
@@ -241,7 +275,7 @@ describe('flow-model mutate', () => {
         expect.objectContaining({
           modelUid: 'mut-ref-strict',
           modelUse: 'MutateSchemaStrictModel',
-          section: 'props',
+          section: 'stepParams',
           expectedType: 'string',
           schemaHash: expect.any(String),
         }),
@@ -252,5 +286,46 @@ describe('flow-model mutate', () => {
     const strict = await repository.findModelById('mut-ref-strict', { includeAsyncNode: true });
     expect(seeded).toBeNull();
     expect(strict).toBeNull();
+  });
+
+  it('should validate contextual nested child schema during mutate upsert', async () => {
+    const res = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'ctx-upsert',
+            type: 'upsert',
+            params: {
+              values: {
+                uid: 'mut-context-root',
+                use: 'MutateContextualParentModel',
+                subModels: {
+                  body: {
+                    uid: 'mut-context-child',
+                    use: 'MutateContextualChildModel',
+                    stepParams: {
+                      beta: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUid: 'mut-context-child',
+          modelUse: 'MutateContextualChildModel',
+          section: 'stepParams',
+        }),
+      ]),
+    );
   });
 });

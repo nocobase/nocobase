@@ -314,22 +314,15 @@ describe('FlowSchemaRegistry', () => {
     registry.registerModelManifest({
       use: 'SchemaRegistryManifestModel',
       title: 'Manifest model',
-      propsSchema: {
-        type: 'object',
-        properties: {
-          title: {
-            type: 'string',
-          },
-        },
-        required: ['title'],
-        additionalProperties: false,
-      },
       stepParamsSchema: {
         type: 'object',
         properties: {
           settings: {
             type: 'object',
             properties: {
+              title: {
+                type: 'string',
+              },
               toggle: {
                 type: 'object',
                 properties: {
@@ -340,7 +333,8 @@ describe('FlowSchemaRegistry', () => {
                 additionalProperties: false,
               },
             },
-            additionalProperties: true,
+            required: ['title'],
+            additionalProperties: false,
           },
         },
         additionalProperties: true,
@@ -364,16 +358,20 @@ describe('FlowSchemaRegistry', () => {
         minimalExample: {
           uid: 'manifest-model-1',
           use: 'SchemaRegistryManifestModel',
-          props: {
-            title: 'Manifest model',
+          stepParams: {
+            settings: {
+              title: 'Manifest model',
+            },
           },
         },
         commonPatterns: [
           {
             title: 'Minimal manifest model',
             snippet: {
-              props: {
-                title: 'Manifest model',
+              stepParams: {
+                settings: {
+                  title: 'Manifest model',
+                },
               },
             },
           },
@@ -409,9 +407,6 @@ describe('FlowSchemaRegistry', () => {
     expect(doc.skeleton).toMatchObject({
       uid: 'todo-uid',
       use: 'SchemaRegistryManifestModel',
-      props: {
-        title: '',
-      },
     });
     expect(doc.commonPatterns).toEqual(
       expect.arrayContaining([
@@ -448,5 +443,415 @@ describe('FlowSchemaRegistry', () => {
       ]),
     });
     expect(bundle.items[0]?.keyEnums?.['#/properties/use']).toEqual(['SchemaRegistryManifestModel']);
+  });
+
+  it('should filter internal models from public discovery helpers', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryInternalBaseModel',
+      exposure: 'internal',
+      allowDirectUse: false,
+      suggestedUses: ['SchemaRegistryPublicModel'],
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryPublicModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          settings: {
+            type: 'object',
+            additionalProperties: true,
+          },
+        },
+        additionalProperties: true,
+      },
+    });
+
+    expect(registry.hasPublicModel('SchemaRegistryInternalBaseModel')).toBe(false);
+    expect(registry.hasPublicModel('SchemaRegistryPublicModel')).toBe(true);
+    expect(registry.isDirectUseAllowed('SchemaRegistryInternalBaseModel')).toBe(false);
+    expect(registry.getSuggestedUses('SchemaRegistryInternalBaseModel')).toEqual(['SchemaRegistryPublicModel']);
+    expect(registry.listModelUses({ publicOnly: true })).toEqual(['SchemaRegistryPublicModel']);
+    expect(registry.getSchemaBundle().summary.registeredModels).toBe(1);
+    expect(registry.getSchemaBundle().items.map((item) => item.use)).toEqual(['SchemaRegistryPublicModel']);
+  });
+
+  it('should resolve direct child schema patches by parent slot context', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryContextChildModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          shared: {
+            type: 'string',
+          },
+        },
+        additionalProperties: true,
+      },
+      source: 'official',
+      strict: true,
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryParentAlphaModel',
+      source: 'official',
+      strict: true,
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SchemaRegistryContextChildModel',
+          childSchemaPatch: {
+            stepParamsSchema: {
+              type: 'object',
+              properties: {
+                alpha: {
+                  type: 'string',
+                },
+              },
+              required: ['alpha'],
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryParentBetaModel',
+      source: 'official',
+      strict: true,
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SchemaRegistryContextChildModel',
+          childSchemaPatch: {
+            stepParamsSchema: {
+              type: 'object',
+              properties: {
+                beta: {
+                  type: 'number',
+                },
+              },
+              required: ['beta'],
+              additionalProperties: false,
+            },
+          },
+        },
+      },
+    });
+
+    expect(
+      registry.getModelDocument('SchemaRegistryContextChildModel').jsonSchema.properties?.stepParams,
+    ).toMatchObject({
+      properties: {
+        shared: {
+          type: 'string',
+        },
+      },
+      additionalProperties: true,
+    });
+
+    expect(
+      registry.resolveModelSchema('SchemaRegistryContextChildModel', [
+        {
+          parentUse: 'SchemaRegistryParentAlphaModel',
+          slotKey: 'body',
+          childUse: 'SchemaRegistryContextChildModel',
+        },
+      ]).stepParamsSchema,
+    ).toMatchObject({
+      properties: {
+        shared: {
+          type: 'string',
+        },
+        alpha: {
+          type: 'string',
+        },
+      },
+      required: ['alpha'],
+      additionalProperties: false,
+    });
+
+    expect(
+      (registry.getModelDocument('SchemaRegistryParentAlphaModel').jsonSchema.properties?.subModels as any)?.properties
+        ?.body?.properties?.stepParams,
+    ).toMatchObject({
+      properties: {
+        alpha: {
+          type: 'string',
+        },
+      },
+      required: ['alpha'],
+      additionalProperties: false,
+    });
+
+    expect(
+      (registry.getModelDocument('SchemaRegistryParentBetaModel').jsonSchema.properties?.subModels as any)?.properties
+        ?.body?.properties?.stepParams,
+    ).toMatchObject({
+      properties: {
+        beta: {
+          type: 'number',
+        },
+      },
+      required: ['beta'],
+      additionalProperties: false,
+    });
+  });
+
+  it('should apply ancestor descendant patches before direct child patches', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryDescLeafModel',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      source: 'official',
+      strict: true,
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryDescParentModel',
+      source: 'official',
+      strict: true,
+      subModelSlots: {
+        section: {
+          type: 'object',
+          use: 'SchemaRegistryDescBridgeModel',
+          childSchemaPatch: {
+            subModelSlots: {
+              leaf: {
+                type: 'object',
+                use: 'SchemaRegistryDescLeafModel',
+                childSchemaPatch: {
+                  stepParamsSchema: {
+                    type: 'object',
+                    properties: {
+                      marker: {
+                        type: 'string',
+                      },
+                      directOnly: {
+                        type: 'string',
+                      },
+                    },
+                    required: ['directOnly'],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            },
+          },
+          descendantSchemaPatches: [
+            {
+              path: [
+                {
+                  slotKey: 'leaf',
+                  use: 'SchemaRegistryDescLeafModel',
+                },
+              ],
+              patch: {
+                stepParamsSchema: {
+                  type: 'object',
+                  properties: {
+                    marker: {
+                      type: 'number',
+                    },
+                    ancestorOnly: {
+                      type: 'boolean',
+                    },
+                  },
+                  required: ['ancestorOnly'],
+                  additionalProperties: true,
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const resolved = registry.resolveModelSchema('SchemaRegistryDescLeafModel', [
+      {
+        parentUse: 'SchemaRegistryDescParentModel',
+        slotKey: 'section',
+        childUse: 'SchemaRegistryDescBridgeModel',
+      },
+      {
+        parentUse: 'SchemaRegistryDescBridgeModel',
+        slotKey: 'leaf',
+        childUse: 'SchemaRegistryDescLeafModel',
+      },
+    ]);
+
+    expect(resolved.stepParamsSchema).toMatchObject({
+      properties: {
+        ancestorOnly: {
+          type: 'boolean',
+        },
+        directOnly: {
+          type: 'string',
+        },
+        marker: {
+          type: 'string',
+        },
+      },
+      required: ['directOnly'],
+      additionalProperties: false,
+    });
+
+    expect(
+      (registry.getModelDocument('SchemaRegistryDescParentModel').jsonSchema.properties?.subModels as any)?.properties
+        ?.section?.properties?.subModels?.properties?.leaf?.properties?.stepParams,
+    ).toMatchObject({
+      properties: {
+        ancestorOnly: {
+          type: 'boolean',
+        },
+        directOnly: {
+          type: 'string',
+        },
+      },
+      required: ['directOnly'],
+      additionalProperties: false,
+    });
+  });
+
+  it('should only use legacy slot schema as fallback when no child use can be resolved', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLegacyChildModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+          },
+        },
+        required: ['title'],
+        additionalProperties: false,
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLegacyParentModel',
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SchemaRegistryLegacyChildModel',
+          schema: {
+            type: 'object',
+            required: ['uid', 'use'],
+            properties: {
+              uid: { type: 'string' },
+              use: { type: 'string' },
+            },
+            additionalProperties: true,
+          },
+        },
+      },
+    });
+
+    expect(
+      (registry.getModelDocument('SchemaRegistryLegacyParentModel').jsonSchema.properties?.subModels as any)?.properties
+        ?.body,
+    ).toMatchObject({
+      properties: {
+        use: {
+          const: 'SchemaRegistryLegacyChildModel',
+        },
+        stepParams: {
+          required: ['title'],
+          additionalProperties: false,
+        },
+      },
+    });
+  });
+
+  it('should expose anonymous child snapshot patches when slot use is unresolved', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryAnonymousGridModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+          },
+        },
+        required: ['title'],
+        additionalProperties: false,
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryAnonymousParentModel',
+      subModelSlots: {
+        body: {
+          type: 'object',
+          childSchemaPatch: {
+            stepParamsSchema: {
+              type: 'object',
+              properties: {
+                mode: {
+                  type: 'string',
+                  enum: ['compact', 'full'],
+                },
+              },
+              required: ['mode'],
+              additionalProperties: false,
+            },
+            subModelSlots: {
+              grid: {
+                type: 'object',
+                use: 'SchemaRegistryAnonymousGridModel',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(
+      (registry.getModelDocument('SchemaRegistryAnonymousParentModel').jsonSchema.properties?.subModels as any)
+        ?.properties?.body,
+    ).toMatchObject({
+      properties: {
+        use: {
+          type: 'string',
+        },
+        stepParams: {
+          properties: {
+            mode: {
+              type: 'string',
+              enum: ['compact', 'full'],
+            },
+          },
+          required: ['mode'],
+          additionalProperties: false,
+        },
+        subModels: {
+          properties: {
+            grid: {
+              properties: {
+                use: {
+                  const: 'SchemaRegistryAnonymousGridModel',
+                },
+                stepParams: {
+                  required: ['title'],
+                  additionalProperties: false,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
   });
 });

@@ -21,14 +21,19 @@ import type {
   ActionDefinition,
   FlowActionSchemaManifest,
   FlowSchemaBundleDocument,
+  FlowSchemaContextEdge,
+  FlowDescendantSchemaPatch,
   FlowSchemaDocs,
   FlowDynamicHint,
   FlowJsonSchema,
+  FlowModelSchemaPatch,
   FlowModelSchemaManifest,
   FlowModelMeta,
   FlowSchemaCoverage,
   FlowSchemaDocument,
+  FlowModelSchemaExposure,
   FlowSchemaRegistrySummary,
+  FlowSubModelContextPathStep,
   FlowSubModelSlotSchema,
   ModelConstructor,
   StepDefinition,
@@ -47,7 +52,6 @@ export type RegisteredActionSchema = {
 export type RegisteredModelSchema = {
   use: string;
   modelClass?: ModelConstructor;
-  propsSchema?: FlowJsonSchema;
   stepParamsSchema?: FlowJsonSchema;
   flowRegistrySchema?: FlowJsonSchema;
   subModelSlots?: Record<string, FlowSubModelSlotSchema>;
@@ -58,12 +62,21 @@ export type RegisteredModelSchema = {
   skeleton?: any;
   dynamicHints: FlowDynamicHint[];
   coverage: FlowSchemaCoverage;
+  exposure: FlowModelSchemaExposure;
+  allowDirectUse: boolean;
+  suggestedUses: string[];
 };
 
 type StepSchemaResolution = {
   schema?: FlowJsonSchema;
   hints: FlowDynamicHint[];
   coverage: FlowSchemaCoverage['status'];
+};
+
+type ModelPatchContribution = {
+  patch: FlowModelSchemaPatch;
+  source: FlowSchemaCoverage['source'];
+  strict?: boolean;
 };
 
 type UiSchemaLike =
@@ -94,21 +107,26 @@ function hashString(input: string): string {
   return hash.toString(16).padStart(8, '0');
 }
 
+function deepMergeReplaceArrays<T>(base: T, patch: any): T {
+  if (typeof patch === 'undefined') {
+    return _.cloneDeep(base);
+  }
+  if (typeof base === 'undefined') {
+    return _.cloneDeep(patch);
+  }
+  return _.mergeWith({}, _.cloneDeep(base), _.cloneDeep(patch), (objValue, srcValue) => {
+    if (Array.isArray(srcValue)) {
+      return _.cloneDeep(srcValue);
+    }
+    return undefined;
+  });
+}
+
 function mergeSchemas(base?: FlowJsonSchema, patch?: FlowJsonSchema): FlowJsonSchema | undefined {
   if (!base && !patch) return undefined;
   if (!base) return _.cloneDeep(patch);
   if (!patch) return _.cloneDeep(base);
-  return _.merge({}, _.cloneDeep(base), _.cloneDeep(patch));
-}
-
-function asObjectSchema(schema?: FlowJsonSchema, additionalProperties = true): FlowJsonSchema {
-  if (!schema) {
-    return { type: 'object', additionalProperties };
-  }
-  if (!schema.type) {
-    return { type: 'object', additionalProperties, ...schema };
-  }
-  return schema;
+  return deepMergeReplaceArrays(base, patch);
 }
 
 function normalizeFlowHintMetadata(metadata?: FlowDynamicHint['x-flow']): FlowDynamicHint['x-flow'] | undefined {
@@ -176,6 +194,162 @@ function normalizeSchemaDocs(docs?: FlowSchemaDocs): FlowSchemaDocs {
   };
 }
 
+function normalizeStringArray(values?: string[]): string[] {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  return _.uniq(values.map((item) => String(item || '').trim()).filter(Boolean));
+}
+
+function normalizeSubModelContextPath(path?: FlowSubModelContextPathStep[]): FlowSubModelContextPathStep[] {
+  if (!Array.isArray(path)) {
+    return [];
+  }
+  return path
+    .map((step) => ({
+      slotKey: String(step?.slotKey || '').trim(),
+      ...(typeof step?.use === 'string'
+        ? { use: step.use.trim() }
+        : Array.isArray(step?.use)
+          ? { use: step.use.map((item) => String(item || '').trim()).filter(Boolean) }
+          : {}),
+    }))
+    .filter((step) => !!step.slotKey);
+}
+
+function normalizeModelSchemaPatch(patch?: FlowModelSchemaPatch): FlowModelSchemaPatch | undefined {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+    return undefined;
+  }
+
+  const normalizedDynamicHints = Array.isArray(patch.dynamicHints)
+    ? normalizeSchemaHints(patch.dynamicHints)
+    : undefined;
+
+  const normalized = _.pickBy(
+    {
+      stepParamsSchema: patch.stepParamsSchema ? _.cloneDeep(patch.stepParamsSchema) : undefined,
+      flowRegistrySchema: patch.flowRegistrySchema ? _.cloneDeep(patch.flowRegistrySchema) : undefined,
+      flowRegistrySchemaPatch: patch.flowRegistrySchemaPatch ? _.cloneDeep(patch.flowRegistrySchemaPatch) : undefined,
+      subModelSlots: normalizeSubModelSlots(patch.subModelSlots),
+      docs: patch.docs ? normalizeSchemaDocs(patch.docs) : undefined,
+      examples: Array.isArray(patch.examples) ? _.cloneDeep(patch.examples) : undefined,
+      skeleton: patch.skeleton === undefined ? undefined : _.cloneDeep(patch.skeleton),
+      dynamicHints: normalizedDynamicHints,
+    },
+    (value) => value !== undefined && (!Array.isArray(value) || value.length > 0),
+  ) as FlowModelSchemaPatch;
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function normalizeDescendantSchemaPatches(
+  patches?: FlowDescendantSchemaPatch[],
+): FlowDescendantSchemaPatch[] | undefined {
+  if (!Array.isArray(patches)) {
+    return undefined;
+  }
+
+  const normalized = patches
+    .map((item) => {
+      const path = normalizeSubModelContextPath(item?.path);
+      const patch = normalizeModelSchemaPatch(item?.patch);
+      if (!patch) {
+        return undefined;
+      }
+      return { path, patch };
+    })
+    .filter(Boolean) as FlowDescendantSchemaPatch[];
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeChildSchemaPatch(
+  patch?: FlowSubModelSlotSchema['childSchemaPatch'],
+): FlowSubModelSlotSchema['childSchemaPatch'] | undefined {
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+    return undefined;
+  }
+
+  const directPatch = normalizeModelSchemaPatch(patch as FlowModelSchemaPatch);
+  if (directPatch) {
+    return directPatch;
+  }
+
+  const entries = Object.entries(patch as Record<string, FlowModelSchemaPatch>)
+    .map(([childUse, childPatch]) => [String(childUse || '').trim(), normalizeModelSchemaPatch(childPatch)] as const)
+    .filter(([childUse, childPatch]) => !!childUse && !!childPatch);
+
+  if (!entries.length) {
+    return undefined;
+  }
+
+  return Object.fromEntries(entries);
+}
+
+function normalizeSubModelSlots(
+  slots?: Record<string, FlowSubModelSlotSchema>,
+): Record<string, FlowSubModelSlotSchema> | undefined {
+  if (!slots || typeof slots !== 'object' || Array.isArray(slots)) {
+    return undefined;
+  }
+
+  const normalizedEntries = Object.entries(slots)
+    .map(([slotKey, slot]) => {
+      const normalizedType = slot?.type;
+      if (!normalizedType) {
+        return undefined;
+      }
+
+      const normalizedSlot: FlowSubModelSlotSchema = {
+        type: normalizedType,
+      };
+
+      const normalizedUse = typeof slot?.use === 'string' ? slot.use.trim() : undefined;
+      if (normalizedUse) {
+        normalizedSlot.use = normalizedUse;
+      }
+
+      const normalizedUses = Array.isArray(slot?.uses)
+        ? slot.uses.map((item) => String(item || '').trim()).filter(Boolean)
+        : undefined;
+      if (normalizedUses?.length) {
+        normalizedSlot.uses = normalizedUses;
+      }
+
+      if (slot?.required !== undefined) {
+        normalizedSlot.required = slot.required;
+      }
+
+      if (slot?.dynamic !== undefined) {
+        normalizedSlot.dynamic = slot.dynamic;
+      }
+
+      if (slot?.schema) {
+        normalizedSlot.schema = _.cloneDeep(slot.schema);
+      }
+
+      const childSchemaPatch = normalizeChildSchemaPatch(slot?.childSchemaPatch);
+      if (childSchemaPatch) {
+        normalizedSlot.childSchemaPatch = childSchemaPatch;
+      }
+
+      const descendantSchemaPatches = normalizeDescendantSchemaPatches(slot?.descendantSchemaPatches);
+      if (descendantSchemaPatches?.length) {
+        normalizedSlot.descendantSchemaPatches = descendantSchemaPatches;
+      }
+
+      if (slot?.description !== undefined) {
+        normalizedSlot.description = slot.description;
+      }
+
+      return [slotKey, normalizedSlot] as const;
+    })
+    .filter(Boolean) as Array<readonly [string, FlowSubModelSlotSchema]>;
+
+  return normalizedEntries.length > 0 ? Object.fromEntries(normalizedEntries) : undefined;
+}
+
 function createFlowHint(hint: FlowDynamicHint, metadata?: FlowDynamicHint['x-flow']): FlowDynamicHint {
   const result = { ...hint };
   const flowMetadata = normalizeFlowHintMetadata({
@@ -227,7 +401,7 @@ function buildSkeletonFromSchema(
       });
       const includeOptionalTopLevelShell =
         depth === 0 &&
-        ['props', 'stepParams', 'subModels', 'flowRegistry'].includes(key) &&
+        ['stepParams', 'subModels', 'flowRegistry'].includes(key) &&
         child !== undefined &&
         ((_.isPlainObject(child) && Object.keys(child).length > 0) || Array.isArray(child));
       if (
@@ -509,6 +683,7 @@ function inferParamsSchemaFromUiSchema(name: string, uiSchema: UiSchemaLike, pat
 export class FlowSchemaRegistry {
   private readonly modelSchemas = new Map<string, RegisteredModelSchema>();
   private readonly actionSchemas = new Map<string, RegisteredActionSchema>();
+  private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
     const name = String(action?.name || '').trim();
@@ -600,10 +775,9 @@ export class FlowSchemaRegistry {
       use: name,
       title: options.title || previous?.title,
       modelClass: options.modelClass || previous?.modelClass,
-      propsSchema: options.propsSchema || previous?.propsSchema,
       stepParamsSchema: options.stepParamsSchema || previous?.stepParamsSchema,
       flowRegistrySchema: options.flowRegistrySchema || previous?.flowRegistrySchema,
-      subModelSlots: options.subModelSlots || previous?.subModelSlots,
+      subModelSlots: normalizeSubModelSlots(options.subModelSlots || previous?.subModelSlots),
       flowRegistrySchemaPatch: options.flowRegistrySchemaPatch || previous?.flowRegistrySchemaPatch,
       examples: options.examples || previous?.examples || [],
       docs: normalizeSchemaDocs({
@@ -619,7 +793,11 @@ export class FlowSchemaRegistry {
       skeleton: options.skeleton !== undefined ? _.cloneDeep(options.skeleton) : previous?.skeleton,
       dynamicHints: normalizeSchemaHints([...(previous?.dynamicHints || []), ...(options.dynamicHints || [])]),
       coverage: options.coverage || previous?.coverage || { status: 'unresolved', source: 'third-party' },
+      exposure: options.exposure ?? previous?.exposure ?? 'public',
+      allowDirectUse: options.allowDirectUse ?? previous?.allowDirectUse ?? true,
+      suggestedUses: normalizeStringArray(options.suggestedUses || previous?.suggestedUses),
     });
+    this.resolvedModelCache.clear();
   }
 
   registerModelManifest(manifest: FlowModelSchemaManifest) {
@@ -639,10 +817,9 @@ export class FlowSchemaRegistry {
     });
     this.registerModel(use, {
       title: manifest.title,
-      propsSchema: manifest.propsSchema ? _.cloneDeep(manifest.propsSchema) : undefined,
       stepParamsSchema: manifest.stepParamsSchema ? _.cloneDeep(manifest.stepParamsSchema) : undefined,
       flowRegistrySchema: manifest.flowRegistrySchema ? _.cloneDeep(manifest.flowRegistrySchema) : undefined,
-      subModelSlots: manifest.subModelSlots ? _.cloneDeep(manifest.subModelSlots) : undefined,
+      subModelSlots: manifest.subModelSlots ? normalizeSubModelSlots(manifest.subModelSlots) : undefined,
       flowRegistrySchemaPatch: manifest.flowRegistrySchemaPatch
         ? _.cloneDeep(manifest.flowRegistrySchemaPatch)
         : undefined,
@@ -652,12 +829,13 @@ export class FlowSchemaRegistry {
       dynamicHints: [...(manifest.dynamicHints || []), ...(docs.dynamicHints || [])],
       coverage: {
         status:
-          manifest.propsSchema || manifest.stepParamsSchema || manifest.flowRegistrySchema || manifest.subModelSlots
-            ? 'manual'
-            : 'unresolved',
+          manifest.stepParamsSchema || manifest.flowRegistrySchema || manifest.subModelSlots ? 'manual' : 'unresolved',
         source: manifest.source || 'official',
         strict: manifest.strict,
       },
+      exposure: manifest.exposure,
+      allowDirectUse: manifest.allowDirectUse,
+      suggestedUses: manifest.suggestedUses,
     });
   }
 
@@ -674,7 +852,6 @@ export class FlowSchemaRegistry {
     const inferredSlots = this.inferSubModelSlotsFromModelClass(use, modelClass);
     const inferredHints = this.collectModelDynamicHints(use, modelClass, meta);
     const hasManual =
-      !!schemaMeta.propsSchema ||
       !!schemaMeta.stepParamsSchema ||
       !!schemaMeta.flowRegistrySchema ||
       !!schemaMeta.subModelSlots ||
@@ -684,7 +861,6 @@ export class FlowSchemaRegistry {
     this.registerModel(use, {
       modelClass,
       title: toSchemaTitle(meta.label, use),
-      propsSchema: schemaMeta.propsSchema,
       stepParamsSchema: schemaMeta.stepParamsSchema,
       flowRegistrySchema: schemaMeta.flowRegistrySchema,
       subModelSlots: Object.keys(schemaMeta.subModelSlots || {}).length ? schemaMeta.subModelSlots : inferredSlots,
@@ -698,6 +874,9 @@ export class FlowSchemaRegistry {
         source: schemaMeta.source || 'official',
         strict: schemaMeta.strict,
       },
+      exposure: schemaMeta.exposure,
+      allowDirectUse: schemaMeta.allowDirectUse,
+      suggestedUses: schemaMeta.suggestedUses,
     });
   }
 
@@ -721,16 +900,87 @@ export class FlowSchemaRegistry {
     return this.modelSchemas.get(use);
   }
 
-  listModelUses(): string[] {
-    return Array.from(this.modelSchemas.keys()).sort();
+  resolveModelSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
+    const name = String(use || '').trim();
+    const cacheKey = `${name}::${stableStringify(contextChain)}`;
+    const cached = this.resolvedModelCache.get(cacheKey);
+    if (cached) {
+      return _.cloneDeep(cached);
+    }
+
+    const registered = this.modelSchemas.get(name);
+    const resolved: RegisteredModelSchema = {
+      use: name,
+      title: registered?.title || name,
+      modelClass: registered?.modelClass,
+      stepParamsSchema: registered?.stepParamsSchema
+        ? _.cloneDeep(registered.stepParamsSchema)
+        : this.buildInferredStepParamsSchema(name),
+      flowRegistrySchema: registered?.flowRegistrySchema
+        ? _.cloneDeep(registered.flowRegistrySchema)
+        : this.buildInferredFlowRegistrySchema(name),
+      subModelSlots: normalizeSubModelSlots(registered?.subModelSlots),
+      flowRegistrySchemaPatch: registered?.flowRegistrySchemaPatch
+        ? _.cloneDeep(registered.flowRegistrySchemaPatch)
+        : undefined,
+      examples: _.cloneDeep(registered?.examples || []),
+      docs: normalizeSchemaDocs(registered?.docs),
+      skeleton: registered?.skeleton === undefined ? undefined : _.cloneDeep(registered.skeleton),
+      dynamicHints: normalizeSchemaHints(registered?.dynamicHints),
+      coverage: registered?.coverage || { status: 'unresolved', source: 'third-party' },
+      exposure: registered?.exposure || 'public',
+      allowDirectUse: registered?.allowDirectUse ?? true,
+      suggestedUses: normalizeStringArray(registered?.suggestedUses),
+    };
+
+    for (const contribution of this.collectContextPatches(name, contextChain)) {
+      this.applyModelSchemaPatch(resolved, contribution.patch, contribution.source, contribution.strict);
+    }
+
+    this.resolvedModelCache.set(cacheKey, _.cloneDeep(resolved));
+    return resolved;
   }
 
-  listModelDocuments(): FlowSchemaDocument[] {
-    return this.listModelUses().map((use) => this.getModelDocument(use));
+  private isPublicModel(model?: Pick<RegisteredModelSchema, 'exposure'>): boolean {
+    return (model?.exposure || 'public') === 'public';
   }
 
-  getCoverageSummary(): FlowSchemaRegistrySummary {
-    const models = Array.from(this.modelSchemas.values());
+  getSuggestedUses(use: string): string[] {
+    const model = this.modelSchemas.get(String(use || '').trim());
+    if (model?.suggestedUses?.length) {
+      return normalizeStringArray(model.suggestedUses);
+    }
+    return this.listModelUses({ publicOnly: true, directUseOnly: true })
+      .filter((item) => item !== use)
+      .slice(0, 20);
+  }
+
+  hasPublicModel(use: string): boolean {
+    const model = this.modelSchemas.get(String(use || '').trim());
+    return !!model && this.isPublicModel(model);
+  }
+
+  isDirectUseAllowed(use: string): boolean {
+    const model = this.modelSchemas.get(String(use || '').trim());
+    return model ? model.allowDirectUse !== false : true;
+  }
+
+  listModelUses(options: { publicOnly?: boolean; directUseOnly?: boolean } = {}): string[] {
+    const { publicOnly = false, directUseOnly = false } = options;
+    return Array.from(this.modelSchemas.values())
+      .filter((model) => !publicOnly || this.isPublicModel(model))
+      .filter((model) => !directUseOnly || model.allowDirectUse !== false)
+      .map((model) => model.use)
+      .sort();
+  }
+
+  listModelDocuments(options: { publicOnly?: boolean } = {}): FlowSchemaDocument[] {
+    return this.listModelUses({ publicOnly: options.publicOnly }).map((use) => this.getModelDocument(use));
+  }
+
+  getCoverageSummary(options: { publicOnly?: boolean } = {}): FlowSchemaRegistrySummary {
+    const { publicOnly = false } = options;
+    const models = Array.from(this.modelSchemas.values()).filter((model) => !publicOnly || this.isPublicModel(model));
     return {
       registeredModels: models.length,
       registeredActions: this.actionSchemas.size,
@@ -744,11 +994,13 @@ export class FlowSchemaRegistry {
 
   getSchemaBundle(uses?: string[]): FlowSchemaBundleDocument {
     const documents = (
-      !uses || uses.length === 0 ? this.listModelDocuments() : uses.map((use) => this.getModelDocument(use))
+      !uses || uses.length === 0
+        ? this.listModelDocuments({ publicOnly: true })
+        : uses.filter((use) => this.hasPublicModel(use)).map((use) => this.getModelDocument(use))
     ).filter(Boolean);
     return {
       generatedAt: new Date().toISOString(),
-      summary: this.getCoverageSummary(),
+      summary: this.getCoverageSummary({ publicOnly: true }),
       items: documents.map((document) => ({
         use: document.use,
         title: document.title,
@@ -765,11 +1017,19 @@ export class FlowSchemaRegistry {
     };
   }
 
-  getModelDocument(use: string): FlowSchemaDocument {
-    const registered = this.modelSchemas.get(use);
-    const baseCoverage = registered?.coverage || { status: 'unresolved', source: 'third-party' as const };
+  getModelDocument(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowSchemaDocument {
+    return this.buildModelDocument(use, contextChain, new Set<string>());
+  }
+
+  private buildModelDocument(
+    use: string,
+    contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): FlowSchemaDocument {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    const baseCoverage = resolved.coverage || { status: 'unresolved', source: 'third-party' as const };
     const flowDiagnostics = this.collectFlowSchemaDiagnostics(use);
-    const slotHints = Object.entries(registered?.subModelSlots || {}).map(([slotKey, slot]) =>
+    const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) =>
       createFlowHint(
         {
           kind: slot.dynamic ? 'dynamic-children' : 'manual-schema-required',
@@ -791,9 +1051,10 @@ export class FlowSchemaRegistry {
     );
     const coverage = this.buildDocumentCoverage(baseCoverage, flowDiagnostics.statuses);
     const dynamicHints = normalizeSchemaHints([
-      ...(registered?.dynamicHints || []),
+      ...(resolved?.dynamicHints || []),
       ...slotHints,
       ...flowDiagnostics.hints,
+      ...this.collectNestedDocumentHints(use, contextChain, visited),
       ...(coverage.status === 'unresolved'
         ? [
             createFlowHint(
@@ -811,33 +1072,40 @@ export class FlowSchemaRegistry {
         : []),
     ]);
 
-    const jsonSchema = this.buildModelSnapshotSchema(use);
-    const skeleton = _.cloneDeep(registered?.skeleton ?? buildSkeletonFromSchema(jsonSchema));
-    const minimalExample = _.cloneDeep(registered?.docs?.minimalExample ?? registered?.examples?.[0] ?? skeleton);
+    const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
+    const skeleton = _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema));
+    const minimalExample = _.cloneDeep(resolved?.docs?.minimalExample ?? resolved?.examples?.[0] ?? skeleton);
     const hash = hashString(stableStringify(jsonSchema));
 
     return {
       use,
-      title: registered?.title || use,
+      title: resolved?.title || use,
       jsonSchema,
       coverage,
       dynamicHints,
-      examples: registered?.examples || [],
+      examples: resolved?.examples || [],
       minimalExample,
-      commonPatterns: _.cloneDeep(registered?.docs?.commonPatterns || []),
-      antiPatterns: _.cloneDeep(registered?.docs?.antiPatterns || []),
+      commonPatterns: _.cloneDeep(resolved?.docs?.commonPatterns || []),
+      antiPatterns: _.cloneDeep(resolved?.docs?.antiPatterns || []),
       skeleton,
       hash,
       source: coverage.source,
     };
   }
 
-  buildModelSnapshotSchema(use: string): FlowJsonSchema {
-    const registered = this.modelSchemas.get(use);
-    const flowRegistrySchema = registered?.flowRegistrySchema || this.buildStaticFlowRegistrySchema(use);
-    const stepParamsSchema = registered?.stepParamsSchema || this.buildStaticStepParamsSchema(use);
-    const propsSchema = asObjectSchema(registered?.propsSchema, true);
-    const subModelsSchema = this.buildSubModelsSchema(use);
+  buildModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    return this.buildSnapshotSchemaFromResolved(use, resolved, contextChain);
+  }
+
+  private buildSnapshotSchemaFromResolved(
+    use: string | undefined,
+    resolved: RegisteredModelSchema,
+    contextChain: FlowSchemaContextEdge[],
+  ): FlowJsonSchema {
+    const flowRegistrySchema = resolved?.flowRegistrySchema || { type: 'object', additionalProperties: true };
+    const stepParamsSchema = resolved?.stepParamsSchema || { type: 'object', additionalProperties: true };
+    const subModelsSchema = this.buildSubModelsSchemaFromSlots(use || '', resolved?.subModelSlots, contextChain);
 
     return {
       $schema: JSON_SCHEMA_DRAFT_07,
@@ -850,9 +1118,8 @@ export class FlowSchemaRegistry {
         subKey: { type: 'string' },
         subType: { type: 'string', enum: ['object', 'array'] },
         sortIndex: { type: 'number' },
-        props: propsSchema,
         stepParams: stepParamsSchema,
-        flowRegistry: mergeSchemas(flowRegistrySchema, registered?.flowRegistrySchemaPatch) || {
+        flowRegistry: mergeSchemas(flowRegistrySchema, resolved?.flowRegistrySchemaPatch) || {
           type: 'object',
           additionalProperties: true,
         },
@@ -863,15 +1130,61 @@ export class FlowSchemaRegistry {
     };
   }
 
-  buildStaticFlowRegistrySchema(use: string): FlowJsonSchema {
-    const registered = this.modelSchemas.get(use);
-    if (registered?.flowRegistrySchema) {
-      return _.cloneDeep(registered.flowRegistrySchema);
+  buildStaticFlowRegistrySchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    if (resolved?.flowRegistrySchema) {
+      return _.cloneDeep(
+        mergeSchemas(resolved.flowRegistrySchema, resolved.flowRegistrySchemaPatch) || resolved.flowRegistrySchema,
+      );
     }
+    return { type: 'object', additionalProperties: true };
+  }
+
+  buildStaticStepParamsSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    if (resolved?.stepParamsSchema) {
+      return _.cloneDeep(resolved.stepParamsSchema);
+    }
+    return { type: 'object', additionalProperties: true };
+  }
+
+  buildSubModelsSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    return this.buildSubModelsSchemaFromSlots(use, resolved?.subModelSlots, contextChain);
+  }
+
+  private buildSubModelsSchemaFromSlots(
+    parentUse: string,
+    slots: Record<string, FlowSubModelSlotSchema> | undefined,
+    contextChain: FlowSchemaContextEdge[] = [],
+  ): FlowJsonSchema {
+    if (!slots || Object.keys(slots).length === 0) {
+      return { type: 'object', additionalProperties: true };
+    }
+    const properties: Record<string, FlowJsonSchema> = {};
+    for (const [slotKey, slot] of Object.entries(slots)) {
+      const itemSchema = this.buildSlotTargetSchema(parentUse, slotKey, slot, contextChain);
+      properties[slotKey] =
+        slot.type === 'array'
+          ? {
+              type: 'array',
+              items: itemSchema,
+            }
+          : itemSchema;
+    }
+    return {
+      type: 'object',
+      properties,
+      additionalProperties: true,
+    };
+  }
+
+  private buildInferredFlowRegistrySchema(use: string): FlowJsonSchema | undefined {
+    const registered = this.modelSchemas.get(use);
     const modelClass = registered?.modelClass as any;
     const flowsMap = modelClass?.globalFlowRegistry?.getFlows?.() as Map<string, any> | undefined;
     if (!flowsMap?.size) {
-      return { type: 'object', additionalProperties: true };
+      return undefined;
     }
 
     const properties: Record<string, FlowJsonSchema> = {};
@@ -908,15 +1221,12 @@ export class FlowSchemaRegistry {
     };
   }
 
-  buildStaticStepParamsSchema(use: string): FlowJsonSchema {
+  private buildInferredStepParamsSchema(use: string): FlowJsonSchema | undefined {
     const registered = this.modelSchemas.get(use);
-    if (registered?.stepParamsSchema) {
-      return _.cloneDeep(registered.stepParamsSchema);
-    }
     const modelClass = registered?.modelClass as any;
     const flowsMap = modelClass?.globalFlowRegistry?.getFlows?.() as Map<string, any> | undefined;
     if (!flowsMap?.size) {
-      return { type: 'object', additionalProperties: true };
+      return undefined;
     }
 
     const properties: Record<string, FlowJsonSchema> = {};
@@ -932,29 +1242,6 @@ export class FlowSchemaRegistry {
         properties: stepProperties,
         additionalProperties: false,
       };
-    }
-    return {
-      type: 'object',
-      properties,
-      additionalProperties: true,
-    };
-  }
-
-  buildSubModelsSchema(use: string): FlowJsonSchema {
-    const slots = this.getModel(use)?.subModelSlots;
-    if (!slots || Object.keys(slots).length === 0) {
-      return { type: 'object', additionalProperties: true };
-    }
-    const properties: Record<string, FlowJsonSchema> = {};
-    for (const [slotKey, slot] of Object.entries(slots)) {
-      const itemSchema = slot.schema || this.buildSlotTargetSchema(slot);
-      properties[slotKey] =
-        slot.type === 'array'
-          ? {
-              type: 'array',
-              items: itemSchema,
-            }
-          : itemSchema;
     }
     return {
       type: 'object',
@@ -1058,16 +1345,274 @@ export class FlowSchemaRegistry {
     };
   }
 
-  private buildSlotTargetSchema(slot: FlowSubModelSlotSchema): FlowJsonSchema {
+  private buildSlotTargetSchema(
+    parentUse: string,
+    slotKey: string,
+    slot: FlowSubModelSlotSchema,
+    contextChain: FlowSchemaContextEdge[],
+  ): FlowJsonSchema {
     if (slot.use) {
-      return this.buildModelSnapshotSchema(slot.use);
+      return this.buildModelSnapshotSchema(slot.use, [
+        ...contextChain,
+        {
+          parentUse,
+          slotKey,
+          childUse: slot.use,
+        },
+      ]);
     }
     if (Array.isArray(slot.uses) && slot.uses.length > 0) {
       return {
-        oneOf: slot.uses.map((use) => this.buildModelSnapshotSchema(use)),
+        oneOf: slot.uses.map((use) =>
+          this.buildModelSnapshotSchema(use, [
+            ...contextChain,
+            {
+              parentUse,
+              slotKey,
+              childUse: use,
+            },
+          ]),
+        ),
       };
     }
+    if (slot.childSchemaPatch || slot.descendantSchemaPatches?.length) {
+      return this.buildAnonymousSlotSnapshotSchema(parentUse, slotKey, slot, contextChain);
+    }
+    if (slot.schema && !slot.childSchemaPatch && !slot.descendantSchemaPatches?.length) {
+      return _.cloneDeep(slot.schema);
+    }
     return { type: 'object', additionalProperties: true };
+  }
+
+  private buildAnonymousSlotSnapshotSchema(
+    parentUse: string,
+    slotKey: string,
+    slot: FlowSubModelSlotSchema,
+    contextChain: FlowSchemaContextEdge[],
+  ): FlowJsonSchema {
+    const anonymousResolved: RegisteredModelSchema = {
+      use: '',
+      title: slot.description || `${parentUse || 'AnonymousModel'}.${slotKey}`,
+      examples: [],
+      docs: normalizeSchemaDocs(),
+      dynamicHints: [],
+      coverage: {
+        status: 'unresolved',
+        source: 'third-party',
+      },
+    };
+
+    const directPatch = this.resolveChildSchemaPatch(slot, '');
+    if (directPatch) {
+      this.applyModelSchemaPatch(anonymousResolved, directPatch, 'third-party');
+    }
+
+    return this.buildSnapshotSchemaFromResolved('', anonymousResolved, [
+      ...contextChain,
+      {
+        parentUse,
+        slotKey,
+        childUse: '',
+      },
+    ]);
+  }
+
+  private collectNestedDocumentHints(
+    use: string,
+    contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): FlowDynamicHint[] {
+    const visitKey = `${use}::${stableStringify(contextChain)}`;
+    if (visited.has(visitKey)) {
+      return [];
+    }
+
+    visited.add(visitKey);
+    try {
+      const resolved = this.resolveModelSchema(use, contextChain);
+      const hints: FlowDynamicHint[] = [];
+      for (const [slotKey, slot] of Object.entries(resolved.subModelSlots || {})) {
+        const childUses = collectAllowedUses(slot);
+        for (const childUse of childUses) {
+          const childContext = [
+            ...contextChain,
+            {
+              parentUse: use,
+              slotKey,
+              childUse,
+            },
+          ];
+          const childDocument = this.buildModelDocument(childUse, childContext, visited);
+          const basePath = `${use}.subModels.${slotKey}`;
+          hints.push(...childDocument.dynamicHints.map((hint) => this.prefixNestedHint(hint, basePath, childUse)));
+        }
+      }
+      return normalizeSchemaHints(hints);
+    } finally {
+      visited.delete(visitKey);
+    }
+  }
+
+  private prefixNestedHint(hint: FlowDynamicHint, basePath: string, childUse: string): FlowDynamicHint {
+    if (!hint.path) {
+      return {
+        ...hint,
+        path: basePath,
+      };
+    }
+
+    if (hint.path === childUse) {
+      return {
+        ...hint,
+        path: basePath,
+      };
+    }
+
+    if (hint.path.startsWith(`${childUse}.`)) {
+      return {
+        ...hint,
+        path: `${basePath}.${hint.path.slice(childUse.length + 1)}`,
+      };
+    }
+
+    return {
+      ...hint,
+      path: `${basePath}.${hint.path}`,
+    };
+  }
+
+  private collectContextPatches(use: string, contextChain: FlowSchemaContextEdge[]): ModelPatchContribution[] {
+    if (!contextChain.length) {
+      return [];
+    }
+
+    const contributions: ModelPatchContribution[] = [];
+    const targetEdgeIndex = contextChain.length - 1;
+
+    for (let index = 0; index < contextChain.length; index++) {
+      const edge = contextChain[index];
+      const parentContext = contextChain.slice(0, index);
+      const parentResolved = this.resolveModelSchema(edge.parentUse, parentContext);
+      const slot = parentResolved.subModelSlots?.[edge.slotKey];
+      if (!slot) {
+        continue;
+      }
+
+      const remainingEdges = contextChain.slice(index + 1);
+      for (const patch of slot.descendantSchemaPatches || []) {
+        if (this.matchesDescendantSchemaPatch(patch, remainingEdges)) {
+          contributions.push({
+            patch: patch.patch,
+            source: parentResolved.coverage.source,
+            strict: parentResolved.coverage.strict,
+          });
+        }
+      }
+
+      if (index === targetEdgeIndex) {
+        const directPatch = this.resolveChildSchemaPatch(slot, use);
+        if (directPatch) {
+          contributions.push({
+            patch: directPatch,
+            source: parentResolved.coverage.source,
+            strict: parentResolved.coverage.strict,
+          });
+        }
+      }
+    }
+
+    return contributions;
+  }
+
+  private matchesDescendantSchemaPatch(
+    patch: FlowDescendantSchemaPatch,
+    remainingEdges: FlowSchemaContextEdge[],
+  ): boolean {
+    const path = normalizeSubModelContextPath(patch.path);
+    if (path.length !== remainingEdges.length) {
+      return false;
+    }
+
+    return path.every((step, index) => {
+      const edge = remainingEdges[index];
+      if (step.slotKey !== edge.slotKey) {
+        return false;
+      }
+      if (typeof step.use === 'undefined') {
+        return true;
+      }
+      if (typeof step.use === 'string') {
+        return step.use === edge.childUse;
+      }
+      return step.use.includes(edge.childUse);
+    });
+  }
+
+  private resolveChildSchemaPatch(slot: FlowSubModelSlotSchema, childUse: string): FlowModelSchemaPatch | undefined {
+    const childSchemaPatch = slot.childSchemaPatch;
+    if (!childSchemaPatch || typeof childSchemaPatch !== 'object' || Array.isArray(childSchemaPatch)) {
+      return undefined;
+    }
+
+    const directPatch = normalizeModelSchemaPatch(childSchemaPatch as FlowModelSchemaPatch);
+    if (directPatch) {
+      return directPatch;
+    }
+
+    return normalizeModelSchemaPatch((childSchemaPatch as Record<string, FlowModelSchemaPatch>)[childUse]);
+  }
+
+  private applyModelSchemaPatch(
+    target: RegisteredModelSchema,
+    patch: FlowModelSchemaPatch,
+    source: FlowSchemaCoverage['source'],
+    strict?: boolean,
+  ) {
+    target.stepParamsSchema = mergeSchemas(target.stepParamsSchema, patch.stepParamsSchema);
+    target.flowRegistrySchema = mergeSchemas(target.flowRegistrySchema, patch.flowRegistrySchema);
+    target.flowRegistrySchemaPatch = mergeSchemas(target.flowRegistrySchemaPatch, patch.flowRegistrySchemaPatch);
+    target.subModelSlots = normalizeSubModelSlots(
+      patch.subModelSlots
+        ? deepMergeReplaceArrays(target.subModelSlots || {}, patch.subModelSlots)
+        : target.subModelSlots,
+    );
+    target.docs = normalizeSchemaDocs({
+      ...target.docs,
+      ...patch.docs,
+      examples: patch.docs?.examples || target.docs?.examples,
+      dynamicHints: [...(target.docs?.dynamicHints || []), ...(patch.docs?.dynamicHints || [])],
+      commonPatterns: patch.docs?.commonPatterns || target.docs?.commonPatterns,
+      antiPatterns: patch.docs?.antiPatterns || target.docs?.antiPatterns,
+      minimalExample:
+        patch.docs?.minimalExample !== undefined ? patch.docs.minimalExample : target.docs?.minimalExample,
+    });
+    target.examples = Array.isArray(patch.examples) ? _.cloneDeep(patch.examples) : target.examples;
+    target.skeleton =
+      patch.skeleton !== undefined ? deepMergeReplaceArrays(target.skeleton, patch.skeleton) : target.skeleton;
+    target.dynamicHints = normalizeSchemaHints([
+      ...(target.dynamicHints || []),
+      ...(patch.dynamicHints || []),
+      ...(patch.docs?.dynamicHints || []),
+    ]);
+
+    const hasSchemaPatch =
+      !!patch.stepParamsSchema ||
+      !!patch.flowRegistrySchema ||
+      !!patch.flowRegistrySchemaPatch ||
+      !!patch.subModelSlots;
+    if (hasSchemaPatch) {
+      target.coverage = {
+        ...target.coverage,
+        status:
+          target.coverage.status === 'unresolved'
+            ? 'manual'
+            : target.coverage.status === 'auto'
+              ? 'mixed'
+              : target.coverage.status,
+        source: target.coverage.source === 'third-party' ? source : target.coverage.source,
+        strict: target.coverage.strict ?? strict,
+      };
+    }
   }
 
   private collectModelDynamicHints(use: string, modelClass: ModelConstructor, meta: FlowModelMeta): FlowDynamicHint[] {

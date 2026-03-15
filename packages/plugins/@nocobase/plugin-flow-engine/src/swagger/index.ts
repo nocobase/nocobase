@@ -73,6 +73,10 @@ export default {
               },
             },
           },
+          404: {
+            description: 'Not Found',
+            content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
+          },
           400: {
             description: 'Bad Request',
             content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResponse' } } },
@@ -437,7 +441,6 @@ export default {
               uid: { type: 'string' },
               use: { type: 'string' },
               async: { type: 'boolean' },
-              props: { type: 'object', additionalProperties: true },
               stepParams: { type: 'object', additionalProperties: true },
               flowRegistry: { type: 'object', additionalProperties: true },
               subModels: { type: 'object', additionalProperties: true },
@@ -453,7 +456,6 @@ export default {
               subType: { type: 'string', enum: ['object'] },
               use: { type: 'string' },
               async: { type: 'boolean' },
-              props: { type: 'object', additionalProperties: true },
               stepParams: { type: 'object', additionalProperties: true },
               flowRegistry: { type: 'object', additionalProperties: true },
               subModels: { type: 'object', additionalProperties: true },
@@ -667,7 +669,6 @@ export default {
           subKey: { type: 'string', description: 'Sub-model key on parent.' },
           subType: { type: 'string', enum: ['object', 'array'], description: 'Sub-model type on parent.' },
           stepParams: { type: 'object', additionalProperties: true },
-          props: { type: 'object', additionalProperties: true },
           flowRegistry: { type: 'object', additionalProperties: true },
           subModels: {
             type: 'object',

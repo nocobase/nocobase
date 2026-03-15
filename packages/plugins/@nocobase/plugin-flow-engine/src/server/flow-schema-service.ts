@@ -23,6 +23,7 @@ import {
   type FlowActionSchemaManifest,
   type FlowModelSchemaManifest,
   type FlowSchemaBundleDocument,
+  type FlowSchemaContextEdge,
   type FlowJsonSchema,
   type FlowSchemaDocument,
   type ModelConstructor,
@@ -34,7 +35,7 @@ export interface FlowSchemaValidationIssue {
   jsonPointer: string;
   modelUid?: string;
   modelUse?: string;
-  section: 'model' | 'props' | 'stepParams' | 'subModels' | 'flowRegistry';
+  section: 'model' | 'stepParams' | 'subModels' | 'flowRegistry';
   keyword: string;
   message: string;
   expectedType?: string | string[];
@@ -118,6 +119,12 @@ export class FlowSchemaService {
 
   constructor() {
     this.registry.registerModels({ FlowModel });
+    this.registry.registerModel('FlowModel', {
+      modelClass: FlowModel,
+      title: 'FlowModel',
+      exposure: 'internal',
+      allowDirectUse: false,
+    });
   }
 
   registerModels(models: Record<string, ModelConstructor>) {
@@ -136,15 +143,15 @@ export class FlowSchemaService {
     this.registry.registerModelManifests(manifests);
   }
 
-  getDocument(use: string): FlowSchemaDocument {
-    return this.registry.getModelDocument(use);
+  getDocument(use: string): FlowSchemaDocument | undefined {
+    return this.registry.hasPublicModel(use) ? this.registry.getModelDocument(use) : undefined;
   }
 
   getDocuments(uses?: string[]): FlowSchemaDocument[] {
     if (!Array.isArray(uses) || uses.length === 0) {
-      return this.registry.listModelDocuments();
+      return this.registry.listModelDocuments({ publicOnly: true });
     }
-    return uses.map((use) => this.registry.getModelDocument(use));
+    return uses.filter((use) => this.registry.hasPublicModel(use)).map((use) => this.registry.getModelDocument(use));
   }
 
   getBundle(uses?: string[]): FlowSchemaBundleDocument {
@@ -158,7 +165,7 @@ export class FlowSchemaService {
     } = {},
   ): FlowSchemaValidationIssue[] {
     const issues: FlowSchemaValidationIssue[] = [];
-    this.validateModelNode(input, '#', issues, options);
+    this.validateModelNode(input, '#', issues, options, []);
     return issues;
   }
 
@@ -169,8 +176,10 @@ export class FlowSchemaService {
     options: {
       allowRootObjectLocator?: boolean;
     } = {},
+    contextChain: FlowSchemaContextEdge[] = [],
   ) {
-    const modelDocument = this.registry.getModelDocument(String(node?.use || ''));
+    const modelUse = String(node?.use || '').trim();
+    const modelDocument = this.registry.getModelDocument(modelUse, contextChain);
     const schemaHash = modelDocument.hash;
     const shellSchema =
       jsonPointer === '#' && options.allowRootObjectLocator && !String(node?.uid || '').trim()
@@ -193,13 +202,27 @@ export class FlowSchemaService {
       return;
     }
 
-    const registered = this.registry.getModel(node.use);
-    const strict = registered
-      ? registered.coverage.strict ??
-        (registered.coverage.source !== 'third-party' && registered.coverage.status !== 'unresolved')
-      : false;
+    const resolved = this.registry.resolveModelSchema(modelUse, contextChain);
+    const strict =
+      resolved.coverage.strict ??
+      (resolved.coverage.source !== 'third-party' && resolved.coverage.status !== 'unresolved');
 
-    if (!registered) {
+    if (!this.registry.isDirectUseAllowed(modelUse)) {
+      issues.push({
+        level: 'error',
+        jsonPointer: `${jsonPointer}/use`,
+        modelUid: node?.uid,
+        modelUse: node?.use,
+        section: 'model',
+        keyword: 'unsupported-model-use',
+        message: `Model use "${node?.use}" is internal and cannot be submitted directly.`,
+        suggestedUses: this.registry.getSuggestedUses(modelUse),
+        schemaHash,
+      });
+      return;
+    }
+
+    if (!this.registry.getModel(node.use) && resolved.coverage.status === 'unresolved') {
       issues.push({
         level: 'warning',
         jsonPointer,
@@ -208,27 +231,44 @@ export class FlowSchemaService {
         section: 'model',
         keyword: 'unresolved-model',
         message: `No schema registered for model use "${node?.use}".`,
-        suggestedUses: this.registry.listModelUses().slice(0, 20),
+        suggestedUses: this.registry.listModelUses({ publicOnly: true, directUseOnly: true }).slice(0, 20),
         schemaHash,
       });
     }
 
-    this.validateSchemaSection({
-      issues,
-      modelUid: node?.uid,
-      modelUse: node?.use,
-      jsonPointer: `${jsonPointer}/props`,
-      schema: registered?.propsSchema || { type: 'object', additionalProperties: true },
-      value: node?.props || {},
-      section: 'props',
-      strict,
-      cacheKey: `props:${node?.use || 'unknown'}`,
-      schemaHash,
-    });
+    if (typeof node?.stepParams !== 'undefined') {
+      this.validateSchemaSection({
+        issues,
+        modelUid: node?.uid,
+        modelUse: node?.use,
+        jsonPointer: `${jsonPointer}/stepParams`,
+        schema: this.registry.buildStaticStepParamsSchema(modelUse, contextChain),
+        value: node?.stepParams || {},
+        section: 'stepParams',
+        strict,
+        cacheKey: `step-params-shell:${schemaHash}`,
+        schemaHash,
+      });
+    }
 
-    this.validateFlowRegistry(node, jsonPointer, issues, strict, schemaHash);
-    this.validateStepParams(node, jsonPointer, issues, strict, schemaHash);
-    this.validateSubModels(node, jsonPointer, issues, strict, schemaHash);
+    if (typeof node?.flowRegistry !== 'undefined') {
+      this.validateSchemaSection({
+        issues,
+        modelUid: node?.uid,
+        modelUse: node?.use,
+        jsonPointer: `${jsonPointer}/flowRegistry`,
+        schema: this.registry.buildStaticFlowRegistrySchema(modelUse, contextChain),
+        value: node?.flowRegistry || {},
+        section: 'flowRegistry',
+        strict,
+        cacheKey: `flow-registry-shell:${schemaHash}`,
+        schemaHash,
+      });
+    }
+
+    this.validateFlowRegistry(node, jsonPointer, issues, strict, schemaHash, contextChain);
+    this.validateStepParams(node, jsonPointer, issues, strict, schemaHash, contextChain);
+    this.validateSubModels(node, jsonPointer, issues, strict, schemaHash, contextChain);
   }
 
   private validateFlowRegistry(
@@ -237,6 +277,7 @@ export class FlowSchemaService {
     issues: FlowSchemaValidationIssue[],
     strict: boolean,
     schemaHash?: string,
+    _contextChain: FlowSchemaContextEdge[] = [],
   ) {
     const flowRegistry = node?.flowRegistry;
     if (!flowRegistry) return;
@@ -329,7 +370,7 @@ export class FlowSchemaService {
           value: stepDef,
           section: 'flowRegistry',
           strict: true,
-          cacheKey: `flow-step:${node?.use}:${flowKey}:${stepKey}`,
+          cacheKey: `flow-step:${schemaHash}:${flowKey}:${stepKey}`,
           schemaHash,
         });
         if ((stepDef as any).use && !this.registry.getAction((stepDef as any).use)) {
@@ -355,6 +396,7 @@ export class FlowSchemaService {
     issues: FlowSchemaValidationIssue[],
     strict: boolean,
     schemaHash?: string,
+    contextChain: FlowSchemaContextEdge[] = [],
   ) {
     const stepParams = node?.stepParams;
     if (!stepParams) return;
@@ -373,9 +415,16 @@ export class FlowSchemaService {
       return;
     }
 
-    const staticSchema = this.registry.buildStaticStepParamsSchema(node.use);
+    const staticSchema = this.registry.buildStaticStepParamsSchema(node.use, contextChain);
     const staticFlows = (staticSchema.properties || {}) as Record<string, any>;
+    const staticFlowRegistrySchema = this.registry.buildStaticFlowRegistrySchema(node.use, contextChain);
+    const staticFlowRegistry = (staticFlowRegistrySchema.properties || {}) as Record<string, any>;
     const dynamicFlows = (node?.flowRegistry || {}) as Record<string, any>;
+    const shouldValidateAsFlowMap = Object.keys(staticFlowRegistry).length > 0 || Object.keys(dynamicFlows).length > 0;
+
+    if (!shouldValidateAsFlowMap) {
+      return;
+    }
 
     for (const [flowKey, flowValue] of Object.entries(stepParams)) {
       const flowPointer = `${jsonPointer}/stepParams/${this.escapeJsonPointer(flowKey)}`;
@@ -446,7 +495,7 @@ export class FlowSchemaService {
           value: stepValue,
           section: 'stepParams',
           strict,
-          cacheKey: `step-params:${node?.use}:${flowKey}:${stepKey}`,
+          cacheKey: `step-params:${schemaHash}:${flowKey}:${stepKey}`,
           schemaHash,
         });
       }
@@ -459,6 +508,7 @@ export class FlowSchemaService {
     issues: FlowSchemaValidationIssue[],
     strict: boolean,
     schemaHash?: string,
+    contextChain: FlowSchemaContextEdge[] = [],
   ) {
     const subModels = node?.subModels;
     if (!subModels) return;
@@ -477,7 +527,7 @@ export class FlowSchemaService {
       return;
     }
 
-    const slots = this.registry.getModel(node.use)?.subModelSlots || {};
+    const slots = this.registry.resolveModelSchema(String(node.use || ''), contextChain)?.subModelSlots || {};
     for (const [slotKey, slotValue] of Object.entries(subModels)) {
       const slotPointer = `${jsonPointer}/subModels/${this.escapeJsonPointer(slotKey)}`;
       const slotSchema = slots[slotKey];
@@ -510,7 +560,21 @@ export class FlowSchemaService {
             schemaHash,
           });
         }
-        slotValue.forEach((item, index) => this.validateModelNode(item, `${slotPointer}/${index}`, issues));
+        slotValue.forEach((item, index) => {
+          const itemPointer = `${slotPointer}/${index}`;
+          const nextContext = this.validateSubModelChildUse({
+            parentNode: node,
+            slotKey,
+            slotSchema,
+            value: item,
+            jsonPointer: itemPointer,
+            issues,
+            strict,
+            schemaHash,
+            contextChain,
+          });
+          this.validateModelNode(item, itemPointer, issues, {}, nextContext);
+        });
       } else {
         if (slotSchema && slotSchema.type !== 'object') {
           issues.push({
@@ -526,9 +590,63 @@ export class FlowSchemaService {
             schemaHash,
           });
         }
-        this.validateModelNode(slotValue, slotPointer, issues);
+        const nextContext = this.validateSubModelChildUse({
+          parentNode: node,
+          slotKey,
+          slotSchema,
+          value: slotValue,
+          jsonPointer: slotPointer,
+          issues,
+          strict,
+          schemaHash,
+          contextChain,
+        });
+        this.validateModelNode(slotValue, slotPointer, issues, {}, nextContext);
       }
     }
+  }
+
+  private validateSubModelChildUse(options: {
+    parentNode: any;
+    slotKey: string;
+    slotSchema?: FlowSubModelSlotSchema;
+    value: any;
+    jsonPointer: string;
+    issues: FlowSchemaValidationIssue[];
+    strict: boolean;
+    schemaHash?: string;
+    contextChain: FlowSchemaContextEdge[];
+  }): FlowSchemaContextEdge[] {
+    const childUse = String(options?.value?.use || '').trim();
+    const allowedUses = collectSlotSuggestedUses(options.slotSchema) || [];
+
+    if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse)) {
+      options.issues.push({
+        level: options.strict ? 'error' : 'warning',
+        jsonPointer: `${options.jsonPointer}/use`,
+        modelUid: options.parentNode?.uid,
+        modelUse: options.parentNode?.use,
+        section: 'subModels',
+        keyword: 'invalid-use',
+        message: `Slot "${options.slotKey}" does not allow child use "${childUse}".`,
+        allowedValues: allowedUses,
+        suggestedUses: allowedUses,
+        schemaHash: options.schemaHash,
+      });
+    }
+
+    if (!childUse) {
+      return options.contextChain;
+    }
+
+    return [
+      ...options.contextChain,
+      {
+        parentUse: String(options.parentNode?.use || ''),
+        slotKey: options.slotKey,
+        childUse,
+      },
+    ];
   }
 
   private validateFlowOn(
