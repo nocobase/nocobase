@@ -7,17 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { theme as antdTheme, Badge, ConfigProvider, Grid, Popover, Result, Tooltip } from 'antd';
+import { theme as antdTheme, Badge, ConfigProvider, Grid, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   AdminDynamicPage,
   AdminShellProvider,
@@ -36,7 +35,6 @@ import {
   DndContext,
   Icon,
   ParentRouteContext,
-  PinnedPluginList,
   RemoteSchemaTemplateManagerPlugin,
   SortableItem,
   useDesignable,
@@ -61,6 +59,7 @@ import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
 import { AdminLayoutModel } from './AdminLayoutModel';
+import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
 
 export * from './useDeleteRouteSchema';
 export {
@@ -77,24 +76,6 @@ export {
 } from '../../../admin-shell';
 
 const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';
-
-const layoutContentClass = css`
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  height: calc(100vh - var(--nb-header-height));
-  > div {
-    position: relative;
-  }
-  .ant-layout-footer {
-    position: absolute;
-    bottom: 0;
-    text-align: center;
-    width: 100%;
-    z-index: 0;
-    padding: 0px 50px;
-  }
-`;
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -128,77 +109,6 @@ const className3 = css`
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
-
-const pageContentStyle: React.CSSProperties = {
-  flex: 1,
-  overflowY: 'auto',
-};
-
-const ShowTipWhenNoPages = () => {
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable } = useDesignable();
-  const { token } = useToken();
-  const { t } = useTranslation();
-  const location = useLocation();
-
-  // Check if there are any pages
-  if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
-    return (
-      <Result
-        icon={<HighlightOutlined style={{ fontSize: '8em', color: token.colorText }} />}
-        title={t('No pages yet, please configure first')}
-        subTitle={t(`Click the "UI Editor" icon in the upper right corner to enter the UI Editor mode`)}
-      />
-    );
-  }
-
-  return null;
-};
-
-// 移动端中需要使用 dvh 单位来计算高度，否则会出现滚动不到最底部的问题
-const mobileHeight = {
-  height: `calc(100dvh - var(--nb-header-height))`,
-};
-
-function isDvhSupported() {
-  // 创建一个测试元素
-  const testEl = document.createElement('div');
-
-  // 尝试设置 dvh 单位
-  testEl.style.height = '1dvh';
-
-  // 如果浏览器支持 dvh，则会解析这个值
-  // 如果不支持，height 将保持为空字符串或被设置为无效值
-  return testEl.style.height === '1dvh';
-}
-
-export const LayoutContent = () => {
-  const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
-  const flowEngine = useFlowEngine();
-  const layoutContentRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
-    model?.setLayoutContentElement(layoutContentRef.current);
-    return () => {
-      model?.setLayoutContentElement(null);
-    };
-  }, [flowEngine]);
-
-  /* Use the "nb-subpages-slot-without-header-and-side" class name to locate the position of the subpages */
-  return (
-    <div
-      ref={layoutContentRef}
-      className={`${layoutContentClass} nb-subpages-slot-without-header-and-side`}
-      style={style}
-    >
-      <div style={pageContentStyle}>
-        <Outlet />
-        <ShowTipWhenNoPages />
-      </div>
-    </div>
-  );
-};
 
 const NocoBaseLogo = () => {
   const result = useSystemSettings();
@@ -478,51 +388,6 @@ const contentStyle = {
 
 const HeaderContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
 
-const popoverStyle = css`
-  .ant-popover-inner {
-    padding: 0;
-    overflow: hidden;
-  }
-`;
-
-const MobileActions: FC = (props) => {
-  const { token } = useToken();
-  const [open, setOpen] = useState(false);
-
-  // 点击时立即关闭 Popover，避免影响用户操作
-  const handleContentClick = useCallback(() => {
-    setOpen(false);
-  }, []);
-
-  return (
-    <Popover
-      rootClassName={popoverStyle}
-      content={<PinnedPluginList onClick={handleContentClick} />}
-      color={token.colorBgHeader}
-      trigger="click"
-      open={open}
-      onOpenChange={setOpen}
-    >
-      <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
-        <EllipsisOutlined
-          style={{
-            color: token.colorTextHeaderMenu,
-            fontSize: 20,
-          }}
-        />
-      </div>
-    </Popover>
-  );
-};
-
-const actionsRender: any = (props) => {
-  if (props.isMobile) {
-    return <MobileActions />;
-  }
-
-  return <PinnedPluginList />;
-};
-
 const MenuItemTitle: React.FC = (props) => {
   return <>{props.children}</>;
 };
@@ -625,6 +490,44 @@ const HeaderWrapper: FC = (props) => {
 };
 const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
+};
+
+/**
+ * 渲染 Layout 内容区子模型。
+ *
+ * 这里仍然由 `InternalAdminLayout` 控制 ProLayout 容器，
+ * 但页面主体已经改为从 root model 的 `layoutContent` slot 读取。
+ */
+const AdminLayoutContentSlot = () => {
+  const flowEngine = useFlowEngine();
+  const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID)?.subModels.layoutContent;
+
+  if (!model) {
+    return null;
+  }
+
+  return <FlowModelRenderer model={model} />;
+};
+
+/**
+ * 渲染 Layout 右上角操作区子模型。
+ *
+ * 当前阶段仅把原有插件区收口到 FlowModel，
+ * 后续再继续拆成更细的 header subModels。
+ */
+const AdminLayoutHeaderActionsSlot: FC<{ isMobile?: boolean }> = ({ isMobile }) => {
+  const flowEngine = useFlowEngine();
+  const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID)?.subModels.headerActions;
+
+  if (!model) {
+    return null;
+  }
+
+  return <FlowModelRenderer model={model.createFork({ isMobile }, `admin-layout-header-actions-${isMobile}`)} />;
+};
+
+const actionsRender: any = (props) => {
+  return <AdminLayoutHeaderActionsSlot isMobile={props.isMobile} />;
 };
 
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
@@ -783,7 +686,7 @@ export const InternalAdminLayout = (props) => {
                     <SetIsMobileLayout isMobile={isMobile}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <LayoutContent />
+                        <AdminLayoutContentSlot />
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );
@@ -848,7 +751,7 @@ export class AdminLayoutPlugin extends Plugin {
     await this.app.pm.add(RemoteSchemaTemplateManagerPlugin);
   }
   async load() {
-    this.app.flowEngine.registerModels({ AdminLayoutModel });
+    this.app.flowEngine.registerModels({ AdminLayoutModel, AdminLayoutContentModel, AdminLayoutHeaderActionsModel });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
     this.app.use(MobileLayoutProvider);

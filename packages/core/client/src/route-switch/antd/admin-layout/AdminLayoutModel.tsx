@@ -10,9 +10,32 @@
 import { reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
 import React from 'react';
+import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from './AdminLayoutRouteCoordinator';
 
-export class AdminLayoutModel extends FlowModel {
+type AdminLayoutStructure = {
+  subModels: {
+    layoutContent?: AdminLayoutContentModel;
+    headerActions?: AdminLayoutHeaderActionsModel;
+  };
+};
+
+/**
+ * Admin Layout 的根模型。
+ *
+ * 当前阶段先让它稳定托管 Layout 的核心运行时和关键 slot：
+ * - `layoutContent`：页面主体区域
+ * - `headerActions`：右上角操作区
+ *
+ * 这样可以在不改页面行为的前提下，把 Layout 渲染逐步收敛到 FlowModel 树中。
+ *
+ * @example
+ * ```typescript
+ * const model = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
+ * model?.subModels.layoutContent;
+ * ```
+ */
+export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   private routeCoordinator?: AdminLayoutRouteCoordinator;
   private routeDisposer?: () => void;
   private activePageUid = '';
@@ -28,6 +51,33 @@ export class AdminLayoutModel extends FlowModel {
 
   private getCurrentRouteByActivePage() {
     return this.routePageMetaMap.get(this.activePageUid)?.currentRoute || {};
+  }
+
+  /**
+   * 确保 root model 的关键 slot 始终存在。
+   *
+   * 这里使用固定 uid，保证复用现有模型实例时也能补齐缺失的子模型，
+   * 避免 `AdminLayout` 分阶段重构时出现新旧模型树结构不一致。
+   */
+  ensureShellSubModels() {
+    if (!this.subModels.layoutContent) {
+      this.setSubModel('layoutContent', {
+        uid: `${this.uid}-layout-content`,
+        use: AdminLayoutContentModel,
+      });
+    }
+
+    if (!this.subModels.headerActions) {
+      this.setSubModel('headerActions', {
+        uid: `${this.uid}-header-actions`,
+        use: AdminLayoutHeaderActionsModel,
+      });
+    }
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    this.ensureShellSubModels();
   }
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
@@ -65,6 +115,7 @@ export class AdminLayoutModel extends FlowModel {
 
   protected onMount(): void {
     super.onMount();
+    this.ensureShellSubModels();
     if (!this.routeDisposer) {
       this.flowEngine.context.defineProperty('currentRoute', {
         get: () => this.getCurrentRouteByActivePage(),
