@@ -50,13 +50,13 @@ const getActionContext = (context: { fieldSchema?: Schema }) => {
  *
  * @param clonedSchema 当前字段 schema 的克隆副本
  * @param collectionFieldUiSchema 数据表字段上的 uiSchema
- * @returns 合并后的字段 schema
  * @example
  * ```typescript
- * const nextSchema = applyCollectionFieldUiSchemaToDefaultValueSchema(
- *   { 'x-component': 'CollectionField' },
- *   { 'x-component': 'Select', enum: [{ label: 'Option 1', value: 'option1' }] },
- * );
+ * const schema = { 'x-component': 'CollectionField' };
+ * applyCollectionFieldUiSchemaToDefaultValueSchema(schema, {
+ *   'x-component': 'Select',
+ *   enum: [{ label: 'Option 1', value: 'option1' }],
+ * });
  * ```
  */
 export const applyCollectionFieldUiSchemaToDefaultValueSchema = (
@@ -64,7 +64,7 @@ export const applyCollectionFieldUiSchemaToDefaultValueSchema = (
   collectionFieldUiSchema: Record<string, any>,
 ) => {
   if (!collectionFieldUiSchema) {
-    return clonedSchema;
+    return;
   }
 
   clonedSchema['x-component'] = collectionFieldUiSchema['x-component'] || 'Input';
@@ -77,14 +77,12 @@ export const applyCollectionFieldUiSchemaToDefaultValueSchema = (
 
   // 选项字段的选项源挂在 schema.enum 上，默认值弹窗如果不显式继承会导致下拉无内容。
   if (collectionFieldUiSchema.enum) {
-    clonedSchema.enum = _.cloneDeep(collectionFieldUiSchema.enum);
+    clonedSchema.enum = collectionFieldUiSchema.enum;
   }
 
   if (collectionFieldUiSchema.type) {
     clonedSchema.type = collectionFieldUiSchema.type;
   }
-
-  return clonedSchema;
 };
 
 export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: {
@@ -201,15 +199,11 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
 
               if (clonedSchema['x-component'] === 'CollectionField' && collectionField?.uiSchema) {
-                applyCollectionFieldUiSchemaToDefaultValueSchema(clonedSchema, _.cloneDeep(collectionField.uiSchema));
+                applyCollectionFieldUiSchemaToDefaultValueSchema(clonedSchema, collectionField.uiSchema);
               }
 
               if (collectionField.target && clonedSchema['x-component-props']) {
                 clonedSchema['x-component-props'].mode = 'Select';
-              }
-
-              if (collectionField?.uiSchema.type) {
-                clonedSchema.type = collectionField.uiSchema.type;
               }
 
               if (collectionField?.uiSchema['x-component'] === 'Checkbox') {

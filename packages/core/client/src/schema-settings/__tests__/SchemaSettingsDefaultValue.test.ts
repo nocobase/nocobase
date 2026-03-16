@@ -29,15 +29,14 @@ describe('applyCollectionFieldUiSchemaToDefaultValueSchema', () => {
       ],
     };
 
-    const nextSchema = applyCollectionFieldUiSchemaToDefaultValueSchema(schema, uiSchema);
+    applyCollectionFieldUiSchemaToDefaultValueSchema(schema, uiSchema);
 
-    expect(nextSchema['x-component']).toBe('Select');
-    expect(nextSchema.type).toBe('string');
-    expect(nextSchema['x-component-props']).toMatchObject({
+    expect(schema['x-component']).toBe('Select');
+    expect(schema.type).toBe('string');
+    expect(schema['x-component-props']).toMatchObject({
       allowClear: true,
       placeholder: '请选择',
     });
-    expect(nextSchema.enum).toEqual(uiSchema.enum);
-    expect(nextSchema.enum).not.toBe(uiSchema.enum);
+    expect(schema.enum).toBe(uiSchema.enum);
   });
 });
