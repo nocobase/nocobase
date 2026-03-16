@@ -37,29 +37,30 @@ function ensureSlash(pathname: string, fallback: string) {
   return normalized;
 }
 
-function inferV2PublicPathFromLocation() {
+function inferRootPublicPathFromLocation() {
   const marker = '/v2/';
-  const index = window.location.pathname.indexOf(marker);
+  const pathname = window.location.pathname;
+  const index = pathname.indexOf(marker);
   if (index >= 0) {
-    return ensureSlash(window.location.pathname.slice(0, index + marker.length), '/v2/');
+    return ensureSlash(pathname.slice(0, index), '/');
   }
-  return '/v2/';
+  return '/';
 }
 
-function getV2PublicPath() {
+function getRootPublicPath() {
   const fromWindow = window.__nocobase_public_path__;
   if (fromWindow) {
-    return ensureSlash(fromWindow, '/v2/');
+    return ensureSlash(fromWindow.replace(/\/v2\/$/, '/'), '/');
   }
   const fromBase = import.meta.env.BASE_URL;
   if (fromBase) {
-    return ensureSlash(fromBase, '/v2/');
+    return ensureSlash(fromBase.replace(/\/v2\/$/, '/'), '/');
   }
-  return inferV2PublicPathFromLocation();
+  return inferRootPublicPathFromLocation();
 }
 
-function getRootPublicPath(v2PublicPath: string) {
-  return v2PublicPath.replace(/\/v2\/$/, '/');
+function getV2PublicPath() {
+  return ensureSlash(`${getRootPublicPath().replace(/\/$/, '')}/v2/`, '/v2/');
 }
 
 function parseShareToken(value: boolean | string | undefined) {
@@ -78,8 +79,8 @@ function parseStorageType(value: string | undefined): ClientStorageType {
   return 'localStorage';
 }
 
+const rootPublicPath = getRootPublicPath();
 const v2PublicPath = getV2PublicPath();
-const rootPublicPath = getRootPublicPath(v2PublicPath);
 
 const app = new Application({
   publicPath: v2PublicPath,

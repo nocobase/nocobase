@@ -122,6 +122,10 @@ export default defineConfig(({ command }) => {
     },
     dev: {
       assetPrefix: v2PublicPath,
+      lazyCompilation: {
+        imports: true,
+        serverUrl: 'http://localhost:<port>',
+      },
       client: {
         overlay: false,
         protocol: 'ws',
