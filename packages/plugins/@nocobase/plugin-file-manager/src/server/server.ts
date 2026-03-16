@@ -12,11 +12,13 @@ import { basename } from 'path';
 import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
+import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
 import initActions from './actions';
+import { flowSchemaManifestContribution } from './flow-schema-manifests';
 import { AttachmentInterface } from './interfaces/attachment-interface';
 import { AttachmentModel, StorageClassType, StorageModel } from './storages';
 import StorageTypeAliOss from './storages/ali-oss';
@@ -55,6 +57,10 @@ export type UploadFileOptions = {
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
   storagesCache = new Map<number | string, StorageModel>();
+
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return flowSchemaManifestContribution;
+  }
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;

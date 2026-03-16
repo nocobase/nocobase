@@ -8,7 +8,11 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { createRuntimeFieldDynamicHint, runtimeFieldModelSlotSchema, tableColumnStepParamsSchema } from '../shared';
+import {
+  createRuntimeFieldDynamicHint,
+  createRuntimeFieldModelSlotSchema,
+  tableColumnStepParamsSchema,
+} from '../shared';
 
 export const tableColumnModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'TableColumnModel',
@@ -19,7 +23,7 @@ export const tableColumnModelInternalSchemaManifest: FlowModelSchemaManifest = {
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: tableColumnStepParamsSchema,
   subModelSlots: {
-    field: runtimeFieldModelSlotSchema,
+    field: createRuntimeFieldModelSlotSchema('table-column-field'),
   },
   skeleton: {
     uid: 'todo-table-column-uid',
@@ -38,12 +42,7 @@ export const tableColumnModelInternalSchemaManifest: FlowModelSchemaManifest = {
         },
       },
     },
-    subModels: {
-      field: {
-        uid: 'runtime-field-uid',
-        use: 'RuntimeFieldModel',
-      },
-    },
+    subModels: {},
   },
   docs: {
     dynamicHints: [

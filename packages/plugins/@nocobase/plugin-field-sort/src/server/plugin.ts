@@ -7,14 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 import { SortField } from './sort-field';
 import { move } from './action';
+import { flowSchemaManifestContribution } from './flow-schema-manifests';
 
 export class PluginFieldSortServer extends Plugin {
   async afterAdd() {}
+
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return flowSchemaManifestContribution;
+  }
 
   async beforeLoad() {
     const { lockManager } = this.app;

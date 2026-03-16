@@ -202,11 +202,116 @@ const mapBlockModelSchemaManifest: FlowModelSchemaManifest = {
   },
 };
 
+function createFieldManifest(use: string, title: string): FlowModelSchemaManifest {
+  return {
+    use,
+    title,
+    source: 'plugin',
+    strict: true,
+    exposure: 'internal',
+    stepParamsSchema: {
+      type: 'object',
+      properties: {
+        fieldSettings: {
+          type: 'object',
+          properties: {
+            init: {
+              type: 'object',
+              properties: {
+                dataSourceKey: { type: 'string' },
+                collectionName: { type: 'string' },
+                fieldPath: { type: 'string' },
+              },
+              additionalProperties: true,
+            },
+          },
+          additionalProperties: true,
+        },
+      },
+      additionalProperties: true,
+    },
+    skeleton: {
+      uid: `todo-${use}`.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase(),
+      use,
+    },
+  };
+}
+
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['MapBlockModel'],
+    expectedDescendantModels: [
+      'PointFieldModel',
+      'CircleFieldModel',
+      'PolygonFieldModel',
+      'LineStringFieldModel',
+      'DisplayPointFieldModel',
+      'DisplayCircleFieldModel',
+      'DisplayPolygonFieldModel',
+      'DisplayLineStringFieldModel',
+    ],
   },
-  models: [mapBlockModelSchemaManifest],
+  models: [
+    mapBlockModelSchemaManifest,
+    createFieldManifest('PointFieldModel', 'Point'),
+    createFieldManifest('CircleFieldModel', 'Circle'),
+    createFieldManifest('PolygonFieldModel', 'Polygon'),
+    createFieldManifest('LineStringFieldModel', 'Line string'),
+    createFieldManifest('DisplayPointFieldModel', 'Display point'),
+    createFieldManifest('DisplayCircleFieldModel', 'Display circle'),
+    createFieldManifest('DisplayPolygonFieldModel', 'Display polygon'),
+    createFieldManifest('DisplayLineStringFieldModel', 'Display line string'),
+  ],
+  fieldBindings: [
+    {
+      context: 'editable-field',
+      use: 'PointFieldModel',
+      interfaces: ['point'],
+      isDefault: true,
+    },
+    {
+      context: 'editable-field',
+      use: 'CircleFieldModel',
+      interfaces: ['circle'],
+      isDefault: true,
+    },
+    {
+      context: 'editable-field',
+      use: 'PolygonFieldModel',
+      interfaces: ['polygon'],
+      isDefault: true,
+    },
+    {
+      context: 'editable-field',
+      use: 'LineStringFieldModel',
+      interfaces: ['lineString'],
+      isDefault: true,
+    },
+    {
+      context: 'display-field',
+      use: 'DisplayPointFieldModel',
+      interfaces: ['point'],
+      isDefault: true,
+    },
+    {
+      context: 'display-field',
+      use: 'DisplayCircleFieldModel',
+      interfaces: ['circle'],
+      isDefault: true,
+    },
+    {
+      context: 'display-field',
+      use: 'DisplayPolygonFieldModel',
+      interfaces: ['polygon'],
+      isDefault: true,
+    },
+    {
+      context: 'display-field',
+      use: 'DisplayLineStringFieldModel',
+      interfaces: ['lineString'],
+      isDefault: true,
+    },
+  ],
   defaults: {
     source: 'plugin',
   },

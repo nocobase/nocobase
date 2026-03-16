@@ -143,6 +143,7 @@ export interface FlowSchemaBundleNode {
   use: string;
   title?: string;
   skeleton: any;
+  compatibility?: FlowFieldModelCompatibility;
   subModelCatalog?: Record<string, FlowSchemaBundleSlotCatalog>;
 }
 
@@ -186,6 +187,7 @@ export interface FlowSubModelSlotSchema {
   required?: boolean;
   dynamic?: boolean;
   schema?: FlowJsonSchema;
+  fieldBindingContext?: string;
   childSchemaPatch?: FlowModelSchemaPatch | Record<string, FlowModelSchemaPatch>;
   descendantSchemaPatches?: FlowDescendantSchemaPatch[];
   description?: string;
@@ -249,9 +251,45 @@ export interface FlowSchemaInventoryContribution {
   expectedDescendantActions?: string[];
 }
 
+export interface FlowFieldBindingConditions {
+  association?: boolean;
+  fieldTypes?: string[];
+  targetCollectionTemplateIn?: string[];
+  targetCollectionTemplateNotIn?: string[];
+}
+
+export interface FlowFieldBindingContextManifest {
+  name: string;
+  inherits?: string[];
+}
+
+export interface FlowFieldBindingManifest {
+  context: string;
+  use: string;
+  interfaces: string[];
+  isDefault?: boolean;
+  order?: number;
+  conditions?: FlowFieldBindingConditions;
+  defaultProps?: any;
+}
+
+export interface FlowFieldModelCompatibility {
+  context: string;
+  interfaces: string[];
+  isDefault?: boolean;
+  order?: number;
+  association?: boolean;
+  fieldTypes?: string[];
+  targetCollectionTemplateIn?: string[];
+  targetCollectionTemplateNotIn?: string[];
+  inheritParentFieldBinding?: boolean;
+}
+
 export interface FlowSchemaManifestContribution {
   models?: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>;
   actions?: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>;
+  fieldBindingContexts?: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest>;
+  fieldBindings?: FlowFieldBindingManifest[] | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>;
   inventory?: FlowSchemaInventoryContribution;
   defaults?: FlowSchemaManifestDefaults;
 }

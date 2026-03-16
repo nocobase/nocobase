@@ -243,6 +243,60 @@ class EmptyManifestPlugin extends Plugin {
   }
 }
 
+class FieldBindingManifestPlugin extends Plugin {
+  get name() {
+    return 'field-binding-manifest-plugin';
+  }
+
+  getFlowSchemaManifests(): FlowSchemaManifestContribution {
+    return {
+      fieldBindingContexts: [
+        {
+          name: 'provider-base-field',
+        },
+        {
+          name: 'provider-form-field',
+          inherits: ['provider-base-field'],
+        },
+      ],
+      models: {
+        ProviderBoundInputModel: {
+          exposure: 'internal',
+          stepParamsSchema: {
+            type: 'object',
+            additionalProperties: true,
+          },
+          skeleton: {
+            uid: 'provider-bound-input-model',
+            use: 'ProviderBoundInputModel',
+          },
+        } as any,
+        ProviderFieldHostModel: {
+          subModelSlots: {
+            field: {
+              type: 'object',
+              fieldBindingContext: 'provider-form-field',
+            },
+          },
+          skeleton: {
+            uid: 'provider-field-host-model',
+            use: 'ProviderFieldHostModel',
+          },
+        } as any,
+      },
+      fieldBindings: [
+        {
+          context: 'provider-base-field',
+          use: 'ProviderBoundInputModel',
+          interfaces: ['input'],
+          isDefault: true,
+          order: 10,
+        },
+      ],
+    };
+  }
+}
+
 class DisabledManifestPlugin extends Plugin {
   get name() {
     return 'disabled-manifest-plugin';
@@ -285,6 +339,7 @@ describe('flow schema manifest provider', () => {
         FirstMergedManifestPlugin,
         SecondMergedManifestPlugin,
         EmptyManifestPlugin,
+        FieldBindingManifestPlugin,
         [DisabledManifestPlugin, { name: 'disabled-manifest-plugin', enabled: false }],
       ],
     });
@@ -499,6 +554,45 @@ describe('flow schema manifest provider', () => {
         },
       },
     });
+  });
+
+  it('should collect field binding contexts and bindings from plugin providers', async () => {
+    const flowEnginePlugin = app.pm.get('flow-engine') as any;
+    expect(
+      flowEnginePlugin.flowSchemaService.registry
+        .resolveFieldBindingCandidates('provider-form-field', { interface: 'input' })
+        .map((item) => item.use),
+    ).toEqual(['ProviderBoundInputModel']);
+
+    const bundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: ['ProviderFieldHostModel'],
+    });
+
+    expect(bundle.status).toBe(200);
+    expect(bundle.body?.data?.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          use: 'ProviderFieldHostModel',
+          subModelCatalog: {
+            field: {
+              type: 'object',
+              candidates: [
+                expect.objectContaining({
+                  use: 'ProviderBoundInputModel',
+                  compatibility: expect.objectContaining({
+                    context: 'provider-base-field',
+                    interfaces: ['input'],
+                    isDefault: true,
+                    order: 10,
+                    inheritParentFieldBinding: true,
+                  }),
+                }),
+              ],
+            },
+          },
+        }),
+      ]),
+    );
   });
 
   it('should skip disabled or empty providers during collection', async () => {

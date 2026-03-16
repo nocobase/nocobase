@@ -20,6 +20,8 @@ import {
   FlowSchemaRegistry,
   type ActionDefinition,
   type FlowActionSchemaManifest,
+  type FlowFieldBindingContextManifest,
+  type FlowFieldBindingManifest,
   type FlowSchemaInventoryContribution,
   type FlowModelSchemaManifest,
   type FlowSchemaBundleDocument,
@@ -41,6 +43,9 @@ export interface FlowSchemaValidationIssue {
   expectedType?: string | string[];
   allowedValues?: any[];
   suggestedUses?: string[];
+  fieldInterface?: string;
+  fieldType?: string;
+  targetCollectionTemplate?: string;
   schemaHash?: string;
 }
 
@@ -112,12 +117,17 @@ function slotAllowsUnknownUses(slot?: FlowSubModelSlotSchema): boolean {
   return !!slot?.schema;
 }
 
+function readModelUse(value: any): string {
+  return String(value && typeof value === 'object' ? value.use || '' : '').trim();
+}
+
 export class FlowSchemaService {
   readonly registry = new FlowSchemaRegistry();
   private readonly ajv = new Ajv({
     allErrors: true,
   });
   private readonly validatorCache = new Map<string, ValidateFunction>();
+  private app: any;
 
   constructor() {
     this.registry.registerModel('FlowModel', {
@@ -156,6 +166,26 @@ export class FlowSchemaService {
     this.registry.registerInventory(inventory, source);
   }
 
+  registerFieldBindingContexts(
+    manifests: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest> | undefined,
+  ) {
+    this.registry.registerFieldBindingContexts(manifests);
+  }
+
+  registerFieldBindings(
+    manifests:
+      | FlowFieldBindingManifest[]
+      | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>
+      | undefined,
+    source: 'official' | 'plugin' | 'third-party',
+  ) {
+    this.registry.registerFieldBindings(manifests, source);
+  }
+
+  setApp(app: any) {
+    this.app = app;
+  }
+
   getDocument(use: string): FlowSchemaDocument | undefined {
     return this.registry.hasQueryableModel(use) ? this.registry.getModelDocument(use) : undefined;
   }
@@ -169,6 +199,64 @@ export class FlowSchemaService {
 
   getBundle(uses?: string[]): FlowSchemaBundleDocument {
     return this.registry.getSchemaBundle(uses);
+  }
+
+  private collectRuntimeFieldBindingUses(slot?: FlowSubModelSlotSchema, parentNode?: any) {
+    const fieldBindingContext = String(slot?.fieldBindingContext || '').trim();
+    if (!fieldBindingContext) {
+      return {
+        allowedUses: collectSlotSuggestedUses(slot),
+      };
+    }
+
+    const metadata = this.resolveFieldBindingMetadata(parentNode);
+    const candidates = this.registry.resolveFieldBindingCandidates(fieldBindingContext, metadata || {});
+    const allowedUses = candidates.map((candidate) => candidate.use);
+
+    return {
+      allowedUses: allowedUses.length > 0 ? allowedUses : collectSlotSuggestedUses(slot),
+      metadata,
+    };
+  }
+
+  private resolveFieldBindingMetadata(parentNode: any):
+    | {
+        interface?: string;
+        fieldType?: string;
+        association?: boolean;
+        targetCollectionTemplate?: string;
+      }
+    | undefined {
+    const init = parentNode?.stepParams?.fieldSettings?.init;
+    const dataSourceKey = String(init?.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(init?.collectionName || '').trim();
+    const fieldPath = String(init?.fieldPath || '').trim();
+    if (!collectionName || !fieldPath) {
+      return undefined;
+    }
+
+    const dataSource =
+      this.app?.dataSourceManager?.get?.(dataSourceKey) || this.app?.dataSourceManager?.getDataSource?.(dataSourceKey);
+    const database = dataSource?.collectionManager?.db || (dataSourceKey === 'main' ? this.app?.db : undefined);
+    const field = database?.getFieldByPath?.(`${collectionName}.${fieldPath}`);
+    if (!field) {
+      return undefined;
+    }
+
+    const targetCollection =
+      field.targetCollection || (field.target ? database?.getCollection?.(field.target) : undefined);
+    const association =
+      typeof field.isAssociationField === 'function'
+        ? !!field.isAssociationField()
+        : !!field.target || !!targetCollection;
+
+    return {
+      interface: typeof field.interface === 'string' ? field.interface : undefined,
+      fieldType:
+        typeof field.dataType === 'string' ? field.dataType : typeof field.type === 'string' ? field.type : undefined,
+      association,
+      targetCollectionTemplate: typeof targetCollection?.template === 'string' ? targetCollection.template : undefined,
+    };
   }
 
   validateModelTree(
@@ -210,6 +298,20 @@ export class FlowSchemaService {
         modelUid: node?.uid,
         modelUse: node?.use,
         section: 'model',
+        schemaHash,
+      });
+      return;
+    }
+
+    if (modelUse === 'RuntimeFieldModel') {
+      issues.push({
+        level: 'error',
+        jsonPointer: `${jsonPointer}/use`,
+        modelUid: node?.uid,
+        modelUse: node?.use,
+        section: 'model',
+        keyword: 'invalid-use',
+        message: 'Model use "RuntimeFieldModel" is a runtime placeholder and cannot be submitted directly.',
         schemaHash,
       });
       return;
@@ -575,6 +677,7 @@ export class FlowSchemaService {
         }
         slotValue.forEach((item, index) => {
           const itemPointer = `${slotPointer}/${index}`;
+          const itemUse = readModelUse(item);
           const nextContext = this.validateSubModelChildUse({
             parentNode: node,
             slotKey,
@@ -586,6 +689,9 @@ export class FlowSchemaService {
             schemaHash,
             contextChain,
           });
+          if (itemUse === 'RuntimeFieldModel') {
+            return;
+          }
           this.validateModelNode(item, itemPointer, issues, {}, nextContext);
         });
       } else {
@@ -614,6 +720,9 @@ export class FlowSchemaService {
           schemaHash,
           contextChain,
         });
+        if (readModelUse(slotValue) === 'RuntimeFieldModel') {
+          continue;
+        }
         this.validateModelNode(slotValue, slotPointer, issues, {}, nextContext);
       }
     }
@@ -631,8 +740,28 @@ export class FlowSchemaService {
     contextChain: FlowSchemaContextEdge[];
   }): FlowSchemaContextEdge[] {
     const childUse = String(options?.value?.use || '').trim();
-    const allowedUses = collectSlotSuggestedUses(options.slotSchema) || [];
-    const allowUnknownUses = slotAllowsUnknownUses(options.slotSchema);
+    const fieldBinding = this.collectRuntimeFieldBindingUses(options.slotSchema, options.parentNode);
+    const allowedUses = fieldBinding.allowedUses || [];
+    const allowUnknownUses =
+      !!options.slotSchema && !options.slotSchema.fieldBindingContext && slotAllowsUnknownUses(options.slotSchema);
+
+    if (childUse === 'RuntimeFieldModel') {
+      options.issues.push({
+        level: 'error',
+        jsonPointer: `${options.jsonPointer}/use`,
+        modelUid: options.parentNode?.uid,
+        modelUse: options.parentNode?.use,
+        section: 'subModels',
+        keyword: 'invalid-use',
+        message: `Slot "${options.slotKey}" cannot use runtime placeholder "RuntimeFieldModel".`,
+        allowedValues: allowedUses,
+        suggestedUses: allowedUses,
+        fieldInterface: fieldBinding.metadata?.interface,
+        fieldType: fieldBinding.metadata?.fieldType,
+        targetCollectionTemplate: fieldBinding.metadata?.targetCollectionTemplate,
+        schemaHash: options.schemaHash,
+      });
+    }
 
     if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse) && !allowUnknownUses) {
       options.issues.push({
@@ -645,6 +774,9 @@ export class FlowSchemaService {
         message: `Slot "${options.slotKey}" does not allow child use "${childUse}".`,
         allowedValues: allowedUses,
         suggestedUses: allowedUses,
+        fieldInterface: fieldBinding.metadata?.interface,
+        fieldType: fieldBinding.metadata?.fieldType,
+        targetCollectionTemplate: fieldBinding.metadata?.targetCollectionTemplate,
         schemaHash: options.schemaHash,
       });
     }

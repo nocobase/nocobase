@@ -1026,4 +1026,194 @@ describe('FlowSchemaRegistry', () => {
       },
     });
   });
+
+  it('should resolve runtime field binding candidates with compatibility metadata', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerFieldBindingContexts([
+      { name: 'editable-field' },
+      { name: 'display-field' },
+      { name: 'filter-field' },
+      { name: 'table-column-field', inherits: ['display-field'] },
+      { name: 'form-item-field', inherits: ['editable-field'] },
+    ]);
+
+    registry.registerModelManifest({
+      use: 'InputFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'input-field-uid',
+        use: 'InputFieldModel',
+      },
+    });
+    registry.registerModelManifest({
+      use: 'DisplayTextFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'display-text-field-uid',
+        use: 'DisplayTextFieldModel',
+      },
+    });
+    registry.registerModelManifest({
+      use: 'RecordSelectFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'record-select-field-uid',
+        use: 'RecordSelectFieldModel',
+      },
+    });
+    registry.registerModelManifest({
+      use: 'CascadeSelectFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'cascade-select-field-uid',
+        use: 'CascadeSelectFieldModel',
+      },
+    });
+    registry.registerFieldBindings([
+      {
+        context: 'editable-field',
+        use: 'InputFieldModel',
+        interfaces: ['input'],
+        isDefault: true,
+      },
+      {
+        context: 'display-field',
+        use: 'DisplayTextFieldModel',
+        interfaces: ['input'],
+        isDefault: true,
+      },
+      {
+        context: 'editable-field',
+        use: 'RecordSelectFieldModel',
+        interfaces: ['m2o'],
+        isDefault: true,
+        conditions: {
+          association: true,
+        },
+      },
+      {
+        context: 'editable-field',
+        use: 'CascadeSelectFieldModel',
+        interfaces: ['m2o'],
+        isDefault: true,
+        order: 60,
+        conditions: {
+          association: true,
+          targetCollectionTemplateIn: ['tree'],
+        },
+      },
+    ]);
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryFieldHostModel',
+      subModelSlots: {
+        field: {
+          type: 'object',
+          fieldBindingContext: 'form-item-field',
+        },
+      },
+      skeleton: {
+        uid: 'field-host-uid',
+        use: 'SchemaRegistryFieldHostModel',
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryDisplayFieldHostModel',
+      subModelSlots: {
+        field: {
+          type: 'object',
+          fieldBindingContext: 'table-column-field',
+        },
+      },
+      skeleton: {
+        uid: 'display-field-host-uid',
+        use: 'SchemaRegistryDisplayFieldHostModel',
+      },
+    });
+
+    expect(
+      registry.resolveFieldBindingCandidates('form-item-field', { interface: 'input' }).map((item) => item.use),
+    ).toEqual(['InputFieldModel']);
+    expect(
+      registry
+        .resolveFieldBindingCandidates('form-item-field', {
+          interface: 'm2o',
+          association: true,
+          targetCollectionTemplate: 'tree',
+        })
+        .map((item) => item.use),
+    ).toEqual(['CascadeSelectFieldModel', 'RecordSelectFieldModel']);
+
+    const bundle = registry.getSchemaBundle(['SchemaRegistryFieldHostModel', 'SchemaRegistryDisplayFieldHostModel']);
+    const formItem = bundle.items.find((item) => item.use === 'SchemaRegistryFieldHostModel');
+    const tableItem = bundle.items.find((item) => item.use === 'SchemaRegistryDisplayFieldHostModel');
+
+    expect(formItem?.subModelCatalog).toMatchObject({
+      field: {
+        type: 'object',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            use: 'InputFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'editable-field',
+              interfaces: ['input'],
+              isDefault: true,
+              inheritParentFieldBinding: true,
+            }),
+          }),
+          expect.objectContaining({
+            use: 'RecordSelectFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'editable-field',
+              interfaces: ['m2o'],
+              association: true,
+              isDefault: true,
+            }),
+          }),
+        ]),
+      },
+    });
+    expect(tableItem?.subModelCatalog).toMatchObject({
+      field: {
+        type: 'object',
+        candidates: [expect.objectContaining({ use: 'DisplayTextFieldModel' })],
+      },
+    });
+
+    const hostDoc = registry.getModelDocument('SchemaRegistryFieldHostModel');
+    expect(hostDoc.dynamicHints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'SchemaRegistryFieldHostModel.subModels.field',
+          'x-flow': expect.objectContaining({
+            slotRules: expect.objectContaining({
+              allowedUses: expect.arrayContaining([
+                'InputFieldModel',
+                'RecordSelectFieldModel',
+                'CascadeSelectFieldModel',
+              ]),
+            }),
+          }),
+        }),
+      ]),
+    );
+    expect(JSON.stringify(bundle)).not.toContain('RuntimeFieldModel');
+  });
 });

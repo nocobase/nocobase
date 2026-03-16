@@ -7,7 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowDynamicHint, FlowJsonSchema, FlowSubModelSlotSchema } from '@nocobase/flow-engine';
+import type {
+  FlowDynamicHint,
+  FlowJsonSchema,
+  FlowModelSchemaManifest,
+  FlowSubModelSlotSchema,
+} from '@nocobase/flow-engine';
 
 export const genericFilterSchema: FlowJsonSchema = {
   type: 'object',
@@ -237,12 +242,18 @@ export const filterFieldMetadataSchema: FlowJsonSchema = {
   additionalProperties: true,
 };
 
-export const runtimeFieldModelSlotSchema: FlowSubModelSlotSchema = {
-  type: 'object',
-  dynamic: true,
-  schema: genericModelNodeSchema,
-  description: 'Field renderer model is resolved from runtime field bindings.',
-};
+export function createRuntimeFieldModelSlotSchema(
+  fieldBindingContext: string,
+  description = 'Field renderer model is resolved from runtime field bindings.',
+): FlowSubModelSlotSchema {
+  return {
+    type: 'object',
+    dynamic: true,
+    fieldBindingContext,
+    schema: genericModelNodeSchema,
+    description,
+  };
+}
 
 export const showLabelStepParamsSchema: FlowJsonSchema = {
   type: 'object',
@@ -825,12 +836,79 @@ export function createRuntimeFieldDynamicHint(
       },
       contextRequirements,
       unresolvedReason,
-      recommendedFallback: {
-        uid: 'runtime-field-uid',
-        use: 'RuntimeFieldModel',
-      },
     },
   };
+}
+
+export function createFieldModelStepParamsSchema(extraFieldSettingsProperties: Record<string, FlowJsonSchema> = {}) {
+  return {
+    type: 'object',
+    properties: {
+      fieldSettings: {
+        type: 'object',
+        properties: {
+          init: fieldBindingInitSchema,
+          ...extraFieldSettingsProperties,
+        },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
+  } as FlowJsonSchema;
+}
+
+export function createFieldModelSkeleton(
+  use: string,
+  init: Partial<{
+    dataSourceKey: string;
+    collectionName: string;
+    fieldPath: string;
+    associationPathName: string;
+  }> = {},
+) {
+  return {
+    uid: `todo-${use}`.replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase(),
+    use,
+    ...(Object.keys(init).length > 0
+      ? {
+          stepParams: {
+            fieldSettings: {
+              init: {
+                ...init,
+              },
+            },
+          },
+        }
+      : {}),
+  };
+}
+
+export function createFieldModelSchemaManifest(options: {
+  use: string;
+  title?: string;
+  source?: 'official' | 'plugin' | 'third-party';
+  strict?: boolean;
+  exposure?: 'public' | 'internal';
+  abstract?: boolean;
+  allowDirectUse?: boolean;
+  suggestedUses?: string[];
+  stepParamsSchema?: FlowJsonSchema;
+  skeleton?: any;
+}) {
+  const manifest: FlowModelSchemaManifest = {
+    use: options.use,
+    title: options.title,
+    source: options.source ?? 'official',
+    strict: options.strict ?? true,
+    exposure: options.exposure ?? 'internal',
+    abstract: options.abstract,
+    allowDirectUse: options.allowDirectUse,
+    suggestedUses: options.suggestedUses,
+    stepParamsSchema: options.stepParamsSchema || createFieldModelStepParamsSchema(),
+    skeleton: options.skeleton || createFieldModelSkeleton(options.use),
+  };
+
+  return manifest;
 }
 
 export const formBlockBaseStepParamsSchema: FlowJsonSchema = {

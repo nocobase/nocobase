@@ -8,7 +8,11 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { createRuntimeFieldDynamicHint, detailItemStepParamsSchema, runtimeFieldModelSlotSchema } from '../shared';
+import {
+  createRuntimeFieldDynamicHint,
+  createRuntimeFieldModelSlotSchema,
+  detailItemStepParamsSchema,
+} from '../shared';
 
 export const formAssociationItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'FormAssociationItemModel',
@@ -19,7 +23,7 @@ export const formAssociationItemModelInternalSchemaManifest: FlowModelSchemaMani
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: detailItemStepParamsSchema,
   subModelSlots: {
-    field: runtimeFieldModelSlotSchema,
+    field: createRuntimeFieldModelSlotSchema('form-association-item-field'),
   },
   skeleton: {
     uid: 'todo-form-association-item-uid',
@@ -39,12 +43,7 @@ export const formAssociationItemModelInternalSchemaManifest: FlowModelSchemaMani
         },
       },
     },
-    subModels: {
-      field: {
-        uid: 'runtime-field-uid',
-        use: 'RuntimeFieldModel',
-      },
-    },
+    subModels: {},
   },
   docs: {
     dynamicHints: [

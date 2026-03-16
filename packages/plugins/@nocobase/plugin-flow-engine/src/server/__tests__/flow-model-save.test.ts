@@ -9,6 +9,7 @@
 
 import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
+import { vi } from 'vitest';
 
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
@@ -534,6 +535,307 @@ describe('flow-model save', () => {
           keyword: 'unsupported-model-use',
           message: 'Model use "FormBlockModel" is base/abstract and cannot be submitted directly.',
           suggestedUses: ['CreateFormModel', 'EditFormModel'],
+        }),
+      ]),
+    );
+  });
+
+  it('should expose real field model candidates and validate runtime field slots against field metadata', async () => {
+    const originalGetFieldByPath = app.db.getFieldByPath?.bind(app.db);
+    const originalGetDataSource = app.dataSourceManager.get.bind(app.dataSourceManager);
+    vi.spyOn(app.db, 'getFieldByPath').mockImplementation((path: string) => {
+      if (path === 'flow_field_schema_cases.title') {
+        return {
+          interface: 'input',
+          type: 'string',
+        } as any;
+      }
+      if (path === 'flow_field_schema_cases.website') {
+        return {
+          interface: 'url',
+          type: 'string',
+        } as any;
+      }
+      if (path === 'secondary_flow_field_schema_cases.website') {
+        return {
+          interface: 'input',
+          type: 'string',
+        } as any;
+      }
+      return originalGetFieldByPath?.(path);
+    });
+    vi.spyOn(app.dataSourceManager, 'get').mockImplementation((key: string) => {
+      if (key === 'secondary') {
+        return {
+          collectionManager: {
+            db: {
+              getFieldByPath(path: string) {
+                if (path === 'secondary_flow_field_schema_cases.website') {
+                  return {
+                    interface: 'url',
+                    type: 'string',
+                  } as any;
+                }
+                return undefined;
+              },
+              getCollection() {
+                return undefined;
+              },
+            },
+          },
+        } as any;
+      }
+
+      return originalGetDataSource(key);
+    });
+
+    const inputField = await agent.get('/flowModels:schema').query({
+      use: 'InputFieldModel',
+    });
+    expect(inputField.status).toBe(200);
+    expect(inputField.body?.data?.use).toBe('InputFieldModel');
+
+    const displayTextField = await agent.get('/flowModels:schema').query({
+      use: 'DisplayTextFieldModel',
+    });
+    expect(displayTextField.status).toBe(200);
+    expect(displayTextField.body?.data?.use).toBe('DisplayTextFieldModel');
+
+    const displayUrlField = await agent.get('/flowModels:schema').query({
+      use: 'DisplayURLFieldModel',
+    });
+    expect(displayUrlField.status).toBe(200);
+    expect(displayUrlField.body?.data?.use).toBe('DisplayURLFieldModel');
+
+    const bundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: ['TableColumnModel', 'FormItemModel', 'InputFieldModel'],
+    });
+
+    expect(bundle.status).toBe(200);
+    expect(JSON.stringify(bundle.body?.data)).not.toContain('RuntimeFieldModel');
+
+    const tableColumn = (bundle.body?.data?.items || []).find((item) => item.use === 'TableColumnModel');
+    expect(tableColumn?.subModelCatalog).toMatchObject({
+      field: {
+        type: 'object',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            use: 'DisplayTextFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'display-field',
+              interfaces: expect.arrayContaining(['input']),
+              isDefault: true,
+              inheritParentFieldBinding: true,
+            }),
+          }),
+          expect.objectContaining({
+            use: 'DisplayURLFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'display-field',
+              interfaces: expect.arrayContaining(['url']),
+              isDefault: true,
+              inheritParentFieldBinding: true,
+            }),
+          }),
+        ]),
+      },
+    });
+
+    const formItem = (bundle.body?.data?.items || []).find((item) => item.use === 'FormItemModel');
+    expect(formItem?.subModelCatalog).toMatchObject({
+      field: {
+        type: 'object',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({
+            use: 'InputFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'editable-field',
+              interfaces: expect.arrayContaining(['input']),
+              isDefault: true,
+              inheritParentFieldBinding: true,
+            }),
+          }),
+        ]),
+      },
+    });
+
+    const topLevelFieldItem = (bundle.body?.data?.items || []).find((item) => item.use === 'InputFieldModel');
+    expect(topLevelFieldItem?.skeleton?.stepParams?.fieldSettings?.init).toBeUndefined();
+
+    const saveTableDisplay = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-table-display-field',
+        use: 'TableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'website',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-table-display-field-child',
+            use: 'DisplayURLFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveTableDisplay.status).toBe(200);
+
+    const saveSecondaryDataSourceDisplay = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-secondary-data-source-display-field',
+        use: 'TableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'secondary',
+              collectionName: 'secondary_flow_field_schema_cases',
+              fieldPath: 'website',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-secondary-data-source-display-field-child',
+            use: 'DisplayURLFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveSecondaryDataSourceDisplay.status).toBe(200);
+    expect(app.dataSourceManager.get).toHaveBeenCalledWith('secondary');
+
+    const saveTableInput = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-table-input-field',
+        use: 'TableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'website',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-table-input-field-child',
+            use: 'InputFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveTableInput.status).toBe(400);
+    expect(saveTableInput.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/field/use',
+          modelUid: 'save-table-input-field',
+          modelUse: 'TableColumnModel',
+          section: 'subModels',
+          keyword: 'invalid-use',
+          allowedValues: ['DisplayURLFieldModel'],
+          fieldInterface: 'url',
+        }),
+      ]),
+    );
+
+    const saveTableRuntimePlaceholder = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-table-runtime-field',
+        use: 'TableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'website',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-table-runtime-field-child',
+            use: 'RuntimeFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveTableRuntimePlaceholder.status).toBe(400);
+    expect(saveTableRuntimePlaceholder.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/field/use',
+          modelUid: 'save-table-runtime-field',
+          modelUse: 'TableColumnModel',
+          section: 'subModels',
+          keyword: 'invalid-use',
+          message: 'Slot "field" cannot use runtime placeholder "RuntimeFieldModel".',
+          fieldInterface: 'url',
+        }),
+      ]),
+    );
+
+    const saveFormInput = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-form-input-field',
+        use: 'FormItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'title',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-form-input-field-child',
+            use: 'InputFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveFormInput.status).toBe(200);
+
+    const saveFormDisplay = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-form-display-field',
+        use: 'FormItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'title',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-form-display-field-child',
+            use: 'DisplayTextFieldModel',
+          },
+        },
+      },
+    });
+    expect(saveFormDisplay.status).toBe(400);
+    expect(saveFormDisplay.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/field/use',
+          modelUid: 'save-form-display-field',
+          modelUse: 'FormItemModel',
+          section: 'subModels',
+          keyword: 'invalid-use',
+          allowedValues: expect.arrayContaining(['InputFieldModel']),
+          fieldInterface: 'input',
         }),
       ]),
     );

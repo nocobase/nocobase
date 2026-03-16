@@ -20,6 +20,10 @@ import type { ISchema } from '@formily/json-schema';
 import type {
   ActionDefinition,
   FlowActionSchemaManifest,
+  FlowFieldBindingConditions,
+  FlowFieldBindingContextManifest,
+  FlowFieldBindingManifest,
+  FlowFieldModelCompatibility,
   FlowSchemaBundleDocument,
   FlowSchemaBundleNode,
   FlowSchemaBundleSlotCatalog,
@@ -87,6 +91,22 @@ type UiSchemaLike =
   | Record<string, ISchema>
   | ((...args: any[]) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
   | undefined;
+
+type RegisteredFieldBindingContext = {
+  name: string;
+  inherits: string[];
+};
+
+type RegisteredFieldBinding = {
+  context: string;
+  use: string;
+  interfaces: string[];
+  isDefault: boolean;
+  order?: number;
+  conditions?: FlowFieldBindingConditions;
+  defaultProps?: any;
+  source: FlowSchemaCoverage['source'];
+};
 
 const JSON_SCHEMA_DRAFT_07 = 'http://json-schema.org/draft-07/schema#';
 
@@ -203,6 +223,69 @@ function normalizeStringArray(values?: string[]): string[] {
     return [];
   }
   return _.uniq(values.map((item) => String(item || '').trim()).filter(Boolean));
+}
+
+function normalizeFieldBindingConditions(
+  conditions?: FlowFieldBindingConditions,
+): FlowFieldBindingConditions | undefined {
+  if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) {
+    return undefined;
+  }
+
+  const normalized = _.pickBy(
+    {
+      association: typeof conditions.association === 'boolean' ? conditions.association : undefined,
+      fieldTypes: normalizeStringArray(conditions.fieldTypes),
+      targetCollectionTemplateIn: normalizeStringArray(conditions.targetCollectionTemplateIn),
+      targetCollectionTemplateNotIn: normalizeStringArray(conditions.targetCollectionTemplateNotIn),
+    },
+    (value) => {
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return value !== undefined;
+    },
+  ) as FlowFieldBindingConditions;
+
+  return Object.keys(normalized).length > 0 ? normalized : undefined;
+}
+
+function normalizeFieldBindingContextManifest(
+  manifest?: FlowFieldBindingContextManifest,
+  fallbackName?: string,
+): RegisteredFieldBindingContext | undefined {
+  const name = String(manifest?.name || fallbackName || '').trim();
+  if (!name) {
+    return undefined;
+  }
+
+  return {
+    name,
+    inherits: normalizeStringArray(manifest?.inherits),
+  };
+}
+
+function normalizeFieldBindingManifest(
+  manifest?: FlowFieldBindingManifest,
+  source: FlowSchemaCoverage['source'] = 'official',
+): RegisteredFieldBinding | undefined {
+  const context = String(manifest?.context || '').trim();
+  const use = String(manifest?.use || '').trim();
+  const interfaces = normalizeStringArray(manifest?.interfaces);
+  if (!context || !use || interfaces.length === 0) {
+    return undefined;
+  }
+
+  return {
+    context,
+    use,
+    interfaces,
+    isDefault: manifest?.isDefault === true,
+    order: typeof manifest?.order === 'number' ? manifest.order : undefined,
+    conditions: normalizeFieldBindingConditions(manifest?.conditions),
+    defaultProps: manifest?.defaultProps === undefined ? undefined : _.cloneDeep(manifest.defaultProps),
+    source,
+  };
 }
 
 function normalizeSubModelContextPath(path?: FlowSubModelContextPathStep[]): FlowSubModelContextPathStep[] {
@@ -331,6 +414,10 @@ function normalizeSubModelSlots(
 
       if (slot?.schema) {
         normalizedSlot.schema = _.cloneDeep(slot.schema);
+      }
+
+      if (typeof slot?.fieldBindingContext === 'string' && slot.fieldBindingContext.trim()) {
+        normalizedSlot.fieldBindingContext = slot.fieldBindingContext.trim();
       }
 
       const childSchemaPatch = normalizeChildSchemaPatch(slot?.childSchemaPatch);
@@ -687,6 +774,8 @@ function inferParamsSchemaFromUiSchema(name: string, uiSchema: UiSchemaLike, pat
 export class FlowSchemaRegistry {
   private readonly modelSchemas = new Map<string, RegisteredModelSchema>();
   private readonly actionSchemas = new Map<string, RegisteredActionSchema>();
+  private readonly fieldBindingContexts = new Map<string, RegisteredFieldBindingContext>();
+  private readonly fieldBindings = new Map<string, RegisteredFieldBinding[]>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
   private readonly publicModelInventory = new Map<string, FlowSchemaCoverage['source']>();
   private readonly publicActionInventory = new Map<string, FlowSchemaCoverage['source']>();
@@ -773,6 +862,88 @@ export class FlowSchemaRegistry {
     const values = Array.isArray(manifests) ? manifests : Object.values(manifests || {});
     for (const manifest of values) {
       this.registerActionManifest(manifest);
+    }
+  }
+
+  registerFieldBindingContext(manifest: FlowFieldBindingContextManifest, fallbackName?: string) {
+    const normalized = normalizeFieldBindingContextManifest(manifest, fallbackName);
+    if (!normalized) {
+      return;
+    }
+
+    const previous = this.fieldBindingContexts.get(normalized.name);
+    this.fieldBindingContexts.set(normalized.name, {
+      name: normalized.name,
+      inherits: _.uniq([...(previous?.inherits || []), ...normalized.inherits]),
+    });
+  }
+
+  registerFieldBindingContexts(
+    manifests: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest> | undefined,
+  ) {
+    if (!manifests) {
+      return;
+    }
+
+    if (Array.isArray(manifests)) {
+      for (const manifest of manifests) {
+        this.registerFieldBindingContext(manifest);
+      }
+      return;
+    }
+
+    for (const [name, manifest] of Object.entries(manifests)) {
+      if (!manifest) {
+        continue;
+      }
+      this.registerFieldBindingContext(manifest, name);
+    }
+  }
+
+  registerFieldBinding(manifest: FlowFieldBindingManifest, source: FlowSchemaCoverage['source'] = 'official') {
+    const normalized = normalizeFieldBindingManifest(manifest, source);
+    if (!normalized) {
+      return;
+    }
+
+    const bindings = this.fieldBindings.get(normalized.context) || [];
+    bindings.push(normalized);
+    this.fieldBindings.set(normalized.context, bindings);
+  }
+
+  registerFieldBindings(
+    manifests:
+      | FlowFieldBindingManifest[]
+      | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>
+      | undefined,
+    source: FlowSchemaCoverage['source'] = 'official',
+  ) {
+    if (!manifests) {
+      return;
+    }
+
+    if (Array.isArray(manifests)) {
+      for (const manifest of manifests) {
+        this.registerFieldBinding(manifest, source);
+      }
+      return;
+    }
+
+    for (const [context, manifest] of Object.entries(manifests)) {
+      if (!manifest) {
+        continue;
+      }
+
+      const items = Array.isArray(manifest) ? manifest : [manifest];
+      for (const item of items) {
+        this.registerFieldBinding(
+          {
+            ...item,
+            context: item.context || context,
+          },
+          source,
+        );
+      }
     }
   }
 
@@ -926,6 +1097,53 @@ export class FlowSchemaRegistry {
     }
   }
 
+  resolveFieldBindingCandidates(
+    context: string,
+    options: {
+      interface?: string;
+      fieldType?: string;
+      association?: boolean;
+      targetCollectionTemplate?: string;
+    } = {},
+  ) {
+    const contextChain = this.resolveFieldBindingContextChain(context);
+    const entries = contextChain.flatMap((contextName, contextIndex) =>
+      (this.fieldBindings.get(contextName) || []).map((binding, bindingIndex) => ({
+        binding,
+        contextIndex,
+        bindingIndex,
+      })),
+    );
+
+    const candidates = entries
+      .filter(({ binding }) => this.matchesFieldBinding(binding, options))
+      .filter(({ binding }) => this.hasQueryableModel(binding.use))
+      .sort((a, b) => {
+        if (a.binding.isDefault !== b.binding.isDefault) {
+          return a.binding.isDefault ? -1 : 1;
+        }
+
+        const aOrder = typeof a.binding.order === 'number' ? a.binding.order : Number.MAX_SAFE_INTEGER;
+        const bOrder = typeof b.binding.order === 'number' ? b.binding.order : Number.MAX_SAFE_INTEGER;
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+
+        if (a.contextIndex !== b.contextIndex) {
+          return a.contextIndex - b.contextIndex;
+        }
+
+        return a.bindingIndex - b.bindingIndex;
+      })
+      .map(({ binding }) => ({
+        use: binding.use,
+        defaultProps: binding.defaultProps === undefined ? undefined : _.cloneDeep(binding.defaultProps),
+        compatibility: this.buildFieldModelCompatibility(binding),
+      }));
+
+    return _.uniqBy(candidates, (candidate) => `${candidate.use}:${stableStringify(candidate.compatibility)}`);
+  }
+
   getAction(name: string): RegisteredActionSchema | undefined {
     return this.actionSchemas.get(name);
   }
@@ -936,6 +1154,101 @@ export class FlowSchemaRegistry {
 
   getModel(use: string): RegisteredModelSchema | undefined {
     return this.modelSchemas.get(use);
+  }
+
+  private resolveFieldBindingContextChain(context: string, visited = new Set<string>()): string[] {
+    const name = String(context || '').trim();
+    if (!name || visited.has(name)) {
+      return [];
+    }
+
+    visited.add(name);
+
+    const chain = [name];
+    const inherits = this.fieldBindingContexts.get(name)?.inherits || [];
+    for (const inheritedContext of inherits) {
+      for (const item of this.resolveFieldBindingContextChain(inheritedContext, visited)) {
+        if (!chain.includes(item)) {
+          chain.push(item);
+        }
+      }
+    }
+
+    return chain;
+  }
+
+  private matchesFieldBinding(
+    binding: RegisteredFieldBinding,
+    options: {
+      interface?: string;
+      fieldType?: string;
+      association?: boolean;
+      targetCollectionTemplate?: string;
+    },
+  ) {
+    if (options.interface && !binding.interfaces.includes(options.interface)) {
+      return false;
+    }
+
+    const conditions = binding.conditions;
+    if (!conditions) {
+      return true;
+    }
+
+    if (typeof conditions.association === 'boolean' && options.association !== undefined) {
+      if (conditions.association !== options.association) {
+        return false;
+      }
+    }
+
+    if (conditions.fieldTypes?.length && options.fieldType) {
+      if (!conditions.fieldTypes.includes(options.fieldType)) {
+        return false;
+      }
+    }
+
+    if (conditions.targetCollectionTemplateIn?.length && options.targetCollectionTemplate) {
+      if (!conditions.targetCollectionTemplateIn.includes(options.targetCollectionTemplate)) {
+        return false;
+      }
+    }
+
+    if (conditions.targetCollectionTemplateNotIn?.length && options.targetCollectionTemplate) {
+      if (conditions.targetCollectionTemplateNotIn.includes(options.targetCollectionTemplate)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  private buildFieldModelCompatibility(binding: RegisteredFieldBinding): FlowFieldModelCompatibility {
+    const compatibility: FlowFieldModelCompatibility = {
+      context: binding.context,
+      interfaces: _.cloneDeep(binding.interfaces),
+      inheritParentFieldBinding: true,
+    };
+
+    if (binding.isDefault) {
+      compatibility.isDefault = true;
+    }
+    if (typeof binding.order === 'number') {
+      compatibility.order = binding.order;
+    }
+    if (typeof binding.conditions?.association === 'boolean') {
+      compatibility.association = binding.conditions.association;
+    }
+    if (binding.conditions?.fieldTypes?.length) {
+      compatibility.fieldTypes = _.cloneDeep(binding.conditions.fieldTypes);
+    }
+    if (binding.conditions?.targetCollectionTemplateIn?.length) {
+      compatibility.targetCollectionTemplateIn = _.cloneDeep(binding.conditions.targetCollectionTemplateIn);
+    }
+    if (binding.conditions?.targetCollectionTemplateNotIn?.length) {
+      compatibility.targetCollectionTemplateNotIn = _.cloneDeep(binding.conditions.targetCollectionTemplateNotIn);
+    }
+
+    return compatibility;
   }
 
   resolveModelSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
@@ -1140,6 +1453,18 @@ export class FlowSchemaRegistry {
       .sort();
   }
 
+  private getSlotAllowedUses(slot?: FlowSubModelSlotSchema): string[] {
+    if (!slot) {
+      return [];
+    }
+
+    if (slot.fieldBindingContext) {
+      return _.uniq(this.resolveFieldBindingCandidates(slot.fieldBindingContext).map((candidate) => candidate.use));
+    }
+
+    return collectAllowedUses(slot);
+  }
+
   private buildModelDocument(
     use: string,
     contextChain: FlowSchemaContextEdge[],
@@ -1148,26 +1473,27 @@ export class FlowSchemaRegistry {
     const resolved = this.resolveModelSchema(use, contextChain);
     const baseCoverage = resolved.coverage || { status: 'unresolved', source: 'third-party' as const };
     const flowDiagnostics = this.collectFlowSchemaDiagnostics(use);
-    const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) =>
-      createFlowHint(
+    const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) => {
+      const allowedUses = this.getSlotAllowedUses(slot);
+      return createFlowHint(
         {
-          kind: slot.dynamic ? 'dynamic-children' : 'manual-schema-required',
+          kind: slot.dynamic || slot.fieldBindingContext ? 'dynamic-children' : 'manual-schema-required',
           path: `${use}.subModels.${slotKey}`,
           message:
             slot.description ||
             `${use}.subModels.${slotKey} accepts ${slot.type}${
-              collectAllowedUses(slot).length ? `: ${collectAllowedUses(slot).join(', ')}` : ''
+              allowedUses.length ? `: ${allowedUses.join(', ')}` : ''
             }.`,
         },
         {
           slotRules: {
             slotKey,
             type: slot.type,
-            allowedUses: collectAllowedUses(slot),
+            allowedUses,
           },
         },
-      ),
-    );
+      );
+    });
     const coverage = this.buildDocumentCoverage(baseCoverage, flowDiagnostics.statuses);
     const dynamicHints = normalizeSchemaHints([
       ...(resolved?.dynamicHints || []),
@@ -1216,6 +1542,7 @@ export class FlowSchemaRegistry {
     use: string,
     contextChain: FlowSchemaContextEdge[],
     visited: Set<string>,
+    compatibility?: FlowFieldModelCompatibility,
   ): FlowSchemaBundleNode {
     const resolved = this.resolveModelSchema(use, contextChain);
     const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
@@ -1225,6 +1552,10 @@ export class FlowSchemaRegistry {
       title: resolved?.title || use,
       skeleton: _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema)),
     };
+
+    if (compatibility) {
+      node.compatibility = _.cloneDeep(compatibility);
+    }
 
     if (visited.has(visitKey) || this.isBundleCycle(use, contextChain)) {
       return node;
@@ -1253,23 +1584,48 @@ export class FlowSchemaRegistry {
     }
 
     const entries = Object.entries(slots).map(([slotKey, slot]) => {
-      const allowedUses = collectAllowedUses(slot);
+      const edgeBase = {
+        parentUse,
+        slotKey,
+      };
+      const fieldBindingCandidates = slot.fieldBindingContext
+        ? this.resolveFieldBindingCandidates(slot.fieldBindingContext)
+        : [];
+      const allowedUses =
+        fieldBindingCandidates.length > 0
+          ? _.uniq(fieldBindingCandidates.map((item) => item.use))
+          : collectAllowedUses(slot);
       const catalog: FlowSchemaBundleSlotCatalog = {
         type: slot.type,
-        candidates: allowedUses.map((childUse) =>
-          this.buildBundleNode(
-            childUse,
-            [
-              ...contextChain,
-              {
-                parentUse,
-                slotKey,
-                childUse,
-              },
-            ],
-            visited,
-          ),
-        ),
+        candidates:
+          fieldBindingCandidates.length > 0
+            ? fieldBindingCandidates.map((candidate) =>
+                this.buildBundleNode(
+                  candidate.use,
+                  [
+                    ...contextChain,
+                    {
+                      ...edgeBase,
+                      childUse: candidate.use,
+                    },
+                  ],
+                  visited,
+                  candidate.compatibility,
+                ),
+              )
+            : allowedUses.map((childUse) =>
+                this.buildBundleNode(
+                  childUse,
+                  [
+                    ...contextChain,
+                    {
+                      ...edgeBase,
+                      childUse,
+                    },
+                  ],
+                  visited,
+                ),
+              ),
       };
 
       if (slot.required !== undefined) {
@@ -1557,6 +1913,32 @@ export class FlowSchemaRegistry {
     slot: FlowSubModelSlotSchema,
     contextChain: FlowSchemaContextEdge[],
   ): FlowJsonSchema {
+    if (slot.fieldBindingContext) {
+      const candidateUses = _.uniq(
+        this.resolveFieldBindingCandidates(slot.fieldBindingContext).map((item) => item.use),
+      );
+      if (candidateUses.length > 0) {
+        const candidateSchemas = candidateUses.map((use) =>
+          this.buildModelSnapshotSchema(use, [
+            ...contextChain,
+            {
+              parentUse,
+              slotKey,
+              childUse: use,
+            },
+          ]),
+        );
+
+        if (slot.schema) {
+          return {
+            anyOf: [...candidateSchemas, _.cloneDeep(slot.schema)],
+          };
+        }
+
+        return candidateSchemas.length === 1 ? candidateSchemas[0] : { oneOf: candidateSchemas };
+      }
+    }
+
     if (slot.use) {
       const knownSchema = this.buildModelSnapshotSchema(slot.use, [
         ...contextChain,
@@ -1654,7 +2036,7 @@ export class FlowSchemaRegistry {
       const resolved = this.resolveModelSchema(use, contextChain);
       const hints: FlowDynamicHint[] = [];
       for (const [slotKey, slot] of Object.entries(resolved.subModelSlots || {})) {
-        const childUses = collectAllowedUses(slot);
+        const childUses = this.getSlotAllowedUses(slot);
         for (const childUse of childUses) {
           const childContext = [
             ...contextChain,

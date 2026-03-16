@@ -10,6 +10,8 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import type {
   FlowActionSchemaManifest,
+  FlowFieldBindingContextManifest,
+  FlowFieldBindingManifest,
   FlowSchemaInventoryContribution,
   FlowModelSchemaManifest,
   FlowSchemaManifestContribution,
@@ -114,6 +116,45 @@ function normalizeModelManifests(
     }));
 }
 
+function normalizeFieldBindingContexts(
+  manifests: FlowSchemaManifestContribution['fieldBindingContexts'],
+): FlowFieldBindingContextManifest[] {
+  if (!manifests) {
+    return [];
+  }
+
+  if (Array.isArray(manifests)) {
+    return manifests.filter(Boolean);
+  }
+
+  return Object.entries(manifests)
+    .filter(([, manifest]) => !!manifest)
+    .map(([name, manifest]) => ({
+      ...manifest,
+      name: manifest.name || name,
+    }));
+}
+
+function normalizeFieldBindings(
+  manifests: FlowSchemaManifestContribution['fieldBindings'],
+): FlowFieldBindingManifest[] {
+  if (!manifests) {
+    return [];
+  }
+
+  if (Array.isArray(manifests)) {
+    return manifests.filter(Boolean);
+  }
+
+  return Object.entries(manifests).flatMap(([context, manifest]) => {
+    const items = Array.isArray(manifest) ? manifest : manifest ? [manifest] : [];
+    return items.filter(Boolean).map((item) => ({
+      ...item,
+      context: item.context || context,
+    }));
+  });
+}
+
 function normalizeInventoryContribution(
   inventory: FlowSchemaManifestContribution['inventory'],
 ): FlowSchemaInventoryContribution | undefined {
@@ -169,6 +210,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     const db = this.app.db;
     const pm = this.app.pm;
 
+    this.flowSchemaService.setApp(this.app);
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
@@ -596,6 +638,8 @@ export class PluginUISchemaStorageServer extends Plugin {
       };
       const actionManifests = normalizeActionManifests(contribution.actions, defaults);
       const modelManifests = normalizeModelManifests(contribution.models, defaults);
+      const fieldBindingContexts = normalizeFieldBindingContexts(contribution.fieldBindingContexts);
+      const fieldBindings = normalizeFieldBindings(contribution.fieldBindings);
       const inventory = normalizeInventoryContribution(contribution.inventory);
 
       if (actionManifests.length > 0) {
@@ -603,6 +647,12 @@ export class PluginUISchemaStorageServer extends Plugin {
       }
       if (modelManifests.length > 0) {
         this.flowSchemaService.registerModelManifests(modelManifests);
+      }
+      if (fieldBindingContexts.length > 0) {
+        this.flowSchemaService.registerFieldBindingContexts(fieldBindingContexts);
+      }
+      if (fieldBindings.length > 0) {
+        this.flowSchemaService.registerFieldBindings(fieldBindings, defaults.source);
       }
       if (inventory) {
         this.flowSchemaService.registerInventory(inventory, defaults.source);
@@ -644,6 +694,8 @@ export class PluginUISchemaStorageServer extends Plugin {
     actions?: Record<string, any>;
     modelManifests?: any[] | Record<string, any>;
     actionManifests?: any[] | Record<string, any>;
+    fieldBindingContexts?: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest>;
+    fieldBindings?: FlowFieldBindingManifest[] | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>;
     inventory?: FlowSchemaInventoryContribution;
   }) {
     if (options?.models) {
@@ -657,6 +709,12 @@ export class PluginUISchemaStorageServer extends Plugin {
     }
     if (options?.actionManifests) {
       this.flowSchemaService.registerActionManifests(options.actionManifests);
+    }
+    if (options?.fieldBindingContexts) {
+      this.flowSchemaService.registerFieldBindingContexts(options.fieldBindingContexts);
+    }
+    if (options?.fieldBindings) {
+      this.flowSchemaService.registerFieldBindings(options.fieldBindings, 'third-party');
     }
     if (options?.inventory) {
       this.flowSchemaService.registerInventory(options.inventory, 'third-party');
@@ -707,6 +765,9 @@ export class PluginUISchemaStorageServer extends Plugin {
       expectedType: issue.expectedType,
       allowedValues: issue.allowedValues,
       suggestedUses: issue.suggestedUses,
+      fieldInterface: issue.fieldInterface,
+      fieldType: issue.fieldType,
+      targetCollectionTemplate: issue.targetCollectionTemplate,
       schemaHash: issue.schemaHash,
     };
   }
