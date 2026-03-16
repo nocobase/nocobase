@@ -567,21 +567,19 @@ export const InternalAdminLayout = (props) => {
   const { isMobileLayout } = useMobileLayout();
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
-  const [menuVersion, setMenuVersion] = useState(0);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
-  const menuItems = adminLayoutModel?.subModels.menu?.subModels.items || [];
 
   useEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-    setMenuVersion((version) => version + 1);
   }, [adminLayoutModel, allAccessRoutes]);
 
   const route = useMemo(() => {
-    const children = convertMenuModelsToLayout(menuItems, {
+    // 菜单首屏直接基于最新路由派生，避免复用旧 model 时短暂渲染出过期菜单。
+    const children = convertRoutesToLayout(allAccessRoutes, {
       designable,
       isMobile: isMobileSider,
       t,
@@ -590,7 +588,7 @@ export const InternalAdminLayout = (props) => {
       path: '/',
       children: Array.isArray(children) ? children : [],
     };
-  }, [menuItems, menuVersion, designable, isMobileSider, t]);
+  }, [allAccessRoutes, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -806,11 +804,11 @@ export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; is
   return depth > 1 || (isMobile && depth > 0);
 };
 
-function convertMenuModelsToLayout(
-  menuModels: AdminLayoutMenuItemModel[],
+function convertRoutesToLayout(
+  routes: NocoBaseDesktopRoute[],
   { designable, parentRoute, isMobile, t, depth = 0 }: any,
 ) {
-  if (!menuModels || !Array.isArray(menuModels)) return [];
+  if (!routes || !Array.isArray(routes)) return [];
 
   const getInitializerButton = (testId: string) => {
     return {
@@ -824,11 +822,8 @@ function convertMenuModelsToLayout(
     };
   };
 
-  const result: any[] = menuModels
-    .map((menuModel) => {
-      const item = menuModel.props.route as NocoBaseDesktopRoute;
-      const menuParentRoute = (menuModel.props.parentRoute as NocoBaseDesktopRoute | undefined) || parentRoute;
-
+  const result: any[] = routes
+    .map((item) => {
       if (!item || typeof item !== 'object') {
         return null;
       }
@@ -844,7 +839,7 @@ function convertMenuModelsToLayout(
           path: '/',
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: menuParentRoute,
+          _parentRoute: parentRoute,
           _depth: depth,
         };
       }
@@ -857,7 +852,7 @@ function convertMenuModelsToLayout(
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: menuParentRoute,
+          _parentRoute: parentRoute,
           _depth: depth,
         };
       }
@@ -870,17 +865,15 @@ function convertMenuModelsToLayout(
           redirect: `/admin/${item.schemaUid}`,
           hideInMenu: item.hideInMenu,
           _route: item,
-          _parentRoute: menuParentRoute,
+          _parentRoute: parentRoute,
           _depth: depth,
         };
       }
 
       if (item.type === NocoBaseDesktopRouteType.group) {
         const itemChildren = Array.isArray(item.children) ? item.children : [];
-        const childModels = menuModel.subModels.items || [];
         const children =
-          convertMenuModelsToLayout(childModels, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) ||
-          [];
+          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) || [];
 
         // add a designer button
         if (designable && depth === 0) {
