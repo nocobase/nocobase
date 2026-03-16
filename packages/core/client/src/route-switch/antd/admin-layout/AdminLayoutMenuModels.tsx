@@ -68,6 +68,7 @@ function reconcileMenuItems(
   routes.forEach((route, index) => {
     const uid = getAdminLayoutMenuItemUid(parent.uid, route, index);
     let itemModel = existingItemMap.get(uid);
+    const isExistingModel = !!itemModel;
 
     if (!itemModel) {
       itemModel = parent.addSubModel('items', {
@@ -81,7 +82,9 @@ function reconcileMenuItems(
     }
 
     itemModel.sortIndex = index + 1;
-    itemModel.syncFromRoute(route, parentRoute);
+    if (isExistingModel) {
+      itemModel.syncFromRoute(route, parentRoute);
+    }
     nextItems.push(itemModel);
     nextUidSet.add(uid);
   });

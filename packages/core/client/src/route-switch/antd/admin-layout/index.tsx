@@ -567,15 +567,21 @@ export const InternalAdminLayout = (props) => {
   const { isMobileLayout } = useMobileLayout();
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
+  const [menuVersion, setMenuVersion] = useState(0);
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
+  const menuItems = adminLayoutModel?.subModels.menu?.subModels.items || [];
+
+  useEffect(() => {
+    adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
+    setMenuVersion((version) => version + 1);
+  }, [adminLayoutModel, allAccessRoutes]);
 
   const route = useMemo(() => {
-    adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-    const children = convertMenuModelsToLayout(adminLayoutModel?.subModels.menu?.subModels.items || [], {
+    const children = convertMenuModelsToLayout(menuItems, {
       designable,
       isMobile: isMobileSider,
       t,
@@ -584,7 +590,7 @@ export const InternalAdminLayout = (props) => {
       path: '/',
       children: Array.isArray(children) ? children : [],
     };
-  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+  }, [menuItems, menuVersion, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
