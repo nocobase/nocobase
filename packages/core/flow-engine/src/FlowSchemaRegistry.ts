@@ -1453,7 +1453,16 @@ export class FlowSchemaRegistry {
       .sort();
   }
 
-  private getSlotAllowedUses(slot?: FlowSubModelSlotSchema): string[] {
+  private listPublicTreeRootUses(): string[] {
+    return Array.from(this.publicTreeRootInventory.keys())
+      .filter((use) => {
+        const model = this.modelSchemas.get(use);
+        return !!model && this.isPublicModel(model) && this.isQueryableModel(model);
+      })
+      .sort();
+  }
+
+  resolveSlotAllowedUses(parentUse: string, slotKey: string, slot?: FlowSubModelSlotSchema): string[] {
     if (!slot) {
       return [];
     }
@@ -1462,7 +1471,12 @@ export class FlowSchemaRegistry {
       return _.uniq(this.resolveFieldBindingCandidates(slot.fieldBindingContext).map((candidate) => candidate.use));
     }
 
-    return collectAllowedUses(slot);
+    const allowedUses = collectAllowedUses(slot);
+    if (parentUse === 'BlockGridModel' && slotKey === 'items') {
+      return _.uniq([...allowedUses, ...this.listPublicTreeRootUses()]);
+    }
+
+    return allowedUses;
   }
 
   private buildModelDocument(
@@ -1474,7 +1488,7 @@ export class FlowSchemaRegistry {
     const baseCoverage = resolved.coverage || { status: 'unresolved', source: 'third-party' as const };
     const flowDiagnostics = this.collectFlowSchemaDiagnostics(use);
     const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) => {
-      const allowedUses = this.getSlotAllowedUses(slot);
+      const allowedUses = this.resolveSlotAllowedUses(use, slotKey, slot);
       return createFlowHint(
         {
           kind: slot.dynamic || slot.fieldBindingContext ? 'dynamic-children' : 'manual-schema-required',
@@ -1594,7 +1608,7 @@ export class FlowSchemaRegistry {
       const allowedUses =
         fieldBindingCandidates.length > 0
           ? _.uniq(fieldBindingCandidates.map((item) => item.use))
-          : collectAllowedUses(slot);
+          : this.resolveSlotAllowedUses(parentUse, slotKey, slot);
       const catalog: FlowSchemaBundleSlotCatalog = {
         type: slot.type,
         candidates:
@@ -1939,24 +1953,9 @@ export class FlowSchemaRegistry {
       }
     }
 
-    if (slot.use) {
-      const knownSchema = this.buildModelSnapshotSchema(slot.use, [
-        ...contextChain,
-        {
-          parentUse,
-          slotKey,
-          childUse: slot.use,
-        },
-      ]);
-      if (slot.schema) {
-        return {
-          anyOf: [knownSchema, _.cloneDeep(slot.schema)],
-        };
-      }
-      return knownSchema;
-    }
-    if (Array.isArray(slot.uses) && slot.uses.length > 0) {
-      const knownSchemas = slot.uses.map((use) =>
+    const allowedUses = this.resolveSlotAllowedUses(parentUse, slotKey, slot);
+    if (allowedUses.length > 0) {
+      const knownSchemas = allowedUses.map((use) =>
         this.buildModelSnapshotSchema(use, [
           ...contextChain,
           {
@@ -1970,6 +1969,9 @@ export class FlowSchemaRegistry {
         return {
           anyOf: [...knownSchemas, _.cloneDeep(slot.schema)],
         };
+      }
+      if (knownSchemas.length === 1) {
+        return knownSchemas[0];
       }
       return {
         oneOf: knownSchemas,
@@ -2036,7 +2038,7 @@ export class FlowSchemaRegistry {
       const resolved = this.resolveModelSchema(use, contextChain);
       const hints: FlowDynamicHint[] = [];
       for (const [slotKey, slot] of Object.entries(resolved.subModelSlots || {})) {
-        const childUses = this.getSlotAllowedUses(slot);
+        const childUses = this.resolveSlotAllowedUses(use, slotKey, slot);
         for (const childUse of childUses) {
           const childContext = [
             ...contextChain,

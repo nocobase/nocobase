@@ -77,6 +77,7 @@ const markdownBlockModelSchemaManifest: FlowModelSchemaManifest = {
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['MarkdownBlockModel'],
+    publicTreeRoots: ['MarkdownBlockModel'],
   },
   models: [markdownBlockModelSchemaManifest],
   defaults: {

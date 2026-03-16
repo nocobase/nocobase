@@ -37,6 +37,8 @@ import { filterFormSubmitActionModelInternalSchemaManifest } from './FilterFormS
 import { formBlockModelInternalSchemaManifest } from './FormBlockModel';
 import { formAssociationItemModelInternalSchemaManifest } from './FormAssociationItemModel';
 import { formGridModelInternalSchemaManifest } from './FormGridModel';
+import { jsActionModelInternalSchemaManifest } from './JSActionModel';
+import { jsBlockModelSchemaManifest } from './JSBlockModel';
 import { jsCollectionActionModelInternalSchemaManifest } from './JSCollectionActionModel';
 import { jsFormActionModelInternalSchemaManifest } from './JSFormActionModel';
 import { formItemModelInternalSchemaManifest } from './FormItemModel';
@@ -46,6 +48,7 @@ import { jsColumnModelInternalSchemaManifest } from './JSColumnModel';
 import { linkActionModelInternalSchemaManifest } from './LinkActionModel';
 import { pageModelSchemaManifest } from './PageModel';
 import { pageTabModelInternalSchemaManifest } from './PageTabModel';
+import { popupActionModelInternalSchemaManifest } from './PopupActionModel';
 import { popupCollectionActionModelInternalSchemaManifest } from './PopupCollectionActionModel';
 import { refreshActionModelInternalSchemaManifest } from './RefreshActionModel';
 import { rootPageModelSchemaManifest } from './RootPageModel';
@@ -88,6 +91,8 @@ export {
   formBlockModelInternalSchemaManifest,
   formAssociationItemModelInternalSchemaManifest,
   formGridModelInternalSchemaManifest,
+  jsActionModelInternalSchemaManifest,
+  jsBlockModelSchemaManifest,
   jsCollectionActionModelInternalSchemaManifest,
   jsFormActionModelInternalSchemaManifest,
   formItemModelInternalSchemaManifest,
@@ -97,6 +102,7 @@ export {
   linkActionModelInternalSchemaManifest,
   pageModelSchemaManifest,
   pageTabModelInternalSchemaManifest,
+  popupActionModelInternalSchemaManifest,
   popupCollectionActionModelInternalSchemaManifest,
   refreshActionModelInternalSchemaManifest,
   rootPageModelSchemaManifest,
@@ -118,8 +124,10 @@ export const flowSchemaModelManifests: FlowModelSchemaManifest[] = [
   bulkDeleteActionModelInternalSchemaManifest,
   expandCollapseActionModelInternalSchemaManifest,
   filterActionModelInternalSchemaManifest,
+  jsActionModelInternalSchemaManifest,
   jsCollectionActionModelInternalSchemaManifest,
   linkActionModelInternalSchemaManifest,
+  popupActionModelInternalSchemaManifest,
   popupCollectionActionModelInternalSchemaManifest,
   refreshActionModelInternalSchemaManifest,
   addChildActionModelInternalSchemaManifest,
@@ -139,6 +147,7 @@ export const flowSchemaModelManifests: FlowModelSchemaManifest[] = [
   formItemModelInternalSchemaManifest,
   formAssociationItemModelInternalSchemaManifest,
   formGridModelInternalSchemaManifest,
+  jsBlockModelSchemaManifest,
   createFormModelSchemaManifest,
   editFormModelSchemaManifest,
   basePageTabModelInternalSchemaManifest,

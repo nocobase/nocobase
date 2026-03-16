@@ -10,6 +10,8 @@
 import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
 import { vi } from 'vitest';
+import { PluginBlockWorkbenchServer } from '../../../../plugin-block-workbench/src/server/plugin';
+import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
 
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
@@ -288,7 +290,7 @@ describe('flow-model save', () => {
     );
 
     const bundle = await agent.post('/flowModels:schemaBundle').send({
-      uses: ['ActionModel', 'TableBlockModel', 'PageModel'],
+      uses: ['ActionModel', 'TableBlockModel', 'PageModel', 'JSBlockModel', 'BlockGridModel'],
     });
 
     expect(bundle.status).toBe(200);
@@ -316,10 +318,24 @@ describe('flow-model save', () => {
             use: 'PageModel',
           }),
         }),
+        expect.objectContaining({
+          use: 'JSBlockModel',
+          skeleton: expect.objectContaining({
+            use: 'JSBlockModel',
+          }),
+        }),
+        expect.objectContaining({
+          use: 'BlockGridModel',
+          skeleton: expect.objectContaining({
+            use: 'BlockGridModel',
+          }),
+        }),
       ]),
     );
     const tableItem = (bundle.body?.data?.items || []).find((item) => item.use === 'TableBlockModel');
     const pageItem = (bundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
+    const jsBlockItem = (bundle.body?.data?.items || []).find((item) => item.use === 'JSBlockModel');
+    const blockGridItem = (bundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
     for (const item of bundle.body?.data?.items || []) {
       expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
         [],
@@ -354,6 +370,16 @@ describe('flow-model save', () => {
         candidates: expect.arrayContaining([
           expect.objectContaining({ use: 'RootPageTabModel' }),
           expect.objectContaining({ use: 'PageTabModel' }),
+        ]),
+      },
+    });
+    expect(jsBlockItem?.subModelCatalog).toBeUndefined();
+    expect(blockGridItem?.subModelCatalog).toMatchObject({
+      items: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'TableBlockModel' }),
+          expect.objectContaining({ use: 'JSBlockModel' }),
         ]),
       },
     });
@@ -442,6 +468,154 @@ describe('flow-model save', () => {
       use: 'UpdateRecordActionModel',
     });
     expect(updateRecord.body?.data?.jsonSchema?.properties?.subModels?.properties?.assignForm).toBeDefined();
+
+    const jsBlock = await agent.get('/flowModels:schema').query({
+      use: 'JSBlockModel',
+    });
+    expect(jsBlock.status).toBe(200);
+    expect(jsBlock.body?.data?.minimalExample).toMatchObject({
+      use: 'JSBlockModel',
+    });
+
+    const saveJsBlock = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-js-block-minimal',
+        use: 'JSBlockModel',
+        stepParams: {
+          jsSettings: {
+            runJs: {
+              version: 'v2',
+              code: "ctx.render('<div>Hello JS block.</div>');",
+            },
+          },
+        },
+      },
+    });
+    expect(saveJsBlock.status).toBe(200);
+    expect(saveJsBlock.body?.data?.use).toBe('JSBlockModel');
+  });
+
+  it('should discover and validate public block manifests from plugin providers', async () => {
+    await app.destroy();
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['flow-engine', PluginBlockWorkbenchServer, PluginBlockReferenceServer],
+    });
+    agent = app.agent();
+
+    const actionPanel = await agent.get('/flowModels:schema').query({
+      use: 'ActionPanelBlockModel',
+    });
+    expect(actionPanel.status).toBe(200);
+    expect(actionPanel.body?.data?.use).toBe('ActionPanelBlockModel');
+
+    const reference = await agent.get('/flowModels:schema').query({
+      use: 'ReferenceBlockModel',
+    });
+    expect(reference.status).toBe(200);
+    expect(reference.body?.data?.use).toBe('ReferenceBlockModel');
+
+    const schemas = await agent.post('/flowModels:schemas').send({
+      uses: ['ActionPanelBlockModel', 'ReferenceBlockModel'],
+    });
+    expect(schemas.status).toBe(200);
+    expect((schemas.body?.data || []).map((item) => item.use)).toEqual(
+      expect.arrayContaining(['ActionPanelBlockModel', 'ReferenceBlockModel']),
+    );
+
+    const bundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: ['ActionPanelBlockModel', 'ReferenceBlockModel'],
+    });
+    expect(bundle.status).toBe(200);
+    const actionPanelItem = (bundle.body?.data?.items || []).find((item) => item.use === 'ActionPanelBlockModel');
+    const referenceItem = (bundle.body?.data?.items || []).find((item) => item.use === 'ReferenceBlockModel');
+    expect(actionPanelItem?.subModelCatalog).toMatchObject({
+      actions: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'PopupActionModel' }),
+          expect.objectContaining({ use: 'LinkActionModel' }),
+          expect.objectContaining({ use: 'JSActionModel' }),
+          expect.objectContaining({ use: 'ActionPanelScanActionModel' }),
+        ]),
+      },
+    });
+    expect(referenceItem?.subModelCatalog).toBeUndefined();
+
+    const saveActionPanel = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-action-panel-block',
+        use: 'ActionPanelBlockModel',
+        stepParams: {
+          actionPanelBlockSetting: {
+            layout: {
+              layout: 'grid',
+            },
+          },
+        },
+        subModels: {
+          actions: [
+            {
+              uid: 'save-action-panel-block-js-action',
+              use: 'JSActionModel',
+              stepParams: {
+                buttonSettings: {
+                  general: {
+                    title: 'Run JS',
+                  },
+                },
+                clickSettings: {
+                  runJs: {
+                    code: "ctx.message.info('Hello JS action.');",
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(saveActionPanel.status).toBe(200);
+
+    const saveReference = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-reference-block',
+        use: 'ReferenceBlockModel',
+        stepParams: {
+          referenceSettings: {
+            target: {
+              targetUid: 'users-template-block',
+              mode: 'reference',
+            },
+          },
+        },
+      },
+    });
+    expect(saveReference.status).toBe(200);
+
+    const saveInvalidReference = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-reference-block-invalid',
+        use: 'ReferenceBlockModel',
+        stepParams: {
+          referenceSettings: {
+            target: {
+              mode: 'reference',
+            },
+          },
+        },
+      },
+    });
+    expect(saveInvalidReference.status).toBe(400);
+    expect(saveInvalidReference.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUid: 'save-reference-block-invalid',
+          modelUse: 'ReferenceBlockModel',
+          section: 'stepParams',
+        }),
+      ]),
+    );
   });
 
   it('should allow direct discovery and save for internal concrete models while keeping abstract bases hidden', async () => {

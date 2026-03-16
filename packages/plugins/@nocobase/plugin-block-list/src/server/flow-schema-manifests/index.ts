@@ -227,6 +227,7 @@ const listBlockModelSchemaManifest: FlowModelSchemaManifest = {
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['ListBlockModel'],
+    publicTreeRoots: ['ListBlockModel'],
   },
   models: [listItemModelInternalSchemaManifest, listBlockModelSchemaManifest],
   defaults: {

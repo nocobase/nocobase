@@ -102,17 +102,6 @@ const FLOW_DEFINITION_SHELL_SCHEMA: FlowJsonSchema = {
   additionalProperties: true,
 };
 
-function collectSlotSuggestedUses(slot?: FlowSubModelSlotSchema): string[] | undefined {
-  if (!slot) return undefined;
-  if (Array.isArray(slot.uses) && slot.uses.length > 0) {
-    return slot.uses.filter(Boolean);
-  }
-  if (slot.use) {
-    return [slot.use];
-  }
-  return undefined;
-}
-
 function slotAllowsUnknownUses(slot?: FlowSubModelSlotSchema): boolean {
   return !!slot?.schema;
 }
@@ -201,11 +190,12 @@ export class FlowSchemaService {
     return this.registry.getSchemaBundle(uses);
   }
 
-  private collectRuntimeFieldBindingUses(slot?: FlowSubModelSlotSchema, parentNode?: any) {
+  private collectRuntimeFieldBindingUses(slot?: FlowSubModelSlotSchema, parentNode?: any, slotKey?: string) {
+    const parentUse = String(parentNode?.use || '').trim();
     const fieldBindingContext = String(slot?.fieldBindingContext || '').trim();
     if (!fieldBindingContext) {
       return {
-        allowedUses: collectSlotSuggestedUses(slot),
+        allowedUses: this.registry.resolveSlotAllowedUses(parentUse, String(slotKey || ''), slot),
       };
     }
 
@@ -214,7 +204,10 @@ export class FlowSchemaService {
     const allowedUses = candidates.map((candidate) => candidate.use);
 
     return {
-      allowedUses: allowedUses.length > 0 ? allowedUses : collectSlotSuggestedUses(slot),
+      allowedUses:
+        allowedUses.length > 0
+          ? allowedUses
+          : this.registry.resolveSlotAllowedUses(parentUse, String(slotKey || ''), slot),
       metadata,
     };
   }
@@ -671,7 +664,7 @@ export class FlowSchemaService {
             keyword: 'type',
             message: `Slot "${slotKey}" expects ${slotSchema.type}, received array.`,
             expectedType: slotSchema.type,
-            suggestedUses: collectSlotSuggestedUses(slotSchema),
+            suggestedUses: this.registry.resolveSlotAllowedUses(String(node?.use || ''), slotKey, slotSchema),
             schemaHash,
           });
         }
@@ -705,7 +698,7 @@ export class FlowSchemaService {
             keyword: 'type',
             message: `Slot "${slotKey}" expects ${slotSchema.type}, received object.`,
             expectedType: slotSchema.type,
-            suggestedUses: collectSlotSuggestedUses(slotSchema),
+            suggestedUses: this.registry.resolveSlotAllowedUses(String(node?.use || ''), slotKey, slotSchema),
             schemaHash,
           });
         }
@@ -740,7 +733,7 @@ export class FlowSchemaService {
     contextChain: FlowSchemaContextEdge[];
   }): FlowSchemaContextEdge[] {
     const childUse = String(options?.value?.use || '').trim();
-    const fieldBinding = this.collectRuntimeFieldBindingUses(options.slotSchema, options.parentNode);
+    const fieldBinding = this.collectRuntimeFieldBindingUses(options.slotSchema, options.parentNode, options.slotKey);
     const allowedUses = fieldBinding.allowedUses || [];
     const allowUnknownUses =
       !!options.slotSchema && !options.slotSchema.fieldBindingContext && slotAllowsUnknownUses(options.slotSchema);

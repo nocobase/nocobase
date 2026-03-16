@@ -43,7 +43,6 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
           slotRules: {
             slotKey: 'items',
             type: 'array',
-            allowedUses: coreBlockGridItemUses,
           },
           contextRequirements: ['block registry', 'collection metadata'],
           unresolvedReason: 'runtime-block-grid-items',

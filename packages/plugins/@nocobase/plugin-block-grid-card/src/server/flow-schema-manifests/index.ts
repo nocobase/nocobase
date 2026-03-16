@@ -232,6 +232,7 @@ const gridCardBlockModelSchemaManifest: FlowModelSchemaManifest = {
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['GridCardBlockModel'],
+    publicTreeRoots: ['GridCardBlockModel'],
   },
   models: [gridCardItemModelInternalSchemaManifest, gridCardBlockModelSchemaManifest],
   defaults: {

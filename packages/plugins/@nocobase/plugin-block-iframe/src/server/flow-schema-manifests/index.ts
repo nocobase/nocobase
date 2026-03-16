@@ -113,6 +113,7 @@ const iframeBlockModelSchemaManifest: FlowModelSchemaManifest = {
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['IframeBlockModel'],
+    publicTreeRoots: ['IframeBlockModel'],
   },
   models: [iframeBlockModelSchemaManifest],
   defaults: {

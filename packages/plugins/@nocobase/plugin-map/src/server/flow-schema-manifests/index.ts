@@ -240,6 +240,7 @@ function createFieldManifest(use: string, title: string): FlowModelSchemaManifes
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
     publicModels: ['MapBlockModel'],
+    publicTreeRoots: ['MapBlockModel'],
     expectedDescendantModels: [
       'PointFieldModel',
       'CircleFieldModel',

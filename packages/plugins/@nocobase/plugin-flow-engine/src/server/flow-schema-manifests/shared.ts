@@ -168,6 +168,7 @@ export const publicBlockRootUses = [
   'DetailsBlockModel',
   'EditFormModel',
   'FilterFormBlockModel',
+  'JSBlockModel',
   'TableBlockModel',
 ];
 

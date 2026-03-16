@@ -17,10 +17,16 @@ import { PluginActionExportServer } from '../../../../plugin-action-export/src/s
 import { flowSchemaManifestContribution as actionExportFlowSchemaManifestContribution } from '../../../../plugin-action-export/src/server/flow-schema-manifests';
 import { PluginActionImportServer } from '../../../../plugin-action-import/src/server';
 import { flowSchemaManifestContribution as actionImportFlowSchemaManifestContribution } from '../../../../plugin-action-import/src/server/flow-schema-manifests';
+import { PluginBlockGridCardServer } from '../../../../plugin-block-grid-card/src/server/plugin';
+import { PluginBlockWorkbenchServer } from '../../../../plugin-block-workbench/src/server/plugin';
 import { PluginBlockIframeServer } from '../../../../plugin-block-iframe/src/server/plugin';
+import { PluginBlockListServer } from '../../../../plugin-block-list/src/server/plugin';
 import { PluginBlockMarkdownServer } from '../../../../plugin-block-markdown/src/server/plugin';
+import { PluginCommentServer } from '../../../../plugin-comments/src/server/plugin';
 import { flowSchemaManifestContribution as dataVisualizationFlowSchemaManifestContribution } from '../../../../plugin-data-visualization/src/server/flow-schema-manifests';
 import { PluginDataVisualizationServer } from '../../../../plugin-data-visualization/src/server/plugin';
+import { PluginMapServer } from '../../../../plugin-map/src/server/plugin';
+import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
 
 class ProviderActionHostModel extends FlowModel {}
 
@@ -325,6 +331,26 @@ class DisabledManifestPlugin extends Plugin {
   }
 }
 
+const officialPublicBlockUses = [
+  'TableBlockModel',
+  'DetailsBlockModel',
+  'FilterFormBlockModel',
+  'CreateFormModel',
+  'EditFormModel',
+  'GridCardBlockModel',
+  'IframeBlockModel',
+  'ListBlockModel',
+  'MarkdownBlockModel',
+  'CommentsBlockModel',
+  'MapBlockModel',
+  'ChartBlockModel',
+  'JSBlockModel',
+  'ActionPanelBlockModel',
+  'ReferenceBlockModel',
+];
+
+const publicTreeRootBlockUses = officialPublicBlockUses;
+
 describe('flow schema manifest provider', () => {
   let app: MockServer;
   let agent: any;
@@ -621,8 +647,10 @@ describe('flow schema manifest provider', () => {
         PluginActionBulkUpdateServer,
         PluginActionBulkEditServer,
         PluginActionDuplicateServer,
+        PluginBlockWorkbenchServer,
         PluginBlockMarkdownServer,
         PluginBlockIframeServer,
+        PluginBlockReferenceServer,
       ],
     });
 
@@ -634,6 +662,10 @@ describe('flow schema manifest provider', () => {
           'BulkUpdateActionModel',
           'BulkEditActionModel',
           'DuplicateActionModel',
+          'JSBlockModel',
+          'BlockGridModel',
+          'ActionPanelBlockModel',
+          'ReferenceBlockModel',
           'MarkdownBlockModel',
           'IframeBlockModel',
         ],
@@ -647,6 +679,10 @@ describe('flow schema manifest provider', () => {
           expect.objectContaining({ use: 'BulkUpdateActionModel' }),
           expect.objectContaining({ use: 'BulkEditActionModel' }),
           expect.objectContaining({ use: 'DuplicateActionModel' }),
+          expect.objectContaining({ use: 'JSBlockModel' }),
+          expect.objectContaining({ use: 'BlockGridModel' }),
+          expect.objectContaining({ use: 'ActionPanelBlockModel' }),
+          expect.objectContaining({ use: 'ReferenceBlockModel' }),
           expect.objectContaining({ use: 'MarkdownBlockModel' }),
           expect.objectContaining({ use: 'IframeBlockModel' }),
         ]),
@@ -656,6 +692,104 @@ describe('flow schema manifest provider', () => {
           Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key)),
         ).toEqual([]);
       }
+
+      const jsBlock = await officialAgent.get('/flowModels:schema').query({
+        use: 'JSBlockModel',
+      });
+      expect(jsBlock.status).toBe(200);
+
+      const actionPanel = await officialAgent.get('/flowModels:schema').query({
+        use: 'ActionPanelBlockModel',
+      });
+      expect(actionPanel.status).toBe(200);
+
+      const reference = await officialAgent.get('/flowModels:schema').query({
+        use: 'ReferenceBlockModel',
+      });
+      expect(reference.status).toBe(200);
+
+      const blockGridItem = (bundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
+      expect(blockGridItem?.subModelCatalog).toMatchObject({
+        items: {
+          type: 'array',
+          candidates: expect.arrayContaining([
+            expect.objectContaining({ use: 'TableBlockModel' }),
+            expect.objectContaining({ use: 'JSBlockModel' }),
+            expect.objectContaining({ use: 'ActionPanelBlockModel' }),
+            expect.objectContaining({ use: 'MarkdownBlockModel' }),
+            expect.objectContaining({ use: 'IframeBlockModel' }),
+            expect.objectContaining({ use: 'ReferenceBlockModel' }),
+          ]),
+        },
+      });
+    } finally {
+      await officialApp.destroy();
+    }
+  });
+
+  it('should support every official public block through explicit discovery APIs', async () => {
+    await app.destroy();
+    app = null as any;
+
+    const officialApp = await createMockServer({
+      registerActions: true,
+      plugins: [
+        'flow-engine',
+        PluginBlockGridCardServer,
+        PluginBlockIframeServer,
+        PluginBlockListServer,
+        PluginBlockMarkdownServer,
+        PluginBlockWorkbenchServer,
+        PluginCommentServer,
+        PluginDataVisualizationServer,
+        PluginMapServer,
+        PluginBlockReferenceServer,
+      ],
+    });
+
+    try {
+      const officialAgent = officialApp.agent();
+
+      for (const use of officialPublicBlockUses) {
+        const single = await officialAgent.get('/flowModels:schema').query({ use });
+        expect(single.status).toBe(200);
+        expect(single.body?.data?.use).toBe(use);
+      }
+
+      const schemas = await officialAgent.post('/flowModels:schemas').send({
+        uses: officialPublicBlockUses,
+      });
+      expect(schemas.status).toBe(200);
+      expect((schemas.body?.data || []).map((item) => item.use).sort()).toEqual([...officialPublicBlockUses].sort());
+
+      const bundle = await officialAgent.post('/flowModels:schemaBundle').send({
+        uses: officialPublicBlockUses,
+      });
+      expect(bundle.status).toBe(200);
+      expect((bundle.body?.data?.items || []).map((item) => item.use).sort()).toEqual(
+        [...officialPublicBlockUses].sort(),
+      );
+
+      const blockGridBundle = await officialAgent.post('/flowModels:schemaBundle').send({
+        uses: ['BlockGridModel'],
+      });
+      expect(blockGridBundle.status).toBe(200);
+      const blockGridItem = (blockGridBundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
+      const blockCandidates = (blockGridItem?.subModelCatalog?.items?.candidates || []).map((item) => item.use);
+      expect(blockCandidates).toEqual(expect.arrayContaining(publicTreeRootBlockUses));
+
+      const pageBundle = await officialAgent.post('/flowModels:schemaBundle').send({
+        uses: ['PageModel'],
+      });
+      expect(pageBundle.status).toBe(200);
+      const pageItem = (pageBundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
+      const tabCandidates = pageItem?.subModelCatalog?.tabs?.candidates || [];
+      const nestedBlockCandidates = tabCandidates.flatMap(
+        (tab) =>
+          tab?.subModelCatalog?.grid?.candidates?.flatMap((grid) => grid?.subModelCatalog?.items?.candidates || []) ||
+          [],
+      );
+      expect(nestedBlockCandidates.map((item) => item.use)).toEqual(expect.arrayContaining(publicTreeRootBlockUses));
     } finally {
       await officialApp.destroy();
     }
@@ -668,5 +802,11 @@ describe('flow schema manifest provider', () => {
     expect(typeof PluginActionExportServer.prototype.getFlowSchemaManifests).toBe('function');
     expect(typeof PluginActionImportServer.prototype.getFlowSchemaManifests).toBe('function');
     expect(typeof PluginDataVisualizationServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginBlockGridCardServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginBlockListServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginBlockWorkbenchServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginCommentServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginMapServer.prototype.getFlowSchemaManifests).toBe('function');
+    expect(typeof PluginBlockReferenceServer.prototype.getFlowSchemaManifests).toBe('function');
   });
 });
