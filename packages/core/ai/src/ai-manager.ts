@@ -9,13 +9,16 @@
 
 import { DocumentManager } from './document-manager';
 import { DefaultToolsManager, ToolsManager } from './tools-manager';
+import { McpToolsManager } from './mcp-tools-manager';
 
 export class AIManager {
   documentManager: DocumentManager;
   toolsManager: ToolsManager;
+  mcpToolsManager: McpToolsManager;
 
   constructor(protected readonly app: any) {
     this.documentManager = new DocumentManager();
     this.toolsManager = new DefaultToolsManager();
+    this.mcpToolsManager = new McpToolsManager();
   }
 }

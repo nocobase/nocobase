@@ -13,6 +13,7 @@ import {
   ActionSceneEnum,
   CollectionActionGroupModel,
   FormActionGroupModel,
+  PopupSubTableFormActionGroupModel,
   RecordActionGroupModel,
 } from '@nocobase/client';
 import { FlowModelContext, escapeT } from '@nocobase/flow-engine';
@@ -75,5 +76,9 @@ RecordActionGroupModel.registerActionModels({
 });
 
 FormActionGroupModel.registerActionModels({
+  AIEmployeeActionModel,
+});
+
+PopupSubTableFormActionGroupModel.registerActionModels({
   AIEmployeeActionModel,
 });

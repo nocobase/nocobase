@@ -129,6 +129,16 @@ describe('validation', () => {
       ).rejects.toThrow();
     });
 
+    it('should throw validation error when precision exceeds limit with string input', async () => {
+      await expect(
+        NumberCollection.repository.create({
+          values: {
+            amount: '1.234',
+          },
+        }),
+      ).rejects.toThrow();
+    });
+
     it('should succeed when precision is within limit', async () => {
       const result = await NumberCollection.repository.create({
         values: {
@@ -137,6 +147,39 @@ describe('validation', () => {
       });
 
       expect(result.get('amount')).toBeCloseTo(1.23, 10);
+    });
+  });
+
+  describe('date field validation', () => {
+    let DateCollection: Collection;
+
+    beforeEach(async () => {
+      DateCollection = db.collection({
+        name: 'dates',
+        fields: [
+          {
+            type: 'date',
+            name: 'scheduledAt',
+            allowNull: true,
+            validation: {
+              type: 'date',
+              rules: [{ key: `r_${uid()}`, name: 'required' }],
+            },
+          },
+        ],
+      });
+
+      await db.sync();
+    });
+
+    it('should accept date string input when validation type is date', async () => {
+      const result = await DateCollection.repository.create({
+        values: {
+          scheduledAt: '2026-03-13 10:00:00',
+        },
+      });
+
+      expect(result.get('scheduledAt')).toBeTruthy();
     });
   });
 
