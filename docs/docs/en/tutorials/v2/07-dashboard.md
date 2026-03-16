@@ -2,30 +2,30 @@
 
 In the last chapter, we used workflows to make the system send notifications and record timestamps automatically. The system is getting smarter, but we're still missing one thing — **a bird's-eye view**.
 
-How many tickets are there? How many have been resolved? Which category has the most issues? How many new tickets come in each day? You can't answer these questions by scrolling through a list. We need a **data dashboard** — charts that turn raw data into something you can understand at a glance.
+How many tickets are there? How many have been resolved? Which category has the most issues? How many new tickets come in each day? You can't answer these questions by scrolling through a list. In this chapter, we'll use [chart blocks](/data-visualization) (pie, line, bar charts) and [Markdown blocks](/interface-builder/blocks/other/markdown) to build a **data dashboard** that turns raw data into something you can understand at a glance.
 
 ## 7.1 Adding a Dashboard Page
 
-First, let's add a new menu item to the top navigation bar.
+First, let's add a new [menu](/interface-builder/menus) item to the top navigation bar.
 
-Enter configuration mode, click **"Add menu item"** (`+` icon) on the top menu bar, select **"Modern page (v2)"**, and name it "Dashboard."
+Enter [configuration mode](/get-started/how-nocobase-works), click **"Add menu item"** (`+` icon) on the top menu bar, select **"Modern page (v2)"**, and name it "Dashboard."
 
 ![07-dashboard-2026-03-15-21-39-35](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-39-35.png)
 
-This page is dedicated to charts — it's our dashboard home base.
+This [page](/interface-builder/pages) is dedicated to charts — it's our dashboard home base.
 
 ## 7.2 Pie Chart: Ticket Status Distribution
 
 For our first chart, we'll use a pie chart to show how many tickets are "Pending," "In Progress," and "Completed."
 
-On the Dashboard page, click **Add block → Chart**.
+On the Dashboard page, click **Add block → [Chart](/data-visualization)**.
 
-After adding it, click the **Configure** button in the top-right corner of the block. A chart configuration panel will open on the right side.
+After adding it, click the **Configure** button in the top-right corner of the [block](/interface-builder/blocks). A chart configuration panel will open on the right side.
 
 ### Configuring the Data Query
 
-- **Collection**: Select "Tickets"
-- **Measures**: Select any unique field (e.g., ID), set the aggregation to **Count**
+- **[Collection](/data-sources/main/collection)**: Select "Tickets"
+- **Measures**: Select any unique [field](/data-sources/field) (e.g., ID), set the aggregation to **Count**
 - **Dimensions**: Select the "Status" field
 
 ![07-dashboard-2026-03-15-21-44-32](https://static-docs.nocobase.com/07-dashboard-2026-03-15-21-44-32.png)
@@ -96,7 +96,7 @@ Add a **Table block** to the page, selecting the "Tickets" collection.
 
 ### Configure Filter Conditions
 
-Click the table block's settings and find **Set data scope**. Add a filter condition:
+Click the table block's settings and find **Set data scope**. Add a [filter](/interface-builder/blocks/filter-blocks/form) condition:
 
 - **Status** is not equal to **Completed**
 
@@ -114,7 +114,7 @@ Select the columns to display: Title, Status, Priority, Assignee, Created at.
 
 Beyond charts, we can also put some text information on the dashboard.
 
-Add a **Markdown block** and write a system announcement or usage instructions:
+Add a **[Markdown block](/interface-builder/blocks/other/markdown)** and write a system announcement or usage instructions:
 
 ```markdown
 ## IT HelpDesk System
@@ -171,7 +171,7 @@ The result is a light gray card with the greeting on the left and date on the ri
 
 A dashboard isn't just for viewing data — it should also be a starting point for actions. Let's add an **Action Panel** so users can submit tickets and jump to the ticket list directly from the homepage.
 
-Add an **Action Panel** block (Add block → Other blocks → Action Panel), then add two actions inside it:
+Add an **Action Panel** block (Add block → Other blocks → Action Panel), then add two [actions](/interface-builder/actions) inside it:
 
 ![07-dashboard-2026-03-15-22-54-06](https://static-docs.nocobase.com/07-dashboard-2026-03-15-22-54-06.png)
 
@@ -261,3 +261,9 @@ Data visualization is a built-in NocoBase plugin — no additional installation 
 ## Next Chapter Preview
 
 At this point, our ticket system is quite feature-complete: data modeling, page building, form entry, access control, automated workflows, and a data dashboard — we've got it all. In the final chapter, we'll do some **finishing touches** and talk about **deploying to production**.
+
+## Related Resources
+
+- [Data Visualization](/data-visualization) — Chart configuration guide
+- [Markdown Block](/interface-builder/blocks/other/markdown) — Markdown block usage
+- [Block Layout](/interface-builder/blocks) — Page layout and block configuration

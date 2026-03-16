@@ -1,6 +1,6 @@
 # 第 4 章：表单与详情 — 录入、展示、一步到位
 
-上一章我们搭好了工单列表，数据看得见了。但用户怎么**提交新工单**呢？这一章，我们来解决"数据填得进"的问题——搭建表单区块、配置字段联动，最后还能追踪工单的每一次变更。
+上一章我们搭好了工单列表，数据看得见了。但用户怎么**提交新工单**呢？这一章，我们来解决"数据填得进"的问题——搭建[表单区块](/interface-builder/blocks/data-blocks/form)和[详情区块](/interface-builder/blocks/data-blocks/details)，配置字段布局和[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](/collection-templates/audit-log)追踪工单的每一次修改。
 
 ## 4.1 新建工单表单
 
@@ -9,20 +9,20 @@
 ### 添加"新建"操作按钮
 
 1. 确保处于 UI 编辑器模式（右上角开关打开）。
-2. 进入「工单列表」页面，点击表格区块上方的 **「操作（Actions）」**。
+2. 进入「工单列表」页面，点击表格区块上方的 **「[操作](/interface-builder/actions)（Actions）」**。
 3. 勾选 **「添加」** 操作按钮。
-4. 表格上方会出现一个「添加」按钮，点击它会打开一个弹窗。
+4. 表格上方会出现一个「添加」按钮，点击它会打开一个[弹窗](/interface-builder/actions/pop-up)。
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
 ### 配置弹窗中的表单
 
 1. 点击「添加」按钮，打开弹窗。
-2. 在弹窗中点击 **「创建区块（Add block）」→ 数据区块 → 表单（添加）**。
-3. 选择 **「当前数据表（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
+2. 在弹窗中点击 **「创建[区块](/interface-builder/blocks)（Add block）」→ 数据区块 → 表单（添加）**。
+3. 选择 **「当前[数据表](/data-sources/main/collection)（Current collection）」**。弹窗已经关联了对应的数据表上下文，无需手动指定。
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. 在表单中点击 **「字段（Fields）」**，勾选以下字段：
+4. 在表单中点击 **「[字段](/data-sources/field)（Fields）」**，勾选以下字段：
 
 | 字段 | 配置要点 |
 |------|---------|
@@ -124,7 +124,7 @@
 
 > **联动规则还能做什么？** 除了设置默认值和控制必填，还可以控制字段的显示/隐藏、动态赋值。例如：当状态为「已关闭」时，隐藏处理人字段。后续章节遇到时我们再展开。
 
-## 4.3 详情区块
+## 4.3 [详情区块](/interface-builder/blocks/data-blocks/details)
 
 上一章我们给表格行加了「查看」按钮，点击会打开抽屉。现在来配置抽屉里的内容。
 
@@ -270,3 +270,9 @@
 - **历史记录** — 自动追踪每一次变更，审计无忧
 
 从「看得见」到「填得进」再到「查得到」——我们的工单系统已经具备了基本的可用性。
+
+## 相关资源
+
+- [表单区块](/interface-builder/blocks/data-blocks/form) — 表单区块详细配置
+- [详情区块](/interface-builder/blocks/data-blocks/details) — 详情区块配置
+- [联动规则](/interface-builder/linkage-rules) — 字段联动规则说明

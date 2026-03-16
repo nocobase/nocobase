@@ -1,6 +1,6 @@
 # Chapter 3: Building Pages — From Blank to Functional
 
-In the last chapter, we built the skeleton of our data tables — but right now the data only lives in the "backend." Users can't see it at all. In this chapter, we'll bring our data **front and center**, turning it into a real, usable ticket list.
+In the last chapter, we built the skeleton of our data tables — but right now the data only lives in the "backend." Users can't see it at all. In this chapter, we'll bring our data **front and center**: create a [Table block](/interface-builder/blocks/data-blocks/table) to display ticket data, configure field visibility, sorting, [filtering](/interface-builder/blocks/filter-blocks/form), and pagination, turning it into a real, usable ticket list.
 
 ## 3.1 What Is a Block
 
@@ -23,10 +23,10 @@ Remember this analogy: **Blocks = building bricks**. We're about to use them to 
 
 First, we need to create an entry point for "Tickets" in the system.
 
-1. Click the **UI Editor** toggle in the top-right corner to enter design mode (the entire page will show orange editable borders).
+1. Click the **[UI Editor](/get-started/how-nocobase-works)** toggle in the top-right corner to enter design mode (the entire page will show orange editable borders).
 2. Click the **"Add menu item"** button (`+` icon) in the top navigation bar, select **"Add group"**, and name it **"Tickets"**.
-3. The "Tickets" menu appears immediately in the top navigation bar. **Click on it** — a sidebar menu will expand on the left.
-4. In the sidebar, click the orange **"Add menu item"** button, select **"Modern page (v2)"**, and add two sub-pages one by one:
+3. The "Tickets" [menu](/interface-builder/menus) appears immediately in the top navigation bar. **Click on it** — a sidebar menu will expand on the left.
+4. In the sidebar, click the orange **"Add menu item"** button, select **"Modern page (v2)"**, and add two sub-[pages](/interface-builder/pages) one by one:
    - **All Tickets** — displays all tickets
    - **Categories** — manages category data
 
@@ -42,7 +42,7 @@ Now go to the "All Tickets" page and add a Table block:
 
 1. On the blank page, click **"Add block"**.
 2. Select **Data blocks -> Table**.
-3. In the collection list that pops up, select **"Tickets"** (the table we created in the last chapter).
+3. In the [collection](/data-sources/main/collection) list that pops up, select **"Tickets"** (the table we created in the last chapter).
 
 ![03-building-pages-2026-03-13-08-44-07](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-07.png)
 
@@ -52,7 +52,7 @@ Once the Table block is added, you'll see an empty table on the page. Don't worr
 
 ## 3.4 Configuring Display Columns
 
-By default, a table won't automatically show all fields. We need to manually choose which columns to display:
+By default, a table won't automatically show all [fields](/data-sources/field). We need to manually choose which columns to display:
 
 1. On the right side of the Table block header, click **"Fields"**.
 2. Check the fields you want to show:
@@ -82,7 +82,7 @@ Click the column settings for the "Category" column and find **"Title field"**. 
 
 **Option B: Change it in the data source (global, recommended)**
 
-Go to **Settings -> Data sources -> Collections -> Categories**, and change the **"Title field"** to **Name**. All blocks referencing the Categories collection will then display names by default. After the change, you'll need to re-add the field on the page for it to take effect.
+Go to **Settings -> [Data sources](/data-sources) -> Collections -> Categories**, and change the **"Title field"** to **Name**. All blocks referencing the Categories collection will then display names by default. After the change, you'll need to re-add the field on the page for it to take effect.
 
 ![03-building-pages-2026-03-13-09-23-41](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-23-41.png)
 
@@ -125,7 +125,7 @@ You can even search through relation fields — click "Category," then in the ne
 
 ### Don't Want Auto-Filtering?
 
-If you'd prefer users to click a button before filtering takes effect, click **"Actions"** at the bottom-right of the Filter form and enable the **"Filter"** and **"Reset"** buttons. Users will then need to click "Filter" to apply their criteria.
+If you'd prefer users to click a button before filtering takes effect, click **"[Actions](/interface-builder/actions)"** at the bottom-right of the Filter form and enable the **"Filter"** and **"Reset"** buttons. Users will then need to click "Filter" to apply their criteria.
 
 ![03-building-pages-2026-03-13-09-33-15](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-33-15.png)
 
@@ -159,7 +159,7 @@ This way, newly submitted tickets always appear at the top, making them easier t
 Viewing a list isn't enough — we also need to click into tickets to see details and make edits.
 
 1. In the actions column, click the second "+" icon.
-2. Click to add actions: **View**, **Edit**, **Delete**.
+2. Click to add actions: **View**, **[Edit](/interface-builder/actions/edit)**, **[Delete](/interface-builder/actions/delete)**.
 3. Each row will now have "View", "Edit", and "Delete" buttons in the actions column.
 
 ![03-building-pages-2026-03-13-09-42-42](https://static-docs.nocobase.com/03-building-pages-2026-03-13-09-42-42.png)
@@ -189,7 +189,7 @@ Remember the "Categories" collection we created in Chapter 2? It's a **tree tabl
 
 Once enabled, the table will display categories in an indented hierarchy showing parent-child relationships, instead of listing all records flat.
 
-3. Check the fields you want to display (e.g., Name, Description), and configure row actions (Add new, Edit, Delete).
+3. Check the fields you want to display (e.g., Name, Description), and configure row actions ([Add new](/interface-builder/actions/add-new), Edit, Delete).
 4. **Layout tip**: Put "Name" in the first column and "Actions" in the second. The categories table doesn't have many fields, so a two-column layout is more compact and user-friendly.
 
 [Screenshot: Categories tree table configured]
@@ -210,4 +210,10 @@ Easier than you expected, right? The entire process required zero lines of code 
 ## Next Chapter Preview
 
 Being able to "see" data isn't enough — users also need to **submit new tickets**. In the next chapter, we'll build Form blocks, configure field linkage rules, and enable change history to track every modification to a ticket.
+
+## Related Resources
+
+- [Blocks Overview](/interface-builder/blocks) — All block types explained
+- [Table Block](/interface-builder/blocks/data-blocks/table) — Table block configuration guide
+- [Filter Block](/interface-builder/blocks/filter-blocks/form) — Filter form setup
 

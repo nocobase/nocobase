@@ -1,6 +1,6 @@
 # Chapter 4: Forms & Details — Input, Display, All in One
 
-In the last chapter, we built the ticket list — data is now visible. But how do users **submit new tickets**? In this chapter, we'll solve the "entering data" problem — building Form blocks, configuring field linkage, and even tracking every change made to a ticket.
+In the last chapter, we built the ticket list — data is now visible. But how do users **submit new tickets**? In this chapter, we'll solve the "entering data" problem — building [Form blocks](/interface-builder/blocks/data-blocks/form) and [Details blocks](/interface-builder/blocks/data-blocks/details), configuring field layouts and [linkage rules](/interface-builder/linkage-rules), and using [change history](/collection-templates/audit-log) to track every modification.
 
 ## 4.1 Creating a New Ticket Form
 
@@ -8,21 +8,21 @@ We want to add a "New" button to the ticket list page. Clicking it will pop up a
 
 ### Adding the "Add new" Action Button
 
-1. Make sure you're in UI Editor mode (top-right toggle is on).
-2. Go to the "All Tickets" page, and click **"Actions"** above the Table block.
+1. Make sure you're in [UI Editor](/get-started/how-nocobase-works) mode (top-right toggle is on).
+2. Go to the "All Tickets" page, and click **"[Actions](/interface-builder/actions)"** above the Table block.
 3. Check the **"Add new"** action button.
-4. An "Add new" button will appear above the table. Clicking it opens a popup.
+4. An "Add new" button will appear above the table. Clicking it opens a [popup](/interface-builder/actions/pop-up).
 
 ![04-forms-and-details-2026-03-13-09-43-54](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-43-54.png)
 
 ### Configuring the Form in the Popup
 
 1. Click the "Add new" button to open the popup.
-2. In the popup, click **"Add block" -> Data blocks -> Form (Add new)**.
+2. In the popup, click **"Add block" -> Data blocks -> [Form (Add new)](/interface-builder/blocks/data-blocks/form)**.
 3. Select **"Current collection"**. The popup already knows which collection it's associated with — no need to specify manually.
 
    ![04-forms-and-details-2026-03-13-09-44-50](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-09-44-50.png)
-4. In the form, click **"Fields"** and check the following fields:
+4. In the form, click **"[Fields](/data-sources/field)"** and check the following fields:
 
 | Field | Configuration Notes |
 |-------|-------------------|
@@ -36,7 +36,7 @@ We want to add a "New" button to the ticket list page. Clicking it will pop up a
 
 ![04-forms-and-details-2026-03-13-12-44-49](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-12-44-49.png)
 
-You'll notice a red asterisk `*` next to "Title" automatically — because we set it as required when creating the field in Chapter 2. Forms automatically inherit required rules from the collection's field settings; no extra configuration needed.
+You'll notice a red asterisk `*` next to "Title" automatically — because we set it as required when creating the field in Chapter 2. Forms automatically inherit required rules from the [collection](/data-sources/main/collection)'s field settings; no extra configuration needed.
 
 ![04-forms-and-details-2026-03-13-12-46-34](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-12-46-34.png)
 
@@ -128,7 +128,7 @@ Finally, apply what we've learned and adjust the layout a bit.
 In the last chapter, we added a "View" button to table rows that opens a Drawer. Now let's configure what goes inside the Drawer.
 
 1. In the table, click the **"View"** button on any row to open the Drawer.
-2. In the Drawer, click **"Add block" -> Data blocks -> Details**.
+2. In the Drawer, click **"Add block" -> Data blocks -> [Details](/interface-builder/blocks/data-blocks/details)**.
 3. Select **"Current collection"**.
 
 ![04-forms-and-details-2026-03-13-17-27-02](https://static-docs.nocobase.com/04-forms-and-details-2026-03-13-17-27-02.png)
@@ -260,6 +260,12 @@ In this chapter, we completed the full data lifecycle:
 - **Form** — Users can submit new tickets with default values and validation
 - **Linkage rules** — Urgent tickets automatically require a description
 - **Details block** — Clearly displays a ticket's complete information
-- **Change history** — Automatically tracks every modification for worry-free auditing
+- **[Change history](/collection-templates/audit-log)** — Automatically tracks every modification for worry-free auditing
 
 From "visible" to "enterable" to "traceable" — our ticket system now has basic usability.
+
+## Related Resources
+
+- [Form Block](/interface-builder/blocks/data-blocks/form) — Form block configuration guide
+- [Details Block](/interface-builder/blocks/data-blocks/details) — Details block setup
+- [Linkage Rules](/interface-builder/linkage-rules) — Field linkage configuration

@@ -2,7 +2,7 @@
 
 In the last chapter, we added permissions so different roles see different content. But all operations are still done manually — when a new ticket comes in, someone has to go check; when a status changes, nobody gets notified.
 
-In this chapter, we'll make the system **do things automatically**.
+In this chapter, we'll use NocoBase's [Workflow](/workflow) engine to make the system **do things automatically** — configure [condition](/workflow/nodes/condition) checks and [update](/workflow/nodes/update) nodes for automatic ticket status transitions and timestamp recording.
 
 ## 6.1 What Is a Workflow?
 
@@ -22,14 +22,14 @@ flowchart LR
   C -. No .-> E["⏹ End"]
 ```
 
-- **Trigger**: The entry point for the workflow. For example, "someone created a new ticket" or "a record was updated"
+- **[Trigger](/workflow/triggers/collection)**: The entry point for the workflow. For example, "someone created a new ticket" or "a record was updated"
 - **Condition**: An optional filtering step. For example, "only continue if the assignee is not empty"
-- **Action**: The step that does the actual work. For example, "send a notification" or "update a field"
+- **Action**: The step that does the actual work. For example, "send a notification" or "update a [field](/data-sources/field)"
 
 Actions can be chained with multiple nodes. Common node types include:
 
-- **Flow control**: Condition, Parallel branch, Loop, Delay
-- **Data operations**: Create record, Update record, Query record, Delete record
+- **Flow control**: Condition, Parallel [branch](/workflow/nodes/condition), Loop, Delay
+- **Data operations**: [Create record](/workflow/nodes/create), Update record, Query record, Delete record
 - **Notifications & external**: Notification, HTTP request, Calculation
 
 This tutorial only covers a few of the most common ones — once you learn to combine them, you'll be able to handle most scenarios.
@@ -40,9 +40,9 @@ NocoBase offers several trigger types, which you select when creating a workflow
 
 | Trigger | Description | Typical Use Case |
 |---------|-------------|-----------------|
-| **Collection event** | Fires when a record is created, updated, or deleted | New ticket notification, status change logging |
-| **Schedule** | Fires on a Cron expression or fixed time | Daily reports, periodic data cleanup |
-| **Post-action event** | Fires after a user performs a UI action | Send notification after form submission |
+| **[Collection event](/workflow/triggers/collection)** | Fires when a record is created, updated, or deleted | New ticket notification, status change logging |
+| **[Schedule](/workflow/triggers/schedule)** | Fires on a Cron expression or fixed time | Daily reports, periodic data cleanup |
+| **[Post-action event](/workflow/triggers/action)** | Fires after a user performs a UI action | Send notification after form submission |
 | **Approval** | Initiates an approval flow with multi-level support | Leave requests, purchase approvals |
 | **Custom action** | Bound to a custom button, fires on click | One-click archiving, batch operations |
 | **Pre-action event** | Intercepts a user action synchronously before it completes | Pre-submit validation, auto-fill fields |
@@ -75,7 +75,7 @@ After submitting, click the **Configure** link in the list to enter the flow edi
 
 Click the trigger card at the top to open its configuration drawer:
 
-- **Collection**: Select Main datasource / "Tickets"
+- **[Collection](/data-sources/main/collection)**: Select Main datasource / "Tickets"
 - **Trigger on**: Select "After record created or updated"
 - **Changed fields**: Check "Assignee" — the workflow only triggers when the Assignee field changes, avoiding unnecessary notifications from other field updates (when creating a record, all fields are considered changed, so new tickets will also trigger)
 - **Only triggers when conditions are met**: Set the mode to "Match **any** condition in the group," then add two conditions:
@@ -308,4 +308,10 @@ These two workflows demonstrate two different trigger types, and together took l
 
 ## Next Chapter Preview
 
-The system can do things automatically now, but we're still missing a "big picture view" — how many tickets are there in total? Which category has the most? How many new tickets per day? In the next chapter, we'll use chart blocks to build a **data dashboard** to see everything at a glance.
+The system can do things automatically now, but we're still missing a "big picture view" — how many tickets are there in total? Which category has the most? How many new tickets per day? In the next chapter, we'll use chart [blocks](/interface-builder/blocks) to build a **data dashboard** to see everything at a glance.
+
+## Related Resources
+
+- [Workflow Overview](/workflow) — Core workflow concepts and use cases
+- [Collection Event Trigger](/workflow/triggers/collection) — Data change trigger configuration
+- [Update Record Node](/workflow/nodes/update) — Automatic data update setup
