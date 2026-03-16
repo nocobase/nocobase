@@ -60,12 +60,13 @@ import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
 import { AdminLayoutModel } from './AdminLayoutModel';
 import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
-import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
+import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel, LayoutContent } from './AdminLayoutSlotModels';
 
 export * from './useDeleteRouteSchema';
 export {
   AdminDynamicPage,
   KeepAlive,
+  LayoutContent,
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   findFirstPageRoute,

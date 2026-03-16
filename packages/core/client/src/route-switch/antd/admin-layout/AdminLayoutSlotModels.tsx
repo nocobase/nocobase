@@ -118,6 +118,21 @@ const AdminLayoutContentView: FC<{ host?: LayoutContentHost | null }> = ({ host 
   );
 };
 
+/**
+ * 兼容旧 API 的独立 LayoutContent 组件。
+ *
+ * 旧调用方可能只需要一个不带顶部和侧边栏的内容容器，
+ * 这时不一定存在 AdminLayout root model，因此这里保留一个可独立渲染的版本。
+ *
+ * @example
+ * ```typescript
+ * <LayoutContent />
+ * ```
+ */
+export const LayoutContent: FC = () => {
+  return <AdminLayoutContentView />;
+};
+
 const MobileActions: FC = () => {
   const { token } = useToken();
   const [open, setOpen] = useState(false);

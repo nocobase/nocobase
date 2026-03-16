@@ -14,3 +14,4 @@ export * from './mobile-layout';
 export * from './route-runtime';
 export * from './route-types';
 export * from './route-utils';
+export { LayoutContent } from '../route-switch/antd/admin-layout/AdminLayoutSlotModels';
