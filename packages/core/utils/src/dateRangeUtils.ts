@@ -10,7 +10,7 @@
 import { Dayjs, UnitType } from 'dayjs';
 import { dayjs } from './dayjs';
 
-type DateUnit = 'day' | 'week' | 'isoWeek' | 'month' | 'quarter' | 'year';
+type DateUnit = 'minute' | 'hour' | 'day' | 'week' | 'isoWeek' | 'month' | 'quarter' | 'year';
 type RangeType =
   | 'today'
   | 'yesterday'
@@ -34,6 +34,7 @@ interface RangeParams {
   type: RangeType;
   unit?: DateUnit;
   number?: number;
+  includeCurrent?: boolean;
   timezone?: string;
 }
 
@@ -48,21 +49,35 @@ const getNow = (tz?: string): Dayjs => {
 };
 
 export const getOffsetRangeByParams = (params: RangeParams): [string, string] => {
-  const { type, unit = 'day' as any, number = 1, timezone } = params;
+  const { type, unit = 'day' as any, number = 1, includeCurrent, timezone } = params;
   const now = getNow(timezone);
   const actualUnit: any = unit === 'week' ? 'isoWeek' : unit;
+  const shouldIncludeCurrent =
+    includeCurrent && ['minute', 'hour', 'day', 'week', 'isoWeek', 'month', 'quarter', 'year'].includes(unit);
+  const safeNumber = typeof number === 'number' && Number.isFinite(number) ? Math.max(number, 1) : 1;
 
   let start: dayjs.Dayjs;
   let end: dayjs.Dayjs;
 
   if (type === 'past') {
     const base = now.startOf(actualUnit);
-    start = base.subtract(number, unit).startOf(actualUnit);
-    end = base.subtract(1, unit).endOf(actualUnit);
+    if (shouldIncludeCurrent) {
+      // 勾选“包括当前周期”后，语义是“原有 N 个周期 + 当前周期”。
+      start = base.subtract(safeNumber, unit).startOf(actualUnit);
+      end = base.endOf(actualUnit);
+    } else {
+      start = base.subtract(safeNumber, unit).startOf(actualUnit);
+      end = base.subtract(1, unit).endOf(actualUnit);
+    }
   } else if (type === 'next') {
     const base = now.startOf(actualUnit);
-    start = base.add(1, unit).startOf(actualUnit);
-    end = start.add(number - 1, unit).endOf(actualUnit);
+    if (shouldIncludeCurrent) {
+      start = base.startOf(actualUnit);
+      end = start.add(safeNumber, unit).endOf(actualUnit);
+    } else {
+      start = base.add(1, unit).startOf(actualUnit);
+      end = start.add(safeNumber - 1, unit).endOf(actualUnit);
+    }
   } else {
     throw new Error(`Unsupported type: ${type}`);
   }
