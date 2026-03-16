@@ -42,6 +42,51 @@ const getActionContext = (context: { fieldSchema?: Schema }) => {
   return actionCtx;
 };
 
+/**
+ * 将 CollectionField 的 uiSchema 映射到默认值弹窗里真正渲染的字段 schema。
+ *
+ * 默认值弹窗不会直接渲染 CollectionField，而是会把它替换成实际的表单组件。
+ * 这里必须把选项字段依赖的 `enum` 也带过去，否则下拉 / 单选 / 多选在弹窗里会没有可选项。
+ *
+ * @param clonedSchema 当前字段 schema 的克隆副本
+ * @param collectionFieldUiSchema 数据表字段上的 uiSchema
+ * @returns 合并后的字段 schema
+ * @example
+ * ```typescript
+ * const nextSchema = applyCollectionFieldUiSchemaToDefaultValueSchema(
+ *   { 'x-component': 'CollectionField' },
+ *   { 'x-component': 'Select', enum: [{ label: 'Option 1', value: 'option1' }] },
+ * );
+ * ```
+ */
+export const applyCollectionFieldUiSchemaToDefaultValueSchema = (
+  clonedSchema: Record<string, any>,
+  collectionFieldUiSchema: Record<string, any>,
+) => {
+  if (!collectionFieldUiSchema) {
+    return clonedSchema;
+  }
+
+  clonedSchema['x-component'] = collectionFieldUiSchema['x-component'] || 'Input';
+  clonedSchema['x-use-component-props'] =
+    clonedSchema['x-use-component-props'] || collectionFieldUiSchema['x-use-component-props'];
+  clonedSchema['x-component-props'] = {
+    ...(collectionFieldUiSchema['x-component-props'] || {}),
+    ...(clonedSchema['x-component-props'] || {}),
+  };
+
+  // 选项字段的选项源挂在 schema.enum 上，默认值弹窗如果不显式继承会导致下拉无内容。
+  if (collectionFieldUiSchema.enum) {
+    clonedSchema.enum = _.cloneDeep(collectionFieldUiSchema.enum);
+  }
+
+  if (collectionFieldUiSchema.type) {
+    clonedSchema.type = collectionFieldUiSchema.type;
+  }
+
+  return clonedSchema;
+};
+
 export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: {
   fieldSchema?: Schema;
   hideVariableButton?: boolean;
@@ -156,17 +201,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               const defaultValue = getFieldDefaultValue(clonedSchema, collectionField);
 
               if (clonedSchema['x-component'] === 'CollectionField' && collectionField?.uiSchema) {
-                const collectionFieldUiSchema = _.cloneDeep(collectionField.uiSchema);
-                clonedSchema['x-component'] = collectionFieldUiSchema['x-component'] || 'Input';
-                clonedSchema['x-use-component-props'] =
-                  clonedSchema['x-use-component-props'] || collectionFieldUiSchema['x-use-component-props'];
-                clonedSchema['x-component-props'] = {
-                  ...(collectionFieldUiSchema['x-component-props'] || {}),
-                  ...(clonedSchema['x-component-props'] || {}),
-                };
-                if (collectionFieldUiSchema.type) {
-                  clonedSchema.type = collectionFieldUiSchema.type;
-                }
+                applyCollectionFieldUiSchemaToDefaultValueSchema(clonedSchema, _.cloneDeep(collectionField.uiSchema));
               }
 
               if (collectionField.target && clonedSchema['x-component-props']) {
