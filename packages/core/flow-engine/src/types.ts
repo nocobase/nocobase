@@ -132,14 +132,24 @@ export interface FlowSchemaRegistrySummary {
   missingDescendantActionNames: string[];
 }
 
-export interface FlowSchemaBundleItem {
+export interface FlowSchemaBundleSlotCatalog {
+  type: 'object' | 'array';
+  required?: boolean;
+  open?: boolean;
+  candidates: FlowSchemaBundleNode[];
+}
+
+export interface FlowSchemaBundleNode {
   use: string;
   title?: string;
   skeleton: any;
+  subModelCatalog?: Record<string, FlowSchemaBundleSlotCatalog>;
 }
 
+export type FlowSchemaBundleItem = FlowSchemaBundleNode;
+
 export interface FlowSchemaBundleDocument {
-  items: FlowSchemaBundleItem[];
+  items: FlowSchemaBundleNode[];
 }
 
 export interface FlowSchemaContextEdge {

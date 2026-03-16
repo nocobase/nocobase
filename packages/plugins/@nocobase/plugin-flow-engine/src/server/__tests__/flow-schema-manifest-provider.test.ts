@@ -431,13 +431,25 @@ describe('flow schema manifest provider', () => {
         }),
       ]),
     );
+    const pageItem = (bundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
+        [],
+      );
       expect(item).not.toHaveProperty('dynamicHints');
       expect(item).not.toHaveProperty('coverage');
       expect(item).not.toHaveProperty('hash');
       expect(item).not.toHaveProperty('source');
     }
+    expect(pageItem?.subModelCatalog).toMatchObject({
+      tabs: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'RootPageTabModel' }),
+          expect.objectContaining({ use: 'PageTabModel' }),
+        ]),
+      },
+    });
   });
 
   it('should expose lightweight schema bundles for plugin contributions', async () => {
@@ -455,7 +467,9 @@ describe('flow schema manifest provider', () => {
       ]),
     );
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
+        [],
+      );
     }
   });
 
@@ -545,7 +559,9 @@ describe('flow schema manifest provider', () => {
         ]),
       );
       for (const item of bundle.body?.data?.items || []) {
-        expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+        expect(
+          Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key)),
+        ).toEqual([]);
       }
     } finally {
       await officialApp.destroy();

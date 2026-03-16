@@ -21,6 +21,8 @@ import type {
   ActionDefinition,
   FlowActionSchemaManifest,
   FlowSchemaBundleDocument,
+  FlowSchemaBundleNode,
+  FlowSchemaBundleSlotCatalog,
   FlowSchemaContextEdge,
   FlowDescendantSchemaPatch,
   FlowSchemaDocs,
@@ -1058,17 +1060,11 @@ export class FlowSchemaRegistry {
   }
 
   getSchemaBundle(uses?: string[]): FlowSchemaBundleDocument {
-    const documents = (
-      !uses || uses.length === 0
-        ? this.listModelDocuments({ publicOnly: true })
-        : uses.filter((use) => this.hasPublicModel(use)).map((use) => this.getModelDocument(use))
-    ).filter(Boolean);
     return {
-      items: documents.map((document) => ({
-        use: document.use,
-        title: document.title,
-        skeleton: _.cloneDeep(document.skeleton),
-      })),
+      items: (!uses || uses.length === 0
+        ? this.listModelUses({ publicOnly: true })
+        : uses.filter((use) => this.hasPublicModel(use))
+      ).map((use) => this.buildBundleNode(use, [], new Set<string>())),
     };
   }
 
@@ -1196,6 +1192,93 @@ export class FlowSchemaRegistry {
       hash,
       source: coverage.source,
     };
+  }
+
+  private buildBundleNode(
+    use: string,
+    contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): FlowSchemaBundleNode {
+    const resolved = this.resolveModelSchema(use, contextChain);
+    const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
+    const visitKey = this.createBundleVisitKey(use, contextChain);
+    const node: FlowSchemaBundleNode = {
+      use,
+      title: resolved?.title || use,
+      skeleton: _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema)),
+    };
+
+    if (visited.has(visitKey) || this.isBundleCycle(use, contextChain)) {
+      return node;
+    }
+
+    visited.add(visitKey);
+    try {
+      const subModelCatalog = this.buildBundleSubModelCatalog(use, resolved?.subModelSlots, contextChain, visited);
+      if (subModelCatalog && Object.keys(subModelCatalog).length > 0) {
+        node.subModelCatalog = subModelCatalog;
+      }
+      return node;
+    } finally {
+      visited.delete(visitKey);
+    }
+  }
+
+  private buildBundleSubModelCatalog(
+    parentUse: string,
+    slots: Record<string, FlowSubModelSlotSchema> | undefined,
+    contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): Record<string, FlowSchemaBundleSlotCatalog> | undefined {
+    if (!slots || Object.keys(slots).length === 0) {
+      return undefined;
+    }
+
+    const entries = Object.entries(slots).map(([slotKey, slot]) => {
+      const allowedUses = collectAllowedUses(slot);
+      const catalog: FlowSchemaBundleSlotCatalog = {
+        type: slot.type,
+        candidates: allowedUses.map((childUse) =>
+          this.buildBundleNode(
+            childUse,
+            [
+              ...contextChain,
+              {
+                parentUse,
+                slotKey,
+                childUse,
+              },
+            ],
+            visited,
+          ),
+        ),
+      };
+
+      if (slot.required !== undefined) {
+        catalog.required = slot.required;
+      }
+
+      if (allowedUses.length === 0) {
+        catalog.open = true;
+      }
+
+      return [slotKey, catalog] as const;
+    });
+
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  }
+
+  private createBundleVisitKey(use: string, contextChain: FlowSchemaContextEdge[]): string {
+    return `${use}::${stableStringify(contextChain)}`;
+  }
+
+  private isBundleCycle(use: string, contextChain: FlowSchemaContextEdge[]): boolean {
+    if (!contextChain.length) {
+      return false;
+    }
+
+    const ancestorUses = [contextChain[0].parentUse, ...contextChain.slice(0, -1).map((edge) => edge.childUse)];
+    return ancestorUses.includes(use);
   }
 
   buildModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {

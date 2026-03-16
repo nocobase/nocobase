@@ -303,8 +303,12 @@ describe('flow-model save', () => {
         }),
       ]),
     );
+    const tableItem = (bundle.body?.data?.items || []).find((item) => item.use === 'TableBlockModel');
+    const pageItem = (bundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
+        [],
+      );
       expect(item).not.toHaveProperty('dynamicHints');
       expect(item).not.toHaveProperty('commonPatterns');
       expect(item).not.toHaveProperty('antiPatterns');
@@ -313,6 +317,32 @@ describe('flow-model save', () => {
       expect(item).not.toHaveProperty('hash');
       expect(item).not.toHaveProperty('source');
     }
+    expect(tableItem?.subModelCatalog).toMatchObject({
+      columns: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'TableColumnModel' }),
+          expect.objectContaining({ use: 'TableActionsColumnModel' }),
+        ]),
+      },
+      actions: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'AddNewActionModel' }),
+          expect.objectContaining({ use: 'RefreshActionModel' }),
+        ]),
+      },
+    });
+    expect(pageItem?.subModelCatalog).toMatchObject({
+      tabs: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'BasePageTabModel' }),
+          expect.objectContaining({ use: 'RootPageTabModel' }),
+          expect.objectContaining({ use: 'PageTabModel' }),
+        ]),
+      },
+    });
 
     const formBundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['CreateFormModel', 'EditFormModel', 'FormBlockModel'],
@@ -323,8 +353,37 @@ describe('flow-model save', () => {
       expect.arrayContaining(['CreateFormModel', 'EditFormModel']),
     );
     expect((formBundle.body?.data?.items || []).map((item) => item.use)).not.toContain('FormBlockModel');
+    const createFormItem = (formBundle.body?.data?.items || []).find((item) => item.use === 'CreateFormModel');
+    expect(createFormItem?.subModelCatalog).toMatchObject({
+      grid: {
+        type: 'object',
+        candidates: [
+          expect.objectContaining({
+            use: 'FormGridModel',
+            subModelCatalog: {
+              items: {
+                type: 'array',
+                candidates: expect.arrayContaining([
+                  expect.objectContaining({ use: 'FormItemModel' }),
+                  expect.objectContaining({ use: 'FormAssociationItemModel' }),
+                ]),
+              },
+            },
+          }),
+        ],
+      },
+      actions: {
+        type: 'array',
+        candidates: expect.arrayContaining([
+          expect.objectContaining({ use: 'FormSubmitActionModel' }),
+          expect.objectContaining({ use: 'JSFormActionModel' }),
+        ]),
+      },
+    });
     for (const item of formBundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
+        [],
+      );
     }
 
     const details = await agent.get('/flowModels:schema').query({

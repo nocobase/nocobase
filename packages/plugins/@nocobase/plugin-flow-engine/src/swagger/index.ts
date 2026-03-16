@@ -591,6 +591,24 @@ export default {
           use: { type: 'string' },
           title: { type: 'string' },
           skeleton: {},
+          subModelCatalog: {
+            type: 'object',
+            additionalProperties: { $ref: '#/components/schemas/FlowModelSchemaBundleSlotCatalog' },
+          },
+        },
+        additionalProperties: false,
+      },
+      FlowModelSchemaBundleSlotCatalog: {
+        type: 'object',
+        required: ['type', 'candidates'],
+        properties: {
+          type: { type: 'string', enum: ['object', 'array'] },
+          required: { type: 'boolean' },
+          open: { type: 'boolean' },
+          candidates: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/FlowModelSchemaBundleItem' },
+          },
         },
         additionalProperties: false,
       },

@@ -451,8 +451,18 @@ describe('FlowSchemaRegistry', () => {
       skeleton: expect.objectContaining({
         use: 'SchemaRegistryManifestModel',
       }),
+      subModelCatalog: {
+        body: expect.objectContaining({
+          type: 'array',
+          candidates: [expect.objectContaining({ use: 'SchemaRegistryChildModel' })],
+        }),
+      },
     });
-    expect(Object.keys(bundle.items[0] || {}).filter((key) => !['use', 'title', 'skeleton'].includes(key))).toEqual([]);
+    expect(
+      Object.keys(bundle.items[0] || {}).filter(
+        (key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key),
+      ),
+    ).toEqual([]);
   });
 
   it('should filter internal models from public discovery helpers', () => {
@@ -610,6 +620,17 @@ describe('FlowSchemaRegistry', () => {
       },
       required: ['beta'],
       additionalProperties: false,
+    });
+
+    const bundle = registry.getSchemaBundle(['SchemaRegistryParentAlphaModel', 'SchemaRegistryParentBetaModel']);
+    const alphaItem = bundle.items.find((item) => item.use === 'SchemaRegistryParentAlphaModel');
+    const betaItem = bundle.items.find((item) => item.use === 'SchemaRegistryParentBetaModel');
+
+    expect(alphaItem?.subModelCatalog?.body?.candidates?.[0]?.skeleton?.stepParams).toMatchObject({
+      alpha: '',
+    });
+    expect(betaItem?.subModelCatalog?.body?.candidates?.[0]?.skeleton?.stepParams).toMatchObject({
+      beta: 0,
     });
   });
 
@@ -872,6 +893,113 @@ describe('FlowSchemaRegistry', () => {
               },
             },
           },
+        },
+      },
+    });
+
+    const bundle = registry.getSchemaBundle(['SchemaRegistryAnonymousParentModel']);
+    expect(bundle.items[0]).toMatchObject({
+      use: 'SchemaRegistryAnonymousParentModel',
+      subModelCatalog: {
+        body: {
+          type: 'object',
+          open: true,
+          candidates: [],
+        },
+      },
+    });
+  });
+
+  it('should expose recursive sub-model catalogs for internal descendants without promoting them to top-level items', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryBundleLeafModel',
+      exposure: 'internal',
+      allowDirectUse: false,
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          label: {
+            type: 'string',
+          },
+        },
+        required: ['label'],
+        additionalProperties: false,
+      },
+      skeleton: {
+        uid: 'bundle-leaf-uid',
+        use: 'SchemaRegistryBundleLeafModel',
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryBundleChildModel',
+      exposure: 'internal',
+      allowDirectUse: false,
+      subModelSlots: {
+        items: {
+          type: 'array',
+          uses: ['SchemaRegistryBundleLeafModel'],
+        },
+        dynamicZone: {
+          type: 'array',
+        },
+      },
+      skeleton: {
+        uid: 'bundle-child-uid',
+        use: 'SchemaRegistryBundleChildModel',
+        subModels: {
+          items: [],
+          dynamicZone: [],
+        },
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryBundleParentModel',
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SchemaRegistryBundleChildModel',
+        },
+      },
+      skeleton: {
+        uid: 'bundle-parent-uid',
+        use: 'SchemaRegistryBundleParentModel',
+        subModels: {
+          body: {
+            use: 'SchemaRegistryBundleChildModel',
+          },
+        },
+      },
+    });
+
+    const publicBundle = registry.getSchemaBundle();
+    const bundle = registry.getSchemaBundle(['SchemaRegistryBundleParentModel']);
+
+    expect(publicBundle.items.map((item) => item.use)).toEqual(['SchemaRegistryBundleParentModel']);
+    expect(bundle.items[0]).toMatchObject({
+      use: 'SchemaRegistryBundleParentModel',
+      subModelCatalog: {
+        body: {
+          type: 'object',
+          candidates: [
+            expect.objectContaining({
+              use: 'SchemaRegistryBundleChildModel',
+              subModelCatalog: {
+                items: {
+                  type: 'array',
+                  candidates: [expect.objectContaining({ use: 'SchemaRegistryBundleLeafModel' })],
+                },
+                dynamicZone: {
+                  type: 'array',
+                  open: true,
+                  candidates: [],
+                },
+              },
+            }),
+          ],
         },
       },
     });
