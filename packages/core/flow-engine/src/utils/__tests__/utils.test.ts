@@ -1004,7 +1004,7 @@ describe('Utils', () => {
     });
   });
 
-  // ==================== shouldHideStepInSettings() FUNCTION ====================
+  // ==================== shouldHideEventInSettings() FUNCTION ====================
   describe('shouldHideEventInSettings()', () => {
     let mockFlow: any;
     let mockEvent: EventDefinition;

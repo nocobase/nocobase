@@ -223,7 +223,7 @@ const EventConfigSection = observer(
           const hidden = await shouldHideEventInSettings(model, flow, event);
           if (hidden) continue;
           nextOptions.push({
-            label: t(event.title),
+            label: model.translate(event.title),
             value: event.name,
           });
         }
@@ -237,7 +237,7 @@ const EventConfigSection = observer(
       return () => {
         canceled = true;
       };
-    }, [flow, model, registeredEvents, t]);
+    }, [flow, model, registeredEvents]);
 
     const staticFlows = React.useMemo(() => {
       if (!eventName) return [];
