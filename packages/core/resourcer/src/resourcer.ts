@@ -8,7 +8,7 @@
  */
 
 import { importModule, Toposort, ToposortOptions } from '@nocobase/utils';
-import { globSync } from 'glob';
+import fg from 'fast-glob';
 import compose from 'koa-compose';
 import _ from 'lodash';
 import { pathToRegexp } from 'path-to-regexp';
@@ -191,7 +191,7 @@ export class ResourceManager {
   public async import(options: ImportOptions): Promise<Map<string, Resource>> {
     const { extensions = ['js', 'ts', 'json'], directory } = options;
     const patten = `${directory.replace(/\\/g, '/')}/*.{${extensions.join(',')}}`;
-    const files = globSync(patten, {
+    const files = await fg(patten, {
       ignore: ['**/*.d.ts'],
     });
     const resources = new Map<string, Resource>();
