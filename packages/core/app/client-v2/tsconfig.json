@@ -9,7 +9,7 @@
     "jsx": "react-jsx",
     "esModuleInterop": true,
     "sourceMap": true,
-    "baseUrl": "./",
+    "baseUrl": "../../../../",
     "strict": true,
     "allowSyntheticDefaultImports": true,
     "noEmit": true
