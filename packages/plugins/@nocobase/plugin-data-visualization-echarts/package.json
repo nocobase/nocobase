@@ -22,10 +22,10 @@
     "echarts-wordcloud": "^2.1.0"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-data-visualization": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-data-visualization": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Blocks"

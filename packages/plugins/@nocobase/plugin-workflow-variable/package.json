@@ -20,11 +20,11 @@
     "editionLevel": 0
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-workflow": ">=0.18.0-alpha.2",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/utils": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
+    "@nocobase/utils": "workspace:*"
   },
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "license": "Apache-2.0"

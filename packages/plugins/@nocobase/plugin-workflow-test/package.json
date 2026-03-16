@@ -8,9 +8,9 @@
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/database": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "nocobase": {
     "internal": true

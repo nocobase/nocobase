@@ -18,11 +18,11 @@
     "react": "18.x"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/database": "2.x",
-    "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/plugin-workflow": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Workflow"

@@ -1,8 +1,6 @@
 {
   "version": "2.0.16",
   "npmClient": "pnpm",
-  "useWorkspaces": true,
-  "npmClientArgs": ["--ignore-engines"],
   "command": {
     "version": {
       "forcePublish": true,

@@ -6,9 +6,9 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/cache": "2.0.16",
-    "@nocobase/database": "2.0.16",
-    "@nocobase/resourcer": "2.0.16"
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/resourcer": "workspace:*"
   },
   "repository": {
     "type": "git",

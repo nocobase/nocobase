@@ -13,10 +13,10 @@
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-acl": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-acl": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Data model tools"

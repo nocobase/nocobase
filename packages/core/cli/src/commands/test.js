@@ -68,8 +68,18 @@ function addTestCommand(name, cli) {
       if (opts.singleThread === 'false') {
         process.argv.splice(process.argv.indexOf('--single-thread=false'), 1);
       }
-
-      const cliArgs = ['--max_old_space_size=14096', './node_modules/vitest/vitest.mjs', ...process.argv.slice(3)];
+      // Normalize Windows backslash paths to forward slashes for vitest compatibility
+      const vitestArgs = process.argv.slice(3).map((arg) => {
+        if (!arg.startsWith('-')) {
+          return arg.replace(/\\/g, '/');
+        }
+        return arg;
+      });
+      const cliArgs = [
+        '--max_old_space_size=8192',
+        path.resolve('.', 'node_modules', 'vitest', 'vitest.mjs'),
+        ...vitestArgs,
+      ];
 
       if (process.argv.includes('-h') || process.argv.includes('--help')) {
         await run('node', cliArgs);

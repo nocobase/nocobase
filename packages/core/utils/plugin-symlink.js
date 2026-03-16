@@ -123,8 +123,9 @@ async function createPluginSymLink(pluginName, sourcePath, nodeModulesPath, plug
     // Remove existing link if it exists
     await removeExistingLink(linkPath, pluginName, pluginType);
 
-    // Create new symlink
-    await fs.symlink(targetPath, linkPath, 'dir');
+    // Create new symlink (use junction on Windows to avoid EPERM)
+    const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
+    await fs.symlink(targetPath, linkPath, symlinkType);
   } catch (error) {
     console.error(`Failed to create symlink for ${pluginType} plugin: ${pluginName}`, error.message);
   }

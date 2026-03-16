@@ -6,12 +6,12 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "2.0.16",
-    "@nocobase/preset-nocobase": "2.0.16",
-    "@nocobase/server": "2.0.16"
+    "@nocobase/database": "workspace:*",
+    "@nocobase/preset-nocobase": "workspace:*",
+    "@nocobase/server": "workspace:*"
   },
   "devDependencies": {
-    "@nocobase/client": "2.0.16"
+    "@nocobase/client": "workspace:*"
   },
   "repository": {
     "type": "git",
