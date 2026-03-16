@@ -328,4 +328,38 @@ describe('flow-model mutate', () => {
       ]),
     );
   });
+
+  it('should allow props to be null in nested mutate upsert payloads', async () => {
+    const res = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'ctx-upsert-pass',
+            type: 'upsert',
+            params: {
+              values: {
+                uid: 'mut-context-root-pass',
+                use: 'MutateContextualParentModel',
+                subModels: {
+                  body: {
+                    uid: 'mut-context-child-pass',
+                    use: 'MutateContextualChildModel',
+                    props: null,
+                    stepParams: {
+                      alpha: 'ok',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        ],
+        returnModels: ['mut-context-root-pass'],
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.models?.['mut-context-root-pass']?.subModels?.body?.uid).toBe('mut-context-child-pass');
+  });
 });

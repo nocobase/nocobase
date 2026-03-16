@@ -148,6 +148,25 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.uid).toBeTruthy();
   });
 
+  it('should allow props to be null during ensure object child creation', async () => {
+    await repository.insertModel({ uid: 'ensure-null-props-parent', use: 'PageTabModel' } as any);
+
+    const res = await agent.resource('flowModels').ensure({
+      values: {
+        parentId: 'ensure-null-props-parent',
+        subKey: 'grid',
+        subType: 'object',
+        use: 'BlockGridModel',
+        props: null,
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.parentId).toBe('ensure-null-props-parent');
+    expect(res.body?.data?.subKey).toBe('grid');
+    expect(res.body?.data?.use).toBe('BlockGridModel');
+  });
+
   it('should validate nested child schema with parent context during ensure', async () => {
     const pass = await agent.resource('flowModels').ensure({
       values: {

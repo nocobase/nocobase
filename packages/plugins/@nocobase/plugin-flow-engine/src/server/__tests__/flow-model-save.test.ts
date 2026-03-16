@@ -786,4 +786,33 @@ describe('flow-model save', () => {
     expect(res.status).toBe(200);
     expect(res.body?.data?.uid).toBe('save-ignore-props-1');
   });
+
+  it('should allow nested child props to be null during save', async () => {
+    const res = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-ignore-props-null-parent',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+        subModels: {
+          body: [
+            {
+              uid: 'save-ignore-props-null-child',
+              use: 'SaveSchemaChildModel',
+              props: null,
+            },
+          ],
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.uid).toBe('save-ignore-props-null-parent');
+    expect(res.body?.data?.subModels?.body?.[0]?.uid).toBe('save-ignore-props-null-child');
+  });
 });
