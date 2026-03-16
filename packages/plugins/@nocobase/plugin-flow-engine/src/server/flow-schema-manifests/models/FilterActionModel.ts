@@ -16,7 +16,6 @@ export const filterActionModelInternalSchemaManifest: FlowModelSchemaManifest = 
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     filterSettings: filterActionSettingsStepParamsSchema,

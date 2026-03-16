@@ -16,7 +16,6 @@ export const bulkDeleteActionModelInternalSchemaManifest: FlowModelSchemaManifes
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     deleteSettings: deleteActionSettingsStepParamsSchema,

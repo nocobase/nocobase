@@ -511,10 +511,9 @@ describe('flow schema manifest provider', () => {
     const batch = await agent.post('/flowModels:schemas').send({
       uses: [],
     });
-    const uses = (batch.body?.data || []).map((item) => item.use);
 
-    expect(uses).toContain('ProviderManifestModel');
-    expect(uses).not.toContain('DisabledProviderModel');
+    expect(batch.status).toBe(200);
+    expect(batch.body?.data).toEqual([]);
   });
 
   it('should collect manifests from official plugin providers', async () => {

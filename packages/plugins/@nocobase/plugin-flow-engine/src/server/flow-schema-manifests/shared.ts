@@ -166,7 +166,7 @@ export const publicBlockRootUses = [
   'TableBlockModel',
 ];
 
-export const pageTabUses = ['BasePageTabModel', 'RootPageTabModel', 'PageTabModel'];
+export const pageTabUses = ['RootPageTabModel', 'PageTabModel'];
 
 export const tableColumnUses = [
   'TableColumnModel',

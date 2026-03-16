@@ -15,7 +15,6 @@ export const filterFormCustomFieldModelInternalSchemaManifest: FlowModelSchemaMa
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {
     type: 'object',

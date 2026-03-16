@@ -16,7 +16,6 @@ export const tableCustomColumnModelInternalSchemaManifest: FlowModelSchemaManife
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: {
     type: 'object',

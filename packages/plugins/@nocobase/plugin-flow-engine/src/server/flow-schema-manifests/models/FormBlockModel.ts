@@ -15,6 +15,7 @@ export const formBlockModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
+  abstract: true,
   allowDirectUse: false,
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
 };

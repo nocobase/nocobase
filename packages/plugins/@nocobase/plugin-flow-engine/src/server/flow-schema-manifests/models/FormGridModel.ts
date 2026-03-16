@@ -16,7 +16,6 @@ export const formGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   subModelSlots: {
     items: {

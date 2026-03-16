@@ -16,7 +16,6 @@ export const assignFormModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['UpdateRecordActionModel'],
   stepParamsSchema: {
     type: 'object',

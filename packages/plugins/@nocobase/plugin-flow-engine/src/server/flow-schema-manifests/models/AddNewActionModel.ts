@@ -16,7 +16,6 @@ export const addNewActionModelInternalSchemaManifest: FlowModelSchemaManifest = 
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     popupSettings: popupActionSettingsStepParamsSchema,

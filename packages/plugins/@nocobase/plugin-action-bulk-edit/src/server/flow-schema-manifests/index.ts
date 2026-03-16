@@ -25,7 +25,6 @@ const bulkEditBlockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'plugin',
   strict: false,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['BulkEditActionModel'],
   subModelSlots: {
     items: {
@@ -67,7 +66,6 @@ const bulkEditChildPageTabModelInternalSchemaManifest: FlowModelSchemaManifest =
   source: 'plugin',
   strict: false,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['BulkEditActionModel'],
   subModelSlots: {
     grid: {

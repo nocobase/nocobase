@@ -130,6 +130,7 @@ export class FlowSchemaService {
         strict: false,
       },
       exposure: 'internal',
+      abstract: true,
       allowDirectUse: false,
     });
   }
@@ -158,14 +159,14 @@ export class FlowSchemaService {
   }
 
   getDocument(use: string): FlowSchemaDocument | undefined {
-    return this.registry.hasPublicModel(use) ? this.registry.getModelDocument(use) : undefined;
+    return this.registry.hasQueryableModel(use) ? this.registry.getModelDocument(use) : undefined;
   }
 
   getDocuments(uses?: string[]): FlowSchemaDocument[] {
     if (!Array.isArray(uses) || uses.length === 0) {
-      return this.registry.listModelDocuments({ publicOnly: true });
+      return [];
     }
-    return uses.filter((use) => this.registry.hasPublicModel(use)).map((use) => this.registry.getModelDocument(use));
+    return uses.filter((use) => this.registry.hasQueryableModel(use)).map((use) => this.registry.getModelDocument(use));
   }
 
   getBundle(uses?: string[]): FlowSchemaBundleDocument {
@@ -229,7 +230,7 @@ export class FlowSchemaService {
         modelUse: node?.use,
         section: 'model',
         keyword: 'unsupported-model-use',
-        message: `Model use "${node?.use}" is internal and cannot be submitted directly.`,
+        message: `Model use "${node?.use}" is base/abstract and cannot be submitted directly.`,
         suggestedUses: this.registry.getSuggestedUses(modelUse),
         schemaHash,
       });
@@ -245,7 +246,7 @@ export class FlowSchemaService {
         section: 'model',
         keyword: 'unresolved-model',
         message: `No schema registered for model use "${node?.use}".`,
-        suggestedUses: this.registry.listModelUses({ publicOnly: true, directUseOnly: true }).slice(0, 20),
+        suggestedUses: this.registry.listModelUses({ directUseOnly: true }).slice(0, 20),
         schemaHash,
       });
     }

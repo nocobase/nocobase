@@ -16,6 +16,7 @@ export const basePageTabModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
+  abstract: true,
   allowDirectUse: false,
   suggestedUses: ['PageModel', 'RootPageModel'],
   stepParamsSchema: pageTabSettingsStepParamsSchema,

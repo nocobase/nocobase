@@ -16,7 +16,6 @@ export const formAssociationItemModelInternalSchemaManifest: FlowModelSchemaMani
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: detailItemStepParamsSchema,
   subModelSlots: {

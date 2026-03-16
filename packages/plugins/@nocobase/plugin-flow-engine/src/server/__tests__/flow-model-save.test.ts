@@ -252,6 +252,20 @@ describe('flow-model save', () => {
     expect(batch.status).toBe(200);
     expect(batch.body?.data).toHaveLength(1);
     expect(batch.body?.data?.[0]?.use).toBe('SaveSchemaStrictModel');
+
+    const internalConcrete = await agent.post('/flowModels:schemas').send({
+      uses: ['FormGridModel', 'FormItemModel', 'FormSubmitActionModel', 'BlockGridModel'],
+    });
+
+    expect(internalConcrete.status).toBe(200);
+    expect((internalConcrete.body?.data || []).map((item) => item.use)).toEqual(
+      expect.arrayContaining(['FormGridModel', 'FormItemModel', 'FormSubmitActionModel', 'BlockGridModel']),
+    );
+
+    const emptyBatch = await agent.post('/flowModels:schemas').send({});
+
+    expect(emptyBatch.status).toBe(200);
+    expect(emptyBatch.body?.data).toEqual([]);
   });
 
   it('should expose builtin official schema bundle for prompt bootstrapping', async () => {
@@ -337,7 +351,6 @@ describe('flow-model save', () => {
       tabs: {
         type: 'array',
         candidates: expect.arrayContaining([
-          expect.objectContaining({ use: 'BasePageTabModel' }),
           expect.objectContaining({ use: 'RootPageTabModel' }),
           expect.objectContaining({ use: 'PageTabModel' }),
         ]),
@@ -353,6 +366,16 @@ describe('flow-model save', () => {
       expect.arrayContaining(['CreateFormModel', 'EditFormModel']),
     );
     expect((formBundle.body?.data?.items || []).map((item) => item.use)).not.toContain('FormBlockModel');
+    const internalBundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: ['FormGridModel', 'BlockGridModel'],
+    });
+    expect(internalBundle.status).toBe(200);
+    expect((internalBundle.body?.data?.items || []).map((item) => item.use)).toEqual(
+      expect.arrayContaining(['FormGridModel', 'BlockGridModel']),
+    );
+    const emptyBundle = await agent.post('/flowModels:schemaBundle').send({});
+    expect(emptyBundle.status).toBe(200);
+    expect(emptyBundle.body?.data?.items).toEqual([]);
     const createFormItem = (formBundle.body?.data?.items || []).find((item) => item.use === 'CreateFormModel');
     expect(createFormItem?.subModelCatalog).toMatchObject({
       grid: {
@@ -420,7 +443,65 @@ describe('flow-model save', () => {
     expect(updateRecord.body?.data?.jsonSchema?.properties?.subModels?.properties?.assignForm).toBeDefined();
   });
 
-  it('should hide internal base models from discovery and reject direct use', async () => {
+  it('should allow direct discovery and save for internal concrete models while keeping abstract bases hidden', async () => {
+    const internalConcrete = await agent.get('/flowModels:schema').query({
+      use: 'FormGridModel',
+    });
+
+    expect(internalConcrete.status).toBe(200);
+    expect(internalConcrete.body?.data?.use).toBe('FormGridModel');
+
+    const blockGrid = await agent.get('/flowModels:schema').query({
+      use: 'BlockGridModel',
+    });
+
+    expect(blockGrid.status).toBe(200);
+    expect(blockGrid.body?.data?.use).toBe('BlockGridModel');
+
+    const formItem = await agent.get('/flowModels:schema').query({
+      use: 'FormItemModel',
+    });
+
+    expect(formItem.status).toBe(200);
+    expect(formItem.body?.data?.use).toBe('FormItemModel');
+
+    const formSubmit = await agent.get('/flowModels:schema').query({
+      use: 'FormSubmitActionModel',
+    });
+
+    expect(formSubmit.status).toBe(200);
+    expect(formSubmit.body?.data?.use).toBe('FormSubmitActionModel');
+
+    const saveConcrete = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-internal-form-grid',
+        use: 'FormGridModel',
+      },
+    });
+
+    expect(saveConcrete.status).toBe(200);
+    expect(saveConcrete.body?.data?.use).toBe('FormGridModel');
+
+    const saveItem = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-internal-form-item',
+        use: 'FormItemModel',
+      },
+    });
+
+    expect(saveItem.status).toBe(200);
+    expect(saveItem.body?.data?.use).toBe('FormItemModel');
+
+    const saveSubmitAction = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-internal-form-submit',
+        use: 'FormSubmitActionModel',
+      },
+    });
+
+    expect(saveSubmitAction.status).toBe(200);
+    expect(saveSubmitAction.body?.data?.use).toBe('FormSubmitActionModel');
+
     const internal = await agent.get('/flowModels:schema').query({
       use: 'FormBlockModel',
     });
@@ -451,6 +532,7 @@ describe('flow-model save', () => {
           modelUse: 'FormBlockModel',
           section: 'model',
           keyword: 'unsupported-model-use',
+          message: 'Model use "FormBlockModel" is base/abstract and cannot be submitted directly.',
           suggestedUses: ['CreateFormModel', 'EditFormModel'],
         }),
       ]),

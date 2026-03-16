@@ -259,7 +259,7 @@ export class PluginUISchemaStorageServer extends Plugin {
           }
           const document = this.flowSchemaService.getDocument(modelUse);
           if (!document) {
-            ctx.throw(404, `No public flow schema document found for use "${modelUse}"`, {
+            ctx.throw(404, `No flow schema document found for use "${modelUse}"`, {
               code: 'FLOW_MODEL_SCHEMA_NOT_FOUND',
             });
           }

@@ -16,7 +16,6 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['PageModel', 'RootPageModel'],
   subModelSlots: {
     items: {

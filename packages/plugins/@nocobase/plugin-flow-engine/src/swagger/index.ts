@@ -62,7 +62,7 @@ export default {
       get: {
         tags: ['flowModels'],
         description:
-          'Get the server-side JSON Schema document for a specific flow model use. Use this discovery endpoint before composing flowModels:save/ensure/mutate payloads.',
+          'Get the server-side JSON Schema document for a specific registered concrete flow model use. Use this discovery endpoint before composing flowModels:save/ensure/mutate payloads.',
         parameters: [{ name: 'use', in: 'query', required: true, schema: { type: 'string' } }],
         responses: {
           200: {
@@ -88,7 +88,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Batch fetch flow model JSON Schema documents. When uses is empty or omitted, returns the current schema index visible to the server.',
+          'Batch fetch flow model JSON Schema documents for explicit uses[]. When uses is empty or omitted, returns an empty array.',
         requestBody: {
           required: false,
           content: {
@@ -116,7 +116,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Fetch a lightweight model directory and minimal skeleton bundle for LLM prompts. For full schema details and validation rules, use flowModels:schema or flowModels:schemas.',
+          'Fetch a lightweight skeleton bundle for explicit uses[]. When uses is empty or omitted, returns an empty directory. For full schema details and validation rules, use flowModels:schema or flowModels:schemas.',
         requestBody: {
           required: false,
           content: {

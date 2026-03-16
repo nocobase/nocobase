@@ -203,6 +203,7 @@ export interface FlowModelSchemaMeta {
   source?: FlowSchemaCoverage['source'];
   strict?: boolean;
   exposure?: FlowModelSchemaExposure;
+  abstract?: boolean;
   allowDirectUse?: boolean;
   suggestedUses?: string[];
 }
@@ -230,6 +231,7 @@ export interface FlowModelSchemaManifest {
   source?: FlowSchemaCoverage['source'];
   strict?: boolean;
   exposure?: FlowModelSchemaExposure;
+  abstract?: boolean;
   allowDirectUse?: boolean;
   suggestedUses?: string[];
 }

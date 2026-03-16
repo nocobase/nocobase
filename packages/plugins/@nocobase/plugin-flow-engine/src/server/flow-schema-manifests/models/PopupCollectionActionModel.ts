@@ -16,7 +16,6 @@ export const popupCollectionActionModelInternalSchemaManifest: FlowModelSchemaMa
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel', 'TableActionsColumnModel', 'DetailsBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     popupSettings: popupActionSettingsStepParamsSchema,

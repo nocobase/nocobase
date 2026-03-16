@@ -16,7 +16,6 @@ export const detailsItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['DetailsBlockModel'],
   stepParamsSchema: detailItemStepParamsSchema,
   subModelSlots: {

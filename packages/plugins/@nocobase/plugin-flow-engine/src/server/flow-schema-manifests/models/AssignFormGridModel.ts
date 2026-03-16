@@ -16,7 +16,6 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['UpdateRecordActionModel'],
   subModelSlots: {
     items: {

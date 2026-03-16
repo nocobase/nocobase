@@ -16,7 +16,6 @@ export const expandCollapseActionModelInternalSchemaManifest: FlowModelSchemaMan
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     expandCollapseSettings: expandCollapseActionSettingsStepParamsSchema,

@@ -16,7 +16,6 @@ export const filterFormJsActionModelInternalSchemaManifest: FlowModelSchemaManif
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {
     type: 'object',

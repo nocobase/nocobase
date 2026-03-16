@@ -16,7 +16,6 @@ export const linkActionModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['TableBlockModel', 'TableActionsColumnModel', 'DetailsBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({
     actionPanelLinkSettings: linkActionSettingsStepParamsSchema,

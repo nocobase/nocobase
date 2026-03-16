@@ -127,6 +127,27 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.uid).toBeTruthy();
   });
 
+  it('should allow ensuring internal concrete child models directly', async () => {
+    await repository.insertModel({ uid: 'ensure-tab-parent', use: 'PageTabModel' } as any);
+
+    const res = await agent.resource('flowModels').ensure({
+      values: {
+        parentId: 'ensure-tab-parent',
+        subKey: 'grid',
+        subType: 'object',
+        use: 'BlockGridModel',
+        async: true,
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.parentId).toBe('ensure-tab-parent');
+    expect(res.body?.data?.subKey).toBe('grid');
+    expect(res.body?.data?.subType).toBe('object');
+    expect(res.body?.data?.use).toBe('BlockGridModel');
+    expect(res.body?.data?.uid).toBeTruthy();
+  });
+
   it('should validate nested child schema with parent context during ensure', async () => {
     const pass = await agent.resource('flowModels').ensure({
       values: {

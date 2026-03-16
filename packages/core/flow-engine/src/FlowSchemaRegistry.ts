@@ -66,6 +66,7 @@ export type RegisteredModelSchema = {
   dynamicHints: FlowDynamicHint[];
   coverage: FlowSchemaCoverage;
   exposure: FlowModelSchemaExposure;
+  abstract: boolean;
   allowDirectUse: boolean;
   suggestedUses: string[];
 };
@@ -802,6 +803,7 @@ export class FlowSchemaRegistry {
       dynamicHints: normalizeSchemaHints([...(previous?.dynamicHints || []), ...(options.dynamicHints || [])]),
       coverage: options.coverage || previous?.coverage || { status: 'unresolved', source: 'third-party' },
       exposure: options.exposure ?? previous?.exposure ?? 'public',
+      abstract: options.abstract ?? previous?.abstract ?? false,
       allowDirectUse: options.allowDirectUse ?? previous?.allowDirectUse ?? true,
       suggestedUses: normalizeStringArray(options.suggestedUses || previous?.suggestedUses),
     });
@@ -842,6 +844,7 @@ export class FlowSchemaRegistry {
         strict: manifest.strict,
       },
       exposure: manifest.exposure,
+      abstract: manifest.abstract,
       allowDirectUse: manifest.allowDirectUse,
       suggestedUses: manifest.suggestedUses,
     });
@@ -883,6 +886,7 @@ export class FlowSchemaRegistry {
         strict: schemaMeta.strict,
       },
       exposure: schemaMeta.exposure,
+      abstract: schemaMeta.abstract,
       allowDirectUse: schemaMeta.allowDirectUse,
       suggestedUses: schemaMeta.suggestedUses,
     });
@@ -963,6 +967,7 @@ export class FlowSchemaRegistry {
       dynamicHints: normalizeSchemaHints(registered?.dynamicHints),
       coverage: registered?.coverage || { status: 'unresolved', source: 'third-party' },
       exposure: registered?.exposure || 'public',
+      abstract: registered?.abstract ?? false,
       allowDirectUse: registered?.allowDirectUse ?? true,
       suggestedUses: normalizeStringArray(registered?.suggestedUses),
     };
@@ -979,42 +984,56 @@ export class FlowSchemaRegistry {
     return (model?.exposure || 'public') === 'public';
   }
 
+  private isQueryableModel(model?: Pick<RegisteredModelSchema, 'abstract'>): boolean {
+    return !!model && model.abstract !== true;
+  }
+
   getSuggestedUses(use: string): string[] {
     const model = this.modelSchemas.get(String(use || '').trim());
     if (model?.suggestedUses?.length) {
       return normalizeStringArray(model.suggestedUses);
     }
-    return this.listModelUses({ publicOnly: true, directUseOnly: true })
+    return this.listModelUses({ directUseOnly: true })
       .filter((item) => item !== use)
       .slice(0, 20);
   }
 
   hasPublicModel(use: string): boolean {
     const model = this.modelSchemas.get(String(use || '').trim());
-    return !!model && this.isPublicModel(model);
+    return !!model && this.isPublicModel(model) && this.isQueryableModel(model);
+  }
+
+  hasQueryableModel(use: string): boolean {
+    const model = this.modelSchemas.get(String(use || '').trim());
+    return this.isQueryableModel(model);
   }
 
   isDirectUseAllowed(use: string): boolean {
     const model = this.modelSchemas.get(String(use || '').trim());
-    return model ? model.allowDirectUse !== false : true;
+    return model ? this.isQueryableModel(model) && model.allowDirectUse !== false : true;
   }
 
-  listModelUses(options: { publicOnly?: boolean; directUseOnly?: boolean } = {}): string[] {
-    const { publicOnly = false, directUseOnly = false } = options;
+  listModelUses(options: { publicOnly?: boolean; directUseOnly?: boolean; queryableOnly?: boolean } = {}): string[] {
+    const { publicOnly = false, directUseOnly = false, queryableOnly = false } = options;
     return Array.from(this.modelSchemas.values())
-      .filter((model) => !publicOnly || this.isPublicModel(model))
-      .filter((model) => !directUseOnly || model.allowDirectUse !== false)
+      .filter((model) => !publicOnly || (this.isPublicModel(model) && this.isQueryableModel(model)))
+      .filter((model) => !queryableOnly || this.isQueryableModel(model))
+      .filter((model) => !directUseOnly || (this.isQueryableModel(model) && model.allowDirectUse !== false))
       .map((model) => model.use)
       .sort();
   }
 
-  listModelDocuments(options: { publicOnly?: boolean } = {}): FlowSchemaDocument[] {
-    return this.listModelUses({ publicOnly: options.publicOnly }).map((use) => this.getModelDocument(use));
+  listModelDocuments(options: { publicOnly?: boolean; queryableOnly?: boolean } = {}): FlowSchemaDocument[] {
+    return this.listModelUses({ publicOnly: options.publicOnly, queryableOnly: options.queryableOnly }).map((use) =>
+      this.getModelDocument(use),
+    );
   }
 
   getCoverageSummary(options: { publicOnly?: boolean } = {}): FlowSchemaRegistrySummary {
     const { publicOnly = false } = options;
-    const models = Array.from(this.modelSchemas.values()).filter((model) => !publicOnly || this.isPublicModel(model));
+    const models = Array.from(this.modelSchemas.values()).filter(
+      (model) => !publicOnly || (this.isPublicModel(model) && this.isQueryableModel(model)),
+    );
     const inventoryModelEntries = Array.from(this.publicModelInventory.entries()).filter(([, source]) =>
       this.isOfficialInventorySource(source),
     );
@@ -1061,10 +1080,9 @@ export class FlowSchemaRegistry {
 
   getSchemaBundle(uses?: string[]): FlowSchemaBundleDocument {
     return {
-      items: (!uses || uses.length === 0
-        ? this.listModelUses({ publicOnly: true })
-        : uses.filter((use) => this.hasPublicModel(use))
-      ).map((use) => this.buildBundleNode(use, [], new Set<string>())),
+      items: (Array.isArray(uses) && uses.length > 0 ? uses.filter((use) => this.hasQueryableModel(use)) : []).map(
+        (use) => this.buildBundleNode(use, [], new Set<string>()),
+      ),
     };
   }
 
@@ -1090,11 +1108,11 @@ export class FlowSchemaRegistry {
         missingUses.push(use);
         continue;
       }
-      if (options.publicOnly && !this.isPublicModel(model)) {
+      if (options.publicOnly && (!this.isPublicModel(model) || !this.isQueryableModel(model))) {
         missingUses.push(use);
         continue;
       }
-      if (options.directUseOnly && model.allowDirectUse === false) {
+      if (options.directUseOnly && (!this.isQueryableModel(model) || model.allowDirectUse === false)) {
         missingUses.push(use);
         continue;
       }
@@ -1601,6 +1619,7 @@ export class FlowSchemaRegistry {
         source: 'third-party',
       },
       exposure: 'internal',
+      abstract: false,
       allowDirectUse: true,
       suggestedUses: [],
     };

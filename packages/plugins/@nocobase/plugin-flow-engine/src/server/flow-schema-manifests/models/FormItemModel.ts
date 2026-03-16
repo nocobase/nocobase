@@ -16,7 +16,6 @@ export const formItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: formItemStepParamsSchema,
   subModelSlots: {

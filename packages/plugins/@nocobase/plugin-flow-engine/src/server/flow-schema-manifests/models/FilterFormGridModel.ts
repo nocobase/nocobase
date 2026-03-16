@@ -16,7 +16,6 @@ export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['FilterFormBlockModel'],
   subModelSlots: {
     items: {

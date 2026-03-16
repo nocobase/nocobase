@@ -16,7 +16,6 @@ export const formSubmitActionModelInternalSchemaManifest: FlowModelSchemaManifes
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: {
     type: 'object',

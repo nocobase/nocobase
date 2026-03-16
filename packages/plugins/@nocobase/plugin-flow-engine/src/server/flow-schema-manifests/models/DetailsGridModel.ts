@@ -16,7 +16,6 @@ export const detailsGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['DetailsBlockModel'],
   subModelSlots: {
     items: {

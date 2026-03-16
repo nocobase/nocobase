@@ -16,7 +16,6 @@ export const assignFormItemModelInternalSchemaManifest: FlowModelSchemaManifest 
   source: 'official',
   strict: true,
   exposure: 'internal',
-  allowDirectUse: false,
   suggestedUses: ['UpdateRecordActionModel'],
   stepParamsSchema: assignFormItemStepParamsSchema,
   subModelSlots: {

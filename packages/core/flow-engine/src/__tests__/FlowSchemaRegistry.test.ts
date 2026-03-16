@@ -465,14 +465,28 @@ describe('FlowSchemaRegistry', () => {
     ).toEqual([]);
   });
 
-  it('should filter internal models from public discovery helpers', () => {
+  it('should treat abstract models as non-queryable while allowing explicit internal concrete models', () => {
     const registry = new FlowSchemaRegistry();
 
     registry.registerModelManifest({
       use: 'SchemaRegistryInternalBaseModel',
       exposure: 'internal',
+      abstract: true,
       allowDirectUse: false,
       suggestedUses: ['SchemaRegistryPublicModel'],
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryInternalConcreteModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+          },
+        },
+        additionalProperties: true,
+      },
     });
     registry.registerModelManifest({
       use: 'SchemaRegistryPublicModel',
@@ -489,13 +503,19 @@ describe('FlowSchemaRegistry', () => {
     });
 
     expect(registry.hasPublicModel('SchemaRegistryInternalBaseModel')).toBe(false);
+    expect(registry.hasQueryableModel('SchemaRegistryInternalBaseModel')).toBe(false);
     expect(registry.hasPublicModel('SchemaRegistryPublicModel')).toBe(true);
+    expect(registry.hasQueryableModel('SchemaRegistryInternalConcreteModel')).toBe(true);
     expect(registry.isDirectUseAllowed('SchemaRegistryInternalBaseModel')).toBe(false);
+    expect(registry.isDirectUseAllowed('SchemaRegistryInternalConcreteModel')).toBe(true);
     expect(registry.getSuggestedUses('SchemaRegistryInternalBaseModel')).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.listModelUses({ publicOnly: true })).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.getCoverageSummary({ publicOnly: true }).registeredModels).toBe(1);
     expect(registry.getCoverageSummary({ publicOnly: true }).publicOfficialModelsTotal).toBe(0);
-    expect(registry.getSchemaBundle().items.map((item) => item.use)).toEqual(['SchemaRegistryPublicModel']);
+    expect(registry.getSchemaBundle().items).toEqual([]);
+    expect(registry.getSchemaBundle(['SchemaRegistryInternalConcreteModel']).items.map((item) => item.use)).toEqual([
+      'SchemaRegistryInternalConcreteModel',
+    ]);
   });
 
   it('should resolve direct child schema patches by parent slot context', () => {
@@ -977,8 +997,10 @@ describe('FlowSchemaRegistry', () => {
 
     const publicBundle = registry.getSchemaBundle();
     const bundle = registry.getSchemaBundle(['SchemaRegistryBundleParentModel']);
+    const explicitInternalBundle = registry.getSchemaBundle(['SchemaRegistryBundleChildModel']);
 
-    expect(publicBundle.items.map((item) => item.use)).toEqual(['SchemaRegistryBundleParentModel']);
+    expect(publicBundle.items).toEqual([]);
+    expect(explicitInternalBundle.items.map((item) => item.use)).toEqual(['SchemaRegistryBundleChildModel']);
     expect(bundle.items[0]).toMatchObject({
       use: 'SchemaRegistryBundleParentModel',
       subModelCatalog: {
