@@ -4,7 +4,7 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 
 # ModelDefinition
 
-`ModelDefinition` definieert de creatie-opties voor een `flow` model. U gebruikt dit om een modelinstantie te maken via de `FlowEngine.createModel()` methode. Het bevat de basisconfiguratie, eigenschappen, submodellen en andere relevante informatie van het model.
+`ModelDefinition` definieert de creatie-opties voor een `flow` model. U gebruikt dit om een modelinstantie te maken via de `FlowEngine.createModelAsync()` methode. Het bevat de basisconfiguratie, eigenschappen, submodellen en andere relevante informatie van het model.
 
 ## Type Definitie
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Maak een modelinstantie
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Gebruik een dynamische referentie
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Registreer de modelklasse
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamische import: de modelmodule wordt pas geladen wanneer dit model voor het eerst echt nodig is
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Maak een modelinstantie
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

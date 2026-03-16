@@ -4,7 +4,7 @@
 
 # ModelDefinition
 
-`ModelDefinition` מגדיר את אפשרויות היצירה עבור מודל זרימה (flow model), המשמש ליצירת מופע מודל (model instance) באמצעות שיטת `FlowEngine.createModel()`. הוא כולל את התצורה הבסיסית של המודל, מאפיינים, תת-מודלים ומידע נוסף.
+`ModelDefinition` מגדיר את אפשרויות היצירה עבור מודל זרימה (flow model), המשמש ליצירת מופע מודל (model instance) באמצעות שיטת `FlowEngine.createModelAsync()`. הוא כולל את התצורה הבסיסית של המודל, מאפיינים, תת-מודלים ומידע נוסף.
 
 ## הגדרת טיפוס
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // יצירת מופע מודל
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -83,7 +83,7 @@ use: 'MyModel'
 use: MyModel
 
 // שימוש בהפניה דינמית
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -263,10 +263,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // רישום מחלקת המודל
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // ייבוא דינמי: מודול המודל ייטען רק כאשר המודל הזה נדרש בפועל לראשונה
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // יצירת מופע מודל
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

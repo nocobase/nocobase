@@ -4,7 +4,7 @@ Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, pro
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 *   **Typ**: `string`
 *   **Wartość domyślna**: `docs`

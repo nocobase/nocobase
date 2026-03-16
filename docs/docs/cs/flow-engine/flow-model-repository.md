@@ -60,7 +60,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Lokální metody
 
 ```ts
-flowEngine.createModel(options); // Vytvoří lokální instanci modelu
+await flowEngine.createModelAsync(options); // Vytvoří lokální instanci modelu
 flowEngine.getModel(uid);        // Získá lokální instanci modelu
 flowEngine.removeModel(uid);     // Odstraní lokální instanci modelu
 ```
@@ -76,7 +76,7 @@ await flowEngine.destroyModel(uid);  // Smaže model ze vzdáleného zdroje
 ## Metody instance modelu
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Uloží do vzdáleného zdroje

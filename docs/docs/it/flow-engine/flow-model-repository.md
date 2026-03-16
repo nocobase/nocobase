@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Metodi Locali
 
 ```ts
-flowEngine.createModel(options); // Crea un'istanza di modello locale
+await flowEngine.createModelAsync(options); // Crea un'istanza di modello locale
 flowEngine.getModel(uid);        // Ottiene un'istanza di modello locale
 flowEngine.removeModel(uid);     // Rimuove un'istanza di modello locale
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // Elimina il modello da remoto
 ## Metodi dell'Istanza del Modello
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Salva su remoto

@@ -5,7 +5,7 @@ Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen 
 
 # ModelDefinition
 
-ModelDefinition, `FlowEngine.createModel()` metodu aracılığıyla bir model örneği oluşturmak için kullanılan bir akış modelinin oluşturma seçeneklerini tanımlar. Bu tanım, modelin temel yapılandırmasını, özelliklerini, alt modellerini ve diğer bilgilerini içerir.
+ModelDefinition, `FlowEngine.createModelAsync()` metodu aracılığıyla bir model örneği oluşturmak için kullanılan bir akış modelinin oluşturma seçeneklerini tanımlar. Bu tanım, modelin temel yapılandırmasını, özelliklerini, alt modellerini ve diğer bilgilerini içerir.
 
 ## Tip Tanımı
 
@@ -31,7 +31,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Bir model örneği oluşturun
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -86,7 +86,7 @@ use: 'MyModel'
 use: MyModel
 
 // Dinamik referans kullanın
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -274,10 +274,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Model sınıfını kaydedin
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dinamik içe aktarma: model modülü yalnızca bu modele ilk kez gerçekten ihtiyaç duyulduğunda yüklenir
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Bir model örneği oluşturun
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

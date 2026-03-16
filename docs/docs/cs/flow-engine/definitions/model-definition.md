@@ -5,7 +5,7 @@ Tento dokument byl přeložen umělou inteligencí. V případě nepřesností s
 
 # ModelDefinition
 
-ModelDefinition definuje možnosti vytvoření pro model toku, které se používají k vytvoření instance modelu pomocí metody `FlowEngine.createModel()`. Obsahuje základní konfiguraci modelu, jeho vlastnosti, podmodely a další informace.
+ModelDefinition definuje možnosti vytvoření pro model toku, které se používají k vytvoření instance modelu pomocí metody `FlowEngine.createModelAsync()`. Obsahuje základní konfiguraci modelu, jeho vlastnosti, podmodely a další informace.
 
 ## Definice typu
 
@@ -31,7 +31,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Vytvoření instance modelu
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -86,7 +86,7 @@ use: 'MyModel'
 use: MyModel
 
 // Použití dynamické reference
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -274,10 +274,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Registrace třídy modelu
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamický import: modul modelu se načte až při prvním skutečném použití
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Vytvoření instance modelu
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

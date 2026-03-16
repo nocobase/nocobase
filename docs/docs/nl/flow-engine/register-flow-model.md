@@ -32,7 +32,12 @@ class HelloModel extends FlowModel {
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // Dynamische import: de modelmodule wordt pas geladen wanneer dit model voor het eerst echt nodig is
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

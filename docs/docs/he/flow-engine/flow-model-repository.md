@@ -53,7 +53,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 
 ### שיטות מקומיות
 ```ts
-flowEngine.createModel(options); // יצירת מופע מודל מקומי
+await flowEngine.createModelAsync(options); // יצירת מופע מודל מקומי
 flowEngine.getModel(uid);        // קבלת מופע מודל מקומי
 flowEngine.removeModel(uid);     // הסרת מופע מודל מקומי
 ```
@@ -67,7 +67,7 @@ await flowEngine.destroyModel(uid);  // מחיקת מודל ממקור מרוח�
 
 ## שיטות מופע של מודל
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // שמירה למקור מרוחק

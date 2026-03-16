@@ -17,15 +17,20 @@ NocoBase istemcisi, `router.add()` ve `pluginSettingsRouter.add()` metotları ar
 
 ## Normal Sayfa Genişletme
 
-`router.add()` metodu aracılığıyla normal sayfa yönlendirmeleri ekleyebilirsiniz.
+`router.add()` ile normal sayfa rotaları ekleyin. Sayfa bileşenleri için `componentLoader` kullanın; böylece sayfa modülü yalnızca ilgili rotaya gerçekten girildiğinde yüklenir.
+
+Sayfa dosyaları `export default` kullanmalıdır:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -40,8 +45,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Dinamik içe aktarma: sayfa modülü yalnızca bu rotaya girildiğinde yüklenir
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -62,22 +75,22 @@ this.router.add('root.user', {
 });
 ```
 
+Sayfa ağırsa veya ilk render sırasında gerekli değilse `componentLoader` tercih edilmelidir; `element` ise düzen rotaları veya çok hafif satır içi sayfalar için hâlâ uygundur.
+
 ## Eklenti Ayar Sayfası Genişletme
 
-`pluginSettingsRouter.add()` metodu aracılığıyla eklenti ayar sayfaları ekleyebilirsiniz.
+`pluginSettingsRouter.add()` ile eklenti ayar sayfaları ekleyin. Normal sayfa rotalarında olduğu gibi ayar sayfalarında da `componentLoader` kullanılmalıdır.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Ayar sayfası başlığı
       icon: 'ApiOutlined', // Ayar sayfası menü simgesi
-      Component: HelloSettingPage,
+      // Dinamik içe aktarma: sayfa modülü yalnızca bu ayar sayfasına girildiğinde yüklenir
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -96,18 +109,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Alt yönlendirmeler
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Dinamik içe aktarma: sayfa modülü yalnızca bu ayar sayfasına girildiğinde yüklenir
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

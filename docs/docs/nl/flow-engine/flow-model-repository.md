@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Lokale methoden
 
 ```ts
-flowEngine.createModel(options); // Maak een lokale modelinstantie aan
+await flowEngine.createModelAsync(options); // Maak een lokale modelinstantie aan
 flowEngine.getModel(uid);        // Haal een lokale modelinstantie op
 flowEngine.removeModel(uid);     // Verwijder een lokale modelinstantie
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // Verwijder model op afstand
 ## model-instantie methoden
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Sla op afstand op
