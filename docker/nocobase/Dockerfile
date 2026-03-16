@@ -4,13 +4,10 @@ ARG CNA_VERSION
 
 WORKDIR /app
 
-RUN cd /app \
-  && yarn config set network-timeout 600000 -g \
+RUN corepack enable pnpm && cd /app \
   && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
-  && yarn install --production \
-  && rm -rf yarn.lock \
-  && find node_modules -type f -name "yarn.lock" -delete \
+  && pnpm install --prod \
   && find node_modules -type f -name "bower.json" -delete \
   && find node_modules -type f -name "composer.json" -delete
 

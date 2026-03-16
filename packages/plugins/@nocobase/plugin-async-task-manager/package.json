@@ -10,10 +10,10 @@
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/plugin-error-handler": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/plugin-error-handler": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "dependencies": {
     "p-queue": "^6.6.2"

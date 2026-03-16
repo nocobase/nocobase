@@ -10,9 +10,9 @@
   "description.ru-RU": "Настройка идентификатора экземпляра и ключа лицензии",
   "description.zh-CN": "实例 ID 和授权密钥设置",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "scripts": {
     "ts:env": "tsc -p tsconfig.env.json"

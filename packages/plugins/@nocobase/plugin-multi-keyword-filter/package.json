@@ -22,9 +22,9 @@
     "xlsx": "0.18.5"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*",
     "antd": "5.x"
   },
   "license": "Apache-2.0"

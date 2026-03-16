@@ -170,28 +170,29 @@ export const getFilterInclude = (isServer, isCoverage) => {
   argv = argv.filter((item, index) => {
     if (!item.startsWith('-')) {
       const pre = argv[index - 1];
-
       if (pre && pre.startsWith('--') && ['--reporter'].includes(pre)) {
         return false;
       }
-
       return true;
     }
-
     return false;
   });
 
-  let filterFileOrDir = argv[0];
-
+  const filterFileOrDir = argv[0];
   if (!filterFileOrDir) return {};
+
+
   const absPath = path.join(process.cwd(), filterFileOrDir);
   const isDir = fs.existsSync(absPath) && fs.statSync(absPath).isDirectory();
+
+  // glob pattern 需要使用 POSIX 分隔符
+  const globBaseDir = filterFileOrDir.replace(/\\/g, '/');
 
   // 如果是文件，则只测试当前文件
   if (!isDir) {
     return {
       isFile: true,
-      include: [filterFileOrDir],
+      include: [globBaseDir],
     };
   }
 
@@ -199,44 +200,44 @@ export const getFilterInclude = (isServer, isCoverage) => {
 
   // 判断是否为包目录，如果不是包目录，则只测试当前目录
   const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
-
   if (!isPackage) {
     return {
-      include: [`${filterFileOrDir}/${suffix}`],
+      include: [`${globBaseDir}/${suffix}`],
     };
   }
 
   // 判断是否为 core 包目录，不分 client 和 server
-  const isCore = absPath.includes('packages/core');
+  const isCore = absPath.includes(path.join('packages', 'core'));
   if (isCore) {
     return {
-      include: [`${filterFileOrDir}/src/${suffix}`],
+      include: [`${globBaseDir}/src/${suffix}`],
     };
   }
 
   // 插件目录，区分 client 和 server
   return {
-    include: [`${filterFileOrDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
+    include: [`${globBaseDir}/src/${isServer ? 'server' : 'client'}/${suffix}`],
   };
 };
 
 export const getReportsDirectory = (isServer) => {
-  let filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
+  const filterFileOrDir = process.argv.slice(2).find((arg) => !arg.startsWith('-'));
   if (!filterFileOrDir) return;
+  // 统一为 POSIX 路径分隔符
+  filterFileOrDir = filterFileOrDir.replace(/\\/g, '/');
   const basePath = `./storage/coverage/`;
-  const isPackage = fs.existsSync(path.join(process.cwd(), filterFileOrDir, 'package.json'));
+  const absPath = path.join(process.cwd(), filterFileOrDir);
+  const posix = filterFileOrDir.replace(/\\/g, '/');
+  const isPackage = fs.existsSync(path.join(absPath, 'package.json'));
   if (isPackage) {
-    let reportsDirectory = `${basePath}${filterFileOrDir.replace('packages/', '')}`;
-
-    const isCore = filterFileOrDir.includes('packages/core');
-
+    let reportsDirectory = `${basePath}${posix.replace('packages/', '')}`;
+    const isCore = absPath.includes(path.join('packages', 'core'));
     if (!isCore) {
       reportsDirectory = `${reportsDirectory}/${isServer ? 'server' : 'client'}`;
     }
-
     return reportsDirectory;
   } else {
-    return `${basePath}${filterFileOrDir.replace('packages/', '').replace('src/', '')}`;
+    return `${basePath}${posix.replace('packages/', '').replace('src/', '')}`;
   }
 };
 

@@ -11,9 +11,9 @@
   "homepage": "https://docs.nocobase.com/handbook/block-markdown",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-markdown",
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/client": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Blocks"

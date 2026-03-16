@@ -26,7 +26,7 @@
     "react-router-dom": "6.x"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x"
+    "@nocobase/client": "workspace:*"
   },
   "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
   "license": "Apache-2.0"

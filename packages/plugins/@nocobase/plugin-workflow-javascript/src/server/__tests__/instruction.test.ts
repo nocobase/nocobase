@@ -31,7 +31,8 @@ describe('workflow > instructions > script', () => {
   beforeEach(async () => {
     originalEnv = process.env.WORKFLOW_SCRIPT_MODULES;
     const mathjsPath = Path.resolve(process.cwd(), 'node_modules', 'mathjs');
-    const testModulePath = '.' + Path.sep + 'node_modules' + Path.sep + 'mathjs';
+    // 使用 POSIX 路径，Node.js require() 在 Windows 上兼容正斜杠
+    const testModulePath = './node_modules/mathjs';
     process.env.WORKFLOW_SCRIPT_MODULES = `path,crypto,lodash,dayjs,http,axios,node:timers,node:process,fs,@nocobase/utils,${mathjsPath},${testModulePath}`;
 
     app = await getApp({
@@ -307,8 +308,8 @@ describe('workflow > instructions > script', () => {
 
     it.skip('can require module based on relative local path', async () => {
       const script = `
-        const Path = require('path');
-        const math = require('.' + Path.sep + 'node_modules' + Path.sep + 'mathjs');
+        // 统一 require 路径为 POSIX 风格
+        const math = require('./node_modules/mathjs');
         return math.evaluate('1+1');
       `;
       const result = await ScriptInstruction.run(script, [], { logger });

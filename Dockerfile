@@ -7,7 +7,8 @@ ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN apt-get update && apt-get install -y jq expect
+RUN corepack enable pnpm && \
+  apt-get update && apt-get install -y jq expect
 
 RUN expect <<EOD
 spawn npm adduser --registry $VERDACCIO_URL
@@ -23,28 +24,27 @@ COPY . /tmp
 
 SHELL ["/bin/bash", "-c"]
 
-RUN yarn install && yarn build --no-dts && \
+RUN pnpm install && pnpm build --no-dts && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
   if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
   cd /tmp && \
   NEWVERSION="$(echo $CURRENTVERSION).$(date +'%Y%m%d%H%M%S')" && \
   git checkout -b release-$(date +'%Y%m%d%H%M%S') && \
-  yarn lerna version ${NEWVERSION} -y --no-git-tag-version && \
+  pnpm lerna version ${NEWVERSION} -y --no-git-tag-version && \
   git config user.email "test@mail.com"  && \
   git config user.name "test" && git add .  && \
   git commit -m "chore(versions): test publish packages" && \
-  yarn nocobase client:extract && \
-  yarn nocobase client:upload && \
-  yarn release:force --registry $VERDACCIO_URL && \
-  yarn config set registry $VERDACCIO_URL && \
+  pnpm nocobase client:extract && \
+  pnpm nocobase client:upload && \
+  pnpm release:force --registry $VERDACCIO_URL && \
+  npm config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
-  yarn config set network-timeout 600000 -g && \
-  yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
+  pnpm dlx create-nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  yarn install --production && \
-  yarn add newrelic --production -W && \
+  pnpm install --prod && \
+  pnpm add newrelic -w && \
   cd /app/my-nocobase-app && \
   $BEFORE_PACK_NOCOBASE && \
   cd /app && \

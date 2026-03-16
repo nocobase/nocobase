@@ -124,5 +124,8 @@
       "dayjs": "1.11.13",
       "eslint": "8.57.1"
     }
+  },
+  "dependencies": {
+    "sqlite3": "^6.0.1"
   }
 }
