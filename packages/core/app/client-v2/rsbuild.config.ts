@@ -8,10 +8,15 @@
  */
 
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@rsbuild/core';
 import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
+import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function ensurePublicPath(value: string) {
   let normalized = value || '/v2/';
@@ -66,9 +71,13 @@ export default defineConfig(({ command }) => {
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST || 'localhost';
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT || process.env.APP_PORT, v2Port);
+  const workspaceAliases = getRsbuildAlias();
 
   return {
     plugins: [pluginReact(), pluginLess(), pluginNodePolyfill()],
+    resolve: {
+      alias: workspaceAliases,
+    },
     source: {
       entry: {
         index: path.resolve(__dirname, 'src/main.tsx'),
