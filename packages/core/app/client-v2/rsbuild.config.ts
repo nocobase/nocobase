@@ -131,12 +131,7 @@ export default defineConfig(({ command }) => {
     },
     dev: {
       assetPrefix: v2PublicPath,
-      lazyCompilation: {
-        // 通过 localhost:13000 代理访问 localhost:13002 时，
-        // 需要显式指定 lazy compilation 请求发送到真正的 Rsbuild dev server。
-        imports: true,
-        serverUrl: 'http://localhost:<port>',
-      },
+      lazyCompilation: false,
       client: {
         overlay: false,
         protocol: 'ws',
