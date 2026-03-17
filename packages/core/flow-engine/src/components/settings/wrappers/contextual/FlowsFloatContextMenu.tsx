@@ -45,6 +45,7 @@ const renderToolbarItems = (
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
   extraToolbarItems?: ToolbarItemConfig[],
+  onSettingsMenuOpenChange?: (open: boolean) => void,
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
@@ -73,6 +74,7 @@ const renderToolbarItems = (
             showDeleteButton={showDeleteButton}
             showCopyUidButton={showCopyUidButton}
             menuLevels={settingsMenuLevel}
+            onDropdownVisibleChange={onSettingsMenuOpenChange}
           />
         );
       }
@@ -85,6 +87,7 @@ const renderToolbarItems = (
 // Width in pixels per toolbar item (icon width + spacing)
 const TOOLBAR_ITEM_WIDTH = 19;
 const TOOLBAR_Z_INDEX = 999;
+const TOOLBAR_HIDE_DELAY = 180;
 
 type ToolbarPosition = 'inside' | 'above' | 'below';
 type ToolbarRenderMode = 'portal' | 'inline';
@@ -575,6 +578,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const [isHostHovered, setIsHostHovered] = useState<boolean>(false);
     const [isToolbarHovered, setIsToolbarHovered] = useState<boolean>(false);
     const [isDraggingToolbar, setIsDraggingToolbar] = useState<boolean>(false);
+    const [isToolbarPinned, setIsToolbarPinned] = useState<boolean>(false);
     const [portalRect, setPortalRect] = useState<{ top: number; left: number; width: number; height: number }>({
       top: 0,
       left: 0,
@@ -585,10 +589,28 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const flowEngine = useFlowEngine();
     const toolbarContainerRef = useRef<HTMLDivElement>(null);
     const portalRafIdRef = useRef<number | null>(null);
+    const hideToolbarTimerRef = useRef<number | null>(null);
     const toolbarRenderModeValue: ToolbarRenderMode =
       toolbarRenderMode === 'inline' || typeof document === 'undefined' ? 'inline' : 'portal';
-    const isToolbarVisible = !hideMenu && (isHostHovered || isToolbarHovered || isDraggingToolbar);
+    const isToolbarVisible = !hideMenu && (isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned);
     const toolbarCount = getToolbarCount(model, flowEngine, extraToolbarItems);
+    const clearHideToolbarTimer = useCallback(() => {
+      if (hideToolbarTimerRef.current !== null) {
+        window.clearTimeout(hideToolbarTimerRef.current);
+        hideToolbarTimerRef.current = null;
+      }
+    }, []);
+    const scheduleHideToolbar = useCallback(() => {
+      clearHideToolbarTimer();
+      hideToolbarTimerRef.current = window.setTimeout(() => {
+        hideToolbarTimerRef.current = null;
+        if (isDraggingToolbar || isToolbarPinned) {
+          return;
+        }
+        setIsHostHovered(false);
+        setIsToolbarHovered(false);
+      }, TOOLBAR_HIDE_DELAY);
+    }, [clearHideToolbarTimer, isDraggingToolbar, isToolbarPinned]);
     const toolbarItems = useMemo(
       () =>
         renderToolbarItems(
@@ -598,6 +620,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           flowEngine,
           settingsMenuLevel,
           extraToolbarItems,
+          setIsToolbarPinned,
         ),
       [model, showDeleteButton, showCopyUidButton, flowEngine, settingsMenuLevel, extraToolbarItems],
     );
@@ -682,8 +705,15 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         if (portalRafIdRef.current !== null) {
           window.cancelAnimationFrame(portalRafIdRef.current);
         }
+        clearHideToolbarTimer();
       };
-    }, []);
+    }, [clearHideToolbarTimer]);
+
+    useEffect(() => {
+      if (isToolbarPinned) {
+        clearHideToolbarTimer();
+      }
+    }, [clearHideToolbarTimer, isToolbarPinned]);
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -729,35 +759,52 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }, []);
 
     const handleHostMouseEnter = useCallback(() => {
+      clearHideToolbarTimer();
       setHideMenu(false);
       setIsHostHovered(true);
       schedulePortalRectUpdate();
-    }, [schedulePortalRectUpdate]);
+    }, [clearHideToolbarTimer, schedulePortalRectUpdate]);
 
-    const handleHostMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-      setIsHostHovered(false);
-      if (isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
-        setIsToolbarHovered(true);
-      }
-      if (!isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
-        setHideMenu(false);
-      }
-    }, []);
+    const handleHostMouseLeave = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isToolbarPinned) {
+          setIsHostHovered(false);
+          return;
+        }
+        if (isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
+          clearHideToolbarTimer();
+          setIsHostHovered(false);
+          setIsToolbarHovered(true);
+          return;
+        }
+        scheduleHideToolbar();
+      },
+      [clearHideToolbarTimer, isToolbarPinned, scheduleHideToolbar],
+    );
 
     const handleToolbarMouseEnter = useCallback(() => {
+      clearHideToolbarTimer();
+      setIsHostHovered(false);
       setIsToolbarHovered(true);
       schedulePortalRectUpdate();
-    }, [schedulePortalRectUpdate]);
+    }, [clearHideToolbarTimer, schedulePortalRectUpdate]);
 
-    const handleToolbarMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-      setIsToolbarHovered(false);
-      if (isNodeWithin(e.relatedTarget, containerRef.current)) {
-        setIsHostHovered(true);
-      }
-      if (!isNodeWithin(e.relatedTarget, containerRef.current)) {
-        setHideMenu(false);
-      }
-    }, []);
+    const handleToolbarMouseLeave = useCallback(
+      (e: React.MouseEvent<HTMLDivElement>) => {
+        if (isToolbarPinned) {
+          setIsToolbarHovered(false);
+          return;
+        }
+        setIsToolbarHovered(false);
+        if (isNodeWithin(e.relatedTarget, containerRef.current)) {
+          clearHideToolbarTimer();
+          setIsHostHovered(true);
+          return;
+        }
+        scheduleHideToolbar();
+      },
+      [clearHideToolbarTimer, isToolbarPinned, scheduleHideToolbar],
+    );
 
     if (!model) {
       const t = getT(model || ({} as FlowModel));
