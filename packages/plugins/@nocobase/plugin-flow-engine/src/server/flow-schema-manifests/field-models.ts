@@ -104,6 +104,107 @@ function createRecordSelectFieldManifest(): FlowModelSchemaManifest {
   });
 }
 
+function createSubTableColumnManifest(): FlowModelSchemaManifest {
+  const dataSourceKey = 'main';
+  const collectionName = 'users';
+  const fieldPath = 'roles.title';
+  return createFieldManifest('SubTableColumnModel', {
+    subModelSlots: {
+      field: createRuntimeFieldModelSlotSchema('editable-field', 'Inline sub-table column editor field.'),
+    },
+    skeleton: {
+      uid: 'todo-sub-table-column-model',
+      use: 'SubTableColumnModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey,
+            collectionName,
+            fieldPath,
+          },
+        },
+      },
+      subModels: {
+        field: createFieldModelSkeleton('DisplayTextFieldModel', {
+          dataSourceKey,
+          collectionName,
+          fieldPath,
+        }),
+      },
+    },
+  });
+}
+
+function createSubTableFieldManifest(): FlowModelSchemaManifest {
+  return createFieldManifest('SubTableFieldModel', {
+    subModelSlots: {
+      columns: {
+        type: 'array',
+        uses: ['SubTableColumnModel'],
+        description: 'Inline editable sub-table columns.',
+      },
+    },
+    skeleton: {
+      ...createFieldModelSkeleton('SubTableFieldModel', {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        fieldPath: 'roles',
+      }),
+      subModels: {
+        columns: [
+          {
+            uid: 'todo-sub-table-column-model',
+            use: 'SubTableColumnModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: 'main',
+                  collectionName: 'users',
+                  fieldPath: 'roles.title',
+                },
+              },
+            },
+            subModels: {
+              field: createFieldModelSkeleton('DisplayTextFieldModel', {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                fieldPath: 'roles.title',
+              }),
+            },
+          },
+        ],
+      },
+    },
+  });
+}
+
+function createSubFormFieldManifest(use: 'SubFormFieldModel' | 'SubFormListFieldModel'): FlowModelSchemaManifest {
+  return createFieldManifest(use, {
+    subModelSlots: {
+      grid: {
+        type: 'object',
+        use: 'FormGridModel',
+        description: 'Nested form grid.',
+      },
+    },
+    skeleton: {
+      ...createFieldModelSkeleton(use, {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        fieldPath: use === 'SubFormFieldModel' ? 'profile' : 'roles',
+      }),
+      subModels: {
+        grid: {
+          uid: `todo-${use
+            .replace(/Model$/, '')
+            .replace(/[A-Z]/g, (m, i) => `${i ? '-' : ''}${m.toLowerCase()}`)}-grid`,
+          use: 'FormGridModel',
+        },
+      },
+    },
+  });
+}
+
 function associationBinding(
   context: string,
   use: string,
@@ -158,9 +259,10 @@ const coreFieldModelManifestEntries: Array<string | FlowModelSchemaManifest> = [
   'CascadeSelectFieldModel',
   'CascadeSelectListFieldModel',
   'PopupSubTableFieldModel',
-  'SubFormFieldModel',
-  'SubFormListFieldModel',
-  'SubTableFieldModel',
+  createSubFormFieldManifest('SubFormFieldModel'),
+  createSubFormFieldManifest('SubFormListFieldModel'),
+  createSubTableFieldManifest(),
+  createSubTableColumnManifest(),
   'DisplayTextFieldModel',
   'DisplayNumberFieldModel',
   'DisplayDateTimeFieldModel',

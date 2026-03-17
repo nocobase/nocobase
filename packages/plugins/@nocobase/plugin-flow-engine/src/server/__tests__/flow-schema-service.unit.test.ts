@@ -23,6 +23,12 @@ function createService() {
   service.registerFieldBindings(
     [
       {
+        context: 'editable-field',
+        use: 'InputFieldModel',
+        interfaces: ['input', 'uuid'],
+        isDefault: true,
+      },
+      {
         context: 'form-item-field',
         use: 'RecordSelectFieldModel',
         interfaces: ['m2m'],
@@ -33,6 +39,12 @@ function createService() {
         use: 'RecordPickerFieldModel',
         interfaces: ['m2m'],
         order: 20,
+      },
+      {
+        context: 'form-item-field',
+        use: 'SubTableFieldModel',
+        interfaces: ['m2m'],
+        order: 30,
       },
       {
         context: 'display-field',
@@ -61,6 +73,15 @@ function createService() {
       },
     },
     {
+      use: 'InputFieldModel',
+      source: 'official',
+      strict: true,
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+    },
+    {
       use: 'RecordSelectFieldModel',
       source: 'official',
       strict: true,
@@ -71,7 +92,7 @@ function createService() {
       subModelSlots: {
         field: {
           type: 'object',
-          fieldBindingContext: 'display-field',
+          fieldBindingContext: 'editable-field',
         },
       },
     },
@@ -91,6 +112,36 @@ function createService() {
         'grid-block': {
           type: 'object',
           use: 'BlockGridModel',
+        },
+      },
+    },
+    {
+      use: 'SubTableFieldModel',
+      source: 'official',
+      strict: true,
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      subModelSlots: {
+        columns: {
+          type: 'array',
+          uses: ['SubTableColumnModel'],
+        },
+      },
+    },
+    {
+      use: 'SubTableColumnModel',
+      source: 'official',
+      strict: true,
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      subModelSlots: {
+        field: {
+          type: 'object',
+          fieldBindingContext: 'editable-field',
         },
       },
     },
@@ -240,6 +291,89 @@ describe('FlowSchemaService', () => {
         },
       },
     });
+  });
+
+  it('should prune stale field slot when switching association form item to SubTableFieldModel', () => {
+    const service = createService();
+    const payload = {
+      uid: 'form-item-sub-table',
+      use: 'FormItemModel',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'roles',
+          },
+        },
+        editItemSettings: {
+          model: {
+            use: 'SubTableFieldModel',
+          },
+        },
+      },
+      subModels: {
+        field: {
+          uid: 'field-sub-table',
+          use: 'RecordSelectFieldModel',
+          stepParams: {
+            fieldBinding: {
+              use: 'SubTableFieldModel',
+            },
+            fieldSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                fieldPath: 'roles',
+              },
+            },
+          },
+          subModels: {
+            field: {
+              uid: 'stale-display-field',
+              use: 'DisplayTextFieldModel',
+            },
+          },
+        },
+      },
+    };
+
+    const normalized = service.normalizeModelTree(payload);
+    expect(normalized.subModels.field.use).toBe('SubTableFieldModel');
+    expect(normalized.subModels.field.subModels?.field).toBeUndefined();
+
+    const issues = service.validateModelTree(payload);
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
+  });
+
+  it('should allow editable field models inside SubTableColumnModel', () => {
+    const service = createService();
+    const payload = {
+      uid: 'sub-table-column-1',
+      use: 'SubTableColumnModel',
+      parentId: 'sub-table-field-1',
+      subKey: 'columns',
+      subType: 'array',
+      stepParams: {
+        fieldSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            fieldPath: 'roles.name',
+          },
+        },
+      },
+      subModels: {
+        field: {
+          uid: 'sub-table-column-field-1',
+          use: 'InputFieldModel',
+          stepParams: {},
+        },
+      },
+    };
+
+    const issues = service.validateModelTree(payload);
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
   });
 
   it('should allow ensure-style partial nested child creation without uid for lazy popup tabs', () => {
