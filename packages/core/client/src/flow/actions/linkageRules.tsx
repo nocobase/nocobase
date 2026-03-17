@@ -2341,10 +2341,9 @@ export const fieldLinkageRules = defineAction({
       return;
     }
 
-    const getRowScopeKeyFromModel = (model: any): string | null => {
+    const getFieldIndexEntriesFromModel = (model: any): Array<{ name: string; index: number }> => {
       const fieldIndex = model?.context?.fieldIndex;
       const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
-      if (!arr.length) return null;
       const entries: Array<{ name: string; index: number }> = [];
       for (const it of arr) {
         if (typeof it !== 'string') continue;
@@ -2353,43 +2352,130 @@ export const fieldLinkageRules = defineAction({
         if (!name || Number.isNaN(index)) continue;
         entries.push({ name, index });
       }
+      return entries;
+    };
+
+    const getFieldIndexSignatureFromModel = (model: any): string | null => {
+      const fieldIndex = model?.context?.fieldIndex;
+      const arr = Array.isArray(fieldIndex) ? fieldIndex : [];
+      const normalized = arr.filter((it): it is string => typeof it === 'string' && !!it);
+      if (!normalized.length) return null;
+      return normalized.join('|');
+    };
+
+    const getFormValuesSnapshot = (runtimeCtx: any) => {
+      const form = runtimeCtx?.model?.context?.form;
+      if (!form) return undefined;
+      try {
+        if (typeof form.getFieldsValue === 'function') {
+          return form.getFieldsValue(true);
+        }
+      } catch {
+        // ignore
+      }
+      if (typeof form.values !== 'undefined') {
+        return form.values;
+      }
+      return undefined;
+    };
+
+    const buildFreshItemChainFromFormValues = (runtimeCtx: any) => {
+      const entries = getFieldIndexEntriesFromModel(runtimeCtx?.model);
+      if (!entries.length) return undefined;
+
+      const formValues = getFormValuesSnapshot(runtimeCtx);
+      if (typeof formValues === 'undefined') return undefined;
+
+      const buildNode = (value: any, index: number | undefined, length: number | undefined, parentItem: any) => ({
+        index,
+        length,
+        __is_new__: value?.__is_new__,
+        __is_stored__: value?.__is_stored__,
+        value,
+        parentItem,
+      });
+
+      let currentValue = formValues;
+      let currentItem = buildNode(formValues, undefined, undefined, undefined);
+
+      for (const entry of entries) {
+        const listValue = currentValue?.[entry.name];
+        if (!Array.isArray(listValue)) {
+          return undefined;
+        }
+        const rowValue = listValue[entry.index];
+        currentItem = buildNode(rowValue, entry.index, listValue.length, currentItem);
+        currentValue = rowValue;
+      }
+
+      return currentItem;
+    };
+
+    const getRowScopeKeyFromModel = (model: any): string | null => {
+      const entries = getFieldIndexEntriesFromModel(model);
       if (!entries.length) return null;
       const deepest = entries[entries.length - 1].name;
       const occurrence = entries.reduce((count, e) => (e.name === deepest ? count + 1 : count), 0);
       return `${deepest}#${occurrence}`;
     };
 
-    const isRowGridForkModel = (model: any): boolean => {
-      if (!model || typeof model !== 'object') return false;
-      if ((model as any)?.subModels?.field) return false;
-      if (!(model as any)?.subModels?.items) return false;
-      return !!getRowScopeKeyFromModel(model);
+    const getRowCarrierPriority = (model: any): number => {
+      if (!model || typeof model !== 'object') return -1;
+      if (!getRowScopeKeyFromModel(model)) return -1;
+
+      // 优先选择当前已有的 row grid fork，其次选择 Inline table 等“行载体”模型，
+      // 最后才退回到其他拥有同一 fieldIndex 的 leaf fork，避免同一物理行重复执行。
+      if ((model as any)?.subModels?.items && !(model as any)?.subModels?.field) {
+        return 3;
+      }
+      if ((model as any)?.subModels?.field) {
+        return 2;
+      }
+      return 1;
     };
 
-    const collectRowGridForksByKey = (): Map<string, FlowModel[]> => {
-      const out = new Map<string, FlowModel[]>();
+    const collectRowScopedCarrierForksByKey = (): Map<string, FlowModel[]> => {
+      const out = new Map<string, Map<string, { model: FlowModel; priority: number }>>();
       const engine = ctx.engine;
-      if (!engine?.forEachModel) return out;
+      if (!engine?.forEachModel) return new Map<string, FlowModel[]>();
+
+      const visitCandidate = (candidate: any) => {
+        if (!candidate || candidate.disposed) return;
+        const rowScopeKey = getRowScopeKeyFromModel(candidate);
+        const fieldIndexSignature = getFieldIndexSignatureFromModel(candidate);
+        const priority = getRowCarrierPriority(candidate);
+        if (!rowScopeKey || !fieldIndexSignature || priority < 0) return;
+
+        const bySignature = out.get(rowScopeKey) || new Map<string, { model: FlowModel; priority: number }>();
+        const prev = bySignature.get(fieldIndexSignature);
+        if (!prev || priority > prev.priority) {
+          bySignature.set(fieldIndexSignature, { model: candidate as FlowModel, priority });
+        }
+        out.set(rowScopeKey, bySignature);
+      };
 
       engine.forEachModel((m: FlowModel) => {
+        visitCandidate(m);
         const forks: any = (m as any)?.forks;
         if (!forks || typeof forks.forEach !== 'function') return;
         forks.forEach((fork: any) => {
-          if (!fork || fork.disposed) return;
-          if (!isRowGridForkModel(fork)) return;
-          const rowScopeKey = getRowScopeKeyFromModel(fork);
-          if (!rowScopeKey) return;
-          const arr = out.get(rowScopeKey) || [];
-          arr.push(fork as FlowModel);
-          out.set(rowScopeKey, arr);
+          visitCandidate(fork);
         });
       });
 
-      return out;
+      const normalized = new Map<string, FlowModel[]>();
+      out.forEach((bySignature, rowScopeKey) => {
+        normalized.set(
+          rowScopeKey,
+          Array.from(bySignature.values()).map((entry) => entry.model),
+        );
+      });
+
+      return normalized;
     };
 
     const runRowScoped = async (): Promise<boolean> => {
-      const forksByKey = collectRowGridForksByKey();
+      const forksByKey = collectRowScopedCarrierForksByKey();
       let hasAnyRowFork = false;
       for (const [rowScopeKey, rowParams] of rowParamsByKey.entries()) {
         const forks = forksByKey.get(rowScopeKey) || [];
@@ -2398,6 +2484,27 @@ export const fieldLinkageRules = defineAction({
         for (const forkModel of forks) {
           const rowCtx = new FlowRuntimeContext(forkModel, ctx.flowKey);
           defineSharedRuntimeMeta(rowCtx as any);
+          const inheritedItemOptions = rowCtx.getPropertyOptions?.('item');
+          const inheritedItemGetter =
+            typeof inheritedItemOptions?.get === 'function'
+              ? () => {
+                  try {
+                    return (forkModel as any)?.context?.item;
+                  } catch {
+                    return inheritedItemOptions.get.call(rowCtx);
+                  }
+                }
+              : 'value' in (inheritedItemOptions || {})
+                ? () => inheritedItemOptions?.value
+                : () => undefined;
+          const { get: _itemGet, value: _itemValue, ...inheritedItemRest } = (inheritedItemOptions || {}) as any;
+          rowCtx.defineProperty('item', {
+            ...inheritedItemRest,
+            // Inline table row carrier captures render-time record. Rebuild item from live form values first
+            // so row-scoped linkage can read the latest Current Item value on the first edit.
+            get: () => buildFreshItemChainFromFormValues(rowCtx) ?? inheritedItemGetter(),
+            cache: false,
+          });
           try {
             const resolvedRow = await resolveLinkageRulesParamsPreservingRunJsScripts(rowCtx, rowParams);
             await commonLinkageRulesHandler(rowCtx, resolvedRow);
