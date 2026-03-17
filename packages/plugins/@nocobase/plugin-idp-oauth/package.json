@@ -7,7 +7,7 @@
   "description": "Based on OAuth 2.1 and OpenID Connect, this plugin enables NocoBase to act as an identity provider for other systems.",
   "description.zh-CN": "基于 OAuth 2.1 和 OpenID Connect 协议，支持 NocoBase 作为身份提供方登录其他系统。",
   "devDependencies": {
-    "jose": "^6.1.0",
+    "jose": "^5.9.6",
     "oidc-provider": "~9.7.0",
     "light-my-request": "^6.6.0",
     "@types/oidc-provider": "^9.5.0"
