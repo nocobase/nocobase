@@ -1,12 +1,12 @@
 # 第 5 章：用户与权限 — 谁能看什么
 
-上一章我们把表单和详情页做好了，工单系统已经能正常录入和查看数据。但现在有个问题——所有人登录后看到的东西都一样。提交工单的普通员工能看到管理页面，技术员能删除分类……这可不行。
+上一章我们把表单和详情页做好了，工单系统已经能正常录入和查看数据。但现在有个问题——所有人登录后看到的东西都一样。提交工单的普通员工能看到管理[页面](/interface-builder/pages)，技术员能删除分类……这可不行。
 
-这一章，我们来给系统加上"门禁"：**不同的人，看到不同的菜单，操作不同的数据**。
+这一章，我们来给系统加上"门禁"：创建[角色](/users-permissions/role)、配置[菜单权限](/users-permissions/role/menu-permissions)和[数据范围](/users-permissions/role/data-scope)，实现**不同的人，看到不同的[菜单](/interface-builder/menus)，操作不同的数据**。
 
-## 5.1 理解角色（Role）
+## 5.1 理解[角色](/users-permissions/role)（Role）
 
-在 NocoBase 里，**角色就是一组权限的集合**。你不需要给每个用户单独配权限，而是先定义好几个角色，再把用户丢进对应的角色里。
+在 NocoBase 里，**角色就是一组[权限](/users-permissions/role)的集合**。你不需要给每个用户单独配权限，而是先定义好几个角色，再把用户丢进对应的角色里。
 
 NocoBase 安装后自带三个角色：
 
@@ -64,9 +64,9 @@ NocoBase 安装后自带三个角色：
 
 菜单权限管的是"能不能进这个页面"，数据权限管的是"进了页面后能看到哪些数据"。
 
-关键概念：**数据范围（Data Scope）**。
+关键概念：**[数据范围](/users-permissions/role/data-scope)（Data Scope）**。
 
-在角色的权限配置中，切换到 **数据表操作权限** 选项卡。找到我们的"工单"表，点击进入单独配置。
+在角色的权限配置中，切换到 **[数据表](/data-sources/main/collection)操作权限** 选项卡。找到我们的"工单"表，点击进入单独配置。
 
 ![05-roles-and-permissions-2026-03-13-19-51-06](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-19-51-06.png)
 
@@ -90,7 +90,7 @@ NocoBase 安装后自带三个角色：
 
 1. 找到"工单"表的 **查看** 权限
 2. 数据范围选择 → **自己的数据**
-3. 但这里有个细节——NocoBase 的"自己的数据"默认是按创建人过滤的。如果我们希望按"处理人"过滤，可以在全局操作权限里进一步调整，或者在前端页面用 **数据区块的筛选条件** 配合实现
+3. 但这里有个细节——NocoBase 的"自己的数据"默认是按创建人过滤的。如果我们希望按"处理人"过滤，可以在全局[操作权限](/users-permissions/role/action-permissions)里进一步调整，或者在前端页面用 **数据[区块](/interface-builder/blocks)的筛选条件** 配合实现
 
 ![05-roles-and-permissions-2026-03-13-20-01-54](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-20-01-54.png)
 
@@ -194,3 +194,8 @@ NocoBase 安装后自带三个角色：
 
 下一章我们来学 **工作流（Workflow）**——让系统自动帮我们干活。比如工单提交后自动通知处理人，状态变更时自动记录日志。
 
+## 相关资源
+
+- [用户管理](/users-permissions/user) — 用户管理详解
+- [角色与权限](/users-permissions/role) — 角色配置说明
+- [数据范围](/users-permissions/role/data-scope) — 数据级权限控制

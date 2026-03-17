@@ -1,10 +1,8 @@
 # Chapter 1: Getting Started — Build a Working System in 5 Minutes
 
-Welcome to the NocoBase 2.0 beginner tutorial!
+In this series, we'll build a **minimal IT HelpDesk system** from scratch using NocoBase. The entire system needs only **2 [data tables](/data-sources/main/collection)** and zero lines of code — yet it will support ticket submission, category management, change tracking, access control, and even a [dashboard](/data-visualization).
 
-In this series, we'll build a **minimal IT HelpDesk system** from scratch using NocoBase. The entire system needs only **2 data tables** and zero lines of code — yet it will support ticket submission, category management, change tracking, access control, and even a data dashboard.
-
-Ready? Let's go!
+This chapter walks you through deploying NocoBase with [Docker](/get-started/installation/docker), completing your first login, and understanding the difference between [UI Editor mode and Usage mode](/get-started/how-nocobase-works).
 
 
 ## 1.1 What Is NocoBase
@@ -19,10 +17,10 @@ Have you ever been in one of these situations?
 
 Compared to other no-code tools, NocoBase has a few core principles:
 
-- **Data model driven**: Define your data structure first, then use blocks to display data, then actions to process it — UI and data are fully decoupled
-- **WYSIWYG**: Pages are your canvas. Click anywhere to edit, as intuitive as building a Notion page
-- **Everything is a plugin**: All features are plugins, similar to WordPress — install what you need
-- **AI built into your workflow**: Built-in AI employees that can perform analysis, translation, data entry, and more
+- **Data model driven**: Define your data structure first, then use [blocks](/interface-builder/blocks) to display data, then [actions](/interface-builder/actions) to process it — UI and data are fully decoupled
+- **WYSIWYG**: [Pages](/interface-builder/pages) are your canvas. Click anywhere to edit, as intuitive as building a Notion page
+- **Everything is a plugin**: All features are [plugins](/development/plugin), similar to WordPress — install what you need
+- **AI built into your workflow**: Built-in [AI employees](/ai-employees/quick-start) that can perform analysis, translation, data entry, and more
 - **Open source + self-hosted**: Core code is fully open source, all data stays on your own server
 
 
@@ -43,7 +41,7 @@ Open your terminal (PowerShell on Windows, Terminal on Mac) and run:
 mkdir my-project && cd my-project
 
 # Download docker-compose.yml (defaults to PostgreSQL)
-curl -fsSL https://static-docs.nocobase.com/docker-compose/en/beta-postgres.yml -o docker-compose.yml
+curl -fsSL https://static-docs.nocobase.com/docker-compose/en/latest-postgres.yml -o docker-compose.yml
 ```
 
 > **Other databases?** Replace `postgres` in the URL with `mysql` or `mariadb`.
@@ -51,9 +49,9 @@ curl -fsSL https://static-docs.nocobase.com/docker-compose/en/beta-postgres.yml 
 >
 > | Database | Download URL |
 > |----------|-------------|
-> | PostgreSQL (recommended) | `https://static-docs.nocobase.com/docker-compose/en/beta-postgres.yml` |
-> | MySQL | `https://static-docs.nocobase.com/docker-compose/en/beta-mysql.yml` |
-> | MariaDB | `https://static-docs.nocobase.com/docker-compose/en/beta-mariadb.yml` |
+> | PostgreSQL (recommended) | `https://static-docs.nocobase.com/docker-compose/en/latest-postgres.yml` |
+> | MySQL | `https://static-docs.nocobase.com/docker-compose/en/latest-mysql.yml` |
+> | MariaDB | `https://static-docs.nocobase.com/docker-compose/en/latest-mariadb.yml` |
 
 ### Step 2: Start It Up
 
@@ -109,7 +107,7 @@ Here's what it looks like on a demo system:
 
 ![01-getting-started-2026-03-11-08-19-24](https://static-docs.nocobase.com/01-getting-started-2026-03-11-08-19-24.png)
 
-As shown above: menus, table action bars, and the bottom of the page all show orange indicators. Click them to create or configure elements.
+As shown above: [menus](/interface-builder/menus), table action bars, and the bottom of the page all show orange indicators. Click them to create or configure elements.
 
 > **Remember this pattern**: In NocoBase, whenever you want to modify something on the page, enter UI Editor mode, find the small icon in its top-right corner, and click it.
 
@@ -144,7 +142,7 @@ Over the course of this tutorial, we'll build an **IT HelpDesk system** step by 
 
 - ✅ Ticket submission: Users fill in title, description, category, and priority
 - ✅ Ticket list: Filter by status or category at a glance
-- ✅ Access control: Regular users see only their own tickets; admins see everything
+- ✅ Access control: Regular [users](/users-permissions/user) see only their own tickets; admins see everything
 - ✅ Dashboard: Real-time statistics on ticket distribution and trends
 - ✅ Audit log (built-in)
 
@@ -155,7 +153,7 @@ The entire system needs just **2 data tables**:
 | Categories | Ticket categories (e.g., Network Issue, Software Bug) | 2 |
 | Tickets | The core table — each row is one ticket | 7-8 |
 
-That's right, just 2 tables. Common capabilities like users, permissions, file management, departments, email, and audit logs are all provided by built-in NocoBase plugins — no need to reinvent the wheel. We only need to focus on our business data.
+That's right, just 2 tables. Common capabilities like users, [permissions](/users-permissions/role), file management, departments, email, and audit logs are all provided by built-in NocoBase plugins — no need to reinvent the wheel. We only need to focus on our business data.
 
 
 ## Summary
@@ -167,6 +165,12 @@ In this chapter we:
 3. Understood the two interface modes (UI Editor / Usage) and the basic layout
 4. Previewed the HelpDesk system we're going to build
 
-**Next chapter**: We'll get hands-on — enter the Data Source Manager and create our first data table. This is the skeleton of the entire system and NocoBase's most fundamental capability.
+**Next chapter**: We'll get hands-on — enter the [Data Source Manager](/data-sources) and create our first data table. This is the skeleton of the entire system and NocoBase's most fundamental capability.
 
 See you in Chapter 2!
+
+## Related Resources
+
+- [Docker Installation Guide](/get-started/installation/docker) — Full installation options and environment variables
+- [System Requirements](/get-started/system-requirements) — Hardware and software requirements
+- [How NocoBase Works](/get-started/how-nocobase-works) — Core concepts: data sources, blocks, actions

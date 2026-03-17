@@ -29,11 +29,13 @@ import {
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
 import { obfuscate } from './utils/obfuscationResult';
+import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
+
 
 const external = [
   // nocobase
@@ -744,28 +746,7 @@ export async function buildPluginClient(
         'process.env.NODE_ENV': JSON.stringify('production'),
         'process.env.NODE_DEBUG': false,
       }),
-      {
-        apply(compiler) {
-          compiler.hooks.compilation.tap('CustomPublicPathPlugin', (compilation) => {
-            compilation.hooks.runtimeModule.tap('CustomPublicPathPlugin', (module) => {
-              if (module.name === 'auto_public_path') {
-                // 处理所有可能的情况
-                module.source = {
-                  source: `
-__webpack_require__.p = (function() {
-  var publicPath = window['__webpack_public_path__'] || '/';
-  // 确保路径以 / 结尾
-  if (!publicPath.endsWith('/')) {
-    publicPath += '/';
-  }
-  return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`,
-                };
-              }
-            });
-          });
-        },
-      },
+      new AutoInjectPublicPathPlugin(packageJson.name),
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({
         // plugin options

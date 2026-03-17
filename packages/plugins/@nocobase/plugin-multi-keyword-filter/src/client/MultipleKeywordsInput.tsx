@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useLazy } from '@nocobase/client';
 import { Alert, Button, message, Modal, Select, Space, Tooltip, Typography } from 'antd';
 import React, { FC, useRef, useState } from 'react';
 import { useT } from './locale';
@@ -26,6 +25,7 @@ export const MultipleKeywordsInput: FC<{
   onChange?: (value: string[], option?: any) => void;
   style?: React.CSSProperties;
 }> = (props) => {
+  const { fieldInterface, ...selectProps } = props;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importLoading, setImportLoading] = useState(false);
   const [columnModal, setColumnModal] = useState(false);
@@ -33,10 +33,6 @@ export const MultipleKeywordsInput: FC<{
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [excelData, setExcelData] = useState<any[]>([]);
   const t = useT();
-  const XLSX = useLazy<typeof import('xlsx')>(
-    () => import('xlsx'),
-    (module) => module,
-  );
   const field = useField<any>();
 
   // remove validator to prevent error
@@ -45,13 +41,13 @@ export const MultipleKeywordsInput: FC<{
   }
 
   const onChange = (...arg: [any, any]) => {
-    if (['integer', 'number'].includes(props.fieldInterface)) {
+    if (['integer', 'number'].includes(fieldInterface)) {
       arg[0] = arg[0]
         .map(trim)
         .map((item: string) => parseInt(item, 10))
         .filter((item: number) => !isNaN(item));
     }
-    if (['percent'].includes(props.fieldInterface)) {
+    if (['percent'].includes(fieldInterface)) {
       arg[0] = arg[0]
         .map(trim)
         .map((item: string) => parseFloat(item))
@@ -110,8 +106,10 @@ export const MultipleKeywordsInput: FC<{
   const readExcel = (file: File): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         try {
+          // 仅在用户实际导入 Excel 时再加载 xlsx，避免首次挂载输入组件时触发 Suspense 闪烁
+          const XLSX = await import('xlsx');
           const data = e.target?.result;
           const workbook = XLSX.read(data, { type: 'binary' });
           const firstSheetName = workbook.SheetNames[0];
@@ -188,8 +186,8 @@ export const MultipleKeywordsInput: FC<{
           allowClear
           suffixIcon={null}
           maxTagCount="responsive"
-          open={_.isEmpty(props.value) ? false : undefined}
-          {...props}
+          open={_.isEmpty(selectProps.value) ? false : undefined}
+          {...selectProps}
           onChange={onChange}
         />
         <Tooltip title={t('importExcel')}>

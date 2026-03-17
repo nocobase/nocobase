@@ -2,7 +2,7 @@
 
 In the last chapter, we installed NocoBase and got familiar with the interface. Now it's time to build the skeleton of our HelpDesk system — the **data model**.
 
-The data model is the foundation: figure out what data you need to store and how it's related, then building pages and setting permissions becomes straightforward.
+This chapter creates two [collections](/data-sources/main/collection) — Tickets and Categories — and configures [field types](/data-sources/field) ([single-line text](/data-sources/field/basic/input), [dropdown](/data-sources/field/choices/select), [many-to-one](/data-sources/field/associations/m2o) relations). The data model is the foundation: figure out what data you need and how it's related, then building pages and setting permissions becomes straightforward.
 
 
 ## 2.1 What Are Collections and Fields
@@ -30,7 +30,7 @@ But NocoBase is much more powerful than Excel. It supports multiple **collection
 
 Today we'll use **General** and **Tree** collections. We'll cover the others when needed.
 
-**Enter Data Source Manager**: Click the **"Data Source Manager"** icon in the bottom-left corner (the database icon next to the gear). You'll see the "Main data source" — this is where all our tables live.
+**Enter Data Source Manager**: Click the **"Data Source Manager"** icon in the bottom-left corner (the database icon next to the gear). You'll see the "Main [data source](/data-sources)" — this is where all our tables live.
 
 ![02-data-modeling-2026-03-11-08-35-08](https://static-docs.nocobase.com/02-data-modeling-2026-03-11-08-35-08.png)
 
@@ -227,7 +227,7 @@ Let's look at a specific ticket — on the left are the ticket's attributes. "Ca
 
 ![02-data-modeling-2026-03-12-00-50-10](https://static-docs.nocobase.com/02-data-modeling-2026-03-12-00-50-10.png)
 
-On the interface, you see names like "Network" and "Alice", but behind the scenes it's all connected by IDs. **Multiple tickets can point to the same category or the same user** — this relationship is called **Many-to-one**.
+On the interface, you see names like "Network" and "Alice", but behind the scenes it's all connected by IDs. **Multiple tickets can point to the same category or the same user** — this relationship is called **[Many-to-one](/data-sources/field/associations/m2o)**.
 
 ### Adding Relation Fields
 
@@ -310,3 +310,10 @@ Key concepts we learned:
 The skeleton is ready, but the tables are still empty. In the next chapter, we'll build pages to make the data visible.
 
 See you in Chapter 3!
+
+
+## Related Resources
+
+- [Data Sources Overview](/data-sources) — Core data modeling concepts in NocoBase
+- [Field Types](/data-sources/field) — Complete field type reference
+- [Many-to-One Relations](/data-sources/field/associations/m2o) — Relationship configuration guide

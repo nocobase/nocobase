@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### 로컬 메서드
 
 ```ts
-flowEngine.createModel(options); // 로컬 모델 인스턴스 생성
+await flowEngine.createModelAsync(options); // 로컬 모델 인스턴스 생성
 flowEngine.getModel(uid);        // 로컬 모델 인스턴스 가져오기
 flowEngine.removeModel(uid);     // 로컬 모델 인스턴스 제거
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // 원격에서 모델 삭제
 ## model 인스턴스 메서드
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // 원격에 저장

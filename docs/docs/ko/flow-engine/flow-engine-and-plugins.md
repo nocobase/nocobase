@@ -10,7 +10,7 @@ NocoBase 2.0에서는 모든 API가 FlowEngine에 집중되어 있으며, 플러
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

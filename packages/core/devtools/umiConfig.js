@@ -4,12 +4,22 @@ const packageJson = require('./package.json');
 const fs = require('fs');
 const glob = require('fast-glob');
 const path = require('path');
+const { resolvePublicPath, resolveV2PublicPath } = require('../cli/src/util');
 
 console.log('VERSION: ', packageJson.version);
 
 function getUmiConfig() {
-  const { APP_PORT, API_BASE_URL, API_CLIENT_STORAGE_TYPE, API_CLIENT_STORAGE_PREFIX, APP_PUBLIC_PATH } = process.env;
+  const {
+    APP_PORT,
+    APP_V2_PORT,
+    API_BASE_URL,
+    API_CLIENT_STORAGE_TYPE,
+    API_CLIENT_STORAGE_PREFIX,
+    APP_PUBLIC_PATH,
+  } = process.env;
   const API_BASE_PATH = process.env.API_BASE_PATH || '/api/';
+  const normalizedAppPublicPath = resolvePublicPath(APP_PUBLIC_PATH || '/');
+  const V2_PUBLIC_PATH = resolveV2PublicPath(APP_PUBLIC_PATH || '/');
   const PROXY_TARGET_URL = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${APP_PORT}`;
   const LOCAL_STORAGE_BASE_URL = 'storage/uploads/';
   const STATIC_PATH = 'static/';
@@ -20,13 +30,33 @@ function getUmiConfig() {
     }
 
     return {
-      [APP_PUBLIC_PATH + LOCAL_STORAGE_BASE_URL]: {
+      [normalizedAppPublicPath + LOCAL_STORAGE_BASE_URL]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
       },
-      [APP_PUBLIC_PATH + STATIC_PATH]: {
+      [normalizedAppPublicPath + STATIC_PATH]: {
         target: PROXY_TARGET_URL,
         changeOrigin: true,
+      },
+    };
+  }
+
+  function getClientV2Proxy() {
+    if (!APP_V2_PORT) {
+      return {};
+    }
+
+    return {
+      [V2_PUBLIC_PATH]: {
+        target: `http://127.0.0.1:${APP_V2_PORT}`,
+        changeOrigin: true,
+        ws: true,
+        pathRewrite: { [`^${V2_PUBLIC_PATH}`]: V2_PUBLIC_PATH },
+        onProxyReq: (proxyReq, req, res) => {
+          if (req?.ip) {
+            proxyReq.setHeader('X-Forwarded-For', req.ip);
+          }
+        },
       },
     };
   }
@@ -72,6 +102,8 @@ function getUmiConfig() {
       },
       // for local storage
       ...getLocalStorageProxy(),
+      // v2 shell dev server proxy
+      ...getClientV2Proxy(),
     },
   };
 }

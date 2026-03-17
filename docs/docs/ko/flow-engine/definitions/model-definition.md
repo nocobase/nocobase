@@ -4,7 +4,7 @@
 
 # ModelDefinition
 
-ModelDefinition은 `FlowEngine.createModel()` 메서드를 통해 모델 인스턴스를 생성하는 데 사용되는 플로우 모델의 생성 옵션을 정의합니다. 여기에는 모델의 기본 설정, 속성, 하위 모델 등의 정보가 포함됩니다.
+ModelDefinition은 `FlowEngine.createModelAsync()` 메서드를 통해 모델 인스턴스를 생성하는 데 사용되는 플로우 모델의 생성 옵션을 정의합니다. 여기에는 모델의 기본 설정, 속성, 하위 모델 등의 정보가 포함됩니다.
 
 ## 타입 정의
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // 모델 인스턴스 생성
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // 동적 참조 사용
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // 모델 클래스 등록
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // 동적 가져오기: 이 모델이 처음으로 실제 필요해질 때만 모델 모듈이 로드됩니다
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // 모델 인스턴스 생성
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

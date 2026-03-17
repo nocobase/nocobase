@@ -122,7 +122,7 @@ export class BuiltInManager {
       const existedMap = new Map<string, any>(existed.map((it) => [it.username, it.toJSON()]));
       for (const { username, description, skillSettings } of updates) {
         let { skills } = existedMap.get(username)?.skillSettings ?? { skills: [] };
-        skills = skills.filter((s) => s.name?.startsWith('workflowCaller-'));
+        skills = (skills ?? []).filter((s) => s.name?.startsWith('workflowCaller-'));
         const mergedSkills = new Set([...skills, ...skillSettings.skills]);
         await aiEmployeesRepo.update({
           values: {

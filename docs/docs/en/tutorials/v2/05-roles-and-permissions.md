@@ -1,12 +1,12 @@
 # Chapter 5: Users & Permissions — Who Sees What
 
-In the last chapter, we built forms and detail pages — our ticket system can now handle data entry and viewing. But there's a problem: everyone sees the same thing after logging in. Regular employees who submit tickets can access the admin pages, technicians can delete categories... that's not going to work.
+In the last chapter, we built forms and detail [pages](/interface-builder/pages) — our ticket system can now handle data entry and viewing. But there's a problem: everyone sees the same thing after logging in. Regular employees who submit tickets can access the admin pages, technicians can delete categories... that's not going to work.
 
-In this chapter, we'll add "access control" to the system: **different people see different menus and operate on different data**.
+In this chapter, we'll add "access control": create [roles](/users-permissions/role), configure [menu permissions](/users-permissions/role/menu-permissions) and [data scope](/users-permissions/role/data-scope) restrictions — **different people see different [menus](/interface-builder/menus) and operate on different data**.
 
 ## 5.1 Understanding Roles
 
-In NocoBase, **a role is a collection of permissions**. You don't need to configure permissions for each user individually — instead, you define a few roles first, then assign users to the appropriate roles.
+In NocoBase, **a [role](/users-permissions/role) is a collection of [permissions](/users-permissions/role)**. You don't need to configure permissions for each user individually — instead, you define a few roles first, then assign users to the appropriate roles.
 
 NocoBase comes with three built-in roles after installation:
 
@@ -64,9 +64,9 @@ Click on a role to enter its permission configuration page, and find the **Menu 
 
 Menu permissions control "can I access this page?" while data permissions control "what data can I see once I'm on the page?"
 
-Key concept: **Data Scope**.
+Key concept: **[Data Scope](/users-permissions/role/data-scope)**.
 
-In the role's permission settings, switch to the **Action permissions** tab. Find our "Tickets" collection and click to configure it individually.
+In the role's permission settings, switch to the **[Action permissions](/users-permissions/role/action-permissions)** tab. Find our "Tickets" [collection](/data-sources/main/collection) and click to configure it individually.
 
 ![05-roles-and-permissions-2026-03-13-19-51-06](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-19-51-06.png)
 
@@ -88,7 +88,7 @@ About global configuration: if you only configure the Tickets collection, other 
 
 1. Find the **View** permission for the "Tickets" collection
 2. Set the data scope to **Own records**
-3. There's a nuance here — NocoBase's "Own records" filters by creator by default. If we want to filter by "Assignee" instead, we can further adjust this in the global operation permissions, or achieve it on the frontend by setting **filter conditions on the data block**
+3. There's a nuance here — NocoBase's "Own records" filters by creator by default. If we want to filter by "Assignee" instead, we can further adjust this in the global operation permissions, or achieve it on the frontend by setting **filter conditions on the data [block](/interface-builder/blocks)**
 
 ![05-roles-and-permissions-2026-03-13-20-01-54](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-13-20-01-54.png)
 
@@ -108,7 +108,7 @@ Before testing permissions, let's add a handy feature to the ticket list: **assi
 
 The implementation is simple — add a custom popup button to the table row actions:
 
-1. Enter UI Editor mode. In the ticket list table's actions column, click **"+"** to add a **"Popup"** action button.
+1. Enter [UI Editor](/get-started/how-nocobase-works) mode. In the ticket list table's actions column, click **"+"** to add a **"Popup"** action button.
 
 ![05-roles-and-permissions-2026-03-14-13-57-31](https://static-docs.nocobase.com/05-roles-and-permissions-2026-03-14-13-57-31.png)
 
@@ -190,3 +190,9 @@ At this point, our ticket system is shaping up nicely — it can handle data ent
 ## Next Chapter Preview
 
 In the next chapter, we'll learn about **Workflows** — letting the system do work for us automatically. For example, automatically notifying the assignee when a ticket is submitted, or logging a timestamp when the status changes.
+
+## Related Resources
+
+- [User Management](/users-permissions/user) — User administration guide
+- [Roles & Permissions](/users-permissions/role) — Role configuration reference
+- [Data Scope](/users-permissions/role/data-scope) — Row-level permission control
