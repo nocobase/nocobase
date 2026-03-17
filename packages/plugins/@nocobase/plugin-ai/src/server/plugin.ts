@@ -39,6 +39,7 @@ import { ollamaProviderOptions } from './llm-providers/ollama';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
+import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
@@ -47,8 +48,6 @@ import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
-  declare app: any;
-
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
@@ -113,6 +112,9 @@ export class PluginAIServer extends Plugin {
     toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
+
+    // Register MCP tools dynamically
+    toolsManager.registerDynamicTools(this.ai.mcpManager.getMCPToolsProvider());
   }
 
   defineResources() {
@@ -122,6 +124,7 @@ export class PluginAIServer extends Plugin {
     this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
     this.app.resourceManager.define(aiContextDatasources);
+    this.app.resourceManager.define(aiMcpClients);
 
     this.app.resourceManager.use(
       async (ctx, next) => {
@@ -145,6 +148,10 @@ export class PluginAIServer extends Plugin {
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.llm-services`,
       actions: ['ai:*', 'llmServices:*'],
+    });
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.mcp-settings`,
+      actions: ['aiMcpClients:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,

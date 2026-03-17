@@ -7,9 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './types';
-export * from './scanner';
-export * from './tools';
-export * from './skills';
-export * from './mcp';
-export * from './employee';
+import { defineMCP } from '../../../../index';
+
+export default defineMCP({
+  transport: 'http',
+  url: 'http://localhost:8123/mcp',
+  headers: {
+    Authorization: 'Bearer test-token',
+  },
+  env: {
+    MCP_ENV: 'test',
+  },
+  args: ['--foo'],
+  restart: {
+    enabled: true,
+  },
+});

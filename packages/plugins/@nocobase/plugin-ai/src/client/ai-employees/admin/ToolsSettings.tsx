@@ -70,11 +70,15 @@ export const Tools: React.FC = observer(() => {
   }, [aiConfigRepository]);
 
   const handleAddTool = (name: string) => {
+    console.log(name);
     const tools = [...(field.value || [])];
     if (!tools.some((s) => s.name === name)) {
       tools.push({ name, autoCall: false });
     }
+    console.log(field.value);
+    console.log(tools);
     field.value = tools;
+    console.log(field.value);
   };
 
   const selectedTools = [...(field.value ?? [])];
@@ -99,7 +103,7 @@ export const Tools: React.FC = observer(() => {
       }) || [];
 
   const toolsByName = new Map(tools.map((tool) => [tool.definition.name, tool]));
-  const generalTools = tools.filter((tool) => tool.scope === 'GENERAL');
+  const generalTools = tools.filter((tool) => tool.scope === 'GENERAL' && tool.from === 'loader');
   const specifiedTools = selectedTools.filter((item) => {
     const tool = toolsByName.get(item.name);
     return tool && tool.scope !== 'GENERAL' && tool.scope !== 'CUSTOM';
@@ -382,7 +386,7 @@ export const ToolSettings: React.FC = () => {
       schema={{
         type: 'void',
         properties: {
-          toolSettings: {
+          skillSettings: {
             type: 'object',
             properties: {
               tools: {

@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './types';
-export * from './scanner';
-export * from './tools';
-export * from './skills';
-export * from './mcp';
-export * from './employee';
+import { defineCollection } from '@nocobase/database';
+import aiMcpClients from '../../collections/ai-mcp-clients';
+
+export default defineCollection({
+  migrationRules: ['overwrite', 'schema-only'],
+  autoGenId: false,
+  sortable: true,
+  ...aiMcpClients,
+});

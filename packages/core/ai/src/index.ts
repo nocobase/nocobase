@@ -12,4 +12,5 @@ export * from './ai-employee-manager';
 export * from './document-manager';
 export * from './tools-manager';
 export * from './skills-manager';
+export * from './mcp-manager';
 export * from './loader';
