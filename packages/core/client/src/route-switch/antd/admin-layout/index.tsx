@@ -13,21 +13,18 @@ import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, Badge, ConfigProvider, Grid, Tooltip } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
-import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
 import {
   AdminDynamicPage,
   AdminShellProvider,
-  KeepAlive,
   NocoBaseDesktopRoute,
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   MobileLayoutProvider,
   useAllAccessDesktopRoutes,
-  useCurrentRoute,
-  useKeepAlive,
   useMobileLayout,
   findFirstPageRoute,
 } from '../../../admin-shell';
@@ -60,7 +57,7 @@ import { userCenterSettings } from './userCenterSettings';
 import { useApplications } from './useApplications';
 import { AdminLayoutModel } from './AdminLayoutModel';
 import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
-import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel, LayoutContent } from './AdminLayoutSlotModels';
+import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
 
 export * from './useDeleteRouteSchema';
 export {
