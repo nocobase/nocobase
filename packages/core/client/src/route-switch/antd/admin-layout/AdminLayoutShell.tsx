@@ -27,7 +27,12 @@ import {
 } from './AdminLayoutMenuModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
-import { NocoBaseRouteContext, useAllAccessDesktopRoutes, useMobileLayout } from '../../../admin-shell';
+import {
+  NocoBaseDesktopRouteType,
+  type NocoBaseDesktopRoute,
+  useAllAccessDesktopRoutes,
+  useMobileLayout,
+} from '../../../admin-shell';
 import {
   DndContext,
   ParentRouteContext,
@@ -272,27 +277,50 @@ function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
   return props.children;
 }
 
-const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
+const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRoute?: NocoBaseDesktopRoute }> = (
+  props,
+) => {
   const divRef = useRef<HTMLDivElement>(null);
+  const parentRoute = props.item._parentRoute || props.fallbackParentRoute;
+  const isHeaderDesignerButton = !parentRoute;
 
   useEffect(() => {
-    if (divRef.current) {
+    if (divRef.current && isHeaderDesignerButton) {
       // 顶部 Add menu item 按钮放置在右侧
       divRef.current.parentElement.parentElement.style.order = '999';
       divRef.current.parentElement.parentElement.style.paddingLeft = '0';
       divRef.current.parentElement.parentElement.style.padding = '0';
     }
-  }, []);
+  }, [isHeaderDesignerButton]);
 
   return (
     <div ref={divRef}>
       <ResetThemeTokenAndKeepAlgorithm>
-        <ParentRouteContext.Provider value={props.item._parentRoute}>
-          <NocoBaseRouteContext.Provider value={props.item._route}>{props.children}</NocoBaseRouteContext.Provider>
-        </ParentRouteContext.Provider>
+        <ParentRouteContext.Provider value={parentRoute}>{props.item.name}</ParentRouteContext.Provider>
       </ResetThemeTokenAndKeepAlgorithm>
     </div>
   );
+};
+
+const matchesRoutePath = (route: NocoBaseDesktopRoute | undefined, pathname: string): boolean => {
+  if (!route) {
+    return false;
+  }
+
+  const candidates = [
+    route.id != null ? `/admin/${route.id}` : null,
+    route.schemaUid ? `/admin/${route.schemaUid}` : null,
+  ].filter(Boolean) as string[];
+
+  if (candidates.some((candidate) => pathname === candidate || pathname.startsWith(`${candidate}/`))) {
+    return true;
+  }
+
+  return Array.isArray(route.children) ? route.children.some((child) => matchesRoutePath(child, pathname)) : false;
+};
+
+const findSelectedTopGroupRoute = (routes: NocoBaseDesktopRoute[], pathname: string) => {
+  return routes.find((route) => route.type === NocoBaseDesktopRouteType.group && matchesRoutePath(route, pathname));
 };
 
 const renderMenuNodeWithModel = (
@@ -300,7 +328,16 @@ const renderMenuNodeWithModel = (
   dom: React.ReactNode,
   renderType: 'item' | 'group',
   options?: AdminLayoutMenuRenderOptions,
+  fallbackParentRoute?: NocoBaseDesktopRoute,
 ) => {
+  const isDesignerButton =
+    item?.key === 'x-designer-button' ||
+    (item != null && item.disabled && item.path === '/' && !item?._route?.id && !item?._route?.schemaUid);
+
+  if (isDesignerButton) {
+    return <DesignerButtonMenuItem item={item} fallbackParentRoute={fallbackParentRoute} />;
+  }
+
   if (item?._model) {
     return (
       <AdminLayoutMenuModelRenderer
@@ -314,19 +351,7 @@ const renderMenuNodeWithModel = (
     );
   }
 
-  if (item?.key === 'x-designer-button') {
-    return <DesignerButtonMenuItem item={item}>{dom}</DesignerButtonMenuItem>;
-  }
-
   return dom;
-};
-
-const menuItemRender = (item, dom, options) => {
-  return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'item', options);
-};
-
-const subMenuItemRender = (item, dom) => {
-  return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'group');
 };
 
 export const AdminLayoutShell = (props) => {
@@ -352,6 +377,10 @@ export const AdminLayoutShell = (props) => {
   const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
+  const selectedTopGroupRoute = useMemo(
+    () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
+    [allAccessRoutes, location.pathname],
+  );
 
   useEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
@@ -430,6 +459,21 @@ export const AdminLayoutShell = (props) => {
     }
     setCollapsed(true);
   }, [isMobileSider]);
+
+  const menuItemRender = useCallback(
+    (item, dom, options) => {
+      const fallbackParentRoute = options?.menuRenderType === 'header' ? undefined : selectedTopGroupRoute;
+      return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'item', options, fallbackParentRoute);
+    },
+    [selectedTopGroupRoute],
+  );
+
+  const subMenuItemRender = useCallback(
+    (item, dom) => {
+      return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'group', undefined, selectedTopGroupRoute);
+    },
+    [selectedTopGroupRoute],
+  );
 
   return (
     <div style={rootStyle}>

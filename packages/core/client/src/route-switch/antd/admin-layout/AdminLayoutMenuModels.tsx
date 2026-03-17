@@ -40,6 +40,7 @@ type AdminLayoutMenuRenderType = 'item' | 'group';
 export type AdminLayoutMenuRenderOptions = {
   isMobile?: boolean;
   collapsed?: boolean;
+  menuRenderType?: string;
 };
 
 export type AdminLayoutMenuNode = {
@@ -199,7 +200,9 @@ const MenuSchemaToolbarWithContainer = () => {
   const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setContainer(divRef.current?.parentElement?.parentElement?.parentElement as HTMLDivElement | null);
+    const submenuTitleContainer = divRef.current?.closest('.ant-menu-submenu-title') as HTMLDivElement | null;
+    const fallbackContainer = divRef.current?.parentElement?.parentElement?.parentElement as HTMLDivElement | null;
+    setContainer(submenuTitleContainer || fallbackContainer);
   }, []);
 
   return (
