@@ -9,22 +9,42 @@
 
 import type { Cache } from '@nocobase/cache';
 import type Application from '@nocobase/server';
-import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
-import * as oidc from 'oidc-provider';
 import { createCacheAdapter } from './cache-adapter';
 import { normalizeBasePath } from './utils';
 
-type ProviderInstance = oidc.Provider;
+type OidcModule = typeof import('oidc-provider');
+type JoseModule = typeof import('jose');
+type ProviderInstance = import('oidc-provider').Provider;
+type ResourceServer = import('oidc-provider').ResourceServer;
+type TokenFormat = import('oidc-provider').TokenFormat;
+
+let oidcModulePromise: Promise<OidcModule> | null = null;
+let joseModulePromise: Promise<JoseModule> | null = null;
+
+function getOidcModule() {
+  if (!oidcModulePromise) {
+    oidcModulePromise = import('oidc-provider');
+  }
+  return oidcModulePromise;
+}
+
+function getJoseModule() {
+  if (!joseModulePromise) {
+    joseModulePromise = import('jose');
+  }
+  return joseModulePromise;
+}
+
 export type ResourceServerConfig = {
   path?: string;
   identifier?: string;
   audience?: string;
   scope: string;
   accessTokenTTL?: number;
-  accessTokenFormat?: oidc.TokenFormat;
-  jwt?: oidc.ResourceServer['jwt'];
+  accessTokenFormat?: TokenFormat;
+  jwt?: ResourceServer['jwt'];
 };
 
 type ProviderContext = {
@@ -38,7 +58,7 @@ export class IdpOauthService {
   private providers = new Map<string, ProviderInstance>();
   private pendingProviders = new Map<string, Promise<ProviderInstance>>();
   private resourceServers = new Map<string, ResourceServerConfig>();
-  private resourceJwks = new Map<string, ReturnType<typeof createLocalJWKSet>>();
+  private resourceJwks = new Map<string, unknown>();
 
   constructor(
     private readonly app: Application,
@@ -99,7 +119,7 @@ export class IdpOauthService {
   private getResourceServerInfo(
     providerContext: ProviderContext,
     resourceIndicator: string,
-  ): oidc.ResourceServer | undefined {
+  ): ResourceServer | undefined {
     for (const config of this.resourceServers.values()) {
       const identifier = this.resolveResourceIdentifier(providerContext, config);
 
@@ -155,6 +175,7 @@ export class IdpOauthService {
     if (this.resourceJwks.has(provider.issuer)) {
       return this.resourceJwks.get(provider.issuer);
     }
+    const { createLocalJWKSet } = await getJoseModule();
 
     const issuerPath = normalizeBasePath(new URL(provider.issuer).pathname || '/');
     const jwksPath = (provider as any).pathFor('jwks') as string;
@@ -286,6 +307,7 @@ export class IdpOauthService {
     if (!token) {
       return undefined;
     }
+    const { decodeJwt, jwtVerify } = await getJoseModule();
 
     const providerContext = this.getProviderContext(ctx);
     const audience = this.resolveResourceIdentifier(providerContext, resourceConfig);
@@ -304,7 +326,7 @@ export class IdpOauthService {
 
     let payload;
     try {
-      ({ payload } = await jwtVerify(token, keySet, {
+      ({ payload } = await jwtVerify(token, keySet as any, {
         issuer: providerContext.issuer,
         audience,
       }));
@@ -422,6 +444,7 @@ export class IdpOauthService {
             if (resourceServer) {
               return resourceServer;
             }
+            const oidc = await getOidcModule();
             throw new oidc.errors.InvalidTarget();
           },
         },
@@ -485,7 +508,7 @@ export class IdpOauthService {
       return this.pendingProviders.get(issuer);
     }
 
-    const pending = Promise.resolve().then(() => {
+    const pending = getOidcModule().then((oidc) => {
       const provider = new oidc.Provider(issuer, this.createConfiguration(providerContext));
       provider.proxy = true;
       this.providers.set(issuer, provider);

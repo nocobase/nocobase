@@ -7,9 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Interaction, InteractionResults, Provider } from 'oidc-provider';
 import type { IdpOauthService } from './service';
 import { rewriteProviderLocationHeader } from './provider-dispatch';
+
+type Interaction = import('oidc-provider').Interaction;
+type InteractionResults = import('oidc-provider').InteractionResults;
+type Provider = import('oidc-provider').Provider;
 
 type InteractionUser = {
   id: string | number;

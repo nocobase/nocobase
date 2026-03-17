@@ -8,9 +8,10 @@
  */
 
 import inject from 'light-my-request';
-import type { Provider } from 'oidc-provider';
 import type { IdpOauthService } from './service';
 import { getProviderInternalPath } from './paths';
+
+type Provider = import('oidc-provider').Provider;
 
 type DispatchContext = {
   method: string;
