@@ -1,10 +1,10 @@
 # 第 4 章：表单与详情 — 录入、展示、一步到位
 
-上一章我们搭好了工单列表，数据看得见了。但用户怎么**提交新工单**呢？这一章，我们来解决"数据填得进"的问题——搭建[表单区块](/interface-builder/blocks/data-blocks/form)和[详情区块](/interface-builder/blocks/data-blocks/details)，配置字段布局和[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](/collection-templates/audit-log)追踪工单的每一次修改。
+上一章我们搭好了工单列表，并用一个简易表单录入了测试数据。这一章我们来**完善表单体验**——优化[表单区块](/interface-builder/blocks/data-blocks/form)的字段布局、添加[详情区块](/interface-builder/blocks/data-blocks/details)、配置[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](/collection-templates/audit-log)追踪工单的每一次修改。
 
-## 4.1 新建工单表单
+## 4.1 完善新建工单表单
 
-我们要在工单列表页面添加一个「新建」按钮，点击后弹出表单让用户填写工单。
+上一章我们快速创建了一个能用的新建表单，现在来完善它——调整字段顺序、设置默认值、优化布局。如果你跳过了上一章的快速表单部分，也没关系，我们这里会从头开始新建表单。
 
 ### 添加"新建"操作按钮
 

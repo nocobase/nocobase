@@ -1,10 +1,10 @@
 # Chapter 4: Forms & Details — Input, Display, All in One
 
-In the last chapter, we built the ticket list — data is now visible. But how do users **submit new tickets**? In this chapter, we'll solve the "entering data" problem — building [Form blocks](/interface-builder/blocks/data-blocks/form) and [Details blocks](/interface-builder/blocks/data-blocks/details), configuring field layouts and [linkage rules](/interface-builder/linkage-rules), and using [change history](/collection-templates/audit-log) to track every modification.
+In the last chapter, we built the ticket list and used a quick form to enter test data. In this chapter, we'll **refine the form experience** — optimize [Form block](/interface-builder/blocks/data-blocks/form) field layouts, add [Details blocks](/interface-builder/blocks/data-blocks/details), configure [linkage rules](/interface-builder/linkage-rules), and use [change history](/collection-templates/audit-log) to track every modification.
 
-## 4.1 Creating a New Ticket Form
+## 4.1 Refining the New Ticket Form
 
-We want to add a "New" button to the ticket list page. Clicking it will pop up a form for users to fill in a ticket.
+In the last chapter, we quickly created a working "Add new" form. Now let's refine it — adjust field order, set default values, and optimize the layout. If you skipped the quick form in the previous chapter, no worries — we'll walk through creating one from scratch here.
 
 ### Adding the "Add new" Action Button
 

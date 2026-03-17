@@ -23,7 +23,7 @@ const locales = {
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr'];
+const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr', 'ru'];
 
 const langMap = {
   en: 'en-US',
@@ -34,6 +34,7 @@ const langMap = {
   pt: 'pt-PT',
   de: 'de-DE',
   fr: 'fr-FR',
+  ru: 'ru-RU',
 };
 
 function sitemap(): RspressPlugin {
