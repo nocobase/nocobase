@@ -69,7 +69,7 @@ export interface FlowModelRendererProps {
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
-        /** 自定义工具栏样式 */
+        /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -112,6 +112,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -182,6 +183,7 @@ const FlowModelRendererCore: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
