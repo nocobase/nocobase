@@ -20,6 +20,7 @@
     "pm": "nocobase pm",
     "pm2": "nocobase pm2",
     "dev": "nocobase dev",
+    "dev:rsbuild": "nocobase dev --rsbuild",
     "dev:client-v2": "nocobase dev --client-v2-only",
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",

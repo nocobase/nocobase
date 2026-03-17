@@ -83,6 +83,44 @@ exports.run = (command, args, options = {}) => {
   });
 };
 
+exports.runWithPrefix = (command, args, options = {}) => {
+  if (command === 'tsx') {
+    command = 'node';
+    args = ['./node_modules/tsx/dist/cli.mjs'].concat(args || []);
+  }
+
+  const prefix = options.prefix || 'process';
+  const color = options.color || 'cyan';
+  const label = chalk[color](`[${prefix}]`);
+  const subprocess = execa(command, args, {
+    shell: true,
+    stdio: 'pipe',
+    ...options,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+  });
+
+  const writePrefixed = (chunk, writer) => {
+    const text = chunk.toString();
+    const lines = text.split(/\r?\n/);
+    const trailingNewline = text.endsWith('\n') || text.endsWith('\r');
+
+    lines.forEach((line, index) => {
+      if (!line && index === lines.length - 1 && trailingNewline) {
+        return;
+      }
+      writer.write(`${label} ${line}\n`);
+    });
+  };
+
+  subprocess.stdout?.on('data', (chunk) => writePrefixed(chunk, process.stdout));
+  subprocess.stderr?.on('data', (chunk) => writePrefixed(chunk, process.stderr));
+
+  return subprocess;
+};
+
 exports.isPortReachable = async (port, { timeout = 1000, host } = {}) => {
   const promise = new Promise((resolve, reject) => {
     const socket = new net.Socket();
