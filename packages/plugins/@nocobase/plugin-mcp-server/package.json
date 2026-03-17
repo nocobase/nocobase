@@ -17,7 +17,8 @@
     "@nocobase/ai": "2.x",
     "@nocobase/client": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/test": "2.x",
+    "@nocobase/plugin-idp-oauth": "2.x"
   },
   "keywords": [
     "AI"
