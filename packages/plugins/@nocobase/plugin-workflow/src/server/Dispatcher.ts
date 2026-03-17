@@ -137,6 +137,7 @@ export default class Dispatcher {
 
           try {
             const execution = await this.createExecution(...event);
+            // NOTE: cache first execution for most cases
             if (!execution?.dispatched) {
               if (this.plugin.serving() && !this.executing && !this.pending.length) {
                 logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
@@ -219,6 +220,7 @@ export default class Dispatcher {
     }
 
     if (this.executing) {
+      this.plugin.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
       return;
     }
 
@@ -243,6 +245,12 @@ export default class Dispatcher {
           if (execution) {
             next = [execution];
           }
+        } else {
+          this.plugin
+            .getLogger('dispatcher')
+            .warn(
+              `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
+            );
         }
       }
       if (next) {
@@ -252,6 +260,7 @@ export default class Dispatcher {
         this.executing = null;
 
         if (next || this.pending.length) {
+          this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
           this.dispatch();
         }
       });
@@ -360,6 +369,7 @@ export default class Dispatcher {
       workflow.stats = await workflow.getStats({ transaction });
     }
     await workflow.stats.increment('executed', { transaction });
+    // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
     if (this.plugin.db.options.dialect !== 'postgres') {
       await workflow.stats.reload({ transaction });
     }
