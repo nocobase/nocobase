@@ -10,7 +10,7 @@
 /* istanbul ignore file -- @preserve */
 
 import { Model, Transactionable } from '@nocobase/database';
-import { LoggerOptions } from '@nocobase/logger';
+import { Logger, LoggerOptions } from '@nocobase/logger';
 import { fsExists } from '@nocobase/utils';
 import fs from 'fs';
 import type { TFuncKey, TOptions } from 'i18next';
@@ -65,7 +65,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     this.setOptions(options);
   }
 
-  get log() {
+  get log(): Logger {
     return this.app.log.child({
       reqId: this.app.context.reqId,
       module: this.name,
@@ -112,7 +112,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
     return (this.options as any).name;
   }
 
-  createLogger(options: LoggerOptions) {
+  createLogger(options: LoggerOptions): Logger {
     return this.app.createLogger(options);
   }
 
