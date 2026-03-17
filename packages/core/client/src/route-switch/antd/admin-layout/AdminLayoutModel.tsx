@@ -12,6 +12,7 @@ import { FlowModel } from '@nocobase/flow-engine';
 import { AdminShellProvider } from '../../../admin-shell';
 import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
+import { AdminLayoutShell } from './AdminLayoutShell';
 import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import React from 'react';
 import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
@@ -173,15 +174,9 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   }
 
   render() {
-    const { layoutComponent: LayoutComponent, ...layoutProps } = this.props;
-
-    if (!LayoutComponent) {
-      return null;
-    }
-
     return (
       <AdminShellProvider>
-        <LayoutComponent {...layoutProps} />
+        <AdminLayoutShell {...this.props} />
       </AdminShellProvider>
     );
   }
