@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Alert, Space } from 'antd';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
@@ -83,204 +84,226 @@ const renderToolbarItems = (
 
 // Width in pixels per toolbar item (icon width + spacing)
 const TOOLBAR_ITEM_WIDTH = 19;
+const TOOLBAR_Z_INDEX = 999;
 
-const toolbarPositionToCSS = {
-  inside: `
-    top: 2px;
-  `,
-  above: `
-    top: 0px;
-    transform: translateY(-100%);
-    padding-bottom: 0px;
-    margin-bottom: -2px;
-  `,
-  below: `
-    top: 0px;
-    transform: translateY(100%);
-    padding-top: 2px;
-    margin-top: -2px;
-  `,
-};
+type ToolbarPosition = 'inside' | 'above' | 'below';
+type ToolbarRenderMode = 'portal' | 'inline';
 
-// 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition = 'inside', toolbarCount }) => css`
+const hostContainerStyles = css`
   position: relative;
 
-  /* 当检测到button时使用inline-block */
   &.has-button-child {
     display: inline-block;
   }
+`;
 
-  /* 正常的hover行为 - 添加延迟显示 */
-  &:hover > .nb-toolbar-container {
+const toolbarPositionClassNames: Record<ToolbarPosition, string> = {
+  inside: 'nb-toolbar-position-inside',
+  above: 'nb-toolbar-position-above',
+  below: 'nb-toolbar-position-below',
+};
+
+const toolbarContainerStyles = ({
+  showBackground,
+  showBorder,
+  ctx,
+}: {
+  showBackground: boolean;
+  showBorder: boolean;
+  ctx: any;
+}) => css`
+  z-index: ${TOOLBAR_Z_INDEX};
+  opacity: 0;
+  pointer-events: none;
+  overflow: visible;
+  transition: opacity 0.12s ease;
+  background: ${showBackground ? 'var(--colorBgSettingsHover)' : 'transparent'};
+  border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : 'none'};
+  border-radius: ${ctx.themeToken.borderRadiusLG}px;
+
+  &.nb-toolbar-visible {
     opacity: 1;
     transition-delay: 0.1s;
-
-    .nb-toolbar-container-icons {
-      display: block;
-    }
   }
 
-  /* 当有.hide-parent-menu类时隐藏菜单 */
-  &.hide-parent-menu > .nb-toolbar-container {
-    opacity: 0 !important;
-  }
-
-  > .nb-toolbar-container {
+  &.nb-toolbar-inline {
     position: absolute;
     top: 0;
+    right: 0;
     bottom: 0;
     left: 0;
-    right: 0;
-    z-index: 999;
-    opacity: 0;
-    background: ${showBackground ? 'var(--colorBgSettingsHover)' : ''};
-    border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
-    border-radius: ${ctx.themeToken.borderRadiusLG}px;
+  }
+
+  &.nb-toolbar-portal {
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+
+  &.nb-in-template {
+    background: var(--colorTemplateBgSettingsHover);
+  }
+
+  > .nb-toolbar-container-title {
     pointer-events: none;
-    min-width: ${TOOLBAR_ITEM_WIDTH * toolbarCount}px;
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 16px;
+    padding: 0;
+    font-size: 12px;
+    line-height: 16px;
+    border-bottom-right-radius: 2px;
+    border-radius: 2px;
 
-    &.nb-in-template {
-      background: var(--colorTemplateBgSettingsHover);
-    }
-
-    > .nb-toolbar-container-title {
-      pointer-events: none;
-      position: absolute;
-      font-size: 12px;
-      padding: 0;
-      line-height: 16px;
-      height: 16px;
-      border-bottom-right-radius: 2px;
+    .title-tag {
+      display: inline-flex;
+      padding: 0 3px;
       border-radius: 2px;
-      top: 2px;
-      left: 2px;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-
-      .title-tag {
-        padding: 0 3px;
-        border-radius: 2px;
-        background: var(--colorSettings);
-        color: #fff;
-        display: inline-flex;
-      }
-    }
-
-    > .nb-toolbar-container-icons {
-      display: none; // 防止遮挡其它 icons
-      position: absolute;
-      right: 2px;
-      ${toolbarPositionToCSS[toolbarPosition] || ''}
-      line-height: 16px;
-      pointer-events: all;
-
-      .ant-space-item {
-        background-color: var(--colorSettings);
-        color: #fff;
-        line-height: 16px;
-        width: 16px;
-        height: 16px;
-        padding: 2px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-
-    /* 拖拽把手样式 - 参考 AirTable 样式 */
-    > .resize-handle {
-      position: absolute;
-      pointer-events: all;
       background: var(--colorSettings);
-      opacity: 0.6;
-      border-radius: 4px;
+      color: #fff;
+    }
+  }
+
+  > .nb-toolbar-container-icons {
+    display: none;
+    position: absolute;
+    right: 2px;
+    line-height: 16px;
+    pointer-events: all;
+
+    &.nb-toolbar-position-inside {
+      top: 2px;
+    }
+
+    &.nb-toolbar-position-above {
+      top: 0;
+      transform: translateY(-100%);
+      padding-bottom: 0;
+      margin-bottom: -2px;
+    }
+
+    &.nb-toolbar-position-below {
+      top: 0;
+      transform: translateY(100%);
+      padding-top: 2px;
+      margin-top: -2px;
+    }
+
+    .ant-space-item {
       display: flex;
       align-items: center;
       justify-content: center;
+      width: 16px;
+      height: 16px;
+      padding: 2px;
+      line-height: 16px;
+      background-color: var(--colorSettings);
+      color: #fff;
+    }
+  }
 
-      &:hover {
-        opacity: 0.9;
-        background: var(--colorSettingsHover, var(--colorSettings));
-      }
+  &.nb-toolbar-visible > .nb-toolbar-container-icons {
+    display: block;
+  }
 
-      &::before {
-        content: '';
-        position: absolute;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 50%;
-      }
+  > .resize-handle {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: all;
+    opacity: 0.6;
+    border-radius: 4px;
+    background: var(--colorSettings);
 
-      &::after {
-        content: '';
-        position: absolute;
-        background: rgba(255, 255, 255, 0.9);
-        border-radius: 50%;
-      }
+    &:hover {
+      opacity: 0.9;
+      background: var(--colorSettingsHover, var(--colorSettings));
     }
 
-    > .resize-handle-left {
-      left: -4px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 6px;
-      height: 20px;
-      cursor: ew-resize;
-
-      &::before {
-        width: 2px;
-        height: 2px;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-        box-shadow:
-          0 4px 0 rgba(255, 255, 255, 0.9),
-          0 8px 0 rgba(255, 255, 255, 0.9);
-      }
+    &::before {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
     }
 
-    > .resize-handle-right {
-      right: -4px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 6px;
-      height: 20px;
-      cursor: ew-resize;
-
-      &::before {
-        width: 2px;
-        height: 2px;
-        top: 6px;
-        left: 50%;
-        transform: translateX(-50%);
-        box-shadow:
-          0 4px 0 rgba(255, 255, 255, 0.9),
-          0 8px 0 rgba(255, 255, 255, 0.9);
-      }
+    &::after {
+      content: '';
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
     }
+  }
 
-    > .resize-handle-bottom {
-      bottom: -4px;
+  > .resize-handle-left {
+    top: 50%;
+    left: -4px;
+    width: 6px;
+    height: 20px;
+    cursor: ew-resize;
+    transform: translateY(-50%);
+
+    &::before {
+      top: 6px;
       left: 50%;
+      width: 2px;
+      height: 2px;
       transform: translateX(-50%);
-      width: 20px;
-      height: 6px;
-      cursor: ns-resize;
+      box-shadow:
+        0 4px 0 rgba(255, 255, 255, 0.9),
+        0 8px 0 rgba(255, 255, 255, 0.9);
+    }
+  }
 
-      &::before {
-        width: 2px;
-        height: 2px;
-        left: 6px;
-        top: 50%;
-        transform: translateY(-50%);
-        box-shadow:
-          4px 0 0 rgba(255, 255, 255, 0.9),
-          8px 0 0 rgba(255, 255, 255, 0.9);
-      }
+  > .resize-handle-right {
+    top: 50%;
+    right: -4px;
+    width: 6px;
+    height: 20px;
+    cursor: ew-resize;
+    transform: translateY(-50%);
+
+    &::before {
+      top: 6px;
+      left: 50%;
+      width: 2px;
+      height: 2px;
+      transform: translateX(-50%);
+      box-shadow:
+        0 4px 0 rgba(255, 255, 255, 0.9),
+        0 8px 0 rgba(255, 255, 255, 0.9);
+    }
+  }
+
+  > .resize-handle-bottom {
+    bottom: -4px;
+    left: 50%;
+    width: 20px;
+    height: 6px;
+    cursor: ns-resize;
+    transform: translateX(-50%);
+
+    &::before {
+      top: 50%;
+      left: 6px;
+      width: 2px;
+      height: 2px;
+      transform: translateY(-50%);
+      box-shadow:
+        4px 0 0 rgba(255, 255, 255, 0.9),
+        8px 0 0 rgba(255, 255, 255, 0.9);
     }
   }
 `;
+
+const isNodeWithin = (target: EventTarget | null, container: HTMLElement | null): boolean => {
+  return target instanceof Node && !!container?.contains(target);
+};
 
 // 悬浮右键菜单组件接口
 interface ModelProvidedProps {
@@ -319,7 +342,11 @@ interface ModelProvidedProps {
   /**
    * @default 'inside'
    */
-  toolbarPosition?: 'inside' | 'above' | 'below';
+  toolbarPosition?: ToolbarPosition;
+  /**
+   * @default 'portal'
+   */
+  toolbarRenderMode?: ToolbarRenderMode;
 }
 
 interface ModelByIdProps {
@@ -330,6 +357,7 @@ interface ModelByIdProps {
   showDeleteButton?: boolean;
   showCopyUidButton?: boolean;
   containerStyle?: React.CSSProperties;
+  toolbarStyle?: React.CSSProperties;
   className?: string;
   /**
    * @default true
@@ -344,6 +372,10 @@ interface ModelByIdProps {
    */
   showTitle?: boolean;
   /**
+   * @default false
+   */
+  showDragHandle?: boolean;
+  /**
    * Settings menu levels: 1=current model only (default), 2=include sub-models
    */
   settingsMenuLevel?: number;
@@ -354,7 +386,11 @@ interface ModelByIdProps {
   /**
    * @default 'inside'
    */
-  toolbarPosition?: 'inside' | 'above' | 'below';
+  toolbarPosition?: ToolbarPosition;
+  /**
+   * @default 'portal'
+   */
+  toolbarRenderMode?: ToolbarRenderMode;
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -402,7 +438,13 @@ const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((pr
   }
 });
 
-const ResizeHandles: React.FC<{ model: FlowModel; onDragStart: () => void; onDragEnd: () => void }> = (props) => {
+const ResizeHandles: React.FC<{
+  model: FlowModel;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  onMouseEnter?: React.MouseEventHandler<HTMLDivElement>;
+  onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
+}> = (props) => {
   const isDraggingRef = useRef<boolean>(false);
   const dragTypeRef = useRef<'left' | 'right' | 'bottom' | 'corner' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -488,11 +530,15 @@ const ResizeHandles: React.FC<{ model: FlowModel; onDragStart: () => void; onDra
       <div
         className="resize-handle resize-handle-left"
         title="拖拽调节宽度"
+        onMouseEnter={props.onMouseEnter}
+        onMouseLeave={props.onMouseLeave}
         onMouseDown={(e) => handleDragStart(e, 'left')}
       ></div>
       <div
         className="resize-handle resize-handle-right"
         title="拖拽调节宽度"
+        onMouseEnter={props.onMouseEnter}
+        onMouseLeave={props.onMouseLeave}
         onMouseDown={(e) => handleDragStart(e, 'right')}
       ></div>
       {/* <div
@@ -522,14 +568,122 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     extraToolbarItems,
     toolbarStyle,
     toolbarPosition = 'inside',
+    toolbarRenderMode = 'portal',
   }: ModelProvidedProps) => {
     const [hideMenu, setHideMenu] = useState<boolean>(false);
     const [hasButton, setHasButton] = useState<boolean>(false);
+    const [isHostHovered, setIsHostHovered] = useState<boolean>(false);
+    const [isToolbarHovered, setIsToolbarHovered] = useState<boolean>(false);
+    const [isDraggingToolbar, setIsDraggingToolbar] = useState<boolean>(false);
+    const [portalRect, setPortalRect] = useState<{ top: number; left: number; width: number; height: number }>({
+      top: 0,
+      left: 0,
+      width: 0,
+      height: 0,
+    });
     const containerRef = useRef<HTMLDivElement>(null);
     const flowEngine = useFlowEngine();
-    const [style, setStyle] = useState<React.CSSProperties>({});
     const toolbarContainerRef = useRef<HTMLDivElement>(null);
-    const toolbarContainerStyle: any = useMemo(() => ({ ...toolbarStyle, ...style }), [style, toolbarStyle]);
+    const portalRafIdRef = useRef<number | null>(null);
+    const toolbarRenderModeValue: ToolbarRenderMode =
+      toolbarRenderMode === 'inline' || typeof document === 'undefined' ? 'inline' : 'portal';
+    const isToolbarVisible = !hideMenu && (isHostHovered || isToolbarHovered || isDraggingToolbar);
+    const toolbarCount = getToolbarCount(model, flowEngine, extraToolbarItems);
+    const toolbarItems = useMemo(
+      () =>
+        renderToolbarItems(
+          model,
+          showDeleteButton,
+          showCopyUidButton,
+          flowEngine,
+          settingsMenuLevel,
+          extraToolbarItems,
+        ),
+      [model, showDeleteButton, showCopyUidButton, flowEngine, settingsMenuLevel, extraToolbarItems],
+    );
+
+    const updatePortalRect = useCallback(() => {
+      if (!containerRef.current || toolbarRenderModeValue !== 'portal') {
+        return;
+      }
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const nextRect = {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      };
+
+      setPortalRect((prevRect) => {
+        if (
+          prevRect.top === nextRect.top &&
+          prevRect.left === nextRect.left &&
+          prevRect.width === nextRect.width &&
+          prevRect.height === nextRect.height
+        ) {
+          return prevRect;
+        }
+        return nextRect;
+      });
+    }, [toolbarRenderModeValue]);
+
+    const schedulePortalRectUpdate = useCallback(() => {
+      if (toolbarRenderModeValue !== 'portal' || portalRafIdRef.current !== null) {
+        return;
+      }
+
+      portalRafIdRef.current = window.requestAnimationFrame(() => {
+        portalRafIdRef.current = null;
+        updatePortalRect();
+      });
+    }, [toolbarRenderModeValue, updatePortalRect]);
+
+    useEffect(() => {
+      if (toolbarRenderModeValue === 'portal') {
+        updatePortalRect();
+      }
+    }, [toolbarRenderModeValue, updatePortalRect]);
+
+    useEffect(() => {
+      if (toolbarRenderModeValue !== 'portal' || !isToolbarVisible) {
+        return;
+      }
+
+      updatePortalRect();
+
+      const handleViewportChange = () => {
+        schedulePortalRectUpdate();
+      };
+
+      const resizeObserver =
+        typeof ResizeObserver !== 'undefined' && containerRef.current
+          ? new ResizeObserver(() => {
+              schedulePortalRectUpdate();
+            })
+          : null;
+
+      if (containerRef.current) {
+        resizeObserver?.observe(containerRef.current);
+      }
+
+      window.addEventListener('resize', handleViewportChange);
+      window.addEventListener('scroll', handleViewportChange, true);
+
+      return () => {
+        resizeObserver?.disconnect();
+        window.removeEventListener('resize', handleViewportChange);
+        window.removeEventListener('scroll', handleViewportChange, true);
+      };
+    }, [isToolbarVisible, schedulePortalRectUpdate, toolbarRenderModeValue, updatePortalRect]);
+
+    useEffect(() => {
+      return () => {
+        if (portalRafIdRef.current !== null) {
+          window.cancelAnimationFrame(portalRafIdRef.current);
+        }
+      };
+    }, []);
 
     // 检测DOM中是否包含button元素
     useEffect(() => {
@@ -574,6 +728,37 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }
     }, []);
 
+    const handleHostMouseEnter = useCallback(() => {
+      setHideMenu(false);
+      setIsHostHovered(true);
+      schedulePortalRectUpdate();
+    }, [schedulePortalRectUpdate]);
+
+    const handleHostMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      setIsHostHovered(false);
+      if (isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
+        setIsToolbarHovered(true);
+      }
+      if (!isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
+        setHideMenu(false);
+      }
+    }, []);
+
+    const handleToolbarMouseEnter = useCallback(() => {
+      setIsToolbarHovered(true);
+      schedulePortalRectUpdate();
+    }, [schedulePortalRectUpdate]);
+
+    const handleToolbarMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      setIsToolbarHovered(false);
+      if (isNodeWithin(e.relatedTarget, containerRef.current)) {
+        setIsHostHovered(true);
+      }
+      if (!isNodeWithin(e.relatedTarget, containerRef.current)) {
+        setHideMenu(false);
+      }
+    }, []);
+
     if (!model) {
       const t = getT(model || ({} as FlowModel));
       return <Alert message={t('Invalid model provided')} type="error" />;
@@ -584,53 +769,88 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
+    const toolbarContainerClassName = [
+      toolbarContainerStyles({ showBackground, showBorder, ctx: model.context }),
+      toolbarRenderModeValue === 'portal' ? 'nb-toolbar-portal' : 'nb-toolbar-inline',
+      isToolbarVisible ? 'nb-toolbar-visible' : '',
+      className?.includes('nb-in-template') ? 'nb-in-template' : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const toolbarContainerStyle = {
+      ...(toolbarRenderModeValue === 'portal'
+        ? {
+            top: `${portalRect.top}px`,
+            left: `${portalRect.left}px`,
+            width: `${portalRect.width}px`,
+            height: `${portalRect.height}px`,
+          }
+        : {
+            minWidth: `${TOOLBAR_ITEM_WIDTH * toolbarCount}px`,
+          }),
+      ...toolbarStyle,
+    } satisfies React.CSSProperties;
+
+    const toolbarNode = (
+      <div
+        ref={toolbarContainerRef}
+        className={`nb-toolbar-container ${toolbarContainerClassName}`}
+        style={toolbarContainerStyle}
+        data-model-uid={model.uid}
+        data-toolbar-position={toolbarPosition}
+        data-toolbar-render-mode={toolbarRenderModeValue}
+        data-toolbar-visible={isToolbarVisible ? 'true' : 'false'}
+      >
+        {showTitle && (model.title || model.extraTitle) && (
+          <div className="nb-toolbar-container-title">
+            {model.title && <span className="title-tag">{model.title}</span>}
+            {model.extraTitle && <span className="title-tag">{model.extraTitle}</span>}
+          </div>
+        )}
+        <div
+          className={`nb-toolbar-container-icons ${toolbarPositionClassNames[toolbarPosition]}`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          onMouseMove={(e) => e.stopPropagation()}
+          onMouseEnter={handleToolbarMouseEnter}
+          onMouseLeave={handleToolbarMouseLeave}
+        >
+          <Space size={3} align="center">
+            {toolbarItems}
+          </Space>
+        </div>
+
+        {showDragHandle && (
+          <ResizeHandles
+            model={model}
+            onMouseEnter={handleToolbarMouseEnter}
+            onMouseLeave={handleToolbarMouseLeave}
+            onDragStart={() => {
+              setIsDraggingToolbar(true);
+              schedulePortalRectUpdate();
+            }}
+            onDragEnd={() => {
+              setIsDraggingToolbar(false);
+              schedulePortalRectUpdate();
+            }}
+          />
+        )}
+      </div>
+    );
+
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({
-          showBackground,
-          showBorder,
-          ctx: model.context,
-          toolbarPosition,
-          toolbarCount: getToolbarCount(flowEngine, extraToolbarItems),
-        })} ${hideMenu ? 'hide-parent-menu' : ''} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
+        className={`${hostContainerStyles} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
         onMouseMove={handleChildHover}
+        onMouseEnter={handleHostMouseEnter}
+        onMouseLeave={handleHostMouseLeave}
       >
         {children}
-
-        {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
-        <div ref={toolbarContainerRef} className="nb-toolbar-container" style={toolbarContainerStyle}>
-          {showTitle && (model.title || model.extraTitle) && (
-            <div className="nb-toolbar-container-title">
-              {model.title && <span className="title-tag">{model.title}</span>}
-              {model.extraTitle && <span className="title-tag">{model.extraTitle}</span>}
-            </div>
-          )}
-          <div
-            className="nb-toolbar-container-icons"
-            onClick={(e) => e.stopPropagation()}
-            onMouseDown={(e) => e.stopPropagation()}
-            onMouseMove={(e) => e.stopPropagation()}
-          >
-            <Space size={3} align="center">
-              {renderToolbarItems(
-                model,
-                showDeleteButton,
-                showCopyUidButton,
-                flowEngine,
-                settingsMenuLevel,
-                extraToolbarItems,
-              )}
-            </Space>
-          </div>
-
-          {/* 拖拽把手 */}
-          {showDragHandle && (
-            <ResizeHandles model={model} onDragStart={() => setStyle({ opacity: 1 })} onDragEnd={() => setStyle({})} />
-          )}
-        </div>
+        {toolbarRenderModeValue === 'portal' ? createPortal(toolbarNode, document.body) : toolbarNode}
       </div>
     );
   },
@@ -654,6 +874,11 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     settingsMenuLevel,
     extraToolbarItems: extraToolbarItems,
     toolbarPosition,
+    toolbarRenderMode,
+    showBackground = true,
+    showBorder = true,
+    toolbarStyle,
+    showDragHandle = false,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
     const flowEngine = useFlowEngine();
@@ -671,9 +896,14 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         containerStyle={containerStyle}
         className={className}
         showTitle={showTitle}
+        showBackground={showBackground}
+        showBorder={showBorder}
+        showDragHandle={showDragHandle}
         settingsMenuLevel={settingsMenuLevel}
         extraToolbarItems={extraToolbarItems}
+        toolbarStyle={toolbarStyle}
         toolbarPosition={toolbarPosition}
+        toolbarRenderMode={toolbarRenderMode}
       >
         {children}
       </FlowsFloatContextMenuWithModel>
@@ -686,8 +916,10 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
 
 export { FlowsFloatContextMenu };
 
-function getToolbarCount(flowEngine, extraToolbarItems) {
+function getToolbarCount(model: FlowModel, flowEngine: FlowEngine, extraToolbarItems?: ToolbarItemConfig[]) {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
   const allToolbarItems = [...toolbarItems, ...(extraToolbarItems || [])];
-  return allToolbarItems.length;
+  return allToolbarItems.filter((itemConfig: ToolbarItemConfig) => {
+    return itemConfig.visible ? itemConfig.visible(model) : true;
+  }).length;
 }

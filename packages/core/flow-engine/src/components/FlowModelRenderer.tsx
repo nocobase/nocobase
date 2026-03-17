@@ -75,6 +75,10 @@ export interface FlowModelRendererProps {
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
+        /**
+         * @default 'portal'
+         */
+        toolbarRenderMode?: 'portal' | 'inline';
       }; // 默认 false
 
   /** 流程设置的交互风格 */
@@ -117,6 +121,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
+        /**
+         * @default 'portal'
+         */
+        toolbarRenderMode?: 'portal' | 'inline';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
@@ -187,6 +195,10 @@ const FlowModelRendererCore: React.FC<{
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
+        /**
+         * @default 'portal'
+         */
+        toolbarRenderMode?: 'portal' | 'inline';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
@@ -255,6 +267,7 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarRenderMode={_.isObject(showFlowSettings) ? showFlowSettings.toolbarRenderMode : undefined}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
@@ -301,6 +314,7 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarRenderMode={_.isObject(showFlowSettings) ? showFlowSettings.toolbarRenderMode : undefined}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
