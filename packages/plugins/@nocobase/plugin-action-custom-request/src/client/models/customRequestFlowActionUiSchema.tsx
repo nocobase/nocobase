@@ -16,45 +16,9 @@ import React from 'react';
 import { generateNTemplate } from '../locale';
 import { FlowJsonWithContextSelector } from './FlowJsonWithContextSelector';
 import { makeRequestKey } from './utils';
+import { RolesSelect } from './components/RolesSelect';
 
 const requestConfigInFlight = new Map<string, Promise<any>>();
-
-const RolesSelect = (props: { value?: string[]; onChange?: (value: string[]) => void }) => {
-  const { value = [], onChange } = props;
-
-  const toRoleNames = (next: any): string[] => {
-    if (!Array.isArray(next)) {
-      return [];
-    }
-    return next
-      .map((item) => {
-        if (typeof item === 'string') {
-          return item;
-        }
-        if (item && typeof item === 'object') {
-          return item?.name || item?.value || item?.roleName;
-        }
-      })
-      .filter(Boolean);
-  };
-
-  return (
-    <RemoteSelect
-      mode="multiple"
-      manual={false}
-      value={value}
-      service={{
-        resource: 'roles',
-      }}
-      fieldNames={{
-        label: 'title',
-        value: 'name',
-      }}
-      allowClear
-      onChange={(next) => onChange?.(toRoleNames(next))}
-    />
-  );
-};
 
 const RequestKeyField = (props: { value?: string; onChange?: (value: string) => void }) => {
   const { value, onChange } = props;
