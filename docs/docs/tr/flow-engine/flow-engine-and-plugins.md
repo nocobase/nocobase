@@ -11,7 +11,7 @@ NocoBase 2.0'da tüm API'ler FlowEngine'de toplanmıştır ve eklentiler `this.e
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

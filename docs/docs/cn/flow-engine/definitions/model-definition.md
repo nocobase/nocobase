@@ -1,6 +1,6 @@
 # ModelDefinition
 
-ModelDefinition 定义了流模型的创建选项，用于通过 `FlowEngine.createModel()` 方法创建模型实例。它包含了模型的基本配置、属性、子模型等信息。
+ModelDefinition 定义了流模型的创建选项，用于通过 `FlowEngine.createModelAsync()` 方法创建模型实例。它包含了模型的基本配置、属性、子模型等信息。
 
 ## 类型定义
 
@@ -26,7 +26,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // 创建模型实例
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -81,7 +81,7 @@ use: 'MyModel'
 use: MyModel
 
 // 使用动态引用
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -269,10 +269,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // 注册模型类
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // 动态导入，首次真正用到这个 model 时才会加载对应模块
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // 创建模型实例
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

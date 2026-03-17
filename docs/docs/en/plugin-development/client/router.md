@@ -12,15 +12,20 @@ NocoBase client provides a flexible router manager that supports extending pages
 
 ## Regular Page Extension
 
-Add regular page routes via router.add().
+Add regular page routes via `router.add()`. For page components, use `componentLoader` so the page module is loaded only when the route is actually visited.
+
+Page modules must use `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -35,8 +40,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Dynamic import: the page module loads only when this route is entered
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -57,22 +70,22 @@ this.router.add('root.user', {
 });
 ```
 
+If a page is heavy or not needed on first paint, prefer `componentLoader`. `element` remains suitable for layout routes or very lightweight inline pages.
+
 ## Plugin Settings Page Extension
 
-Add plugin settings pages via pluginSettingsRouter.add().
+Add plugin settings pages via `pluginSettingsRouter.add()`. Like regular routes, settings pages should also use `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Settings page title
       icon: 'ApiOutlined', // Settings page menu icon
-      Component: HelloSettingPage,
+      // Dynamic import: the page module loads only when this settings route is entered
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -91,20 +104,20 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Child routes
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Dynamic import: the page module loads only when this settings route is entered
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }
 ```
-

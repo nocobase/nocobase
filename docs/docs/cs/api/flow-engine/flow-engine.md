@@ -5,7 +5,7 @@ Tento dokument byl přeložen umělou inteligencí. V případě nepřesností s
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 * **Typ**: `string`
 * **Výchozí hodnota**: `docs`

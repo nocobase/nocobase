@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### الطرق المحلية
 
 ```ts
-flowEngine.createModel(options); // إنشاء نسخة نموذج محلية
+await flowEngine.createModelAsync(options); // إنشاء نسخة نموذج محلية
 flowEngine.getModel(uid);        // الحصول على نسخة نموذج محلية
 flowEngine.removeModel(uid);     // إزالة نسخة نموذج محلية
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // حذف النموذج من المصدر 
 ## طرق نسخة النموذج
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // حفظ إلى المصدر البعيد

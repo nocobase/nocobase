@@ -16,15 +16,20 @@ Il client NocoBase offre un gestore di router flessibile che Le permette di este
 
 ## Estensione di Pagine Regolari
 
-Aggiunga route di pagina regolari tramite `router.add()`.
+Aggiungi le route delle pagine normali tramite `router.add()`. Per i componenti di pagina, usa `componentLoader` per la registrazione on demand, così il modulo della pagina verrà caricato solo quando la route viene effettivamente visitata.
+
+I file di pagina devono usare `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Import dinamico: il modulo della pagina viene caricato solo quando si entra in questa route
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Se la pagina è pesante o non è necessaria al primo rendering, è consigliabile preferire `componentLoader`; `element` resta adatto per le route di layout o per pagine inline molto leggere.
+
 ## Estensione delle Pagine di Impostazioni dei Plugin
 
-Aggiunga le pagine di impostazioni dei plugin tramite `pluginSettingsRouter.add()`.
+Aggiungi le pagine delle impostazioni del plugin tramite `pluginSettingsRouter.add()`. Come per le route normali, anche le pagine delle impostazioni dovrebbero usare `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Titolo della pagina di impostazioni
       icon: 'ApiOutlined', // Icona del menu della pagina di impostazioni
-      Component: HelloSettingPage,
+      // Import dinamico: il modulo della pagina viene caricato solo quando si entra in questa pagina delle impostazioni
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Route figlie
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Import dinamico: il modulo della pagina viene caricato solo quando si entra in questa pagina delle impostazioni
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

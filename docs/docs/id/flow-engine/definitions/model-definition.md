@@ -4,7 +4,7 @@ Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat 
 
 # ModelDefinition
 
-ModelDefinition mendefinisikan opsi pembuatan untuk model alur kerja, yang digunakan untuk membuat instans model melalui metode `FlowEngine.createModel()`. Ini mencakup konfigurasi dasar model, properti, sub-model, dan informasi lainnya.
+ModelDefinition mendefinisikan opsi pembuatan untuk model alur kerja, yang digunakan untuk membuat instans model melalui metode `FlowEngine.createModelAsync()`. Ini mencakup konfigurasi dasar model, properti, sub-model, dan informasi lainnya.
 
 ## Definisi Tipe
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Membuat instans model
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Menggunakan referensi dinamis
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Mendaftarkan kelas model
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Impor dinamis: modul model baru dimuat saat model ini pertama kali benar-benar dibutuhkan
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Membuat instans model
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

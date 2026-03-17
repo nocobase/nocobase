@@ -60,7 +60,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Yerel Metotlar
 
 ```ts
-flowEngine.createModel(options); // Yerel bir model örneği oluşturun
+await flowEngine.createModelAsync(options); // Yerel bir model örneği oluşturun
 flowEngine.getModel(uid);        // Yerel bir model örneği alın
 flowEngine.removeModel(uid);     // Yerel bir model örneğini kaldırın
 ```
@@ -76,7 +76,7 @@ await flowEngine.destroyModel(uid);  // Modeli uzaktan silin
 ## model Örnek Metotları
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Uzaktan kaydedin

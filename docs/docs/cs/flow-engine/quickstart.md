@@ -46,7 +46,7 @@ class MyModel extends FlowModel {
 #### 2. Vytvoření instance modelu
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -140,7 +140,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. Použití `stepParams` namísto statických `props`
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -248,7 +248,7 @@ MyModel.registerFlow(myEventFlow);
 Při vytváření modelu můžete konfigurovat výchozí parametry pro tok událostí prostřednictvím `stepParams`:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

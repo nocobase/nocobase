@@ -46,7 +46,7 @@ class MyModel extends FlowModel {
 #### 2. 모델 인스턴스 생성
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -140,7 +140,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. 정적 `props` 대신 `stepParams` 사용
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -248,7 +248,7 @@ MyModel.registerFlow(myEventFlow);
 모델 생성 시 `stepParams`를 통해 이벤트 Flow의 기본 매개변수를 구성할 수 있습니다:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

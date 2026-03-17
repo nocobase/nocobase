@@ -1,6 +1,6 @@
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 * **类型**： `string`
 * **默认值**： `docs`

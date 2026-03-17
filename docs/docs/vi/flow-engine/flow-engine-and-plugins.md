@@ -11,7 +11,7 @@ Trong NocoBase 2.0, tất cả các API đều được tập trung tại FlowEn
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

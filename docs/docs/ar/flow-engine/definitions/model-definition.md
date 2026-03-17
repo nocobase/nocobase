@@ -4,7 +4,7 @@
 
 # ModelDefinition
 
-يحدد `ModelDefinition` خيارات إنشاء نموذج سير العمل، والتي تُستخدم لإنشاء نسخة نموذج عبر طريقة `FlowEngine.createModel()`. يتضمن هذا التعريف التكوين الأساسي للنموذج، وخصائصه، ونماذجه الفرعية، وغيرها من المعلومات.
+يحدد `ModelDefinition` خيارات إنشاء نموذج سير العمل، والتي تُستخدم لإنشاء نسخة نموذج عبر طريقة `FlowEngine.createModelAsync()`. يتضمن هذا التعريف التكوين الأساسي للنموذج، وخصائصه، ونماذجه الفرعية، وغيرها من المعلومات.
 
 ## تعريف النوع
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // إنشاء نسخة نموذج
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // استخدام مرجع ديناميكي
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // تسجيل فئة النموذج
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // استيراد ديناميكي: لا يتم تحميل وحدة model إلا عند الحاجة إليها للمرة الأولى
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // إنشاء نسخة نموذج
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

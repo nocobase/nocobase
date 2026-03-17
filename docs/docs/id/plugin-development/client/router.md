@@ -16,15 +16,20 @@ Klien NocoBase menyediakan pengelola router yang fleksibel, yang mendukung perlu
 
 ## Perluasan Halaman Reguler
 
-Tambahkan rute halaman reguler melalui `router.add()`.
+Tambahkan rute halaman biasa melalui `router.add()`. Untuk komponen halaman, gunakan `componentLoader` agar modul halaman baru dimuat saat rute tersebut benar-benar dikunjungi.
+
+Berkas halaman harus menggunakan `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Impor dinamis: modul halaman baru dimuat saat rute ini benar-benar dimasuki
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Jika halaman cukup berat atau tidak dibutuhkan pada render pertama, prioritaskan `componentLoader`; `element` tetap cocok untuk rute layout atau halaman inline yang sangat ringan.
+
 ## Perluasan Halaman Pengaturan Plugin
 
-Tambahkan halaman pengaturan plugin melalui `pluginSettingsRouter.add()`.
+Tambahkan halaman pengaturan plugin melalui `pluginSettingsRouter.add()`. Seperti rute halaman biasa, halaman pengaturan juga sebaiknya menggunakan `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Judul halaman pengaturan
       icon: 'ApiOutlined', // Ikon menu halaman pengaturan
-      Component: HelloSettingPage,
+      // Impor dinamis: modul halaman baru dimuat saat halaman pengaturan ini benar-benar dimasuki
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Rute anak
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Impor dinamis: modul halaman baru dimuat saat halaman pengaturan ini benar-benar dimasuki
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

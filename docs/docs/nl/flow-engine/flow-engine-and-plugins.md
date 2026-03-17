@@ -9,7 +9,7 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

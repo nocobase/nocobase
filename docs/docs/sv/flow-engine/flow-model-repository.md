@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Lokala metoder
 
 ```ts
-flowEngine.createModel(options); // Skapa en lokal modellinstans
+await flowEngine.createModelAsync(options); // Skapa en lokal modellinstans
 flowEngine.getModel(uid);        // Hämta en lokal modellinstans
 flowEngine.removeModel(uid);     // Ta bort en lokal modellinstans
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // Radera modell från fjärr
 ## Modellinstansmetoder
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Spara till fjärr

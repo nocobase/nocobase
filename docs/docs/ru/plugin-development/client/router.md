@@ -16,15 +16,20 @@
 
 ## Расширение обычных страниц
 
-Добавляйте маршруты обычных страниц с помощью `router.add()`.
+Добавляйте обычные маршруты страниц с помощью `router.add()`. Для компонентов страниц используйте `componentLoader`, чтобы модуль страницы загружался только при фактическом переходе на маршрут.
+
+Файлы страниц должны использовать `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Динамический импорт: модуль страницы загружается только при переходе на этот маршрут
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Если страница тяжёлая или не нужна при первом рендере, отдавайте предпочтение `componentLoader`; `element` по-прежнему подходит для layout-маршрутов или очень лёгких inline-страниц.
+
 ## Расширение страниц настроек плагинов
 
-Добавляйте страницы настроек плагинов с помощью `pluginSettingsRouter.add()`.
+Добавляйте страницы настроек плагина с помощью `pluginSettingsRouter.add()`. Как и для обычных маршрутов, для страниц настроек также следует использовать `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Заголовок страницы настроек
       icon: 'ApiOutlined', // Иконка меню страницы настроек
-      Component: HelloSettingPage,
+      // Динамический импорт: модуль страницы загружается только при переходе на эту страницу настроек
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Дочерние маршруты
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Динамический импорт: модуль страницы загружается только при переходе на эту страницу настроек
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

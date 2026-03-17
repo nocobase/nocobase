@@ -17,15 +17,20 @@ Klient NocoBase nabízí flexibilního správce routeru, který umožňuje rozš
 
 ## Rozšíření běžných stránek
 
-Běžné routy stránek přidáte pomocí metody `router.add()`.
+Běžné routy stránek přidáte pomocí metody `router.add()`. U stránkových komponent je potřeba používat `componentLoader`, aby se modul stránky načetl až ve chvíli, kdy uživatel na danou routu skutečně vstoupí.
+
+Soubory stránek musí používat `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -40,8 +45,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Dynamický import: modul stránky se načte až při vstupu na tuto routu
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -62,22 +75,22 @@ this.router.add('root.user', {
 });
 ```
 
+Pokud je stránka objemnější nebo není potřeba při prvním vykreslení, používejte přednostně `componentLoader`. `element` je stále vhodný pro layout routy nebo velmi lehké inline stránky.
+
 ## Rozšíření stránek nastavení **pluginů**
 
-Stránky nastavení **pluginů** přidáte pomocí metody `pluginSettingsRouter.add()`.
+Stránky nastavení **pluginů** přidáte pomocí metody `pluginSettingsRouter.add()`. Stejně jako u běžných rout by i zde měl být použit `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Název stránky nastavení
       icon: 'ApiOutlined', // Ikona pro menu stránky nastavení
-      Component: HelloSettingPage,
+      // Dynamický import: modul stránky se načte až při vstupu na tuto stránku nastavení
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -96,18 +109,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Podřízené routy
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Dynamický import: modul stránky se načte až při vstupu na tuto stránku nastavení
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

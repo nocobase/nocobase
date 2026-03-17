@@ -19,6 +19,7 @@ import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } f
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
+import { runViewBeforeClose } from './runViewBeforeClose';
 
 let uuid = 0;
 
@@ -97,6 +98,7 @@ export function useDialog() {
       type: 'dialog' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
+      beforeClose: undefined,
       destroy: (result?: any) => {
         if (destroyed) return;
         destroyed = true;
@@ -112,18 +114,24 @@ export function useDialog() {
         scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => dialogRef.current?.update(newConfig),
-      close: (result?: any, force?: boolean) => {
+      close: async (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
-          return;
+          return false;
+        }
+
+        const shouldClose = await runViewBeforeClose(currentDialog, { result, force });
+        if (!shouldClose) {
+          return false;
         }
 
         if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
           // 交由路由系统来销毁当前视图
           config.inputArgs.navigation.back();
-          return;
+          return true;
         }
 
         currentDialog.destroy(result);
+        return true;
       },
       Footer: FooterComponent,
       Header: HeaderComponent,

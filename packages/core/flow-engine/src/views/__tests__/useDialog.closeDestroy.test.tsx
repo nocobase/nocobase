@@ -76,40 +76,40 @@ describe('useDialog - close/destroy logic', () => {
     return api;
   };
 
-  it('should call destroy (and thus closeFunc) when close is called without preventClose', () => {
+  it('should call destroy (and thus closeFunc) when close is called without preventClose', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
 
     const dialog = api.open({}, flowContext);
 
-    dialog.close();
+    await dialog.close();
 
     expect(mockCloseFunc).toHaveBeenCalled();
   });
 
-  it('should not call destroy (and thus closeFunc) when close is called with preventClose=true', () => {
+  it('should not call destroy (and thus closeFunc) when close is called with preventClose=true', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
 
     const dialog = api.open({ preventClose: true }, flowContext);
 
-    dialog.close();
+    await dialog.close();
 
     expect(mockCloseFunc).not.toHaveBeenCalled();
   });
 
-  it('should call destroy (and thus closeFunc) when close is called with preventClose=true but force=true', () => {
+  it('should call destroy (and thus closeFunc) when close is called with preventClose=true but force=true', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
 
     const dialog = api.open({ preventClose: true }, flowContext);
 
-    dialog.close(undefined, true);
+    await dialog.close(undefined, true);
 
     expect(mockCloseFunc).toHaveBeenCalled();
   });
 
-  it('should delegate to navigation.back when triggerByRouter is true', () => {
+  it('should delegate to navigation.back when triggerByRouter is true', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
     const backMock = vi.fn();
@@ -126,25 +126,25 @@ describe('useDialog - close/destroy logic', () => {
       flowContext,
     );
 
-    dialog.close();
+    await dialog.close();
 
     expect(backMock).toHaveBeenCalled();
     // Should not call destroy directly, let router handle it
     expect(mockCloseFunc).not.toHaveBeenCalled();
   });
 
-  it('should emit view activated event on opener engine', () => {
+  it('should emit view activated event on opener engine', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
     const emitSpy = flowContext.engine.emitter.emit;
 
     const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
 
-    dialog.close();
+    await dialog.close();
     expect(emitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
   });
 
-  it('should emit view events on immediate opener engine (previousEngine) when present', () => {
+  it('should emit view events on immediate opener engine (previousEngine) when present', async () => {
     const api = renderUseDialog();
     const flowContext = createMockFlowContext();
     const rootEmitSpy = flowContext.engine.emitter.emit;
@@ -153,7 +153,7 @@ describe('useDialog - close/destroy logic', () => {
 
     const dialog = api.open({ inputArgs: { viewUid: 'child-view' } }, flowContext);
 
-    dialog.close();
+    await dialog.close();
     expect(openerEmitSpy).toHaveBeenCalledWith('view:activated', expect.anything());
     expect(rootEmitSpy).not.toHaveBeenCalledWith('view:activated', expect.anything());
   });

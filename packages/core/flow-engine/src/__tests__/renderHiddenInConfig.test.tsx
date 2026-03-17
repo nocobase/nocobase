@@ -14,7 +14,7 @@ import { FlowEngine } from '../flowEngine';
 import { FlowModel, ModelRenderMode } from '../models/flowModel';
 
 describe('FlowModel.renderHiddenInConfig', () => {
-  it('renders via renderHiddenInConfig when hidden and config enabled (React element mode, mounted)', () => {
+  it('renders via renderHiddenInConfig when hidden and config enabled (React element mode, mounted)', async () => {
     class ElemModel extends FlowModel {
       render() {
         return <div data-testid="content">Content</div>;
@@ -28,14 +28,14 @@ describe('FlowModel.renderHiddenInConfig', () => {
     const model = new ElemModel({ uid: 'elem-1', flowEngine: engine });
 
     // runtime hidden => mounted result should be empty (no content/hidden)
-    engine.flowSettings.disable();
+    await engine.flowSettings.disable();
     model.setHidden(true);
     const { container, unmount, rerender } = render(model.render() as React.ReactElement);
     expect(screen.queryByTestId('content')).toBeNull();
     expect(screen.queryByTestId('hidden')).toBeNull();
 
     // config enabled + hidden => should show renderHiddenInConfig result
-    engine.flowSettings.enable();
+    await engine.flowSettings.enable();
     rerender(model.render() as React.ReactElement);
     expect(screen.getByTestId('hidden').textContent).toBe('HiddenViaAPI');
 
@@ -46,7 +46,7 @@ describe('FlowModel.renderHiddenInConfig', () => {
     unmount();
     cleanup();
   });
-  it('returns a render function when hidden and config enabled (RenderFunction mode)', () => {
+  it('returns a render function when hidden and config enabled (RenderFunction mode)', async () => {
     class FuncModel extends FlowModel {
       static override renderMode = ModelRenderMode.RenderFunction;
       render() {
@@ -63,13 +63,13 @@ describe('FlowModel.renderHiddenInConfig', () => {
     const model = engine.createModel({ use: 'FuncModel' }) as FuncModel;
 
     // runtime hidden => null
-    engine.flowSettings.disable();
+    await engine.flowSettings.disable();
     model.setHidden(true);
     const runtimeHidden = model.render();
     expect(runtimeHidden).toBeNull();
 
     // config enabled + hidden => renderHiddenInConfig (function)
-    engine.flowSettings.enable();
+    await engine.flowSettings.enable();
     const cfgHidden = model.render();
     expect(typeof cfgHidden).toBe('function');
     const cellNode = (cfgHidden as any)();

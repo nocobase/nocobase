@@ -4,7 +4,7 @@ Detta dokument har översatts av AI. För eventuella felaktigheter, se [den enge
 
 # ModelDefinition
 
-ModelDefinition definierar skapandealternativen för en flödesmodell, som används för att skapa en modellinstans via metoden `FlowEngine.createModel()`. Den innehåller modellens grundläggande konfiguration, egenskaper, undermodeller och annan information.
+ModelDefinition definierar skapandealternativen för en flödesmodell, som används för att skapa en modellinstans via metoden `FlowEngine.createModelAsync()`. Den innehåller modellens grundläggande konfiguration, egenskaper, undermodeller och annan information.
 
 ## Typdefinition
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Skapa en modellinstans
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Använd dynamisk referens
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Registrera modellklassen
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Dynamisk import: modellmodulen laddas först när modellen faktiskt behövs för första gången
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Skapa en modellinstans
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

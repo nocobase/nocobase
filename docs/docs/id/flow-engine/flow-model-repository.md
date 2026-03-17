@@ -59,7 +59,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Metode Lokal
 
 ```ts
-flowEngine.createModel(options); // Membuat instans model lokal
+await flowEngine.createModelAsync(options); // Membuat instans model lokal
 flowEngine.getModel(uid);        // Mendapatkan instans model lokal
 flowEngine.removeModel(uid);     // Menghapus instans model lokal
 ```
@@ -75,7 +75,7 @@ await flowEngine.destroyModel(uid);  // Menghapus model dari jarak jauh
 ## Metode Instans Model
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Menyimpan ke jarak jauh

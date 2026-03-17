@@ -56,7 +56,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### स्थानीय विधियाँ
 
 ```ts
-flowEngine.createModel(options); // एक स्थानीय मॉडल इंस्टेंस बनाएँ
+await flowEngine.createModelAsync(options); // एक स्थानीय मॉडल इंस्टेंस बनाएँ
 flowEngine.getModel(uid);        // एक स्थानीय मॉडल इंस्टेंस प्राप्त करें
 flowEngine.removeModel(uid);     // एक स्थानीय मॉडल इंस्टेंस हटाएँ
 ```
@@ -72,7 +72,7 @@ await flowEngine.destroyModel(uid);  // रिमोट से मॉडल ह�
 ## मॉडल इंस्टेंस विधियाँ
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // रिमोट में सेव करें

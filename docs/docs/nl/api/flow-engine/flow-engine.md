@@ -4,7 +4,7 @@ Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse 
 
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 *   **Type**: `string`
 *   **Standaardwaarde**: `docs`

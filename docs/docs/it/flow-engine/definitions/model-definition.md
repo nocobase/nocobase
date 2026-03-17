@@ -4,7 +4,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 # ModelDefinition
 
-ModelDefinition definisce le opzioni di creazione per un modello di **flusso di lavoro**, utilizzate per creare un'istanza di modello tramite il metodo `FlowEngine.createModel()`. Include la configurazione di base del modello, le proprietà, i sotto-modelli e altre informazioni.
+ModelDefinition definisce le opzioni di creazione per un modello di **flusso di lavoro**, utilizzate per creare un'istanza di modello tramite il metodo `FlowEngine.createModelAsync()`. Include la configurazione di base del modello, le proprietà, i sotto-modelli e altre informazioni.
 
 ## Definizione del Tipo
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Crea un'istanza del modello
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // Utilizza il riferimento dinamico
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Registra la classe del modello
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Import dinamico: il modulo del modello viene caricato solo quando questo modello è realmente necessario per la prima volta
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Crea un'istanza del modello
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {
