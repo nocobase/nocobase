@@ -18,7 +18,12 @@ export class PluginIdpOauthServer extends Plugin {
   service: IdpOauthService;
 
   async load() {
-    this.service = new IdpOauthService(this.app);
+    const bridgeTokenCache = await this.app.cacheManager.createCache({
+      name: 'idp-oauth-token',
+      prefix: 'idp-oauth:token',
+      store: 'memory',
+    });
+    this.service = new IdpOauthService(this.app, bridgeTokenCache);
     const paths = createIdpOauthPaths();
 
     this.app.use(

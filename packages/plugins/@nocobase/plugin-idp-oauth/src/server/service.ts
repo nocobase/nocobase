@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { Cache } from '@nocobase/cache';
 import type Application from '@nocobase/server';
 import { createLocalJWKSet, decodeJwt, jwtVerify } from 'jose';
 import inject from 'light-my-request';
+import { createHash } from 'node:crypto';
 import * as oidc from 'oidc-provider';
 import { createCacheAdapter } from './cache-adapter';
 import { normalizeBasePath } from './utils';
@@ -38,7 +40,10 @@ export class IdpOauthService {
   private resourceServers = new Map<string, ResourceServerConfig>();
   private resourceJwks = new Map<string, ReturnType<typeof createLocalJWKSet>>();
 
-  constructor(private readonly app: Application) {}
+  constructor(
+    private readonly app: Application,
+    private readonly bridgeTokenCache: Cache,
+  ) {}
 
   getOrigin(ctx: { protocol: string; host: string }) {
     return process.env.APP_PUBLIC_ORIGIN || `${ctx.protocol}://${ctx.host}`;
@@ -196,6 +201,10 @@ export class IdpOauthService {
     );
   }
 
+  private getBridgeTokenCacheKey(token: string, tokenId?: string) {
+    return tokenId || createHash('sha256').update(token).digest('hex');
+  }
+
   private async findUserById(userId: string | number) {
     return this.app.db.getRepository('users').findOne({
       filterByTk: String(userId),
@@ -316,7 +325,15 @@ export class IdpOauthService {
     }
 
     const oauthExpiresInMs = typeof payload.exp === 'number' ? Math.max(0, payload.exp * 1000 - Date.now()) : undefined;
-    const internalToken = await this.issueInternalToken(user.id, oauthExpiresInMs);
+    const bridgeTokenCacheKey = this.getBridgeTokenCacheKey(
+      token,
+      typeof payload.jti === 'string' ? payload.jti : undefined,
+    );
+    const cachedInternalToken = await this.bridgeTokenCache.get<string>(bridgeTokenCacheKey);
+    const internalToken = cachedInternalToken || (await this.issueInternalToken(user.id, oauthExpiresInMs));
+    if (!cachedInternalToken && typeof oauthExpiresInMs === 'number' && oauthExpiresInMs > 0) {
+      await this.bridgeTokenCache.set(bridgeTokenCacheKey, internalToken, oauthExpiresInMs);
+    }
     const authorizationHeader = `Bearer ${internalToken}`;
 
     ctx.req.headers.authorization = authorizationHeader;
