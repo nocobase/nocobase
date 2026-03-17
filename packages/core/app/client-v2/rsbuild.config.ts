@@ -34,14 +34,6 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
-function getForwardedFor(headers: { [key: string]: string | string[] | undefined }) {
-  const forwardedFor = headers['x-forwarded-for'];
-  if (Array.isArray(forwardedFor)) {
-    return forwardedFor[0];
-  }
-  return forwardedFor;
-}
-
 function createDefineValues(v2PublicPath: string) {
   return {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
