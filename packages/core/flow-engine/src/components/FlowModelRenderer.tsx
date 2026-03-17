@@ -69,16 +69,12 @@ export interface FlowModelRendererProps {
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
-        /** 自定义工具栏样式 */
+        /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
-        /**
-         * @default 'portal'
-         */
-        toolbarRenderMode?: 'portal' | 'inline';
       }; // 默认 false
 
   /** 流程设置的交互风格 */
@@ -116,15 +112,12 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
-        /**
-         * @default 'portal'
-         */
-        toolbarRenderMode?: 'portal' | 'inline';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
@@ -190,15 +183,12 @@ const FlowModelRendererCore: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** `top/left/right/bottom` 会作为 portal overlay 的 inset 使用 */
         style?: React.CSSProperties;
         /**
          * @default 'inside'
          */
         toolbarPosition?: 'inside' | 'above' | 'below';
-        /**
-         * @default 'portal'
-         */
-        toolbarRenderMode?: 'portal' | 'inline';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
@@ -267,7 +257,6 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
-            toolbarRenderMode={_.isObject(showFlowSettings) ? showFlowSettings.toolbarRenderMode : undefined}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
@@ -314,7 +303,6 @@ const FlowModelRendererCore: React.FC<{
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
-            toolbarRenderMode={_.isObject(showFlowSettings) ? showFlowSettings.toolbarRenderMode : undefined}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
