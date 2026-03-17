@@ -567,6 +567,82 @@ describe('FlowSchemaRegistry', () => {
     ).toEqual([]);
   });
 
+  it('should truncate recursive ancestor snapshots in model documents', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLoopRootModel',
+      subModelSlots: {
+        actions: {
+          type: 'array',
+          uses: ['SchemaRegistryLoopActionModel'],
+        },
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLoopActionModel',
+      subModelSlots: {
+        page: {
+          type: 'object',
+          use: 'SchemaRegistryLoopPageModel',
+        },
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLoopPageModel',
+      subModelSlots: {
+        tabs: {
+          type: 'array',
+          uses: ['SchemaRegistryLoopTabModel'],
+        },
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLoopTabModel',
+      subModelSlots: {
+        grid: {
+          type: 'object',
+          use: 'SchemaRegistryLoopGridModel',
+        },
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryLoopGridModel',
+      subModelSlots: {
+        items: {
+          type: 'array',
+          uses: ['SchemaRegistryLoopRootModel'],
+        },
+      },
+    });
+
+    const doc = registry.getModelDocument('SchemaRegistryLoopRootModel');
+    const rootSubModels = (doc.jsonSchema.properties?.subModels as any)?.properties;
+    const actionNode = rootSubModels?.actions?.items;
+    const actionSubModels = actionNode?.properties?.subModels?.properties;
+    const pageNode = actionSubModels?.page;
+    const pageSubModels = pageNode?.properties?.subModels?.properties;
+    const tabNode = pageSubModels?.tabs?.items;
+    const tabSubModels = tabNode?.properties?.subModels?.properties;
+    const gridNode = tabSubModels?.grid;
+    const gridSubModels = gridNode?.properties?.subModels?.properties;
+    const recursiveRoot = gridSubModels?.items?.items;
+
+    expect(recursiveRoot).toMatchObject({
+      type: 'object',
+      properties: {
+        use: {
+          const: 'SchemaRegistryLoopRootModel',
+        },
+        subModels: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+    });
+    expect((recursiveRoot?.properties?.subModels as any)?.properties).toBeUndefined();
+  });
+
   it('should treat abstract models as non-queryable while allowing explicit internal concrete models', () => {
     const registry = new FlowSchemaRegistry();
 
@@ -1317,5 +1393,92 @@ describe('FlowSchemaRegistry', () => {
       ]),
     );
     expect(JSON.stringify(bundle)).not.toContain('RuntimeFieldModel');
+  });
+
+  it('should project required and minItems slot constraints into schema documents and bundle catalogs', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryRequiredChildModel',
+      title: 'Required child',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'required-child',
+        use: 'SchemaRegistryRequiredChildModel',
+      },
+    });
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryRequiredParentModel',
+      title: 'Required parent',
+      subModelSlots: {
+        page: {
+          type: 'object',
+          use: 'SchemaRegistryRequiredChildModel',
+          required: true,
+        },
+        tabs: {
+          type: 'array',
+          uses: ['SchemaRegistryRequiredChildModel'],
+          required: true,
+          minItems: 1,
+        },
+      },
+      skeleton: {
+        uid: 'required-parent',
+        use: 'SchemaRegistryRequiredParentModel',
+        subModels: {
+          page: {
+            uid: 'required-parent-page',
+            use: 'SchemaRegistryRequiredChildModel',
+          },
+          tabs: [
+            {
+              uid: 'required-parent-tab',
+              use: 'SchemaRegistryRequiredChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    const doc = registry.getModelDocument('SchemaRegistryRequiredParentModel');
+    const bundle = registry.getSchemaBundle(['SchemaRegistryRequiredParentModel']);
+    const bundleItem = bundle.items[0];
+
+    expect(doc.jsonSchema.properties?.subModels).toMatchObject({
+      type: 'object',
+      required: ['page', 'tabs'],
+      properties: {
+        page: {
+          type: 'object',
+          properties: {
+            use: {
+              const: 'SchemaRegistryRequiredChildModel',
+            },
+          },
+        },
+        tabs: {
+          type: 'array',
+          minItems: 1,
+        },
+      },
+    });
+    expect(bundleItem?.subModelCatalog).toMatchObject({
+      page: {
+        type: 'object',
+        required: true,
+        candidates: [expect.objectContaining({ use: 'SchemaRegistryRequiredChildModel' })],
+      },
+      tabs: {
+        type: 'array',
+        required: true,
+        minItems: 1,
+        candidates: [expect.objectContaining({ use: 'SchemaRegistryRequiredChildModel' })],
+      },
+    });
   });
 });

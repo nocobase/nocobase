@@ -20,14 +20,22 @@ export const openViewSchemaManifest: FlowActionSchemaManifest = {
     minimalExample: {
       mode: 'drawer',
       size: 'medium',
-      pageModelClass: 'RootPageModel',
+      pageModelClass: 'ChildPageModel',
     },
     commonPatterns: [
       {
-        title: 'Open a popup page in drawer mode',
+        title: 'Open a popup child page in drawer mode',
         snippet: {
           mode: 'drawer',
           size: 'medium',
+          pageModelClass: 'ChildPageModel',
+        },
+      },
+      {
+        title: 'Open a route or embedded root page',
+        snippet: {
+          mode: 'embed',
+          size: 'large',
           pageModelClass: 'RootPageModel',
         },
       },

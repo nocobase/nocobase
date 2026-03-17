@@ -167,31 +167,56 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.use).toBe('BlockGridModel');
   });
 
-  it('should allow ensuring an existing object child without repeating use', async () => {
-    await repository.insertModel({ uid: 'ensure-existing-use-parent', use: 'PageTabModel' } as any);
+  it('should allow ensure to create popup child pages with lazy nested tabs missing uid and grid', async () => {
+    await repository.insertModel({ uid: 'ensure-popup-parent', use: 'AddNewActionModel' } as any);
 
-    const created = await agent.resource('flowModels').ensure({
+    const res = await agent.resource('flowModels').ensure({
       values: {
-        parentId: 'ensure-existing-use-parent',
-        subKey: 'grid',
+        parentId: 'ensure-popup-parent',
+        subKey: 'page',
         subType: 'object',
-        use: 'BlockGridModel',
+        use: 'ChildPageModel',
+        async: true,
+        stepParams: {
+          pageSettings: {
+            general: {
+              displayTitle: false,
+              enableTabs: true,
+            },
+          },
+        },
+        subModels: {
+          tabs: [
+            {
+              use: 'ChildPageTabModel',
+              stepParams: {
+                pageTabSettings: {
+                  tab: {
+                    title: 'Details',
+                  },
+                },
+              },
+            },
+          ],
+        },
       },
     });
 
-    expect(created.status).toBe(200);
-
-    const ensuredAgain = await agent.resource('flowModels').ensure({
-      values: {
-        parentId: 'ensure-existing-use-parent',
-        subKey: 'grid',
-        subType: 'object',
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.use).toBe('ChildPageModel');
+    expect(res.body?.data?.uid).toBeTruthy();
+    expect(res.body?.data?.subModels?.tabs?.[0]).toMatchObject({
+      use: 'ChildPageTabModel',
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Details',
+          },
+        },
       },
     });
-
-    expect(ensuredAgain.status).toBe(200);
-    expect(ensuredAgain.body?.data?.uid).toBe(created.body?.data?.uid);
-    expect(ensuredAgain.body?.data?.use).toBe('BlockGridModel');
+    expect(res.body?.data?.subModels?.tabs?.[0]?.uid).toBeTruthy();
+    expect(res.body?.data?.subModels?.tabs?.[0]?.subModels?.grid).toBeUndefined();
   });
 
   it('should validate nested child schema with parent context during ensure', async () => {

@@ -135,6 +135,7 @@ export interface FlowSchemaRegistrySummary {
 export interface FlowSchemaBundleSlotCatalog {
   type: 'object' | 'array';
   required?: boolean;
+  minItems?: number;
   open?: boolean;
   candidates: FlowSchemaBundleNode[];
 }
@@ -185,6 +186,7 @@ export interface FlowSubModelSlotSchema {
   use?: string;
   uses?: string[];
   required?: boolean;
+  minItems?: number;
   dynamic?: boolean;
   schema?: FlowJsonSchema;
   fieldBindingContext?: string;

@@ -408,6 +408,10 @@ function normalizeSubModelSlots(
         normalizedSlot.required = slot.required;
       }
 
+      if (slot?.type === 'array' && typeof slot?.minItems === 'number' && Number.isFinite(slot.minItems)) {
+        normalizedSlot.minItems = Math.max(0, Math.trunc(slot.minItems));
+      }
+
       if (slot?.dynamic !== undefined) {
         normalizedSlot.dynamic = slot.dynamic;
       }
@@ -1560,7 +1564,7 @@ export class FlowSchemaRegistry {
   ): FlowSchemaBundleNode {
     const resolved = this.resolveModelSchema(use, contextChain);
     const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
-    const visitKey = this.createBundleVisitKey(use, contextChain);
+    const visitKey = this.createContextVisitKey(use, contextChain);
     const node: FlowSchemaBundleNode = {
       use,
       title: resolved?.title || use,
@@ -1571,7 +1575,7 @@ export class FlowSchemaRegistry {
       node.compatibility = _.cloneDeep(compatibility);
     }
 
-    if (visited.has(visitKey) || this.isBundleCycle(use, contextChain)) {
+    if (visited.has(visitKey) || this.isContextCycle(use, contextChain)) {
       return node;
     }
 
@@ -1646,6 +1650,10 @@ export class FlowSchemaRegistry {
         catalog.required = slot.required;
       }
 
+      if (slot.type === 'array' && typeof slot.minItems === 'number') {
+        catalog.minItems = slot.minItems;
+      }
+
       if (allowedUses.length === 0) {
         catalog.open = true;
       }
@@ -1656,11 +1664,11 @@ export class FlowSchemaRegistry {
     return entries.length ? Object.fromEntries(entries) : undefined;
   }
 
-  private createBundleVisitKey(use: string, contextChain: FlowSchemaContextEdge[]): string {
+  private createContextVisitKey(use: string, contextChain: FlowSchemaContextEdge[]): string {
     return `${use}::${stableStringify(contextChain)}`;
   }
 
-  private isBundleCycle(use: string, contextChain: FlowSchemaContextEdge[]): boolean {
+  private isContextCycle(use: string, contextChain: FlowSchemaContextEdge[]): boolean {
     if (!contextChain.length) {
       return false;
     }
@@ -1670,19 +1678,51 @@ export class FlowSchemaRegistry {
   }
 
   buildModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    return this.buildModelSnapshotSchemaInternal(use, contextChain, new Set<string>());
+  }
+
+  private buildModelSnapshotSchemaInternal(
+    use: string,
+    contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): FlowJsonSchema {
     const resolved = this.resolveModelSchema(use, contextChain);
-    return this.buildSnapshotSchemaFromResolved(use, resolved, contextChain);
+    const visitKey = this.createContextVisitKey(use, contextChain);
+
+    if (visited.has(visitKey) || this.isContextCycle(use, contextChain)) {
+      return this.buildTruncatedSnapshotSchema(use, resolved);
+    }
+
+    visited.add(visitKey);
+    try {
+      return this.buildSnapshotSchemaFromResolved(use, resolved, contextChain, visited);
+    } finally {
+      visited.delete(visitKey);
+    }
   }
 
   private buildSnapshotSchemaFromResolved(
     use: string | undefined,
     resolved: RegisteredModelSchema,
     contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
+  ): FlowJsonSchema {
+    const subModelsSchema = this.buildSubModelsSchemaFromSlots(
+      use || '',
+      resolved?.subModelSlots,
+      contextChain,
+      visited,
+    );
+    return this.buildSnapshotShellSchema(use, resolved, subModelsSchema);
+  }
+
+  private buildSnapshotShellSchema(
+    use: string | undefined,
+    resolved: RegisteredModelSchema,
+    subModelsSchema: FlowJsonSchema,
   ): FlowJsonSchema {
     const flowRegistrySchema = resolved?.flowRegistrySchema || { type: 'object', additionalProperties: true };
     const stepParamsSchema = resolved?.stepParamsSchema || { type: 'object', additionalProperties: true };
-    const subModelsSchema = this.buildSubModelsSchemaFromSlots(use || '', resolved?.subModelSlots, contextChain);
-
     return {
       $schema: JSON_SCHEMA_DRAFT_07,
       type: 'object',
@@ -1706,6 +1746,13 @@ export class FlowSchemaRegistry {
     };
   }
 
+  private buildTruncatedSnapshotSchema(use: string | undefined, resolved: RegisteredModelSchema): FlowJsonSchema {
+    return this.buildSnapshotShellSchema(use, resolved, {
+      type: 'object',
+      additionalProperties: true,
+    });
+  }
+
   buildStaticFlowRegistrySchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
     const resolved = this.resolveModelSchema(use, contextChain);
     if (resolved?.flowRegistrySchema) {
@@ -1726,31 +1773,38 @@ export class FlowSchemaRegistry {
 
   buildSubModelsSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
     const resolved = this.resolveModelSchema(use, contextChain);
-    return this.buildSubModelsSchemaFromSlots(use, resolved?.subModelSlots, contextChain);
+    return this.buildSubModelsSchemaFromSlots(use, resolved?.subModelSlots, contextChain, new Set<string>());
   }
 
   private buildSubModelsSchemaFromSlots(
     parentUse: string,
     slots: Record<string, FlowSubModelSlotSchema> | undefined,
     contextChain: FlowSchemaContextEdge[] = [],
+    visited: Set<string>,
   ): FlowJsonSchema {
     if (!slots || Object.keys(slots).length === 0) {
       return { type: 'object', additionalProperties: true };
     }
     const properties: Record<string, FlowJsonSchema> = {};
+    const required: string[] = [];
     for (const [slotKey, slot] of Object.entries(slots)) {
-      const itemSchema = this.buildSlotTargetSchema(parentUse, slotKey, slot, contextChain);
+      const itemSchema = this.buildSlotTargetSchema(parentUse, slotKey, slot, contextChain, visited);
       properties[slotKey] =
         slot.type === 'array'
           ? {
               type: 'array',
+              ...(typeof slot.minItems === 'number' ? { minItems: slot.minItems } : {}),
               items: itemSchema,
             }
           : itemSchema;
+      if (slot.required) {
+        required.push(slotKey);
+      }
     }
     return {
       type: 'object',
       properties,
+      ...(required.length ? { required } : {}),
       additionalProperties: true,
     };
   }
@@ -1926,6 +1980,7 @@ export class FlowSchemaRegistry {
     slotKey: string,
     slot: FlowSubModelSlotSchema,
     contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
   ): FlowJsonSchema {
     if (slot.fieldBindingContext) {
       const candidateUses = _.uniq(
@@ -1933,14 +1988,18 @@ export class FlowSchemaRegistry {
       );
       if (candidateUses.length > 0) {
         const candidateSchemas = candidateUses.map((use) =>
-          this.buildModelSnapshotSchema(use, [
-            ...contextChain,
-            {
-              parentUse,
-              slotKey,
-              childUse: use,
-            },
-          ]),
+          this.buildModelSnapshotSchemaInternal(
+            use,
+            [
+              ...contextChain,
+              {
+                parentUse,
+                slotKey,
+                childUse: use,
+              },
+            ],
+            visited,
+          ),
         );
 
         if (slot.schema) {
@@ -1956,14 +2015,18 @@ export class FlowSchemaRegistry {
     const allowedUses = this.resolveSlotAllowedUses(parentUse, slotKey, slot);
     if (allowedUses.length > 0) {
       const knownSchemas = allowedUses.map((use) =>
-        this.buildModelSnapshotSchema(use, [
-          ...contextChain,
-          {
-            parentUse,
-            slotKey,
-            childUse: use,
-          },
-        ]),
+        this.buildModelSnapshotSchemaInternal(
+          use,
+          [
+            ...contextChain,
+            {
+              parentUse,
+              slotKey,
+              childUse: use,
+            },
+          ],
+          visited,
+        ),
       );
       if (slot.schema) {
         return {
@@ -1978,7 +2041,7 @@ export class FlowSchemaRegistry {
       };
     }
     if (slot.childSchemaPatch || slot.descendantSchemaPatches?.length) {
-      return this.buildAnonymousSlotSnapshotSchema(parentUse, slotKey, slot, contextChain);
+      return this.buildAnonymousSlotSnapshotSchema(parentUse, slotKey, slot, contextChain, visited);
     }
     if (slot.schema && !slot.childSchemaPatch && !slot.descendantSchemaPatches?.length) {
       return _.cloneDeep(slot.schema);
@@ -1991,6 +2054,7 @@ export class FlowSchemaRegistry {
     slotKey: string,
     slot: FlowSubModelSlotSchema,
     contextChain: FlowSchemaContextEdge[],
+    visited: Set<string>,
   ): FlowJsonSchema {
     const anonymousResolved: RegisteredModelSchema = {
       use: '',
@@ -2013,14 +2077,19 @@ export class FlowSchemaRegistry {
       this.applyModelSchemaPatch(anonymousResolved, directPatch, 'third-party');
     }
 
-    return this.buildSnapshotSchemaFromResolved('', anonymousResolved, [
-      ...contextChain,
-      {
-        parentUse,
-        slotKey,
-        childUse: '',
-      },
-    ]);
+    return this.buildSnapshotSchemaFromResolved(
+      '',
+      anonymousResolved,
+      [
+        ...contextChain,
+        {
+          parentUse,
+          slotKey,
+          childUse: '',
+        },
+      ],
+      visited,
+    );
   }
 
   private collectNestedDocumentHints(
@@ -2028,8 +2097,8 @@ export class FlowSchemaRegistry {
     contextChain: FlowSchemaContextEdge[],
     visited: Set<string>,
   ): FlowDynamicHint[] {
-    const visitKey = `${use}::${stableStringify(contextChain)}`;
-    if (visited.has(visitKey)) {
+    const visitKey = this.createContextVisitKey(use, contextChain);
+    if (visited.has(visitKey) || this.isContextCycle(use, contextChain)) {
       return [];
     }
 

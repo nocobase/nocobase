@@ -12,7 +12,12 @@ import type {
   FlowFieldBindingManifest,
   FlowModelSchemaManifest,
 } from '@nocobase/flow-engine';
-import { createFieldModelSchemaManifest, createRuntimeFieldModelSlotSchema } from './shared';
+import {
+  createFieldModelSchemaManifest,
+  createFieldModelSkeleton,
+  createPopupBlockGrid,
+  createRuntimeFieldModelSlotSchema,
+} from './shared';
 
 function toTitle(use: string) {
   return use
@@ -35,12 +40,69 @@ function createFieldManifest(use: string, options: Partial<FlowModelSchemaManife
   };
 }
 
-const titleFieldRendererUses = new Set([
-  'RecordSelectFieldModel',
-  'RecordPickerFieldModel',
-  'CascadeSelectFieldModel',
-  'FilterFormRecordSelectFieldModel',
-]);
+function createAssociationDisplayFieldSkeleton(
+  use: string,
+  options: Partial<{
+    dataSourceKey: string;
+    sourceCollectionName: string;
+    sourceFieldPath: string;
+    targetCollectionName: string;
+    targetFieldPath: string;
+  }> = {},
+) {
+  const dataSourceKey = options.dataSourceKey || 'main';
+  const sourceCollectionName = options.sourceCollectionName || 'users';
+  const sourceFieldPath = options.sourceFieldPath || 'roles';
+  const targetCollectionName = options.targetCollectionName || 'roles';
+  const targetFieldPath = options.targetFieldPath || 'title';
+
+  return {
+    ...createFieldModelSkeleton(use, {
+      dataSourceKey,
+      collectionName: sourceCollectionName,
+      fieldPath: sourceFieldPath,
+    }),
+    subModels: {
+      field: createFieldModelSkeleton('DisplayTextFieldModel', {
+        dataSourceKey,
+        collectionName: targetCollectionName,
+        fieldPath: targetFieldPath,
+      }),
+    },
+  };
+}
+
+function createRecordPickerFieldManifest(): FlowModelSchemaManifest {
+  const skeleton = createAssociationDisplayFieldSkeleton('RecordPickerFieldModel');
+  return createFieldManifest('RecordPickerFieldModel', {
+    subModelSlots: {
+      field: createRuntimeFieldModelSlotSchema('display-field', 'Selected record label renderer.'),
+      'grid-block': {
+        type: 'object',
+        use: 'BlockGridModel',
+        description: 'Popup selector content grid.',
+      },
+    },
+    skeleton: {
+      ...skeleton,
+      subModels: {
+        ...skeleton.subModels,
+        'grid-block': createPopupBlockGrid({
+          prefix: 'record-picker-popup',
+        }),
+      },
+    },
+  });
+}
+
+function createRecordSelectFieldManifest(): FlowModelSchemaManifest {
+  return createFieldManifest('RecordSelectFieldModel', {
+    subModelSlots: {
+      field: createRuntimeFieldModelSlotSchema('display-field', 'Selected option label renderer.'),
+    },
+    skeleton: createAssociationDisplayFieldSkeleton('RecordSelectFieldModel'),
+  });
+}
 
 function associationBinding(
   context: string,
@@ -72,7 +134,7 @@ export const coreFieldBindingContextManifests: FlowFieldBindingContextManifest[]
   { name: 'filter-form-item-field', inherits: ['filter-field'] },
 ];
 
-export const coreFieldModelManifests: FlowModelSchemaManifest[] = [
+const coreFieldModelManifestEntries: Array<string | FlowModelSchemaManifest> = [
   'InputFieldModel',
   'NumberFieldModel',
   'PercentFieldModel',
@@ -91,8 +153,8 @@ export const coreFieldModelManifests: FlowModelSchemaManifest[] = [
   'RichTextFieldModel',
   'ColorFieldModel',
   'IconFieldModel',
-  'RecordSelectFieldModel',
-  'RecordPickerFieldModel',
+  createRecordSelectFieldManifest(),
+  createRecordPickerFieldManifest(),
   'CascadeSelectFieldModel',
   'CascadeSelectListFieldModel',
   'PopupSubTableFieldModel',
@@ -120,20 +182,10 @@ export const coreFieldModelManifests: FlowModelSchemaManifest[] = [
   'DateOnlyFilterFieldModel',
   'DateTimeNoTzFilterFieldModel',
   'DateTimeTzFilterFieldModel',
-].map((use) =>
-  createFieldManifest(
-    use,
-    titleFieldRendererUses.has(use)
-      ? {
-          subModelSlots: {
-            field: createRuntimeFieldModelSlotSchema(
-              'display-field',
-              'Title field renderer model is resolved from runtime display field bindings.',
-            ),
-          },
-        }
-      : undefined,
-  ),
+];
+
+export const coreFieldModelManifests: FlowModelSchemaManifest[] = coreFieldModelManifestEntries.map((manifest) =>
+  typeof manifest === 'string' ? createFieldManifest(manifest) : manifest,
 );
 
 export const coreFieldBindingManifests: FlowFieldBindingManifest[] = [

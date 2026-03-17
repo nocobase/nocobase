@@ -8,7 +8,47 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { createActionStepParamsSchema, popupActionSettingsStepParamsSchema } from '../shared';
+import {
+  createActionStepParamsSchema,
+  createCollectionResourceStepParams,
+  createPopupActionExample,
+  createPopupActionPattern,
+  createPopupPageSlotSchema,
+  popupActionAntiPatterns,
+  popupActionSettingsStepParamsSchema,
+} from '../shared';
+
+const detailsPopupBlock = {
+  uid: 'details-popup-block',
+  use: 'DetailsBlockModel',
+  stepParams: createCollectionResourceStepParams(
+    {},
+    {
+      detailsSettings: {
+        layout: {
+          layout: 'vertical',
+          colon: true,
+        },
+        dataScope: {
+          filter: {
+            logic: '$and',
+            items: [],
+          },
+        },
+        linkageRules: {
+          value: [],
+        },
+      },
+    },
+  ),
+  subModels: {
+    grid: {
+      uid: 'details-popup-grid',
+      use: 'DetailsGridModel',
+    },
+    actions: [],
+  },
+};
 
 export const viewActionModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'ViewActionModel',
@@ -17,7 +57,52 @@ export const viewActionModelInternalSchemaManifest: FlowModelSchemaManifest = {
   strict: true,
   exposure: 'internal',
   suggestedUses: ['TableActionsColumnModel', 'DetailsBlockModel'],
+  subModelSlots: {
+    page: createPopupPageSlotSchema(),
+  },
   stepParamsSchema: createActionStepParamsSchema({
     popupSettings: popupActionSettingsStepParamsSchema,
   }),
+  skeleton: createPopupActionExample({
+    uid: 'todo-view-action-uid',
+    use: 'ViewActionModel',
+    title: 'View',
+    prefix: 'todo-view-action',
+    tabTitle: 'Details',
+    items: [detailsPopupBlock],
+    openView: {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    },
+  }),
+  docs: {
+    minimalExample: createPopupActionExample({
+      uid: 'view-users',
+      use: 'ViewActionModel',
+      title: 'View',
+      prefix: 'view-users',
+      tabTitle: 'Details',
+      items: [detailsPopupBlock],
+      openView: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      },
+    }),
+    commonPatterns: [
+      createPopupActionPattern({
+        title: 'ViewActionModel + Details popup',
+        description: 'Render a record details block inside a ChildPageModel popup tree.',
+        use: 'ViewActionModel',
+        buttonTitle: 'View',
+        prefix: 'view-pattern',
+        tabTitle: 'Details',
+        items: [detailsPopupBlock],
+        openView: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+      }),
+    ],
+    antiPatterns: popupActionAntiPatterns,
+  },
 };

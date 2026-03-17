@@ -46,6 +46,8 @@ const coreDescendantModelUses = Array.from(
     'BasePageTabModel',
     'BlockGridModel',
     'BulkDeleteActionModel',
+    'ChildPageModel',
+    'ChildPageTabModel',
     'DeleteActionModel',
     'DetailsGridModel',
     'DetailsItemModel',

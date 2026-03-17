@@ -29,7 +29,7 @@ export const formSubmitActionModelInternalSchemaManifest: FlowModelSchemaManifes
               title: { type: 'string' },
               type: { type: 'string' },
               danger: { type: 'boolean' },
-              icon: { type: 'string' },
+              icon: { type: ['string', 'null'] },
             },
             additionalProperties: true,
           },

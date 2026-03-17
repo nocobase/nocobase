@@ -102,6 +102,8 @@ const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExam
   expect(ok, JSON.stringify(validate.errors)).toBe(true);
 };
 
+const clonePayload = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+
 SaveSchemaChildModel.define({
   label: 'Save schema child',
 });
@@ -948,6 +950,251 @@ describe('flow-model save', () => {
         }),
       ]),
     );
+  });
+
+  it('should expose popup action child page contracts in schema and bundle', async () => {
+    const popupActionUses = [
+      'PopupActionModel',
+      'AddNewActionModel',
+      'EditActionModel',
+      'ViewActionModel',
+      'PopupCollectionActionModel',
+    ];
+
+    for (const use of popupActionUses) {
+      const schema = await agent.get('/flowModels:schema').query({ use });
+      expect(schema.status).toBe(200);
+      expect(schema.body?.data?.use).toBe(use);
+      expect(schema.body?.data?.jsonSchema?.properties?.subModels?.properties?.page).toMatchObject({
+        type: 'object',
+        properties: {
+          use: {
+            const: 'ChildPageModel',
+          },
+        },
+      });
+      expect(
+        schema.body?.data?.jsonSchema?.properties?.stepParams?.properties?.popupSettings?.properties?.openView,
+      ).toMatchObject({
+        type: 'object',
+        properties: {
+          pageModelClass: {
+            type: 'string',
+            enum: ['ChildPageModel', 'RootPageModel'],
+          },
+        },
+      });
+      expect(schema.body?.data?.minimalExample?.subModels?.page?.use).toBe('ChildPageModel');
+      expect(schema.body?.data?.minimalExample?.stepParams?.popupSettings?.openView?.pageModelClass).toBe(
+        'ChildPageModel',
+      );
+    }
+
+    const childPage = await agent.get('/flowModels:schema').query({
+      use: 'ChildPageModel',
+    });
+    expect(childPage.status).toBe(200);
+    expect(childPage.body?.data?.jsonSchema?.properties?.subModels).toMatchObject({
+      required: ['tabs'],
+      properties: {
+        tabs: {
+          type: 'array',
+          minItems: 1,
+        },
+      },
+    });
+
+    const childPageTab = await agent.get('/flowModels:schema').query({
+      use: 'ChildPageTabModel',
+    });
+    expect(childPageTab.status).toBe(200);
+    expect(childPageTab.body?.data?.jsonSchema?.properties?.subModels).toMatchObject({
+      required: ['grid'],
+      properties: {
+        grid: {
+          type: 'object',
+          properties: {
+            use: {
+              const: 'BlockGridModel',
+            },
+          },
+        },
+      },
+    });
+
+    const batch = await agent.post('/flowModels:schemas').send({
+      uses: [...popupActionUses, 'ChildPageModel', 'ChildPageTabModel'],
+    });
+    expect(batch.status).toBe(200);
+    expect((batch.body?.data || []).map((item) => item.use)).toEqual(
+      expect.arrayContaining([...popupActionUses, 'ChildPageModel', 'ChildPageTabModel']),
+    );
+
+    const bundle = await agent.post('/flowModels:schemaBundle').send({
+      uses: [...popupActionUses, 'ChildPageModel', 'ChildPageTabModel'],
+    });
+    expect(bundle.status).toBe(200);
+    expect((bundle.body?.data?.items || []).map((item) => item.use)).toEqual(
+      expect.arrayContaining([...popupActionUses, 'ChildPageModel', 'ChildPageTabModel']),
+    );
+
+    const addNewItem = (bundle.body?.data?.items || []).find((item) => item.use === 'AddNewActionModel');
+    expect(addNewItem?.subModelCatalog).toMatchObject({
+      page: {
+        type: 'object',
+        candidates: [
+          expect.objectContaining({
+            use: 'ChildPageModel',
+            subModelCatalog: {
+              tabs: {
+                type: 'array',
+                required: true,
+                minItems: 1,
+                candidates: [
+                  expect.objectContaining({
+                    use: 'ChildPageTabModel',
+                    subModelCatalog: {
+                      grid: {
+                        type: 'object',
+                        required: true,
+                        candidates: [expect.objectContaining({ use: 'BlockGridModel' })],
+                      },
+                    },
+                  }),
+                ],
+              },
+            },
+          }),
+        ],
+      },
+    });
+  });
+
+  it('should save popup action trees and validate popup child page contracts', async () => {
+    const popupActionUses = ['AddNewActionModel', 'EditActionModel', 'ViewActionModel'];
+    const popupDocs = Object.fromEntries(
+      await Promise.all(
+        popupActionUses.map(async (use) => {
+          const res = await agent.get('/flowModels:schema').query({ use });
+          expect(res.status).toBe(200);
+          return [use, res.body?.data] as const;
+        }),
+      ),
+    );
+
+    for (const use of popupActionUses) {
+      const payload = clonePayload(popupDocs[use].minimalExample);
+      payload.uid = `save-${use.toLowerCase()}`;
+      const saveRes = await agent.resource('flowModels').save({
+        values: payload,
+      });
+      expect(saveRes.status).toBe(200);
+      expect(saveRes.body?.data?.use).toBe(use);
+    }
+
+    const legacyPopup = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-legacy-popup-action',
+        use: 'PopupActionModel',
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Popup',
+              type: 'default',
+            },
+          },
+          popupSettings: {
+            openView: {
+              mode: 'drawer',
+              size: 'medium',
+              pageModelClass: 'ChildPageModel',
+            },
+          },
+        },
+      },
+    });
+    expect(legacyPopup.status).toBe(200);
+
+    const expectInvalidPopupPayload = async (values: any, matcher: Record<string, any>) => {
+      const res = await agent.resource('flowModels').save({ values });
+      expect(res.status).toBe(400);
+      expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+      expect(res.body?.errors?.[0]?.details?.errors).toEqual(
+        expect.arrayContaining([expect.objectContaining(matcher)]),
+      );
+    };
+
+    const addNewBase = clonePayload(popupDocs.AddNewActionModel.minimalExample);
+
+    const wrongPageUse = clonePayload(addNewBase);
+    wrongPageUse.uid = 'save-popup-invalid-page-use';
+    wrongPageUse.subModels.page.use = 'PageModel';
+    await expectInvalidPopupPayload(wrongPageUse, {
+      jsonPointer: '#/subModels/page/use',
+      modelUse: 'AddNewActionModel',
+      section: 'subModels',
+      keyword: 'invalid-use',
+    });
+
+    const missingTabs = clonePayload(addNewBase);
+    missingTabs.uid = 'save-popup-missing-tabs';
+    delete missingTabs.subModels.page.subModels.tabs;
+    await expectInvalidPopupPayload(missingTabs, {
+      jsonPointer: '#/subModels/page/subModels/tabs',
+      modelUse: 'ChildPageModel',
+      section: 'subModels',
+      keyword: 'required',
+    });
+
+    const emptyTabs = clonePayload(addNewBase);
+    emptyTabs.uid = 'save-popup-empty-tabs';
+    emptyTabs.subModels.page.subModels.tabs = [];
+    await expectInvalidPopupPayload(emptyTabs, {
+      jsonPointer: '#/subModels/page/subModels/tabs',
+      modelUse: 'ChildPageModel',
+      section: 'subModels',
+      keyword: 'minItems',
+    });
+
+    const wrongTabUse = clonePayload(addNewBase);
+    wrongTabUse.uid = 'save-popup-invalid-tab-use';
+    wrongTabUse.subModels.page.subModels.tabs[0].use = 'PageTabModel';
+    await expectInvalidPopupPayload(wrongTabUse, {
+      jsonPointer: '#/subModels/page/subModels/tabs/0/use',
+      modelUse: 'ChildPageModel',
+      section: 'subModels',
+      keyword: 'invalid-use',
+    });
+
+    const missingGrid = clonePayload(addNewBase);
+    missingGrid.uid = 'save-popup-missing-grid';
+    delete missingGrid.subModels.page.subModels.tabs[0].subModels.grid;
+    await expectInvalidPopupPayload(missingGrid, {
+      jsonPointer: '#/subModels/page/subModels/tabs/0/subModels/grid',
+      modelUse: 'ChildPageTabModel',
+      section: 'subModels',
+      keyword: 'required',
+    });
+
+    const wrongGridUse = clonePayload(addNewBase);
+    wrongGridUse.uid = 'save-popup-invalid-grid-use';
+    wrongGridUse.subModels.page.subModels.tabs[0].subModels.grid.use = 'FormGridModel';
+    await expectInvalidPopupPayload(wrongGridUse, {
+      jsonPointer: '#/subModels/page/subModels/tabs/0/subModels/grid/use',
+      modelUse: 'ChildPageTabModel',
+      section: 'subModels',
+      keyword: 'invalid-use',
+    });
+
+    const invalidPageModelClass = clonePayload(addNewBase);
+    invalidPageModelClass.uid = 'save-popup-invalid-page-model-class';
+    invalidPageModelClass.stepParams.popupSettings.openView.pageModelClass = 'UnknownPageModel';
+    await expectInvalidPopupPayload(invalidPageModelClass, {
+      jsonPointer: '#/stepParams/popupSettings/openView/pageModelClass',
+      modelUse: 'AddNewActionModel',
+      section: 'stepParams',
+      keyword: 'enum',
+    });
   });
 
   it('should expose real field model candidates and validate runtime field slots against field metadata', async () => {

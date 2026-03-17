@@ -150,7 +150,10 @@ export const openViewParamsSchema: FlowJsonSchema = {
       type: 'string',
       enum: ['small', 'medium', 'large'],
     },
-    pageModelClass: { type: 'string' },
+    pageModelClass: {
+      type: 'string',
+      enum: ['ChildPageModel', 'RootPageModel'],
+    },
     filterByTk: { type: ['string', 'number', 'object'] as any },
     sourceId: { type: ['string', 'number'] as any },
     dataSourceKey: { type: 'string' },
@@ -510,7 +513,7 @@ export const actionButtonGeneralStepParamsSchema: FlowJsonSchema = {
       enum: ['default', 'primary', 'dashed', 'link', 'text'],
     },
     danger: { type: 'boolean' },
-    icon: { type: 'string' },
+    icon: { type: ['string', 'null'] },
     color: { type: 'string' },
   },
   additionalProperties: true,
@@ -727,7 +730,7 @@ export const pageTabSettingsStepParamsSchema: FlowJsonSchema = {
           properties: {
             title: { type: 'string' },
             documentTitle: { type: 'string' },
-            icon: { type: 'string' },
+            icon: { type: ['string', 'null'] },
           },
           additionalProperties: false,
         },
@@ -737,6 +740,194 @@ export const pageTabSettingsStepParamsSchema: FlowJsonSchema = {
   },
   additionalProperties: true,
 };
+
+export const childPageSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    pageSettings: {
+      type: 'object',
+      properties: {
+        general: {
+          type: 'object',
+          properties: {
+            title: { type: 'string' },
+            documentTitle: { type: 'string' },
+            displayTitle: { type: 'boolean' },
+            enableTabs: { type: 'boolean' },
+          },
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export function createPopupActionOpenViewParams(
+  overrides: Partial<{
+    uid: string;
+    mode: 'drawer' | 'dialog' | 'embed';
+    size: 'small' | 'medium' | 'large';
+    pageModelClass: 'ChildPageModel' | 'RootPageModel';
+    filterByTk: string | number;
+    sourceId: string | number;
+    dataSourceKey: string;
+    collectionName: string;
+    associationName: string;
+    preventClose: boolean;
+    navigation: boolean;
+    tabUid: string;
+  }> = {},
+) {
+  return {
+    mode: 'drawer',
+    size: 'medium',
+    pageModelClass: 'ChildPageModel' as const,
+    ...overrides,
+  };
+}
+
+export function createPopupBlockGrid(options: { prefix: string; items?: any[] }) {
+  return {
+    uid: `${options.prefix}-grid`,
+    use: 'BlockGridModel',
+    subModels: {
+      items: options.items || [],
+    },
+  };
+}
+
+export function createPopupChildPageTree(options: { prefix: string; tabTitle?: string; items?: any[] }) {
+  return {
+    uid: `${options.prefix}-page`,
+    use: 'ChildPageModel',
+    stepParams: {
+      pageSettings: {
+        general: {
+          displayTitle: false,
+          enableTabs: true,
+        },
+      },
+    },
+    subModels: {
+      tabs: [
+        {
+          uid: `${options.prefix}-tab`,
+          use: 'ChildPageTabModel',
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: options.tabTitle || 'Popup',
+              },
+            },
+          },
+          subModels: {
+            grid: createPopupBlockGrid({
+              prefix: `${options.prefix}-tab`,
+              items: options.items,
+            }),
+          },
+        },
+      ],
+    },
+  };
+}
+
+export function createPopupPageSlotSchema(): FlowSubModelSlotSchema {
+  return {
+    type: 'object',
+    use: 'ChildPageModel',
+    description: 'Popup child page.',
+    childSchemaPatch: {
+      subModelSlots: {
+        tabs: {
+          type: 'array',
+          uses: ['ChildPageTabModel'],
+          required: true,
+          minItems: 1,
+          description: 'Popup child page tabs.',
+        },
+      },
+    },
+  };
+}
+
+export const popupActionAntiPatterns = [
+  {
+    title: 'Do not treat openView parameters alone as a complete popup',
+    description:
+      'A usable popup action should provide a popup child page tree instead of relying only on runtime defaults.',
+  },
+  {
+    title: 'Do not use arbitrary pageModelClass values',
+    description: 'pageModelClass is restricted to ChildPageModel or RootPageModel.',
+  },
+];
+
+export function createPopupActionStepParams(title: string, overrides: Record<string, any> = {}) {
+  return {
+    buttonSettings: {
+      general: {
+        title,
+        type: 'default',
+      },
+    },
+    popupSettings: {
+      openView: createPopupActionOpenViewParams(overrides),
+    },
+  };
+}
+
+export function createPopupActionExample(options: {
+  uid: string;
+  use: string;
+  title: string;
+  prefix: string;
+  tabTitle?: string;
+  items?: any[];
+  openView?: Record<string, any>;
+}) {
+  return {
+    uid: options.uid,
+    use: options.use,
+    stepParams: createPopupActionStepParams(options.title, options.openView),
+    subModels: {
+      page: createPopupChildPageTree({
+        prefix: options.prefix,
+        tabTitle: options.tabTitle,
+        items: options.items,
+      }),
+    },
+  };
+}
+
+export function createPopupActionPattern(options: {
+  title: string;
+  description?: string;
+  use: string;
+  buttonTitle: string;
+  prefix: string;
+  tabTitle?: string;
+  items?: any[];
+  openView?: Record<string, any>;
+}) {
+  return {
+    title: options.title,
+    description: options.description,
+    snippet: {
+      use: options.use,
+      stepParams: createPopupActionStepParams(options.buttonTitle, options.openView),
+      subModels: {
+        page: createPopupChildPageTree({
+          prefix: options.prefix,
+          tabTitle: options.tabTitle,
+          items: options.items,
+        }),
+      },
+    },
+  };
+}
 
 export const detailItemStepParamsSchema: FlowJsonSchema = {
   type: 'object',

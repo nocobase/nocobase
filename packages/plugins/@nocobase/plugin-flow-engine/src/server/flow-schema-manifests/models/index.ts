@@ -17,6 +17,8 @@ import { assignFormModelInternalSchemaManifest } from './AssignFormModel';
 import { basePageTabModelInternalSchemaManifest } from './BasePageTabModel';
 import { blockGridModelInternalSchemaManifest } from './BlockGridModel';
 import { bulkDeleteActionModelInternalSchemaManifest } from './BulkDeleteActionModel';
+import { childPageModelInternalSchemaManifest } from './ChildPageModel';
+import { childPageTabModelInternalSchemaManifest } from './ChildPageTabModel';
 import { createFormModelSchemaManifest } from './CreateFormModel';
 import { deleteActionModelInternalSchemaManifest } from './DeleteActionModel';
 import { detailsBlockModelSchemaManifest } from './DetailsBlockModel';
@@ -71,6 +73,8 @@ export {
   basePageTabModelInternalSchemaManifest,
   blockGridModelInternalSchemaManifest,
   bulkDeleteActionModelInternalSchemaManifest,
+  childPageModelInternalSchemaManifest,
+  childPageTabModelInternalSchemaManifest,
   createFormModelSchemaManifest,
   deleteActionModelInternalSchemaManifest,
   detailsBlockModelSchemaManifest,
@@ -155,6 +159,8 @@ export const flowSchemaModelManifests: FlowModelSchemaManifest[] = [
   rootPageTabModelInternalSchemaManifest,
   rootPageModelSchemaManifest,
   blockGridModelInternalSchemaManifest,
+  childPageModelInternalSchemaManifest,
+  childPageTabModelInternalSchemaManifest,
   tableCustomColumnModelInternalSchemaManifest,
   tableColumnModelInternalSchemaManifest,
   tableActionsColumnModelInternalSchemaManifest,
