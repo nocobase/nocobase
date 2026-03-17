@@ -15,8 +15,18 @@ import _ from 'lodash';
 
 export class DefaultSkillsManager implements SkillsManager {
   private readonly skills = new Registry<SkillsEntry>();
+  private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager };
+  private mode = 'memory';
 
-  constructor(private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager }) {}
+  constructor(private readonly app: any) {
+    this.provideCollectionManager = () => app.mainDataSource;
+    this.app.on('afterStart', async () => {
+      if (this.mode === 'memory') {
+        await this.persistence();
+        this.mode = 'database';
+      }
+    });
+  }
 
   getSkills(name: string[]): Promise<SkillsEntry[]>;
   getSkills(name: string): Promise<SkillsEntry>;
@@ -42,11 +52,10 @@ export class DefaultSkillsManager implements SkillsManager {
   }
 
   async registerSkills(options: SkillsOptions): Promise<void> {
-    if (await this.isAISkillsCollectionSync()) {
-      return this.registerSkillsInDatabase(options);
-    } else {
+    if (this.mode === 'memory') {
       return this.registerSkillsInMemory(options);
     }
+    return this.registerSkillsInDatabase(options);
   }
 
   async persistence(): Promise<void> {
@@ -102,10 +111,6 @@ export class DefaultSkillsManager implements SkillsManager {
         );
       }
     });
-  }
-
-  private async isAISkillsCollectionSync() {
-    return this.aiSkillsCollection?.existsInDb() ?? Promise.resolve(false);
   }
 
   private get aiSkillsCollection() {
