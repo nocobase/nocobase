@@ -21,7 +21,7 @@ export class AIManager {
   constructor(protected readonly app: any) {
     this.documentManager = new DocumentManager();
     this.toolsManager = new DefaultToolsManager();
-    this.skillsManager = new DefaultSkillsManager(() => app.mainDataSource);
+    this.skillsManager = new DefaultSkillsManager(app);
     this.employeeManager = new DefaultAIEmployeeManager(app);
   }
 }
