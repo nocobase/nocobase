@@ -8,7 +8,7 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { genericModelNodeSchema } from '../shared';
+import { createGridLayoutDocs, createGridLayoutStepParamsSchema, genericModelNodeSchema } from '../shared';
 
 export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'AssignFormGridModel',
@@ -17,6 +17,7 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
   strict: true,
   exposure: 'internal',
   suggestedUses: ['UpdateRecordActionModel'],
+  stepParamsSchema: createGridLayoutStepParamsSchema(),
   subModelSlots: {
     items: {
       type: 'array',
@@ -33,7 +34,10 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
       items: [],
     },
   },
-  docs: {
+  docs: createGridLayoutDocs({
+    use: 'AssignFormGridModel',
+    itemUses: ['AssignFormItemModel'],
+    prefix: 'assign-form-grid',
     dynamicHints: [
       {
         kind: 'dynamic-children',
@@ -50,5 +54,5 @@ export const assignFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
         },
       },
     ],
-  },
+  }),
 };

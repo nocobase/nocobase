@@ -8,7 +8,13 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { createFormGridDynamicHints, formGridItemUses, genericModelNodeSchema } from '../shared';
+import {
+  createFormGridDynamicHints,
+  createGridLayoutDocs,
+  createGridLayoutStepParamsSchema,
+  formGridItemUses,
+  genericModelNodeSchema,
+} from '../shared';
 
 export const formGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'FormGridModel',
@@ -17,6 +23,7 @@ export const formGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   strict: true,
   exposure: 'internal',
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
+  stepParamsSchema: createGridLayoutStepParamsSchema(),
   subModelSlots: {
     items: {
       type: 'array',
@@ -33,7 +40,10 @@ export const formGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
       items: [],
     },
   },
-  docs: {
+  docs: createGridLayoutDocs({
+    use: 'FormGridModel',
+    itemUses: formGridItemUses,
+    prefix: 'form-grid',
     dynamicHints: createFormGridDynamicHints(),
-  },
+  }),
 };

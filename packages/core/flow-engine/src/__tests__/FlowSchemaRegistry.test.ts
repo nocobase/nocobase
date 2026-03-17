@@ -19,6 +19,51 @@ import { describe, expect, it } from 'vitest';
 import { FlowSchemaRegistry } from '../FlowSchemaRegistry';
 import { FlowModel } from '../models';
 
+const expectGridLayoutSchemaDocument = (document: any) => {
+  expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
+    properties: {
+      gridSettings: {
+        type: 'object',
+        properties: {
+          grid: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              rows: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+              sizes: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'number',
+                  },
+                },
+              },
+              rowOrder: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
 describe('FlowSchemaRegistry', () => {
   it('should infer JSON schema from static uiSchema', () => {
     const registry = new FlowSchemaRegistry();
@@ -287,6 +332,63 @@ describe('FlowSchemaRegistry', () => {
         }),
       ]),
     );
+  });
+
+  it('should preserve nested grid layout step params schema in model documents', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelManifest({
+      use: 'SchemaRegistryGridModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          gridSettings: {
+            type: 'object',
+            properties: {
+              grid: {
+                type: 'object',
+                properties: {
+                  rows: {
+                    type: 'object',
+                    additionalProperties: {
+                      type: 'array',
+                      items: {
+                        type: 'array',
+                        items: {
+                          type: 'string',
+                        },
+                      },
+                    },
+                  },
+                  sizes: {
+                    type: 'object',
+                    additionalProperties: {
+                      type: 'array',
+                      items: {
+                        type: 'number',
+                      },
+                    },
+                  },
+                  rowOrder: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                },
+                additionalProperties: false,
+              },
+            },
+            additionalProperties: true,
+          },
+        },
+        additionalProperties: true,
+      },
+    });
+
+    const doc = registry.getModelDocument('SchemaRegistryGridModel');
+
+    expectGridLayoutSchemaDocument(doc);
   });
 
   it('should build bundle-friendly documents from pure data manifests', () => {

@@ -16,6 +16,51 @@ import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
 
+const expectGridLayoutSchemaDocument = (document: any) => {
+  expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
+    properties: {
+      gridSettings: {
+        type: 'object',
+        properties: {
+          grid: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              rows: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+              sizes: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'number',
+                  },
+                },
+              },
+              rowOrder: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
 SaveSchemaChildModel.define({
   label: 'Save schema child',
 });
@@ -269,6 +314,55 @@ describe('flow-model save', () => {
 
     expect(emptyBatch.status).toBe(200);
     expect(emptyBatch.body?.data).toEqual([]);
+
+    const gridUses = [
+      'BlockGridModel',
+      'FormGridModel',
+      'DetailsGridModel',
+      'FilterFormGridModel',
+      'AssignFormGridModel',
+    ];
+
+    for (const use of gridUses) {
+      const gridDoc = await agent.get('/flowModels:schema').query({ use });
+      expect(gridDoc.status).toBe(200);
+      expect(gridDoc.body?.data?.use).toBe(use);
+      expectGridLayoutSchemaDocument(gridDoc.body?.data);
+    }
+
+    const blockGridDoc = await agent.get('/flowModels:schema').query({
+      use: 'BlockGridModel',
+    });
+    expect(blockGridDoc.status).toBe(200);
+    expect(blockGridDoc.body?.data?.commonPatterns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Two rows with 2 + 3 columns',
+          snippet: expect.objectContaining({
+            stepParams: {
+              gridSettings: {
+                grid: {
+                  sizes: {
+                    rowTop: [12, 12],
+                    rowBottom: [8, 8, 8],
+                  },
+                  rowOrder: ['rowTop', 'rowBottom'],
+                },
+              },
+            },
+          }),
+        }),
+      ]),
+    );
+
+    const gridBatch = await agent.post('/flowModels:schemas').send({
+      uses: gridUses,
+    });
+    expect(gridBatch.status).toBe(200);
+    expect((gridBatch.body?.data || []).map((item) => item.use).sort()).toEqual([...gridUses].sort());
+    for (const item of gridBatch.body?.data || []) {
+      expectGridLayoutSchemaDocument(item);
+    }
   });
 
   it('should expose builtin official schema bundle for prompt bootstrapping', async () => {

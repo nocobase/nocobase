@@ -163,6 +163,174 @@ export const openViewParamsSchema: FlowJsonSchema = {
   additionalProperties: true,
 };
 
+export const gridRowsSchema: FlowJsonSchema = {
+  type: 'object',
+  description:
+    'Map of row ids to column definitions. Each row value is a string[][] where every inner array lists the child model UIDs rendered inside one column.',
+  additionalProperties: {
+    type: 'array',
+    items: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
+    },
+  },
+};
+
+export const gridSizesSchema: FlowJsonSchema = {
+  type: 'object',
+  description:
+    'Map of row ids to column widths. Each width array uses the 24-column grid system, for example [12, 12] or [8, 8, 8].',
+  additionalProperties: {
+    type: 'array',
+    items: {
+      type: 'number',
+    },
+  },
+};
+
+export const gridRowOrderSchema: FlowJsonSchema = {
+  type: 'array',
+  description: 'Optional explicit row order. When omitted, the persisted row key order is used.',
+  items: {
+    type: 'string',
+  },
+};
+
+export function createGridLayoutStepParamsSchema(): FlowJsonSchema {
+  return {
+    type: 'object',
+    properties: {
+      gridSettings: {
+        type: 'object',
+        properties: {
+          grid: {
+            type: 'object',
+            description: 'Persisted multi-row, multi-column grid layout.',
+            properties: {
+              rows: gridRowsSchema,
+              sizes: gridSizesSchema,
+              rowOrder: gridRowOrderSchema,
+            },
+            additionalProperties: false,
+          },
+        },
+        additionalProperties: true,
+      },
+    },
+    additionalProperties: true,
+  };
+}
+
+function createGridLayoutStepParamsValue(
+  rows: Record<string, string[][]>,
+  sizes: Record<string, number[]>,
+  rowOrder: string[],
+) {
+  return {
+    gridSettings: {
+      grid: {
+        rows,
+        sizes,
+        rowOrder,
+      },
+    },
+  };
+}
+
+function createGridLayoutItems(itemUses: string[], prefix: string, count: number) {
+  const uses = itemUses.length > 0 ? itemUses : ['FlowModel'];
+  return Array.from({ length: count }, (_, index) => ({
+    uid: `${prefix}-item-${index + 1}`,
+    use: uses[index % uses.length],
+  }));
+}
+
+export function createGridLayoutDocs(options: {
+  use: string;
+  itemUses: string[];
+  prefix: string;
+  dynamicHints?: FlowDynamicHint[];
+}): FlowModelSchemaManifest['docs'] {
+  const minimalItems = createGridLayoutItems(options.itemUses, `${options.prefix}-minimal`, 1);
+  const standardItems = createGridLayoutItems(options.itemUses, `${options.prefix}-standard`, 5);
+  const customSizeItems = createGridLayoutItems(options.itemUses, `${options.prefix}-sizes`, 5);
+
+  const minimalRows = {
+    rowMain: [[minimalItems[0].uid]],
+  };
+  const standardRows = {
+    rowTop: [[standardItems[0].uid], [standardItems[1].uid]],
+    rowBottom: [[standardItems[2].uid], [standardItems[3].uid], [standardItems[4].uid]],
+  };
+  const customSizeRows = {
+    rowTop: [[customSizeItems[0].uid], [customSizeItems[1].uid]],
+    rowBottom: [[customSizeItems[2].uid], [customSizeItems[3].uid], [customSizeItems[4].uid]],
+  };
+
+  return {
+    minimalExample: {
+      uid: `${options.prefix}-grid`,
+      use: options.use,
+      stepParams: createGridLayoutStepParamsValue(minimalRows, { rowMain: [24] }, ['rowMain']),
+      subModels: {
+        items: minimalItems,
+      },
+    },
+    commonPatterns: [
+      {
+        title: 'Single row with one column',
+        description: 'Use one row with a single 24-column slot when the grid only needs one child model.',
+        snippet: {
+          use: options.use,
+          stepParams: createGridLayoutStepParamsValue(minimalRows, { rowMain: [24] }, ['rowMain']),
+          subModels: {
+            items: minimalItems,
+          },
+        },
+      },
+      {
+        title: 'Two rows with 2 + 3 columns',
+        description: 'The first row has 2 columns and the second row has 3 columns with equal widths.',
+        snippet: {
+          use: options.use,
+          stepParams: createGridLayoutStepParamsValue(
+            standardRows,
+            {
+              rowTop: [12, 12],
+              rowBottom: [8, 8, 8],
+            },
+            ['rowTop', 'rowBottom'],
+          ),
+          subModels: {
+            items: standardItems,
+          },
+        },
+      },
+      {
+        title: 'Two rows with custom column sizes',
+        description: 'Use sizes to express non-equal column widths while keeping the rows definition stable.',
+        snippet: {
+          use: options.use,
+          stepParams: createGridLayoutStepParamsValue(
+            customSizeRows,
+            {
+              rowTop: [8, 16],
+              rowBottom: [6, 10, 8],
+            },
+            ['rowTop', 'rowBottom'],
+          ),
+          subModels: {
+            items: customSizeItems,
+          },
+        },
+      },
+    ],
+    dynamicHints: options.dynamicHints || [],
+  };
+}
+
 export const publicBlockRootUses = [
   'CreateFormModel',
   'DetailsBlockModel',

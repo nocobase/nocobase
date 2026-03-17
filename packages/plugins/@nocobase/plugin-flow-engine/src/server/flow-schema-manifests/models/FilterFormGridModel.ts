@@ -8,7 +8,12 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { filterFormGridItemUses, genericModelNodeSchema } from '../shared';
+import {
+  createGridLayoutDocs,
+  createGridLayoutStepParamsSchema,
+  filterFormGridItemUses,
+  genericModelNodeSchema,
+} from '../shared';
 
 export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'FilterFormGridModel',
@@ -17,6 +22,7 @@ export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
   strict: true,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
+  stepParamsSchema: createGridLayoutStepParamsSchema(),
   subModelSlots: {
     items: {
       type: 'array',
@@ -33,7 +39,10 @@ export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
       items: [],
     },
   },
-  docs: {
+  docs: createGridLayoutDocs({
+    use: 'FilterFormGridModel',
+    itemUses: filterFormGridItemUses,
+    prefix: 'filter-form-grid',
     dynamicHints: [
       {
         kind: 'dynamic-children',
@@ -50,5 +59,5 @@ export const filterFormGridModelInternalSchemaManifest: FlowModelSchemaManifest 
         },
       },
     ],
-  },
+  }),
 };

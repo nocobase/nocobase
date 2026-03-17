@@ -8,7 +8,12 @@
  */
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
-import { coreBlockGridItemUses, genericModelNodeSchema } from '../shared';
+import {
+  coreBlockGridItemUses,
+  createGridLayoutDocs,
+  createGridLayoutStepParamsSchema,
+  genericModelNodeSchema,
+} from '../shared';
 
 export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'BlockGridModel',
@@ -17,6 +22,7 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
   strict: true,
   exposure: 'internal',
   suggestedUses: ['PageModel', 'RootPageModel'],
+  stepParamsSchema: createGridLayoutStepParamsSchema(),
   subModelSlots: {
     items: {
       type: 'array',
@@ -33,7 +39,10 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
       items: [],
     },
   },
-  docs: {
+  docs: createGridLayoutDocs({
+    use: 'BlockGridModel',
+    itemUses: coreBlockGridItemUses,
+    prefix: 'block-grid',
     dynamicHints: [
       {
         kind: 'dynamic-children',
@@ -49,5 +58,5 @@ export const blockGridModelInternalSchemaManifest: FlowModelSchemaManifest = {
         },
       },
     ],
-  },
+  }),
 };

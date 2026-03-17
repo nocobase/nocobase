@@ -351,6 +351,51 @@ const officialPublicBlockUses = [
 
 const publicTreeRootBlockUses = officialPublicBlockUses;
 
+const expectGridLayoutSchemaDocument = (document: any) => {
+  expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
+    properties: {
+      gridSettings: {
+        type: 'object',
+        properties: {
+          grid: {
+            type: 'object',
+            additionalProperties: false,
+            properties: {
+              rows: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'array',
+                    items: {
+                      type: 'string',
+                    },
+                  },
+                },
+              },
+              sizes: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'array',
+                  items: {
+                    type: 'number',
+                  },
+                },
+              },
+              rowOrder: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+};
+
 describe('flow schema manifest provider', () => {
   let app: MockServer;
   let agent: any;
@@ -697,6 +742,26 @@ describe('flow schema manifest provider', () => {
         use: 'JSBlockModel',
       });
       expect(jsBlock.status).toBe(200);
+
+      const bulkEditGrid = await officialAgent.get('/flowModels:schema').query({
+        use: 'BulkEditBlockGridModel',
+      });
+      expect(bulkEditGrid.status).toBe(200);
+      expectGridLayoutSchemaDocument(bulkEditGrid.body?.data);
+      expect(bulkEditGrid.body?.data?.commonPatterns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Two rows with 2 + 3 columns',
+          }),
+        ]),
+      );
+
+      const bulkEditGridBatch = await officialAgent.post('/flowModels:schemas').send({
+        uses: ['BulkEditBlockGridModel'],
+      });
+      expect(bulkEditGridBatch.status).toBe(200);
+      expect((bulkEditGridBatch.body?.data || []).map((item) => item.use)).toEqual(['BulkEditBlockGridModel']);
+      expectGridLayoutSchemaDocument(bulkEditGridBatch.body?.data?.[0]);
 
       const actionPanel = await officialAgent.get('/flowModels:schema').query({
         use: 'ActionPanelBlockModel',
