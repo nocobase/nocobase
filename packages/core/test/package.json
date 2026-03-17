@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "2.0.17",
+  "version": "2.0.18",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",

@@ -132,7 +132,7 @@ export class DashscopeEmbeddingProvider extends EmbeddingProvider {
   createEmbedding(): EmbeddingsInterface {
     return new OpenAIEmbeddings({
       configuration: {
-        baseURL: this.baseUrl ?? '',
+        baseURL: this.baseURL ?? '',
         apiKey: this.apiKey,
       },
       model: this.model,
