@@ -5,7 +5,7 @@
 
 # ModelDefinition
 
-ModelDefinition กำหนดตัวเลือกสำหรับการสร้างโมเดล Flow ซึ่งใช้สำหรับสร้างอินสแตนซ์ของโมเดลผ่านเมธอด `FlowEngine.createModel()` ครับ/ค่ะ โดยจะรวมถึงการตั้งค่าพื้นฐาน, คุณสมบัติ, ซับโมเดล (sub-models) และข้อมูลอื่นๆ ของโมเดลครับ/ค่ะ
+ModelDefinition กำหนดตัวเลือกสำหรับการสร้างโมเดล Flow ซึ่งใช้สำหรับสร้างอินสแตนซ์ของโมเดลผ่านเมธอด `FlowEngine.createModelAsync()` ครับ/ค่ะ โดยจะรวมถึงการตั้งค่าพื้นฐาน, คุณสมบัติ, ซับโมเดล (sub-models) และข้อมูลอื่นๆ ของโมเดลครับ/ค่ะ
 
 ## การกำหนดประเภท
 
@@ -31,7 +31,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // สร้างอินสแตนซ์ของโมเดล
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -86,7 +86,7 @@ use: 'MyModel'
 use: MyModel
 
 // ใช้การอ้างอิงแบบไดนามิก
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -274,10 +274,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // ลงทะเบียนคลาสโมเดล
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // การนำเข้าแบบไดนามิก: โมดูลของโมเดลจะถูกโหลดเมื่อจำเป็นต้องใช้โมเดลนี้จริง ๆ เป็นครั้งแรก
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // สร้างอินสแตนซ์ของโมเดล
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

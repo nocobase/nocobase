@@ -46,7 +46,7 @@ class MyModel extends FlowModel {
 #### 2. สร้างอินสแตนซ์ของโมเดล
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -140,7 +140,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. ใช้ `stepParams` แทน `props` แบบคงที่
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -248,7 +248,7 @@ MyModel.registerFlow(myEventFlow);
 เมื่อสร้างโมเดล คุณสามารถกำหนดค่าพารามิเตอร์เริ่มต้นสำหรับ EventFlow ได้ผ่าน `stepParams` ครับ/ค่ะ:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

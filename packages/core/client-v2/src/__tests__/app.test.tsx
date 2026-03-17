@@ -68,6 +68,61 @@ describe('app', () => {
     expect(screen.getByText('Hello Route')).toBeInTheDocument();
   });
 
+  it('should support router componentLoader lazy functionality', async () => {
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', {
+          path: '/',
+          componentLoader: async () => ({
+            default: () => <div>Hello Lazy Route</div>,
+          }),
+        });
+      }
+    }
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+    expect(await screen.findByText('Hello Lazy Route')).toBeInTheDocument();
+  });
+
+  it('should support publicPath basename for plugin routes', async () => {
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('demo.route', {
+          path: '/demo/app-info',
+          componentLoader: async () => ({
+            default: () => <div>Hello Basename Route</div>,
+          }),
+        });
+      }
+    }
+    const app = createMockClient({
+      publicPath: '/v2/',
+      plugins: [PluginHelloClient],
+      router: { type: 'memory', initialEntries: ['/v2/demo/app-info'] },
+    });
+    await renderApp(app);
+    expect(await screen.findByText('Hello Basename Route')).toBeInTheDocument();
+  });
+
+  it('should support plugin settings componentLoader lazy functionality', async () => {
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.pluginSettingsManager.add('demo', {
+          title: 'Demo',
+          componentLoader: async () => ({
+            default: () => <div>Hello Lazy Settings</div>,
+          }),
+        });
+      }
+    }
+    const app = createMockClient({
+      plugins: [PluginHelloClient],
+      router: { type: 'memory', initialEntries: ['/admin/settings/demo'] },
+    });
+    await renderApp(app);
+    expect(await screen.findByText('Hello Lazy Settings')).toBeInTheDocument();
+  });
+
   it('should show maintaining state', async () => {
     class PluginHelloClient extends Plugin {}
     const app = createMockClient({ plugins: [PluginHelloClient] });

@@ -5,7 +5,7 @@ Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin kh
 
 # ModelDefinition
 
-ModelDefinition định nghĩa các tùy chọn tạo mô hình luồng, dùng để tạo một thể hiện mô hình thông qua phương thức `FlowEngine.createModel()`. Nó bao gồm cấu hình cơ bản, thuộc tính, các mô hình con và các thông tin khác của mô hình.
+ModelDefinition định nghĩa các tùy chọn tạo mô hình luồng, dùng để tạo một thể hiện mô hình thông qua phương thức `FlowEngine.createModelAsync()`. Nó bao gồm cấu hình cơ bản, thuộc tính, các mô hình con và các thông tin khác của mô hình.
 
 ## Định nghĩa kiểu
 
@@ -31,7 +31,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // Tạo một thể hiện mô hình
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -86,7 +86,7 @@ use: 'MyModel'
 use: MyModel
 
 // Sử dụng tham chiếu động
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -274,10 +274,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // Đăng ký lớp mô hình
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // Import động: mô-đun model chỉ được tải khi model này thực sự cần đến lần đầu
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // Tạo một thể hiện mô hình
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

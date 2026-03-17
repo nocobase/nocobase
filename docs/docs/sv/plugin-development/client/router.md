@@ -16,15 +16,20 @@ NocoBase-klienten erbjuder en flexibel routerhanterare som gör det möjligt att
 
 ## Utökning av vanliga sidor
 
-Lägg till vanliga sidrutter via `router.add()`.
+Lägg till vanliga sidrutter via `router.add()`. För sidkomponenter bör du använda `componentLoader`, så att sidmodulen bara laddas när rutten faktiskt besöks.
+
+Sidfiler måste använda `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Dynamisk import: sidmodulen laddas först när denna rutt öppnas
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Om sidan är tung eller inte behövs vid första renderingen bör du föredra `componentLoader`; `element` passar fortfarande för layoutrutter eller mycket lätta inline-sidor.
+
 ## Utökning av inställningssidor för plugin
 
-Lägg till inställningssidor för plugin via `pluginSettingsRouter.add()`.
+Lägg till plugininställningssidor via `pluginSettingsRouter.add()`. Precis som vanliga rutter bör även inställningssidor använda `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Sidans titel
       icon: 'ApiOutlined', // Menyikon för sidan
-      Component: HelloSettingPage,
+      // Dynamisk import: sidmodulen laddas först när denna inställningssida öppnas
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Underrutter
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Dynamisk import: sidmodulen laddas först när denna inställningssida öppnas
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

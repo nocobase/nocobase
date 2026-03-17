@@ -4,7 +4,7 @@
 
 # ModelDefinition
 
-ModelDefinition एक फ़्लो मॉडल के निर्माण विकल्पों को परिभाषित करता है, जिसका उपयोग `FlowEngine.createModel()` विधि के माध्यम से मॉडल इंस्टेंस बनाने के लिए किया जाता है। इसमें मॉडल का मूल कॉन्फ़िगरेशन, गुण (properties), सब-मॉडल और अन्य जानकारी शामिल होती है।
+ModelDefinition एक फ़्लो मॉडल के निर्माण विकल्पों को परिभाषित करता है, जिसका उपयोग `FlowEngine.createModelAsync()` विधि के माध्यम से मॉडल इंस्टेंस बनाने के लिए किया जाता है। इसमें मॉडल का मूल कॉन्फ़िगरेशन, गुण (properties), सब-मॉडल और अन्य जानकारी शामिल होती है।
 
 ## प्रकार की परिभाषा
 
@@ -30,7 +30,7 @@ interface CreateModelOptions {
 const engine = new FlowEngine();
 
 // एक मॉडल इंस्टेंस बनाएँ
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'unique-model-id',
   use: 'MyModel',
   props: {
@@ -85,7 +85,7 @@ use: 'MyModel'
 use: MyModel
 
 // डायनामिक संदर्भ का उपयोग करें
-const ModelClass = engine.getModelClass('MyModel');
+const ModelClass = await engine.getModelClassAsync('MyModel');
 use: ModelClass
 ```
 
@@ -273,10 +273,15 @@ flowRegistry: {
 class DataProcessingModel extends FlowModel {}
 
 // मॉडल क्लास को पंजीकृत करें
-engine.registerModel('DataProcessingModel', DataProcessingModel);
+engine.registerModelLoaders({
+  DataProcessingModel: {
+    // डायनेमिक इम्पोर्ट: यह मॉडल मॉड्यूल केवल तभी लोड होगा जब इस मॉडल की पहली बार वास्तव में आवश्यकता होगी
+    loader: () => import('./DataProcessingModel'),
+  },
+});
 
 // एक मॉडल इंस्टेंस बनाएँ
-const model = engine.createModel({
+const model = await engine.createModelAsync({
   uid: 'data-processing-001',
   use: 'DataProcessingModel',
   props: {

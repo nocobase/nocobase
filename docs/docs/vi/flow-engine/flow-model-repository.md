@@ -60,7 +60,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 ### Các phương thức cục bộ
 
 ```ts
-flowEngine.createModel(options); // Tạo một thể hiện mô hình cục bộ
+await flowEngine.createModelAsync(options); // Tạo một thể hiện mô hình cục bộ
 flowEngine.getModel(uid);        // Lấy một thể hiện mô hình cục bộ
 flowEngine.removeModel(uid);     // Xóa một thể hiện mô hình cục bộ
 ```
@@ -76,7 +76,7 @@ await flowEngine.destroyModel(uid);  // Xóa mô hình từ xa
 ## Các phương thức của thể hiện mô hình
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   use: 'FlowModel',
 });
 await model.save();     // Lưu vào bộ nhớ từ xa

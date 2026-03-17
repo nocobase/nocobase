@@ -1,6 +1,6 @@
 # FlowEngine
 
-## createModel()
+## createModelAsync()
 
 * **Type**: `string`
 * **Default value**: `docs`

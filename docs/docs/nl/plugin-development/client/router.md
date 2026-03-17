@@ -16,15 +16,20 @@ De NocoBase-client biedt een flexibele routermanager die het uitbreiden van pagi
 
 ## Reguliere pagina-uitbreiding
 
-Voeg reguliere paginaroutes toe via `router.add()`.
+Voeg gewone paginaroutes toe via `router.add()`. Gebruik voor paginacomponenten `componentLoader`, zodat de paginamodule pas wordt geladen wanneer de route daadwerkelijk wordt bezocht.
+
+Paginabestanden moeten `export default` gebruiken:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Dynamische import: de paginamodule wordt pas geladen wanneer deze route wordt geopend
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Als een pagina zwaar is of niet nodig is bij de eerste render, geef dan de voorkeur aan `componentLoader`; `element` blijft geschikt voor lay-outroutes of zeer lichte inlinepagina's.
+
 ## Uitbreiding van instellingenpagina's voor plugins
 
-Voeg instellingenpagina's voor plugins toe via `pluginSettingsRouter.add()`.
+Voeg plugin-instellingenpagina's toe via `pluginSettingsRouter.add()`. Net als gewone routes moeten instellingenpagina's ook `componentLoader` gebruiken.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Titel van de instellingenpagina
       icon: 'ApiOutlined', // Menu-icoon voor de instellingenpagina
-      Component: HelloSettingPage,
+      // Dynamische import: de paginamodule wordt pas geladen wanneer deze instellingenpagina wordt geopend
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Subroutes
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Dynamische import: de paginamodule wordt pas geladen wanneer deze instellingenpagina wordt geopend
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }

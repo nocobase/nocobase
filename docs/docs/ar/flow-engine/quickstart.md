@@ -40,7 +40,7 @@ class MyModel extends FlowModel {
 #### 2. إنشاء نسخة من النموذج
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -141,7 +141,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. استخدام `stepParams` بدلاً من `props` الثابتة
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -249,7 +249,7 @@ MyModel.registerFlow(myEventFlow);
 عند إنشاء النموذج، يمكنك تكوين المعلمات الافتراضية لتدفق الأحداث عبر `stepParams`:
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

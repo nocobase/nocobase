@@ -16,15 +16,20 @@ Klient NocoBase oferuje elastyczny menedżer routera, który umożliwia rozszerz
 
 ## Rozszerzanie zwykłych stron
 
-Zwykłe trasy stron dodaje się za pomocą metody `router.add()`.
+Dodaj zwykłe trasy stron za pomocą `router.add()`. W przypadku komponentów stron używaj `componentLoader`, aby moduł strony był ładowany dopiero wtedy, gdy użytkownik faktycznie wejdzie na daną trasę.
+
+Pliki stron muszą używać `export default`:
 
 ```tsx
-import React from 'react';
+// routes/HomePage.tsx
+export default function HomePage() {
+  return <h1>Home</h1>;
+}
+```
+
+```tsx
 import { Link, Outlet } from 'react-router-dom';
 import { Application, Plugin } from '@nocobase/client';
-
-const Home = () => <h1>Home</h1>;
-const About = () => <h1>About</h1>;
 
 const Layout = () => (
   <div>
@@ -39,8 +44,16 @@ class MyPlugin extends Plugin {
   async load() {
     this.router.add('root', { element: <Layout /> });
 
-    this.router.add('root.home', { path: '/', element: <Home /> });
-    this.router.add('root.about', { path: '/about', element: <About /> });
+    this.router.add('root.home', {
+      path: '/',
+      // Import dynamiczny: moduł strony zostanie załadowany dopiero po wejściu na tę trasę
+      componentLoader: () => import('./routes/HomePage'),
+    });
+
+    this.router.add('root.about', {
+      path: '/about',
+      componentLoader: () => import('./routes/AboutPage'),
+    });
   }
 }
 
@@ -61,22 +74,22 @@ this.router.add('root.user', {
 });
 ```
 
+Jeśli strona jest ciężka lub nie jest potrzebna przy pierwszym renderowaniu, preferuj `componentLoader`; `element` nadal nadaje się do tras układu lub bardzo lekkich stron inline.
+
 ## Rozszerzanie stron ustawień wtyczek
 
-Strony ustawień wtyczek dodaje się za pomocą metody `pluginSettingsRouter.add()`.
+Dodaj strony ustawień wtyczki za pomocą `pluginSettingsRouter.add()`. Podobnie jak zwykłe trasy, strony ustawień również powinny używać `componentLoader`.
 
 ```tsx
 import { Plugin } from '@nocobase/client';
-import React from 'react';
-
-const HelloSettingPage = () => <div>Hello Setting page</div>;
 
 export class HelloPlugin extends Plugin {
   async load() {
     this.pluginSettingsRouter.add('hello', {
       title: 'Hello', // Tytuł strony ustawień
       icon: 'ApiOutlined', // Ikona menu strony ustawień
-      Component: HelloSettingPage,
+      // Import dynamiczny: moduł strony zostanie załadowany dopiero po wejściu na tę stronę ustawień
+      componentLoader: () => import('./settings/HelloSettingPage'),
     });
   }
 }
@@ -95,18 +108,19 @@ class HelloPlugin extends Plugin {
     this.pluginSettingsRouter.add(pluginName, {
       title: 'HelloWorld',
       icon: '',
-      Component: Outlet,
+      element: <Outlet />,
     });
 
     // Trasy podrzędne
     this.pluginSettingsRouter.add(`${pluginName}.demo1`, {
       title: 'Demo1 Page',
-      Component: () => <div>Demo1 Page Content</div>,
+      // Import dynamiczny: moduł strony zostanie załadowany dopiero po wejściu na tę stronę ustawień
+      componentLoader: () => import('./settings/Demo1Page'),
     });
 
     this.pluginSettingsRouter.add(`${pluginName}.demo2`, {
       title: 'Demo2 Page',
-      Component: () => <div>Demo2 Page Content</div>,
+      componentLoader: () => import('./settings/Demo2Page'),
     });
   }
 }
