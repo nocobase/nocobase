@@ -209,8 +209,8 @@ interface MCPTool {
 const unwrapResponseData = <T,>(response: any, fallback: T): T => response?.data?.data ?? response?.data ?? fallback;
 
 interface MCPSettingsContextValue {
-  refreshMCPs: () => Promise<any>;
-  refreshTools: () => Promise<any>;
+  refreshMCPs: () => void;
+  refreshTools: () => void;
   rebuildClient: () => Promise<void>;
   rebuilding: boolean;
 }
@@ -695,7 +695,7 @@ const MCPList: React.FC = () => {
     return task;
   }, [api]);
 
-  const mcpRequest = useRequest(
+  const mcpRequest = useRequest<MCPRecord[]>(
     async () => {
       const response = await api.resource('aiMcpClients').list({ paginate: false });
       return unwrapResponseData<MCPRecord[]>(response, []);
@@ -705,7 +705,7 @@ const MCPList: React.FC = () => {
     },
   );
 
-  const toolsRequest = useRequest(
+  const toolsRequest = useRequest<Record<string, MCPTool[]>>(
     async () => {
       const response = await api.resource('aiMcpClients').listTools();
       return unwrapResponseData<Record<string, MCPTool[]>>(response, {});
