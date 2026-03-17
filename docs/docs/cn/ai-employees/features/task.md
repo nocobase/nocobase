@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工快捷任务"
+description: "在区块上绑定 AI 员工并预设常用任务，一键执行：区块绑定、任务设置（Title、Background、Default user message、Work context、Skills）。"
+keywords: "快捷任务,AI 任务,区块绑定,任务配置,NocoBase"
+---
+
 # 快捷任务
 
 为了更高效地让 AI 员工开始工作，我们可以在场景区块上绑定 AI 员工，并预先设定几个常用的任务。

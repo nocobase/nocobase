@@ -1,3 +1,9 @@
+---
+title: "ResourceManager 资源管理"
+description: "NocoBase 服务端资源管理：app.resourceManager、registerActions、resource.use、Action 注册。"
+keywords: "ResourceManager,资源管理,registerActions,resource.use,Action,NocoBase"
+---
+
 # ResourceManager 资源管理
 
 NocoBase 的资源管理功能可以自动将现有的数据表（collection）和关联（association）转换为资源，并内置多种操作类型，帮助开发者快速构建 REST API 资源操作。与传统的 REST API 略有不同，NocoBase 的资源操作并不依赖 HTTP 请求方法，而是通过显式定义 `:action` 来确定执行的具体操作。

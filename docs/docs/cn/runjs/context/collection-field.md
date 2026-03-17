@@ -1,3 +1,9 @@
+---
+title: "ctx.collectionField"
+description: "ctx.collectionField 当前字段对应的 Collection Field 实例，用于获取字段元数据、关联配置。"
+keywords: "ctx.collectionField,Collection Field,字段元数据,关联配置,RunJS,NocoBase"
+---
+
 # ctx.collectionField
 
 当前 RunJS 执行上下文关联的数据表字段（CollectionField）实例，用于访问字段的元数据、类型、校验规则及关联信息。仅在字段绑定到数据表定义时存在；自定义/虚拟字段可能为 `null`。

@@ -1,3 +1,9 @@
+---
+title: "BelongsToManyRepository"
+description: "NocoBase BelongsToMany 关系 Repository：处理多对多关联的增删改查。"
+keywords: "BelongsToManyRepository,BelongsToMany,多对多,Repository,NocoBase"
+---
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` 是用于处理 `BelongsToMany` 关系的 `Relation Repository`。

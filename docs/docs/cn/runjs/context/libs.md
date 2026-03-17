@@ -1,3 +1,9 @@
+---
+title: "ctx.libs"
+description: "ctx.libs RunJS 内置库命名空间，含 React、antd、dayjs、lodash、formula、math 等，无需 import 直接使用。"
+keywords: "ctx.libs,React,antd,dayjs,lodash,formula,math,内置库,RunJS,NocoBase"
+---
+
 # ctx.libs
 
 `ctx.libs` 是 RunJS 内置库的统一命名空间，包含 React、Ant Design、dayjs、lodash 等常用库。**无需 `import` 或异步加载**，可直接通过 `ctx.libs.xxx` 使用。

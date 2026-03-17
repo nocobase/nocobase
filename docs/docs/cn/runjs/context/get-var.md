@@ -1,3 +1,9 @@
+---
+title: "ctx.getVar()"
+description: "ctx.getVar() 获取工作流或联动规则中定义的变量值，支持 scope 作用域。"
+keywords: "ctx.getVar,变量,工作流变量,scope,联动规则,RunJS,NocoBase"
+---
+
 # ctx.getVar()
 
 从当前运行时上下文中**异步**读取变量值。变量来源与 SQL、模板中的 `{{ctx.xxx}}` 解析一致，通常来自当前用户、当前记录、视图参数、弹窗上下文等。

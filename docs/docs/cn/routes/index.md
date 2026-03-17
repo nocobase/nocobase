@@ -1,3 +1,9 @@
+---
+title: "路由管理器"
+description: "路由管理器管理主页面路由与菜单，支持桌面端/移动端、分组/页面/标签/链接四种路由类型，菜单与路由同步。"
+keywords: "路由,Routes,菜单路由,NocoBase"
+---
+
 # 路由管理器
 
 <PluginInfo name="client"></PluginInfo>

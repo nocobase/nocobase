@@ -1,3 +1,9 @@
+---
+title: "ICollection"
+description: "NocoBase ICollection 接口：数据模型接口，包含 repository、getFields、setField 等。"
+keywords: "ICollection,接口,数据模型,Collection,NocoBase"
+---
+
 # ICollection
 
 `ICollection` 是数据模型的接口，其中包含了模型的名称、字段、关联等信息。

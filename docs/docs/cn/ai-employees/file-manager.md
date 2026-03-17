@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工文件管理"
+description: "配置 AI 员工对话过程中上传文件的存储方式，在 AI 员工插件 Settings 中设置 Files storage。"
+keywords: "AI 员工,文件存储,文件管理,NocoBase"
+---
+
 # 文件管理
 
 ## 介绍

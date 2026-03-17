@@ -1,3 +1,9 @@
+---
+title: "插件依赖管理"
+description: "NocoBase 插件依赖：package.json、peerDependencies、@nocobase 包版本、插件间依赖声明。"
+keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
+---
+
 # 依赖管理
 
 在 NocoBase 插件开发中，依赖分为 **自身依赖** 和 **全局依赖** 两类。

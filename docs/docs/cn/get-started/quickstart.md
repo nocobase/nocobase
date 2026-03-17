@@ -1,4 +1,7 @@
 ---
+title: "NocoBase 安装方式与版本对比"
+description: "NocoBase 三种安装方式：Docker（推荐）、create-nocobase-app、Git 源码；Latest/Beta/Alpha 版本区别，适用场景与升级方式。"
+keywords: "NocoBase 安装,Docker 安装,create-nocobase-app,Git 源码,Latest,Beta,Alpha,版本对比,NocoBase"
 versions:
   - label: Latest（稳定版）
     features: 功能稳定、测试完善，仅进行缺陷修复。

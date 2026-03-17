@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
+title: "导出 Pro 操作"
+description: "导出 Pro 操作：高级导出功能，支持自定义模板、多表导出、复杂格式。"
+keywords: "导出 Pro,ExportPro,高级导出,自定义模板,界面搭建,NocoBase"
 ---
-
 # 导出 Pro
 
 ## 介绍

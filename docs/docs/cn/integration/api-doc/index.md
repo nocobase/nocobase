@@ -1,3 +1,9 @@
+---
+title: "API 文档插件"
+description: "基于 Swagger 的 NocoBase API 文档：访问地址、总文档/内核/插件/collections 文档、swagger 编写规则、OpenAPI 规范。"
+keywords: "API 文档,Swagger,OpenAPI,接口文档,swagger:get,插件开发,NocoBase"
+---
+
 # API 文档
 
 <PluginInfo name="api-doc"></PluginInfo>

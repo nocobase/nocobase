@@ -1,3 +1,9 @@
+---
+title: "ModelDefinition 类型定义"
+description: "ModelDefinition 定义 FlowModel 创建选项 CreateModelOptions：uid、use、props、flowRegistry、subModels 等，createModel 用法。"
+keywords: "ModelDefinition,CreateModelOptions,createModel,flowRegistry,subModels,FlowModel 创建,FlowEngine,NocoBase"
+---
+
 # ModelDefinition
 
 ModelDefinition 定义了流模型的创建选项，用于通过 `FlowEngine.createModel()` 方法创建模型实例。它包含了模型的基本配置、属性、子模型等信息。

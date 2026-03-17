@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-telemetry'
+title: "NocoBase 遥测与监控"
+description: "基于 OpenTelemetry 的遥测：HTTP 请求耗时/数量、进程 CPU/内存、子应用状态，TELEMETRY 环境变量配置，Prometheus/HTTP 导出。"
+keywords: "遥测,Telemetry,OpenTelemetry,监控指标,Prometheus,http_request_cost,process_cpu,NocoBase"
 ---
-
 # 遥测
 
 ## 概述

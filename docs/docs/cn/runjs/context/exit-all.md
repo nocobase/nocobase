@@ -1,3 +1,9 @@
+---
+title: "ctx.exitAll()"
+description: "ctx.exitAll() 退出所有嵌套 Flow，用于深层嵌套时一次性终止执行。"
+keywords: "ctx.exitAll,退出 Flow,嵌套 Flow,终止执行,RunJS,NocoBase"
+---
+
 # ctx.exitAll()
 
 终止当前事件流及其在同一次事件调度中触发的所有后续事件流。常用于因全局错误或权限校验需要立即中止当前事件下的所有事件流。

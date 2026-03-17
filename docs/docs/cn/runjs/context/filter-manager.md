@@ -1,3 +1,9 @@
+---
+title: "ctx.filterManager"
+description: "ctx.filterManager 筛选器管理器，用于获取、设置、监听表格或列表的筛选条件。"
+keywords: "ctx.filterManager,筛选器,表格筛选,列表筛选,RunJS,NocoBase"
+---
+
 # ctx.filterManager
 
 筛选连接管理器，用于管理筛选表单（FilterForm）与数据区块（表格、列表、图表等）之间的筛选关联。由 `BlockGridModel` 提供，仅在其上下文中（如筛选表单区块、数据区块）可用。

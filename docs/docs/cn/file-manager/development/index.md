@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "文件管理器扩展开发"
+description: "扩展自定义存储引擎（继承 StorageType、实现 make/delete）、扩展前端文件预览类型（filePreviewTypes.add、match、Previewer），含完整示例代码。"
+keywords: "扩展开发,StorageType,自定义存储,filePreviewTypes,文件预览扩展,File Manager,NocoBase"
+---
+
 # 扩展开发
 
 ## 扩展存储引擎

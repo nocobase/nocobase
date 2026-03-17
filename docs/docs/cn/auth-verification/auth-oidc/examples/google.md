@@ -1,3 +1,9 @@
+---
+title: "OIDC 配置示例：Sign in with Google"
+description: "Google OAuth 2.0 配置 OIDC 登录：创建 OAuth 客户端 ID、配置授权重定向 URL、在 NocoBase 添加 OIDC 认证器。"
+keywords: "OIDC,Google,OAuth 2.0,Sign in with Google,授权重定向,NocoBase"
+---
+
 # Sign in with Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect
