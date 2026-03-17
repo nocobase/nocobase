@@ -14,13 +14,42 @@ import { App, ConfigProvider } from 'antd';
 import { FlowEngine } from '../../../../../flowEngine';
 import { FlowModel } from '../../../../../models/flowModel';
 import { FlowEngineProvider } from '../../../../../provider';
+import { FieldModelRenderer } from '../../../../FieldModelRenderer';
 import { FlowModelRenderer } from '../../../../FlowModelRenderer';
 import { FlowsFloatContextMenu } from '../FlowsFloatContextMenu';
 
 const mockColorTextTertiary = '#8c8c8c';
 
-vi.mock('antd', () => {
-  const Dropdown = (props: any) => React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
+vi.mock('antd', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  const Dropdown = (props: any) => {
+    const ref = React.useRef<HTMLSpanElement>(null);
+    const [popupContainer, setPopupContainer] = React.useState('');
+
+    React.useEffect(() => {
+      if (!ref.current || typeof props.getPopupContainer !== 'function') {
+        setPopupContainer('');
+        return;
+      }
+
+      const container = props.getPopupContainer(ref.current);
+      setPopupContainer(container?.id || container?.className || container?.tagName?.toLowerCase() || '');
+    }, [props.getPopupContainer, props.open]);
+
+    return React.createElement(
+      'span',
+      {
+        ref,
+        'data-testid': 'dropdown',
+        'data-open': props.open ? 'true' : 'false',
+        'data-popup-container': popupContainer,
+        'data-has-popup-container': typeof props.getPopupContainer === 'function' ? 'true' : 'false',
+        onMouseEnter: () => props.onOpenChange?.(true, { source: 'trigger' }),
+        onMouseLeave: () => props.onOpenChange?.(false, { source: 'trigger' }),
+      },
+      props.children,
+    );
+  };
   const App = Object.assign(({ children }: any) => React.createElement(React.Fragment, null, children), {
     useApp: () => ({ message: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }),
   });
@@ -34,8 +63,13 @@ vi.mock('antd', () => {
   const Alert = (props: any) => React.createElement('div', { role: 'alert' }, props.message ?? 'Alert');
   const Select = (props: any) => React.createElement('select', props);
   const Switch = (props: any) => React.createElement('input', { ...props, type: 'checkbox' });
+  const Typography = {
+    Paragraph: ({ children }: any) => React.createElement('p', null, children),
+    Text: ({ children }: any) => React.createElement('span', null, children),
+  };
 
   return {
+    ...actual,
     Dropdown,
     App,
     ConfigProvider,
@@ -45,7 +79,8 @@ vi.mock('antd', () => {
     Alert,
     Select,
     Switch,
-    theme: { useToken: () => ({ token: { colorTextTertiary: mockColorTextTertiary } }) },
+    Typography,
+    theme: { ...actual.theme, useToken: () => ({ token: { colorTextTertiary: mockColorTextTertiary } }) },
   } as any;
 });
 
@@ -68,15 +103,54 @@ const mockRect = (element: HTMLElement, rect: { top: number; left: number; width
   });
 };
 
-const renderWithProviders = (engine: FlowEngine, ui: React.ReactNode) => {
+const renderWithProviders = (engine: FlowEngine, ui: React.ReactNode, renderOptions?: Parameters<typeof render>[1]) => {
   return render(
     <ConfigProvider>
       <App>
         <FlowEngineProvider engine={engine}>{ui}</FlowEngineProvider>
       </App>
     </ConfigProvider>,
+    renderOptions,
   );
 };
+
+const createAppContainer = () => {
+  const container = document.createElement('div');
+  container.id = 'nocobase-app-container';
+  document.body.appendChild(container);
+  return container;
+};
+
+const createPopupRoot = (
+  className:
+    | 'ant-drawer-content-wrapper'
+    | 'ant-drawer-content'
+    | 'ant-modal-wrap'
+    | 'ant-modal-content'
+    | 'ant-drawer-root'
+    | 'ant-modal-root',
+) => {
+  const popupRoot = document.createElement('div');
+  popupRoot.className = className;
+  return popupRoot;
+};
+
+const setupDrawerPopup = () => {
+  const appContainer = createAppContainer();
+  const drawerWrapper = createPopupRoot('ant-drawer-content-wrapper');
+  const drawerContent = createPopupRoot('ant-drawer-content');
+  drawerContent.setAttribute('role', 'dialog');
+  drawerWrapper.scrollTop = 14;
+  drawerWrapper.scrollLeft = 9;
+  drawerWrapper.appendChild(drawerContent);
+  appContainer.appendChild(drawerWrapper);
+  mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+  mockRect(drawerWrapper, { top: 80, left: 200, width: 640, height: 520 });
+  mockRect(drawerContent, { top: 96, left: 216, width: 624, height: 504 });
+  return { drawerWrapper, drawerContent };
+};
+
+const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
 
 const createModel = (engine: FlowEngine, uid: string) => {
   const model = new FlowModel({ uid, flowEngine: engine });
@@ -110,26 +184,33 @@ describe('FlowsFloatContextMenu', () => {
     globalThis.ResizeObserver = originalResizeObserver;
     globalThis.requestAnimationFrame = originalRequestAnimationFrame;
     globalThis.cancelAnimationFrame = originalCancelAnimationFrame;
+    document.body.innerHTML = '';
   });
 
-  it('uses a portal toolbar by default and keeps it visible while moving from host to toolbar', async () => {
+  it('defaults to portal into app container and keeps toolbar visible while moving from host to toolbar', async () => {
     const engine = new FlowEngine();
     engine.flowSettings.forceEnable();
     const model = createModel(engine, 'portal-model');
+    const appContainer = createAppContainer();
+    appContainer.scrollTop = 8;
+    appContainer.scrollLeft = 6;
+    mockRect(appContainer, { top: 100, left: 120, width: 960, height: 720 });
 
     const { getByTestId } = renderWithProviders(
       engine,
       <FlowsFloatContextMenu model={model}>
         <div data-testid="content">content</div>
       </FlowsFloatContextMenu>,
+      { container: appContainer },
     );
 
-    const host = getByTestId('content').parentElement as HTMLDivElement;
-    mockRect(host, { top: 12, left: 24, width: 160, height: 60 });
+    const host = getHost(getByTestId('content'));
+    mockRect(host, { top: 112, left: 124, width: 160, height: 60 });
 
-    const overlay = document.body.querySelector('[data-model-uid="portal-model"]') as HTMLDivElement;
+    const overlay = appContainer.querySelector('[data-model-uid="portal-model"]') as HTMLDivElement;
     expect(overlay).toBeTruthy();
     expect(host.querySelector('.nb-toolbar-container')).toBeNull();
+    expect(document.body.querySelector('[data-model-uid="portal-model"]')).toBe(overlay);
 
     await waitFor(() => {
       expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
@@ -138,43 +219,50 @@ describe('FlowsFloatContextMenu', () => {
     fireEvent.mouseEnter(host);
 
     await waitFor(() => {
-      expect(overlay.dataset.toolbarVisible).toBe('true');
-      expect(overlay.dataset.toolbarRenderMode).toBe('portal');
-      expect(overlay.style.top).toBe('12px');
-      expect(overlay.style.left).toBe('24px');
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(overlay.className).toContain('nb-toolbar-portal-absolute');
+      expect(overlay.style.top).toBe('20px');
+      expect(overlay.style.left).toBe('10px');
       expect(overlay.style.width).toBe('160px');
       expect(overlay.style.height).toBe('60px');
+      expect(overlay.parentElement).toBe(appContainer);
     });
 
     const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+    const dropdown = within(overlay).getByTestId('dropdown');
+    expect(dropdown.getAttribute('data-popup-container')).toBe('nocobase-app-container');
     fireEvent.mouseLeave(host, { relatedTarget: icons });
     fireEvent.mouseEnter(icons, { relatedTarget: host });
 
     await waitFor(() => {
-      expect(overlay.dataset.toolbarVisible).toBe('true');
+      expect(overlay.className).toContain('nb-toolbar-visible');
     });
 
     fireEvent.mouseLeave(icons);
 
     await waitFor(() => {
-      expect(overlay.dataset.toolbarVisible).toBe('false');
+      expect(overlay.className).not.toContain('nb-toolbar-visible');
     });
   });
 
-  it('keeps toolbar position semantics in portal mode and renders through FlowModelRenderer by default', async () => {
+  it('renders through FlowModelRenderer with app-container portal and keeps toolbar pinned while dropdown is open', async () => {
     const engine = new FlowEngine();
     engine.flowSettings.forceEnable();
     const model = createModel(engine, 'renderer-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 40, left: 60, width: 1200, height: 800 });
 
-    const { getByTestId } = renderWithProviders(
+    const { findByTestId } = renderWithProviders(
       engine,
       <FlowModelRenderer model={model} showFlowSettings={{ toolbarPosition: 'above' }} />,
+      { container: appContainer },
     );
 
-    const host = getByTestId('renderer-model-content').parentElement as HTMLDivElement;
-    mockRect(host, { top: 20, left: 30, width: 180, height: 72 });
+    const content = await findByTestId('renderer-model-content');
+    const host = getHost(content);
+    mockRect(host, { top: 100, left: 150, width: 180, height: 72 });
 
-    const overlay = document.body.querySelector('[data-model-uid="renderer-model"]') as HTMLDivElement;
+    const overlay = appContainer.querySelector('[data-model-uid="renderer-model"]') as HTMLDivElement;
     expect(overlay).toBeTruthy();
 
     await waitFor(() => {
@@ -184,13 +272,106 @@ describe('FlowsFloatContextMenu', () => {
     fireEvent.mouseEnter(host);
 
     await waitFor(() => {
-      expect(overlay.dataset.toolbarRenderMode).toBe('portal');
-      expect(overlay.dataset.toolbarPosition).toBe('above');
-      expect(overlay.dataset.toolbarVisible).toBe('true');
+      expect(overlay.className).toContain('nb-toolbar-visible');
+      expect(overlay.className).toContain('nb-toolbar-portal-absolute');
     });
 
     const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+    const dropdown = within(overlay).getByTestId('dropdown');
     expect(icons.className).toContain('nb-toolbar-position-above');
+    expect(dropdown.getAttribute('data-popup-container')).toBe('nocobase-app-container');
+
+    fireEvent.mouseEnter(icons);
+    fireEvent.mouseEnter(dropdown);
+
+    await waitFor(() => {
+      expect(dropdown.getAttribute('data-open')).toBe('true');
+    });
+
+    fireEvent.mouseLeave(icons);
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-visible');
+    });
+
+    fireEvent.mouseLeave(dropdown);
+    fireEvent.mouseLeave(icons);
+
+    await waitFor(() => {
+      expect(overlay.className).not.toContain('nb-toolbar-visible');
+      expect(dropdown.getAttribute('data-open')).toBe('false');
+    });
+  });
+
+  it('portals field toolbar to the nearest popup root and treats inset values as rect adjustments', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    const model = createModel(engine, 'field-model');
+    model.render = vi.fn().mockReturnValue(<input data-testid="field-input" />);
+    const insetModel = createModel(engine, 'field-inset-model');
+    insetModel.render = vi.fn().mockReturnValue(<input data-testid="field-inset-input" />);
+    const { drawerWrapper, drawerContent } = setupDrawerPopup();
+
+    const { findByTestId } = renderWithProviders(
+      engine,
+      <>
+        <FieldModelRenderer model={model} showFlowSettings={{ toolbarPosition: 'inside' }} />
+        <FieldModelRenderer
+          model={insetModel}
+          showFlowSettings={{
+            toolbarPosition: 'inside',
+            style: {
+              top: -6,
+              left: -6,
+              right: -6,
+              bottom: -6,
+            },
+          }}
+        />
+      </>,
+      { container: drawerContent },
+    );
+
+    const input = await findByTestId('field-input');
+    const insetInput = await findByTestId('field-inset-input');
+    const host = getHost(input);
+    const insetHost = getHost(insetInput);
+    mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
+    mockRect(insetHost, { top: 220, left: 320, width: 220, height: 48 });
+
+    const overlay = drawerWrapper.querySelector('[data-model-uid="field-model"]') as HTMLDivElement;
+    const insetOverlay = drawerWrapper.querySelector('[data-model-uid="field-inset-model"]') as HTMLDivElement;
+    expect(overlay).toBeTruthy();
+    expect(insetOverlay).toBeTruthy();
+
+    await waitFor(() => {
+      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+      expect(within(insetOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(host);
+
+    await waitFor(() => {
+      expect(overlay.className).toContain('nb-toolbar-portal-absolute');
+      expect(overlay.style.top).toBe('74px');
+      expect(overlay.style.left).toBe('89px');
+      expect(overlay.style.width).toBe('220px');
+      expect(overlay.style.height).toBe('48px');
+      expect(overlay.parentElement).toBe(drawerWrapper);
+    });
+
+    fireEvent.mouseEnter(insetHost);
+
+    await waitFor(() => {
+      expect(insetOverlay.className).toContain('nb-toolbar-portal-absolute');
+      expect(insetOverlay.style.top).toBe('148px');
+      expect(insetOverlay.style.left).toBe('123px');
+      expect(insetOverlay.style.width).toBe('232px');
+      expect(insetOverlay.style.height).toBe('60px');
+      expect(insetOverlay.parentElement).toBe(drawerWrapper);
+      expect(insetOverlay.style.right).toBe('');
+      expect(insetOverlay.style.bottom).toBe('');
+    });
   });
 
   it('hides parent toolbar when hovering a nested child host', async () => {
@@ -198,6 +379,8 @@ describe('FlowsFloatContextMenu', () => {
     engine.flowSettings.forceEnable();
     const parentModel = createModel(engine, 'parent-model');
     const childModel = createModel(engine, 'child-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
 
     const { getByTestId } = renderWithProviders(
       engine,
@@ -208,15 +391,16 @@ describe('FlowsFloatContextMenu', () => {
           </FlowsFloatContextMenu>
         </div>
       </FlowsFloatContextMenu>,
+      { container: appContainer },
     );
 
-    const parentHost = getByTestId('parent-content').parentElement as HTMLDivElement;
-    const childHost = getByTestId('child-content').parentElement as HTMLDivElement;
+    const parentHost = getHost(getByTestId('parent-content'));
+    const childHost = getHost(getByTestId('child-content'));
     mockRect(parentHost, { top: 10, left: 10, width: 240, height: 120 });
     mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
 
-    const parentOverlay = document.body.querySelector('[data-model-uid="parent-model"]') as HTMLDivElement;
-    const childOverlay = document.body.querySelector('[data-model-uid="child-model"]') as HTMLDivElement;
+    const parentOverlay = appContainer.querySelector('[data-model-uid="parent-model"]') as HTMLDivElement;
+    const childOverlay = appContainer.querySelector('[data-model-uid="child-model"]') as HTMLDivElement;
 
     await waitFor(() => {
       expect(within(parentOverlay).getByLabelText('flows-settings')).toBeTruthy();
@@ -226,46 +410,22 @@ describe('FlowsFloatContextMenu', () => {
     fireEvent.mouseEnter(parentHost);
 
     await waitFor(() => {
-      expect(parentOverlay.dataset.toolbarVisible).toBe('true');
+      expect(parentOverlay.className).toContain('nb-toolbar-visible');
     });
 
     fireEvent.mouseEnter(childHost);
     fireEvent.mouseMove(childHost);
 
     await waitFor(() => {
-      expect(childOverlay.dataset.toolbarVisible).toBe('true');
-      expect(parentOverlay.dataset.toolbarVisible).toBe('false');
-    });
-  });
-
-  it('keeps inline mode as an escape hatch', async () => {
-    const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
-    const model = createModel(engine, 'inline-model');
-
-    const { getByTestId } = renderWithProviders(
-      engine,
-      <FlowsFloatContextMenu model={model} toolbarRenderMode="inline">
-        <div data-testid="inline-content">content</div>
-      </FlowsFloatContextMenu>,
-    );
-
-    const host = getByTestId('inline-content').parentElement as HTMLDivElement;
-    mockRect(host, { top: 16, left: 18, width: 120, height: 40 });
-
-    const overlay = host.querySelector('[data-model-uid="inline-model"]') as HTMLDivElement;
-    expect(overlay).toBeTruthy();
-
-    await waitFor(() => {
-      expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
+      expect(childOverlay.className).toContain('nb-toolbar-visible');
+      expect(parentOverlay.className).not.toContain('nb-toolbar-visible');
     });
 
-    fireEvent.mouseEnter(host);
+    fireEvent.mouseLeave(childHost, { relatedTarget: document.createElement('div') });
 
     await waitFor(() => {
-      expect(overlay.dataset.toolbarRenderMode).toBe('inline');
-      expect(overlay.dataset.toolbarVisible).toBe('true');
-      expect(overlay.parentElement).toBe(host);
+      expect(childOverlay.className).toContain('nb-toolbar-visible');
+      expect(parentOverlay.className).not.toContain('nb-toolbar-visible');
     });
   });
 });

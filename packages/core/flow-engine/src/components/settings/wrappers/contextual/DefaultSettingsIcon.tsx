@@ -189,6 +189,7 @@ interface DefaultSettingsIconProps {
   menuLevels?: number; // Menu levels: 1=current model only (default), 2=include sub-models
   flattenSubMenus?: boolean; // Whether to flatten sub-menus: false=group by model (default), true=flatten all
   onDropdownVisibleChange?: (open: boolean) => void;
+  getPopupContainer?: DropdownProps['getPopupContainer'];
   [key: string]: any; // Allow additional props
 }
 
@@ -199,6 +200,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
   onDropdownVisibleChange,
+  getPopupContainer,
 }) => {
   const { message } = App.useApp();
   const t = useMemo(() => getT(model), [model]);
@@ -214,6 +216,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     setVisible(false);
     onDropdownVisibleChange?.(false);
   }, [onDropdownVisibleChange]);
+  const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
+    (triggerNode) => {
+      return getPopupContainer?.(triggerNode) || triggerNode?.parentElement || document.body;
+    },
+    [getPopupContainer],
+  );
   const handleOpenChange: DropdownProps['onOpenChange'] = useCallback(
     (nextOpen: boolean, info) => {
       if (info.source === 'trigger' || nextOpen) {
@@ -845,6 +853,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   return (
     <Dropdown
+      getPopupContainer={resolvePopupContainer}
       onOpenChange={handleOpenChange}
       open={visible}
       menu={{
