@@ -84,7 +84,7 @@ export class MCPLoader extends LoadAndRegister<MCPLoaderOptions> {
     const { mcpManager } = this.ai;
     for (const descriptor of this.mcpDescriptors) {
       try {
-        mcpManager.registerMCP({
+        await mcpManager.registerMCP({
           [descriptor.name]: descriptor.options,
         });
       } catch (e) {

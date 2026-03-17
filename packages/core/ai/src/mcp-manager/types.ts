@@ -7,20 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { MultiServerMCPClient } from '@langchain/mcp-adapters';
+import type { DynamicToolsProvider, Permission } from '../tools-manager/types';
+
 export interface MCPManager extends MCPRegistration {
   getMCP(name: string): Promise<MCPEntry>;
   listMCP(filter: MCPFilter): Promise<MCPEntry[]>;
-  persistence(): Promise<void>;
+  testConnection(options: MCPOptions): Promise<MCPTestResult>;
+  rebuildClient(): Promise<void>;
+  getClient(): MultiServerMCPClient | null;
+  getMCPToolsProvider(): DynamicToolsProvider;
+  listMCPTools(): Promise<Record<string, MCPToolEntry[]>>;
+  updateMCPToolPermission(toolName: string, permission: Permission): Promise<void>;
 }
+
 export interface MCPRegistration {
-  registerMCP(registration: { [key: string | symbol]: MCPOptions }): void;
+  registerMCP(registration: { [key: string | symbol]: MCPOptions }): Promise<void>;
 }
 
 export type MCPOptions = {
   transport: MCPTransport;
   command?: string;
   args?: string[];
-  env: Record<string, string>;
+  env?: Record<string, string>;
   url?: string;
   headers?: Record<string, string>;
   restart?: Record<string, any>;
@@ -38,3 +47,21 @@ export type MCPFilter = {
 };
 
 export type MCPTransport = 'stdio' | 'sse' | 'http';
+
+export type MCPTestResult = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  details?: string;
+  toolsCount?: number;
+  tools?: string[];
+  toolsTruncated?: boolean;
+};
+
+export type MCPToolEntry = {
+  name: string;
+  title: string;
+  description?: string;
+  serverName: string;
+  permission: Permission;
+};

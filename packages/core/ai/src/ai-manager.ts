@@ -24,7 +24,7 @@ export class AIManager {
     this.documentManager = new DocumentManager();
     this.toolsManager = new DefaultToolsManager();
     this.skillsManager = new DefaultSkillsManager(() => app.mainDataSource);
-    this.employeeManager = new DefaultAIEmployeeManager(() => app.mainDataSource);
-    this.mcpManager = new DefaultMCPManager(() => app.mainDataSource);
+    this.employeeManager = new DefaultAIEmployeeManager(app);
+    this.mcpManager = new DefaultMCPManager(app);
   }
 }

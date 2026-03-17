@@ -23,8 +23,18 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
 
 export class DefaultAIEmployeeManager implements AIEmployeeManager {
   private readonly employees = new Registry<AIEmployeeOptions>();
+  private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager };
+  private mode = 'memory';
 
-  constructor(private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager }) {}
+  constructor(private readonly app: any) {
+    this.provideCollectionManager = () => app.mainDataSource;
+    this.app.on('afterStart', async () => {
+      if (this.mode === 'memory') {
+        await this.persistence();
+        this.mode = 'database';
+      }
+    });
+  }
 
   async getEmployee(username: string): Promise<AIEmployeeEntry> {
     return (await this.aiEmployeesModel.findOne({ where: { username } }))?.toJSON() as AIEmployeeEntry;
@@ -44,10 +54,10 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
   }
 
   async registerEmployee(options: AIEmployeeOptions): Promise<void> {
-    if (await this.isAIEmployeesCollectionSync()) {
-      return this.registerEmployeeInDatabase(options);
+    if (this.mode === 'memory') {
+      return this.registerEmployeeInMemory(options);
     }
-    return this.registerEmployeeInMemory(options);
+    return this.registerEmployeeInDatabase(options);
   }
 
   async persistence(): Promise<void> {
@@ -109,10 +119,6 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
       };
       await existed.update(values, { transaction });
     });
-  }
-
-  private async isAIEmployeesCollectionSync() {
-    return this.aiEmployeesCollection?.existsInDb() ?? Promise.resolve(false);
   }
 
   private get aiEmployeesCollection() {

@@ -8,49 +8,11 @@
  */
 
 import { defineCollection } from '@nocobase/database';
+import aiMcpClients from '../../collections/ai-mcp-clients';
 
 export default defineCollection({
   migrationRules: ['overwrite', 'schema-only'],
   autoGenId: false,
   sortable: true,
-  name: 'aiMcpClients',
-  fields: [
-    {
-      name: 'name',
-      type: 'string',
-      primaryKey: true,
-    },
-    {
-      name: 'enabled',
-      type: 'boolean',
-    },
-    {
-      name: 'transport',
-      type: 'string',
-    },
-    {
-      name: 'command',
-      type: 'string',
-    },
-    {
-      name: 'args',
-      type: 'jsonb',
-    },
-    {
-      name: 'env',
-      type: 'jsonb',
-    },
-    {
-      name: 'url',
-      type: 'string',
-    },
-    {
-      name: 'headers',
-      type: 'jsonb',
-    },
-    {
-      name: 'restart',
-      type: 'jsonb',
-    },
-  ],
+  ...aiMcpClients,
 });

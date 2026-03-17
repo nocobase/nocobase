@@ -63,4 +63,44 @@ describe('MCP loader test cases', () => {
     const enabledEntries = await mcpManager.listMCP({ enabled: true, transport: 'http', name: 'weath' });
     expect(enabledEntries.map((item) => item.name)).toEqual(['weather']);
   });
+
+  it('should expose cached mcp tools and allow updating permissions', async () => {
+    const manager = mcpManager as any;
+    manager.toolsMap = {
+      weather: [
+        {
+          name: 'getForecast',
+          description: 'Get weather forecast',
+        },
+        {
+          name: 'setDefaultCity',
+          description: 'Set default city',
+        },
+      ],
+    };
+
+    const tools = await mcpManager.listMCPTools();
+    expect(tools.weather).toEqual([
+      {
+        name: 'mcp-weather-getForecast',
+        title: 'getForecast',
+        description: 'Get weather forecast',
+        serverName: 'weather',
+        permission: 'ASK',
+      },
+      {
+        name: 'mcp-weather-setDefaultCity',
+        title: 'setDefaultCity',
+        description: 'Set default city',
+        serverName: 'weather',
+        permission: 'ASK',
+      },
+    ]);
+
+    await mcpManager.updateMCPToolPermission('mcp-weather-getForecast', 'ALLOW');
+
+    const updatedTools = await mcpManager.listMCPTools();
+    expect(updatedTools.weather[0].permission).toBe('ALLOW');
+    expect(updatedTools.weather[1].permission).toBe('ASK');
+  });
 });
