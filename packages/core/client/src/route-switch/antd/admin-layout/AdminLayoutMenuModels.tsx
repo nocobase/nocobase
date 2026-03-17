@@ -217,6 +217,12 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
   const { item } = props;
   const { designable } = useDesignable();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
+  const ariaLabel =
+    typeof item.name === 'string' || typeof item.name === 'number'
+      ? String(item.name)
+      : typeof item._route?.title === 'string' || typeof item._route?.title === 'number'
+        ? String(item._route.title)
+        : undefined;
 
   // fake schema used to pass routing information to SortableItem
   const fakeSchema: any = { __route__: item._route };
@@ -224,7 +230,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
+        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={ariaLabel} style={menuItemStyle}>
           {props.children}
           {designable && <MenuSchemaToolbarWithContainer />}
           {badgeCount != null && (
