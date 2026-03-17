@@ -11,11 +11,7 @@
     "@nocobase/server": "2.1.0-alpha.9"
   },
   "devDependencies": {
-    "@nocobase/client": "2.1.0-alpha.9",
-    "@rsbuild/core": "1.7.3",
-    "@rsbuild/plugin-less": "^1.6.2",
-    "@rsbuild/plugin-node-polyfill": "1.4.4",
-    "@rsbuild/plugin-react": "1.4.6"
+    "@nocobase/client": "2.1.0-alpha.9"
   },
   "repository": {
     "type": "git",

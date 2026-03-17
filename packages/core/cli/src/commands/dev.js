@@ -115,6 +115,8 @@ module.exports = (cli) => {
             WS_PATH: process.env.WS_PATH,
             ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
             ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },
         });
       };

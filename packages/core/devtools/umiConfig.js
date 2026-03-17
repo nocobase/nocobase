@@ -51,6 +51,12 @@ function getUmiConfig() {
         target: `http://127.0.0.1:${APP_V2_PORT}`,
         changeOrigin: true,
         ws: true,
+        pathRewrite: { [`^${V2_PUBLIC_PATH}`]: V2_PUBLIC_PATH },
+        onProxyReq: (proxyReq, req, res) => {
+          if (req?.ip) {
+            proxyReq.setHeader('X-Forwarded-For', req.ip);
+          }
+        },
       },
     };
   }

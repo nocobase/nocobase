@@ -34,6 +34,14 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function getForwardedFor(headers: { [key: string]: string | string[] | undefined }) {
+  const forwardedFor = headers['x-forwarded-for'];
+  if (Array.isArray(forwardedFor)) {
+    return forwardedFor[0];
+  }
+  return forwardedFor;
+}
+
 function createDefineValues(v2PublicPath: string) {
   return {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
@@ -66,11 +74,13 @@ function createTemplateParameters(v2PublicPath: string) {
 export default defineConfig(({ command }) => {
   const isBuild = command === 'build';
   const appPublicPath = ensurePublicPath(process.env.APP_PUBLIC_PATH || '/');
+  const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH || '/api/');
   const v2PublicPath = ensurePublicPath(`${appPublicPath.replace(/\/$/, '')}/v2/`);
   const hmrPath = `${v2PublicPath.replace(/\/$/, '')}/__rspack_hmr`;
   const v2Port = toNumber(process.env.APP_V2_PORT, 13002);
   const hmrClientHost = process.env.RSPACK_HMR_CLIENT_HOST || 'localhost';
   const hmrClientPort = toNumber(process.env.RSPACK_HMR_CLIENT_PORT || process.env.APP_PORT, v2Port);
+  const proxyTargetUrl = process.env.PROXY_TARGET_URL || `http://127.0.0.1:${process.env.APP_PORT || 13001}`;
   const workspaceAliases = getRsbuildAlias();
 
   return {
@@ -124,6 +134,26 @@ export default defineConfig(({ command }) => {
       port: v2Port,
       compress: true,
       publicDir: false,
+      proxy: {
+        [apiBasePath]: {
+          target: proxyTargetUrl,
+          changeOrigin: true,
+          ws: true,
+          xfwd: true, // 这里会处理 X-Forwarded-For 头，添加客户端 IP 地址
+          pathRewrite: {
+            [`^${apiBasePath}`]: apiBasePath,
+          },
+          onProxyRes(proxyRes, req, res) {
+            if (req.headers.accept === 'text/event-stream') {
+              res.writeHead(res.statusCode, {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-transform',
+                Connection: 'keep-alive',
+              });
+            }
+          },
+        },
+      },
       historyApiFallback: {
         disableDotRule: true,
         index: `${v2PublicPath}index.html`,
