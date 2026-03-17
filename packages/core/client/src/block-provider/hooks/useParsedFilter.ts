@@ -30,23 +30,32 @@ export function useParsedFilter({
   onFilterChange?: (filter: any) => void;
 }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
+  const filterOptionKey = JSON.stringify(filterOption);
   const [filter, setFilter] = useState({});
-  const [parseVariableLoading, setParseVariableLoading] = useState(!!filterOption);
+  const [parsedFilterOptionKey, setParsedFilterOptionKey] = useState(() => (filterOption ? null : filterOptionKey));
+  const parseVariableLoading = !!filterOption && parsedFilterOptionKey !== filterOptionKey;
 
   useEffect(() => {
-    if (!filterOption) return;
+    if (!filterOption) {
+      setFilter({});
+      setParsedFilterOptionKey(filterOptionKey);
+      return;
+    }
 
+    let canceled = false;
     const _run = async () => {
-      setParseVariableLoading(true);
       const result = await parseFilter(filterOption);
-      setParseVariableLoading(false);
+      if (canceled) {
+        return;
+      }
       setFilter(result);
+      setParsedFilterOptionKey(filterOptionKey);
       onFilterChange?.(result);
     };
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    reaction(
+    const dispose = reaction(
       () => {
         // 这一步主要是为了使 reaction 能够收集到依赖
         const flat = flatten(filterOption, {
@@ -95,7 +104,13 @@ export function useParsedFilter({
         equals: _.isEqual,
       },
     );
-  }, [JSON.stringify(filterOption), parseFilter, findVariable]);
+
+    return () => {
+      canceled = true;
+      run.cancel();
+      dispose();
+    };
+  }, [filterOption, filterOptionKey, findVariable, onFilterChange, parseFilter]);
 
   return {
     /** 数据范围的筛选参数 */

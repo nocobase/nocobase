@@ -12,6 +12,7 @@ import React, { FC, createContext, useContext, useDeferredValue, useMemo, useRef
 
 import _ from 'lodash';
 import { UseRequestResult, useAPIClient, useRequest } from '../../api-client';
+import { useLocationSearch } from '../../application/CustomRouterContextProvider';
 import { useTemplateBlockContext } from '../../block-provider/TemplateBlockProvider';
 import { useDataLoadingMode } from '../../modules/blocks/data-blocks/details-multi/setDataLoadingModeSettingsItem';
 import { useSourceKey } from '../../modules/blocks/useSourceKey';
@@ -126,7 +127,9 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const recordRequestRef = useRef<UseRequestResult<any>>(props.recordRequest);
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
+  const locationSearch = useLocationSearch();
   const prevPageActiveRef = useRef(pageActive);
+  const prevActiveLocationSearchRef = useRef(locationSearch);
   // Prevent page switching lag
   const deferredPageActive = useDeferredValue(pageActive);
   const blockProps = useDataBlockProps();
@@ -134,6 +137,7 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   if (
     deferredPageActive &&
     !prevPageActiveRef.current &&
+    prevActiveLocationSearchRef.current === locationSearch &&
     (_.isNil(blockProps.dataLoadingMode) || blockProps.dataLoadingMode === 'auto')
   ) {
     props.recordRequest?.refresh();
@@ -152,6 +156,10 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
 
   if (deferredPageActive !== prevPageActiveRef.current) {
     prevPageActiveRef.current = deferredPageActive;
+  }
+
+  if (deferredPageActive) {
+    prevActiveLocationSearchRef.current = locationSearch;
   }
 
   recordRequestRef.current = props.recordRequest;
