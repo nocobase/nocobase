@@ -188,6 +188,7 @@ interface DefaultSettingsIconProps {
   showCopyUidButton?: boolean;
   menuLevels?: number; // Menu levels: 1=current model only (default), 2=include sub-models
   flattenSubMenus?: boolean; // Whether to flatten sub-menus: false=group by model (default), true=flatten all
+  onDropdownVisibleChange?: (open: boolean) => void;
   [key: string]: any; // Allow additional props
 }
 
@@ -197,6 +198,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   showCopyUidButton = true,
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
+  onDropdownVisibleChange,
 }) => {
   const { message } = App.useApp();
   const t = useMemo(() => getT(model), [model]);
@@ -210,15 +212,25 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const closeDropdown = useCallback(() => {
     setVisible(false);
-  }, []);
-  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
-    if (info.source === 'trigger' || nextOpen) {
-      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-      startTransition(() => {
-        setVisible(nextOpen);
-      });
-    }
-  }, []);
+    onDropdownVisibleChange?.(false);
+  }, [onDropdownVisibleChange]);
+  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback(
+    (nextOpen: boolean, info) => {
+      if (info.source === 'trigger' || nextOpen) {
+        // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+        startTransition(() => {
+          setVisible(nextOpen);
+        });
+        onDropdownVisibleChange?.(nextOpen);
+      }
+    },
+    [onDropdownVisibleChange],
+  );
+  useEffect(() => {
+    return () => {
+      onDropdownVisibleChange?.(false);
+    };
+  }, [onDropdownVisibleChange]);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
   useEffect(() => {
     let mounted = true;
