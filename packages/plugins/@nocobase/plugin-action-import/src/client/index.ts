@@ -20,6 +20,8 @@ import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
 import { ImportActionModel } from './models/ImportActionModel';
 
+export { buildImportFieldOptions } from './buildImportFieldOptions';
+
 export class PluginActionImportClient extends Plugin {
   async load() {
     this.app.use(ImportPluginProvider);

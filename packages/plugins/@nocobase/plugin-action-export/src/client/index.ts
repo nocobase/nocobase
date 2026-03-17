@@ -16,6 +16,8 @@ import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
 import { ExportActionModel } from './models/ExportActionModel';
 
+export { buildExportFieldOptions } from './buildExportFieldOptions';
+
 export class PluginActionExportClient extends Plugin {
   async load() {
     this.app.use(ExportPluginProvider);
