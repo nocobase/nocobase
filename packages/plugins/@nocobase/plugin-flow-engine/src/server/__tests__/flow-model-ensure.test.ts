@@ -167,6 +167,33 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.use).toBe('BlockGridModel');
   });
 
+  it('should allow ensuring an existing object child without repeating use', async () => {
+    await repository.insertModel({ uid: 'ensure-existing-use-parent', use: 'PageTabModel' } as any);
+
+    const created = await agent.resource('flowModels').ensure({
+      values: {
+        parentId: 'ensure-existing-use-parent',
+        subKey: 'grid',
+        subType: 'object',
+        use: 'BlockGridModel',
+      },
+    });
+
+    expect(created.status).toBe(200);
+
+    const ensuredAgain = await agent.resource('flowModels').ensure({
+      values: {
+        parentId: 'ensure-existing-use-parent',
+        subKey: 'grid',
+        subType: 'object',
+      },
+    });
+
+    expect(ensuredAgain.status).toBe(200);
+    expect(ensuredAgain.body?.data?.uid).toBe(created.body?.data?.uid);
+    expect(ensuredAgain.body?.data?.use).toBe('BlockGridModel');
+  });
+
   it('should validate nested child schema with parent context during ensure', async () => {
     const pass = await agent.resource('flowModels').ensure({
       values: {

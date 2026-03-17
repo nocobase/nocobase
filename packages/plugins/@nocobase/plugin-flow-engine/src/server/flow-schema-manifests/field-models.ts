@@ -12,7 +12,7 @@ import type {
   FlowFieldBindingManifest,
   FlowModelSchemaManifest,
 } from '@nocobase/flow-engine';
-import { createFieldModelSchemaManifest } from './shared';
+import { createFieldModelSchemaManifest, createRuntimeFieldModelSlotSchema } from './shared';
 
 function toTitle(use: string) {
   return use
@@ -34,6 +34,13 @@ function createFieldManifest(use: string, options: Partial<FlowModelSchemaManife
     title: options.title || toTitle(use),
   };
 }
+
+const titleFieldRendererUses = new Set([
+  'RecordSelectFieldModel',
+  'RecordPickerFieldModel',
+  'CascadeSelectFieldModel',
+  'FilterFormRecordSelectFieldModel',
+]);
 
 function associationBinding(
   context: string,
@@ -113,7 +120,21 @@ export const coreFieldModelManifests: FlowModelSchemaManifest[] = [
   'DateOnlyFilterFieldModel',
   'DateTimeNoTzFilterFieldModel',
   'DateTimeTzFilterFieldModel',
-].map((use) => createFieldManifest(use));
+].map((use) =>
+  createFieldManifest(
+    use,
+    titleFieldRendererUses.has(use)
+      ? {
+          subModelSlots: {
+            field: createRuntimeFieldModelSlotSchema(
+              'display-field',
+              'Title field renderer model is resolved from runtime display field bindings.',
+            ),
+          },
+        }
+      : undefined,
+  ),
+);
 
 export const coreFieldBindingManifests: FlowFieldBindingManifest[] = [
   {

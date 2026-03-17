@@ -348,8 +348,9 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { return: returnType = 'model', includeAsyncNode = false } = ctx.action.params as any;
           const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
-            this.assertValidFlowModelSchema(values);
-            const uid = await repository.upsertModel(values);
+            const validationContext = await this.buildExistingNodeValidationContext(values, repository);
+            this.assertValidFlowModelSchema(validationContext.values, validationContext.options);
+            const uid = await repository.upsertModel(validationContext.values);
             if (returnType && returnType !== 'model' && returnType !== 'uid') {
               ctx.throw(400, `Invalid query param 'return': ${returnType}`, {
                 code: 'INVALID_PARAMS',
@@ -374,8 +375,11 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { values } = ctx.action.params as any;
           const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
-            this.assertValidFlowModelSchema(values, { allowRootObjectLocator: true });
-            ctx.body = await repository.ensureModel(values, { includeAsyncNode });
+            const validationContext = await this.buildExistingNodeValidationContext(values, repository, {
+              allowRootObjectLocator: true,
+            });
+            this.assertValidFlowModelSchema(validationContext.values, validationContext.options);
+            ctx.body = await repository.ensureModel(validationContext.values, { includeAsyncNode });
           } catch (error) {
             if (error instanceof FlowModelOperationError) {
               this.respondWithFlowModelOperationError(ctx, error);
@@ -492,8 +496,12 @@ export class PluginUISchemaStorageServer extends Plugin {
                 let output: any;
 
                 if (type === 'ensure') {
-                  this.assertValidFlowModelSchema(params, { allowRootObjectLocator: true });
-                  output = await repository.ensureModel(params, { transaction, includeAsyncNode });
+                  const validationContext = await this.buildExistingNodeValidationContext(params, repository, {
+                    allowRootObjectLocator: true,
+                    transaction,
+                  });
+                  this.assertValidFlowModelSchema(validationContext.values, validationContext.options);
+                  output = await repository.ensureModel(validationContext.values, { transaction, includeAsyncNode });
                 } else if (type === 'upsert') {
                   const modelValues = params?.values;
                   const modelUid = String(modelValues?.uid || '').trim();
@@ -504,8 +512,11 @@ export class PluginUISchemaStorageServer extends Plugin {
                       message: "flowModels:mutate upsert requires 'params.values.uid' for retry-safety",
                     });
                   }
-                  this.assertValidFlowModelSchema(modelValues);
-                  await repository.upsertModel(modelValues, { transaction });
+                  const validationContext = await this.buildExistingNodeValidationContext(modelValues, repository, {
+                    transaction,
+                  });
+                  this.assertValidFlowModelSchema(validationContext.values, validationContext.options);
+                  await repository.upsertModel(validationContext.values, { transaction });
                   output = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
                 } else if (type === 'destroy') {
                   const uid = String(params?.uid || '').trim();
@@ -725,6 +736,8 @@ export class PluginUISchemaStorageServer extends Plugin {
     values: any,
     options: {
       allowRootObjectLocator?: boolean;
+      existingNodeUids?: Set<string>;
+      existingRootObjectLocator?: boolean;
     } = {},
   ) {
     const issues = this.flowSchemaService.validateModelTree(values, options);
@@ -752,6 +765,138 @@ export class PluginUISchemaStorageServer extends Plugin {
         errors: errors.map((item) => this.toValidationError(item)),
       },
     });
+  }
+
+  private collectPayloadNodeUids(node: any, carry = new Set<string>()) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      return carry;
+    }
+
+    const uidValue = String(node.uid || '').trim();
+    if (uidValue) {
+      carry.add(uidValue);
+    }
+
+    const subModels = node.subModels;
+    if (!subModels || typeof subModels !== 'object' || Array.isArray(subModels)) {
+      return carry;
+    }
+
+    Object.values(subModels).forEach((value) => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => this.collectPayloadNodeUids(item, carry));
+        return;
+      }
+      this.collectPayloadNodeUids(value, carry);
+    });
+
+    return carry;
+  }
+
+  private async buildExistingNodeValidationContext(
+    values: any,
+    repository: FlowModelRepository,
+    options: {
+      allowRootObjectLocator?: boolean;
+      transaction?: any;
+    } = {},
+  ) {
+    const normalized = _.cloneDeep(values);
+    if (!normalized || typeof normalized !== 'object' || Array.isArray(normalized)) {
+      return {
+        values: normalized,
+        options: {
+          allowRootObjectLocator: !!options.allowRootObjectLocator,
+        },
+      };
+    }
+
+    const payloadUids = Array.from(this.collectPayloadNodeUids(normalized));
+    const existingNodeUids = new Set<string>();
+    const useByUid = new Map<string, string>();
+
+    if (payloadUids.length > 0) {
+      const instances = await repository.model.findAll({
+        where: {
+          uid: payloadUids,
+        },
+        transaction: options.transaction,
+      });
+
+      instances.forEach((instance) => {
+        const uidValue = String(instance.get('uid') || '').trim();
+        const existingOptions = FlowModelRepository.optionsToJson(instance.get('options'));
+        const useValue = String(existingOptions?.use || '').trim();
+        if (!uidValue) {
+          return;
+        }
+        existingNodeUids.add(uidValue);
+        if (useValue) {
+          useByUid.set(uidValue, useValue);
+        }
+      });
+    }
+
+    const hydrateExistingNodeUses = (node: any) => {
+      if (!node || typeof node !== 'object' || Array.isArray(node)) {
+        return;
+      }
+      const uidValue = String(node.uid || '').trim();
+      if (uidValue && existingNodeUids.has(uidValue) && !String(node.use || '').trim()) {
+        const useValue = useByUid.get(uidValue);
+        if (useValue) {
+          node.use = useValue;
+        }
+      }
+
+      const subModels = node.subModels;
+      if (!subModels || typeof subModels !== 'object' || Array.isArray(subModels)) {
+        return;
+      }
+      Object.values(subModels).forEach((value) => {
+        if (Array.isArray(value)) {
+          value.forEach((item) => hydrateExistingNodeUses(item));
+          return;
+        }
+        hydrateExistingNodeUses(value);
+      });
+    };
+
+    hydrateExistingNodeUses(normalized);
+
+    let existingRootObjectLocator = false;
+    const rootUidValue = String(normalized.uid || '').trim();
+    const rootParentIdValue = String(normalized.parentId || '').trim();
+    const rootSubKeyValue = String(normalized.subKey || '').trim();
+    if (
+      !rootUidValue &&
+      options.allowRootObjectLocator &&
+      rootParentIdValue &&
+      rootSubKeyValue &&
+      normalized.subType === 'object'
+    ) {
+      const existingChild = await repository.findModelByParentId(rootParentIdValue, {
+        subKey: rootSubKeyValue,
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      const existingUseValue = String(existingChild?.use || '').trim();
+      if (existingUseValue) {
+        existingRootObjectLocator = true;
+        if (!String(normalized.use || '').trim()) {
+          normalized.use = existingUseValue;
+        }
+      }
+    }
+
+    return {
+      values: normalized,
+      options: {
+        allowRootObjectLocator: !!options.allowRootObjectLocator,
+        existingNodeUids,
+        existingRootObjectLocator,
+      },
+    };
   }
 
   private toValidationError(issue: FlowSchemaValidationIssue) {

@@ -265,6 +265,106 @@ describe('flow-model save', () => {
     expect(res.body?.data).toBe('save-uid-1');
   });
 
+  it('should allow update payloads to omit existing use values', async () => {
+    const created = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-omit-use-root',
+        use: 'RecordSelectFieldModel',
+        subModels: {
+          field: {
+            uid: 'save-omit-use-child',
+            use: 'DisplayTextFieldModel',
+          },
+        },
+      },
+    });
+
+    expect(created.status).toBe(200);
+
+    const updated = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-omit-use-root',
+        subModels: {
+          field: {
+            uid: 'save-omit-use-child',
+          },
+        },
+      },
+    });
+
+    expect(updated.status).toBe(200);
+    expect(updated.body?.data?.use).toBe('RecordSelectFieldModel');
+    expect(updated.body?.data?.subModels?.field?.use).toBe('DisplayTextFieldModel');
+  });
+
+  it('should allow partial updates on existing nodes without changing upsert semantics', async () => {
+    const created = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-merge-existing-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(created.status).toBe(200);
+
+    const updated = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-merge-existing-root',
+        stepParams: {
+          settings: {
+            save: {},
+          },
+        },
+      },
+    });
+
+    expect(updated.status).toBe(200);
+    expect(updated.body?.data?.stepParams?.settings?.save?.enabled).toBeUndefined();
+    expect(updated.body?.data?.stepParams?.settings?.save).toEqual({});
+  });
+
+  it('should still validate new child nodes under existing parents', async () => {
+    const created = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-existing-parent-new-child',
+        use: 'SaveSchemaStrictModel',
+      },
+    });
+
+    expect(created.status).toBe(200);
+
+    const updated = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-existing-parent-new-child',
+        subModels: {
+          body: [
+            {
+              uid: 'save-existing-parent-new-child-invalid',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(updated.status).toBe(400);
+    expect(updated.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/body/0',
+          section: 'model',
+          keyword: 'required',
+        }),
+      ]),
+    );
+  });
+
   it('should expose schema discovery documents', async () => {
     const single = await agent.get('/flowModels:schema').query({
       use: 'SaveSchemaStrictModel',
@@ -1156,6 +1256,31 @@ describe('flow-model save', () => {
       required: ['directOnly'],
       additionalProperties: false,
     });
+  });
+
+  it('should allow title field renderer sub-models on association field models', async () => {
+    for (const use of [
+      'RecordSelectFieldModel',
+      'RecordPickerFieldModel',
+      'CascadeSelectFieldModel',
+      'FilterFormRecordSelectFieldModel',
+    ]) {
+      const res = await agent.resource('flowModels').save({
+        values: {
+          uid: `save-title-field-slot-${use}`,
+          use,
+          subModels: {
+            field: {
+              uid: `save-title-field-slot-${use}-child`,
+              use: 'DisplayTextFieldModel',
+            },
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body?.data?.use).toBe(use);
+    }
   });
 
   it('should validate the same child use differently under different parent contexts', async () => {

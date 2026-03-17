@@ -49,6 +49,12 @@ export interface FlowSchemaValidationIssue {
   schemaHash?: string;
 }
 
+interface FlowModelValidationOptions {
+  allowRootObjectLocator?: boolean;
+  existingNodeUids?: Set<string>;
+  existingRootObjectLocator?: boolean;
+}
+
 const MODEL_SHELL_SCHEMA: FlowJsonSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
   type: 'object',
@@ -252,12 +258,7 @@ export class FlowSchemaService {
     };
   }
 
-  validateModelTree(
-    input: any,
-    options: {
-      allowRootObjectLocator?: boolean;
-    } = {},
-  ): FlowSchemaValidationIssue[] {
+  validateModelTree(input: any, options: FlowModelValidationOptions = {}): FlowSchemaValidationIssue[] {
     const issues: FlowSchemaValidationIssue[] = [];
     this.validateModelNode(input, '#', issues, options, []);
     return issues;
@@ -267,116 +268,118 @@ export class FlowSchemaService {
     node: any,
     jsonPointer: string,
     issues: FlowSchemaValidationIssue[],
-    options: {
-      allowRootObjectLocator?: boolean;
-    } = {},
+    options: FlowModelValidationOptions = {},
     contextChain: FlowSchemaContextEdge[] = [],
   ) {
+    const nodeUid = String(node?.uid || '').trim();
     const modelUse = String(node?.use || '').trim();
     const modelDocument = this.registry.getModelDocument(modelUse, contextChain);
     const schemaHash = modelDocument.hash;
-    const shellSchema =
-      jsonPointer === '#' && options.allowRootObjectLocator && !String(node?.uid || '').trim()
-        ? MODEL_SHELL_OBJECT_LOCATOR_SCHEMA
-        : MODEL_SHELL_SCHEMA;
-    const shellCacheKey =
-      jsonPointer === '#' && options.allowRootObjectLocator && !String(node?.uid || '').trim()
-        ? `shell-object-locator:${node?.use || 'unknown'}`
-        : `shell:${node?.use || 'unknown'}`;
-    const shellOk = this.validateSchema(shellCacheKey, shellSchema, node);
-    if (!shellOk.valid) {
-      this.pushAjvIssues(shellOk.errors, issues, {
-        level: 'error',
-        jsonPointer,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        section: 'model',
-        schemaHash,
-      });
-      return;
-    }
-
-    if (modelUse === 'RuntimeFieldModel') {
-      issues.push({
-        level: 'error',
-        jsonPointer: `${jsonPointer}/use`,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        section: 'model',
-        keyword: 'invalid-use',
-        message: 'Model use "RuntimeFieldModel" is a runtime placeholder and cannot be submitted directly.',
-        schemaHash,
-      });
-      return;
-    }
-
+    const isRootObjectLocator = jsonPointer === '#' && options.allowRootObjectLocator && !nodeUid;
+    const isExistingNode =
+      (!!nodeUid && options.existingNodeUids?.has(nodeUid)) ||
+      (jsonPointer === '#' && options.existingRootObjectLocator);
+    const shellSchema = isRootObjectLocator ? MODEL_SHELL_OBJECT_LOCATOR_SCHEMA : MODEL_SHELL_SCHEMA;
+    const shellCacheKey = isRootObjectLocator
+      ? `shell-object-locator:${node?.use || 'unknown'}`
+      : `shell:${node?.use || 'unknown'}`;
     const resolved = this.registry.resolveModelSchema(modelUse, contextChain);
     const strict =
       resolved.coverage.strict ??
       (resolved.coverage.source !== 'third-party' && resolved.coverage.status !== 'unresolved');
 
-    if (!this.registry.isDirectUseAllowed(modelUse)) {
-      issues.push({
-        level: 'error',
-        jsonPointer: `${jsonPointer}/use`,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        section: 'model',
-        keyword: 'unsupported-model-use',
-        message: `Model use "${node?.use}" is base/abstract and cannot be submitted directly.`,
-        suggestedUses: this.registry.getSuggestedUses(modelUse),
-        schemaHash,
-      });
-      return;
+    if (!isExistingNode) {
+      const shellOk = this.validateSchema(shellCacheKey, shellSchema, node);
+      if (!shellOk.valid) {
+        this.pushAjvIssues(shellOk.errors, issues, {
+          level: 'error',
+          jsonPointer,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          section: 'model',
+          schemaHash,
+        });
+        return;
+      }
+
+      if (modelUse === 'RuntimeFieldModel') {
+        issues.push({
+          level: 'error',
+          jsonPointer: `${jsonPointer}/use`,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          section: 'model',
+          keyword: 'invalid-use',
+          message: 'Model use "RuntimeFieldModel" is a runtime placeholder and cannot be submitted directly.',
+          schemaHash,
+        });
+        return;
+      }
+
+      if (!this.registry.isDirectUseAllowed(modelUse)) {
+        issues.push({
+          level: 'error',
+          jsonPointer: `${jsonPointer}/use`,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          section: 'model',
+          keyword: 'unsupported-model-use',
+          message: `Model use "${node?.use}" is base/abstract and cannot be submitted directly.`,
+          suggestedUses: this.registry.getSuggestedUses(modelUse),
+          schemaHash,
+        });
+        return;
+      }
+
+      if (!this.registry.getModel(node.use) && resolved.coverage.status === 'unresolved') {
+        issues.push({
+          level: 'warning',
+          jsonPointer,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          section: 'model',
+          keyword: 'unresolved-model',
+          message: `No schema registered for model use "${node?.use}".`,
+          suggestedUses: this.registry.listModelUses({ directUseOnly: true }).slice(0, 20),
+          schemaHash,
+        });
+      }
+
+      if (typeof node?.stepParams !== 'undefined') {
+        this.validateSchemaSection({
+          issues,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          jsonPointer: `${jsonPointer}/stepParams`,
+          schema: this.registry.buildStaticStepParamsSchema(modelUse, contextChain),
+          value: node?.stepParams || {},
+          section: 'stepParams',
+          strict,
+          cacheKey: `step-params-shell:${schemaHash}`,
+          schemaHash,
+        });
+      }
+
+      if (typeof node?.flowRegistry !== 'undefined') {
+        this.validateSchemaSection({
+          issues,
+          modelUid: node?.uid,
+          modelUse: node?.use,
+          jsonPointer: `${jsonPointer}/flowRegistry`,
+          schema: this.registry.buildStaticFlowRegistrySchema(modelUse, contextChain),
+          value: node?.flowRegistry || {},
+          section: 'flowRegistry',
+          strict,
+          cacheKey: `flow-registry-shell:${schemaHash}`,
+          schemaHash,
+        });
+      }
+
+      this.validateFlowRegistry(node, jsonPointer, issues, strict, schemaHash, contextChain);
+      this.validateStepParams(node, jsonPointer, issues, strict, schemaHash, contextChain);
     }
 
-    if (!this.registry.getModel(node.use) && resolved.coverage.status === 'unresolved') {
-      issues.push({
-        level: 'warning',
-        jsonPointer,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        section: 'model',
-        keyword: 'unresolved-model',
-        message: `No schema registered for model use "${node?.use}".`,
-        suggestedUses: this.registry.listModelUses({ directUseOnly: true }).slice(0, 20),
-        schemaHash,
-      });
-    }
-
-    if (typeof node?.stepParams !== 'undefined') {
-      this.validateSchemaSection({
-        issues,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        jsonPointer: `${jsonPointer}/stepParams`,
-        schema: this.registry.buildStaticStepParamsSchema(modelUse, contextChain),
-        value: node?.stepParams || {},
-        section: 'stepParams',
-        strict,
-        cacheKey: `step-params-shell:${schemaHash}`,
-        schemaHash,
-      });
-    }
-
-    if (typeof node?.flowRegistry !== 'undefined') {
-      this.validateSchemaSection({
-        issues,
-        modelUid: node?.uid,
-        modelUse: node?.use,
-        jsonPointer: `${jsonPointer}/flowRegistry`,
-        schema: this.registry.buildStaticFlowRegistrySchema(modelUse, contextChain),
-        value: node?.flowRegistry || {},
-        section: 'flowRegistry',
-        strict,
-        cacheKey: `flow-registry-shell:${schemaHash}`,
-        schemaHash,
-      });
-    }
-
-    this.validateFlowRegistry(node, jsonPointer, issues, strict, schemaHash, contextChain);
-    this.validateStepParams(node, jsonPointer, issues, strict, schemaHash, contextChain);
-    this.validateSubModels(node, jsonPointer, issues, strict, schemaHash, contextChain);
+    this.validateSubModels(node, jsonPointer, issues, strict, schemaHash, contextChain, options);
   }
 
   private validateFlowRegistry(
@@ -617,6 +620,7 @@ export class FlowSchemaService {
     strict: boolean,
     schemaHash?: string,
     contextChain: FlowSchemaContextEdge[] = [],
+    validationOptions: FlowModelValidationOptions = {},
   ) {
     const subModels = node?.subModels;
     if (!subModels) return;
@@ -671,6 +675,7 @@ export class FlowSchemaService {
         slotValue.forEach((item, index) => {
           const itemPointer = `${slotPointer}/${index}`;
           const itemUse = readModelUse(item);
+          const itemUid = String(item?.uid || '').trim();
           const nextContext = this.validateSubModelChildUse({
             parentNode: node,
             slotKey,
@@ -681,11 +686,12 @@ export class FlowSchemaService {
             strict,
             schemaHash,
             contextChain,
+            skipValidation: !!itemUid && validationOptions.existingNodeUids?.has(itemUid),
           });
           if (itemUse === 'RuntimeFieldModel') {
             return;
           }
-          this.validateModelNode(item, itemPointer, issues, {}, nextContext);
+          this.validateModelNode(item, itemPointer, issues, validationOptions, nextContext);
         });
       } else {
         if (slotSchema && slotSchema.type !== 'object') {
@@ -702,6 +708,7 @@ export class FlowSchemaService {
             schemaHash,
           });
         }
+        const slotValueUid = String(slotValue?.uid || '').trim();
         const nextContext = this.validateSubModelChildUse({
           parentNode: node,
           slotKey,
@@ -712,11 +719,12 @@ export class FlowSchemaService {
           strict,
           schemaHash,
           contextChain,
+          skipValidation: !!slotValueUid && validationOptions.existingNodeUids?.has(slotValueUid),
         });
         if (readModelUse(slotValue) === 'RuntimeFieldModel') {
           continue;
         }
-        this.validateModelNode(slotValue, slotPointer, issues, {}, nextContext);
+        this.validateModelNode(slotValue, slotPointer, issues, validationOptions, nextContext);
       }
     }
   }
@@ -731,6 +739,7 @@ export class FlowSchemaService {
     strict: boolean;
     schemaHash?: string;
     contextChain: FlowSchemaContextEdge[];
+    skipValidation?: boolean;
   }): FlowSchemaContextEdge[] {
     const childUse = String(options?.value?.use || '').trim();
     const fieldBinding = this.collectRuntimeFieldBindingUses(options.slotSchema, options.parentNode, options.slotKey);
@@ -738,7 +747,7 @@ export class FlowSchemaService {
     const allowUnknownUses =
       !!options.slotSchema && !options.slotSchema.fieldBindingContext && slotAllowsUnknownUses(options.slotSchema);
 
-    if (childUse === 'RuntimeFieldModel') {
+    if (!options.skipValidation && childUse === 'RuntimeFieldModel') {
       options.issues.push({
         level: 'error',
         jsonPointer: `${options.jsonPointer}/use`,
@@ -756,7 +765,13 @@ export class FlowSchemaService {
       });
     }
 
-    if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse) && !allowUnknownUses) {
+    if (
+      !options.skipValidation &&
+      childUse &&
+      allowedUses.length > 0 &&
+      !allowedUses.includes(childUse) &&
+      !allowUnknownUses
+    ) {
       options.issues.push({
         level: options.strict ? 'error' : 'warning',
         jsonPointer: `${options.jsonPointer}/use`,
