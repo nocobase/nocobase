@@ -13,10 +13,16 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
+import { pluginSvgr } from '@rsbuild/plugin-svgr';
+import { generatePlugins } from '@nocobase/devtools/umiConfig';
 import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+if (process.env.SKIP_GENERATE_PLUGINS !== 'true') {
+  generatePlugins();
+}
 
 function ensurePublicPath(value: string) {
   let normalized = value || '/v2/';
@@ -76,7 +82,7 @@ export default defineConfig(({ command }) => {
   const workspaceAliases = getRsbuildAlias();
 
   return {
-    plugins: [pluginReact(), pluginLess(), pluginNodePolyfill()],
+    plugins: [pluginReact(), pluginLess(), pluginNodePolyfill(), pluginSvgr()],
     resolve: {
       alias: workspaceAliases,
     },
@@ -172,11 +178,6 @@ export default defineConfig(({ command }) => {
           ...config.experiments,
           outputModule: isBuild,
         };
-        config.module.rules.push({
-          test: /\.svg$/i,
-          issuer: /\.[jt]sx?$/,
-          use: ['@svgr/webpack'],
-        });
         config.optimization = {
           ...config.optimization,
           runtimeChunk: 'single',

@@ -7683,13 +7683,25 @@
     util "^0.12.5"
     vm-browserify "^1.1.2"
 
-"@rsbuild/plugin-react@1.4.6":
+"@rsbuild/plugin-react@1.4.6", "@rsbuild/plugin-react@^1.4.6":
   version "1.4.6"
   resolved "https://registry.npmmirror.com/@rsbuild/plugin-react/-/plugin-react-1.4.6.tgz#69dda9e9821976e476eb839ba4eb53153e7a2eb9"
   integrity sha512-LAT6xHlEyZKA0VjF/ph5d50iyG+WSmBx+7g98HNZUwb94VeeTMZFB8qVptTkbIRMss3BNKOXmHOu71Lhsh9oEw==
   dependencies:
     "@rspack/plugin-react-refresh" "^1.6.1"
     react-refresh "^0.18.0"
+
+"@rsbuild/plugin-svgr@^1.3.1":
+  version "1.3.1"
+  resolved "https://registry.npmmirror.com/@rsbuild/plugin-svgr/-/plugin-svgr-1.3.1.tgz#89ddec86553e7403985d90268199eb6a45e8b955"
+  integrity sha512-HQupp4ubDgoPg0VHva68BZKNEb2GM/bZfQP/Pit2tV7vu/SnOO8MZFdiFbjyK/VXCdQktIMbkNREG7xDgpo/ww==
+  dependencies:
+    "@rsbuild/plugin-react" "^1.4.6"
+    "@svgr/core" "8.1.0"
+    "@svgr/plugin-jsx" "8.1.0"
+    "@svgr/plugin-svgo" "8.1.0"
+    deepmerge "^4.3.1"
+    loader-utils "^3.3.1"
 
 "@rsdoctor/client@0.4.11":
   version "0.4.11"
@@ -22367,6 +22379,11 @@ loader-utils@^2.0.0, loader-utils@^2.0.4:
     big.js "^5.2.2"
     emojis-list "^3.0.0"
     json5 "^2.1.2"
+
+loader-utils@^3.3.1:
+  version "3.3.1"
+  resolved "https://registry.npmmirror.com/loader-utils/-/loader-utils-3.3.1.tgz#735b9a19fd63648ca7adbd31c2327dfe281304e5"
+  integrity sha512-FMJTLMXfCLMLfJxcX9PFqX5qD88Z5MRGaZCVzfuqeZSPsyiBzs+pahDQjbIWz2QIzPZz0NX9Zy4FX3lmK6YHIg==
 
 loadjs@^4.3.0:
   version "4.3.0"
