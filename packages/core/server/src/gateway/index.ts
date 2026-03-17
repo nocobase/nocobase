@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, SystemLogger, Logger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { lockdownSes } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
@@ -212,7 +212,7 @@ export class Gateway extends EventEmitter {
     this.emit('appSelectorChanged');
   }
 
-  getLogger(appName: string, res: ServerResponse) {
+  getLogger(appName: string, res: ServerResponse): Logger {
     const reqId = randomUUID();
     res.setHeader('X-Request-Id', reqId);
     let logger = this.loggers.get(appName);
