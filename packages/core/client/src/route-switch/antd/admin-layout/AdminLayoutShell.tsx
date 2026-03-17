@@ -11,46 +11,35 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { theme as antdTheme, Badge, ConfigProvider, Grid, Tooltip } from 'antd';
+import { theme as antdTheme, ConfigProvider, Grid } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
-import React, { FC, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { AdminLayoutModel } from './AdminLayoutModel';
 import {
-  NocoBaseDesktopRoute,
-  NocoBaseDesktopRouteType,
-  NocoBaseRouteContext,
-  findFirstPageRoute,
-  useAllAccessDesktopRoutes,
-  useMobileLayout,
-} from '../../../admin-shell';
+  AdminLayoutMenuModelRenderer,
+  type AdminLayoutMenuNode,
+  type AdminLayoutMenuRenderOptions,
+  HeaderContext,
+  MobileMenuControlContext,
+} from './AdminLayoutMenuModels';
+import { ADMIN_LAYOUT_MODEL_UID } from './constants';
+
+import { NocoBaseRouteContext, useAllAccessDesktopRoutes, useMobileLayout } from '../../../admin-shell';
 import {
   DndContext,
-  Icon,
   ParentRouteContext,
-  SortableItem,
   useDesignable,
   useGlobalTheme,
   useMenuDragEnd,
-  useParseURLAndParams,
-  useRouterBasename,
-  useSchemaInitializerRender,
   useSystemSettings,
   useToken,
 } from '../../../';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { navigateWithinSelf } from '../../../block-provider/hooks';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
-import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
-import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
-import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
-import { VariableScope } from '../../../variables/VariableScope';
-import { type AdminLayoutModel } from './AdminLayoutModel';
-import { ADMIN_LAYOUT_MODEL_UID } from './constants';
-import { MenuSchemaToolbar, ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
-import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
+import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
+import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -105,238 +94,6 @@ const NocoBaseLogo = () => {
   );
 };
 
-/**
- * Fix the issue where SchemaToolbar cannot be displayed normally in Group
- * @returns
- */
-const MenuSchemaToolbarWithContainer = () => {
-  const divRef = useRef(null);
-  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setContainer(divRef.current.parentElement.parentElement.parentElement);
-  }, []);
-
-  return (
-    <>
-      <MenuSchemaToolbar container={container} />
-      <div ref={divRef}></div>
-    </>
-  );
-};
-
-const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
-const MobileMenuControlContext = React.createContext<{
-  closeMobileMenu: () => void;
-}>({
-  closeMobileMenu: () => {},
-});
-
-const HeaderContext = React.createContext<{ inHeader: boolean }>({ inHeader: false });
-
-const GroupItem: FC<{ item: any }> = (props) => {
-  const { item } = props;
-  const { designable } = useDesignable();
-  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
-
-  // fake schema used to pass routing information to SortableItem
-  const fakeSchema: any = { __route__: item._route };
-
-  return (
-    <ParentRouteContext.Provider value={item._parentRoute}>
-      <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={item.name} style={menuItemStyle}>
-          {props.children}
-          {designable && <MenuSchemaToolbarWithContainer />}
-          {badgeCount != null && (
-            <Badge
-              {...item._route.options.badge}
-              count={badgeCount}
-              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
-              dot={false}
-            ></Badge>
-          )}
-        </SortableItem>
-      </NocoBaseRouteContext.Provider>
-    </ParentRouteContext.Provider>
-  );
-};
-
-const WithTooltip: FC<{ title: string; hidden: boolean; badgeProps: any }> = (props) => {
-  const { inHeader } = useContext(HeaderContext);
-
-  return (
-    <RouteContext.Consumer>
-      {(context) =>
-        context.collapsed && !props.hidden && !inHeader ? (
-          <Tooltip title={props.title} placement="right">
-            <Badge {...props.badgeProps} style={{ transform: 'none', maxWidth: '10em' }} dot={false}>
-              {props.children}
-            </Badge>
-          </Tooltip>
-        ) : (
-          props.children
-        )
-      }
-    </RouteContext.Consumer>
-  );
-};
-
-const MenuItem: FC<{ item: any; options: { isMobile: boolean; collapsed: boolean } }> = (props) => {
-  const { item } = props;
-  const { parseURLAndParams } = useParseURLAndParams();
-  const divRef = useRef(null);
-  const location = useLocation();
-  const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
-  const navigate = useNavigateNoUpdate();
-  const basenameOfCurrentRouter = useRouterBasename();
-  const { closeMobileMenu } = useContext(MobileMenuControlContext);
-  // 如果点击的是一个 group，直接跳转到第一个子页面
-  const path = item.redirect || item.path;
-  const badgeProps = { ...item._route.options?.badge, count: badgeCount };
-
-  useEffect(() => {
-    if (divRef.current) {
-      // 顶部 Add menu item 按钮放置在右侧
-      divRef.current.parentElement.parentElement.style.order = 999;
-
-      divRef.current.parentElement.parentElement.style.paddingLeft = 0;
-      divRef.current.parentElement.parentElement.style.padding = 0;
-    }
-  }, []);
-
-  const handleClickLink = useCallback(
-    async (event: React.MouseEvent) => {
-      const href = item._route.options?.href;
-      const params = item._route.options?.params;
-      const openInNewWindow = item._route.options?.openInNewWindow;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      try {
-        const url = await parseURLAndParams(href, params || []);
-
-        if (openInNewWindow !== false) {
-          if (props.options?.isMobile) {
-            closeMobileMenu();
-          }
-          window.open(url, '_blank');
-        } else {
-          runAfterMobileMenuClosed({
-            isMobile: !!props.options?.isMobile,
-            closeMobileMenu,
-            callback: () => {
-              navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
-            },
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        if (props.options?.isMobile) {
-          closeMobileMenu();
-        }
-        window.open(href, '_blank');
-      }
-    },
-    [parseURLAndParams, item, props.options?.isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter],
-  );
-
-  const handleClickMenuItem = useCallback(
-    (event: React.MouseEvent) => {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (!props.options?.isMobile) {
-        navigate(path);
-        return;
-      }
-
-      // 移动端先收起菜单，再跳转，避免返回时菜单残留在打开态。
-      runAfterMobileMenuClosed({
-        isMobile: !!props.options?.isMobile,
-        closeMobileMenu,
-        callback: () => {
-          navigate(path);
-        },
-      });
-    },
-    [props.options?.isMobile, closeMobileMenu, navigate, path],
-  );
-
-  if (item._hidden) {
-    return null;
-  }
-
-  const fakeSchema: any = { __route__: item._route };
-
-  // "Add menu item" does not need SchemaToolbar
-  if (item.key === 'x-designer-button') {
-    return (
-      <div ref={divRef}>
-        <ResetThemeTokenAndKeepAlgorithm>
-          <ParentRouteContext.Provider value={item._parentRoute}>
-            <NocoBaseRouteContext.Provider value={item._route}>{props.children}</NocoBaseRouteContext.Provider>
-          </ParentRouteContext.Provider>
-        </ResetThemeTokenAndKeepAlgorithm>
-      </div>
-    );
-  }
-
-  if (item._route?.type === NocoBaseDesktopRouteType.link) {
-    // fake schema used to pass routing information to SortableItem
-    return (
-      <ParentRouteContext.Provider value={item._parentRoute}>
-        <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
-            <div onClick={handleClickLink}>
-              {/* 这里是为了扩大点击区域 */}
-              <Link to={location.pathname} aria-label={item.name}>
-                {props.children}
-              </Link>
-            </div>
-            <MenuSchemaToolbar />
-            {badgeCount != null && (
-              <Badge
-                {...item._route.options?.badge}
-                count={badgeCount}
-                style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
-                dot={false}
-              ></Badge>
-            )}
-          </SortableItem>
-        </NocoBaseRouteContext.Provider>
-      </ParentRouteContext.Provider>
-    );
-  }
-
-  return (
-    <ParentRouteContext.Provider value={item._parentRoute}>
-      <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
-          <WithTooltip
-            title={item.name}
-            hidden={item._route.type === NocoBaseDesktopRouteType.group || item._depth > 0}
-            badgeProps={badgeProps}
-          >
-            <Link to={path} aria-label={item.name} onClick={handleClickMenuItem}>
-              {props.children}
-            </Link>
-          </WithTooltip>
-          <MenuSchemaToolbar />
-          {badgeCount != null && (
-            <Badge
-              {...badgeProps}
-              style={{ marginLeft: 4, color: item._route.options?.badge?.textColor, maxWidth: '10em' }}
-              dot={false}
-            ></Badge>
-          )}
-        </SortableItem>
-      </NocoBaseRouteContext.Provider>
-    </ParentRouteContext.Provider>
-  );
-};
-
 const resetStyle = css`
   .ant-layout-sider-children {
     margin-inline-end: 0 !important;
@@ -361,32 +118,6 @@ const resetStyle = css`
 const contentStyle = {
   paddingBlock: 0,
   paddingInline: 0,
-};
-
-const MenuItemTitle: React.FC = (props) => {
-  return <>{props.children}</>;
-};
-
-const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
-
-const menuItemRender = (item, dom, options) => {
-  return (
-    <VariableScope scopeId={item._route.schemaUid} type="menuItem">
-      <MenuItem item={item} options={options}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-      </MenuItem>
-    </VariableScope>
-  );
-};
-
-const subMenuItemRender = (item, dom) => {
-  return (
-    <VariableScope scopeId={item._route.schemaUid} type="groupItem">
-      <GroupItem item={item}>
-        <MenuItemTitleWithTooltip tooltip={item._route?.tooltip}>{dom}</MenuItemTitleWithTooltip>
-      </GroupItem>
-    </VariableScope>
-  );
 };
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
@@ -498,7 +229,7 @@ const AdminLayoutHeaderActionsSlot: FC<{ isMobile?: boolean }> = ({ isMobile }) 
     return null;
   }
 
-  return <FlowModelRenderer model={model.createFork({ isMobile }, `admin-layout-header-actions-${isMobile}`)} />;
+  return model.renderHeaderActions({ isMobile });
 };
 
 const actionsRender: any = (props) => {
@@ -541,6 +272,63 @@ function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
   return props.children;
 }
 
+const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
+  const divRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (divRef.current) {
+      // 顶部 Add menu item 按钮放置在右侧
+      divRef.current.parentElement.parentElement.style.order = '999';
+      divRef.current.parentElement.parentElement.style.paddingLeft = '0';
+      divRef.current.parentElement.parentElement.style.padding = '0';
+    }
+  }, []);
+
+  return (
+    <div ref={divRef}>
+      <ResetThemeTokenAndKeepAlgorithm>
+        <ParentRouteContext.Provider value={props.item._parentRoute}>
+          <NocoBaseRouteContext.Provider value={props.item._route}>{props.children}</NocoBaseRouteContext.Provider>
+        </ParentRouteContext.Provider>
+      </ResetThemeTokenAndKeepAlgorithm>
+    </div>
+  );
+};
+
+const renderMenuNodeWithModel = (
+  item: AdminLayoutMenuNode,
+  dom: React.ReactNode,
+  renderType: 'item' | 'group',
+  options?: AdminLayoutMenuRenderOptions,
+) => {
+  if (item?._model) {
+    return (
+      <AdminLayoutMenuModelRenderer
+        model={item._model}
+        item={item}
+        dom={dom}
+        options={options}
+        renderType={renderType}
+        key={`admin-layout-menu-${renderType}-${item._model.uid}-${item.path}-${options?.isMobile}-${options?.collapsed}`}
+      />
+    );
+  }
+
+  if (item?.key === 'x-designer-button') {
+    return <DesignerButtonMenuItem item={item}>{dom}</DesignerButtonMenuItem>;
+  }
+
+  return dom;
+};
+
+const menuItemRender = (item, dom, options) => {
+  return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'item', options);
+};
+
+const subMenuItemRender = (item, dom) => {
+  return renderMenuNodeWithModel(item as AdminLayoutMenuNode, dom, 'group');
+};
+
 export const AdminLayoutShell = (props) => {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
@@ -555,6 +343,10 @@ export const AdminLayoutShell = (props) => {
   const { isMobileLayout } = useMobileLayout();
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
+  const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({
+    path: '/',
+    children: [],
+  });
   const doNotChangeCollapsedRef = useRef(false);
   const { t } = useMenuTranslation();
   const designable = isMobileSider ? false : _designable;
@@ -563,20 +355,16 @@ export const AdminLayoutShell = (props) => {
 
   useEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-  }, [adminLayoutModel, allAccessRoutes]);
-
-  const route = useMemo(() => {
-    // 菜单首屏直接基于最新路由派生，避免复用旧 model 时短暂渲染出过期菜单。
-    const children = convertRoutesToLayout(allAccessRoutes, {
+    const nextRoute = adminLayoutModel?.subModels.menu?.toProLayoutRoute({
       designable,
       isMobile: isMobileSider,
       t,
-    });
-    return {
+    }) || {
       path: '/',
-      children: Array.isArray(children) ? children : [],
+      children: [],
     };
-  }, [allAccessRoutes, designable, isMobileSider, t]);
+    setRoute(nextRoute);
+  }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -701,139 +489,3 @@ export const AdminLayoutShell = (props) => {
     </div>
   );
 };
-
-const MenuDesignerButton: FC<{ testId: string }> = (props) => {
-  const { render: renderInitializer } = useSchemaInitializerRender(menuItemInitializer);
-
-  return renderInitializer({
-    style: { background: 'none' },
-    'data-testid': props.testId,
-  });
-};
-
-const MenuTitleWithIcon: FC<{ icon: any; title: string }> = (props) => {
-  if (props.icon) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <Icon type={props.icon} />
-        <span>{props.title}</span>
-      </div>
-    );
-  }
-
-  return <>{props.title}</>;
-};
-
-export const shouldRenderIconInTitle = ({ depth, isMobile }: { depth: number; isMobile: boolean }) => {
-  // ProLayout 在深层菜单和移动端侧栏一级菜单里都可能忽略 icon 字段，因此统一把图标渲染到标题内部。
-  return depth > 1 || (isMobile && depth > 0);
-};
-
-function convertRoutesToLayout(
-  routes: NocoBaseDesktopRoute[],
-  { designable, parentRoute, isMobile, t, depth = 0 }: any,
-) {
-  if (!routes || !Array.isArray(routes)) return [];
-
-  const getInitializerButton = (testId: string) => {
-    return {
-      key: 'x-designer-button',
-      name: <MenuDesignerButton testId={testId} />,
-      path: '/',
-      disabled: true,
-      _route: {},
-      _parentRoute: {},
-      icon: <Icon type="setting" />,
-    };
-  };
-
-  const result: any[] = routes
-    .map((item) => {
-      if (!item || typeof item !== 'object') {
-        return null;
-      }
-
-      const shouldShowIconInTitle = shouldRenderIconInTitle({ depth, isMobile });
-      const name = shouldShowIconInTitle ? <MenuTitleWithIcon icon={item.icon} title={t(item.title)} /> : t(item.title);
-      const icon = shouldShowIconInTitle ? null : item.icon ? <Icon type={item.icon} /> : null;
-
-      if (item.type === NocoBaseDesktopRouteType.link) {
-        return {
-          name,
-          icon,
-          path: '/',
-          hideInMenu: item.hideInMenu,
-          _route: item,
-          _parentRoute: parentRoute,
-          _depth: depth,
-        };
-      }
-
-      if (item.type === NocoBaseDesktopRouteType.page) {
-        return {
-          name,
-          icon,
-          path: `/admin/${item.schemaUid}`,
-          redirect: `/admin/${item.schemaUid}`,
-          hideInMenu: item.hideInMenu,
-          _route: item,
-          _parentRoute: parentRoute,
-          _depth: depth,
-        };
-      }
-
-      if (item.type === NocoBaseDesktopRouteType.flowPage) {
-        return {
-          name,
-          icon,
-          path: `/admin/${item.schemaUid}`,
-          redirect: `/admin/${item.schemaUid}`,
-          hideInMenu: item.hideInMenu,
-          _route: item,
-          _parentRoute: parentRoute,
-          _depth: depth,
-        };
-      }
-
-      if (item.type === NocoBaseDesktopRouteType.group) {
-        const itemChildren = Array.isArray(item.children) ? item.children : [];
-        const children =
-          convertRoutesToLayout(itemChildren, { designable, parentRoute: item, depth: depth + 1, isMobile, t }) || [];
-
-        // add a designer button
-        if (designable && depth === 0) {
-          children.push({ ...getInitializerButton('schema-initializer-Menu-side'), _parentRoute: item });
-        }
-
-        const groupRoute: any = {
-          name,
-          icon,
-          path: `/admin/${item.id}`,
-          redirect:
-            children[0]?.key === 'x-designer-button'
-              ? undefined
-              : `/admin/${findFirstPageRoute(itemChildren)?.schemaUid || item.id}`,
-          hideInMenu: item.hideInMenu,
-          _route: item,
-          _depth: depth,
-        };
-
-        if (children.length > 0) {
-          groupRoute.routes = children;
-        }
-
-        return groupRoute;
-      }
-
-      return null;
-    })
-    .filter(Boolean);
-
-  if (designable && depth === 0) {
-    isMobile
-      ? result.push({ ...getInitializerButton('schema-initializer-Menu-header') })
-      : result.unshift({ ...getInitializerButton('schema-initializer-Menu-header') });
-  }
-
-  return result;
-}

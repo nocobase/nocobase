@@ -32,7 +32,7 @@ export {
   useKeepAlive,
   useMobileLayout,
 } from '../../../admin-shell';
-export { shouldRenderIconInTitle } from './AdminLayoutShell';
+export { shouldRenderIconInTitle } from './AdminLayoutMenuModels';
 
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();

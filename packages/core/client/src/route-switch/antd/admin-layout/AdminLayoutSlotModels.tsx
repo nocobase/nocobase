@@ -197,11 +197,15 @@ export class AdminLayoutContentModel extends FlowModel {
  * ```
  */
 export class AdminLayoutHeaderActionsModel extends FlowModel {
-  render() {
-    if (this.props.isMobile) {
+  renderHeaderActions(options: { isMobile?: boolean }) {
+    if (options.isMobile) {
       return <MobileActions />;
     }
 
     return <PinnedPluginList />;
+  }
+
+  render() {
+    return this.renderHeaderActions({ isMobile: this.props.isMobile });
   }
 }
