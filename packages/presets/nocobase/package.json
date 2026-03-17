@@ -58,6 +58,7 @@
     "@nocobase/plugin-form-drafts": "2.1.0-alpha.9",
     "@nocobase/plugin-gantt": "2.1.0-alpha.9",
     "@nocobase/plugin-graph-collection-manager": "2.1.0-alpha.9",
+    "@nocobase/plugin-idp-oauth": "2.1.0-alpha.9",
     "@nocobase/plugin-kanban": "2.1.0-alpha.9",
     "@nocobase/plugin-license": "2.1.0-alpha.9",
     "@nocobase/plugin-locale-tester": "2.1.0-alpha.9",
