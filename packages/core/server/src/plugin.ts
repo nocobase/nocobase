@@ -244,7 +244,13 @@ export abstract class Plugin<O = any> implements PluginInterface {
     const employeeLoader = new AIEmployeeLoader(this.ai, {
       scan: {
         basePath,
-        pattern: ['**/ai-employees/*.ts', '**/ai-employees/*/index.ts', '!**/ai-employees/**/*.d.ts'],
+        pattern: [
+          '**/ai-employees/*.ts',
+          '**/ai-employees/*/index.ts',
+          '**/ai-employees/*.js',
+          '**/ai-employees/*/index.js',
+          '!**/ai-employees/**/*.d.ts',
+        ],
       },
       log: this.log,
     });
