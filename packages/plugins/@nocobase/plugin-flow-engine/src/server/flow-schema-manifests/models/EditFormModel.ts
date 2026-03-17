@@ -9,6 +9,7 @@
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
 import {
+  createCurrentRecordCollectionPattern,
   createFormBlockCommonPatterns,
   createFormBlockDynamicHints,
   createFormBlockMinimalExample,
@@ -72,22 +73,16 @@ export const editFormModelSchemaManifest: FlowModelSchemaManifest = {
     },
     commonPatterns: [
       ...createFormBlockCommonPatterns('EditFormModel'),
-      {
-        title: 'Edit form with record scope',
-        snippet: {
-          use: 'EditFormModel',
-          stepParams: {
-            formSettings: {
-              dataScope: {
-                filter: {
-                  logic: '$and',
-                  items: [],
-                },
-              },
+      createCurrentRecordCollectionPattern('EditFormModel', {
+        formSettings: {
+          dataScope: {
+            filter: {
+              logic: '$and',
+              items: [],
             },
           },
         },
-      },
+      }),
     ],
     antiPatterns: formBlockAntiPatterns,
     dynamicHints: createFormBlockDynamicHints('EditFormModel'),

@@ -9,6 +9,9 @@
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
 import {
+  collectionResourceSettingsStepParamsSchema,
+  createCollectionResourceStepParams,
+  createCurrentRecordCollectionPattern,
   genericModelNodeSchema,
   recordActionUses,
   dataScopeParamsSchema,
@@ -26,6 +29,7 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
   stepParamsSchema: {
     type: 'object',
     properties: {
+      ...(((collectionResourceSettingsStepParamsSchema as any).properties || {}) as Record<string, any>),
       detailsSettings: {
         type: 'object',
         properties: {
@@ -64,36 +68,9 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
   skeleton: {
     uid: 'todo-uid',
     use: 'DetailsBlockModel',
-    stepParams: {
-      detailsSettings: {
-        layout: {
-          layout: 'vertical',
-          colon: true,
-        },
-        dataScope: {
-          filter: {
-            logic: '$and',
-            items: [],
-          },
-        },
-        linkageRules: {
-          value: [],
-        },
-      },
-    },
-    subModels: {
-      grid: {
-        uid: 'todo-details-grid-uid',
-        use: 'DetailsGridModel',
-      },
-      actions: [],
-    },
-  },
-  docs: {
-    minimalExample: {
-      uid: 'details-users',
-      use: 'DetailsBlockModel',
-      stepParams: {
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
         detailsSettings: {
           layout: {
             layout: 'vertical',
@@ -110,6 +87,39 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
           },
         },
       },
+    ),
+    subModels: {
+      grid: {
+        uid: 'todo-details-grid-uid',
+        use: 'DetailsGridModel',
+      },
+      actions: [],
+    },
+  },
+  docs: {
+    minimalExample: {
+      uid: 'details-users',
+      use: 'DetailsBlockModel',
+      stepParams: createCollectionResourceStepParams(
+        {},
+        {
+          detailsSettings: {
+            layout: {
+              layout: 'vertical',
+              colon: true,
+            },
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      ),
       subModels: {
         grid: {
           uid: 'details-grid-users',
@@ -119,6 +129,14 @@ export const detailsBlockModelSchemaManifest: FlowModelSchemaManifest = {
       },
     },
     commonPatterns: [
+      createCurrentRecordCollectionPattern('DetailsBlockModel', {
+        detailsSettings: {
+          layout: {
+            layout: 'vertical',
+            colon: true,
+          },
+        },
+      }),
       {
         title: 'Details block with record actions',
         snippet: {

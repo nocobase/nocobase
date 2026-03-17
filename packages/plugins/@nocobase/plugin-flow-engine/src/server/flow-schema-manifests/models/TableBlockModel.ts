@@ -9,7 +9,10 @@
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
 import {
+  collectionResourceSettingsStepParamsSchema,
   collectionActionUses,
+  createAssociatedCollectionPattern,
+  createCollectionResourceStepParams,
   dataScopeParamsSchema,
   genericModelNodeSchema,
   sortingRuleParamsSchema,
@@ -40,6 +43,7 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
   stepParamsSchema: {
     type: 'object',
     properties: {
+      ...(((collectionResourceSettingsStepParamsSchema as any).properties || {}) as Record<string, any>),
       resourceSettings2: {
         type: 'object',
         additionalProperties: true,
@@ -118,32 +122,9 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
   skeleton: {
     uid: 'todo-uid',
     use: 'TableBlockModel',
-    stepParams: {
-      tableSettings: {
-        pageSize: {
-          pageSize: 20,
-        },
-        showRowNumbers: {
-          showIndex: true,
-        },
-        dataScope: {
-          filter: {
-            logic: '$and',
-            items: [],
-          },
-        },
-      },
-    },
-    subModels: {
-      columns: [],
-      actions: [],
-    },
-  },
-  docs: {
-    minimalExample: {
-      uid: 'table-block-users',
-      use: 'TableBlockModel',
-      stepParams: {
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
         tableSettings: {
           pageSize: {
             pageSize: 20,
@@ -159,6 +140,35 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
           },
         },
       },
+    ),
+    subModels: {
+      columns: [],
+      actions: [],
+    },
+  },
+  docs: {
+    minimalExample: {
+      uid: 'table-block-users',
+      use: 'TableBlockModel',
+      stepParams: createCollectionResourceStepParams(
+        {},
+        {
+          tableSettings: {
+            pageSize: {
+              pageSize: 20,
+            },
+            showRowNumbers: {
+              showIndex: true,
+            },
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+          },
+        },
+      ),
       subModels: {
         columns: [],
         actions: [],
@@ -168,16 +178,26 @@ export const tableBlockModelSchemaManifest: FlowModelSchemaManifest = {
       {
         title: 'Basic table with page size and sorting',
         snippet: {
-          stepParams: {
-            tableSettings: {
-              pageSize: { pageSize: 20 },
-              defaultSorting: {
-                sort: [{ field: 'createdAt', direction: 'desc' }],
+          stepParams: createCollectionResourceStepParams(
+            {},
+            {
+              tableSettings: {
+                pageSize: { pageSize: 20 },
+                defaultSorting: {
+                  sort: [{ field: 'createdAt', direction: 'desc' }],
+                },
               },
             },
-          },
+          ),
         },
       },
+      createAssociatedCollectionPattern('TableBlockModel', {
+        tableSettings: {
+          pageSize: {
+            pageSize: 20,
+          },
+        },
+      }),
     ],
     antiPatterns: [
       {

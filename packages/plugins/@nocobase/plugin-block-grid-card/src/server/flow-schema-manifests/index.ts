@@ -75,6 +75,69 @@ const genericModelNodeSchema: FlowJsonSchema = {
   additionalProperties: true,
 };
 
+const collectionResourceInitSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    dataSourceKey: { type: 'string' },
+    collectionName: { type: 'string' },
+    associationName: { type: 'string' },
+    sourceId: { type: ['string', 'number'] as any },
+    filterByTk: { type: ['string', 'number'] as any },
+  },
+  required: ['dataSourceKey', 'collectionName'],
+  additionalProperties: true,
+};
+
+const collectionResourceSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    resourceSettings: {
+      type: 'object',
+      properties: {
+        init: collectionResourceInitSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+const createCollectionResourceStepParams = (
+  init: Partial<{
+    dataSourceKey: string;
+    collectionName: string;
+    associationName: string;
+    sourceId: string | number;
+    filterByTk: string | number;
+  }> = {},
+  extraStepParams: Record<string, any> = {},
+) => ({
+  resourceSettings: {
+    init: {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      ...init,
+    },
+  },
+  ...extraStepParams,
+});
+
+const createAssociatedCollectionPattern = (use: string, extraStepParams: Record<string, any> = {}) => ({
+  title: 'Associated records in popup/new scene',
+  description: 'Use associationName + sourceId when the block should load records through a parent relation.',
+  snippet: {
+    use,
+    stepParams: createCollectionResourceStepParams(
+      {
+        collectionName: 'roles',
+        associationName: 'users.roles',
+        sourceId: '{{ctx.view.inputArgs.sourceId}}',
+      },
+      extraStepParams,
+    ),
+  },
+});
+
 const gridCardItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'GridCardItemModel',
   title: 'Grid card item',
@@ -108,6 +171,7 @@ const gridCardBlockModelSchemaManifest: FlowModelSchemaManifest = {
   stepParamsSchema: {
     type: 'object',
     properties: {
+      ...(((collectionResourceSettingsStepParamsSchema as any).properties || {}) as Record<string, any>),
       resourceSettings2: {
         type: 'object',
         additionalProperties: true,
@@ -165,32 +229,9 @@ const gridCardBlockModelSchemaManifest: FlowModelSchemaManifest = {
   skeleton: {
     uid: 'todo-uid',
     use: 'GridCardBlockModel',
-    stepParams: {
-      GridCardSettings: {
-        columnCount: {
-          xs: 1,
-          md: 2,
-          lg: 3,
-          xxl: 4,
-        },
-        rowCount: {
-          rowCount: 3,
-        },
-      },
-    },
-    subModels: {
-      item: {
-        uid: 'todo-grid-card-item-uid',
-        use: 'GridCardItemModel',
-      },
-      actions: [],
-    },
-  },
-  docs: {
-    minimalExample: {
-      uid: 'grid-card-users',
-      use: 'GridCardBlockModel',
-      stepParams: {
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
         GridCardSettings: {
           columnCount: {
             xs: 1,
@@ -203,6 +244,35 @@ const gridCardBlockModelSchemaManifest: FlowModelSchemaManifest = {
           },
         },
       },
+    ),
+    subModels: {
+      item: {
+        uid: 'todo-grid-card-item-uid',
+        use: 'GridCardItemModel',
+      },
+      actions: [],
+    },
+  },
+  docs: {
+    minimalExample: {
+      uid: 'grid-card-users',
+      use: 'GridCardBlockModel',
+      stepParams: createCollectionResourceStepParams(
+        {},
+        {
+          GridCardSettings: {
+            columnCount: {
+              xs: 1,
+              md: 2,
+              lg: 3,
+              xxl: 4,
+            },
+            rowCount: {
+              rowCount: 3,
+            },
+          },
+        },
+      ),
       subModels: {
         item: {
           uid: 'grid-card-item-users',
@@ -211,6 +281,40 @@ const gridCardBlockModelSchemaManifest: FlowModelSchemaManifest = {
         actions: [],
       },
     },
+    commonPatterns: [
+      {
+        title: 'Basic grid card block',
+        snippet: {
+          use: 'GridCardBlockModel',
+          stepParams: createCollectionResourceStepParams(
+            {},
+            {
+              GridCardSettings: {
+                columnCount: {
+                  xs: 1,
+                  md: 2,
+                  lg: 3,
+                  xxl: 4,
+                },
+                rowCount: {
+                  rowCount: 3,
+                },
+              },
+            },
+          ),
+        },
+      },
+      createAssociatedCollectionPattern('GridCardBlockModel', {
+        GridCardSettings: {
+          columnCount: {
+            xs: 1,
+            md: 2,
+            lg: 3,
+            xxl: 4,
+          },
+        },
+      }),
+    ],
     dynamicHints: [
       {
         kind: 'dynamic-children',

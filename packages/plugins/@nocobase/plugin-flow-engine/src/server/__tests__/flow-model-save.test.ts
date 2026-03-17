@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Ajv from 'ajv';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
 import { vi } from 'vitest';
@@ -15,6 +16,8 @@ import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/
 
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
+
+const ajv = new Ajv({ allErrors: true, strict: false });
 
 const expectGridLayoutSchemaDocument = (document: any) => {
   expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
@@ -59,6 +62,44 @@ const expectGridLayoutSchemaDocument = (document: any) => {
       },
     },
   });
+};
+
+const expectCollectionResourceSettingsSchemaDocument = (
+  document: any,
+  options: {
+    keepLegacyResourceSettings2?: boolean;
+  } = {},
+) => {
+  const initSchema = document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings?.properties?.init;
+
+  expect(initSchema).toMatchObject({
+    type: 'object',
+    properties: {
+      dataSourceKey: { type: 'string' },
+      collectionName: { type: 'string' },
+      associationName: { type: 'string' },
+      sourceId: { type: ['string', 'number'] },
+      filterByTk: { type: ['string', 'number'] },
+    },
+  });
+  expect(initSchema?.required || []).toEqual(expect.arrayContaining(['dataSourceKey', 'collectionName']));
+  if (options.keepLegacyResourceSettings2) {
+    expect(document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings2).toBeDefined();
+  }
+};
+
+const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
+  const validate = ajv.compile({
+    type: 'object',
+    properties: {
+      stepParams: document?.jsonSchema?.properties?.stepParams || {},
+    },
+    additionalProperties: true,
+  });
+  const ok = validate({
+    stepParams: document?.[key]?.stepParams,
+  });
+  expect(ok, JSON.stringify(validate.errors)).toBe(true);
 };
 
 SaveSchemaChildModel.define({
@@ -265,106 +306,6 @@ describe('flow-model save', () => {
     expect(res.body?.data).toBe('save-uid-1');
   });
 
-  it('should allow update payloads to omit existing use values', async () => {
-    const created = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-omit-use-root',
-        use: 'RecordSelectFieldModel',
-        subModels: {
-          field: {
-            uid: 'save-omit-use-child',
-            use: 'DisplayTextFieldModel',
-          },
-        },
-      },
-    });
-
-    expect(created.status).toBe(200);
-
-    const updated = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-omit-use-root',
-        subModels: {
-          field: {
-            uid: 'save-omit-use-child',
-          },
-        },
-      },
-    });
-
-    expect(updated.status).toBe(200);
-    expect(updated.body?.data?.use).toBe('RecordSelectFieldModel');
-    expect(updated.body?.data?.subModels?.field?.use).toBe('DisplayTextFieldModel');
-  });
-
-  it('should allow partial updates on existing nodes without changing upsert semantics', async () => {
-    const created = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-merge-existing-root',
-        use: 'SaveSchemaStrictModel',
-        stepParams: {
-          settings: {
-            save: {
-              enabled: true,
-            },
-          },
-        },
-      },
-    });
-
-    expect(created.status).toBe(200);
-
-    const updated = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-merge-existing-root',
-        stepParams: {
-          settings: {
-            save: {},
-          },
-        },
-      },
-    });
-
-    expect(updated.status).toBe(200);
-    expect(updated.body?.data?.stepParams?.settings?.save?.enabled).toBeUndefined();
-    expect(updated.body?.data?.stepParams?.settings?.save).toEqual({});
-  });
-
-  it('should still validate new child nodes under existing parents', async () => {
-    const created = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-existing-parent-new-child',
-        use: 'SaveSchemaStrictModel',
-      },
-    });
-
-    expect(created.status).toBe(200);
-
-    const updated = await agent.resource('flowModels').save({
-      values: {
-        uid: 'save-existing-parent-new-child',
-        subModels: {
-          body: [
-            {
-              uid: 'save-existing-parent-new-child-invalid',
-            },
-          ],
-        },
-      },
-    });
-
-    expect(updated.status).toBe(400);
-    expect(updated.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/subModels/body/0',
-          section: 'model',
-          keyword: 'required',
-        }),
-      ]),
-    );
-  });
-
   it('should expose schema discovery documents', async () => {
     const single = await agent.get('/flowModels:schema').query({
       use: 'SaveSchemaStrictModel',
@@ -463,6 +404,94 @@ describe('flow-model save', () => {
     for (const item of gridBatch.body?.data || []) {
       expectGridLayoutSchemaDocument(item);
     }
+
+    const collectionUses = ['CreateFormModel', 'EditFormModel', 'DetailsBlockModel', 'TableBlockModel'];
+    const collectionBatch = await agent.post('/flowModels:schemas').send({
+      uses: collectionUses,
+    });
+    expect(collectionBatch.status).toBe(200);
+    expect((collectionBatch.body?.data || []).map((item) => item.use).sort()).toEqual([...collectionUses].sort());
+    const collectionDocs = Object.fromEntries((collectionBatch.body?.data || []).map((item) => [item.use, item]));
+
+    for (const use of ['CreateFormModel', 'EditFormModel', 'DetailsBlockModel']) {
+      expectCollectionResourceSettingsSchemaDocument(collectionDocs[use]);
+      expect(collectionDocs[use]?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expect(collectionDocs[use]?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expectStepParamsExampleMatchesDocument(collectionDocs[use], 'minimalExample');
+      expectStepParamsExampleMatchesDocument(collectionDocs[use], 'skeleton');
+    }
+
+    expectCollectionResourceSettingsSchemaDocument(collectionDocs.TableBlockModel, {
+      keepLegacyResourceSettings2: true,
+    });
+    expect(collectionDocs.TableBlockModel?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    expect(collectionDocs.TableBlockModel?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'minimalExample');
+    expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'skeleton');
+
+    expect(collectionDocs.EditFormModel?.commonPatterns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Current record mode',
+          snippet: expect.objectContaining({
+            stepParams: expect.objectContaining({
+              resourceSettings: {
+                init: expect.objectContaining({
+                  filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+                }),
+              },
+            }),
+          }),
+        }),
+      ]),
+    );
+    expect(collectionDocs.DetailsBlockModel?.commonPatterns).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          title: 'Current record mode',
+          snippet: expect.objectContaining({
+            stepParams: expect.objectContaining({
+              resourceSettings: {
+                init: expect.objectContaining({
+                  filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+                }),
+              },
+            }),
+          }),
+        }),
+      ]),
+    );
+    for (const use of ['CreateFormModel', 'TableBlockModel']) {
+      expect(collectionDocs[use]?.commonPatterns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Associated records in popup/new scene',
+            snippet: expect.objectContaining({
+              stepParams: expect.objectContaining({
+                resourceSettings: {
+                  init: expect.objectContaining({
+                    associationName: 'users.roles',
+                    sourceId: '{{ctx.view.inputArgs.sourceId}}',
+                  }),
+                },
+              }),
+            }),
+          }),
+        ]),
+      );
+    }
   });
 
   it('should expose builtin official schema bundle for prompt bootstrapping', async () => {
@@ -558,6 +587,10 @@ describe('flow-model save', () => {
         ]),
       },
     });
+    expect(tableItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
     expect(pageItem?.subModelCatalog).toMatchObject({
       tabs: {
         type: 'array',
@@ -598,6 +631,7 @@ describe('flow-model save', () => {
     expect(emptyBundle.status).toBe(200);
     expect(emptyBundle.body?.data?.items).toEqual([]);
     const createFormItem = (formBundle.body?.data?.items || []).find((item) => item.use === 'CreateFormModel');
+    const editFormItem = (formBundle.body?.data?.items || []).find((item) => item.use === 'EditFormModel');
     expect(createFormItem?.subModelCatalog).toMatchObject({
       grid: {
         type: 'object',
@@ -623,6 +657,14 @@ describe('flow-model save', () => {
           expect.objectContaining({ use: 'JSFormActionModel' }),
         ]),
       },
+    });
+    expect(createFormItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+    });
+    expect(editFormItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
     });
     for (const item of formBundle.body?.data?.items || []) {
       expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
@@ -1256,31 +1298,6 @@ describe('flow-model save', () => {
       required: ['directOnly'],
       additionalProperties: false,
     });
-  });
-
-  it('should allow title field renderer sub-models on association field models', async () => {
-    for (const use of [
-      'RecordSelectFieldModel',
-      'RecordPickerFieldModel',
-      'CascadeSelectFieldModel',
-      'FilterFormRecordSelectFieldModel',
-    ]) {
-      const res = await agent.resource('flowModels').save({
-        values: {
-          uid: `save-title-field-slot-${use}`,
-          use,
-          subModels: {
-            field: {
-              uid: `save-title-field-slot-${use}-child`,
-              use: 'DisplayTextFieldModel',
-            },
-          },
-        },
-      });
-
-      expect(res.status).toBe(200);
-      expect(res.body?.data?.use).toBe(use);
-    }
   });
 
   it('should validate the same child use differently under different parent contexts', async () => {

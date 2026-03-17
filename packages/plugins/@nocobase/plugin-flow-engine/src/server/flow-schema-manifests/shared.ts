@@ -1080,9 +1080,105 @@ export function createFieldModelSchemaManifest(options: {
   return manifest;
 }
 
+export const collectionResourceInitSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    dataSourceKey: { type: 'string' },
+    collectionName: { type: 'string' },
+    associationName: { type: 'string' },
+    sourceId: { type: ['string', 'number'] as any },
+    filterByTk: { type: ['string', 'number'] as any },
+  },
+  required: ['dataSourceKey', 'collectionName'],
+  additionalProperties: true,
+};
+
+export const collectionResourceSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    resourceSettings: {
+      type: 'object',
+      properties: {
+        init: collectionResourceInitSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+export function createCollectionResourceInit(
+  init: Partial<{
+    dataSourceKey: string;
+    collectionName: string;
+    associationName: string;
+    sourceId: string | number;
+    filterByTk: string | number;
+  }> = {},
+) {
+  return {
+    dataSourceKey: 'main',
+    collectionName: 'users',
+    ...init,
+  };
+}
+
+export function createCollectionResourceStepParams(
+  init: Partial<{
+    dataSourceKey: string;
+    collectionName: string;
+    associationName: string;
+    sourceId: string | number;
+    filterByTk: string | number;
+  }> = {},
+  extraStepParams: Record<string, any> = {},
+) {
+  return {
+    resourceSettings: {
+      init: createCollectionResourceInit(init),
+    },
+    ...extraStepParams,
+  };
+}
+
+export function createCurrentRecordCollectionPattern(use: string, extraStepParams: Record<string, any> = {}) {
+  return {
+    title: 'Current record mode',
+    description: 'Bind the block to the current record when the page or popup provides filterByTk.',
+    snippet: {
+      use,
+      stepParams: createCollectionResourceStepParams(
+        {
+          filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+        },
+        extraStepParams,
+      ),
+    },
+  };
+}
+
+export function createAssociatedCollectionPattern(use: string, extraStepParams: Record<string, any> = {}) {
+  return {
+    title: 'Associated records in popup/new scene',
+    description: 'Use associationName + sourceId when the block should load records through a parent relation.',
+    snippet: {
+      use,
+      stepParams: createCollectionResourceStepParams(
+        {
+          collectionName: 'roles',
+          associationName: 'users.roles',
+          sourceId: '{{ctx.view.inputArgs.sourceId}}',
+        },
+        extraStepParams,
+      ),
+    },
+  };
+}
+
 export const formBlockBaseStepParamsSchema: FlowJsonSchema = {
   type: 'object',
   properties: {
+    ...(((collectionResourceSettingsStepParamsSchema as any).properties || {}) as Record<string, any>),
     formModelSettings: {
       type: 'object',
       properties: {
@@ -1141,22 +1237,25 @@ export function createFormBlockSkeleton(use: string) {
   return {
     uid: 'todo-uid',
     use,
-    stepParams: {
-      formModelSettings: {
-        layout: {
-          layout: 'vertical',
-          colon: true,
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
+        formModelSettings: {
+          layout: {
+            layout: 'vertical',
+            colon: true,
+          },
+          assignRules: {
+            value: [],
+          },
         },
-        assignRules: {
-          value: [],
+        eventSettings: {
+          linkageRules: {
+            value: [],
+          },
         },
       },
-      eventSettings: {
-        linkageRules: {
-          value: [],
-        },
-      },
-    },
+    ),
     subModels: {
       grid: {
         uid: 'todo-grid-uid',
@@ -1171,22 +1270,25 @@ export function createFormBlockMinimalExample(use: string) {
   return {
     uid: `${use}-users`.toLowerCase(),
     use,
-    stepParams: {
-      formModelSettings: {
-        layout: {
-          layout: 'vertical',
-          colon: true,
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
+        formModelSettings: {
+          layout: {
+            layout: 'vertical',
+            colon: true,
+          },
+          assignRules: {
+            value: [],
+          },
         },
-        assignRules: {
-          value: [],
+        eventSettings: {
+          linkageRules: {
+            value: [],
+          },
         },
       },
-      eventSettings: {
-        linkageRules: {
-          value: [],
-        },
-      },
-    },
+    ),
     subModels: {
       grid: {
         uid: `${use}-grid-users`.toLowerCase(),
@@ -1203,14 +1305,17 @@ export function createFormBlockCommonPatterns(use: string) {
       title: 'Empty editable form block shell',
       snippet: {
         use,
-        stepParams: {
-          formModelSettings: {
-            layout: {
-              layout: 'vertical',
-              colon: true,
+        stepParams: createCollectionResourceStepParams(
+          {},
+          {
+            formModelSettings: {
+              layout: {
+                layout: 'vertical',
+                colon: true,
+              },
             },
           },
-        },
+        ),
         subModels: {
           grid: {
             uid: 'form-grid-uid',

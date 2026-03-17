@@ -9,6 +9,7 @@
 
 import type { FlowModelSchemaManifest } from '@nocobase/flow-engine';
 import {
+  createAssociatedCollectionPattern,
   createFormBlockCommonPatterns,
   createFormBlockDynamicHints,
   createFormBlockMinimalExample,
@@ -28,7 +29,10 @@ export const createFormModelSchemaManifest: FlowModelSchemaManifest = {
   skeleton: createFormBlockSkeleton('CreateFormModel'),
   docs: {
     minimalExample: createFormBlockMinimalExample('CreateFormModel'),
-    commonPatterns: createFormBlockCommonPatterns('CreateFormModel'),
+    commonPatterns: [
+      ...createFormBlockCommonPatterns('CreateFormModel'),
+      createAssociatedCollectionPattern('CreateFormModel'),
+    ],
     antiPatterns: formBlockAntiPatterns,
     dynamicHints: createFormBlockDynamicHints('CreateFormModel'),
   },

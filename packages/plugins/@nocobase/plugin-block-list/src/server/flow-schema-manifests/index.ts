@@ -75,6 +75,69 @@ const genericModelNodeSchema: FlowJsonSchema = {
   additionalProperties: true,
 };
 
+const collectionResourceInitSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    dataSourceKey: { type: 'string' },
+    collectionName: { type: 'string' },
+    associationName: { type: 'string' },
+    sourceId: { type: ['string', 'number'] as any },
+    filterByTk: { type: ['string', 'number'] as any },
+  },
+  required: ['dataSourceKey', 'collectionName'],
+  additionalProperties: true,
+};
+
+const collectionResourceSettingsStepParamsSchema: FlowJsonSchema = {
+  type: 'object',
+  properties: {
+    resourceSettings: {
+      type: 'object',
+      properties: {
+        init: collectionResourceInitSchema,
+      },
+      additionalProperties: true,
+    },
+  },
+  additionalProperties: true,
+};
+
+const createCollectionResourceStepParams = (
+  init: Partial<{
+    dataSourceKey: string;
+    collectionName: string;
+    associationName: string;
+    sourceId: string | number;
+    filterByTk: string | number;
+  }> = {},
+  extraStepParams: Record<string, any> = {},
+) => ({
+  resourceSettings: {
+    init: {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      ...init,
+    },
+  },
+  ...extraStepParams,
+});
+
+const createAssociatedCollectionPattern = (use: string, extraStepParams: Record<string, any> = {}) => ({
+  title: 'Associated records in popup/new scene',
+  description: 'Use associationName + sourceId when the block should load records through a parent relation.',
+  snippet: {
+    use,
+    stepParams: createCollectionResourceStepParams(
+      {
+        collectionName: 'roles',
+        associationName: 'users.roles',
+        sourceId: '{{ctx.view.inputArgs.sourceId}}',
+      },
+      extraStepParams,
+    ),
+  },
+});
+
 const listItemModelInternalSchemaManifest: FlowModelSchemaManifest = {
   use: 'ListItemModel',
   title: 'List item',
@@ -108,6 +171,7 @@ const listBlockModelSchemaManifest: FlowModelSchemaManifest = {
   stepParamsSchema: {
     type: 'object',
     properties: {
+      ...(((collectionResourceSettingsStepParamsSchema as any).properties || {}) as Record<string, any>),
       resourceSettings2: {
         type: 'object',
         additionalProperties: true,
@@ -172,13 +236,16 @@ const listBlockModelSchemaManifest: FlowModelSchemaManifest = {
   skeleton: {
     uid: 'todo-uid',
     use: 'ListBlockModel',
-    stepParams: {
-      listSettings: {
-        pageSize: {
-          pageSize: 20,
+    stepParams: createCollectionResourceStepParams(
+      {},
+      {
+        listSettings: {
+          pageSize: {
+            pageSize: 20,
+          },
         },
       },
-    },
+    ),
     subModels: {
       item: {
         uid: 'todo-list-item-uid',
@@ -191,13 +258,16 @@ const listBlockModelSchemaManifest: FlowModelSchemaManifest = {
     minimalExample: {
       uid: 'list-users',
       use: 'ListBlockModel',
-      stepParams: {
-        listSettings: {
-          pageSize: {
-            pageSize: 20,
+      stepParams: createCollectionResourceStepParams(
+        {},
+        {
+          listSettings: {
+            pageSize: {
+              pageSize: 20,
+            },
           },
         },
-      },
+      ),
       subModels: {
         item: {
           uid: 'list-item-users',
@@ -206,6 +276,31 @@ const listBlockModelSchemaManifest: FlowModelSchemaManifest = {
         actions: [],
       },
     },
+    commonPatterns: [
+      {
+        title: 'Basic list block',
+        snippet: {
+          use: 'ListBlockModel',
+          stepParams: createCollectionResourceStepParams(
+            {},
+            {
+              listSettings: {
+                pageSize: {
+                  pageSize: 20,
+                },
+              },
+            },
+          ),
+        },
+      },
+      createAssociatedCollectionPattern('ListBlockModel', {
+        listSettings: {
+          pageSize: {
+            pageSize: 20,
+          },
+        },
+      }),
+    ],
     dynamicHints: [
       {
         kind: 'dynamic-children',

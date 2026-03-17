@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Ajv from 'ajv';
 import { type FlowSchemaManifestContribution, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { MockServer, createMockServer } from '@nocobase/test';
@@ -351,6 +352,8 @@ const officialPublicBlockUses = [
 
 const publicTreeRootBlockUses = officialPublicBlockUses;
 
+const ajv = new Ajv({ allErrors: true, strict: false });
+
 const expectGridLayoutSchemaDocument = (document: any) => {
   expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
     properties: {
@@ -394,6 +397,44 @@ const expectGridLayoutSchemaDocument = (document: any) => {
       },
     },
   });
+};
+
+const expectCollectionResourceSettingsSchemaDocument = (
+  document: any,
+  options: {
+    keepLegacyResourceSettings2?: boolean;
+  } = {},
+) => {
+  const initSchema = document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings?.properties?.init;
+
+  expect(initSchema).toMatchObject({
+    type: 'object',
+    properties: {
+      dataSourceKey: { type: 'string' },
+      collectionName: { type: 'string' },
+      associationName: { type: 'string' },
+      sourceId: { type: ['string', 'number'] },
+      filterByTk: { type: ['string', 'number'] },
+    },
+  });
+  expect(initSchema?.required || []).toEqual(expect.arrayContaining(['dataSourceKey', 'collectionName']));
+  if (options.keepLegacyResourceSettings2) {
+    expect(document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings2).toBeDefined();
+  }
+};
+
+const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
+  const validate = ajv.compile({
+    type: 'object',
+    properties: {
+      stepParams: document?.jsonSchema?.properties?.stepParams || {},
+    },
+    additionalProperties: true,
+  });
+  const ok = validate({
+    stepParams: document?.[key]?.stepParams,
+  });
+  expect(ok, JSON.stringify(validate.errors)).toBe(true);
 };
 
 describe('flow schema manifest provider', () => {
@@ -855,6 +896,91 @@ describe('flow schema manifest provider', () => {
           [],
       );
       expect(nestedBlockCandidates.map((item) => item.use)).toEqual(expect.arrayContaining(publicTreeRootBlockUses));
+
+      const listBlock = await officialAgent.get('/flowModels:schema').query({
+        use: 'ListBlockModel',
+      });
+      expect(listBlock.status).toBe(200);
+      expectCollectionResourceSettingsSchemaDocument(listBlock.body?.data, {
+        keepLegacyResourceSettings2: true,
+      });
+      expect(listBlock.body?.data?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expect(listBlock.body?.data?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expectStepParamsExampleMatchesDocument(listBlock.body?.data, 'minimalExample');
+      expectStepParamsExampleMatchesDocument(listBlock.body?.data, 'skeleton');
+      expect(listBlock.body?.data?.commonPatterns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Associated records in popup/new scene',
+            snippet: expect.objectContaining({
+              stepParams: expect.objectContaining({
+                resourceSettings: {
+                  init: expect.objectContaining({
+                    associationName: 'users.roles',
+                    sourceId: '{{ctx.view.inputArgs.sourceId}}',
+                  }),
+                },
+              }),
+            }),
+          }),
+        ]),
+      );
+
+      const gridCardBlock = await officialAgent.get('/flowModels:schema').query({
+        use: 'GridCardBlockModel',
+      });
+      expect(gridCardBlock.status).toBe(200);
+      expectCollectionResourceSettingsSchemaDocument(gridCardBlock.body?.data, {
+        keepLegacyResourceSettings2: true,
+      });
+      expect(gridCardBlock.body?.data?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expect(gridCardBlock.body?.data?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expectStepParamsExampleMatchesDocument(gridCardBlock.body?.data, 'minimalExample');
+      expectStepParamsExampleMatchesDocument(gridCardBlock.body?.data, 'skeleton');
+      expect(gridCardBlock.body?.data?.commonPatterns).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            title: 'Associated records in popup/new scene',
+            snippet: expect.objectContaining({
+              stepParams: expect.objectContaining({
+                resourceSettings: {
+                  init: expect.objectContaining({
+                    associationName: 'users.roles',
+                    sourceId: '{{ctx.view.inputArgs.sourceId}}',
+                  }),
+                },
+              }),
+            }),
+          }),
+        ]),
+      );
+
+      const collectionBundle = await officialAgent.post('/flowModels:schemaBundle').send({
+        uses: ['ListBlockModel', 'GridCardBlockModel'],
+      });
+      expect(collectionBundle.status).toBe(200);
+      const listItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'ListBlockModel');
+      const gridCardItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'GridCardBlockModel');
+      expect(listItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
+      expect(gridCardItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
+        dataSourceKey: 'main',
+        collectionName: 'users',
+      });
     } finally {
       await officialApp.destroy();
     }
