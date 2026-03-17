@@ -9,6 +9,7 @@
 
 import { reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
+import { AdminShellProvider } from '../../../admin-shell';
 import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
 import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
@@ -172,6 +173,16 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   }
 
   render() {
-    return <>{this.props.children}</>;
+    const { layoutComponent: LayoutComponent, ...layoutProps } = this.props;
+
+    if (!LayoutComponent) {
+      return null;
+    }
+
+    return (
+      <AdminShellProvider>
+        <LayoutComponent {...layoutProps} />
+      </AdminShellProvider>
+    );
   }
 }

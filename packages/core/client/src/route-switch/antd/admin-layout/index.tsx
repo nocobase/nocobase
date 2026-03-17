@@ -731,11 +731,6 @@ export const AdminProvider = AdminShellProvider;
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();
   const modelRef = useRef<AdminLayoutModel>(null);
-  const modelChildren = (
-    <AdminProvider>
-      <InternalAdminLayout {...props} />
-    </AdminProvider>
-  );
 
   if (!modelRef.current) {
     modelRef.current =
@@ -743,15 +738,15 @@ export const AdminLayout = (props) => {
       flowEngine.createModel<AdminLayoutModel>({
         uid: ADMIN_LAYOUT_MODEL_UID,
         use: AdminLayoutModel,
-        props: { ...props, children: modelChildren },
+        props: { ...props, layoutComponent: InternalAdminLayout },
       });
   }
 
   const model = modelRef.current;
 
   useEffect(() => {
-    model.setProps({ ...props, children: modelChildren });
-  }, [model, modelChildren, props]);
+    model.setProps({ ...props, layoutComponent: InternalAdminLayout });
+  }, [model, props]);
 
   return <FlowModelRenderer model={model} />;
 };
