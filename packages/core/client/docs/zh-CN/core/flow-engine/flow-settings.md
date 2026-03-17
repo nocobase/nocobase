@@ -87,6 +87,7 @@ const MyComponent = () => {
 **注意事项：**
 - 工具栏项目组件内部需要处理所有逻辑（点击、菜单、状态等）
 - 使用 Tooltip 提供操作说明，提升用户体验
+- `FlowModelRenderer.showFlowSettings.toolbarRenderMode` 默认为 `portal`，工具栏会渲染到 `document.body` 以避免被祖先容器裁剪；如需兼容旧的容器内覆盖行为，可改为 `inline`
 
 #### 步骤上下文 (Step Context)
 

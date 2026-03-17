@@ -10,7 +10,16 @@ interface FlowModelRendererProps {
   uid?: string;
 
   /** 是否显示流设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean; // 默认 false
+  showFlowSettings?:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        toolbarPosition?: 'inside' | 'above' | 'below';
+        toolbarRenderMode?: 'portal' | 'inline';
+      }; // 默认 false
 
   /** 流设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -34,6 +43,9 @@ interface FlowModelRendererProps {
 - **model**: 要渲染的 FlowModel 实例
 - **uid**: 流模型的唯一标识符
 - **showFlowSettings**: 是否显示流设置入口，如按钮、菜单等
+  - 传入对象时可进一步控制工具栏背景、边框、拖拽把手和自定义样式
+  - `toolbarPosition` 用于控制图标条显示在宿主框内部、上方或下方
+  - `toolbarRenderMode` 默认为 `portal`，会把工具栏渲染到 `document.body`，避免被祖先 `overflow` 裁剪；如需兼容旧行为可显式指定为 `inline`
 - **flowSettingsVariant**: 流设置的交互风格
   - `dropdown`: 下拉菜单形式（默认）
   - `contextMenu`: 右键上下文菜单
@@ -83,6 +95,15 @@ interface FlowModelRendererProps {
   model={model} 
   showFlowSettings 
   settingsMenuLevel={2} // 包含子模型设置
+/>
+
+// 调整工具栏渲染位置与挂载方式
+<FlowModelRenderer
+  model={model}
+  showFlowSettings={{
+    toolbarPosition: 'above',
+    toolbarRenderMode: 'portal',
+  }}
 />
 
 // 完整配置示例
