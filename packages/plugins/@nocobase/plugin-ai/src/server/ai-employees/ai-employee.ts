@@ -1261,7 +1261,10 @@ If information is missing, clearly state it in the summary.</Important>`;
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
     const specifiedSkillNames = this.employee.skillSettings?.skills ?? [];
     const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];
-    return _.uniqBy([...(generalSkills || []), ...(specifiedSkills || [])], 'name');
+    const skillFilter = this.skillSettings?.skills ?? [];
+    return _.uniqBy([...(generalSkills || []), ...(specifiedSkills || [])], 'name').filter(
+      (it) => skillFilter.length === 0 || skillFilter.includes(it.name),
+    );
   }
 
   private async getAgentTools(): Promise<{ tools: ToolsEntry[]; baseToolNames: Set<string> }> {

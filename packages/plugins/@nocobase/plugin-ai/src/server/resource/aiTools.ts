@@ -52,6 +52,7 @@ export const aiTools: ResourceOptions = {
       ctx.body = result.map(({ introduction, definition }) => ({
         title: introduction?.title ?? definition.name,
         name: definition.name,
+        description: introduction?.about ?? definition.description,
       }));
       await next();
     },

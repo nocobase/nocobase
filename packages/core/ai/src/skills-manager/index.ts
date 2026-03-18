@@ -32,9 +32,11 @@ export class DefaultSkillsManager implements SkillsManager {
   getSkills(name: string): Promise<SkillsEntry>;
   async getSkills(name: string | string[]): Promise<SkillsEntry | SkillsEntry[]> {
     if (_.isArray(name)) {
-      return (await this.aiSkillsModel.findAll({ where: { name: { [Op.in]: name } } })).map((it) => it.toJSON());
+      return (await this.aiSkillsModel.findAll({ where: { name: { [Op.in]: name } } }))
+        .map((it) => it.toJSON())
+        .map(converterSkillsEntry);
     } else {
-      return (await this.aiSkillsModel.findOne({ where: { name } }))?.toJSON() as SkillsEntry;
+      return converterSkillsEntry((await this.aiSkillsModel.findOne({ where: { name } }))?.toJSON()) as SkillsEntry;
     }
   }
 
@@ -48,7 +50,7 @@ export class DefaultSkillsManager implements SkillsManager {
         [Op.substring]: filter.name,
       };
     }
-    return (await this.aiSkillsModel.findAll({ where })).map((it) => it.toJSON());
+    return (await this.aiSkillsModel.findAll({ where })).map((it) => it.toJSON()).map(converterSkillsEntry);
   }
 
   async registerSkills(options: SkillsOptions): Promise<void> {
@@ -129,5 +131,17 @@ export class DefaultSkillsManager implements SkillsManager {
     return this.provideCollectionManager().collectionManager;
   }
 }
+
+const converterSkillsEntry = (model: any): SkillsEntry => {
+  return {
+    ...(model ?? {}),
+    introduction: model?.title
+      ? {
+          title: model.title,
+          about: model?.about,
+        }
+      : undefined,
+  };
+};
 
 export * from './types';

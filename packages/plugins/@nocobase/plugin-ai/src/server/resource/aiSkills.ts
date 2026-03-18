@@ -39,9 +39,10 @@ export const aiSkills: ResourceOptions = {
       const skills = await plugin.ai.skillsManager.listSkills();
       const result = skills.filter((tool) => tool.scope === 'GENERAL' || bindingSkillNames.includes(tool.name));
 
-      ctx.body = result.map(({ introduction, name }) => ({
+      ctx.body = result.map(({ introduction, name, description }) => ({
         title: introduction?.title ?? name,
         name,
+        description: introduction?.about ?? description,
       }));
       await next();
     },

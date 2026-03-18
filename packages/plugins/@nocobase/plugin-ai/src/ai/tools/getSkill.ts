@@ -9,13 +9,15 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
   defaultPermission: 'ALLOW',
   introduction: {
-    title: '{{t("Load specific SKILLS")}}',
-    about: '{{t("Loading content of the specific SKILLS")}}',
+    title: `{{t("Load specific SKILLS", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Loading content of the specific SKILLS", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'getSkill',

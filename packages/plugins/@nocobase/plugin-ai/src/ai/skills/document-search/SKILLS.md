@@ -3,8 +3,8 @@ scope: GENERAL
 name: document-search
 description: helps users search and read documentation using keyword-based indexing and file browsing capabilities.
 introduction:
-  title: '{{t("ai.skills.documentSearch.title")}}'
-  about: '{{t("ai.skills.documentSearch.about")}}'
+  title: '{{t("ai.skills.documentSearch.title", { ns: "@nocobase/plugin-ai" })}}'
+  about: '{{t("ai.skills.documentSearch.about", { ns: "@nocobase/plugin-ai" })}}'
 tools: ['searchDocs', 'readDocEntry']
 ---
 
