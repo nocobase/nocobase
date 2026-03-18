@@ -40,10 +40,10 @@ export class DefaultSkillsManager implements SkillsManager {
 
   async listSkills(filter: SkillsFilter): Promise<SkillsEntry[]> {
     const where = {};
-    if (filter.scope) {
+    if (filter?.scope) {
       where['scope'] = filter.scope;
     }
-    if (filter.name) {
+    if (filter?.name) {
       where['name'] = {
         [Op.substring]: filter.name,
       };

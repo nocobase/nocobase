@@ -9,6 +9,7 @@
 
 import { ResourceOptions } from '@nocobase/resourcer';
 import { SkillsManager } from '@nocobase/ai';
+import PluginAIServer from '../plugin';
 
 export const aiSkills: ResourceOptions = {
   name: 'aiSkills',
@@ -19,6 +20,29 @@ export const aiSkills: ResourceOptions = {
       const skills = await skillsManager.listSkills(filter || {});
       // Exclude content field
       ctx.body = skills.map(({ content, ...rest }) => rest);
+      await next();
+    },
+    listBinding: async (ctx, next) => {
+      const { username } = ctx.action.params;
+      const aiEmployee = await ctx.app.db.getRepository('aiEmployees').findOne({
+        filter: {
+          username,
+        },
+      });
+      if (!aiEmployee) {
+        return [];
+      }
+
+      const bindingSkillNames = aiEmployee.skillSettings?.skills?.map((tool) => tool.name) ?? [];
+
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+      const skills = await plugin.ai.skillsManager.listSkills();
+      const result = skills.filter((tool) => tool.scope === 'GENERAL' || bindingSkillNames.includes(tool.name));
+
+      ctx.body = result.map(({ introduction, name }) => ({
+        title: introduction?.title ?? name,
+        name,
+      }));
       await next();
     },
   },

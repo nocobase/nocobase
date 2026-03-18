@@ -8,6 +8,8 @@
   "AI is thinking": "{{ nickname }} is thinking...",
   "Use all AI employee skills": "Use all AI employee skills",
   "Restrict task skills": "Restrict task skills",
+  "Use all AI employee tools": "Use all AI employee tools",
+  "Restrict task tools": "Restrict task tools",
   "Use default model": "Use default model",
   "Search disables tools": "The current model does not support tool calls when web search is enabled, which may affect task results",
   "Web search not supported": "The current model does not support calling the web search tool",
