@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
 import React, { FC, useCallback, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -436,8 +436,16 @@ export const AdminLayoutMenuModelRenderer: FC<{
   renderType: AdminLayoutMenuRenderType;
   options?: AdminLayoutMenuRenderOptions;
 }> = ({ model, item, dom, renderType, options }) => {
-  void model;
-  return <AdminLayoutMenuItemRenderer item={item} dom={dom} options={options} renderType={renderType} />;
+  useEffect(() => {
+    model.setProps({
+      item,
+      dom,
+      renderType,
+      options,
+    });
+  }, [dom, item, model, options, renderType]);
+
+  return <FlowModelRenderer model={model} />;
 };
 
 function getInitializerButton(testId: string, parentRoute?: NocoBaseDesktopRoute): AdminLayoutMenuNode {
@@ -582,7 +590,14 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   }
 
   render() {
-    return null;
+    return (
+      <AdminLayoutMenuItemRenderer
+        item={this.props.item}
+        dom={this.props.dom}
+        options={this.props.options}
+        renderType={this.props.renderType}
+      />
+    );
   }
 }
 
