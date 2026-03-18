@@ -282,7 +282,7 @@ function reconcileMenuItems(
           route,
           parentRoute,
         },
-      }) as AdminLayoutMenuItemModel;
+      }) as unknown as AdminLayoutMenuItemModel;
     }
 
     itemModel.sortIndex = index + 1;
@@ -557,7 +557,11 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   );
 };
 
-const MenuDragToolbarButton: FC<{ model: AdminLayoutMenuItemModel }> = ({ model }) => {
+const MenuDragToolbarButton: FC<{ model: FlowModel }> = ({ model }) => {
+  if (!(model instanceof AdminLayoutMenuItemModel)) {
+    return null;
+  }
+
   const route = model.getRoute();
 
   if (!route?.id) {
@@ -717,21 +721,17 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
   async openMenuItemDialog(title: string, schema: Record<string, any>, initialValues: Record<string, any> = {}) {
     const options = this.getSchemaComponentOptions();
 
-    return FormDialog(
-      title,
-      () => {
-        return (
-          <SchemaComponentOptions scope={options.scope} components={options.components}>
-            <FormLayout layout="vertical">
-              <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
-                <SchemaComponent schema={schema} />
-              </zIndexContext.Provider>
-            </FormLayout>
-          </SchemaComponentOptions>
-        );
-      },
-      undefined,
-    ).open({
+    return FormDialog(title, () => {
+      return (
+        <SchemaComponentOptions scope={options.scope} components={options.components}>
+          <FormLayout layout="vertical">
+            <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+              <SchemaComponent schema={schema} />
+            </zIndexContext.Provider>
+          </FormLayout>
+        </SchemaComponentOptions>
+      );
+    }).open({
       initialValues,
     });
   }
@@ -917,10 +917,10 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return undefined;
   }
 
-  async destroy() {
+  async destroy(): Promise<boolean> {
     const route = this.getRoute();
     if (!route?.id) {
-      return;
+      return false;
     }
 
     const allAccessRoutes = this.getRouteRepository().listAccessible();
@@ -937,7 +937,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     ]);
 
     if (!shouldNavigate) {
-      return;
+      return true;
     }
 
     const sibling = prevSibling || nextSibling;
@@ -945,6 +945,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       ? `/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`
       : '/';
     this.context.router.navigate(nextPath);
+    return true;
   }
 
   toProLayoutMenuItem(options: AdminLayoutMenuRouteOptions): AdminLayoutMenuNode | null {
@@ -1165,27 +1166,28 @@ AdminLayoutMenuItemModel.registerFlow({
 });
 
 AdminLayoutMenuItemModel.registerExtraMenuItems((model, t) => {
-  const route = model.getRoute();
+  const menuModel = model as AdminLayoutMenuItemModel;
+  const route = menuModel.getRoute();
   const createInsertChildren = (insertPosition: 'beforeBegin' | 'afterEnd' | 'beforeEnd') => [
     {
       key: `menu-insert-${insertPosition}-group`,
       label: t('Group'),
-      onClick: () => model.openInsertMenuDialog(insertPosition, 'group'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'group'),
     },
     {
       key: `menu-insert-${insertPosition}-page`,
       label: t('Classic page (v1)'),
-      onClick: () => model.openInsertMenuDialog(insertPosition, 'page'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'page'),
     },
     {
       key: `menu-insert-${insertPosition}-flow-page`,
       label: t('Modern page (v2)'),
-      onClick: () => model.openInsertMenuDialog(insertPosition, 'flowPage'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'flowPage'),
     },
     {
       key: `menu-insert-${insertPosition}-link`,
       label: t('Link'),
-      onClick: () => model.openInsertMenuDialog(insertPosition, 'link'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'link'),
     },
   ];
 

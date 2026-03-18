@@ -66,6 +66,8 @@ export type FlowModelExtraMenuItem = MenuBaseItem & {
   key: React.Key;
   group?: string;
   sort?: number;
+  label?: React.ReactNode;
+  disabled?: boolean;
   onClick?: () => void;
   children?: FlowModelExtraMenuItem[];
 };

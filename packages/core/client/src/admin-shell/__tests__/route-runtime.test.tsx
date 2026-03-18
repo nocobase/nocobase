@@ -72,7 +72,7 @@ describe('RoutesRequestProvider', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('route-count')).toHaveTextContent('1');
+      expect(screen.getByTestId('route-count').textContent).toBe('1');
     });
 
     act(() => {
@@ -83,14 +83,14 @@ describe('RoutesRequestProvider', () => {
       ]);
     });
 
-    expect(screen.getByTestId('route-count')).toHaveTextContent('3');
+    expect(screen.getByTestId('route-count').textContent).toBe('3');
 
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: 'refresh' }));
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('route-count')).toHaveTextContent('2');
+      expect(screen.getByTestId('route-count').textContent).toBe('2');
     });
   });
 });

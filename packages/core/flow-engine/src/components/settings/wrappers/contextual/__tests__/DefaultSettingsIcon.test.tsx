@@ -105,7 +105,7 @@ const findElement = (node: any, predicate: (element: React.ReactElement) => bool
       return node;
     }
 
-    const children = React.Children.toArray(node.props?.children);
+    const children = React.Children.toArray((node as React.ReactElement<any>).props?.children);
     for (const child of children) {
       const matched = findElement(child, predicate);
       if (matched) {
@@ -322,7 +322,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     );
     expect(tooltipElement).toBeTruthy();
 
-    const iconElement = React.isValidElement(tooltipElement) ? tooltipElement.props.children : null;
+    const iconElement = React.isValidElement(tooltipElement)
+      ? (tooltipElement as React.ReactElement<any>).props.children
+      : null;
     expect(React.isValidElement(iconElement)).toBe(true);
     expect((iconElement as any).props?.style?.color).toBe(mockColorTextTertiary);
 
