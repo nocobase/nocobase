@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useLazy } from '@nocobase/client';
 import { Alert, Button, message, Modal, Select, Space, Tooltip, Typography } from 'antd';
 import React, { FC, useRef, useState } from 'react';
 import { useT } from './locale';
@@ -33,10 +32,6 @@ export const MultipleKeywordsInput: FC<{
   const [selectedColumns, setSelectedColumns] = useState<string[]>([]);
   const [excelData, setExcelData] = useState<any[]>([]);
   const t = useT();
-  const XLSX = useLazy<typeof import('xlsx')>(
-    () => import('xlsx'),
-    (module) => module,
-  );
   const field = useField<any>();
 
   // remove validator to prevent error
@@ -73,9 +68,10 @@ export const MultipleKeywordsInput: FC<{
     if (file) {
       try {
         setImportLoading(true);
+        const XLSX = await import('xlsx');
 
         // Read Excel file
-        const data = await readExcel(file);
+        const data = await readExcel(file, XLSX);
         if (data.length === 0) {
           message.error(t('excelFileEmpty'));
           setImportLoading(false);
@@ -107,7 +103,7 @@ export const MultipleKeywordsInput: FC<{
   };
 
   // Read Excel file content
-  const readExcel = (file: File): Promise<any[]> => {
+  const readExcel = (file: File, XLSX: typeof import('xlsx')): Promise<any[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
