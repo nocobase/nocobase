@@ -24,10 +24,12 @@ import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-des
 import { App, Button, Space, Switch, Tag, Alert, Spin } from 'antd';
 import { createForm } from '@formily/core';
 import { observer, useForm } from '@formily/react';
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState, useCallback, createContext } from 'react';
 import aiMcpClients from '../../../../collections/ai-mcp-clients';
 import { useT } from '../../../locale';
-import { createMCPSchema, editMCPDrawerSchema, mcpSettingsSchema } from './schemas';
+import { MCPSettingsContext, unwrapResponseData } from './context';
+import { MCPToolsList } from './MCPToolsList';
+import { createMCPSchema, editMCPDrawerSchema, mcpSettingsSchema, viewMCPToolsDrawerSchema } from './schemas';
 
 type MCPTransport = 'stdio' | 'http' | 'sse';
 
@@ -195,16 +197,6 @@ const useCancelActionProps = () => {
   };
 };
 
-interface MCPSettingsContextValue {
-  rebuildClient: () => Promise<void>;
-  rebuilding: boolean;
-}
-
-const MCPSettingsContext = createContext<MCPSettingsContextValue>({
-  rebuildClient: async () => undefined,
-  rebuilding: false,
-});
-
 interface TestConnectionResultData {
   success: boolean;
   message?: string;
@@ -228,8 +220,6 @@ const TestConnectionContext = createContext<TestConnectionContextValue>({
   setResult: () => {},
   setLoading: () => {},
 });
-
-const unwrapResponseData = <T,>(response: any, fallback: T): T => response?.data?.data ?? response?.data ?? fallback;
 
 const useEnsureConnectionBeforeSubmit = () => {
   const api = useAPIClient();
@@ -506,6 +496,22 @@ const EditMCP: React.FC<{
   );
 };
 
+const ViewMCPTools: React.FC<{
+  record: MCPRecord;
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+}> = ({ record, visible, setVisible }) => {
+  const t = useT();
+
+  return (
+    <CollectionRecordProvider record={record}>
+      <ActionContextProvider value={{ visible, setVisible }}>
+        <SchemaComponent components={{ MCPToolsList }} scope={{ t }} schema={viewMCPToolsDrawerSchema} />
+      </ActionContextProvider>
+    </CollectionRecordProvider>
+  );
+};
+
 const TransportTag: React.FC = () => {
   const record = useCollectionRecordData<MCPRecord>();
   const transport = record.transport;
@@ -553,7 +559,8 @@ const MCPActions: React.FC = () => {
   const record = useCollectionRecordData<MCPRecord>();
   const { refresh } = useDataBlockRequest();
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
-  const [visible, setVisible] = useState(false);
+  const [viewVisible, setViewVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleDelete = async () => {
@@ -573,11 +580,14 @@ const MCPActions: React.FC = () => {
   return (
     <>
       <Space>
+        <Button type="link" style={{ paddingInline: 0 }} disabled={loading} onClick={() => setViewVisible(true)}>
+          {t('View')}
+        </Button>
         <Button
           type="link"
           style={{ paddingInline: 0 }}
           disabled={loading || rebuilding}
-          onClick={() => setVisible(true)}
+          onClick={() => setEditVisible(true)}
         >
           {t('Edit')}
         </Button>
@@ -597,7 +607,8 @@ const MCPActions: React.FC = () => {
           {t('Delete')}
         </Button>
       </Space>
-      <EditMCP record={record} visible={visible} setVisible={setVisible} />
+      <ViewMCPTools record={record} visible={viewVisible} setVisible={setViewVisible} />
+      <EditMCP record={record} visible={editVisible} setVisible={setEditVisible} />
     </>
   );
 };
@@ -666,6 +677,8 @@ export const MCPSettings: React.FC = () => {
           components={{
             AddNew,
             EditMCP,
+            ViewMCPTools,
+            MCPToolsList,
             MCPActions,
             TestConnectionButton,
             TestConnectionResult,

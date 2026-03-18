@@ -275,6 +275,26 @@ export const editMCPDrawerSchema = {
   },
 };
 
+export const viewMCPToolsDrawerSchema = {
+  type: 'void',
+  properties: {
+    viewDrawer: {
+      type: 'void',
+      title: '{{ t("MCP tools") }}',
+      'x-component': 'Action.Drawer',
+      'x-component-props': {
+        width: 720,
+      },
+      properties: {
+        tools: {
+          type: 'void',
+          'x-component': 'MCPToolsList',
+        },
+      },
+    },
+  },
+};
+
 export const mcpSettingsSchema = {
   type: 'void',
   name: 'ai-mcp-clients',
