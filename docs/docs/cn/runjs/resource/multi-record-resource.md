@@ -1,3 +1,9 @@
+---
+title: "RunJS MultiRecordResource"
+description: "RunJS 多记录资源：表格/列表分页、筛选、排序，refresh、create、update、destroy、destroySelectedRows，适用于表格区块、JSBlock 列表、关联资源。"
+keywords: "MultiRecordResource,多记录资源,分页,筛选,排序,表格区块,RunJS,NocoBase"
+---
+
 # MultiRecordResource
 
 面向数据表的 Resource：请求返回数组，支持分页、筛选、排序及增删改查。适用于表格、列表等“多条记录”场景。与 [APIResource](./api-resource.md) 不同，MultiRecordResource 通过 `setResourceName()` 指定资源名，自动构建 `users:list`、`users:create` 等 URL，并内置分页、筛选、选中行等能力。

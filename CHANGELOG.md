@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.19](https://github.com/nocobase/nocobase/compare/v2.0.18...v2.0.19) - 2026-03-17
+
+### 🚀 Improvements
+
+- **[Workflow]** Fix the issue where gracefully shutdown not drain all events ([#8894](https://github.com/nocobase/nocobase/pull/8894)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix issue with specified URL for LLM service not taking effect in text embedding model calls. ([#8892](https://github.com/nocobase/nocobase/pull/8892)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix `beforeStop` event on sub app not fired by @mytharcher
+
 ## [v2.0.18](https://github.com/nocobase/nocobase/compare/v2.0.17...v2.0.18) - 2026-03-17
 
 ### 🎉 New Features

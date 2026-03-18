@@ -1,3 +1,9 @@
+---
+title: "Logger"
+description: "NocoBase 日志 API：Logger 创建日志、日志级别、输出配置。"
+keywords: "Logger,日志 API,日志级别,日志输出,NocoBase"
+---
+
 # Logger
 
 ## 创建日志

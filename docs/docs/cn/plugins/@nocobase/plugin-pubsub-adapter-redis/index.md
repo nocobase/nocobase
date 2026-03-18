@@ -1,6 +1,8 @@
 ---
 displayName: "Redis 发布订阅适配器"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
+title: "Redis 发布订阅适配器"
+keywords: "Redis 发布订阅适配器,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

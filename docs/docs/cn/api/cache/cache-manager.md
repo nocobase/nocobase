@@ -1,3 +1,9 @@
+---
+title: "CacheManager"
+description: "NocoBase 缓存管理器：CacheManager 创建和管理 Cache 实例。"
+keywords: "CacheManager,缓存管理器,Cache 实例,NocoBase"
+---
+
 # CacheManager
 
 ## 概览

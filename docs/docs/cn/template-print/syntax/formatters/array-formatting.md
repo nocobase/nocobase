@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 数组格式化"
+description: "模板打印数组格式化器：arrayJoin 将数组拼接为字符串，支持分隔符、索引、数量参数。"
+keywords: "模板打印,数组格式化,arrayJoin,NocoBase"
+---
+
 ### 数组格式化
 
 #### 1. :arrayJoin(separator, index, count)

@@ -46,9 +46,31 @@ Now go to the "All Tickets" page and add a Table block:
 
 ![03-building-pages-2026-03-13-08-44-07](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-07.png)
 
-Once the Table block is added, you'll see an empty table on the page. Don't worry — next we'll configure which columns it should display.
+Once the Table block is added, you'll see an empty table on the page.
 
 ![03-building-pages-2026-03-13-08-44-29](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-29.png)
+
+An empty table with no data isn't very useful for testing. Let's quickly add an "Add new" button so we can enter some test data:
+
+1. Click **"Configure actions"** in the top-right corner of the table, and check **"Add new"**.
+
+![03-building-pages-2026-03-17-14-58-39](https://static-docs.nocobase.com/03-building-pages-2026-03-17-14-58-39.png)
+
+2. Click the new **"Add new"** button, then in the popup select **Add block → Form (Add New) → Current collection**.
+
+![03-building-pages-2026-03-17-14-59-42](https://static-docs.nocobase.com/03-building-pages-2026-03-17-14-59-42.png)
+
+3. In the popup, click **"Configure fields"** and check the fields you need (Title, Status, Priority, etc.); click **"Configure actions"** and enable the **"Submit"** button.
+
+![03-building-pages-2026-03-17-15-00-54](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-00-54.png)
+
+![03-building-pages-2026-03-17-15-01-49](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-01-49.png)
+
+4. Fill in a few test tickets and submit — you'll see the data appear in the table.
+
+![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
+
+> We'll cover form configuration in detail (field linkage, edit forms, detail popups, etc.) in [Chapter 4](/tutorials/v2/04-forms-and-details/). For now, just being able to enter data is enough.
 
 ## 3.4 Configuring Display Columns
 

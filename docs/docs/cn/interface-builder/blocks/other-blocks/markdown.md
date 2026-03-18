@@ -1,3 +1,9 @@
+---
+title: "Markdown 区块"
+description: "Markdown 区块：展示 Markdown 格式内容，支持富文本、代码块、图片等，用于展示文档内容。"
+keywords: "Markdown 区块,Markdown,富文本,文档展示,界面搭建,NocoBase"
+---
+
 # Markdown 区块
 
 ## 介绍

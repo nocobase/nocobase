@@ -1,3 +1,9 @@
+---
+title: "级联选择"
+description: "级联选择字段：多级联动下拉，支持省市区、分类层级等树形数据选择。"
+keywords: "级联选择,CascadeSelect,多级联动,树形选择,界面搭建,NocoBase"
+---
+
 # 级联选择
 
 ## 介绍

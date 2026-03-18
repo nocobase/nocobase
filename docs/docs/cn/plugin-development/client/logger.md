@@ -1,3 +1,9 @@
+---
+title: "Logger 日志（客户端）"
+description: "NocoBase 客户端日志：app.logger、日志级别、前端调试、浏览器控制台输出。"
+keywords: "Logger,日志,app.logger,客户端日志,前端调试,NocoBase"
+---
+
 # Logger 日志
 
 NocoBase 提供了一个基于 [pino](https://github.com/pinojs/pino) 的高性能日志系统。在任意拥有 `context` 的地方，都可以通过 `ctx.logger` 获取日志实例，用于记录插件或系统运行时的关键日志。

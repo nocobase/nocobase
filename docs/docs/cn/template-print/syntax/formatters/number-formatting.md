@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 数字格式化"
+description: "模板打印数字格式化器：formatN 按本地化设置格式化数字，支持小数位数。"
+keywords: "模板打印,数字格式化,formatN,NocoBase"
+---
+
 ### 数字格式化
 
 #### 1. :formatN(precision)

@@ -48,9 +48,31 @@
 
 ![03-building-pages-2026-03-13-08-44-07](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-07.png)
 
-表格区块添加成功后，页面上会出现一个空表格。别急，我们接下来配置它要显示哪些列。
+表格区块添加成功后，页面上会出现一个空表格。
 
 ![03-building-pages-2026-03-13-08-44-29](https://static-docs.nocobase.com/03-building-pages-2026-03-13-08-44-29.png)
+
+空表格没有数据不方便调试，我们先快速加一个新建按钮，录入几条测试数据：
+
+1. 点击表格右上角的 **「配置操作（Configure actions）」**，勾选 **「新建（Add new）」**。
+
+![03-building-pages-2026-03-17-14-58-39](https://static-docs.nocobase.com/03-building-pages-2026-03-17-14-58-39.png)
+
+2. 点击新出现的 **「新建」** 按钮，在弹窗中选择 **添加区块（Add block） → 表单（新增）（Form (Add New)） → 当前数据表（Current collection）**。
+
+![03-building-pages-2026-03-17-14-59-42](https://static-docs.nocobase.com/03-building-pages-2026-03-17-14-59-42.png)
+
+3. 弹窗中点击 **「配置字段（Configure fields）」**，勾选标题、状态、优先级等字段；点击 **「配置操作（Configure actions）」**，开启 **「提交（Submit）」** 按钮。
+
+![03-building-pages-2026-03-17-15-00-54](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-00-54.png)
+
+![03-building-pages-2026-03-17-15-01-49](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-01-49.png)
+
+4. 随便填几条工单数据提交，表格里就能看到内容了。
+
+![03-building-pages-2026-03-17-15-03-04](https://static-docs.nocobase.com/03-building-pages-2026-03-17-15-03-04.png)
+
+> 表单的详细配置（字段联动、编辑表单、详情弹窗等）我们在[第 4 章](/tutorials/v2/04-forms-and-details/)深入讲解，这里先能录入数据就够了。
 
 ## 3.4 配置显示列
 

@@ -1,8 +1,9 @@
 ---
 pageType: home
-
 pageName: home
-
+title: "NocoBase 文档"
+description: "NocoBase 开源无代码/低代码平台文档：快速上手、数据源、界面搭建、AI 员工、工作流、用户权限、认证验证、插件开发。"
+keywords: "NocoBase,无代码,低代码,文档,开源"
 hero:
   name: NocoBase 文档
   text: 快速学习和掌握 NocoBase

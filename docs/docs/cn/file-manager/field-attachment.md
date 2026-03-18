@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "附件字段"
+description: "附件字段用于在数据表中支持文件上传，底层为多对多关系指向 attachments 表，可配置 MIME 类型限制与存储引擎。"
+keywords: "附件字段,field attachment,文件上传,MIME 类型,存储引擎,attachments,NocoBase"
+---
+
 # 附件字段
 
 ## 介绍

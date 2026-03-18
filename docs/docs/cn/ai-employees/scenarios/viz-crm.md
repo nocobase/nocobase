@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "Viz CRM 场景配置指南"
+description: "以 CRM 为例配置 Viz 洞察分析师：Overall Analytics 模板化分析引擎、SQL Execution 特化分析、data_analysis 模板表、安全与最佳实践。"
+keywords: "Viz,CRM,Overall Analytics,SQL Execution,数据分析,NocoBase"
+---
+
 # AI 员工 · Viz：CRM 场景配置指南
 
 > 以 CRM 示例为例，了解如何让你的 AI 洞察分析师真正理解业务、发挥全部潜力。

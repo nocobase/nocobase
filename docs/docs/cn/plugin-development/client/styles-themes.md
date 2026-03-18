@@ -1,3 +1,9 @@
+---
+title: "Styles & Themes 样式与主题"
+description: "NocoBase 客户端样式与主题：CSS、Ant Design 主题、暗色模式、自定义主题变量。"
+keywords: "Styles,Themes,样式,主题,Ant Design,暗色模式,主题变量,NocoBase"
+---
+
 # Styles & Themes 样式与主题
 
 为了更好的适应 NocoBase 动态主题的能力，在插件里，推荐使用 [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) 来编写样式。再结合现有的 [theme token](https://ant.design/docs/react/customize-theme-cn#seedtoken) 处理主题的动态能力。同时 NocoBase 也提供了[主题编辑器插件](#)，可用于便捷的调整样式。

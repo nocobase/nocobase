@@ -1,3 +1,9 @@
+---
+title: "时间"
+description: "时间字段，仅存储时间部分。"
+keywords: "时间,time,时间字段,时间选择,NocoBase"
+---
+
 # 时间
 
 ## 介绍
