@@ -17,6 +17,7 @@ import {
   useFieldSchema,
 } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
@@ -26,7 +27,6 @@ import {
   Icon,
   NocoBaseRecursionField,
   useAllAccessDesktopRoutes,
-  useAPIClient,
   useParseURLAndParams,
   useSchemaInitializerRender,
 } from '../../../';
@@ -227,53 +227,40 @@ export const useParentRoute = () => {
  * @returns
  */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
-  const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { routeRepository } = useFlowEngineContext();
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
 
   const createRoute = useCallback(
     async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
-      const res = await resource.create({
-        values,
+      const res = await routeRepository.createRoute(values, {
+        collectionName,
+        refreshAfterMutation: refreshAfterCreate,
       });
-      refreshAfterCreate && refreshRoutes();
       return res;
     },
-    [resource, refreshRoutes],
+    [collectionName, routeRepository],
   );
 
   const updateRoute = useCallback(
     async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
-      const res = await resource.update(
-        Array.isArray(filterByTk)
-          ? {
-              filter: {
-                id: {
-                  $in: filterByTk,
-                },
-              },
-              values,
-            }
-          : {
-              filterByTk,
-              values,
-            },
-      );
-      refreshAfterUpdate && refreshRoutes();
+      const res = await routeRepository.updateRoute(filterByTk, values, {
+        collectionName,
+        refreshAfterMutation: refreshAfterUpdate,
+      });
       return res;
     },
-    [resource, refreshRoutes],
+    [collectionName, routeRepository],
   );
 
   const deleteRoute = useCallback(
     async (filterByTk: any, refreshAfterDelete = true) => {
-      const res = await resource.destroy({
-        filterByTk,
+      const res = await routeRepository.deleteRoute(filterByTk, {
+        collectionName,
+        refreshAfterMutation: refreshAfterDelete,
       });
-      refreshAfterDelete && refreshRoutes();
       return res;
     },
-    [refreshRoutes, resource],
+    [collectionName, routeRepository],
   );
 
   const moveRoute = useCallback(
@@ -297,14 +284,22 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method?: 'insertAfter' | 'prepend';
       refreshAfterMove?: boolean;
     }) => {
-      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
-      refreshAfterMove && refreshRoutes();
+      const res = await routeRepository.moveRoute({
+        sourceId,
+        targetId,
+        targetScope,
+        sortField,
+        sticky,
+        method,
+        collectionName,
+        refreshAfterMove,
+      });
       return res;
     },
-    [refreshRoutes, resource],
+    [collectionName, routeRepository],
   );
 
-  return { createRoute, updateRoute, deleteRoute, moveRoute };
+  return { createRoute, updateRoute, deleteRoute, moveRoute, refreshRoutes };
 };
 
 const HeaderMenu = React.memo<{
