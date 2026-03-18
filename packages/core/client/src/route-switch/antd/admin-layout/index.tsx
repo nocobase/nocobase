@@ -31,6 +31,7 @@ export {
   useCurrentRoute,
   useKeepAlive,
   useMobileLayout,
+  AdminShellProvider as AdminProvider,
 } from '../../../admin-shell';
 export { shouldRenderIconInTitle } from './AdminLayoutMenuModels';
 
