@@ -14,27 +14,20 @@ import {
   SchemaComponent,
   useActionContext,
   useAPIClient,
+  useBlockRequestContext,
+  useBulkDestroyActionProps,
   useCollectionRecordData,
-  useRequest,
-  useToken,
+  useDataBlockRequest,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
-import {
-  PlusOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  ReloadOutlined,
-  MoreOutlined,
-} from '@ant-design/icons';
-import { App, Button, Space, Switch, Tag, Alert, Spin, Collapse, List, Flex, Segmented, Empty, Dropdown } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
+import { App, Button, Space, Switch, Tag, Alert, Spin } from 'antd';
 import { createForm } from '@formily/core';
-import { observer, useForm, Schema } from '@formily/react';
-import React, { createContext, useContext, useMemo, useRef, useState, useCallback, useEffect } from 'react';
+import { observer, useForm } from '@formily/react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import aiMcpClients from '../../../../collections/ai-mcp-clients';
 import { useT } from '../../../locale';
-import { createMCPSchema, editMCPDrawerSchema } from './schemas';
+import { createMCPSchema, editMCPDrawerSchema, mcpSettingsSchema } from './schemas';
 
 type MCPTransport = 'stdio' | 'http' | 'sse';
 
@@ -43,6 +36,12 @@ const transportOptions = [
   { label: 'HTTP (Streamable)', value: 'http' },
   { label: 'HTTP + SSE (Legacy)', value: 'sse' },
 ];
+
+const transportColorMap: Record<MCPTransport, string> = {
+  stdio: 'blue',
+  http: 'green',
+  sse: 'gold',
+};
 
 const keyValueRowClassName = css`
   & > .ant-space-item:first-child,
@@ -138,8 +137,22 @@ const useCreateFormProps = () => {
   return { form };
 };
 
+interface MCPRecord {
+  name: string;
+  title?: string;
+  description?: string;
+  enabled?: boolean;
+  transport: MCPTransport;
+  command?: string | null;
+  url?: string | null;
+  args?: string[];
+  env?: Record<string, string>;
+  headers?: Record<string, string>;
+  restart?: Record<string, any>;
+}
+
 const useEditFormProps = () => {
-  const record = useCollectionRecordData();
+  const record = useCollectionRecordData<MCPRecord>();
   const { visible } = useActionContext();
   const initialValues = useMemo(
     () => ({
@@ -182,42 +195,12 @@ const useCancelActionProps = () => {
   };
 };
 
-type Permission = 'ASK' | 'ALLOW';
-
-interface MCPRecord {
-  name: string;
-  title?: string;
-  description?: string;
-  enabled?: boolean;
-  transport: MCPTransport;
-  command?: string | null;
-  url?: string | null;
-  args?: string[];
-  env?: Record<string, string>;
-  headers?: Record<string, string>;
-  restart?: Record<string, any>;
-}
-
-interface MCPTool {
-  name: string;
-  title: string;
-  description?: string;
-  permission: Permission;
-  serverName: string;
-}
-
-const unwrapResponseData = <T,>(response: any, fallback: T): T => response?.data?.data ?? response?.data ?? fallback;
-
 interface MCPSettingsContextValue {
-  refreshMCPs: () => void;
-  refreshTools: () => void;
   rebuildClient: () => Promise<void>;
   rebuilding: boolean;
 }
 
 const MCPSettingsContext = createContext<MCPSettingsContextValue>({
-  refreshMCPs: async () => undefined,
-  refreshTools: async () => undefined,
   rebuildClient: async () => undefined,
   rebuilding: false,
 });
@@ -245,6 +228,8 @@ const TestConnectionContext = createContext<TestConnectionContextValue>({
   setResult: () => {},
   setLoading: () => {},
 });
+
+const unwrapResponseData = <T,>(response: any, fallback: T): T => response?.data?.data ?? response?.data ?? fallback;
 
 const useEnsureConnectionBeforeSubmit = () => {
   const api = useAPIClient();
@@ -279,9 +264,10 @@ const useCreateActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const api = useAPIClient();
+  const { refresh } = useDataBlockRequest();
   const t = useT();
   const { loading: testLoading } = useContext(TestConnectionContext);
-  const { rebuildClient, refreshMCPs, refreshTools, rebuilding } = useContext(MCPSettingsContext);
+  const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
   const ensureConnectionBeforeSubmit = useEnsureConnectionBeforeSubmit();
 
   return {
@@ -297,7 +283,7 @@ const useCreateActionProps = () => {
         values: sanitizeMCPValues(form.values),
       });
       await rebuildClient();
-      await Promise.all([refreshMCPs(), refreshTools()]);
+      await refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
@@ -310,10 +296,11 @@ const useEditActionProps = () => {
   const { message } = App.useApp();
   const form = useForm();
   const api = useAPIClient();
+  const { refresh } = useDataBlockRequest();
   const record = useCollectionRecordData() as MCPRecord;
   const t = useT();
   const { loading: testLoading } = useContext(TestConnectionContext);
-  const { rebuildClient, refreshMCPs, refreshTools, rebuilding } = useContext(MCPSettingsContext);
+  const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
   const ensureConnectionBeforeSubmit = useEnsureConnectionBeforeSubmit();
 
   return {
@@ -325,13 +312,12 @@ const useEditActionProps = () => {
       if (!passed) {
         return;
       }
-      const values = sanitizeMCPValues(form.values);
       await api.resource('aiMcpClients').update({
-        values,
+        values: sanitizeMCPValues(form.values),
         filterByTk: record.name,
       });
       await rebuildClient();
-      await Promise.all([refreshMCPs(), refreshTools()]);
+      await refresh();
       message.success(t('Saved successfully'));
       setVisible(false);
       form.reset();
@@ -405,19 +391,6 @@ const TestConnectionResult: React.FC = observer(
               <p>
                 {t('Tools found')}: {result.toolsCount}
               </p>
-              {result.tools && result.tools.length > 0 && (
-                <div style={{ marginTop: 8 }}>
-                  <p style={{ fontWeight: 'bold', marginBottom: 4 }}>{t('Tools')}:</p>
-                  <div style={{ maxHeight: 120, overflow: 'auto' }}>
-                    {result.tools.map((tool) => (
-                      <Tag key={tool} style={{ margin: '2px' }}>
-                        {tool}
-                      </Tag>
-                    ))}
-                    {result.toolsTruncated && <span>...</span>}
-                  </div>
-                </div>
-              )}
             </div>
           }
         />
@@ -533,144 +506,127 @@ const EditMCP: React.FC<{
   );
 };
 
-const MCPRowExtra: React.FC<{
-  record: MCPRecord;
-  enabled: boolean;
-  loading: boolean;
-  rebuilding: boolean;
-  onEdit: (record: MCPRecord) => void;
-  onToggleEnabled: (record: MCPRecord, enabled: boolean) => Promise<void>;
-  onDelete: (record: MCPRecord) => Promise<void>;
-}> = ({ record, enabled, loading, rebuilding, onEdit, onToggleEnabled, onDelete }) => {
-  const t = useT();
-  const { modal } = App.useApp();
-  const disabled = loading || rebuilding;
-
-  return (
-    <div onClick={(event) => event.stopPropagation()} onKeyDown={(event) => event.stopPropagation()}>
-      <Space size="middle">
-        <Switch
-          size="small"
-          checked={enabled}
-          loading={loading}
-          disabled={disabled}
-          onChange={(checked) => onToggleEnabled(record, checked)}
-        />
-        <Dropdown
-          trigger={['hover']}
-          placement="bottomRight"
-          disabled={disabled}
-          menu={{
-            items: [
-              {
-                key: 'edit',
-                icon: <EditOutlined />,
-                label: t('Edit'),
-              },
-              {
-                key: 'delete',
-                icon: <DeleteOutlined />,
-                danger: true,
-                label: t('Delete'),
-              },
-            ],
-            onClick: ({ key, domEvent }) => {
-              domEvent.stopPropagation();
-              if (key === 'edit') {
-                onEdit(record);
-                return;
-              }
-              modal.confirm({
-                title: t('Delete record'),
-                content: t('Are you sure you want to delete it?'),
-                okButtonProps: {
-                  loading,
-                },
-                onOk: () => onDelete(record),
-              });
-            },
-          }}
-        >
-          <Button type="text" size="small" icon={<MoreOutlined />} loading={loading} disabled={disabled} />
-        </Dropdown>
-      </Space>
-    </div>
-  );
+const TransportTag: React.FC = () => {
+  const record = useCollectionRecordData<MCPRecord>();
+  const transport = record.transport;
+  const label = transportOptions.find((item) => item.value === transport)?.label || transport;
+  return <Tag color={transportColorMap[transport]}>{label}</Tag>;
 };
 
-const MCPToolsList: React.FC<{
-  tools: MCPTool[];
-  onPermissionChange: (toolName: string, permission: Permission) => Promise<void>;
-}> = ({ tools, onPermissionChange }) => {
-  const t = useT();
-  const { token } = useToken();
+const EnabledSwitch: React.FC = observer(
+  () => {
+    const api = useAPIClient();
+    const record = useCollectionRecordData<MCPRecord>();
+    const { refresh } = useDataBlockRequest();
+    const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
+    const [loading, setLoading] = useState(false);
 
-  const permissionOptions = [
-    { label: t('Ask'), value: 'ASK' },
-    { label: t('Allow'), value: 'ALLOW' },
-  ];
-
-  if (!tools.length) {
-    return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No tools')} />;
-  }
-
-  return (
-    <List
-      itemLayout="vertical"
-      size="small"
-      dataSource={tools}
-      renderItem={(tool) => (
-        <List.Item
-          key={tool.name}
-          extra={
-            <Flex vertical justify="end">
-              <div style={{ fontSize: token.fontSizeSM, color: token.colorTextSecondary }}>
-                {t('Permission')}
-                <Segmented
-                  style={{ marginLeft: 8 }}
-                  size="small"
-                  options={permissionOptions}
-                  value={tool.permission}
-                  onChange={(value) => onPermissionChange(tool.name, value as Permission)}
-                />
-              </div>
-            </Flex>
+    return (
+      <Switch
+        size="small"
+        checked={record.enabled !== false}
+        loading={loading}
+        disabled={rebuilding}
+        onChange={async (enabled) => {
+          setLoading(true);
+          try {
+            await api.resource('aiMcpClients').update({
+              filterByTk: record.name,
+              values: { enabled },
+            });
+            await rebuildClient();
+            await refresh();
+          } finally {
+            setLoading(false);
           }
-        >
-          <div style={{ fontSize: token.fontSizeSM }}>{Schema.compile(tool.title || tool.name, { t })}</div>
-          <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
-            {Schema.compile(tool.description || '', { t })}
-          </div>
-        </List.Item>
-      )}
-    />
-  );
-};
+        }}
+      />
+    );
+  },
+  { displayName: 'MCPEnabledSwitch' },
+);
 
-const MCPList: React.FC = () => {
+const MCPActions: React.FC = () => {
   const t = useT();
   const api = useAPIClient();
-  const { message } = App.useApp();
-  const { token } = useToken();
+  const { modal, message } = App.useApp();
+  const record = useCollectionRecordData<MCPRecord>();
+  const { refresh } = useDataBlockRequest();
+  const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
+  const [visible, setVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    try {
+      await api.resource('aiMcpClients').destroy({
+        filterByTk: record.name,
+      });
+      await rebuildClient();
+      await refresh();
+      message.success(t('Deleted successfully'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <Space>
+        <Button
+          type="link"
+          style={{ paddingInline: 0 }}
+          disabled={loading || rebuilding}
+          onClick={() => setVisible(true)}
+        >
+          {t('Edit')}
+        </Button>
+        <Button
+          type="link"
+          style={{ paddingInline: 0 }}
+          loading={loading}
+          disabled={rebuilding}
+          onClick={() =>
+            modal.confirm({
+              title: t('Delete record'),
+              content: t('Are you sure you want to delete it?'),
+              onOk: handleDelete,
+            })
+          }
+        >
+          {t('Delete')}
+        </Button>
+      </Space>
+      <EditMCP record={record} visible={visible} setVisible={setVisible} />
+    </>
+  );
+};
+
+const useMCPBulkDestroyActionProps = () => {
+  const props = useBulkDestroyActionProps();
+  const { field } = useBlockRequestContext();
+  const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
+
+  return {
+    ...props,
+    loading: rebuilding,
+    async onClick(e?, callBack?) {
+      const hasSelection = !!field?.data?.selectedRowKeys?.length;
+      if (!hasSelection) {
+        return;
+      }
+      await props.onClick?.(e, callBack);
+      await rebuildClient();
+    },
+  };
+};
+
+export const MCPSettings: React.FC = () => {
+  const t = useT();
+  const api = useAPIClient();
   const rebuildTailRef = useRef<Promise<void>>(Promise.resolve());
   const rebuildPendingCountRef = useRef(0);
   const [rebuilding, setRebuilding] = useState(false);
-  const [rowLoadingMap, setRowLoadingMap] = useState<Record<string, boolean>>({});
-  const [editingRecord, setEditingRecord] = useState<MCPRecord | null>(null);
-
-  const setRowLoading = (recordName: string, loading: boolean) => {
-    setRowLoadingMap((prev) => {
-      if (loading) {
-        return {
-          ...prev,
-          [recordName]: true,
-        };
-      }
-      const next = { ...prev };
-      delete next[recordName];
-      return next;
-    });
-  };
 
   const rebuildClient = useCallback(async () => {
     rebuildPendingCountRef.current += 1;
@@ -681,7 +637,7 @@ const MCPList: React.FC = () => {
         try {
           await api.resource('aiMcpClients').rebuildClient();
         } catch (error) {
-          // Ignore errors silently
+          // Ignore rebuild errors to avoid blocking CRUD flow.
         }
       });
 
@@ -695,177 +651,41 @@ const MCPList: React.FC = () => {
     return task;
   }, [api]);
 
-  const mcpRequest = useRequest<MCPRecord[]>(
-    async () => {
-      const response = await api.resource('aiMcpClients').list({ paginate: false });
-      return unwrapResponseData<MCPRecord[]>(response, []);
-    },
-    {
-      refreshDeps: [api],
-    },
-  );
-
-  const toolsRequest = useRequest<Record<string, MCPTool[]>>(
-    async () => {
-      const response = await api.resource('aiMcpClients').listTools();
-      return unwrapResponseData<Record<string, MCPTool[]>>(response, {});
-    },
-    {
-      refreshDeps: [api],
-    },
-  );
-
-  const handleToggleEnabled = async (record: MCPRecord, enabled: boolean) => {
-    setRowLoading(record.name, true);
-    try {
-      await api.resource('aiMcpClients').update({
-        filterByTk: record.name,
-        values: { enabled },
-      });
-      await rebuildClient();
-      await Promise.all([mcpRequest.refresh(), toolsRequest.refresh()]);
-    } finally {
-      setRowLoading(record.name, false);
-    }
-  };
-
-  const handleDelete = async (record: MCPRecord) => {
-    setRowLoading(record.name, true);
-    try {
-      await api.resource('aiMcpClients').destroy({
-        filterByTk: record.name,
-      });
-      await rebuildClient();
-      await Promise.all([mcpRequest.refresh(), toolsRequest.refresh()]);
-      message.success(t('Deleted successfully'));
-    } finally {
-      setRowLoading(record.name, false);
-    }
-  };
-
-  const handlePermissionChange = async (toolName: string, permission: Permission) => {
-    await api.resource('aiMcpClients').updateToolPermission({
-      values: {
-        toolName,
-        permission,
-      },
-    });
-    await toolsRequest.refresh();
-    message.success(t('Saved successfully'));
-  };
-
-  const mcpItems = mcpRequest.data || [];
-  const toolsMap = toolsRequest.data || {};
   const contextValue = useMemo(
     () => ({
-      refreshMCPs: () => mcpRequest.refresh(),
-      refreshTools: () => toolsRequest.refresh(),
       rebuildClient,
       rebuilding,
     }),
-    [mcpRequest, toolsRequest, rebuildClient, rebuilding],
+    [rebuildClient, rebuilding],
   );
 
   return (
     <MCPSettingsContext.Provider value={contextValue}>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        {editingRecord ? (
-          <EditMCP
-            record={editingRecord}
-            visible={!!editingRecord}
-            setVisible={(visible) => !visible && setEditingRecord(null)}
-          />
-        ) : null}
-        <Flex justify="flex-end" align="center" gap={8}>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={rebuilding}
-            onClick={() => Promise.all([mcpRequest.refresh(), toolsRequest.refresh()])}
-          >
-            {t('Refresh')}
-          </Button>
-          <AddNew />
-        </Flex>
-        {mcpRequest.loading || toolsRequest.loading ? (
-          <div style={{ padding: '16px 0', textAlign: 'center' }}>
-            <Spin />
-          </div>
-        ) : mcpItems.length === 0 ? (
-          <div style={{ padding: '48px 0' }}>
-            <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={t('No data')} />
-          </div>
-        ) : (
-          <Collapse
-            ghost
-            size="small"
-            items={mcpItems.map((record) => {
-              const transportLabel =
-                transportOptions.find((item) => item.value === record.transport)?.label || record.transport;
-              const transportColor =
-                record.transport === 'stdio' ? 'blue' : record.transport === 'sse' ? 'gold' : 'green';
-
-              return {
-                key: record.name,
-                label: (
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Tag color={transportColor}>{transportLabel}</Tag>
-                      <div style={{ fontWeight: token.fontWeightStrong, fontSize: token.fontSizeSM }}>
-                        {record.title || record.name}
-                      </div>
-                    </div>
-                    <div style={{ color: token.colorTextSecondary, fontSize: token.fontSizeSM }}>
-                      {record.description || record.name}
-                    </div>
-                  </div>
-                ),
-                extra: (
-                  <MCPRowExtra
-                    record={record}
-                    enabled={record.enabled !== false}
-                    loading={!!rowLoadingMap[record.name]}
-                    rebuilding={rebuilding}
-                    onEdit={setEditingRecord}
-                    onToggleEnabled={handleToggleEnabled}
-                    onDelete={handleDelete}
-                  />
-                ),
-                children: (
-                  <MCPToolsList tools={toolsMap[record.name] || []} onPermissionChange={handlePermissionChange} />
-                ),
-              };
-            })}
-          />
-        )}
-      </Space>
+      <ExtendCollectionsProvider collections={[aiMcpClients]}>
+        <SchemaComponent
+          components={{
+            AddNew,
+            EditMCP,
+            MCPActions,
+            TestConnectionButton,
+            TestConnectionResult,
+            TransportTag,
+            EnabledSwitch,
+          }}
+          scope={{
+            t,
+            transportOptions,
+            keyValueRowClassName,
+            useCreateFormProps,
+            useEditFormProps,
+            useCancelActionProps,
+            useCreateActionProps,
+            useEditActionProps,
+            useMCPBulkDestroyActionProps,
+          }}
+          schema={mcpSettingsSchema}
+        />
+      </ExtendCollectionsProvider>
     </MCPSettingsContext.Provider>
-  );
-};
-
-export const MCPSettings: React.FC = () => {
-  return (
-    <ExtendCollectionsProvider collections={[aiMcpClients]}>
-      <SchemaComponent
-        components={{ MCPList }}
-        schema={{
-          type: 'void',
-          properties: {
-            card: {
-              type: 'void',
-              'x-component': 'CardItem',
-              'x-component-props': {
-                heightMode: 'fullHeight',
-              },
-              properties: {
-                content: {
-                  type: 'void',
-                  'x-component': 'MCPList',
-                },
-              },
-            },
-          },
-        }}
-      />
-    </ExtendCollectionsProvider>
   );
 };

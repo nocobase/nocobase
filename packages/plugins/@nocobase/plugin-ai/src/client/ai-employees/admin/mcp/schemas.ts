@@ -274,3 +274,134 @@ export const editMCPDrawerSchema = {
     },
   },
 };
+
+export const mcpSettingsSchema = {
+  type: 'void',
+  name: 'ai-mcp-clients',
+  properties: {
+    card: {
+      type: 'void',
+      'x-component': 'CardItem',
+      'x-component-props': {
+        heightMode: 'fullHeight',
+      },
+      'x-decorator': 'TableBlockProvider',
+      'x-decorator-props': {
+        collection: 'aiMcpClients',
+        action: 'list',
+        rowKey: 'name',
+      },
+      properties: {
+        actions: {
+          type: 'void',
+          'x-component': 'ActionBar',
+          'x-component-props': {
+            style: {
+              marginBottom: 20,
+            },
+          },
+          properties: {
+            refresh: {
+              title: "{{t('Refresh')}}",
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+            },
+            bulkDelete: {
+              title: "{{t('Delete')}}",
+              'x-action': 'destroy',
+              'x-component': 'Action',
+              'x-use-component-props': 'useMCPBulkDestroyActionProps',
+              'x-component-props': {
+                icon: 'DeleteOutlined',
+                confirm: {
+                  title: "{{t('Delete record')}}",
+                  content: "{{t('Are you sure you want to delete it?')}}",
+                },
+              },
+            },
+            add: {
+              type: 'void',
+              title: "{{t('Add new')}}",
+              'x-align': 'right',
+              'x-component': 'AddNew',
+            },
+          },
+        },
+        table: {
+          type: 'array',
+          'x-component': 'TableV2',
+          'x-use-component-props': 'useTableBlockProps',
+          'x-component-props': {
+            rowKey: 'name',
+            rowSelection: {
+              type: 'checkbox',
+            },
+          },
+          properties: {
+            column1: {
+              type: 'void',
+              title: '{{ t("Name") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column2: {
+              type: 'void',
+              title: '{{ t("Title") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                title: {
+                  type: 'string',
+                  'x-component': 'Input',
+                  'x-read-pretty': true,
+                },
+              },
+            },
+            column4: {
+              type: 'void',
+              title: '{{ t("Transport") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                transport: {
+                  type: 'string',
+                  'x-component': 'TransportTag',
+                },
+              },
+            },
+            column5: {
+              type: 'void',
+              title: '{{ t("Enabled") }}',
+              'x-component': 'TableV2.Column',
+              properties: {
+                enabled: {
+                  type: 'boolean',
+                  'x-component': 'EnabledSwitch',
+                },
+              },
+            },
+            column6: {
+              type: 'void',
+              title: '{{ t("Actions") }}',
+              'x-decorator': 'TableV2.Column.ActionBar',
+              'x-component': 'TableV2.Column',
+              properties: {
+                actions: {
+                  type: 'void',
+                  'x-component': 'MCPActions',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+};
