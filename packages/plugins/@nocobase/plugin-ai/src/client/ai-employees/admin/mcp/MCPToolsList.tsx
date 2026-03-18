@@ -8,7 +8,7 @@
  */
 
 import { useActionContext, useAPIClient, useCollectionRecordData } from '@nocobase/client';
-import { App, Empty, List, Segmented, Space, Spin } from 'antd';
+import { App, Card, Empty, List, Segmented, Space, Spin, Typography } from 'antd';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useT } from '../../../locale';
 import { MCPSettingsContext, unwrapResponseData } from './context';
@@ -122,14 +122,19 @@ export const MCPToolsList: React.FC = () => {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <div>
-        <div style={{ fontSize: 16, fontWeight: 500 }}>{record.title || record.name}</div>
-        {record.description ? (
-          <div style={{ marginTop: 4, color: 'var(--nb-color-text-secondary)', fontSize: 12 }}>
-            {record.description}
-          </div>
-        ) : null}
-      </div>
+      <Card size="small">
+        <Space direction="vertical" size={4} style={{ width: '100%' }}>
+          <Typography.Title level={5} style={{ margin: 0 }}>
+            {record.title || record.name}
+          </Typography.Title>
+          {record.title ? <Typography.Text type="secondary">{record.name}</Typography.Text> : null}
+          {record.description ? (
+            <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
+              {record.description}
+            </Typography.Paragraph>
+          ) : null}
+        </Space>
+      </Card>
 
       {loading ? (
         <div style={{ padding: '24px 0', textAlign: 'center' }}>
@@ -146,7 +151,7 @@ export const MCPToolsList: React.FC = () => {
             onChange: setCurrentPage,
             hideOnSinglePage: false,
             size: 'small',
-            showTotal: (total) => `${total} ${t('records')}`,
+            showTotal: (total) => t('Total {{count}} items', { count: total }),
           }}
           renderItem={(tool) => (
             <List.Item

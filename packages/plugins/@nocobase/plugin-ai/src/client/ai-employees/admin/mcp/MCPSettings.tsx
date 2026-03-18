@@ -381,6 +381,19 @@ const TestConnectionResult: React.FC = observer(
               <p>
                 {t('Tools found')}: {result.toolsCount}
               </p>
+              {result.tools && result.tools.length > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ fontWeight: 'bold', marginBottom: 4 }}>{t('Tools')}:</p>
+                  <div style={{ maxHeight: 120, overflow: 'auto' }}>
+                    {result.tools.map((tool) => (
+                      <Tag key={tool} style={{ margin: '2px' }}>
+                        {tool}
+                      </Tag>
+                    ))}
+                    {result.toolsTruncated && <span>...</span>}
+                  </div>
+                </div>
+              )}
             </div>
           }
         />
