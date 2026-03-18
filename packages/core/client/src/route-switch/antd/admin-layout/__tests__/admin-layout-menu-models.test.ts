@@ -13,7 +13,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { NocoBaseDesktopRouteType } from '../../../../admin-shell/route-types';
-import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from '../AdminLayoutMenuModels';
+import {
+  AdminLayoutMenuItemModel,
+  AdminLayoutMenuTreeModel,
+  resolveAdminLayoutMenuDragMoveOptions,
+} from '../AdminLayoutMenuModels';
 
 describe('AdminLayoutMenuTreeModel', () => {
   let engine: FlowEngine;
@@ -346,5 +350,107 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+  });
+
+  it('should resolve sibling move options for non-group drag target', () => {
+    const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-source-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+    const overModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-target-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 2,
+          title: 'Page 2',
+          schemaUid: 'page-2',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    expect(resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel)).toEqual({
+      sourceId: 1,
+      targetId: 2,
+      sortField: 'sort',
+    });
+  });
+
+  it('should move page into group when drag target is a group', () => {
+    const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-source-page-into-group',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+    const overModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-target-group',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 10,
+          title: 'Group 1',
+          schemaUid: 'group-1',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+
+    expect(resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel)).toEqual({
+      sourceId: 1,
+      targetScope: {
+        parentId: 10,
+      },
+      sortField: 'sort',
+      method: 'prepend',
+    });
+  });
+
+  it('should keep group drag on group target as sibling reorder', () => {
+    const activeModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-source-group',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Group 1',
+          schemaUid: 'group-1',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+    const overModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'drag-target-group-2',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 2,
+          title: 'Group 2',
+          schemaUid: 'group-2',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+
+    expect(resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel)).toEqual({
+      sourceId: 1,
+      targetId: 2,
+      sortField: 'sort',
+    });
   });
 });

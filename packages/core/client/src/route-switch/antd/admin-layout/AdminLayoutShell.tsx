@@ -9,8 +9,9 @@
 
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
+import { DndProvider, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, ConfigProvider, Grid } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import {
   type AdminLayoutMenuRenderOptions,
   HeaderContext,
   MobileMenuControlContext,
+  resolveAdminLayoutMenuDragMoveOptions,
 } from './AdminLayoutMenuModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
@@ -33,15 +35,7 @@ import {
   useAllAccessDesktopRoutes,
   useMobileLayout,
 } from '../../../admin-shell';
-import {
-  DndContext,
-  ParentRouteContext,
-  useDesignable,
-  useGlobalTheme,
-  useMenuDragEnd,
-  useSystemSettings,
-  useToken,
-} from '../../../';
+import { ParentRouteContext, useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -363,7 +357,6 @@ export const AdminLayoutShell = (props) => {
   const isMobileViewport =
     screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
-  const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const { isMobileLayout } = useMobileLayout();
   const isMobileSider = isMobileLayout || isMobileViewport;
@@ -380,6 +373,21 @@ export const AdminLayoutShell = (props) => {
   const selectedTopGroupRoute = useMemo(
     () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
     [allAccessRoutes, location.pathname],
+  );
+
+  const handleMenuDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const activeModel = flowEngine.getModel(event.active?.id as string);
+      const overModel = flowEngine.getModel(event.over?.id as string);
+      const moveOptions = resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel);
+
+      if (!moveOptions) {
+        return;
+      }
+
+      await flowEngine.context.routeRepository.moveRoute(moveOptions);
+    },
+    [flowEngine],
   );
 
   useLayoutEffect(() => {
@@ -500,7 +508,7 @@ export const AdminLayoutShell = (props) => {
     <div style={rootStyle}>
       <div id="nocobase-app-container" style={appContainerStyle}>
         <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
-          <DndContext onDragEnd={onDragEnd}>
+          <DndProvider onDragEnd={handleMenuDragEnd}>
             <ProLayout
               {...props}
               contentStyle={contentStyle}
@@ -547,7 +555,7 @@ export const AdminLayoutShell = (props) => {
                 }}
               </RouteContext.Consumer>
             </ProLayout>
-          </DndContext>
+          </DndProvider>
         </MobileMenuControlContext.Provider>
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle}></div>

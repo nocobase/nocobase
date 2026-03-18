@@ -9,7 +9,7 @@
 
 import { TreeSelect, FormLayout } from '@formily/antd-v5';
 import { HolderOutlined } from '@ant-design/icons';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { DragHandler as FlowDragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
@@ -22,13 +22,11 @@ import {
 } from '../../../admin-shell';
 import {
   Icon,
-  DragHandler as LegacyDragHandler,
   FormDialog,
   getPageMenuSchema,
   ParentRouteContext,
   SchemaComponent,
   SchemaComponentOptions,
-  SortableItem,
   useParseURLAndParams,
   useRouterBasename,
   useSchemaInitializerRender,
@@ -333,6 +331,60 @@ const MenuItemTitle: React.FC = (props) => {
 
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
+type AdminLayoutMenuDragMoveOptions = {
+  sourceId: string | number;
+  targetId?: string | number;
+  targetScope?: {
+    parentId: string | number;
+  };
+  sortField: 'sort';
+  method?: 'insertAfter' | 'prepend';
+};
+
+/**
+ * 根据拖拽的 active / over 菜单模型，计算 desktopRoutes:move 所需参数。
+ *
+ * 普通菜单拖到普通菜单上时，保持旧语义，按目标节点排序；
+ * 普通菜单拖到分组上时，视为插入该分组内部；
+ * 分组拖到分组上时，仍按顶层/同层分组排序，避免误变成嵌套分组。
+ *
+ * @param {FlowModel | undefined} activeModel 被拖拽的模型
+ * @param {FlowModel | undefined} overModel 命中的目标模型
+ * @returns {AdminLayoutMenuDragMoveOptions | undefined} 可直接传给 routeRepository.moveRoute 的参数
+ */
+export function resolveAdminLayoutMenuDragMoveOptions(
+  activeModel?: FlowModel,
+  overModel?: FlowModel,
+): AdminLayoutMenuDragMoveOptions | undefined {
+  if (!(activeModel instanceof AdminLayoutMenuItemModel) || !(overModel instanceof AdminLayoutMenuItemModel)) {
+    return;
+  }
+
+  const activeRoute = activeModel.getRoute();
+  const overRoute = overModel.getRoute();
+
+  if (!activeRoute?.id || !overRoute?.id || activeRoute.id === overRoute.id) {
+    return;
+  }
+
+  if (overRoute.type === NocoBaseDesktopRouteType.group && activeRoute.type !== NocoBaseDesktopRouteType.group) {
+    return {
+      sourceId: activeRoute.id,
+      targetScope: {
+        parentId: overRoute.id,
+      },
+      sortField: 'sort',
+      method: 'prepend',
+    };
+  }
+
+  return {
+    sourceId: activeRoute.id,
+    targetId: overRoute.id,
+    sortField: 'sort',
+  };
+}
+
 const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
   const { item } = props;
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
@@ -343,13 +395,10 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
         ? String(item._route.title)
         : undefined;
 
-  // fake schema used to pass routing information to SortableItem
-  const fakeSchema: any = { __route__: item._route };
-
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={ariaLabel} style={menuItemStyle}>
+        <div aria-label={ariaLabel} role="none" style={menuItemStyle}>
           {props.children}
           {badgeCount != null && (
             <Badge
@@ -359,7 +408,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
               dot={false}
             ></Badge>
           )}
-        </SortableItem>
+        </div>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
@@ -452,13 +501,11 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
     [props.options?.isMobile, closeMobileMenu, navigate, path],
   );
 
-  const fakeSchema: any = { __route__: item._route };
-
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
+          <div role="none" style={menuItemStyle}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
               <Link to={location.pathname} aria-label={typeof item.name === 'string' ? item.name : undefined}>
@@ -473,7 +520,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
                 dot={false}
               ></Badge>
             )}
-          </SortableItem>
+          </div>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
     );
@@ -482,7 +529,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
+        <div role="none" style={menuItemStyle}>
           <WithTooltip
             title={item.name}
             hidden={
@@ -505,13 +552,13 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
               dot={false}
             ></Badge>
           )}
-        </SortableItem>
+        </div>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
 };
 
-const LegacyMenuDragToolbarButton: FC<{ model: AdminLayoutMenuItemModel }> = ({ model }) => {
+const MenuDragToolbarButton: FC<{ model: AdminLayoutMenuItemModel }> = ({ model }) => {
   const route = model.getRoute();
 
   if (!route?.id) {
@@ -519,9 +566,20 @@ const LegacyMenuDragToolbarButton: FC<{ model: AdminLayoutMenuItemModel }> = ({ 
   }
 
   return (
-    <LegacyDragHandler>
-      <HolderOutlined />
-    </LegacyDragHandler>
+    <FlowDragHandler model={model}>
+      <span
+        style={{
+          display: 'inline-flex',
+          width: 14,
+          height: 14,
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'grab',
+        }}
+      >
+        <HolderOutlined />
+      </span>
+    </FlowDragHandler>
   );
 };
 
@@ -577,17 +635,19 @@ export const AdminLayoutMenuModelRenderer: FC<{
 
   return (
     <ResetThemeTokenAndKeepAlgorithm>
-      <FlowModelRenderer
-        model={model}
-        showFlowSettings={{ showBackground: false, showBorder: false }}
-        extraToolbarItems={[
-          {
-            key: 'legacy-menu-drag-handler',
-            component: LegacyMenuDragToolbarButton,
-            sort: 1,
-          },
-        ]}
-      />
+      <Droppable model={model}>
+        <FlowModelRenderer
+          model={model}
+          showFlowSettings={{ showBackground: false, showBorder: false }}
+          extraToolbarItems={[
+            {
+              key: 'menu-drag-handler',
+              component: MenuDragToolbarButton,
+              sort: 1,
+            },
+          ]}
+        />
+      </Droppable>
     </ResetThemeTokenAndKeepAlgorithm>
   );
 };
