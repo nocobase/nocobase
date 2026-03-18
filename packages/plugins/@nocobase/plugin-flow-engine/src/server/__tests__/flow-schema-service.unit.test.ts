@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Ajv from 'ajv';
 import { describe, expect, it } from 'vitest';
-import { createActionStepParamsSchema, popupActionSettingsStepParamsSchema } from '../flow-schema-manifests/shared';
+import {
+  createActionStepParamsSchema,
+  genericFilterSchema,
+  popupActionSettingsStepParamsSchema,
+} from '../flow-schema-manifests/shared';
 import { FlowSchemaService } from '../flow-schema-service';
 
 function createService() {
@@ -419,6 +424,95 @@ describe('FlowSchemaService', () => {
     expect(normalized.uid).toBeUndefined();
     expect(normalized.subModels.tabs[0].uid).toBeTruthy();
     expect(normalized.subModels.tabs[0].subModels?.grid).toBeUndefined();
+  });
+
+  it('should validate generic filter trees as recursive groups or conditions', () => {
+    const service = new FlowSchemaService();
+    const ajv = new Ajv({ allErrors: true, strict: false });
+
+    service.registerModelManifests([
+      {
+        use: 'FilterHostModel',
+        source: 'official',
+        strict: true,
+        stepParamsSchema: {
+          type: 'object',
+          properties: {
+            filter: genericFilterSchema,
+          },
+          required: ['filter'],
+          additionalProperties: false,
+        },
+      },
+    ]);
+
+    const document = service.getDocument('FilterHostModel');
+    const filterSchema = document?.jsonSchema?.properties?.stepParams?.properties?.filter;
+    expect(filterSchema).toBeTruthy();
+    const validateFilter = ajv.compile(filterSchema || {});
+
+    expect(
+      validateFilter({
+        logic: '$and',
+        items: [
+          {
+            path: 'status',
+            operator: '$eq',
+            value: 'published',
+          },
+          {
+            logic: '$or',
+            items: [
+              {
+                path: 'createdBy',
+                operator: '$eq',
+                value: '{{ctx.currentUser.id}}',
+              },
+            ],
+          },
+        ],
+      }),
+      JSON.stringify(validateFilter.errors),
+    ).toBe(true);
+
+    expect(
+      validateFilter({
+        logic: '$and',
+        items: [
+          {
+            foo: 'bar',
+          },
+        ],
+      }),
+      JSON.stringify(validateFilter.errors),
+    ).toBe(false);
+
+    const issues = service.validateModelTree({
+      uid: 'filter-host-1',
+      use: 'FilterHostModel',
+      stepParams: {
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              foo: 'bar',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/stepParams/filter/items/0',
+          modelUid: 'filter-host-1',
+          modelUse: 'FilterHostModel',
+          section: 'stepParams',
+          keyword: 'oneOf',
+        }),
+      ]),
+    );
   });
 
   it('should accept null action icons for link-style edit actions', () => {

@@ -14,7 +14,83 @@ import type {
   FlowSubModelSlotSchema,
 } from '@nocobase/flow-engine';
 
+const genericFilterSchemaId = 'https://nocobase.dev/schemas/plugin-flow-engine/generic-filter.json';
+
 export const genericFilterSchema: FlowJsonSchema = {
+  $id: genericFilterSchemaId,
+  definitions: {
+    filterCondition: {
+      type: 'object',
+      properties: {
+        path: {
+          type: 'string',
+        },
+        operator: {
+          type: 'string',
+        },
+        value: {},
+        noValue: {
+          type: 'boolean',
+        },
+      },
+      required: ['path'],
+      additionalProperties: true,
+      allOf: [
+        {
+          not: {
+            required: ['logic'],
+          },
+        },
+        {
+          not: {
+            required: ['items'],
+          },
+        },
+      ],
+    },
+    filterGroup: {
+      type: 'object',
+      properties: {
+        logic: {
+          type: 'string',
+          enum: ['$and', '$or'],
+        },
+        items: {
+          type: 'array',
+          items: {
+            oneOf: [
+              { $ref: `${genericFilterSchemaId}#/definitions/filterCondition` },
+              { $ref: `${genericFilterSchemaId}#/definitions/filterGroup` },
+            ],
+          },
+        },
+      },
+      required: ['logic', 'items'],
+      additionalProperties: true,
+      allOf: [
+        {
+          not: {
+            required: ['path'],
+          },
+        },
+        {
+          not: {
+            required: ['operator'],
+          },
+        },
+        {
+          not: {
+            required: ['value'],
+          },
+        },
+        {
+          not: {
+            required: ['noValue'],
+          },
+        },
+      ],
+    },
+  },
   type: 'object',
   properties: {
     logic: {
@@ -24,12 +100,37 @@ export const genericFilterSchema: FlowJsonSchema = {
     items: {
       type: 'array',
       items: {
-        type: 'object',
-        additionalProperties: true,
+        oneOf: [
+          { $ref: `${genericFilterSchemaId}#/definitions/filterCondition` },
+          { $ref: `${genericFilterSchemaId}#/definitions/filterGroup` },
+        ],
       },
     },
   },
+  required: ['logic', 'items'],
   additionalProperties: true,
+  allOf: [
+    {
+      not: {
+        required: ['path'],
+      },
+    },
+    {
+      not: {
+        required: ['operator'],
+      },
+    },
+    {
+      not: {
+        required: ['value'],
+      },
+    },
+    {
+      not: {
+        required: ['noValue'],
+      },
+    },
+  ],
 };
 
 export const genericModelNodeSchema: FlowJsonSchema = {

@@ -88,6 +88,41 @@ const expectCollectionResourceSettingsSchemaDocument = (
   }
 };
 
+const expectGenericFilterSchemaDocument = (schema: any) => {
+  const validate = ajv.compile(schema);
+  const validFilter = {
+    logic: '$and',
+    items: [
+      {
+        path: 'status',
+        operator: '$eq',
+        value: 'published',
+      },
+      {
+        logic: '$or',
+        items: [
+          {
+            path: 'createdBy',
+            operator: '$eq',
+            value: '{{ctx.currentUser.id}}',
+          },
+        ],
+      },
+    ],
+  };
+  const invalidFilter = {
+    logic: '$and',
+    items: [
+      {
+        foo: 'bar',
+      },
+    ],
+  };
+
+  expect(validate(validFilter), JSON.stringify(validate.errors)).toBe(true);
+  expect(validate(invalidFilter), JSON.stringify(validate.errors)).toBe(false);
+};
+
 const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
   const validate = ajv.compile({
     type: 'object',
@@ -442,6 +477,10 @@ describe('flow-model save', () => {
     });
     expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'minimalExample');
     expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'skeleton');
+    expectGenericFilterSchemaDocument(
+      collectionDocs.TableBlockModel?.jsonSchema?.properties?.stepParams?.properties?.tableSettings?.properties
+        ?.dataScope?.properties?.filter,
+    );
 
     expect(collectionDocs.EditFormModel?.commonPatterns).toEqual(
       expect.arrayContaining([
@@ -1773,5 +1812,48 @@ describe('flow-model save', () => {
     expect(res.status).toBe(200);
     expect(res.body?.data?.uid).toBe('save-ignore-props-null-parent');
     expect(res.body?.data?.subModels?.body?.[0]?.uid).toBe('save-ignore-props-null-child');
+  });
+
+  it('should reject arbitrary objects inside generic filter trees', async () => {
+    const res = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-invalid-filter-tree',
+        use: 'TableBlockModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+          },
+          tableSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [
+                  {
+                    foo: 'bar',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/stepParams/tableSettings/dataScope/filter/items/0',
+          modelUid: 'save-invalid-filter-tree',
+          modelUse: 'TableBlockModel',
+          section: 'stepParams',
+          keyword: 'oneOf',
+        }),
+      ]),
+    );
   });
 });
