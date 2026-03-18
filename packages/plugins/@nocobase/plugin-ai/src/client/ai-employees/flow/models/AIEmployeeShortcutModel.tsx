@@ -8,13 +8,13 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert } from 'antd';
+import { Avatar, Spin, Popover, Card, Tag, Select, Switch, Alert, Typography } from 'antd';
 import { FlowModel, tExpr, useFlowSettingsContext, observer } from '@nocobase/flow-engine';
 import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
-import { RemoteSelect, TextAreaWithContextSelector, useRequest, useToken } from '@nocobase/client';
+import { RemoteSelect, TextAreaWithContextSelector, useCompile, useRequest, useToken } from '@nocobase/client';
 import { AddContextButton } from '../../AddContextButton';
 import { Schema, useField } from '@formily/react';
 import { ArrayField, ObjectField, Field } from '@formily/core';
@@ -192,6 +192,42 @@ const WorkContext: React.FC = () => {
   );
 };
 
+const OptionContent: React.FC<{
+  t: any;
+  title?: string;
+  description?: string;
+}> = ({ t, title, description }) => {
+  const compiledTitle = Schema.compile(title, { t });
+  const compiledDescription = Schema.compile(description, { t });
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        minWidth: 0,
+        padding: '2px 0',
+      }}
+    >
+      <div>{compiledTitle}</div>
+      {compiledDescription ? (
+        <Typography.Text
+          type="secondary"
+          style={{
+            fontSize: 12,
+          }}
+          ellipsis={{
+            tooltip: typeof compiledDescription === 'string' ? compiledDescription : undefined,
+          }}
+        >
+          {compiledDescription}
+        </Typography.Text>
+      ) : null}
+    </div>
+  );
+};
+
 const SkillSettings: React.FC<{
   aiEmployeesMap: {
     [username: string]: AIEmployee;
@@ -219,11 +255,13 @@ const SkillSettings: React.FC<{
       onChange={handleChange}
       manual={false}
       multiple={true}
+      popupMatchSelectWidth={360}
       placeholder={t('Use all AI employee skills')}
       fieldNames={{
         label: 'title',
         value: 'name',
       }}
+      optionRender={renderTitleWithDescription(t)}
       service={{
         resource: 'aiSkills',
         action: 'listBinding',
@@ -262,11 +300,13 @@ const ToolSettings: React.FC<{
       onChange={handleChange}
       manual={false}
       multiple={true}
+      popupMatchSelectWidth={360}
       placeholder={t('Use all AI employee tools')}
       fieldNames={{
         label: 'title',
         value: 'name',
       }}
+      optionRender={renderTitleWithDescription(t)}
       service={{
         resource: 'aiTools',
         action: 'listBinding',
@@ -277,6 +317,10 @@ const ToolSettings: React.FC<{
     />
   );
 };
+
+const renderTitleWithDescription = (t: any) => (option: { data?: { title?: string; description?: string } }) => (
+  <OptionContent t={t} title={option.data?.title} description={option.data?.description} />
+);
 
 const TaskModelSelect: React.FC = observer(() => {
   const t = useT();
