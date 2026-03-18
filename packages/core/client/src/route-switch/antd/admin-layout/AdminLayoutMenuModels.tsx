@@ -626,7 +626,11 @@ export const AdminLayoutMenuModelRenderer: FC<{
       <Droppable model={model}>
         <FlowModelRenderer
           model={model}
-          showFlowSettings={{ showBackground: false, showBorder: false }}
+          showFlowSettings={{
+            showBackground: false,
+            showBorder: false,
+            showDynamicFlowsEditor: false,
+          }}
           extraToolbarItems={[
             {
               key: 'menu-drag-handler',
@@ -664,9 +668,6 @@ function getInitializerButton(testId: string, parentRoute?: NocoBaseDesktopRoute
  * ```
  */
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
-  // 菜单项沿用 v1 的路由编辑语义，不开放动态事件流编辑入口。
-  hideDynamicFlowsEditor = true;
-
   onInit(options) {
     super.onInit(options);
     this.syncFromRoute(

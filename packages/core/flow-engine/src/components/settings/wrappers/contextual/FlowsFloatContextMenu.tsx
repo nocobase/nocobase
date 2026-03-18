@@ -44,6 +44,7 @@ const renderToolbarItems = (
   flowEngine: FlowEngine,
   settingsMenuLevel?: number,
   extraToolbarItems?: ToolbarItemConfig[],
+  showDynamicFlowsEditor = true,
 ) => {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
 
@@ -55,6 +56,9 @@ const renderToolbarItems = (
 
   return allToolbarItems
     .filter((itemConfig: ToolbarItemConfig) => {
+      if (itemConfig.key === 'dynamic-flows-editor' && showDynamicFlowsEditor === false) {
+        return false;
+      }
       // 检查项目是否应该显示
       return itemConfig.visible ? itemConfig.visible(model) : true;
     })
@@ -317,6 +321,10 @@ interface ModelProvidedProps {
    */
   extraToolbarItems?: ToolbarItemConfig[];
   /**
+   * @default true
+   */
+  showDynamicFlowsEditor?: boolean;
+  /**
    * @default 'inside'
    */
   toolbarPosition?: 'inside' | 'above' | 'below';
@@ -351,6 +359,10 @@ interface ModelByIdProps {
    * Extra toolbar items to add to this context menu instance
    */
   extraToolbarItems?: ToolbarItemConfig[];
+  /**
+   * @default true
+   */
+  showDynamicFlowsEditor?: boolean;
   /**
    * @default 'inside'
    */
@@ -520,6 +532,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     showDragHandle = false,
     settingsMenuLevel,
     extraToolbarItems,
+    showDynamicFlowsEditor = true,
     toolbarStyle,
     toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
@@ -592,7 +605,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           showBorder,
           ctx: model.context,
           toolbarPosition,
-          toolbarCount: getToolbarCount(flowEngine, extraToolbarItems),
+          toolbarCount: getToolbarCount(flowEngine, extraToolbarItems, showDynamicFlowsEditor),
         })} ${hideMenu ? 'hide-parent-menu' : ''} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
@@ -622,6 +635,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                 flowEngine,
                 settingsMenuLevel,
                 extraToolbarItems,
+                showDynamicFlowsEditor,
               )}
             </Space>
           </div>
@@ -653,6 +667,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     showTitle = false,
     settingsMenuLevel,
     extraToolbarItems: extraToolbarItems,
+    showDynamicFlowsEditor = true,
     toolbarPosition,
   }) => {
     const model = useFlowModelById(uid, modelClassName);
@@ -673,6 +688,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
         showTitle={showTitle}
         settingsMenuLevel={settingsMenuLevel}
         extraToolbarItems={extraToolbarItems}
+        showDynamicFlowsEditor={showDynamicFlowsEditor}
         toolbarPosition={toolbarPosition}
       >
         {children}
@@ -686,8 +702,8 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
 
 export { FlowsFloatContextMenu };
 
-function getToolbarCount(flowEngine, extraToolbarItems) {
+function getToolbarCount(flowEngine, extraToolbarItems, showDynamicFlowsEditor = true) {
   const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
   const allToolbarItems = [...toolbarItems, ...(extraToolbarItems || [])];
-  return allToolbarItems.length;
+  return allToolbarItems.filter((item) => item.key !== 'dynamic-flows-editor' || showDynamicFlowsEditor).length;
 }

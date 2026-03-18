@@ -69,6 +69,8 @@ export interface FlowModelRendererProps {
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        /** 是否显示事件流入口，默认 true */
+        showDynamicFlowsEditor?: boolean;
         /** 自定义工具栏样式 */
         style?: React.CSSProperties;
         /**
@@ -112,6 +114,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        showDynamicFlowsEditor?: boolean;
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -182,6 +185,7 @@ const FlowModelRendererCore: React.FC<{
         showBackground?: boolean;
         showBorder?: boolean;
         showDragHandle?: boolean;
+        showDynamicFlowsEditor?: boolean;
         style?: React.CSSProperties;
         /**
          * @default 'inside'
@@ -251,6 +255,7 @@ const FlowModelRendererCore: React.FC<{
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showDynamicFlowsEditor={_.isObject(showFlowSettings) ? showFlowSettings.showDynamicFlowsEditor : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
@@ -297,6 +302,7 @@ const FlowModelRendererCore: React.FC<{
             showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
             showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
             showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showDynamicFlowsEditor={_.isObject(showFlowSettings) ? showFlowSettings.showDynamicFlowsEditor : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
