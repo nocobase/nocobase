@@ -6,9 +6,9 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/database": "2.1.0-alpha.9",
-    "@nocobase/preset-nocobase": "2.1.0-alpha.9",
-    "@nocobase/server": "2.1.0-alpha.9"
+    "@nocobase/database": "workspace:*",
+    "@nocobase/preset-nocobase": "workspace:*",
+    "@nocobase/server": "workspace:*"
   },
   "devDependencies": {
     "@nocobase/client": "2.1.0-alpha.9"

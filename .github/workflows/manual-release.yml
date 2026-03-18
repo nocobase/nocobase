@@ -130,24 +130,15 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.rc-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
-      - name: Push and merge into next
+      - name: Push tags
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.rc-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin main --atomic --tags
-            git checkout next
-            git merge -X ours main --no-edit
-            git push origin next --tags --atomic
+            git push origin --tags
             cd ../../../../
           done
           cd ./packages/pro-plugins
-          git push origin main --atomic --tags
-          git checkout next
-          git merge -X ours main --no-edit
-          git push origin next --tags --atomic
+          git push origin --tags
           cd ../../
-          git push origin main --atomic --tags
-          git checkout next
-          git merge -X ours main --no-edit
-          git push origin next --tags --atomic
+          git push origin --tags

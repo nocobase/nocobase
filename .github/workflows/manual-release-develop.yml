@@ -89,15 +89,15 @@ jobs:
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.alpha-plugins }}
           CUSTOM_PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.custom-plugins }}
-      - name: Push
+      - name: Push tags
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.alpha-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin develop --atomic --tags
+            git push origin --tags
             cd ../../../../
           done
           cd ./packages/pro-plugins
-          git push origin develop --atomic --tags
+          git push origin --tags
           cd ../../
-          git push origin develop --tags --atomic
+          git push origin --tags

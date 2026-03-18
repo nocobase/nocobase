@@ -136,24 +136,15 @@ jobs:
           VERSION: ${{ inputs.version && format('--version {0}', inputs.version) || '' }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
           ADD_MINOR: ${{ inputs.add_minor && '--add-minor' || '' }}
-      - name: Push and merge into next
+      - name: Push tags
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.beta-plugins), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin next --atomic --tags
-            git checkout develop
-            git merge -X ours next --no-edit
-            git push origin develop --tags --atomic
+            git push origin --tags
             cd ../../../../
           done
           cd ./packages/pro-plugins
-          git push origin next --atomic --tags
-          git checkout develop
-          git merge -X ours next --no-edit
-          git push origin develop --tags --atomic
+          git push origin --tags
           cd ../../
-          git push origin next --atomic --tags
-          git checkout develop
-          git merge -X ours next --no-edit
-          git push origin develop --tags --atomic
+          git push origin --tags

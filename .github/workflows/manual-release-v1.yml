@@ -199,17 +199,17 @@ jobs:
           PRO_PLUGIN_REPOS: ${{ needs.get-plugins.outputs.all-plugins }}
           IS_FEAT: ${{ inputs.is_feat && '--is-feat' || '' }}
 
-      - name: Push tags/commits (v1)
+      - name: Push tags (v1.x)
         if: ${{ !inputs.dry_run }}
         run: |
           for repo in ${{ join(fromJSON(needs.get-plugins.outputs.all-plugins), ' ') }}
           do
             cd ./packages/pro-plugins/@nocobase/$repo
-            git push origin v1 --atomic --tags
+            git push origin --tags
             cd ../../../../
           done
 
           cd ./packages/pro-plugins
-          git push origin v1 --atomic --tags
+          git push origin --tags
           cd ../../
-          git push origin v1 --atomic --tags
+          git push origin --tags

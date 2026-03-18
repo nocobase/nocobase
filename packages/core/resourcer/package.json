@@ -6,7 +6,7 @@
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/utils": "2.1.0-alpha.9",
+    "@nocobase/utils": "workspace:*",
     "deepmerge": "^4.2.2",
     "fast-glob": "^3.3.1",
     "koa-compose": "^4.1.0",

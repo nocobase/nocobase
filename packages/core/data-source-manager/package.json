@@ -6,11 +6,11 @@
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "2.1.0-alpha.9",
-    "@nocobase/cache": "2.1.0-alpha.9",
-    "@nocobase/database": "2.1.0-alpha.9",
-    "@nocobase/resourcer": "2.1.0-alpha.9",
-    "@nocobase/utils": "2.1.0-alpha.9",
+    "@nocobase/actions": "workspace:*",
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/resourcer": "workspace:*",
+    "@nocobase/utils": "workspace:*",
     "@types/jsonwebtoken": "^8.5.8",
     "jsonwebtoken": "^9.0.2"
   },
