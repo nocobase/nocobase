@@ -65,8 +65,10 @@ export class IdpOauthService {
     private readonly bridgeTokenCache: Cache,
   ) {}
 
-  getOrigin(ctx: { protocol: string; host: string }) {
-    return process.env.APP_PUBLIC_ORIGIN || `${ctx.protocol}://${ctx.host}`;
+  getOrigin(ctx: any) {
+    const protocol = ctx.headers?.['x-forwarded-proto'] || ctx.protocol || 'http';
+    const host = ctx.headers?.['x-forwarded-host'] || ctx.host || '';
+    return process.env.APP_PUBLIC_ORIGIN || `${protocol}://${host}`;
   }
 
   getIssuerPath(appName = this.app.name) {

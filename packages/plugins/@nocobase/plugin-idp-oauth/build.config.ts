@@ -38,7 +38,7 @@ async function copyRuntimePackage(packageName: string, copied: Set<string>, log:
 export default defineConfig({
   afterBuild: async (log) => {
     const copied = new Set<string>();
-    const packagesToCopy = ['oidc-provider', 'jose'];
+    const packagesToCopy = ['oidc-provider', 'jose', 'quick-lru'];
     for (const packageName of packagesToCopy) {
       await copyRuntimePackage(packageName, copied, log);
     }
