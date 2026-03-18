@@ -20,7 +20,7 @@ function normalizeBasePath(path = '') {
 
 export class PluginMcpServerServer extends Plugin {
   private mcpServer: McpServer;
-  private readonly mcpScope = 'mcp';
+  private readonly mcpScopes = ['mcp', 'offline_access'] as const;
 
   private getApiBasePath() {
     return normalizeBasePath(process.env.API_BASE_PATH || '/api');
@@ -48,7 +48,10 @@ export class PluginMcpServerServer extends Plugin {
     if (!metadata) {
       return;
     }
-    ctx.set('WWW-Authenticate', `Bearer resource_metadata="${metadata.resourceMetadataUrl}", scope="${this.mcpScope}"`);
+    ctx.set(
+      'WWW-Authenticate',
+      `Bearer resource_metadata="${metadata.resourceMetadataUrl}", scope="${this.mcpScopes.join(' ')}"`,
+    );
   }
 
   private registerProtectedResourceMetadataRoute() {
@@ -72,7 +75,7 @@ export class PluginMcpServerServer extends Plugin {
         ctx.body = {
           resource: metadata.resource,
           authorization_servers: [metadata.issuer],
-          scopes_supported: [this.mcpScope],
+          scopes_supported: [...this.mcpScopes],
         };
       },
       {
@@ -85,7 +88,7 @@ export class PluginMcpServerServer extends Plugin {
   private registerIdpResource() {
     this.getIdpOauthPlugin()?.service?.registerResourceServer('mcp', {
       path: '/mcp',
-      scope: this.mcpScope,
+      scope: this.mcpScopes.join(' '),
       accessTokenFormat: 'jwt',
       jwt: {
         sign: { alg: 'RS256' },
