@@ -9,11 +9,10 @@
 
 import { TreeSelect, FormLayout } from '@formily/antd-v5';
 import { HolderOutlined } from '@ant-design/icons';
-import { SchemaOptionsContext } from '@formily/react';
 import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
-import { Badge, Modal, Tooltip } from 'antd';
-import React, { FC, useCallback, useContext, useEffect, useRef } from 'react';
+import { Badge, Tooltip } from 'antd';
+import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   findFirstPageRoute,
@@ -30,7 +29,6 @@ import {
   SchemaComponent,
   SchemaComponentOptions,
   SortableItem,
-  useDesignable,
   useParseURLAndParams,
   useRouterBasename,
   useSchemaInitializerRender,
@@ -45,6 +43,8 @@ import { getFlowPageMenuSchema } from '../../../modules/menu';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
+import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
+import { uid } from '@nocobase/utils/client';
 
 type AdminLayoutMenuRenderType = 'item' | 'group';
 
@@ -576,17 +576,19 @@ export const AdminLayoutMenuModelRenderer: FC<{
   }, [dom, item, model, options, renderType]);
 
   return (
-    <FlowModelRenderer
-      model={model}
-      showFlowSettings={{ showBackground: false, showBorder: false }}
-      extraToolbarItems={[
-        {
-          key: 'legacy-menu-drag-handler',
-          component: LegacyMenuDragToolbarButton,
-          sort: 1,
-        },
-      ]}
-    />
+    <ResetThemeTokenAndKeepAlgorithm>
+      <FlowModelRenderer
+        model={model}
+        showFlowSettings={{ showBackground: false, showBorder: false }}
+        extraToolbarItems={[
+          {
+            key: 'legacy-menu-drag-handler',
+            component: LegacyMenuDragToolbarButton,
+            sort: 1,
+          },
+        ]}
+      />
+    </ResetThemeTokenAndKeepAlgorithm>
   );
 };
 
