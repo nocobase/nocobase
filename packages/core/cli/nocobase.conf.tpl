@@ -12,6 +12,11 @@ log_format apm '"$time_local" client=$remote_addr '
                'upstream_connect_time=$upstream_connect_time '
                'upstream_header_time=$upstream_header_time';
 
+map $http_x_forwarded_proto $upstream_x_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
 server {
     listen 80;
     server_name _;
@@ -68,7 +73,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
         proxy_set_header Host $host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
@@ -103,7 +108,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
         proxy_set_header Host $host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
