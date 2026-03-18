@@ -44,10 +44,10 @@ export const InteractionPage = () => {
 
   const currentPath = useMemo(() => {
     if (!params.appName || !params.uid) {
-      return app.getRouteUrl('signin');
+      return '/signin';
     }
-    return app.getRouteUrl(`idp-oauth/interaction/${params.appName}/${params.uid}`);
-  }, [app, params.appName, params.uid]);
+    return `/idp-oauth/interaction/${params.appName}/${params.uid}`;
+  }, [params.appName, params.uid]);
 
   const runInteraction = async (method: 'get' | 'post', payload?: Record<string, any>) => {
     if (!interactionApiPath) {
@@ -86,7 +86,7 @@ export const InteractionPage = () => {
 
     if (data?.prompt === 'login') {
       if (!token) {
-        navigate(`${app.getRouteUrl('signin')}?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
+        navigate(`/signin?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
         return;
       }
 
@@ -95,7 +95,7 @@ export const InteractionPage = () => {
         return;
       }
 
-      navigate(`${app.getRouteUrl('signin')}?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
+      navigate(`/signin?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
       return;
     }
 
