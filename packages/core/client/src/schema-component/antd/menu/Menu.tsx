@@ -27,6 +27,7 @@ import {
   Icon,
   NocoBaseRecursionField,
   useAllAccessDesktopRoutes,
+  useAPIClient,
   useParseURLAndParams,
   useSchemaInitializerRender,
 } from '../../../';
