@@ -10,7 +10,7 @@
 export interface SkillsManager {
   getSkills(name: string[]): Promise<SkillsEntry[]>;
   getSkills(name: string): Promise<SkillsEntry>;
-  listSkills(filter: SkillsFilter): Promise<SkillsEntry[]>;
+  listSkills(filter?: SkillsFilter): Promise<SkillsEntry[]>;
   registerSkills(options: SkillsOptions): Promise<void>;
   persistence(): Promise<void>;
 }

@@ -39,10 +39,8 @@ export const aiTools: ResourceOptions = {
       if (!aiEmployee) {
         return [];
       }
-      if (!aiEmployee.skillSettings?.tools?.length) {
-        return [];
-      }
-      const bindingToolNames = aiEmployee.skillSettings.tools.map((tool) => tool.name);
+
+      const bindingToolNames = aiEmployee.skillSettings?.tools?.map((tool) => tool.name) ?? [];
 
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const tools = await plugin.ai.toolsManager.listTools();
@@ -53,6 +51,7 @@ export const aiTools: ResourceOptions = {
       ctx.body = result.map(({ introduction, definition }) => ({
         title: introduction?.title ?? definition.name,
         name: definition.name,
+        description: introduction?.about ?? definition.description,
       }));
       await next();
     },

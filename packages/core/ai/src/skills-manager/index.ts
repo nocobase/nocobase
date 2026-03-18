@@ -15,38 +15,49 @@ import _ from 'lodash';
 
 export class DefaultSkillsManager implements SkillsManager {
   private readonly skills = new Registry<SkillsEntry>();
+  private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager };
+  private mode = 'memory';
 
-  constructor(private readonly provideCollectionManager: () => { collectionManager: SequelizeCollectionManager }) {}
+  constructor(private readonly app: any) {
+    this.provideCollectionManager = () => app.mainDataSource;
+    this.app.on('afterStart', async () => {
+      if (this.mode === 'memory') {
+        await this.persistence();
+        this.mode = 'database';
+      }
+    });
+  }
 
   getSkills(name: string[]): Promise<SkillsEntry[]>;
   getSkills(name: string): Promise<SkillsEntry>;
   async getSkills(name: string | string[]): Promise<SkillsEntry | SkillsEntry[]> {
     if (_.isArray(name)) {
-      return (await this.aiSkillsModel.findAll({ where: { name: { [Op.in]: name } } })).map((it) => it.toJSON());
+      return (await this.aiSkillsModel.findAll({ where: { name: { [Op.in]: name } } }))
+        .map((it) => it.toJSON())
+        .map(converterSkillsEntry);
     } else {
-      return (await this.aiSkillsModel.findOne({ where: { name } }))?.toJSON() as SkillsEntry;
+      return converterSkillsEntry((await this.aiSkillsModel.findOne({ where: { name } }))?.toJSON()) as SkillsEntry;
     }
   }
 
   async listSkills(filter: SkillsFilter): Promise<SkillsEntry[]> {
     const where = {};
-    if (filter.scope) {
+    if (filter?.scope) {
       where['scope'] = filter.scope;
     }
-    if (filter.name) {
+    if (filter?.name) {
       where['name'] = {
         [Op.substring]: filter.name,
       };
     }
-    return (await this.aiSkillsModel.findAll({ where })).map((it) => it.toJSON());
+    return (await this.aiSkillsModel.findAll({ where })).map((it) => it.toJSON()).map(converterSkillsEntry);
   }
 
   async registerSkills(options: SkillsOptions): Promise<void> {
-    if (await this.isAISkillsCollectionSync()) {
-      return this.registerSkillsInDatabase(options);
-    } else {
+    if (this.mode === 'memory') {
       return this.registerSkillsInMemory(options);
     }
+    return this.registerSkillsInDatabase(options);
   }
 
   async persistence(): Promise<void> {
@@ -104,10 +115,6 @@ export class DefaultSkillsManager implements SkillsManager {
     });
   }
 
-  private async isAISkillsCollectionSync() {
-    return this.aiSkillsCollection?.existsInDb() ?? Promise.resolve(false);
-  }
-
   private get aiSkillsCollection() {
     return this.collectionManager.getCollection('aiSkills');
   }
@@ -124,5 +131,17 @@ export class DefaultSkillsManager implements SkillsManager {
     return this.provideCollectionManager().collectionManager;
   }
 }
+
+const converterSkillsEntry = (model: any): SkillsEntry => {
+  return {
+    ...(model ?? {}),
+    introduction: model?.title
+      ? {
+          title: model.title,
+          about: model?.about,
+        }
+      : undefined,
+  };
+};
 
 export * from './types';
