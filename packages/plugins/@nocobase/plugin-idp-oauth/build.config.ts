@@ -30,16 +30,15 @@ async function copyRuntimePackage(packageName: string, copied: Set<string>, log:
   await fs.cp(source, target, {
     recursive: true,
     force: true,
-    // Copy the real files so the packaged runtime dependencies remain complete
-    // in container builds instead of preserving host-side symlink structure.
-    dereference: true,
+    dereference: false,
+    verbatimSymlinks: true,
   });
 }
 
 export default defineConfig({
   afterBuild: async (log) => {
     const copied = new Set<string>();
-    const packagesToCopy = ['oidc-provider', 'jose', 'quick-lru', 'eta'];
+    const packagesToCopy = ['oidc-provider', 'jose', 'quick-lru', 'eta', 'statuses'];
     for (const packageName of packagesToCopy) {
       await copyRuntimePackage(packageName, copied, log);
     }
