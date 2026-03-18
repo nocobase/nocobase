@@ -1252,7 +1252,13 @@ AdminLayoutMenuItemModel.registerFlow({
   },
 });
 
-AdminLayoutMenuItemModel.registerExtraMenuItems((model, t) => {
+const registerAdminLayoutMenuExtraMenuItems = (
+  AdminLayoutMenuItemModel as typeof AdminLayoutMenuItemModel & {
+    registerExtraMenuItems?: typeof FlowModel.registerExtraMenuItems;
+  }
+).registerExtraMenuItems;
+
+registerAdminLayoutMenuExtraMenuItems?.call(AdminLayoutMenuItemModel, (model, t) => {
   const menuModel = model as AdminLayoutMenuItemModel;
   const route = menuModel.getRoute();
   const createInsertChildren = (insertPosition: 'beforeBegin' | 'afterEnd' | 'beforeEnd') => [
