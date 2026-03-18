@@ -128,15 +128,16 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   const prevRequestDataRef = useRef<any>(props.recordRequest?.data);
   const { active: pageActive } = useKeepAlive();
   const locationSearch = useLocationSearch();
-  const prevPageActiveRef = useRef(pageActive);
+  const prevDeferredPageActiveRef = useRef(pageActive);
   const prevActiveLocationSearchRef = useRef(locationSearch);
   // Prevent page switching lag
   const deferredPageActive = useDeferredValue(pageActive);
   const blockProps = useDataBlockProps();
+  const wasDeferredPageActive = prevDeferredPageActiveRef.current;
 
   if (
     deferredPageActive &&
-    !prevPageActiveRef.current &&
+    !wasDeferredPageActive &&
     prevActiveLocationSearchRef.current === locationSearch &&
     (_.isNil(blockProps.dataLoadingMode) || blockProps.dataLoadingMode === 'auto')
   ) {
@@ -147,19 +148,19 @@ export const BlockRequestContextProvider: FC<{ recordRequest: UseRequestResult<a
   if (
     deferredPageActive &&
     // the stage when loading just ended
-    prevPageActiveRef.current &&
+    wasDeferredPageActive &&
     !props.recordRequest?.loading &&
     !_.isEqual(prevRequestDataRef.current, props.recordRequest?.data)
   ) {
     prevRequestDataRef.current = props.recordRequest?.data;
   }
 
-  if (deferredPageActive !== prevPageActiveRef.current) {
-    prevPageActiveRef.current = deferredPageActive;
+  if (pageActive && wasDeferredPageActive) {
+    prevActiveLocationSearchRef.current = locationSearch;
   }
 
-  if (deferredPageActive) {
-    prevActiveLocationSearchRef.current = locationSearch;
+  if (deferredPageActive !== wasDeferredPageActive) {
+    prevDeferredPageActiveRef.current = deferredPageActive;
   }
 
   recordRequestRef.current = props.recordRequest;

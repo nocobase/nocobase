@@ -10,7 +10,7 @@
 import { reaction } from '@formily/reactive';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParseDataScopeFilter } from '../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../variables';
 import { getPath } from '../../variables/utils/getPath';
@@ -31,12 +31,19 @@ export function useParsedFilter({
 }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
   const filterOptionKey = JSON.stringify(filterOption);
+  const filterOptionRef = useRef(filterOption);
+  const onFilterChangeRef = useRef(onFilterChange);
   const [filter, setFilter] = useState({});
   const [parsedFilterOptionKey, setParsedFilterOptionKey] = useState(() => (filterOption ? null : filterOptionKey));
   const parseVariableLoading = !!filterOption && parsedFilterOptionKey !== filterOptionKey;
 
+  filterOptionRef.current = filterOption;
+  onFilterChangeRef.current = onFilterChange;
+
   useEffect(() => {
-    if (!filterOption) {
+    const currentFilterOption = filterOptionRef.current;
+
+    if (!currentFilterOption) {
       setFilter({});
       setParsedFilterOptionKey(filterOptionKey);
       return;
@@ -44,13 +51,13 @@ export function useParsedFilter({
 
     let canceled = false;
     const _run = async () => {
-      const result = await parseFilter(filterOption);
+      const result = await parseFilter(currentFilterOption);
       if (canceled) {
         return;
       }
       setFilter(result);
       setParsedFilterOptionKey(filterOptionKey);
-      onFilterChange?.(result);
+      onFilterChangeRef.current?.(result);
     };
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);
@@ -58,7 +65,7 @@ export function useParsedFilter({
     const dispose = reaction(
       () => {
         // 这一步主要是为了使 reaction 能够收集到依赖
-        const flat = flatten(filterOption, {
+        const flat = flatten(currentFilterOption, {
           breakOn({ key }) {
             return key.startsWith('$') && key !== '$and' && key !== '$or';
           },
@@ -110,7 +117,7 @@ export function useParsedFilter({
       run.cancel();
       dispose();
     };
-  }, [filterOption, filterOptionKey, findVariable, onFilterChange, parseFilter]);
+  }, [filterOptionKey, findVariable, parseFilter]);
 
   return {
     /** 数据范围的筛选参数 */

@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { render, waitFor } from '@nocobase/test/client';
+import { render, sleep } from '@nocobase/test/client';
 import { DataBlockContext } from '../../data-block/DataBlockProvider';
 import { requestParentRecordData } from '../../data-block/DataBlockRequestProvider';
 import { BlockRequestContextProvider } from '../../data-block/DataBlockRequestProvider';
@@ -89,6 +89,14 @@ describe('requestParentRecordData', () => {
       headers,
     });
   });
+});
+
+describe('BlockRequestContextProvider', () => {
+  beforeEach(() => {
+    mockKeepAliveState.active = true;
+    mockLocationSearch.mockReset();
+    mockLocationSearch.mockReturnValue('');
+  });
 
   it('should skip keep-alive refresh when search params changed before page restore', async () => {
     const refresh = vi.fn();
@@ -115,9 +123,9 @@ describe('requestParentRecordData', () => {
     mockKeepAliveState.active = true;
     rerender(<App />);
 
-    await waitFor(() => {
-      expect(refresh).not.toHaveBeenCalled();
-    });
+    await sleep(50);
+
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it('should refresh when restoring keep-alive page with unchanged search params', async () => {
@@ -144,8 +152,8 @@ describe('requestParentRecordData', () => {
     mockKeepAliveState.active = true;
     rerender(<App />);
 
-    await waitFor(() => {
-      expect(refresh).toHaveBeenCalledTimes(1);
-    });
+    await sleep(50);
+
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 });
