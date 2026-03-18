@@ -43,7 +43,7 @@ export class PluginFlowEngine extends Plugin {
       key: 'dynamic-flows-editor',
       component: DynamicFlowsIcon,
       visible(model) {
-        return model.getEvents().size > 0;
+        return model.getEvents().size > 0 && (model as any).hideDynamicFlowsEditor !== true;
       },
       sort: 0,
     });
