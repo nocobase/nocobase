@@ -394,6 +394,27 @@ export const AdminLayoutShell = (props) => {
     };
     setRoute(nextRoute);
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncFlowSettings = async () => {
+      if (!designable || isMobileSider) {
+        await flowEngine.flowSettings.disable();
+        return;
+      }
+
+      if (!cancelled) {
+        await flowEngine.flowSettings.enable();
+      }
+    };
+
+    void syncFlowSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [designable, flowEngine, isMobileSider]);
   const layoutToken = useMemo(() => {
     return {
       header: {

@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { NocoBaseDesktopRouteType } from '../../../../admin-shell/route-types';
@@ -20,6 +20,38 @@ describe('AdminLayoutMenuTreeModel', () => {
 
   beforeEach(() => {
     engine = new FlowEngine();
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        listAccessible: () => [],
+        createRoute: vi.fn(),
+        updateRoute: vi.fn(),
+        deleteRoute: vi.fn(),
+        moveRoute: vi.fn(),
+        refreshAccessible: vi.fn(),
+      },
+    });
+    engine.context.defineProperty('api', {
+      value: {
+        request: vi.fn(),
+        resource: vi.fn(() => ({})),
+      },
+    });
+    engine.context.defineProperty('router', {
+      value: {
+        navigate: vi.fn(),
+      },
+    });
+    engine.context.defineProperty('location', {
+      value: {
+        pathname: '/admin/current-page',
+      },
+    });
+    engine.context.defineProperty('app', {
+      value: {
+        components: {},
+        scopes: {},
+      },
+    });
   });
 
   it('should sync route tree into menu subModels and cleanup stale branches', () => {
@@ -206,5 +238,113 @@ describe('AdminLayoutMenuTreeModel', () => {
     await waitFor(() => {
       expect(screen.getByTestId('route-length').textContent).toBe('2');
     });
+  });
+
+  it('should persist hidden setting through route repository', async () => {
+    const updateRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.updateRoute = updateRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-hidden',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'current-page',
+          type: NocoBaseDesktopRouteType.page,
+          hideInMenu: false,
+        },
+      },
+    });
+
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    await menuSettingsFlow?.steps?.hidden?.beforeParamsSave?.({ model } as any, { hideInMenu: true }, {});
+
+    expect(updateRoute).toHaveBeenCalledWith(1, {
+      hideInMenu: true,
+    });
+  });
+
+  it('should expose nested insert actions and only show insert inner for groups', async () => {
+    const groupModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-group',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Group 1',
+          schemaUid: 'group-1',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+    const pageModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-page',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 2,
+          title: 'Page 2',
+          schemaUid: 'page-2',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    const groupExtras = await AdminLayoutMenuItemModel.getExtraMenuItems(groupModel, (text) => text);
+    const pageExtras = await AdminLayoutMenuItemModel.getExtraMenuItems(pageModel, (text) => text);
+
+    const insertBefore = groupExtras.find((item) => item.key === 'menu-insert-before');
+    const insertInner = groupExtras.find((item) => item.key === 'menu-insert-inner');
+
+    expect(insertBefore?.children).toHaveLength(4);
+    expect(insertInner?.children).toHaveLength(4);
+    expect(pageExtras.some((item) => item.key === 'menu-insert-inner')).toBe(false);
+  });
+
+  it('should delete current route and navigate to sibling route', async () => {
+    const deleteRoute = vi.fn().mockResolvedValue(undefined);
+    const removeSchema = vi.fn().mockResolvedValue(undefined);
+    const navigate = vi.fn();
+
+    engine.context.routeRepository.deleteRoute = deleteRoute;
+    engine.context.routeRepository.listAccessible = () => [
+      {
+        id: 1,
+        title: 'Current page',
+        schemaUid: 'current-page',
+        type: NocoBaseDesktopRouteType.page,
+      },
+      {
+        id: 2,
+        title: 'Next page',
+        schemaUid: 'next-page',
+        type: NocoBaseDesktopRouteType.page,
+      },
+    ];
+    engine.context.api.resource = vi.fn(() => ({
+      'remove/current-page': removeSchema,
+    }));
+    engine.context.router.navigate = navigate;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-delete',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Current page',
+          schemaUid: 'current-page',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await model.destroy();
+
+    expect(deleteRoute).toHaveBeenCalledWith(1);
+    expect(removeSchema).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/admin/next-page');
   });
 });
