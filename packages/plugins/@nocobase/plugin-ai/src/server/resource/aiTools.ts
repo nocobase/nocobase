@@ -45,7 +45,8 @@ export const aiTools: ResourceOptions = {
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const tools = await plugin.ai.toolsManager.listTools();
       const result = tools.filter(
-        (tool) => tool.scope === 'GENERAL' || bindingToolNames.includes(tool.definition.name),
+        (tool) =>
+          (tool.scope === 'GENERAL' && tool.from === 'loader') || bindingToolNames.includes(tool.definition.name),
       );
 
       ctx.body = result.map(({ introduction, definition }) => ({
