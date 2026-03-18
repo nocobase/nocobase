@@ -198,29 +198,71 @@ const SkillSettings: React.FC<{
   };
 }> = ({ aiEmployeesMap = {} }) => {
   const t = useT();
-  const field = useField<ObjectField>();
+  const field = useField<ArrayField>();
   const ctx = useFlowSettingsContext();
   const username = ctx.model.props.aiEmployee?.username;
-  const aiEmployee = aiEmployeesMap[username];
-  const defaultTools = aiEmployee?.skillSettings?.tools?.map(({ name }) => name) ?? [];
+  useEffect(() => {
+    const aiEmployee = aiEmployeesMap[username];
+    const defaultSkills = aiEmployee?.skillSettings?.skills?.map((name) => name) ?? [];
+    if (field.value?.length) {
+      field.setValue(field.value.filter((tool) => defaultSkills.includes(tool)));
+    }
+  }, [aiEmployeesMap, field, username]);
 
-  if (field.value?.tools?.length) {
-    field.addProperty(
-      'tools',
-      field.value.tools.filter((tool) => defaultTools.includes(tool)),
-    );
-  }
   const handleChange = (value: string[]) => {
-    field.addProperty('tools', value);
+    field.setValue(value);
   };
 
   return (
     <RemoteSelect
-      defaultValue={field.value?.tools}
+      defaultValue={field.value}
       onChange={handleChange}
       manual={false}
       multiple={true}
       placeholder={t('Use all AI employee skills')}
+      fieldNames={{
+        label: 'title',
+        value: 'name',
+      }}
+      service={{
+        resource: 'aiSkills',
+        action: 'listBinding',
+        params: {
+          username,
+        },
+      }}
+    />
+  );
+};
+
+const ToolSettings: React.FC<{
+  aiEmployeesMap: {
+    [username: string]: AIEmployee;
+  };
+}> = ({ aiEmployeesMap = {} }) => {
+  const t = useT();
+  const field = useField<ArrayField>();
+  const ctx = useFlowSettingsContext();
+  const username = ctx.model.props.aiEmployee?.username;
+  useEffect(() => {
+    const aiEmployee = aiEmployeesMap[username];
+    const defaultTools = aiEmployee?.skillSettings?.tools?.map(({ name }) => name) ?? [];
+    if (field.value?.length) {
+      field.setValue(field.value.filter((tool) => defaultTools.includes(tool)));
+    }
+  }, [aiEmployeesMap, field, username]);
+
+  const handleChange = (value: string[]) => {
+    field.setValue(value);
+  };
+
+  return (
+    <RemoteSelect
+      defaultValue={field.value}
+      onChange={handleChange}
+      manual={false}
+      multiple={true}
+      placeholder={t('Use all AI employee tools')}
       fieldNames={{
         label: 'title',
         value: 'name',
@@ -386,15 +428,31 @@ AIEmployeeShortcutModel.registerFlow({
                   'x-component': 'Checkbox',
                 },
                 skillSettings: {
-                  title: tExpr('Skills', { ns: namespace }),
                   type: 'object',
                   nullable: true,
-                  'x-decorator': 'FormItem',
-                  'x-component': () => <SkillSettings aiEmployeesMap={aiEmployeesMap} />,
-                  'x-decorator-props': {
-                    tooltip: tExpr('Restrict task skills', {
-                      ns: namespace,
-                    }),
+                  properties: {
+                    skills: {
+                      title: tExpr('Skills', { ns: namespace }),
+                      type: 'array',
+                      'x-decorator': 'FormItem',
+                      'x-component': () => <SkillSettings aiEmployeesMap={aiEmployeesMap} />,
+                      'x-decorator-props': {
+                        tooltip: tExpr('Restrict task skills', {
+                          ns: namespace,
+                        }),
+                      },
+                    },
+                    tools: {
+                      title: tExpr('Tools', { ns: namespace }),
+                      type: 'array',
+                      'x-decorator': 'FormItem',
+                      'x-component': () => <ToolSettings aiEmployeesMap={aiEmployeesMap} />,
+                      'x-decorator-props': {
+                        tooltip: tExpr('Restrict task tools', {
+                          ns: namespace,
+                        }),
+                      },
+                    },
                   },
                 },
                 model: {
