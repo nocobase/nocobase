@@ -74,6 +74,12 @@ type AdminLayoutMenuRouteOptions = {
   depth?: number;
 };
 
+type AdminLayoutMenuMovePositionOption = {
+  label: any;
+  value: 'beforeBegin' | 'afterEnd' | 'beforeEnd';
+  disabled?: boolean;
+};
+
 type AdminLayoutMenuItemStructure = {
   subModels: {
     items?: AdminLayoutMenuItemModel[];
@@ -106,9 +112,9 @@ export const getAdminLayoutMenuMovePositionOptions = (
   target: string | undefined,
   currentRouteId: string | number | undefined,
   t: (title: any) => any,
-) => {
+): AdminLayoutMenuMovePositionOption[] => {
   const [targetId, targetType] = target?.split?.('||') || [];
-  const options = [
+  const options: AdminLayoutMenuMovePositionOption[] = [
     { label: t('Before'), value: 'beforeBegin' },
     { label: t('After'), value: 'afterEnd' },
   ];
@@ -1237,7 +1243,11 @@ AdminLayoutMenuItemModel.registerFlow({
               (field) => {
                 const options = getAdminLayoutMenuMovePositionOptions(field.form.values?.target, currentRouteId, ctx.t);
                 field.dataSource = options;
-                if (!options.some((option) => option.value === field.value && !option.disabled)) {
+                if (
+                  !options.some(
+                    (option: AdminLayoutMenuMovePositionOption) => option.value === field.value && !option.disabled,
+                  )
+                ) {
                   field.value = 'afterEnd';
                 }
               },
