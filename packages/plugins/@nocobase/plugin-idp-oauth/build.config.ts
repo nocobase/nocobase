@@ -30,8 +30,9 @@ async function copyRuntimePackage(packageName: string, copied: Set<string>, log:
   await fs.cp(source, target, {
     recursive: true,
     force: true,
-    dereference: false,
-    verbatimSymlinks: true,
+    // Copy the real files so the packaged runtime dependencies remain complete
+    // in container builds instead of preserving host-side symlink structure.
+    dereference: true,
   });
 }
 
