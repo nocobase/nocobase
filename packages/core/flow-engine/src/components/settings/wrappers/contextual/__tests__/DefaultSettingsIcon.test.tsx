@@ -517,7 +517,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       const subMenu = items.find((it) => Array.isArray(it?.children));
       expect(subMenu).toBeTruthy();
-      expect(subMenu!.children.some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(true);
+      expect((subMenu?.children || []).some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(
+        true,
+      );
     });
   });
 
@@ -709,6 +711,93 @@ describe('DefaultSettingsIcon - extra menu items', () => {
         menu.onClick?.({ key: 'extra-action' });
       });
       expect(onClick).toHaveBeenCalled();
+      expect((globalThis as any).__lastDropdownOpen).toBe(false);
+    } finally {
+      dispose?.();
+    }
+  });
+
+  it('supports nested extra menu items with sorting and disabled states', async () => {
+    const onInsertBefore = vi.fn();
+    const onInsertAfter = vi.fn();
+
+    class TestFlowModel extends FlowModel {}
+    const dispose = TestFlowModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: 10,
+      items: [
+        {
+          key: 'insert-actions',
+          label: 'Insert actions',
+          children: [
+            { key: 'insert-after', label: 'Insert after', sort: 20, onClick: onInsertAfter },
+            { key: 'insert-before', label: 'Insert before', sort: 10, onClick: onInsertBefore },
+            { key: 'insert-inner', label: 'Insert inner', sort: 30, disabled: true, onClick: vi.fn() },
+          ],
+        },
+      ],
+    });
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-extra-nested', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'flow',
+      title: 'Flow',
+      steps: { s: { title: 'S', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } } },
+    });
+
+    try {
+      render(
+        React.createElement(
+          ConfigProvider as any,
+          null,
+          React.createElement(
+            App as any,
+            null,
+            React.createElement(DefaultSettingsIcon as any, {
+              model,
+              showCopyUidButton: false,
+              showDeleteButton: false,
+            }),
+          ),
+        ),
+      );
+
+      await waitFor(() => {
+        expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+        expect((globalThis as any).__lastDropdownOnOpenChange).toBeTruthy();
+      });
+
+      await act(async () => {
+        (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+      });
+
+      await waitFor(() => {
+        const menu = (globalThis as any).__lastDropdownMenu;
+        const items = (menu?.items || []) as any[];
+        const nested = items.find((it) => String(it.key || '') === 'insert-actions');
+        expect(nested).toBeTruthy();
+        expect((nested.children || []).map((it) => String(it.key || ''))).toEqual([
+          'insert-before',
+          'insert-after',
+          'insert-inner',
+        ]);
+        expect((nested.children || []).find((it) => String(it.key || '') === 'insert-inner')?.disabled).toBe(true);
+      });
+
+      const menu = (globalThis as any).__lastDropdownMenu;
+      await act(async () => {
+        menu.onClick?.({ key: 'insert-inner' });
+      });
+      expect(onInsertBefore).not.toHaveBeenCalled();
+      expect(onInsertAfter).not.toHaveBeenCalled();
+      expect((globalThis as any).__lastDropdownOpen).toBe(true);
+
+      await act(async () => {
+        menu.onClick?.({ key: 'insert-before' });
+      });
+      expect(onInsertBefore).toHaveBeenCalledTimes(1);
       expect((globalThis as any).__lastDropdownOpen).toBe(false);
     } finally {
       dispose?.();
