@@ -9,7 +9,7 @@
     "@nocobase/utils": "1.9.55",
     "deepmerge": "^4.2.2",
     "koa-compose": "^4.1.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "path-to-regexp": "^6.3.0",
     "qs": "^6.9.4"
   },

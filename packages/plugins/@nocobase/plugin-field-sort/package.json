@@ -16,7 +16,7 @@
     "@nocobase/lock-manager": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x",
-    "lodash": "4.17.21",
+    "lodash": "^4.17.23",
     "sequelize": "^6.26.0"
   },
   "keywords": [
