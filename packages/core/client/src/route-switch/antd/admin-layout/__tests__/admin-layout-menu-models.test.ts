@@ -16,6 +16,8 @@ import { NocoBaseDesktopRouteType } from '../../../../admin-shell/route-types';
 import {
   AdminLayoutMenuItemModel,
   AdminLayoutMenuTreeModel,
+  getAdminLayoutMenuMovePositionOptions,
+  resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
 } from '../AdminLayoutMenuModels';
 
@@ -406,6 +408,25 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(moveRoute).not.toHaveBeenCalled();
   });
 
+  it('should only expose inner position for group targets and disable self-inner', () => {
+    expect(getAdminLayoutMenuMovePositionOptions(undefined, 1, (text) => text)).toEqual([
+      { label: 'Before', value: 'beforeBegin' },
+      { label: 'After', value: 'afterEnd' },
+    ]);
+
+    expect(getAdminLayoutMenuMovePositionOptions('2||group', 1, (text) => text)).toEqual([
+      { label: 'Before', value: 'beforeBegin' },
+      { label: 'After', value: 'afterEnd' },
+      { label: 'Inner', value: 'beforeEnd', disabled: false },
+    ]);
+
+    expect(getAdminLayoutMenuMovePositionOptions('1||group', 1, (text) => text)).toEqual([
+      { label: 'Before', value: 'beforeBegin' },
+      { label: 'After', value: 'afterEnd' },
+      { label: 'Inner', value: 'beforeEnd', disabled: true },
+    ]);
+  });
+
   it('should reject moving a group inside itself', async () => {
     const moveRoute = vi.fn().mockResolvedValue(undefined);
     engine.context.routeRepository.moveRoute = moveRoute;
@@ -505,6 +526,24 @@ describe('AdminLayoutMenuTreeModel', () => {
       targetId: 2,
       sortField: 'sort',
     });
+  });
+
+  it('should ignore drag end events without active or over ids', () => {
+    const getModel = vi.fn();
+
+    expect(
+      resolveAdminLayoutMenuDragMoveOptionsFromEvent({ getModel } as any, {
+        active: { id: 'drag-source-page' },
+        over: null,
+      }),
+    ).toBeUndefined();
+    expect(
+      resolveAdminLayoutMenuDragMoveOptionsFromEvent({ getModel } as any, {
+        active: undefined,
+        over: { id: 'drag-target-page' },
+      }),
+    ).toBeUndefined();
+    expect(getModel).not.toHaveBeenCalled();
   });
 
   it('should move page into group when drag target is a group', () => {

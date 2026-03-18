@@ -228,40 +228,61 @@ export const useParentRoute = () => {
  * @returns
  */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
+  const api = useAPIClient();
   const { routeRepository } = useFlowEngineContext();
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+  const isDesktopRoutes = collectionName === 'desktopRoutes';
 
   const createRoute = useCallback(
     async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
-      const res = await routeRepository.createRoute(values, {
-        collectionName,
-        refreshAfterMutation: refreshAfterCreate,
-      });
+      const res = isDesktopRoutes
+        ? await routeRepository.createRoute(values, {
+            refreshAfterMutation: refreshAfterCreate,
+          })
+        : await api.resource(collectionName).create({ values });
       return res;
     },
-    [collectionName, routeRepository],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const updateRoute = useCallback(
     async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
-      const res = await routeRepository.updateRoute(filterByTk, values, {
-        collectionName,
-        refreshAfterMutation: refreshAfterUpdate,
-      });
+      const res = isDesktopRoutes
+        ? await routeRepository.updateRoute(filterByTk, values, {
+            refreshAfterMutation: refreshAfterUpdate,
+          })
+        : await api.resource(collectionName).update(
+            Array.isArray(filterByTk)
+              ? {
+                  filter: {
+                    id: {
+                      $in: filterByTk,
+                    },
+                  },
+                  values,
+                }
+              : {
+                  filterByTk,
+                  values,
+                },
+          );
       return res;
     },
-    [collectionName, routeRepository],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const deleteRoute = useCallback(
     async (filterByTk: any, refreshAfterDelete = true) => {
-      const res = await routeRepository.deleteRoute(filterByTk, {
-        collectionName,
-        refreshAfterMutation: refreshAfterDelete,
-      });
+      const res = isDesktopRoutes
+        ? await routeRepository.deleteRoute(filterByTk, {
+            refreshAfterMutation: refreshAfterDelete,
+          })
+        : await api.resource(collectionName).destroy({
+            filterByTk,
+          });
       return res;
     },
-    [collectionName, routeRepository],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const moveRoute = useCallback(
@@ -285,19 +306,27 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       method?: 'insertBefore' | 'insertAfter' | 'prepend';
       refreshAfterMove?: boolean;
     }) => {
-      const res = await routeRepository.moveRoute({
-        sourceId,
-        targetId,
-        targetScope,
-        sortField,
-        sticky,
-        method,
-        collectionName,
-        refreshAfterMove,
-      });
+      const res = isDesktopRoutes
+        ? await routeRepository.moveRoute({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+            refreshAfterMove,
+          })
+        : await api.resource(collectionName).move({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+          });
       return res;
     },
-    [collectionName, routeRepository],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   return { createRoute, updateRoute, deleteRoute, moveRoute, refreshRoutes };

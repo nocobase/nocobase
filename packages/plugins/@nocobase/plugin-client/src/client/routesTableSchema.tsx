@@ -155,7 +155,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     );
                     tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                     service?.refresh?.();
-                    refreshMenu();
+                    collectionName === 'desktopRoutes' && refreshMenu();
                   } finally {
                     setIsBatchUpdating(false);
                   }
@@ -201,7 +201,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     );
                     tableBlockContextBasicValue.field.data.clearSelectedRowKeys?.();
                     service?.refresh?.();
-                    refreshMenu();
+                    collectionName === 'desktopRoutes' && refreshMenu();
                   } finally {
                     setIsBatchUpdating(false);
                   }
@@ -1273,7 +1273,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                         })
                         .then(() => {
                           getDataBlockRequest().refresh();
-                          refreshMenu();
+                          collectionName === 'desktopRoutes' && refreshMenu();
                         })
                         .catch((error) => {
                           console.error(error);

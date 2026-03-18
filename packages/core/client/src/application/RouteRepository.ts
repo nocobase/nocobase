@@ -13,7 +13,6 @@ import type { APIClient } from '../api-client';
 type RouteSubscriber = () => void;
 
 type RouteMutationOptions = {
-  collectionName?: string;
   refreshAfterMutation?: boolean;
 };
 
@@ -25,7 +24,6 @@ type MoveRouteOptions = {
   sticky?: boolean;
   method?: 'insertBefore' | 'insertAfter' | 'prepend';
   refreshAfterMove?: boolean;
-  collectionName?: string;
 };
 
 export class RouteRepository {
@@ -89,8 +87,8 @@ export class RouteRepository {
    * @returns 服务端响应
    */
   async createRoute(values: NocoBaseDesktopRoute, options: RouteMutationOptions = {}) {
-    const { collectionName = 'desktopRoutes', refreshAfterMutation = true } = options;
-    const res = await this.getResource(collectionName).create({ values });
+    const { refreshAfterMutation = true } = options;
+    const res = await this.getResource('desktopRoutes').create({ values });
     if (refreshAfterMutation) {
       await this.refreshAccessible();
     }
@@ -106,8 +104,8 @@ export class RouteRepository {
    * @returns 服务端响应
    */
   async updateRoute(filterByTk: any, values: NocoBaseDesktopRoute, options: RouteMutationOptions = {}) {
-    const { collectionName = 'desktopRoutes', refreshAfterMutation = true } = options;
-    const res = await this.getResource(collectionName).update(
+    const { refreshAfterMutation = true } = options;
+    const res = await this.getResource('desktopRoutes').update(
       Array.isArray(filterByTk)
         ? {
             filter: {
@@ -136,8 +134,8 @@ export class RouteRepository {
    * @returns 服务端响应
    */
   async deleteRoute(filterByTk: any, options: RouteMutationOptions = {}) {
-    const { collectionName = 'desktopRoutes', refreshAfterMutation = true } = options;
-    const res = await this.getResource(collectionName).destroy({
+    const { refreshAfterMutation = true } = options;
+    const res = await this.getResource('desktopRoutes').destroy({
       filterByTk,
     });
     if (refreshAfterMutation) {
@@ -153,8 +151,8 @@ export class RouteRepository {
    * @returns 服务端响应
    */
   async moveRoute(options: MoveRouteOptions) {
-    const { collectionName = 'desktopRoutes', refreshAfterMove = true, ...moveOptions } = options;
-    const res = await this.getResource(collectionName).move(moveOptions);
+    const { refreshAfterMove = true, ...moveOptions } = options;
+    const res = await this.getResource('desktopRoutes').move(moveOptions);
     if (refreshAfterMove) {
       await this.refreshAccessible();
     }

@@ -94,6 +94,39 @@ const insertPositionToMethod = {
   afterEnd: 'insertAfter',
 } as const;
 
+/**
+ * 根据当前选中的目标菜单，生成可用的 Move to 位置选项。
+ *
+ * @param target 目标节点的 `id||type` 组合值
+ * @param currentRouteId 当前正在编辑的菜单 id
+ * @param t 国际化函数
+ * @returns 可渲染到 Radio.Group 的位置选项
+ */
+export const getAdminLayoutMenuMovePositionOptions = (
+  target: string | undefined,
+  currentRouteId: string | number | undefined,
+  t: (title: any) => any,
+) => {
+  const [targetId, targetType] = target?.split?.('||') || [];
+  const options = [
+    { label: t('Before'), value: 'beforeBegin' },
+    { label: t('After'), value: 'afterEnd' },
+  ];
+
+  if (targetType !== NocoBaseDesktopRouteType.group) {
+    return options;
+  }
+
+  return [
+    ...options,
+    {
+      label: t('Inner'),
+      value: 'beforeEnd',
+      disabled: currentRouteId !== undefined && String(currentRouteId) === targetId,
+    },
+  ];
+};
+
 const buildLinkSettingSchema = (t: (title: any) => any) => ({
   href: {
     title: t('URL'),
@@ -386,6 +419,32 @@ export function resolveAdminLayoutMenuDragMoveOptions(
     targetId: overRoute.id,
     sortField: 'sort',
   };
+}
+
+/**
+ * 从拖拽事件中安全提取 active / over 模型，再交给菜单移动规则计算。
+ *
+ * @param flowEngine flow engine 实例
+ * @param event 当前拖拽结束事件
+ * @returns desktopRoutes:move 所需参数
+ */
+export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
+  flowEngine: {
+    getModel: (uid: string) => FlowModel | undefined;
+  },
+  event: {
+    active?: { id?: string | number };
+    over?: { id?: string | number } | null;
+  },
+): AdminLayoutMenuDragMoveOptions | undefined {
+  if (!event.active?.id || !event.over?.id) {
+    return;
+  }
+
+  return resolveAdminLayoutMenuDragMoveOptions(
+    flowEngine.getModel(String(event.active.id)),
+    flowEngine.getModel(String(event.over.id)),
+  );
 }
 
 const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
@@ -1157,6 +1216,8 @@ AdminLayoutMenuItemModel.registerFlow({
       }),
       uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
         const items = toTreeSelectItems(ctx.routeRepository.listAccessible(), ctx.t);
+        const currentRouteId = ctx.model.getRoute()?.id;
+        const defaultPositionOptions = getAdminLayoutMenuMovePositionOptions(undefined, currentRouteId, ctx.t);
 
         return {
           target: {
@@ -1169,13 +1230,18 @@ AdminLayoutMenuItemModel.registerFlow({
           position: {
             title: ctx.t('Position'),
             required: true,
-            enum: [
-              { label: ctx.t('Before'), value: 'beforeBegin' },
-              { label: ctx.t('After'), value: 'afterEnd' },
-              { label: ctx.t('Inner'), value: 'beforeEnd' },
-            ],
+            enum: defaultPositionOptions,
             'x-decorator': 'FormItem',
             'x-component': 'Radio.Group',
+            'x-reactions': [
+              (field) => {
+                const options = getAdminLayoutMenuMovePositionOptions(field.form.values?.target, currentRouteId, ctx.t);
+                field.dataSource = options;
+                if (!options.some((option) => option.value === field.value && !option.disabled)) {
+                  field.value = 'afterEnd';
+                }
+              },
+            ],
           },
         };
       },

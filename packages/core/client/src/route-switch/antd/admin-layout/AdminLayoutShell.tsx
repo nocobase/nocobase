@@ -25,7 +25,7 @@ import {
   type AdminLayoutMenuRenderOptions,
   HeaderContext,
   MobileMenuControlContext,
-  resolveAdminLayoutMenuDragMoveOptions,
+  resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
@@ -379,9 +379,7 @@ export const AdminLayoutShell = (props) => {
 
   const handleMenuDragEnd = useCallback(
     (event: DragEndEvent) => {
-      const activeModel = flowEngine.getModel(event.active?.id as string);
-      const overModel = flowEngine.getModel(event.over?.id as string);
-      const moveOptions = resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel);
+      const moveOptions = resolveAdminLayoutMenuDragMoveOptionsFromEvent(flowEngine, event);
 
       if (!moveOptions) {
         return;
