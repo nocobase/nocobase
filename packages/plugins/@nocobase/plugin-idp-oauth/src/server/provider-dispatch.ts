@@ -18,6 +18,10 @@ type DispatchContext = {
   path: string;
   querystring?: string;
   headers: Record<string, string | string[] | undefined>;
+  logger?: {
+    debug?: (message: string, meta?: Record<string, any>) => void;
+    warn?: (message: string, meta?: Record<string, any>) => void;
+  };
   request: {
     body?: Record<string, any> | string | null;
   };
@@ -179,6 +183,7 @@ function rewriteProviderJsonBody(ctx: DispatchContext, service: IdpOauthService,
   ) {
     // Discovery must advertise the public issuer-mounted endpoints rather than provider-internal paths.
     body.issuer = issuer;
+    body.scopes_supported = service.getSupportedScopes();
     metadataKeys.forEach((key, index) => {
       body[key] = `${issuer}${metadataPaths[index]}`;
     });
@@ -230,6 +235,13 @@ export async function dispatchToProvider(
 ) {
   ctx.withoutDataWrapping = true;
   const search = ctx.querystring ? `?${ctx.querystring}` : '';
+  ctx.logger?.debug?.('idp-oauth provider request', {
+    method: ctx.method,
+    externalPath: ctx.path,
+    internalPath: pathname,
+    search,
+    issuer: provider.issuer,
+  });
   const response = (await inject(provider.callback(), {
     method: ctx.method as any,
     url: `${pathname}${search}`,
@@ -242,12 +254,29 @@ export async function dispatchToProvider(
 
   const payload = response.rawPayload;
   const contentType = String(response.headers['content-type'] || '').toLowerCase();
+  ctx.logger?.debug?.('idp-oauth provider response', {
+    method: ctx.method,
+    externalPath: ctx.path,
+    internalPath: pathname,
+    status: response.statusCode,
+    contentType,
+    location: response.headers.location,
+  });
   if (payload.length && (contentType.includes('application/json') || contentType.includes('+json'))) {
     try {
       const body = rewriteProviderJsonBody(ctx, service, JSON.parse(payload.toString('utf8')));
       ctx.body = body;
       return;
     } catch (error) {
+      ctx.logger?.warn?.('idp-oauth provider json parse failed', {
+        method: ctx.method,
+        externalPath: ctx.path,
+        internalPath: pathname,
+        status: response.statusCode,
+        contentType,
+        error: error instanceof Error ? error.message : String(error),
+        payloadPreview: payload.toString('utf8').slice(0, 500),
+      });
       // fall through and return raw payload
     }
   }

@@ -9,8 +9,10 @@
 
 import type { Cache } from '@nocobase/cache';
 import type Application from '@nocobase/server';
+import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
+import path from 'node:path';
 import { createCacheAdapter } from './cache-adapter';
 import { normalizeBasePath } from './utils';
 
@@ -53,6 +55,12 @@ type ProviderContext = {
   issuerPath: string;
   origin: string;
 };
+
+const defaultSupportedScopes = ['openid', 'offline_access', 'profile', 'email'] as const;
+const envJwksKeys = ['IDP_OAUTH_JWKS', 'OAUTH_JWKS'] as const;
+type JsonWebKeySet = Awaited<ReturnType<JoseModule['exportJWK']>> extends infer T
+  ? { keys: Array<T & { kid?: string; use?: string; alg?: string }> }
+  : { keys: Array<Record<string, any>> };
 
 export class IdpOauthService {
   private providers = new Map<string, ProviderInstance>();
@@ -103,6 +111,20 @@ export class IdpOauthService {
 
   unregisterResourceServer(name: string) {
     this.resourceServers.delete(name);
+  }
+
+  getSupportedScopes() {
+    const supportedScopes = new Set<string>(defaultSupportedScopes);
+
+    for (const config of this.resourceServers.values()) {
+      for (const scope of config.scope.split(/\s+/)) {
+        if (scope) {
+          supportedScopes.add(scope);
+        }
+      }
+    }
+
+    return [...supportedScopes];
   }
 
   private resolveResourceIdentifier(providerContext: ProviderContext, config: ResourceServerConfig) {
@@ -201,6 +223,58 @@ export class IdpOauthService {
     const localJwks = createLocalJWKSet(jwks);
     this.resourceJwks.set(provider.issuer, localJwks);
     return localJwks;
+  }
+
+  private async generateSigningJwks(): Promise<JsonWebKeySet> {
+    const { exportJWK, generateKeyPair } = await getJoseModule();
+    const { privateKey } = await generateKeyPair('RS256', { extractable: true });
+    const privateJwk = await exportJWK(privateKey);
+
+    return {
+      keys: [
+        {
+          ...privateJwk,
+          kid: privateJwk.kid || 'idp-oauth-rs256',
+          use: 'sig',
+          alg: 'RS256',
+        },
+      ],
+    };
+  }
+
+  private getDefaultJwksPath(appName: string) {
+    return path.resolve(process.cwd(), 'storage', 'apps', appName, 'idp_oauth_jwks.json');
+  }
+
+  private async getProviderSigningJwks(appName: string) {
+    const parseJwks = (value: string, source: string) => {
+      try {
+        const jwks = JSON.parse(value);
+        if (!jwks || !Array.isArray(jwks.keys) || jwks.keys.length === 0) {
+          throw new Error('must be a JSON object with a non-empty keys array');
+        }
+        return jwks as JsonWebKeySet;
+      } catch (error) {
+        throw new Error(`Failed to parse JWKS from ${source}: ${(error as Error).message}`);
+      }
+    };
+
+    for (const key of envJwksKeys) {
+      const value = process.env[key];
+      if (value) {
+        return parseJwks(value, `environment variable ${key}`);
+      }
+    }
+
+    const jwksPath = this.getDefaultJwksPath(appName);
+    if (fs.existsSync(jwksPath)) {
+      return parseJwks(fs.readFileSync(jwksPath, 'utf8'), `file ${jwksPath}`);
+    }
+
+    const generatedJwks = await this.generateSigningJwks();
+    fs.mkdirSync(path.dirname(jwksPath), { recursive: true });
+    fs.writeFileSync(jwksPath, JSON.stringify(generatedJwks, null, 2), { mode: 0o600 });
+    return generatedJwks;
   }
 
   private async issueInternalToken(userId: number, maxExpiresInMs?: number) {
@@ -313,6 +387,12 @@ export class IdpOauthService {
 
     const providerContext = this.getProviderContext(ctx);
     const audience = this.resolveResourceIdentifier(providerContext, resourceConfig);
+    ctx.logger?.debug?.('idp-oauth authenticate resource request', {
+      path: ctx.path,
+      issuer: providerContext.issuer,
+      audience,
+      hasBearerToken: !!token,
+    });
 
     try {
       const decoded = decodeJwt(token);
@@ -381,16 +461,19 @@ export class IdpOauthService {
     return `/idp-oauth/error/${appName}${query.size ? `?${query.toString()}` : ''}`;
   }
 
-  private createConfiguration({ appName, issuer, issuerPath, origin }: ProviderContext) {
+  private async createConfiguration({ appName, issuer, issuerPath, origin }: ProviderContext) {
     const app = this.app;
     const cookieKey = this.app.authManager.jwt.getSecret();
     if (!cookieKey) {
       throw new Error('JWT secret is required for plugin-idp-oauth');
     }
+    const jwks = await this.getProviderSigningJwks(appName);
 
     return {
       adapter: createCacheAdapter(this.app.cache, 'idp-oauth'),
       clients: [],
+      scopes: this.getSupportedScopes(),
+      jwks,
       cookies: {
         keys: [cookieKey],
       },
@@ -510,8 +593,8 @@ export class IdpOauthService {
       return this.pendingProviders.get(issuer);
     }
 
-    const pending = getOidcModule().then((oidc) => {
-      const provider = new oidc.Provider(issuer, this.createConfiguration(providerContext));
+    const pending = getOidcModule().then(async (oidc) => {
+      const provider = new oidc.Provider(issuer, await this.createConfiguration(providerContext));
       provider.proxy = true;
       this.providers.set(issuer, provider);
       this.pendingProviders.delete(issuer);
