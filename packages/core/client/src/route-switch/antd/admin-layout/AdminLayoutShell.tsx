@@ -13,7 +13,7 @@ import { css } from '@emotion/css';
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, ConfigProvider, Grid } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
-import React, { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
@@ -382,7 +382,7 @@ export const AdminLayoutShell = (props) => {
     [allAccessRoutes, location.pathname],
   );
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
     const nextRoute = adminLayoutModel?.subModels.menu?.toProLayoutRoute({
       designable,

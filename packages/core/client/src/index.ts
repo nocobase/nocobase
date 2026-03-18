@@ -25,7 +25,6 @@ export * from '@emotion/css';
 export * from './acl';
 export * from './antd-config-provider';
 export * from './api-client';
-export * from './admin-shell';
 export * from './appInfo';
 export * from './application';
 export * from './async-data-provider';
@@ -104,3 +103,5 @@ export { transformFilter } from '@nocobase/utils/client';
 export * from './modules/menu';
 
 export * from './ai';
+
+export { AdminShellProvider, LegacyRouteCompat, NavigateToDefaultPage, RoutesRequestProvider } from './admin-shell';
