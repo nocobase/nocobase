@@ -8,6 +8,7 @@
  */
 
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from '@rsbuild/core';
 import { pluginLess } from '@rsbuild/plugin-less';
@@ -19,6 +20,9 @@ import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
+const devtoolsPackageJson = require('../../devtools/package.json') as { version?: string };
+const appVersion = devtoolsPackageJson.version || '';
 
 generatePlugins();
 
@@ -38,6 +42,38 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toDefineLiteral(value: string | undefined) {
+  return value === undefined ? 'undefined' : JSON.stringify(value);
+}
+
+function createRuntimeHeadScript(appPublicPath: string, isBuild: boolean) {
+  if (!isBuild) {
+    return [
+      `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
+      `window['__nocobase_dev_public_path__'] = "/";`,
+      `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
+      `window['__esm_cdn_suffix__'] = ${JSON.stringify(process.env.ESM_CDN_SUFFIX || '')};`,
+    ].join('\n');
+  }
+
+  return [
+    `window['__webpack_public_path__'] = ${JSON.stringify(process.env.CDN_BASE_URL || '')};`,
+    `window['__nocobase_public_path__'] = ${JSON.stringify(appPublicPath)};`,
+    `window['__nocobase_api_base_url__'] = ${JSON.stringify(
+      process.env.API_BASE_URL || process.env.API_BASE_PATH || '',
+    )};`,
+    `window['__nocobase_api_client_storage_prefix__'] = ${JSON.stringify(
+      process.env.API_CLIENT_STORAGE_PREFIX || '',
+    )};`,
+    `window['__nocobase_api_client_storage_type__'] = ${JSON.stringify(process.env.API_CLIENT_STORAGE_TYPE || '')};`,
+    `window['__nocobase_api_client_share_token__'] = ${process.env.API_CLIENT_SHARE_TOKEN === 'true'};`,
+    `window['__nocobase_ws_url__'] = ${JSON.stringify(process.env.WEBSOCKET_URL || '')};`,
+    `window['__nocobase_ws_path__'] = ${JSON.stringify(process.env.WS_PATH || '')};`,
+    `window['__esm_cdn_base_url__'] = ${JSON.stringify(process.env.ESM_CDN_BASE_URL || '')};`,
+    `window['__esm_cdn_suffix__'] = ${JSON.stringify(process.env.ESM_CDN_SUFFIX || '')};`,
+  ].join('\n');
+}
+
 function createDefineValues(appPublicPath: string) {
   return {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
@@ -48,25 +84,18 @@ function createDefineValues(appPublicPath: string) {
     'process.env.API_CLIENT_SHARE_TOKEN': JSON.stringify(process.env.API_CLIENT_SHARE_TOKEN || 'false'),
     'process.env.WEBSOCKET_URL': JSON.stringify(process.env.WEBSOCKET_URL || ''),
     'process.env.WS_PATH': JSON.stringify(process.env.WS_PATH || ''),
-  };
-}
-
-function createTemplateParameters(appPublicPath: string) {
-  return {
-    NODE_ENV: process.env.NODE_ENV || 'development',
-    BASE_URL: appPublicPath,
-    API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH || '',
-    API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX || '',
-    API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE || '',
-    API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-    WS_URL: process.env.WEBSOCKET_URL || '',
-    WS_PATH: process.env.WS_PATH || '',
+    'process.env.APP_ENV': toDefineLiteral(process.env.APP_ENV),
+    'process.env.VERSION': JSON.stringify(appVersion),
+    'process.env.__E2E__': toDefineLiteral(process.env.__E2E__),
+    'process.env.USE_REMOTE_PLUGIN': toDefineLiteral(process.env.USE_REMOTE_PLUGIN),
   };
 }
 
 export default defineConfig(({ command }) => {
   const isBuild = command === 'build';
+  const isDev = !isBuild;
   const appPublicPath = ensurePublicPath(process.env.APP_PUBLIC_PATH, '/');
+  const htmlPublicPath = isDev ? '/' : appPublicPath;
   const apiBasePath = ensurePublicPath(process.env.API_BASE_PATH, '/api/');
   const localStorageBasePath = ensurePublicPath(`${appPublicPath}storage/uploads/`, '/storage/uploads/');
   const staticBasePath = ensurePublicPath(`${appPublicPath}static/`, '/static/');
@@ -98,7 +127,43 @@ export default defineConfig(({ command }) => {
     html: {
       template: path.resolve(__dirname, 'index.html'),
       scriptLoading: isBuild ? 'module' : 'defer',
-      templateParameters: createTemplateParameters(appPublicPath),
+      tags: [
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'icon',
+            href: `${htmlPublicPath}favicon_no_exist.ico`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: `${htmlPublicPath}global.css`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'script',
+          children: createRuntimeHeadScript(appPublicPath, isBuild),
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'script',
+          attrs: {
+            src: `${htmlPublicPath}browser-checker.js?v=1`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+      ],
     },
     output: {
       target: 'web',
