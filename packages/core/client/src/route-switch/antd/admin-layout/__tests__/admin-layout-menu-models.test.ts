@@ -300,6 +300,7 @@ describe('AdminLayoutMenuTreeModel', () => {
       useTypedConstant: true,
       changeOnSelect: true,
     });
+    expect(model.getSchemaComponentOptions().components.FlowSettingsVariableTextArea).toBeTypeOf('function');
   });
 
   it('should expose nested insert actions and only show insert inner for groups', async () => {
@@ -426,6 +427,51 @@ describe('AdminLayoutMenuTreeModel', () => {
       'A menu group cannot be moved inside itself',
     );
     expect(moveRoute).not.toHaveBeenCalled();
+  });
+
+  it('should refresh routes when insert move fails after route creation', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 99,
+        },
+      },
+    });
+    const moveRoute = vi.fn().mockRejectedValue(new Error('move failed'));
+    const refreshAccessible = vi.fn().mockResolvedValue(undefined);
+
+    engine.context.routeRepository.createRoute = createRoute;
+    engine.context.routeRepository.moveRoute = moveRoute;
+    engine.context.routeRepository.refreshAccessible = refreshAccessible;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-insert-refresh',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          parentId: 10,
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await expect(
+      model.createRouteForInsert(
+        {
+          type: NocoBaseDesktopRouteType.link,
+          title: 'Link',
+          schemaUid: 'link-99',
+        },
+        'beforeBegin',
+      ),
+    ).rejects.toThrow('move failed');
+
+    expect(createRoute).toHaveBeenCalled();
+    expect(moveRoute).toHaveBeenCalled();
+    expect(refreshAccessible).toHaveBeenCalledTimes(1);
   });
 
   it('should resolve sibling move options for non-group drag target', () => {

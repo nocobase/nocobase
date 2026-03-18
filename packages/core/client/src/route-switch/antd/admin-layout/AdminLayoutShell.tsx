@@ -370,6 +370,8 @@ export const AdminLayoutShell = (props) => {
   const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
+  const flowSettingsSyncRef = useRef(0);
+  const desiredFlowSettingsEnabledRef = useRef(false);
   const selectedTopGroupRoute = useMemo(
     () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
     [allAccessRoutes, location.pathname],
@@ -406,17 +408,23 @@ export const AdminLayoutShell = (props) => {
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
 
   useEffect(() => {
-    let cancelled = false;
+    const syncId = ++flowSettingsSyncRef.current;
+    const shouldEnable = designable && !isMobileSider;
+    desiredFlowSettingsEnabledRef.current = shouldEnable;
+
+    const applyFlowSettingsState = async (enabled: boolean) => {
+      if (enabled) {
+        await flowEngine.flowSettings.enable();
+        return;
+      }
+      await flowEngine.flowSettings.disable();
+    };
 
     const syncFlowSettings = async () => {
       try {
-        if (!designable || isMobileSider) {
-          await flowEngine.flowSettings.disable();
-          return;
-        }
-
-        if (!cancelled) {
-          await flowEngine.flowSettings.enable();
+        await applyFlowSettingsState(shouldEnable);
+        if (syncId !== flowSettingsSyncRef.current) {
+          await applyFlowSettingsState(desiredFlowSettingsEnabledRef.current);
         }
       } catch (error) {
         console.error('[NocoBase] AdminLayoutShell failed to sync flow settings state.', error);
@@ -426,7 +434,9 @@ export const AdminLayoutShell = (props) => {
     void syncFlowSettings();
 
     return () => {
-      cancelled = true;
+      if (flowSettingsSyncRef.current === syncId) {
+        flowSettingsSyncRef.current += 1;
+      }
     };
   }, [designable, flowEngine, isMobileSider]);
   const layoutToken = useMemo(() => {

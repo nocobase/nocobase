@@ -36,6 +36,7 @@ import { useNavigateNoUpdate } from '../../../application/CustomRouterContextPro
 import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
+import { FlowSettingsVariableTextArea } from '../../../modules/actions/link/useURLAndHTMLSchema';
 import { getFlowPageMenuSchema } from '../../../modules/menu';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
@@ -720,6 +721,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       scope: app?.scopes || {},
       components: {
         ...(app?.components || {}),
+        FlowSettingsVariableTextArea,
         ...adminMenuTreeSelectComponents,
       },
     };
@@ -765,12 +767,17 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     );
 
     if (insertPositionToMethod[insertPosition]) {
-      await this.getRouteRepository().moveRoute({
-        sourceId: data?.data?.id,
-        targetId: currentRoute?.id,
-        sortField: 'sort',
-        method: insertPositionToMethod[insertPosition],
-      });
+      try {
+        await this.getRouteRepository().moveRoute({
+          sourceId: data?.data?.id,
+          targetId: currentRoute?.id,
+          sortField: 'sort',
+          method: insertPositionToMethod[insertPosition],
+        });
+      } catch (error) {
+        await this.getRouteRepository().refreshAccessible();
+        throw error;
+      }
       return data?.data?.id;
     }
 

@@ -96,6 +96,10 @@ const sortExtraMenuItems = (items: FlowModelExtraMenuItem[]) => {
   return [...items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
 };
 
+const isFlowModelExtraMenuItem = (item: FlowModelExtraMenuItem | null): item is FlowModelExtraMenuItem => {
+  return item !== null;
+};
+
 const normalizeExtraMenuItem = (
   item: FlowModelExtraMenuItemInput,
   {
@@ -126,7 +130,7 @@ const normalizeExtraMenuItem = (
           path: `${path}-${index}`,
         }),
       )
-      .filter(Boolean),
+      .filter(isFlowModelExtraMenuItem),
   );
 
   return {
@@ -1668,7 +1672,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
                   path: `${entryIndex}-${idx}`,
                 }),
               )
-              .filter(Boolean),
+              .filter(isFlowModelExtraMenuItem),
           ).forEach((it) => {
             collected.push(it);
           });
