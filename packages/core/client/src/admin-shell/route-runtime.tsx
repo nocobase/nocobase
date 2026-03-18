@@ -56,6 +56,8 @@ export const RoutesRequestProvider: FC = ({ children }) => {
     const loadAccessibleRoutes = async () => {
       try {
         await routeRepository.refreshAccessible();
+      } catch (error) {
+        console.error('[NocoBase] RoutesRequestProvider failed to refresh accessible routes.', error);
       } finally {
         if (active) {
           setInitialized(true);

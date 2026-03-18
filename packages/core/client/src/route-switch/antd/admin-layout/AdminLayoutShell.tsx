@@ -376,7 +376,7 @@ export const AdminLayoutShell = (props) => {
   );
 
   const handleMenuDragEnd = useCallback(
-    async (event: DragEndEvent) => {
+    (event: DragEndEvent) => {
       const activeModel = flowEngine.getModel(event.active?.id as string);
       const overModel = flowEngine.getModel(event.over?.id as string);
       const moveOptions = resolveAdminLayoutMenuDragMoveOptions(activeModel, overModel);
@@ -385,7 +385,9 @@ export const AdminLayoutShell = (props) => {
         return;
       }
 
-      await flowEngine.context.routeRepository.moveRoute(moveOptions);
+      void flowEngine.context.routeRepository.moveRoute(moveOptions).catch((error) => {
+        console.error('[NocoBase] AdminLayoutShell failed to move menu route.', error);
+      });
     },
     [flowEngine],
   );
@@ -407,13 +409,17 @@ export const AdminLayoutShell = (props) => {
     let cancelled = false;
 
     const syncFlowSettings = async () => {
-      if (!designable || isMobileSider) {
-        await flowEngine.flowSettings.disable();
-        return;
-      }
+      try {
+        if (!designable || isMobileSider) {
+          await flowEngine.flowSettings.disable();
+          return;
+        }
 
-      if (!cancelled) {
-        await flowEngine.flowSettings.enable();
+        if (!cancelled) {
+          await flowEngine.flowSettings.enable();
+        }
+      } catch (error) {
+        console.error('[NocoBase] AdminLayoutShell failed to sync flow settings state.', error);
       }
     };
 

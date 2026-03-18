@@ -98,7 +98,8 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
     title: t('URL'),
     type: 'string',
     'x-decorator': 'FormItem',
-    'x-component': 'Input',
+    'x-component': 'FlowSettingsVariableTextArea',
+    description: t('Do not concatenate search params in the URL'),
   },
   params: {
     type: 'array',
@@ -123,9 +124,11 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
             value: {
               type: 'string',
               'x-decorator': 'FormItem',
-              'x-component': 'Input',
+              'x-component': 'FlowSettingsVariableTextArea',
               'x-component-props': {
                 placeholder: t('Value'),
+                useTypedConstant: true,
+                changeOnSelect: true,
               },
             },
             remove: {
@@ -898,14 +901,21 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       return;
     }
 
-    const normalizedPosition =
-      position === 'beforeEnd' && targetType !== NocoBaseDesktopRouteType.group ? 'afterEnd' : position;
+    if (position === 'beforeEnd' && targetType !== NocoBaseDesktopRouteType.group) {
+      throw new Error(this.context?.t?.('Only groups support inner moves') || 'Only groups support inner moves');
+    }
+
+    if (position === 'beforeEnd' && String(route.id) === targetId) {
+      throw new Error(
+        this.context?.t?.('A menu group cannot be moved inside itself') || 'A menu group cannot be moved inside itself',
+      );
+    }
 
     await this.getRouteRepository().moveRoute({
       sourceId: route.id,
       sortField: 'sort',
-      method: normalizedPosition === 'beforeEnd' ? undefined : insertPositionToMethod[normalizedPosition],
-      ...(normalizedPosition === 'beforeEnd'
+      method: position === 'beforeEnd' ? undefined : insertPositionToMethod[position],
+      ...(position === 'beforeEnd'
         ? {
             targetScope: {
               parentId: targetId,

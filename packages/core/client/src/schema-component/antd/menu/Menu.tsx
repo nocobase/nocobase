@@ -282,7 +282,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       /**
        * Insertion type - specifies whether to insert before or after the target element
        */
-      method?: 'insertAfter' | 'prepend';
+      method?: 'insertBefore' | 'insertAfter' | 'prepend';
       refreshAfterMove?: boolean;
     }) => {
       const res = await routeRepository.moveRoute({

@@ -20,6 +20,7 @@ import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
 import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
+import { FlowSettingsVariableTextArea } from '../modules/actions/link/useURLAndHTMLSchema';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -36,6 +37,7 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
+      FlowSettingsVariableTextArea,
     });
 
     // 动态流编辑入口

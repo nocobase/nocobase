@@ -23,7 +23,7 @@ type MoveRouteOptions = {
   targetScope?: any;
   sortField?: string;
   sticky?: boolean;
-  method?: 'insertAfter' | 'prepend';
+  method?: 'insertBefore' | 'insertAfter' | 'prepend';
   refreshAfterMove?: boolean;
   collectionName?: string;
 };

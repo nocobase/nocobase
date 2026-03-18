@@ -93,4 +93,34 @@ describe('RoutesRequestProvider', () => {
       expect(screen.getByTestId('route-count').textContent).toBe('2');
     });
   });
+
+  it('should swallow initial refresh errors and still initialize provider', async () => {
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const api = {
+      request: vi.fn().mockRejectedValueOnce(new Error('network error')),
+    };
+    const routeRepository = new RouteRepository({ api });
+
+    mockedUseFlowEngineContext.mockReturnValue({
+      routeRepository,
+    } as any);
+
+    await act(async () => {
+      render(
+        <RoutesRequestProvider>
+          <RoutesConsumer />
+        </RoutesRequestProvider>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('route-count').textContent).toBe('0');
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[NocoBase] RoutesRequestProvider failed to refresh accessible routes.',
+      expect.any(Error),
+    );
+
+    consoleErrorSpy.mockRestore();
+  });
 });

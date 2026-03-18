@@ -16,6 +16,7 @@ import { useRecord } from '../../../record-provider';
 import { Variable } from '../../../schema-component/antd/variable/Variable';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
 import { useGlobalVariable } from '../../../application/hooks/useGlobalVariable';
+
 export const getVariableComponentWithScope = (Com, data = []) => {
   return (props) => {
     const fieldSchema = useFieldSchema();
@@ -44,10 +45,23 @@ const useEvnVariable = () => {
   return null;
 };
 
+export const FlowSettingsVariableTextArea = (props) => {
+  const environmentVariables = useEvnVariable();
+  const Com = useMemo(
+    () => getVariableComponentWithScope(Variable.TextArea, environmentVariables ? [environmentVariables] : []),
+    [environmentVariables],
+  );
+
+  return <Com {...props} />;
+};
+
 export const useURLAndHTMLSchema = () => {
   const { t } = useTranslation();
   const environmentVariables = useEvnVariable();
-  const Com = useMemo(() => getVariableComponentWithScope(Variable.TextArea, [environmentVariables] || []), []);
+  const Com = useMemo(
+    () => getVariableComponentWithScope(Variable.TextArea, environmentVariables ? [environmentVariables] : []),
+    [environmentVariables],
+  );
 
   const urlSchema = useMemo(() => {
     return {

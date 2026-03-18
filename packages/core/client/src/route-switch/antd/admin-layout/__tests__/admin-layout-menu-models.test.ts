@@ -270,6 +270,38 @@ describe('AdminLayoutMenuTreeModel', () => {
     });
   });
 
+  it('should keep variable-aware editors for link menu settings', async () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-link-edit',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Link 1',
+          schemaUid: 'link-1',
+          type: NocoBaseDesktopRouteType.link,
+          options: {
+            href: '{{ ctx.url }}',
+            params: [{ name: 'foo', value: { type: 'number', value: 1 } }],
+          },
+        },
+      },
+    });
+
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    const editUiSchema = menuSettingsFlow?.steps?.edit?.uiSchema as ((ctx: any) => Promise<any>) | undefined;
+    const schema = await editUiSchema?.({ model, t: (text) => text });
+
+    expect(schema?.href?.['x-component']).toBe('FlowSettingsVariableTextArea');
+    expect(schema?.params?.items?.properties?.space?.properties?.value?.['x-component']).toBe(
+      'FlowSettingsVariableTextArea',
+    );
+    expect(schema?.params?.items?.properties?.space?.properties?.value?.['x-component-props']).toMatchObject({
+      useTypedConstant: true,
+      changeOnSelect: true,
+    });
+  });
+
   it('should expose nested insert actions and only show insert inner for groups', async () => {
     const groupModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'menu-item-group',
@@ -350,6 +382,50 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(deleteRoute).toHaveBeenCalledWith(1);
     expect(removeSchema).toHaveBeenCalled();
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+  });
+
+  it('should reject inner move when target is not a group', async () => {
+    const moveRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.moveRoute = moveRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-invalid-inner-target',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await expect(model.moveMenuRoute('2||page', 'beforeEnd')).rejects.toThrow('Only groups support inner moves');
+    expect(moveRoute).not.toHaveBeenCalled();
+  });
+
+  it('should reject moving a group inside itself', async () => {
+    const moveRoute = vi.fn().mockResolvedValue(undefined);
+    engine.context.routeRepository.moveRoute = moveRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-invalid-inner-self',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Group 1',
+          schemaUid: 'group-1',
+          type: NocoBaseDesktopRouteType.group,
+        },
+      },
+    });
+
+    await expect(model.moveMenuRoute('1||group', 'beforeEnd')).rejects.toThrow(
+      'A menu group cannot be moved inside itself',
+    );
+    expect(moveRoute).not.toHaveBeenCalled();
   });
 
   it('should resolve sibling move options for non-group drag target', () => {
