@@ -11,6 +11,8 @@ import type { NocoBaseDesktopRoute } from '../admin-shell/route-types';
 import type { APIClient } from '../api-client';
 
 type RouteSubscriber = () => void;
+type RouteCreateValues = Partial<NocoBaseDesktopRoute>;
+type RouteUpdateValues = Partial<NocoBaseDesktopRoute>;
 
 type RouteMutationOptions = {
   refreshAfterMutation?: boolean;
@@ -86,7 +88,7 @@ export class RouteRepository {
    * @param options 资源与刷新选项
    * @returns 服务端响应
    */
-  async createRoute(values: NocoBaseDesktopRoute, options: RouteMutationOptions = {}) {
+  async createRoute(values: RouteCreateValues, options: RouteMutationOptions = {}) {
     const { refreshAfterMutation = true } = options;
     const res = await this.getResource('desktopRoutes').create({ values });
     if (refreshAfterMutation) {
@@ -103,7 +105,7 @@ export class RouteRepository {
    * @param options 资源与刷新选项
    * @returns 服务端响应
    */
-  async updateRoute(filterByTk: any, values: NocoBaseDesktopRoute, options: RouteMutationOptions = {}) {
+  async updateRoute(filterByTk: any, values: RouteUpdateValues, options: RouteMutationOptions = {}) {
     const { refreshAfterMutation = true } = options;
     const res = await this.getResource('desktopRoutes').update(
       Array.isArray(filterByTk)

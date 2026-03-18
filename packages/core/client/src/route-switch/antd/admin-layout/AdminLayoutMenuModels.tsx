@@ -40,6 +40,7 @@ import { FlowSettingsVariableTextArea } from '../../../modules/actions/link/useU
 import { getFlowPageMenuSchema } from '../../../modules/menu';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
+import { isVariable } from '../../../variables';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { uid } from '@nocobase/utils/client';
@@ -196,14 +197,22 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
   },
 });
 
-const toTreeSelectItems = (routes: NocoBaseDesktopRoute[], t: (title: any) => any) => {
-  return (routes || [])
-    .filter((route) => route.type !== NocoBaseDesktopRouteType.tabs)
-    .map((route) => ({
-      label: t(route.title),
-      value: `${route.id}||${route.type}`,
-      children: route.children?.length ? toTreeSelectItems(route.children, t) : undefined,
-    }));
+const toTreeSelectItems = async (
+  routes: NocoBaseDesktopRoute[],
+  ctx: Pick<FlowSettingsContext<AdminLayoutMenuItemModel>, 'resolveJsonTemplate' | 't'>,
+) => {
+  return Promise.all(
+    (routes || [])
+      .filter((route) => route.type !== NocoBaseDesktopRouteType.tabs)
+      .map(async (route) => ({
+        label:
+          typeof route.title === 'string' && isVariable(route.title)
+            ? (await ctx.resolveJsonTemplate?.(route.title)) ?? route.title
+            : ctx.t(route.title),
+        value: `${route.id}||${route.type}`,
+        children: route.children?.length ? await toTreeSelectItems(route.children, ctx) : undefined,
+      })),
+  );
 };
 
 const findPrevSiblingRoute = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
@@ -244,21 +253,31 @@ const findNextSiblingRoute = (routes: NocoBaseDesktopRoute[], currentRoute: Noco
   }
 };
 
-const matchesRoutePath = (route: NocoBaseDesktopRoute | undefined, pathname: string): boolean => {
+const matchesRoutePath = (route: NocoBaseDesktopRoute | undefined, pathname: string, basename = '/'): boolean => {
   if (!route) {
     return false;
   }
+
+  const normalizedBasename = basename && basename !== '/' ? basename.replace(/\/$/, '') : '';
+  const normalizedPathname =
+    normalizedBasename && pathname.startsWith(normalizedBasename)
+      ? pathname.slice(normalizedBasename.length) || '/'
+      : pathname;
 
   const candidates = [
     route.id != null ? `/admin/${route.id}` : null,
     route.schemaUid ? `/admin/${route.schemaUid}` : null,
   ].filter(Boolean) as string[];
 
-  if (candidates.some((candidate) => pathname === candidate || pathname.startsWith(`${candidate}/`))) {
+  if (
+    candidates.some((candidate) => normalizedPathname === candidate || normalizedPathname.startsWith(`${candidate}/`))
+  ) {
     return true;
   }
 
-  return Array.isArray(route.children) ? route.children.some((child) => matchesRoutePath(child, pathname)) : false;
+  return Array.isArray(route.children)
+    ? route.children.some((child) => matchesRoutePath(child, normalizedPathname, '/'))
+    : false;
 };
 
 export const MobileMenuControlContext = React.createContext<{
@@ -1011,7 +1030,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
     const allAccessRoutes = this.getRouteRepository().listAccessible();
     const pathname = this.context.location?.pathname || window.location.pathname;
-    const shouldNavigate = matchesRoutePath(route, pathname);
+    const shouldNavigate = matchesRoutePath(route, pathname, this.context.router?.basename);
     const prevSibling = findPrevSiblingRoute(allAccessRoutes, route);
     const nextSibling = findNextSiblingRoute(allAccessRoutes, route);
 
@@ -1221,7 +1240,7 @@ AdminLayoutMenuItemModel.registerFlow({
         position: 'afterEnd',
       }),
       uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
-        const items = toTreeSelectItems(ctx.routeRepository.listAccessible(), ctx.t);
+        const items = await toTreeSelectItems(ctx.routeRepository.listAccessible(), ctx);
         const currentRouteId = ctx.model.getRoute()?.id;
         const defaultPositionOptions = getAdminLayoutMenuMovePositionOptions(undefined, currentRouteId, ctx.t);
 

@@ -9,7 +9,7 @@
 
 import { css } from '@emotion/css';
 import { useFieldSchema } from '@formily/react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useRecord } from '../../../record-provider';
@@ -35,14 +35,37 @@ export const getVariableComponentWithScope = (Com, data = []) => {
 
 const useEvnVariable = () => {
   const environmentVariables = useGlobalVariable('$env');
-  if (environmentVariables) {
-    const { children } = environmentVariables;
-    return {
+  const envSignature = useMemo(() => {
+    if (!environmentVariables) {
+      return null;
+    }
+    return JSON.stringify(
+      (environmentVariables.children || []).map((child) => ({
+        name: child?.name,
+        type: child?.type,
+        title: child?.title,
+      })),
+    );
+  }, [environmentVariables]);
+  const stableEnvironmentVariablesRef = useRef<any>(null);
+  const stableEnvironmentVariablesSignatureRef = useRef<string | null>(null);
+
+  if (!environmentVariables) {
+    stableEnvironmentVariablesRef.current = null;
+    stableEnvironmentVariablesSignatureRef.current = null;
+    return null;
+  }
+
+  if (stableEnvironmentVariablesSignatureRef.current !== envSignature) {
+    const { children = [] } = environmentVariables;
+    stableEnvironmentVariablesRef.current = {
       ...environmentVariables,
       children: children.filter((v) => v.type === 'default'),
     };
+    stableEnvironmentVariablesSignatureRef.current = envSignature;
   }
-  return null;
+
+  return stableEnvironmentVariablesRef.current;
 };
 
 export const FlowSettingsVariableTextArea = (props) => {

@@ -387,6 +387,57 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(navigate).toHaveBeenCalledWith('/admin/next-page');
   });
 
+  it('should match current route with router basename before navigating away after delete', async () => {
+    const deleteRoute = vi.fn().mockResolvedValue(undefined);
+    const removeSchema = vi.fn().mockResolvedValue(undefined);
+    const navigate = vi.fn();
+
+    engine.context.routeRepository.deleteRoute = deleteRoute;
+    engine.context.routeRepository.listAccessible = () => [
+      {
+        id: 1,
+        title: 'Current page',
+        schemaUid: 'current-page',
+        type: NocoBaseDesktopRouteType.page,
+      },
+      {
+        id: 2,
+        title: 'Next page',
+        schemaUid: 'next-page',
+        type: NocoBaseDesktopRouteType.page,
+      },
+    ];
+    engine.context.api.resource = vi.fn(() => ({
+      'remove/current-page': removeSchema,
+    }));
+    engine.context.location.pathname = '/apps/demo/admin/current-page';
+    engine.context.defineProperty('router', {
+      value: {
+        basename: '/apps/demo',
+        navigate,
+      },
+    });
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-delete-with-basename',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Current page',
+          schemaUid: 'current-page',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await model.destroy();
+
+    expect(deleteRoute).toHaveBeenCalledWith(1);
+    expect(removeSchema).toHaveBeenCalled();
+    expect(navigate).toHaveBeenCalledWith('/admin/next-page');
+  });
+
   it('should reject inner move when target is not a group', async () => {
     const moveRoute = vi.fn().mockResolvedValue(undefined);
     engine.context.routeRepository.moveRoute = moveRoute;
@@ -424,6 +475,49 @@ describe('AdminLayoutMenuTreeModel', () => {
       { label: 'Before', value: 'beforeBegin' },
       { label: 'After', value: 'afterEnd' },
       { label: 'Inner', value: 'beforeEnd', disabled: true },
+    ]);
+  });
+
+  it('should compile variable-backed route titles in move-to tree', async () => {
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-move-tree',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    const moveToUiSchema = menuSettingsFlow?.steps?.moveTo?.uiSchema as ((ctx: any) => Promise<any>) | undefined;
+    const resolveJsonTemplate = vi.fn(async () => 'Translated title');
+    const schema = await moveToUiSchema?.({
+      model,
+      t: (text) => text,
+      routeRepository: {
+        listAccessible: () => [
+          {
+            id: 2,
+            title: '{{route.title}}',
+            schemaUid: 'page-2',
+            type: NocoBaseDesktopRouteType.page,
+          },
+        ],
+      },
+      resolveJsonTemplate,
+    });
+
+    expect(resolveJsonTemplate).toHaveBeenCalledWith('{{route.title}}');
+    expect(schema?.target?.enum).toEqual([
+      {
+        label: 'Translated title',
+        value: '2||page',
+        children: undefined,
+      },
     ]);
   });
 
