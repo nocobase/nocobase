@@ -8,7 +8,6 @@
  */
 
 import { TreeSelect, FormLayout } from '@formily/antd-v5';
-import { HolderOutlined } from '@ant-design/icons';
 import { DragHandler as FlowDragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
@@ -565,22 +564,7 @@ const MenuDragToolbarButton: FC<{ model: AdminLayoutMenuItemModel }> = ({ model 
     return null;
   }
 
-  return (
-    <FlowDragHandler model={model}>
-      <span
-        style={{
-          display: 'inline-flex',
-          width: 14,
-          height: 14,
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: 'grab',
-        }}
-      >
-        <HolderOutlined />
-      </span>
-    </FlowDragHandler>
-  );
+  return <FlowDragHandler model={model} />;
 };
 
 const AdminLayoutMenuItemRenderer: FC<{
