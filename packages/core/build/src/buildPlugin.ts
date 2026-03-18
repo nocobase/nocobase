@@ -656,18 +656,6 @@ export async function buildPluginClient(
           use: ['@svgr/webpack'],
         },
         {
-          test: /\.(?:js|mjs|cjs|ts|tsx)$/,
-          exclude: /node_modules/,
-          use: {
-            loader: 'babel-loader',
-            options: {
-              targets: 'defaults',
-              // presets: [['@babel/preset-env']],
-              plugins: ['react-imported-component/babel'],
-            },
-          },
-        },
-        {
           test: /\.jsx$/,
           exclude: /[\\/]node_modules[\\/]/,
           loader: 'builtin:swc-loader',

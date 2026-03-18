@@ -88,6 +88,5 @@ export default defineConfig({
     }
     return config;
   },
-  extraBabelPlugins: ['react-imported-component/babel'],
   routes: [{ path: '/*', component: 'index' }],
 });

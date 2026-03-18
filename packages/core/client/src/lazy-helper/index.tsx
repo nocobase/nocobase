@@ -102,9 +102,7 @@ export function lazy<M extends Record<string, any>, K extends keyof M>(
  * It throws a promise while the module is being loaded, which can be caught by
  * the parent Suspense boundary to show a loading state.
  *
- * @deprecated Prefer `lazy()` when loading React components. Prefer `await import()`
- * for modules, hooks, utility functions, or third-party libraries. Avoid adding new
- * `useLazy` usages.
+ * @deprecated Use this hook only when you need to dynamically load a module inside a hook. Otherwise, use lazy() to load React components, or use import() directly to load modules, utility functions, or third-party libraries. Avoid adding new usages of useLazy.
  *
  * @template T - The type of the export being picked from the module.
  *
