@@ -60,16 +60,22 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
 type BaseMenuItem = NonNullable<MenuProps['items']>[number];
-type MenuLeafItem = Exclude<BaseMenuItem, { children: MenuProps['items'] }>;
+type MenuBaseItem = Omit<Exclude<BaseMenuItem, null>, 'key' | 'children'>;
 
-export type FlowModelExtraMenuItem = Omit<MenuLeafItem, 'key'> & {
+export type FlowModelExtraMenuItem = MenuBaseItem & {
   key: React.Key;
   group?: string;
   sort?: number;
+  label?: React.ReactNode;
+  disabled?: boolean;
   onClick?: () => void;
+  children?: FlowModelExtraMenuItem[];
 };
 
-type FlowModelExtraMenuItemInput = Omit<FlowModelExtraMenuItem, 'key'> & { key?: React.Key };
+type FlowModelExtraMenuItemInput = Omit<FlowModelExtraMenuItem, 'key' | 'children'> & {
+  key?: React.Key;
+  children?: FlowModelExtraMenuItemInput[];
+};
 
 type ExtraMenuItemEntry = {
   group?: string;
@@ -85,6 +91,56 @@ type ExtraMenuItemEntry = {
 };
 
 const classMenuExtensions = new WeakMap<typeof FlowModel, Set<ExtraMenuItemEntry>>();
+
+const sortExtraMenuItems = (items: FlowModelExtraMenuItem[]) => {
+  return [...items].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+};
+
+const isFlowModelExtraMenuItem = (item: FlowModelExtraMenuItem | null): item is FlowModelExtraMenuItem => {
+  return item !== null;
+};
+
+const normalizeExtraMenuItem = (
+  item: FlowModelExtraMenuItemInput,
+  {
+    group,
+    sort,
+    prefix,
+    path,
+  }: {
+    group: string;
+    sort: number;
+    prefix: string;
+    path: string;
+  },
+): FlowModelExtraMenuItem | null => {
+  if (!item) {
+    return null;
+  }
+
+  const normalizedGroup = item.group || group;
+  const normalizedSort = typeof item.sort === 'number' ? item.sort : sort;
+  const normalizedChildren = sortExtraMenuItems(
+    (item.children || [])
+      .map((child, index) =>
+        normalizeExtraMenuItem(child, {
+          group: normalizedGroup,
+          sort: normalizedSort,
+          prefix,
+          path: `${path}-${index}`,
+        }),
+      )
+      .filter(isFlowModelExtraMenuItem),
+  );
+
+  return {
+    ...item,
+    key: item.key ?? `${prefix}-${normalizedGroup}-${path}`,
+    group: normalizedGroup,
+    sort: normalizedSort,
+    children: normalizedChildren.length ? normalizedChildren : undefined,
+  };
+};
 
 async function loadOpenStepSettingsDialog() {
   const mod = await import('../components/settings/wrappers/contextual/StepSettingsDialog');
@@ -1598,6 +1654,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       seen.add(Cls);
       const reg = classMenuExtensions.get(Cls);
       if (reg) {
+        let entryIndex = 0;
         for (const entry of reg) {
           if (entry.matcher && !entry.matcher(model)) continue;
           const items =
@@ -1605,16 +1662,21 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           const group = entry.group || 'common-actions';
           const sort = entry.sort ?? 0;
           const prefix = entry.keyPrefix || Cls.name || 'extra';
-          (items || []).forEach((it, idx: number) => {
-            if (!it) return;
-            const key = it.key ?? `${prefix}-${group}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
-            collected.push({
-              ...it,
-              key,
-              group: it.group || group,
-              sort: typeof it.sort === 'number' ? it.sort : sort,
-            });
+          sortExtraMenuItems(
+            (items || [])
+              .map((it, idx: number) =>
+                normalizeExtraMenuItem(it, {
+                  group,
+                  sort,
+                  prefix,
+                  path: `${entryIndex}-${idx}`,
+                }),
+              )
+              .filter(isFlowModelExtraMenuItem),
+          ).forEach((it) => {
+            collected.push(it);
           });
+          entryIndex += 1;
         }
       }
       const ParentClass = Object.getPrototypeOf(Cls) as typeof FlowModel;

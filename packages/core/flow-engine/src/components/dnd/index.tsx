@@ -21,7 +21,7 @@ export * from './gridDragPlanner';
 export const EMPTY_COLUMN_UID = 'EMPTY_COLUMN';
 
 // 可拖拽图标组件
-export const DragHandler: FC<{ model: FlowModel; children: React.ReactNode }> = ({
+export const DragHandler: FC<{ model: FlowModel; children?: React.ReactNode }> = ({
   model,
   children = <DragOutlined />,
 }) => {

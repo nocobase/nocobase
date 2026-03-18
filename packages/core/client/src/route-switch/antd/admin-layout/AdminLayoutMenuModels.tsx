@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { TreeSelect, FormLayout } from '@formily/antd-v5';
+import { DragHandler as FlowDragHandler, Droppable, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import type { FlowSettingsContext } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
-import React, { FC, useCallback, useContext, useEffect, useRef } from 'react';
+import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   findFirstPageRoute,
@@ -19,21 +21,29 @@ import {
 } from '../../../admin-shell';
 import {
   Icon,
+  FormDialog,
+  getPageMenuSchema,
   ParentRouteContext,
-  SortableItem,
-  useDesignable,
+  SchemaComponent,
+  SchemaComponentOptions,
   useParseURLAndParams,
   useRouterBasename,
   useSchemaInitializerRender,
+  zIndexContext,
+  ICON_POPUP_Z_INDEX,
 } from '../../../';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { navigateWithinSelf } from '../../../block-provider/hooks';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
+import { FlowSettingsVariableTextArea } from '../../../modules/actions/link/useURLAndHTMLSchema';
+import { getFlowPageMenuSchema } from '../../../modules/menu';
 import { menuItemInitializer } from '../../../modules/menu/menuItemInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
-import { MenuSchemaToolbar } from './menuItemSettings';
+import { isVariable } from '../../../variables';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
+import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
+import { uid } from '@nocobase/utils/client';
 
 type AdminLayoutMenuRenderType = 'item' | 'group';
 
@@ -65,6 +75,12 @@ type AdminLayoutMenuRouteOptions = {
   depth?: number;
 };
 
+type AdminLayoutMenuMovePositionOption = {
+  label: any;
+  value: 'beforeBegin' | 'afterEnd' | 'beforeEnd';
+  disabled?: boolean;
+};
+
 type AdminLayoutMenuItemStructure = {
   subModels: {
     items?: AdminLayoutMenuItemModel[];
@@ -78,6 +94,191 @@ type AdminLayoutMenuTreeStructure = {
 };
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
+const adminMenuTreeSelectComponents = { TreeSelect };
+
+const insertPositionToMethod = {
+  beforeBegin: 'insertBefore',
+  afterEnd: 'insertAfter',
+} as const;
+
+/**
+ * 根据当前选中的目标菜单，生成可用的 Move to 位置选项。
+ *
+ * @param target 目标节点的 `id||type` 组合值
+ * @param currentRouteId 当前正在编辑的菜单 id
+ * @param t 国际化函数
+ * @returns 可渲染到 Radio.Group 的位置选项
+ */
+export const getAdminLayoutMenuMovePositionOptions = (
+  target: string | undefined,
+  currentRouteId: string | number | undefined,
+  t: (title: any) => any,
+): AdminLayoutMenuMovePositionOption[] => {
+  const [targetId, targetType] = target?.split?.('||') || [];
+  const options: AdminLayoutMenuMovePositionOption[] = [
+    { label: t('Before'), value: 'beforeBegin' },
+    { label: t('After'), value: 'afterEnd' },
+  ];
+
+  if (targetType !== NocoBaseDesktopRouteType.group) {
+    return options;
+  }
+
+  return [
+    ...options,
+    {
+      label: t('Inner'),
+      value: 'beforeEnd',
+      disabled: currentRouteId !== undefined && String(currentRouteId) === targetId,
+    },
+  ];
+};
+
+const buildLinkSettingSchema = (t: (title: any) => any) => ({
+  href: {
+    title: t('URL'),
+    type: 'string',
+    'x-decorator': 'FormItem',
+    'x-component': 'FlowSettingsVariableTextArea',
+    description: t('Do not concatenate search params in the URL'),
+  },
+  params: {
+    type: 'array',
+    title: t('Search parameters'),
+    'x-component': 'ArrayItems',
+    'x-decorator': 'FormItem',
+    items: {
+      type: 'object',
+      properties: {
+        space: {
+          type: 'void',
+          'x-component': 'Space',
+          properties: {
+            name: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'Input',
+              'x-component-props': {
+                placeholder: t('Name'),
+              },
+            },
+            value: {
+              type: 'string',
+              'x-decorator': 'FormItem',
+              'x-component': 'FlowSettingsVariableTextArea',
+              'x-component-props': {
+                placeholder: t('Value'),
+                useTypedConstant: true,
+                changeOnSelect: true,
+              },
+            },
+            remove: {
+              type: 'void',
+              'x-decorator': 'FormItem',
+              'x-component': 'ArrayItems.Remove',
+            },
+          },
+        },
+      },
+    },
+    properties: {
+      add: {
+        type: 'void',
+        title: t('Add parameter'),
+        'x-component': 'ArrayItems.Addition',
+      },
+    },
+  },
+  openInNewWindow: {
+    type: 'boolean',
+    'x-content': t('Open in new window'),
+    'x-decorator': 'FormItem',
+    'x-component': 'Checkbox',
+  },
+});
+
+const toTreeSelectItems = async (
+  routes: NocoBaseDesktopRoute[],
+  ctx: Pick<FlowSettingsContext<AdminLayoutMenuItemModel>, 'resolveJsonTemplate' | 't'>,
+) => {
+  return Promise.all(
+    (routes || [])
+      .filter((route) => route.type !== NocoBaseDesktopRouteType.tabs)
+      .map(async (route) => ({
+        label:
+          typeof route.title === 'string' && isVariable(route.title)
+            ? (await ctx.resolveJsonTemplate?.(route.title)) ?? route.title
+            : ctx.t(route.title),
+        value: `${route.id}||${route.type}`,
+        children: route.children?.length ? await toTreeSelectItems(route.children, ctx) : undefined,
+      })),
+  );
+};
+
+const findPrevSiblingRoute = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
+  if (!currentRoute) {
+    return;
+  }
+
+  for (let index = 0; index < routes.length; index++) {
+    const route = routes[index];
+    if (route.id === currentRoute.id) {
+      return routes[index - 1];
+    }
+    if (route.children?.length) {
+      const prevSibling = findPrevSiblingRoute(route.children, currentRoute);
+      if (prevSibling) {
+        return prevSibling;
+      }
+    }
+  }
+};
+
+const findNextSiblingRoute = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseDesktopRoute | undefined) => {
+  if (!currentRoute) {
+    return;
+  }
+
+  for (let index = 0; index < routes.length; index++) {
+    const route = routes[index];
+    if (route.id === currentRoute.id) {
+      return routes[index + 1];
+    }
+    if (route.children?.length) {
+      const nextSibling = findNextSiblingRoute(route.children, currentRoute);
+      if (nextSibling) {
+        return nextSibling;
+      }
+    }
+  }
+};
+
+const matchesRoutePath = (route: NocoBaseDesktopRoute | undefined, pathname: string, basename = '/'): boolean => {
+  if (!route) {
+    return false;
+  }
+
+  const normalizedBasename = basename && basename !== '/' ? basename.replace(/\/$/, '') : '';
+  const normalizedPathname =
+    normalizedBasename && pathname.startsWith(normalizedBasename)
+      ? pathname.slice(normalizedBasename.length) || '/'
+      : pathname;
+
+  const candidates = [
+    route.id != null ? `/admin/${route.id}` : null,
+    route.schemaUid ? `/admin/${route.schemaUid}` : null,
+  ].filter(Boolean) as string[];
+
+  if (
+    candidates.some((candidate) => normalizedPathname === candidate || normalizedPathname.startsWith(`${candidate}/`))
+  ) {
+    return true;
+  }
+
+  return Array.isArray(route.children)
+    ? route.children.some((child) => matchesRoutePath(child, normalizedPathname, '/'))
+    : false;
+};
 
 export const MobileMenuControlContext = React.createContext<{
   closeMobileMenu: () => void;
@@ -143,7 +344,7 @@ function reconcileMenuItems(
           route,
           parentRoute,
         },
-      }) as AdminLayoutMenuItemModel;
+      }) as unknown as AdminLayoutMenuItemModel;
     }
 
     itemModel.sortIndex = index + 1;
@@ -191,31 +392,88 @@ const MenuItemTitle: React.FC = (props) => {
 
 const MenuItemTitleWithTooltip = withTooltipComponent(MenuItemTitle);
 
-/**
- * Fix the issue where SchemaToolbar cannot be displayed normally in Group
- * @returns
- */
-const MenuSchemaToolbarWithContainer = () => {
-  const divRef = useRef<HTMLDivElement>(null);
-  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const submenuTitleContainer = divRef.current?.closest('.ant-menu-submenu-title') as HTMLDivElement | null;
-    const fallbackContainer = divRef.current?.parentElement?.parentElement?.parentElement as HTMLDivElement | null;
-    setContainer(submenuTitleContainer || fallbackContainer);
-  }, []);
-
-  return (
-    <>
-      <MenuSchemaToolbar container={container || undefined} />
-      <div ref={divRef}></div>
-    </>
-  );
+type AdminLayoutMenuDragMoveOptions = {
+  sourceId: string | number;
+  targetId?: string | number;
+  targetScope?: {
+    parentId: string | number;
+  };
+  sortField: 'sort';
+  method?: 'insertAfter' | 'prepend';
 };
+
+/**
+ * 根据拖拽的 active / over 菜单模型，计算 desktopRoutes:move 所需参数。
+ *
+ * 普通菜单拖到普通菜单上时，保持旧语义，按目标节点排序；
+ * 普通菜单拖到分组上时，视为插入该分组内部；
+ * 分组拖到分组上时，仍按顶层/同层分组排序，避免误变成嵌套分组。
+ *
+ * @param {FlowModel | undefined} activeModel 被拖拽的模型
+ * @param {FlowModel | undefined} overModel 命中的目标模型
+ * @returns {AdminLayoutMenuDragMoveOptions | undefined} 可直接传给 routeRepository.moveRoute 的参数
+ */
+export function resolveAdminLayoutMenuDragMoveOptions(
+  activeModel?: FlowModel,
+  overModel?: FlowModel,
+): AdminLayoutMenuDragMoveOptions | undefined {
+  if (!(activeModel instanceof AdminLayoutMenuItemModel) || !(overModel instanceof AdminLayoutMenuItemModel)) {
+    return;
+  }
+
+  const activeRoute = activeModel.getRoute();
+  const overRoute = overModel.getRoute();
+
+  if (!activeRoute?.id || !overRoute?.id || activeRoute.id === overRoute.id) {
+    return;
+  }
+
+  if (overRoute.type === NocoBaseDesktopRouteType.group && activeRoute.type !== NocoBaseDesktopRouteType.group) {
+    return {
+      sourceId: activeRoute.id,
+      targetScope: {
+        parentId: overRoute.id,
+      },
+      sortField: 'sort',
+      method: 'prepend',
+    };
+  }
+
+  return {
+    sourceId: activeRoute.id,
+    targetId: overRoute.id,
+    sortField: 'sort',
+  };
+}
+
+/**
+ * 从拖拽事件中安全提取 active / over 模型，再交给菜单移动规则计算。
+ *
+ * @param flowEngine flow engine 实例
+ * @param event 当前拖拽结束事件
+ * @returns desktopRoutes:move 所需参数
+ */
+export function resolveAdminLayoutMenuDragMoveOptionsFromEvent(
+  flowEngine: {
+    getModel: (uid: string) => FlowModel | undefined;
+  },
+  event: {
+    active?: { id?: string | number };
+    over?: { id?: string | number } | null;
+  },
+): AdminLayoutMenuDragMoveOptions | undefined {
+  if (!event.active?.id || !event.over?.id) {
+    return;
+  }
+
+  return resolveAdminLayoutMenuDragMoveOptions(
+    flowEngine.getModel(String(event.active.id)),
+    flowEngine.getModel(String(event.over.id)),
+  );
+}
 
 const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
   const { item } = props;
-  const { designable } = useDesignable();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
   const ariaLabel =
     typeof item.name === 'string' || typeof item.name === 'number'
@@ -224,15 +482,11 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
         ? String(item._route.title)
         : undefined;
 
-  // fake schema used to pass routing information to SortableItem
-  const fakeSchema: any = { __route__: item._route };
-
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} aria-label={ariaLabel} style={menuItemStyle}>
+        <div aria-label={ariaLabel} role="none" style={menuItemStyle}>
           {props.children}
-          {designable && <MenuSchemaToolbarWithContainer />}
           {badgeCount != null && (
             <Badge
               {...item._route.options?.badge}
@@ -241,7 +495,7 @@ const GroupItem: FC<{ item: AdminLayoutMenuNode }> = (props) => {
               dot={false}
             ></Badge>
           )}
-        </SortableItem>
+        </div>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
@@ -334,20 +588,17 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
     [props.options?.isMobile, closeMobileMenu, navigate, path],
   );
 
-  const fakeSchema: any = { __route__: item._route };
-
   if (item._route?.type === NocoBaseDesktopRouteType.link) {
     return (
       <ParentRouteContext.Provider value={item._parentRoute}>
         <NocoBaseRouteContext.Provider value={item._route}>
-          <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
+          <div role="none" style={menuItemStyle}>
             <div onClick={handleClickLink}>
               {/* 这里是为了扩大点击区域 */}
               <Link to={location.pathname} aria-label={typeof item.name === 'string' ? item.name : undefined}>
                 {props.children}
               </Link>
             </div>
-            <MenuSchemaToolbar />
             {badgeCount != null && (
               <Badge
                 {...item._route.options?.badge}
@@ -356,7 +607,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
                 dot={false}
               ></Badge>
             )}
-          </SortableItem>
+          </div>
         </NocoBaseRouteContext.Provider>
       </ParentRouteContext.Provider>
     );
@@ -365,7 +616,7 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
   return (
     <ParentRouteContext.Provider value={item._parentRoute}>
       <NocoBaseRouteContext.Provider value={item._route}>
-        <SortableItem id={item._route.id} schema={fakeSchema} style={menuItemStyle}>
+        <div role="none" style={menuItemStyle}>
           <WithTooltip
             title={item.name}
             hidden={
@@ -381,7 +632,6 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
               {props.children}
             </Link>
           </WithTooltip>
-          <MenuSchemaToolbar />
           {badgeCount != null && (
             <Badge
               {...badgeProps}
@@ -389,10 +639,24 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
               dot={false}
             ></Badge>
           )}
-        </SortableItem>
+        </div>
       </NocoBaseRouteContext.Provider>
     </ParentRouteContext.Provider>
   );
+};
+
+const MenuDragToolbarButton: FC<{ model: FlowModel }> = ({ model }) => {
+  if (!(model instanceof AdminLayoutMenuItemModel)) {
+    return null;
+  }
+
+  const route = model.getRoute();
+
+  if (!route?.id) {
+    return null;
+  }
+
+  return <FlowDragHandler model={model} />;
 };
 
 const AdminLayoutMenuItemRenderer: FC<{
@@ -445,7 +709,27 @@ export const AdminLayoutMenuModelRenderer: FC<{
     });
   }, [dom, item, model, options, renderType]);
 
-  return <FlowModelRenderer model={model} />;
+  return (
+    <ResetThemeTokenAndKeepAlgorithm>
+      <Droppable model={model}>
+        <FlowModelRenderer
+          model={model}
+          showFlowSettings={{
+            showBackground: false,
+            showBorder: false,
+            showDynamicFlowsEditor: false,
+          }}
+          extraToolbarItems={[
+            {
+              key: 'menu-drag-handler',
+              component: MenuDragToolbarButton,
+              sort: 1,
+            },
+          ]}
+        />
+      </Droppable>
+    </ResetThemeTokenAndKeepAlgorithm>
+  );
 };
 
 function getInitializerButton(testId: string, parentRoute?: NocoBaseDesktopRoute): AdminLayoutMenuNode {
@@ -501,6 +785,272 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       this.flowEngine.removeModelWithSubModels(item.uid);
     });
     delete this.subModels.items;
+  }
+
+  getRoute() {
+    return this.props.route as NocoBaseDesktopRoute;
+  }
+
+  getParentRoute() {
+    return this.props.parentRoute as NocoBaseDesktopRoute | undefined;
+  }
+
+  getRouteRepository() {
+    return this.context.routeRepository;
+  }
+
+  getSchemaComponentOptions() {
+    const app = this.context.app;
+    return {
+      scope: app?.scopes || {},
+      components: {
+        ...(app?.components || {}),
+        FlowSettingsVariableTextArea,
+        ...adminMenuTreeSelectComponents,
+      },
+    };
+  }
+
+  async openMenuItemDialog(title: string, schema: Record<string, any>, initialValues: Record<string, any> = {}) {
+    const options = this.getSchemaComponentOptions();
+
+    return FormDialog(title, () => {
+      return (
+        <SchemaComponentOptions scope={options.scope} components={options.components}>
+          <FormLayout layout="vertical">
+            <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+              <SchemaComponent schema={schema} />
+            </zIndexContext.Provider>
+          </FormLayout>
+        </SchemaComponentOptions>
+      );
+    }).open({
+      initialValues,
+    });
+  }
+
+  async insertRouteSchema(schema: Record<string, any>) {
+    await this.context.api.request({
+      method: 'POST',
+      url: '/uiSchemas:insert',
+      data: schema,
+    });
+  }
+
+  async createRouteForInsert(route: NocoBaseDesktopRoute, insertPosition: 'beforeBegin' | 'afterEnd' | 'beforeEnd') {
+    const currentRoute = this.getRoute();
+    const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+    const { data } = await this.getRouteRepository().createRoute(
+      {
+        ...route,
+        parentId: parentId || undefined,
+      },
+      {
+        refreshAfterMutation: false,
+      },
+    );
+
+    if (insertPositionToMethod[insertPosition]) {
+      try {
+        await this.getRouteRepository().moveRoute({
+          sourceId: data?.data?.id,
+          targetId: currentRoute?.id,
+          sortField: 'sort',
+          method: insertPositionToMethod[insertPosition],
+        });
+      } catch (error) {
+        await this.getRouteRepository().refreshAccessible();
+        throw error;
+      }
+      return data?.data?.id;
+    }
+
+    await this.getRouteRepository().refreshAccessible();
+    return data?.data?.id;
+  }
+
+  async openInsertMenuDialog(
+    insertPosition: 'beforeBegin' | 'afterEnd' | 'beforeEnd',
+    type: 'group' | 'page' | 'flowPage' | 'link',
+  ) {
+    const route = this.getRoute();
+    if (!route || (insertPosition === 'beforeEnd' && route.type !== NocoBaseDesktopRouteType.group)) {
+      return;
+    }
+
+    const t = this.context.t;
+    const baseSchema: Record<string, any> = {
+      type: 'object',
+      title:
+        type === 'group'
+          ? t('Add group')
+          : type === 'page'
+            ? t('Add classic page')
+            : type === 'flowPage'
+              ? t('Add modern page')
+              : t('Add link'),
+      properties: {
+        title: {
+          title: t('Menu item title'),
+          required: true,
+          'x-decorator': 'FormItem',
+          'x-component': 'Input',
+        },
+        icon: {
+          title: t('Icon'),
+          'x-decorator': 'FormItem',
+          'x-component': 'IconPicker',
+        },
+      },
+    };
+
+    if (type === 'link') {
+      Object.assign(baseSchema.properties, buildLinkSettingSchema(t));
+    }
+
+    const values = await this.openMenuItemDialog(baseSchema.title, baseSchema);
+    if (!values) {
+      return;
+    }
+
+    if (type === 'group') {
+      await this.createRouteForInsert(
+        {
+          type: NocoBaseDesktopRouteType.group,
+          title: values.title,
+          icon: values.icon,
+          schemaUid: uid(),
+        },
+        insertPosition,
+      );
+      return;
+    }
+
+    if (type === 'link') {
+      await this.createRouteForInsert(
+        {
+          type: NocoBaseDesktopRouteType.link,
+          title: values.title,
+          icon: values.icon,
+          schemaUid: uid(),
+          options: {
+            href: values.href,
+            params: values.params,
+            openInNewWindow: values.openInNewWindow,
+          },
+        },
+        insertPosition,
+      );
+      return;
+    }
+
+    const pageSchemaUid = uid();
+    const menuSchemaUid = uid();
+    const tabSchemaUid = uid();
+    const tabSchemaName = uid();
+
+    await this.createRouteForInsert(
+      {
+        type: type === 'flowPage' ? NocoBaseDesktopRouteType.flowPage : NocoBaseDesktopRouteType.page,
+        title: values.title,
+        icon: values.icon,
+        schemaUid: pageSchemaUid,
+        menuSchemaUid,
+        enableTabs: false,
+        children: [
+          {
+            type: NocoBaseDesktopRouteType.tabs,
+            schemaUid: tabSchemaUid,
+            tabSchemaName,
+            hidden: true,
+          },
+        ],
+      },
+      insertPosition,
+    );
+
+    await this.insertRouteSchema(
+      type === 'flowPage'
+        ? getFlowPageMenuSchema({ pageSchemaUid })
+        : getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }),
+    );
+  }
+
+  async updateMenuRoute(values: Partial<NocoBaseDesktopRoute>) {
+    const route = this.getRoute();
+    if (route?.id == null) {
+      return;
+    }
+
+    await this.getRouteRepository().updateRoute(route.id, values);
+  }
+
+  async moveMenuRoute(target: string, position: 'beforeBegin' | 'afterEnd' | 'beforeEnd') {
+    const route = this.getRoute();
+    const [targetId, targetType] = target?.split?.('||') || [];
+    if (!targetId || route?.id == null) {
+      return;
+    }
+
+    if (position === 'beforeEnd' && targetType !== NocoBaseDesktopRouteType.group) {
+      throw new Error(this.context?.t?.('Only groups support inner moves') || 'Only groups support inner moves');
+    }
+
+    if (position === 'beforeEnd' && String(route.id) === targetId) {
+      throw new Error(
+        this.context?.t?.('A menu group cannot be moved inside itself') || 'A menu group cannot be moved inside itself',
+      );
+    }
+
+    await this.getRouteRepository().moveRoute({
+      sourceId: route.id,
+      sortField: 'sort',
+      method: position === 'beforeEnd' ? undefined : insertPositionToMethod[position],
+      ...(position === 'beforeEnd'
+        ? {
+            targetScope: {
+              parentId: targetId,
+            },
+          }
+        : {
+            targetId,
+          }),
+    });
+  }
+
+  async saveStepParams() {
+    return undefined;
+  }
+
+  async destroy(): Promise<boolean> {
+    const route = this.getRoute();
+    if (!route?.id) {
+      return false;
+    }
+
+    const allAccessRoutes = this.getRouteRepository().listAccessible();
+    const pathname = this.context.location?.pathname || window.location.pathname;
+    const shouldNavigate = matchesRoutePath(route, pathname, this.context.router?.basename);
+    const prevSibling = findPrevSiblingRoute(allAccessRoutes, route);
+    const nextSibling = findNextSiblingRoute(allAccessRoutes, route);
+
+    await Promise.all([
+      this.getRouteRepository().deleteRoute(route.id),
+      route.schemaUid
+        ? this.context.api.resource('uiSchemas')[`remove/${route.schemaUid}`]?.()
+        : Promise.resolve(undefined),
+    ]);
+
+    if (!shouldNavigate) {
+      return true;
+    }
+
+    const sibling = prevSibling || nextSibling;
+    const nextPath = sibling
+      ? `/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`
+      : '/';
+    this.context.router.navigate(nextPath);
+    return true;
   }
 
   toProLayoutMenuItem(options: AdminLayoutMenuRouteOptions): AdminLayoutMenuNode | null {
@@ -600,6 +1150,197 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     );
   }
 }
+
+AdminLayoutMenuItemModel.registerFlow({
+  key: 'menuSettings',
+  title: 'Menu settings',
+  steps: {
+    edit: {
+      title: 'Edit',
+      defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
+        const route = ctx.model.getRoute();
+        return {
+          title: route?.title,
+          icon: route?.icon,
+          href: route?.options?.href,
+          params: route?.options?.params,
+          openInNewWindow: route?.options?.openInNewWindow !== false,
+        };
+      },
+      uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
+        const route = ctx.model.getRoute();
+        const schema: Record<string, any> = {
+          title: {
+            title: ctx.t('Menu item title'),
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'Input',
+          },
+          icon: {
+            title: ctx.t('Menu item icon'),
+            'x-decorator': 'FormItem',
+            'x-component': 'IconPicker',
+          },
+        };
+
+        if (route?.type === NocoBaseDesktopRouteType.link) {
+          Object.assign(schema, buildLinkSettingSchema(ctx.t));
+        }
+
+        return schema;
+      },
+      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
+        await ctx.model.updateMenuRoute({
+          title: params.title,
+          icon: params.icon,
+          options:
+            ctx.model.getRoute()?.type === NocoBaseDesktopRouteType.link
+              ? {
+                  href: params.href,
+                  params: params.params,
+                  openInNewWindow: params.openInNewWindow,
+                }
+              : undefined,
+        });
+      },
+    },
+    editTooltip: {
+      title: 'Edit tooltip',
+      defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ({
+        tooltip: ctx.model.getRoute()?.tooltip,
+      }),
+      uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ({
+        tooltip: {
+          title: ctx.t('Tooltip'),
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+      }),
+      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
+        await ctx.model.updateMenuRoute({
+          tooltip: params.tooltip,
+        });
+      },
+    },
+    hidden: {
+      title: 'Hidden',
+      uiMode: { type: 'switch', key: 'hideInMenu' },
+      defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => ({
+        hideInMenu: !!ctx.model.getRoute()?.hideInMenu,
+      }),
+      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
+        await ctx.model.updateMenuRoute({
+          hideInMenu: !!params.hideInMenu,
+        });
+      },
+    },
+    moveTo: {
+      title: 'Move to',
+      defaultParams: async () => ({
+        position: 'afterEnd',
+      }),
+      uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
+        const items = await toTreeSelectItems(ctx.routeRepository.listAccessible(), ctx);
+        const currentRouteId = ctx.model.getRoute()?.id;
+        const defaultPositionOptions = getAdminLayoutMenuMovePositionOptions(undefined, currentRouteId, ctx.t);
+
+        return {
+          target: {
+            title: ctx.t('Target'),
+            enum: items,
+            required: true,
+            'x-decorator': 'FormItem',
+            'x-component': 'TreeSelect',
+          },
+          position: {
+            title: ctx.t('Position'),
+            required: true,
+            enum: defaultPositionOptions,
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            'x-reactions': [
+              (field) => {
+                const options = getAdminLayoutMenuMovePositionOptions(field.form.values?.target, currentRouteId, ctx.t);
+                field.dataSource = options;
+                if (
+                  !options.some(
+                    (option: AdminLayoutMenuMovePositionOption) => option.value === field.value && !option.disabled,
+                  )
+                ) {
+                  field.value = 'afterEnd';
+                }
+              },
+            ],
+          },
+        };
+      },
+      beforeParamsSave: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>, params) => {
+        await ctx.model.moveMenuRoute(params.target, params.position);
+      },
+    },
+  },
+});
+
+const registerAdminLayoutMenuExtraMenuItems = (
+  AdminLayoutMenuItemModel as typeof AdminLayoutMenuItemModel & {
+    registerExtraMenuItems?: typeof FlowModel.registerExtraMenuItems;
+  }
+).registerExtraMenuItems;
+
+registerAdminLayoutMenuExtraMenuItems?.call(AdminLayoutMenuItemModel, (model, t) => {
+  const menuModel = model as AdminLayoutMenuItemModel;
+  const route = menuModel.getRoute();
+  const createInsertChildren = (insertPosition: 'beforeBegin' | 'afterEnd' | 'beforeEnd') => [
+    {
+      key: `menu-insert-${insertPosition}-group`,
+      label: t('Group'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'group'),
+    },
+    {
+      key: `menu-insert-${insertPosition}-page`,
+      label: t('Classic page (v1)'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'page'),
+    },
+    {
+      key: `menu-insert-${insertPosition}-flow-page`,
+      label: t('Modern page (v2)'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'flowPage'),
+    },
+    {
+      key: `menu-insert-${insertPosition}-link`,
+      label: t('Link'),
+      onClick: () => menuModel.openInsertMenuDialog(insertPosition, 'link'),
+    },
+  ];
+
+  return [
+    {
+      key: 'menu-insert-before',
+      group: 'common-actions',
+      sort: 600,
+      label: t('Insert before'),
+      children: createInsertChildren('beforeBegin'),
+    },
+    {
+      key: 'menu-insert-after',
+      group: 'common-actions',
+      sort: 700,
+      label: t('Insert after'),
+      children: createInsertChildren('afterEnd'),
+    },
+    ...(route?.type === NocoBaseDesktopRouteType.group
+      ? [
+          {
+            key: 'menu-insert-inner',
+            group: 'common-actions',
+            sort: 800,
+            label: t('Insert inner'),
+            children: createInsertChildren('beforeEnd'),
+          },
+        ]
+      : []),
+  ];
+});
 
 /**
  * Layout 菜单树根模型。

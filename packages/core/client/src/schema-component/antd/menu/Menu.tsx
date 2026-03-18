@@ -17,6 +17,7 @@ import {
   useFieldSchema,
 } from '@formily/react';
 import { uid } from '@formily/shared';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { error } from '@nocobase/utils/client';
 import { Menu as AntdMenu, MenuProps } from 'antd';
 import { createPortal } from 'react-dom';
@@ -228,52 +229,60 @@ export const useParentRoute = () => {
  */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
   const api = useAPIClient();
-  const resource = useMemo(() => api.resource(collectionName), [api, collectionName]);
+  const { routeRepository } = useFlowEngineContext();
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
+  const isDesktopRoutes = collectionName === 'desktopRoutes';
 
   const createRoute = useCallback(
     async (values: NocoBaseDesktopRoute, refreshAfterCreate = true) => {
-      const res = await resource.create({
-        values,
-      });
-      refreshAfterCreate && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.createRoute(values, {
+            refreshAfterMutation: refreshAfterCreate,
+          })
+        : await api.resource(collectionName).create({ values });
       return res;
     },
-    [resource, refreshRoutes],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const updateRoute = useCallback(
     async (filterByTk: any, values: NocoBaseDesktopRoute, refreshAfterUpdate = true) => {
-      const res = await resource.update(
-        Array.isArray(filterByTk)
-          ? {
-              filter: {
-                id: {
-                  $in: filterByTk,
+      const res = isDesktopRoutes
+        ? await routeRepository.updateRoute(filterByTk, values, {
+            refreshAfterMutation: refreshAfterUpdate,
+          })
+        : await api.resource(collectionName).update(
+            Array.isArray(filterByTk)
+              ? {
+                  filter: {
+                    id: {
+                      $in: filterByTk,
+                    },
+                  },
+                  values,
+                }
+              : {
+                  filterByTk,
+                  values,
                 },
-              },
-              values,
-            }
-          : {
-              filterByTk,
-              values,
-            },
-      );
-      refreshAfterUpdate && refreshRoutes();
+          );
       return res;
     },
-    [resource, refreshRoutes],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const deleteRoute = useCallback(
     async (filterByTk: any, refreshAfterDelete = true) => {
-      const res = await resource.destroy({
-        filterByTk,
-      });
-      refreshAfterDelete && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.deleteRoute(filterByTk, {
+            refreshAfterMutation: refreshAfterDelete,
+          })
+        : await api.resource(collectionName).destroy({
+            filterByTk,
+          });
       return res;
     },
-    [refreshRoutes, resource],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
   const moveRoute = useCallback(
@@ -294,17 +303,33 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       /**
        * Insertion type - specifies whether to insert before or after the target element
        */
-      method?: 'insertAfter' | 'prepend';
+      method?: 'insertBefore' | 'insertAfter' | 'prepend';
       refreshAfterMove?: boolean;
     }) => {
-      const res = await resource.move({ sourceId, targetId, targetScope, sortField, sticky, method });
-      refreshAfterMove && refreshRoutes();
+      const res = isDesktopRoutes
+        ? await routeRepository.moveRoute({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+            refreshAfterMove,
+          })
+        : await api.resource(collectionName).move({
+            sourceId,
+            targetId,
+            targetScope,
+            sortField,
+            sticky,
+            method,
+          });
       return res;
     },
-    [refreshRoutes, resource],
+    [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
-  return { createRoute, updateRoute, deleteRoute, moveRoute };
+  return { createRoute, updateRoute, deleteRoute, moveRoute, refreshRoutes };
 };
 
 const HeaderMenu = React.memo<{

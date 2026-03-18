@@ -8,12 +8,11 @@
  */
 
 import { useFlowEngineContext } from '@nocobase/flow-engine';
-import React, { createContext, FC, memo, useContext, useMemo, useRef } from 'react';
-import { useRequest } from '../api-client';
+import React, { createContext, FC, memo, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findRouteBySchemaUid } from './route-utils';
 
-const emptyArray = [];
+const emptyArray: NocoBaseDesktopRoute[] = [];
 
 export const NocoBaseRouteContext = createContext<NocoBaseDesktopRoute | null>(null);
 NocoBaseRouteContext.displayName = 'NocoBaseRouteContext';
@@ -30,10 +29,10 @@ export const useCurrentRoute = () => {
 
 const AllAccessDesktopRoutesContext = createContext<{
   allAccessRoutes: NocoBaseDesktopRoute[];
-  refresh: () => void;
+  refresh: () => Promise<NocoBaseDesktopRoute[]>;
 }>({
   allAccessRoutes: emptyArray,
-  refresh: () => {},
+  refresh: async () => emptyArray,
 });
 AllAccessDesktopRoutesContext.displayName = 'AllAccessDesktopRoutesContext';
 
@@ -43,31 +42,52 @@ export const useAllAccessDesktopRoutes = () => {
 
 export const RoutesRequestProvider: FC = ({ children }) => {
   const ctx = useFlowEngineContext();
-  const mountedRef = useRef(false);
-  const { data, refresh, loading } = useRequest<any>(
-    {
-      url: `/desktopRoutes:listAccessible`,
-      params: { tree: true, sort: 'sort' },
-    },
-    {
-      onSuccess(data) {
-        ctx.routeRepository.setRoutes(data?.data || emptyArray);
-      },
-    },
+  const routeRepository = ctx.routeRepository;
+  const allAccessRoutes = useSyncExternalStore(
+    (onStoreChange) => routeRepository.subscribe(onStoreChange),
+    () => routeRepository.listAccessible(),
+    () => emptyArray,
   );
+  const [initialized, setInitialized] = useState(allAccessRoutes.length > 0);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAccessibleRoutes = async () => {
+      try {
+        await routeRepository.refreshAccessible();
+      } catch (error) {
+        console.error('[NocoBase] RoutesRequestProvider failed to refresh accessible routes.', error);
+      } finally {
+        if (active) {
+          setInitialized(true);
+        }
+      }
+    };
+
+    void loadAccessibleRoutes();
+
+    return () => {
+      active = false;
+    };
+  }, [routeRepository]);
+
+  const refresh = React.useCallback(async () => {
+    const routes = await routeRepository.refreshAccessible();
+    setInitialized(true);
+    return routes;
+  }, [routeRepository]);
 
   const allAccessRoutesValue = useMemo(() => {
     return {
-      allAccessRoutes: data?.data || emptyArray,
+      allAccessRoutes,
       refresh,
     };
-  }, [data?.data, refresh]);
+  }, [allAccessRoutes, refresh]);
 
-  if (loading && !mountedRef.current) {
+  if (!initialized) {
     return null;
   }
-
-  mountedRef.current = true;
 
   return (
     <AllAccessDesktopRoutesContext.Provider value={allAccessRoutesValue}>

@@ -9,8 +9,9 @@
 
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
+import type { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
-import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
+import { DndProvider, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, ConfigProvider, Grid } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -24,6 +25,7 @@ import {
   type AdminLayoutMenuRenderOptions,
   HeaderContext,
   MobileMenuControlContext,
+  resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
@@ -33,15 +35,7 @@ import {
   useAllAccessDesktopRoutes,
   useMobileLayout,
 } from '../../../admin-shell';
-import {
-  DndContext,
-  ParentRouteContext,
-  useDesignable,
-  useGlobalTheme,
-  useMenuDragEnd,
-  useSystemSettings,
-  useToken,
-} from '../../../';
+import { ParentRouteContext, useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -363,7 +357,6 @@ export const AdminLayoutShell = (props) => {
   const isMobileViewport =
     screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
-  const { onDragEnd } = useMenuDragEnd();
   const { token } = useToken();
   const { isMobileLayout } = useMobileLayout();
   const isMobileSider = isMobileLayout || isMobileViewport;
@@ -377,9 +370,26 @@ export const AdminLayoutShell = (props) => {
   const designable = isMobileSider ? false : _designable;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
+  const flowSettingsSyncRef = useRef(0);
+  const desiredFlowSettingsEnabledRef = useRef(false);
   const selectedTopGroupRoute = useMemo(
     () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
     [allAccessRoutes, location.pathname],
+  );
+
+  const handleMenuDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const moveOptions = resolveAdminLayoutMenuDragMoveOptionsFromEvent(flowEngine, event);
+
+      if (!moveOptions) {
+        return;
+      }
+
+      void flowEngine.context.routeRepository.moveRoute(moveOptions).catch((error) => {
+        console.error('[NocoBase] AdminLayoutShell failed to move menu route.', error);
+      });
+    },
+    [flowEngine],
   );
 
   useLayoutEffect(() => {
@@ -394,6 +404,39 @@ export const AdminLayoutShell = (props) => {
     };
     setRoute(nextRoute);
   }, [adminLayoutModel, allAccessRoutes, designable, isMobileSider, t]);
+
+  useEffect(() => {
+    const syncId = ++flowSettingsSyncRef.current;
+    const shouldEnable = designable && !isMobileSider;
+    desiredFlowSettingsEnabledRef.current = shouldEnable;
+
+    const applyFlowSettingsState = async (enabled: boolean) => {
+      if (enabled) {
+        await flowEngine.flowSettings.enable();
+        return;
+      }
+      await flowEngine.flowSettings.disable();
+    };
+
+    const syncFlowSettings = async () => {
+      try {
+        await applyFlowSettingsState(shouldEnable);
+        if (syncId !== flowSettingsSyncRef.current) {
+          await applyFlowSettingsState(desiredFlowSettingsEnabledRef.current);
+        }
+      } catch (error) {
+        console.error('[NocoBase] AdminLayoutShell failed to sync flow settings state.', error);
+      }
+    };
+
+    void syncFlowSettings();
+
+    return () => {
+      if (flowSettingsSyncRef.current === syncId) {
+        flowSettingsSyncRef.current += 1;
+      }
+    };
+  }, [designable, flowEngine, isMobileSider]);
   const layoutToken = useMemo(() => {
     return {
       header: {
@@ -479,7 +522,7 @@ export const AdminLayoutShell = (props) => {
     <div style={rootStyle}>
       <div id="nocobase-app-container" style={appContainerStyle}>
         <MobileMenuControlContext.Provider value={{ closeMobileMenu }}>
-          <DndContext onDragEnd={onDragEnd}>
+          <DndProvider onDragEnd={handleMenuDragEnd}>
             <ProLayout
               {...props}
               contentStyle={contentStyle}
@@ -526,7 +569,7 @@ export const AdminLayoutShell = (props) => {
                 }}
               </RouteContext.Consumer>
             </ProLayout>
-          </DndContext>
+          </DndProvider>
         </MobileMenuControlContext.Provider>
       </div>
       <div id="nocobase-embed-container" style={embedContainerStyle}></div>

@@ -2980,6 +2980,7 @@ export class FlowContext {
 }
 
 class BaseFlowEngineContext extends FlowContext {
+  declare t: (key: string, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
