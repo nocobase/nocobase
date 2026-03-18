@@ -11,6 +11,7 @@ import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base/FieldModel';
 export class AssociationFieldModel extends FieldModel {
   operator = '$eq';
+  updateAssociation = true;
 }
 
 AssociationFieldModel.registerFlow({
