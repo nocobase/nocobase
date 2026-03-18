@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "chalk": "^4",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "triple-beam": "^1.4.1",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^5.0.0",
