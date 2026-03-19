@@ -159,7 +159,7 @@ export const useAdminSettingsForm = (verificationType: string) => {
   return verification?.components?.AdminSettingsForm;
 };
 
-export const Settings = observer(
+export const Settings: any = observer(
   () => {
     const form = useForm();
     const record = useCollectionRecordData();

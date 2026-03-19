@@ -13,7 +13,7 @@ import { Select, Tag } from 'antd';
 import React from 'react';
 import { omit } from 'lodash';
 
-export const FieldType = observer(
+export const FieldType: any = observer(
   (props: any) => {
     const { value, handleFieldChange, onChange } = props;
     const record = useRecord();

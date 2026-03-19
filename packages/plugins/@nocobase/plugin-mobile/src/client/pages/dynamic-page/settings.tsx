@@ -13,7 +13,7 @@ import { generatePluginTranslationTemplate, usePluginTranslation } from '../../l
 import { useMobileApp } from '../../mobile';
 import { useMobileRoutes } from '../../mobile-providers/context/MobileRoutes';
 
-export const mobilePageSettings = new SchemaSettings({
+export const mobilePageSettings: any = new SchemaSettings({
   name: 'mobile:page',
   items: [
     {

@@ -20,7 +20,7 @@ type Composed = {
   Object?: React.FC<any>;
 };
 
-export const ReadPretty = observer(
+export const ReadPretty: any = observer(
   (props: any) => {
     const fieldNames = { ...defaultFieldNames, ...props.fieldNames };
     const field = useField<any>();

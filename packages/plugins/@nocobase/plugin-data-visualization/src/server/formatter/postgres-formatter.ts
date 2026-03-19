@@ -10,10 +10,10 @@
 import { Col, Formatter } from './formatter';
 
 export class PostgresFormatter extends Formatter {
-  convertFormat(format: string) {
+  convertFormat(format: string): any {
     return format.replace(/hh/g, 'HH24').replace(/mm/g, 'MI').replace(/ss/g, 'SS');
   }
-  formatDate(field: Col, format: string, timezoneOffset?: string) {
+  formatDate(field: Col, format: string, timezoneOffset?: string): any {
     format = this.convertFormat(format);
     const timezone = this.getTimezoneByOffset(timezoneOffset);
     if (timezone) {
@@ -29,7 +29,7 @@ export class PostgresFormatter extends Formatter {
     format: string,
     accuracy: 'second' | 'millisecond' = 'second',
     timezoneOffset?: string,
-  ) {
+  ): any {
     format = this.convertFormat(format);
     const col = this.sequelize.getQueryInterface().quoteIdentifiers(field);
     const timezone = this.getTimezoneByOffset(timezoneOffset);

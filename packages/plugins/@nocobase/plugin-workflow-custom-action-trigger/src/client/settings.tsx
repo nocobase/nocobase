@@ -196,7 +196,7 @@ function BindGlobalWorkflowConfig() {
   );
 }
 
-export const customizeSubmitToWorkflowActionSettings = new SchemaSettings({
+export const customizeSubmitToWorkflowActionSettings: any = new SchemaSettings({
   name: 'actionSettings:submitToWorkflow',
   items: [
     {
@@ -262,7 +262,7 @@ export const customizeSubmitToWorkflowActionSettings = new SchemaSettings({
   ],
 });
 
-export const customizeCollectionTriggerWorkflowActionSettings = new SchemaSettings({
+export const customizeCollectionTriggerWorkflowActionSettings: any = new SchemaSettings({
   name: 'actionSettings:collectionTriggerWorkflow',
   items: [
     {
@@ -321,7 +321,7 @@ export const customizeCollectionTriggerWorkflowActionSettings = new SchemaSettin
   ],
 });
 
-export const customizeGlobalTriggerWorkflowActionSettings = new SchemaSettings({
+export const customizeGlobalTriggerWorkflowActionSettings: any = new SchemaSettings({
   name: 'actionSettings:globalTriggerWorkflow',
   items: [
     {

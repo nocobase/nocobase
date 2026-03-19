@@ -10,7 +10,7 @@
 import { Col, Formatter, Literal } from './formatter';
 
 export class SQLiteFormatter extends Formatter {
-  convertFormat(format: string) {
+  convertFormat(format: string): any {
     return format
       .replace(/YYYY/g, '%Y')
       .replace(/MM/g, '%m')
@@ -19,7 +19,7 @@ export class SQLiteFormatter extends Formatter {
       .replace(/mm/g, '%M')
       .replace(/ss/g, '%S');
   }
-  getOffsetMinutesFromTimezone(timezone: string) {
+  getOffsetMinutesFromTimezone(timezone: string): any {
     const sign = timezone.charAt(0);
     timezone = timezone.slice(1);
     const [hours, minutes] = timezone.split(':');
@@ -29,7 +29,7 @@ export class SQLiteFormatter extends Formatter {
     return `${sign}${offset} minutes`;
   }
 
-  formatDate(field: Col, format: string, timezone?: string) {
+  formatDate(field: Col, format: string, timezone?: string): any {
     format = this.convertFormat(format);
     if (timezone) {
       return this.sequelize.fn('strftime', format, field, this.getOffsetMinutesFromTimezone(timezone));
@@ -37,7 +37,12 @@ export class SQLiteFormatter extends Formatter {
     return this.sequelize.fn('strftime', format, field);
   }
 
-  formatUnixTimeStamp(field: string, format: string, accuracy: 'second' | 'millisecond' = 'second', timezone?: string) {
+  formatUnixTimeStamp(
+    field: string,
+    format: string,
+    accuracy: 'second' | 'millisecond' = 'second',
+    timezone?: string,
+  ): any {
     format = this.convertFormat(format);
     const col = this.sequelize.getQueryInterface().quoteIdentifiers(field);
     if (accuracy === 'millisecond') {

@@ -21,7 +21,7 @@ type GigaChatOptions = {
 };
 
 class GigaChatModelInternal extends GigaChatModel {
-  bindTools(tools, kwargs) {
+  bindTools(tools, kwargs): any {
     return this.withConfig({
       tools: tools?.map((t) => ({
         name: t.name,

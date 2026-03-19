@@ -9,7 +9,7 @@
 
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ css }) => {
+export const useStyles: any = createStyles(({ css }) => {
   return css`
     .ant-table-cell {
       > .ant-space-horizontal {

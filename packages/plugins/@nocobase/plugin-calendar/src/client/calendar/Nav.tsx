@@ -14,7 +14,7 @@ import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
 import { useDesignable, useLazy } from '@nocobase/client';
 
-export const Nav = observer(
+export const Nav: any = observer(
   () => {
     const Navigate = useLazy<typeof import('react-big-calendar/dist/react-big-calendar.esm').Navigate>(
       () => import('react-big-calendar/dist/react-big-calendar.esm'),

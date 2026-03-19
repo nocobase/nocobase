@@ -22,7 +22,7 @@ import _ from 'lodash';
 import React from 'react';
 import { observer } from '@formily/reactive-react';
 
-export const CommentActions = observer(() => {
+export const CommentActions: any = observer(() => {
   const model = useFlowModel();
   const record = model.context.record;
   return (

@@ -345,7 +345,7 @@ export const useProviderSettingsForm = (provider: string) => {
 };
 
 // Render the ProviderSettings component for the current provider
-export const Settings = observer(
+export const Settings: any = observer(
   () => {
     const form = useForm();
     const record = useCollectionRecordData();

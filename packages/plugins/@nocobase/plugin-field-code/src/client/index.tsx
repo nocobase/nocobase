@@ -18,7 +18,7 @@ import { DisplayCodeFieldModel } from './models/DisplayCodeFieldModel';
 
 const CodeEditor = lazy(() => import('./CodeEditor'));
 
-export const codeComponentSettings = new SchemaSettings({
+export const codeComponentSettings: any = new SchemaSettings({
   name: 'fieldSettings:component:CodeEditor',
   items: [
     {

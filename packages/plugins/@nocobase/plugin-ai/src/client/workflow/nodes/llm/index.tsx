@@ -53,7 +53,7 @@ export class LLMInstruction extends Instruction {
       'x-component': 'Chat',
     },
   };
-  components = {
+  components: any = {
     Settings,
     Chat,
   };

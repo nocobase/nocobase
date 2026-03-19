@@ -1125,7 +1125,14 @@ export class Database extends EventEmitter implements AsyncEmitter {
   }
 }
 
-export function extendCollection(collectionOptions: CollectionOptions, mergeOptions?: MergeOptions) {
+export function extendCollection(
+  collectionOptions: CollectionOptions,
+  mergeOptions?: MergeOptions,
+): {
+  collectionOptions: CollectionOptions;
+  mergeOptions?: any;
+  extend: true;
+} {
   return {
     collectionOptions,
     mergeOptions,

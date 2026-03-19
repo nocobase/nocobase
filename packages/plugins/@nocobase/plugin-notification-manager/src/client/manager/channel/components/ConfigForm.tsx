@@ -12,7 +12,7 @@ import { useCollectionRecord } from '@nocobase/client';
 import React, { useContext } from 'react';
 import { NotificationTypesContext } from '../context';
 
-export const ConfigForm = observer(
+export const ConfigForm: any = observer(
   () => {
     const form = useForm();
     const record = useCollectionRecord<Record<string, any>>();

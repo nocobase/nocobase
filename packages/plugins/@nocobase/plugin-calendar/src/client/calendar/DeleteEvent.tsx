@@ -25,7 +25,7 @@ import {
 import { useTranslation } from '../../locale';
 const { Text } = Typography;
 
-export const DeleteEvent = observer(
+export const DeleteEvent: any = observer(
   () => {
     const { visible, setVisible, setSubmitted } = useActionContext();
     const { exclude = [], cron, ...record } = useRecord();

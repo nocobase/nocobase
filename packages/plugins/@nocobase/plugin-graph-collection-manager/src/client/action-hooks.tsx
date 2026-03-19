@@ -38,7 +38,7 @@ export const useValuesFromRecord = (options, data) => {
   return result;
 };
 
-export const SourceCollection = observer(
+export const SourceCollection: any = observer(
   () => {
     const { record } = useContext(GraphCollectionContext);
     const compile = useCompile();

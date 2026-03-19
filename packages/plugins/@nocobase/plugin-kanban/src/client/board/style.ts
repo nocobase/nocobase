@@ -9,7 +9,7 @@
 
 import { createStyles } from 'antd-style';
 
-export const useStyles = createStyles(({ css, token }, { columnWidth = 300 }) => {
+export const useStyles: any = createStyles(({ css, token }, { columnWidth = 300 }) => {
   return {
     nbBord: css`
       .react-kanban-board {

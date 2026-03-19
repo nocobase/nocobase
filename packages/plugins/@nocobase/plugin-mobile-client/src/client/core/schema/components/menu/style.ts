@@ -9,7 +9,7 @@
 
 import { createStyles } from '@nocobase/client';
 
-const useStyles = createStyles(({ token, css }) => {
+const useStyles: any = createStyles(({ token, css }) => {
   return {
     mobileMenu: css`
       --adm-color-primary: ${token.colorPrimary};

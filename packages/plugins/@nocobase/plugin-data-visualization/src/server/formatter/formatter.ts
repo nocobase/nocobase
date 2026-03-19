@@ -20,16 +20,16 @@ export abstract class Formatter {
     this.sequelize = sequelize;
   }
 
-  abstract formatDate(field: Col, format: string, timezone?: string): Fn | Col;
+  abstract formatDate(field: Col, format: string, timezone?: string): any;
 
   abstract formatUnixTimeStamp(
     field: string,
     format: string,
     accuracy?: 'second' | 'millisecond',
     timezone?: string,
-  ): Fn | Literal;
+  ): any;
 
-  getTimezoneByOffset(offset: string) {
+  getTimezoneByOffset(offset: string): any {
     if (!/^[+-]\d{1,2}:\d{2}$/.test(offset)) {
       return offset;
     }
@@ -39,11 +39,11 @@ export abstract class Formatter {
     });
   }
 
-  convertFormat(format: string) {
+  convertFormat(format: string): any {
     return format;
   }
 
-  format(options: { type: string; field: string; format: string; options?: any; timezone?: string }) {
+  format(options: { type: string; field: string; format: string; options?: any; timezone?: string }): any {
     const { type, field, format, timezone, options: fieldOptions } = options;
     const col = this.sequelize.col(field);
     switch (type) {

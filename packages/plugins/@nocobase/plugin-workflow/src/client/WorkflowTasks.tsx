@@ -703,7 +703,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
   },
 };
 
-export const MobileTabBarWorkflowTasksItem = observer(
+export const MobileTabBarWorkflowTasksItem: any = observer(
   (props: any) => {
     const { message } = App.useApp();
     const navigate = useNavigate();

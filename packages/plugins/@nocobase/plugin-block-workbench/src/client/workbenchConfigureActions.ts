@@ -10,7 +10,7 @@
 import { SchemaInitializer } from '@nocobase/client';
 import { WorkbenchLinkActionSchemaInitializerItem } from './WorkbenchLinkActionSchemaInitializerItem';
 
-export const workbenchConfigureActions = new SchemaInitializer({
+export const workbenchConfigureActions: any = new SchemaInitializer({
   name: 'workbench:configureActions',
   title: '{{t("Configure actions")}}',
   // 插入位置

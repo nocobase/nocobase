@@ -9,7 +9,7 @@
 
 import { useAPIClient } from '@nocobase/client';
 
-export const useCustomRequestsResource = () => {
+export const useCustomRequestsResource = (): any => {
   const apiClient = useAPIClient();
   return apiClient.resource('customRequests');
 };

@@ -13,7 +13,7 @@ import React, { useState, useEffect } from 'react';
 import { useRecord, useCompile } from '@nocobase/client';
 import { useMBMFields } from './hooks';
 
-export const ForeignKey = observer(
+export const ForeignKey: any = observer(
   (props: any) => {
     const { disabled } = props;
     const [options, setOptions] = useState([]);

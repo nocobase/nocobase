@@ -371,7 +371,7 @@ const getAggregateVariableSchema = (initialValues: any, action: string) => {
   };
 };
 
-export const variableInitializer = new SchemaInitializer({
+export const variableInitializer: any = new SchemaInitializer({
   name: 'customVariables:addVariable',
   title: `{{t("Add variable", { ns: "${NAMESPACE}" })}}`,
   icon: 'PlusOutlined',

@@ -9,7 +9,7 @@
 
 import { createStyles } from '@nocobase/client';
 
-const useStyles = createStyles(({ css, token }) => {
+const useStyles: any = createStyles(({ css, token }) => {
   return {
     workflowPageClass: css`
       flex-grow: 1;

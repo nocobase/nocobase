@@ -167,4 +167,4 @@ const InnerInbox = (props) => {
     </ConfigProvider>
   );
 };
-export const Inbox = observer(InnerInbox);
+export const Inbox: any = observer(InnerInbox);

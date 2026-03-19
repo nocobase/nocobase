@@ -21,7 +21,7 @@ import {
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const workbenchActionSettingsLink = new SchemaSettings({
+export const workbenchActionSettingsLink: any = new SchemaSettings({
   name: 'workbench:actionSettings:link',
   items: [
     {

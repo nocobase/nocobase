@@ -11,7 +11,7 @@ import { Col, Formatter } from './formatter';
 import moment from 'moment-timezone';
 
 export class MySQLFormatter extends Formatter {
-  convertFormat(format: string) {
+  convertFormat(format: string): any {
     return format
       .replace(/YYYY/g, '%Y')
       .replace(/MM/g, '%m')
@@ -21,7 +21,7 @@ export class MySQLFormatter extends Formatter {
       .replace(/ss/g, '%S');
   }
 
-  formatDate(field: Col, format: string, timezoneOffset?: string) {
+  formatDate(field: Col, format: string, timezoneOffset?: string): any {
     const tz = moment.tz(process.env.TZ || 'UTC').format('Z');
     format = this.convertFormat(format);
     if (timezoneOffset && tz !== timezoneOffset) {
@@ -35,7 +35,7 @@ export class MySQLFormatter extends Formatter {
     format: string,
     accuracy: 'second' | 'millisecond' = 'second',
     timezoneOffset?: string,
-  ) {
+  ): any {
     const col = this.sequelize.getQueryInterface().quoteIdentifiers(field);
     const timezone = this.getTimezoneByOffset(timezoneOffset);
     format = this.convertFormat(format);

@@ -137,7 +137,7 @@ const schema = {
   },
 };
 
-export const StorageOptions = observer(
+export const StorageOptions: any = observer(
   (props) => {
     const form = useForm();
     const field = useField<Field>();

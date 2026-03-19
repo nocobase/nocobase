@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useShared } from './useShared';
 
-export const exportActionSchemaSettings = new SchemaSettings({
+export const exportActionSchemaSettings: any = new SchemaSettings({
   name: 'actionSettings:export',
   items: [
     {

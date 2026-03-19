@@ -33,7 +33,7 @@ import { useGanttTranslation, useOptions } from './utils';
  * @deprecated
  * 用于兼容旧版 schema
  */
-export const oldGanttSettings = new SchemaSettings({
+export const oldGanttSettings: any = new SchemaSettings({
   name: 'GanttBlockSettings',
   items: [
     {
@@ -286,7 +286,7 @@ export const oldGanttSettings = new SchemaSettings({
   ],
 });
 
-export const ganttSettings = new SchemaSettings({
+export const ganttSettings: any = new SchemaSettings({
   name: 'blockSettings:gantt',
   items: [
     {

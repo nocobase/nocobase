@@ -90,7 +90,7 @@ export function CustomRequestSettingsItem() {
 /**
  * @deprecated
  */
-export const customRequestActionSettings = new SchemaSettings({
+export const customRequestActionSettings: any = new SchemaSettings({
   name: 'CustomRequestActionSettings',
   items: [
     {

@@ -14,7 +14,7 @@ import { CalendarToolbarContext } from './context';
 import { useDesignable, useLazy } from '@nocobase/client';
 import { useTranslation } from '../../locale';
 
-export const Today = observer(
+export const Today: any = observer(
   (props) => {
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);

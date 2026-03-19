@@ -33,7 +33,7 @@ import { useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useTranslation } from '../locale';
 
-export const commentBlockSettings = new SchemaSettings({
+export const commentBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:comment',
   items: [
     {

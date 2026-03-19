@@ -20,7 +20,7 @@ import { editAction } from '../actionCommonSettings';
 import { useLinkActionProps } from '@nocobase/client';
 import { actionCommonInitializerSchema } from '../actionCommonInitializerSchema';
 
-export const mobileNavigationBarLinkSettings = new SchemaSettings({
+export const mobileNavigationBarLinkSettings: any = new SchemaSettings({
   name: `mobile:navigation-bar:actions:link`,
   items: [
     editAction(),

@@ -60,7 +60,7 @@ function useTriggerInitializers(): SchemaInitializerItemType | null {
   return trigger.useInitializers ? trigger.useInitializers(workflow.config) : null;
 }
 
-export const addBlockButton = new SchemaInitializer({
+export const addBlockButton: any = new SchemaInitializer({
   name: 'workflowCc:popup:configureUserInterface:addBlock',
   wrap: gridRowColWrap,
   title: '{{t("Add block")}}',

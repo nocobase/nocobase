@@ -33,7 +33,7 @@ import DataSetPreviewTable from './DataSetPreviewTable';
 import { lang } from './locale';
 import { templates } from './templates';
 
-export const Options = observer(
+export const Options: any = observer(
   (props) => {
     const form = useForm<ChartFormInterface>();
     const field = useField<Field>();

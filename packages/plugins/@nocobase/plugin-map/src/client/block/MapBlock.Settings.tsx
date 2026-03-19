@@ -81,7 +81,7 @@ export const defaultZoomLevel = {
   },
 };
 
-export const mapBlockSettings = new SchemaSettings({
+export const mapBlockSettings: any = new SchemaSettings({
   name: 'blockSettings:map',
   items: [
     {

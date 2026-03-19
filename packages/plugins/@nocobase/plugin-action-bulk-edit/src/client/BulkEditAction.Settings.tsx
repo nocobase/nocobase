@@ -86,7 +86,7 @@ function RemoveButton(
  * @deprecated
  * 之所以还保留，仅是为了兼容旧版 schema
  */
-export const deprecatedBulkEditActionSettings = new SchemaSettings({
+export const deprecatedBulkEditActionSettings: any = new SchemaSettings({
   name: 'ActionSettings:customize:bulkEdit',
   items: [
     {
@@ -148,7 +148,7 @@ export const deprecatedBulkEditActionSettings = new SchemaSettings({
   ],
 });
 
-export const bulkEditActionSettings = new SchemaSettings({
+export const bulkEditActionSettings: any = new SchemaSettings({
   name: 'actionSettings:bulkEdit',
   items: [
     {
@@ -204,7 +204,7 @@ export const bulkEditActionSettings = new SchemaSettings({
 /**
  * 批量编辑表单的submit 按钮
  */
-export const bulkEditFormSubmitActionSettings = new SchemaSettings({
+export const bulkEditFormSubmitActionSettings: any = new SchemaSettings({
   name: 'actionSettings:bulkEditSubmit',
   items: [
     {

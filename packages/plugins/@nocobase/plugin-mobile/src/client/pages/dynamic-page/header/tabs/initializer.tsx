@@ -21,7 +21,7 @@ import { getPageContentTabSchema } from '../../content';
 import { MobileRouteItem, useMobileRoutes } from '../../../../mobile-providers';
 import { generatePluginTranslationTemplate, usePluginTranslation } from '../../../../locale';
 
-export const mobilePagesTabInitializer = new SchemaInitializer({
+export const mobilePagesTabInitializer: any = new SchemaInitializer({
   name: 'mobile:tabs',
   Component: () => {
     const { refresh, resource, activeTabBarItem } = useMobileRoutes();

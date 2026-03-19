@@ -11,7 +11,7 @@ import { EllipsisWithTooltip, FormProvider, SchemaComponent, useRecord } from '@
 import React from 'react';
 import { observer, useField } from '@formily/react';
 
-export const AuditLogsValue = observer(
+export const AuditLogsValue: any = observer(
   () => {
     const field = useField<any>();
     const record = useRecord();

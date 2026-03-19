@@ -18,7 +18,7 @@ export const useModelSettingsForm = (provider: string) => {
   return p?.components?.ModelSettingsForm;
 };
 
-export const Settings = observer(
+export const Settings: any = observer(
   () => {
     const form = useForm();
     const api = useAPIClient();

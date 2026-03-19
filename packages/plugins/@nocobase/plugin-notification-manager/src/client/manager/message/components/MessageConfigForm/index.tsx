@@ -15,7 +15,7 @@ import { useAPIClient } from '@nocobase/client';
 import { useChannelTypeMap } from '../../../../hooks';
 import { useNotificationTranslation } from '../../../../locale';
 import { COLLECTION_NAME } from '../../../../../constant';
-export const MessageConfigForm = observer<{ variableOptions: any }>(
+export const MessageConfigForm: any = observer<{ variableOptions: any }>(
   ({ variableOptions }) => {
     const field = useField();
     const { channelName } = field.form.values;

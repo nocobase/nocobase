@@ -9,7 +9,7 @@
 
 import { createStyles } from '@nocobase/client';
 
-export const useStyles = createStyles(({ token, css }) => {
+export const useStyles: any = createStyles(({ token, css }) => {
   return {
     nbKanban: css`
       overflow: hidden;
