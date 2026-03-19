@@ -26,6 +26,10 @@ export class PluginMcpServerServer extends Plugin {
     return normalizeBasePath(process.env.API_BASE_PATH || '/api');
   }
 
+  private getMcpPath() {
+    return `${this.getApiBasePath()}/mcp`;
+  }
+
   private getIdpOauthPlugin() {
     return this.app.pm.get('idp-oauth') as PluginIdpOauthServer | undefined;
   }
@@ -52,6 +56,16 @@ export class PluginMcpServerServer extends Plugin {
       'WWW-Authenticate',
       `Bearer resource_metadata="${metadata.resourceMetadataUrl}", scope="${this.mcpScopes.join(' ')}"`,
     );
+  }
+
+  private rewriteUnauthorizedResponse(ctx: any) {
+    this.setUnauthorizedChallenge(ctx);
+    ctx.withoutDataWrapping = true;
+    ctx.type = 'application/json';
+    ctx.status = 401;
+    ctx.body = {
+      errors: [{ message: 'Authentication required' }],
+    };
   }
 
   private registerProtectedResourceMetadataRoute() {
@@ -125,16 +139,34 @@ export class PluginMcpServerServer extends Plugin {
       logger: this.log,
     });
 
-    const mcpHandler = async (ctx) => {
-      if (!ctx.state.currentUser) {
-        this.setUnauthorizedChallenge(ctx);
-        ctx.status = 401;
-        ctx.body = {
-          errors: [{ message: 'Authentication required' }],
-        };
-        return;
-      }
+    this.app.use(
+      async (ctx, next) => {
+        if (ctx.path !== this.getMcpPath()) {
+          await next();
+          return;
+        }
 
+        try {
+          await next();
+        } catch (error) {
+          if (ctx.status === 401 || error?.status === 401 || error?.statusCode === 401) {
+            this.rewriteUnauthorizedResponse(ctx);
+            return;
+          }
+          throw error;
+        }
+
+        if (ctx.status === 401) {
+          this.rewriteUnauthorizedResponse(ctx);
+        }
+      },
+      {
+        tag: 'mcp-unauthorized-response',
+        before: 'dataSource',
+      },
+    );
+
+    const mcpHandler = async (ctx) => {
       await this.mcpServer.handlePost(ctx);
     };
     this.app.resourceManager.define({
@@ -147,7 +179,7 @@ export class PluginMcpServerServer extends Plugin {
       },
       only: ['list', 'create'],
     });
-    this.app.acl.allow('mcp', '*', 'public');
+    this.app.acl.allow('mcp', '*', 'loggedIn');
   }
 
   async install() {}
