@@ -15,11 +15,9 @@ import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/a
 import { AdminLayoutShell } from './AdminLayoutShell';
 import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import React from 'react';
-import { AdminLayoutContentModel } from './AdminLayoutSlotModels';
 
 type AdminLayoutStructure = {
   subModels: {
-    layoutContent?: AdminLayoutContentModel;
     menu?: AdminLayoutMenuTreeModel;
   };
 };
@@ -27,16 +25,13 @@ type AdminLayoutStructure = {
 /**
  * Admin Layout 的根模型。
  *
- * 当前阶段先让它稳定托管 Layout 的核心运行时和关键 slot：
- * - `layoutContent`：页面主体区域
- * - `menu`：菜单树
- *
- * 这样可以在不改页面行为的前提下，把 Layout 渲染逐步收敛到 FlowModel 树中。
+ * 当前阶段先让它稳定托管 Layout 的核心运行时和菜单树，
+ * 让页面主体直接由 shell 渲染，避免为纯渲染容器额外挂一层 slot model。
  *
  * @example
  * ```typescript
  * const model = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
- * model?.subModels.layoutContent;
+ * model?.subModels.menu;
  * ```
  */
 export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
@@ -58,19 +53,12 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   }
 
   /**
-   * 确保 root model 的关键 slot 始终存在。
+   * 确保 root model 的菜单子树始终存在。
    *
    * 这里使用固定 uid，保证复用现有模型实例时也能补齐缺失的子模型，
    * 避免 `AdminLayout` 分阶段重构时出现新旧模型树结构不一致。
    */
-  ensureShellSubModels() {
-    if (!this.subModels.layoutContent) {
-      this.setSubModel('layoutContent', {
-        uid: `${this.uid}-layout-content`,
-        use: AdminLayoutContentModel,
-      });
-    }
-
+  ensureMenuSubModel() {
     if (!this.subModels.menu) {
       this.setSubModel('menu', {
         uid: `${this.uid}-menu`,
@@ -81,7 +69,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
   onInit(options) {
     super.onInit(options);
-    this.ensureShellSubModels();
+    this.ensureMenuSubModel();
   }
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
@@ -118,7 +106,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
    * @param {NocoBaseDesktopRoute[]} routes 当前用户可访问的桌面路由
    */
   syncMenuRoutes(routes: NocoBaseDesktopRoute[]) {
-    this.ensureShellSubModels();
+    this.ensureMenuSubModel();
     this.subModels.menu?.syncRoutes(routes);
   }
 
@@ -129,7 +117,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
   protected onMount(): void {
     super.onMount();
-    this.ensureShellSubModels();
+    this.ensureMenuSubModel();
     if (!this.routeDisposer) {
       this.flowEngine.context.defineProperty('currentRoute', {
         get: () => this.getCurrentRouteByActivePage(),
