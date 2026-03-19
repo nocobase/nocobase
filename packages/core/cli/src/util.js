@@ -561,9 +561,14 @@ exports.checkDBDialect = function () {
 
 exports.generatePlugins = function () {
   try {
-    require.resolve('@nocobase/devtools/umiConfig');
-    const { generatePlugins } = require('@nocobase/devtools/umiConfig');
-    generatePlugins();
+    require.resolve('@nocobase/devtools/common');
+    const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');
+    if (typeof generateAllPlugins === 'function') {
+      generateAllPlugins();
+      return;
+    }
+    generatePlugins?.();
+    generateV2Plugins?.();
   } catch (error) {
     return;
   }

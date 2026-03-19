@@ -122,7 +122,6 @@ module.exports = (cli) => {
             color: 'magenta',
             env: {
               ...process.env,
-              SKIP_GENERATE_PLUGINS: shouldRunClient ? 'true' : undefined,
               APP_V2_PORT: `${clientV2Port}`,
               NODE_ENV: 'development',
               RSPACK_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,

@@ -14,15 +14,12 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generatePlugins } from '@nocobase/devtools/umiConfig';
-import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
+import { generateV2Plugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-if (process.env.SKIP_GENERATE_PLUGINS !== 'true') {
-  generatePlugins();
-}
+generateV2Plugins();
 
 function ensurePublicPath(value: string) {
   let normalized = value || '/v2/';

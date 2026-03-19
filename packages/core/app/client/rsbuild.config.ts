@@ -15,8 +15,7 @@ import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSvgr } from '@rsbuild/plugin-svgr';
-import { generatePlugins } from '@nocobase/devtools/umiConfig';
-import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
+import { generatePlugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

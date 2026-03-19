@@ -8,6 +8,7 @@
  */
 
 import { Application } from '@nocobase/client-v2';
+import devDynamicImport from './.plugins';
 import { AppInfoDemoPlugin } from './plugins/AppInfoDemoPlugin';
 
 declare global {
@@ -98,7 +99,8 @@ const app = new Application({
     basename: window.__nocobase_ws_path__ || import.meta.env.WS_PATH || `${rootPublicPath}ws`,
   },
   plugins: [AppInfoDemoPlugin],
-  loadRemotePlugins: false,
+  loadRemotePlugins: true,
+  devDynamicImport,
 });
 
 window.__nocobase_v2_app__ = app;
