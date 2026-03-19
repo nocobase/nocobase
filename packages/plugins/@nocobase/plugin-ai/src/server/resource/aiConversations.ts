@@ -48,9 +48,12 @@ export default {
       if (!userId) {
         return ctx.throw(403);
       }
+      const filter = ctx.action.params.filter || {};
       ctx.action.mergeParams({
         filter: {
+          ...filter,
           userId,
+          from: filter.from ?? 'main-agent',
         },
       });
       return actions.list(ctx, next);

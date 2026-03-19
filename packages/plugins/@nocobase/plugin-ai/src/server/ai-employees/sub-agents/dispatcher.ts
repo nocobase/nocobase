@@ -40,6 +40,7 @@ export class SubAgentsDispatcher {
         username: employee.get('username'),
       },
       title: task.prompt.slice(0, 30),
+      from: 'sub-agent',
       options: {
         skillSettings,
       },

@@ -30,6 +30,12 @@ export default defineCollection({
       type: 'string',
     },
     {
+      name: 'from',
+      type: 'string',
+      defaultValue: 'main-agent',
+      allowNull: false,
+    },
+    {
       name: 'user',
       type: 'belongsTo',
       target: 'users',

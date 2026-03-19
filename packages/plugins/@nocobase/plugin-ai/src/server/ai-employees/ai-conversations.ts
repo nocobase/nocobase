@@ -30,6 +30,7 @@ export type CreateAIConversationParams = {
   aiEmployee: { username: string };
   title?: string;
   options?: AIConversationsOptions;
+  from?: 'main-agent' | 'sub-agent';
 };
 
 export type UpdateAIConversationParams = {
@@ -57,7 +58,7 @@ export type GetAIConversationMessagesResult = {
 export class AIConversationsManager {
   constructor(protected plugin: PluginAIServer) {}
 
-  async create({ userId, aiEmployee, title, options = {} }: CreateAIConversationParams) {
+  async create({ userId, aiEmployee, title, options = {}, from = 'main-agent' }: CreateAIConversationParams) {
     return await this.aiConversationsRepo.create({
       values: {
         userId,
@@ -65,6 +66,7 @@ export class AIConversationsManager {
         aiEmployee,
         options,
         thread: 1,
+        from,
       },
     });
   }
