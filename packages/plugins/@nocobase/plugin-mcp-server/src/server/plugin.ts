@@ -47,19 +47,14 @@ export class PluginMcpServerServer extends Plugin {
     };
   }
 
-  private setUnauthorizedChallenge(ctx: any) {
-    const metadata = this.getOauthMetadata(ctx);
-    if (!metadata) {
-      return;
-    }
-    ctx.set(
-      'WWW-Authenticate',
-      `Bearer resource_metadata="${metadata.resourceMetadataUrl}", scope="${this.mcpScopes.join(' ')}"`,
-    );
-  }
-
   private rewriteUnauthorizedResponse(ctx: any) {
-    this.setUnauthorizedChallenge(ctx);
+    const metadata = this.getOauthMetadata(ctx);
+    if (metadata) {
+      ctx.set(
+        'WWW-Authenticate',
+        `Bearer resource_metadata="${metadata.resourceMetadataUrl}", scope="${this.mcpScopes.join(' ')}"`,
+      );
+    }
     ctx.withoutDataWrapping = true;
     ctx.type = 'application/json';
     ctx.status = 401;
@@ -142,8 +137,7 @@ export class PluginMcpServerServer extends Plugin {
     this.app.use(
       async (ctx, next) => {
         if (ctx.path !== this.getMcpPath()) {
-          await next();
-          return;
+          return next();
         }
 
         try {
