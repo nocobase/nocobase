@@ -1324,6 +1324,135 @@ describe('Change with association', async () => {
     });
   });
 
+  test('allow update hasOne when fixed params depend on ctx.state', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'space_assoc',
+        autoGenId: false,
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            primaryKey: true,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'spaceName',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'space_test',
+        fields: [
+          {
+            name: 'name',
+            type: 'string',
+            unique: true,
+          },
+          {
+            name: 'manager',
+            type: 'hasOne',
+            target: 'space_assoc',
+            sourceKey: 'name',
+            foreignKey: 'space_test_name',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    app.acl.addGeneralFixedParams((resource) => {
+      if (resource !== 'space_assoc') {
+        return {};
+      }
+      return {
+        filter: {
+          spaceName: '{{ctx.state.currentVisibleSpacesFilter}}',
+        },
+      };
+    });
+
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: [
+        {
+          usingActionsConfig: true,
+          name: 'space_test',
+          actions: [
+            {
+              name: 'create',
+              fields: ['name', 'manager'],
+            },
+          ],
+        },
+        {
+          usingActionsConfig: true,
+          name: 'space_assoc',
+          actions: [
+            {
+              name: 'update',
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    await db.getRepository('space_assoc').create({
+      values: {
+        name: 'manager-1',
+        title: 'Initial title',
+        spaceName: 'space-a',
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+      currentVisibleSpacesFilter: 'space-a',
+    };
+    ctx.action = {
+      resourceName: 'space_test',
+      actionName: 'create',
+      params: {
+        updateAssociationValues: ['manager'],
+        values: {
+          name: 'test-1',
+          manager: {
+            name: 'manager-1',
+            title: 'Updated title',
+          },
+        },
+      },
+    };
+
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      manager: {
+        name: 'manager-1',
+        title: 'Updated title',
+      },
+    });
+  });
+
   it('should reserve filter keys', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
       values: [
