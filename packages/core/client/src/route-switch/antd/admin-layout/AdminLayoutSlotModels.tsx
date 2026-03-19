@@ -9,17 +9,16 @@
 
 import { HighlightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { FlowModel } from '@nocobase/flow-engine';
 import { Result } from 'antd';
-import React, { FC, useCallback, useMemo, useRef } from 'react';
+import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDesignable } from '../../../schema-component/hooks';
 import { useToken } from '../../../style';
 import { useAllAccessDesktopRoutes } from '../../../admin-shell';
 
-type LayoutContentHost = FlowModel & {
-  setLayoutContentElement?: (element: HTMLElement | null) => void;
+type AdminLayoutContentProps = {
+  onContentElementChange?: (element: HTMLDivElement | null) => void;
 };
 
 const layoutContentClass = css`
@@ -84,16 +83,19 @@ const ShowTipWhenNoPages = () => {
   return null;
 };
 
-const AdminLayoutContentView: FC<{ host?: LayoutContentHost | null }> = ({ host }) => {
+/**
+ * AdminLayout 内部使用的内容区容器。
+ *
+ * 内容区不再依赖独立 FlowModel，而是通过回调把挂载目标同步给 root model。
+ */
+export const AdminLayoutContent: FC<AdminLayoutContentProps> = ({ onContentElementChange }) => {
   const style = useMemo(() => (isDvhSupported() ? mobileHeight : undefined), []);
-  const layoutContentRef = useRef<HTMLDivElement>(null);
-
   const bindLayoutContentRef = useCallback(
     (node: HTMLDivElement | null) => {
-      layoutContentRef.current = node;
-      host?.setLayoutContentElement?.(node);
+      // shell 直接渲染内容区时，仍需把挂载目标同步给 root model。
+      onContentElementChange?.(node);
     },
-    [host],
+    [onContentElementChange],
   );
 
   return (
@@ -122,28 +124,5 @@ const AdminLayoutContentView: FC<{ host?: LayoutContentHost | null }> = ({ host 
  * ```
  */
 export const LayoutContent: FC = () => {
-  return <AdminLayoutContentView />;
+  return <AdminLayoutContent />;
 };
-
-/**
- * Layout 内容区子模型。
- *
- * 它负责把页面主体渲染收进 FlowModel，同时把 subpage 的挂载目标同步回 root model，
- * 这样后续可以继续把内容区周边能力往子模型上迁移，而不影响现有路由行为。
- *
- * @example
- * ```typescript
- * rootModel.subModels.layoutContent
- * ```
- */
-export class AdminLayoutContentModel extends FlowModel {
-  protected onUnmount(): void {
-    const host = this.parent as LayoutContentHost | undefined;
-    host?.setLayoutContentElement?.(null);
-    super.onUnmount();
-  }
-
-  render() {
-    return <AdminLayoutContentView host={this.parent as LayoutContentHost | undefined} />;
-  }
-}

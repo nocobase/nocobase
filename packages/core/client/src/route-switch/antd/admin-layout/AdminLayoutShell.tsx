@@ -12,7 +12,7 @@ import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DndProvider, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
+import { DndProvider, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, ConfigProvider, Grid, Popover } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -28,6 +28,7 @@ import {
   MobileMenuControlContext,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
+import { AdminLayoutContent } from './AdminLayoutSlotModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 
 import {
@@ -205,23 +206,6 @@ const headerRender = (props: HeaderViewProps, defaultDom: React.ReactNode) => {
   return <HeaderWrapper>{defaultDom}</HeaderWrapper>;
 };
 
-/**
- * 渲染 Layout 内容区子模型。
- *
- * 这里仍然由 `AdminLayoutShell` 控制 ProLayout 容器，
- * 但页面主体已经改为从 root model 的 `layoutContent` slot 读取。
- */
-const AdminLayoutContentSlot = () => {
-  const flowEngine = useFlowEngine();
-  const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID)?.subModels.layoutContent;
-
-  if (!model) {
-    return null;
-  }
-
-  return <FlowModelRenderer model={model} />;
-};
-
 const actionsRender = (props: HeaderViewProps): React.ReactNode[] => {
   if (props.isMobile) {
     return [<MobileActions key="mobile-actions" />];
@@ -396,6 +380,12 @@ export const AdminLayoutShell = (props) => {
   const { Component: AppsComponent } = useApplications();
   const flowSettingsSyncRef = useRef(0);
   const desiredFlowSettingsEnabledRef = useRef(false);
+  const handleLayoutContentElementChange = useCallback(
+    (element: HTMLDivElement | null) => {
+      adminLayoutModel?.setLayoutContentElement(element);
+    },
+    [adminLayoutModel],
+  );
   const selectedTopGroupRoute = useMemo(
     () => findSelectedTopGroupRoute(allAccessRoutes, location.pathname),
     [allAccessRoutes, location.pathname],
@@ -586,7 +576,7 @@ export const AdminLayoutShell = (props) => {
                     <SetIsMobileLayout isMobile={isMobile}>
                       <ConfigProvider theme={isMobile ? mobileTheme : theme}>
                         <GlobalStyle />
-                        <AdminLayoutContentSlot />
+                        <AdminLayoutContent onContentElementChange={handleLayoutContentElementChange} />
                       </ConfigProvider>
                     </SetIsMobileLayout>
                   );

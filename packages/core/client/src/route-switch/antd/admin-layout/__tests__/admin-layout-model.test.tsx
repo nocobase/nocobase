@@ -39,7 +39,6 @@ import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { AdminLayout } from '..';
 import { AdminLayoutModel } from '../AdminLayoutModel';
 import { AdminLayoutMenuTreeModel } from '../AdminLayoutMenuModels';
-import { AdminLayoutContentModel } from '../AdminLayoutSlotModels';
 
 describe('AdminLayout (phase-1 host)', () => {
   beforeEach(() => {
@@ -63,7 +62,7 @@ describe('AdminLayout (phase-1 host)', () => {
     expect(model).toBeInstanceOf(AdminLayoutModel);
     expect(model.props.testFlag).toBe('first-render');
     expect(model.subModels.menu).toBeInstanceOf(AdminLayoutMenuTreeModel);
-    expect(model.subModels.layoutContent).toBeInstanceOf(AdminLayoutContentModel);
+    expect((model.subModels as any).layoutContent).toBeUndefined();
     expect((model.subModels as any).headerActions).toBeUndefined();
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model }));
   });
@@ -88,7 +87,7 @@ describe('AdminLayout (phase-1 host)', () => {
 
     expect(engine.getModel('admin-layout-model')).toBe(existingModel);
     expect(existingModel.subModels.menu).toBeInstanceOf(AdminLayoutMenuTreeModel);
-    expect(existingModel.subModels.layoutContent).toBeInstanceOf(AdminLayoutContentModel);
+    expect((existingModel.subModels as any).layoutContent).toBeUndefined();
     expect((existingModel.subModels as any).headerActions).toBeUndefined();
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model: existingModel }));
   });
@@ -113,6 +112,33 @@ describe('AdminLayout (phase-1 host)', () => {
     await waitFor(() => {
       expect(model.props.testFlag).toBe('v2');
     });
+  });
+
+  it('should expose live layoutContentElement on engine context', async () => {
+    const engine = new FlowEngine();
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <AdminLayout />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    const element = document.createElement('div');
+
+    act(() => {
+      model.setLayoutContentElement(element);
+    });
+
+    expect(engine.context.layoutContentElement).toBe(element);
+
+    act(() => {
+      model.setLayoutContentElement(null);
+    });
+
+    expect(engine.context.layoutContentElement).toBeNull();
   });
 
   it('should expose live engine currentRoute when active page changes', async () => {
