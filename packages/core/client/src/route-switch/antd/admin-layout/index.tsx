@@ -13,7 +13,7 @@ import { AdminDynamicPage, MobileLayoutProvider } from '../../../admin-shell';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { AdminLayoutModel } from './AdminLayoutModel';
-import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
+import { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { userCenterSettings } from './userCenterSettings';
 
@@ -65,7 +65,6 @@ export class AdminLayoutPlugin extends Plugin {
   async load() {
     this.app.flowEngine.registerModels({
       AdminLayoutModel,
-      AdminLayoutMenuTreeModel,
       AdminLayoutMenuItemModel,
     });
     this.app.schemaSettingsManager.add(userCenterSettings);

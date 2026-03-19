@@ -68,7 +68,7 @@ export type AdminLayoutMenuNode = {
   routes?: AdminLayoutMenuNode[];
 };
 
-type AdminLayoutMenuRouteOptions = {
+export type AdminLayoutMenuRouteOptions = {
   designable: boolean;
   isMobile: boolean;
   t: (title: any) => any;
@@ -83,13 +83,7 @@ type AdminLayoutMenuMovePositionOption = {
 
 type AdminLayoutMenuItemStructure = {
   subModels: {
-    items?: AdminLayoutMenuItemModel[];
-  };
-};
-
-type AdminLayoutMenuTreeStructure = {
-  subModels: {
-    items?: AdminLayoutMenuItemModel[];
+    menuItems?: AdminLayoutMenuItemModel[];
   };
 };
 
@@ -317,16 +311,22 @@ function getAdminLayoutMenuItemUid(parentUid: string, route: NocoBaseDesktopRout
  * 它会复用还存在的菜单项模型，并同步删除已经失效的分支，
  * 这样可以让 Layout 菜单逐步切换到 FlowModel 树，同时不引入额外的 UI 行为变化。
  *
- * @param {FlowModel & { subModels: { items?: AdminLayoutMenuItemModel[] } }} parent 父模型
+ * @param {FlowModel & { subModels: { menuItems?: AdminLayoutMenuItemModel[] } }} parent 父模型
  * @param {NocoBaseDesktopRoute[]} routes 当前层菜单路由列表
  * @param {NocoBaseDesktopRoute | undefined} parentRoute 父级路由
  */
-function reconcileMenuItems(
-  parent: FlowModel & { subModels: { items?: AdminLayoutMenuItemModel[] } },
+type AdminLayoutMenuItemsParent = FlowModel & {
+  subModels: {
+    menuItems?: AdminLayoutMenuItemModel[];
+  };
+};
+
+export function reconcileAdminLayoutMenuItems(
+  parent: AdminLayoutMenuItemsParent,
   routes: NocoBaseDesktopRoute[],
   parentRoute?: NocoBaseDesktopRoute,
 ) {
-  const existingItems = [...(parent.subModels.items || [])];
+  const existingItems = [...(parent.subModels.menuItems || [])];
   const existingItemMap = new Map(existingItems.map((item) => [item.uid, item]));
   const nextItems: AdminLayoutMenuItemModel[] = [];
   const nextUidSet = new Set<string>();
@@ -337,7 +337,7 @@ function reconcileMenuItems(
     const isExistingModel = !!itemModel;
 
     if (!itemModel) {
-      itemModel = parent.addSubModel('items', {
+      itemModel = parent.addSubModel('menuItems', {
         uid,
         use: AdminLayoutMenuItemModel,
         props: {
@@ -361,7 +361,7 @@ function reconcileMenuItems(
     }
   });
 
-  parent.subModels.items = nextItems;
+  parent.subModels.menuItems = nextItems;
 }
 
 const MenuDesignerButton: FC<{ testId: string }> = (props) => {
@@ -732,7 +732,10 @@ export const AdminLayoutMenuModelRenderer: FC<{
   );
 };
 
-function getInitializerButton(testId: string, parentRoute?: NocoBaseDesktopRoute): AdminLayoutMenuNode {
+export function getAdminLayoutMenuInitializerButton(
+  testId: string,
+  parentRoute?: NocoBaseDesktopRoute,
+): AdminLayoutMenuNode {
   return {
     key: 'x-designer-button',
     name: <MenuDesignerButton testId={testId} />,
@@ -752,7 +755,7 @@ function getInitializerButton(testId: string, parentRoute?: NocoBaseDesktopRoute
  *
  * @example
  * ```typescript
- * const firstItem = menuTree.subModels.items?.[0];
+ * const firstItem = layoutModel.subModels.menuItems?.[0];
  * ```
  */
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
@@ -777,14 +780,14 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     });
 
     if (route?.type === NocoBaseDesktopRouteType.group) {
-      reconcileMenuItems(this, Array.isArray(route.children) ? route.children : [], route);
+      reconcileAdminLayoutMenuItems(this, Array.isArray(route.children) ? route.children : [], route);
       return;
     }
 
-    (this.subModels.items || []).forEach((item) => {
+    (this.subModels.menuItems || []).forEach((item) => {
       this.flowEngine.removeModelWithSubModels(item.uid);
     });
-    delete this.subModels.items;
+    delete this.subModels.menuItems;
   }
 
   getRoute() {
@@ -1100,7 +1103,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     if (route.type === NocoBaseDesktopRouteType.group) {
       const itemChildren = Array.isArray(route.children) ? route.children : [];
       const children =
-        (this.subModels.items || [])
+        (this.subModels.menuItems || [])
           .map((item) =>
             item.toProLayoutMenuItem({
               ...options,
@@ -1111,7 +1114,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
       // add a designer button
       if (options.designable && depth === 0) {
-        children.push(getInitializerButton('schema-initializer-Menu-side', route));
+        children.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-side', route));
       }
 
       const groupRoute: AdminLayoutMenuNode = {
@@ -1341,52 +1344,3 @@ registerAdminLayoutMenuExtraMenuItems?.call(AdminLayoutMenuItemModel, (model, t)
       : []),
   ];
 });
-
-/**
- * Layout 菜单树根模型。
- *
- * 当前阶段先把菜单路由同步为一棵独立的 FlowModel 树，
- * 让 Layout 的菜单状态不再依赖 `convertRoutesToLayout()` 这种一次性函数结果。
- *
- * @example
- * ```typescript
- * menuTree.syncRoutes(routes);
- * ```
- */
-export class AdminLayoutMenuTreeModel extends FlowModel<AdminLayoutMenuTreeStructure> {
-  /**
-   * 使用最新的桌面端 route 列表重建菜单树。
-   *
-   * @param {NocoBaseDesktopRoute[]} routes 当前用户可访问的桌面菜单路由
-   */
-  syncRoutes(routes: NocoBaseDesktopRoute[]) {
-    reconcileMenuItems(this, Array.isArray(routes) ? routes : []);
-  }
-
-  toProLayoutRoute(options: Omit<AdminLayoutMenuRouteOptions, 'depth'>) {
-    const result =
-      (this.subModels.items || [])
-        .map((item) =>
-          item.toProLayoutMenuItem({
-            ...options,
-            depth: 0,
-          }),
-        )
-        .filter(Boolean) || [];
-
-    if (options.designable) {
-      options.isMobile
-        ? result.push(getInitializerButton('schema-initializer-Menu-header'))
-        : result.unshift(getInitializerButton('schema-initializer-Menu-header'));
-    }
-
-    return {
-      path: '/',
-      children: result,
-    };
-  }
-
-  render() {
-    return null;
-  }
-}

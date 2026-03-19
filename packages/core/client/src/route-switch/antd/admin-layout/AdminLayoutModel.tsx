@@ -13,12 +13,17 @@ import { AdminShellProvider } from '../../../admin-shell';
 import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
 import { AdminLayoutShell } from './AdminLayoutShell';
-import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import React from 'react';
+import {
+  AdminLayoutMenuItemModel,
+  type AdminLayoutMenuRouteOptions,
+  getAdminLayoutMenuInitializerButton,
+  reconcileAdminLayoutMenuItems,
+} from './AdminLayoutMenuModels';
 
 type AdminLayoutStructure = {
   subModels: {
-    menu?: AdminLayoutMenuTreeModel;
+    menuItems?: AdminLayoutMenuItemModel[];
   };
 };
 
@@ -31,7 +36,7 @@ type AdminLayoutStructure = {
  * @example
  * ```typescript
  * const model = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
- * model?.subModels.menu;
+ * model?.subModels.menuItems;
  * ```
  */
 export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
@@ -50,26 +55,6 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
   private getCurrentRouteByActivePage() {
     return this.routePageMetaMap.get(this.activePageUid)?.currentRoute || {};
-  }
-
-  /**
-   * 确保 root model 的菜单子树始终存在。
-   *
-   * 这里使用固定 uid，保证复用现有模型实例时也能补齐缺失的子模型，
-   * 避免 `AdminLayout` 分阶段重构时出现新旧模型树结构不一致。
-   */
-  ensureMenuSubModel() {
-    if (!this.subModels.menu) {
-      this.setSubModel('menu', {
-        uid: `${this.uid}-menu`,
-        use: AdminLayoutMenuTreeModel,
-      });
-    }
-  }
-
-  onInit(options) {
-    super.onInit(options);
-    this.ensureMenuSubModel();
   }
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
@@ -106,8 +91,30 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
    * @param {NocoBaseDesktopRoute[]} routes 当前用户可访问的桌面路由
    */
   syncMenuRoutes(routes: NocoBaseDesktopRoute[]) {
-    this.ensureMenuSubModel();
-    this.subModels.menu?.syncRoutes(routes);
+    reconcileAdminLayoutMenuItems(this, Array.isArray(routes) ? routes : []);
+  }
+
+  toProLayoutRoute(options: Omit<AdminLayoutMenuRouteOptions, 'depth'>) {
+    const result =
+      (this.subModels.menuItems || [])
+        .map((item) =>
+          item.toProLayoutMenuItem({
+            ...options,
+            depth: 0,
+          }),
+        )
+        .filter(Boolean) || [];
+
+    if (options.designable) {
+      options.isMobile
+        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'))
+        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'));
+    }
+
+    return {
+      path: '/',
+      children: result,
+    };
   }
 
   setLayoutContentElement(element: HTMLElement | null) {
@@ -117,7 +124,6 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
   protected onMount(): void {
     super.onMount();
-    this.ensureMenuSubModel();
     if (!this.routeDisposer) {
       this.flowEngine.context.defineProperty('currentRoute', {
         get: () => this.getCurrentRouteByActivePage(),
