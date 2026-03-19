@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.20](https://github.com/nocobase/nocobase/compare/v2.0.19...v2.0.20) - 2026-03-19
+
+### 🐛 修复
+
+- **[server]** 修复工作进程发送应用生命周期事件导致服务实例停止的问题 ([#8906](https://github.com/nocobase/nocobase/pull/8906)) by @mytharcher
+
+- **[数据源管理]** 修复AI员工创建的数据表总是缺少”创建人“、”修改人“字段的问题 ([#8895](https://github.com/nocobase/nocobase/pull/8895)) by @cgyrock
+
+- **[操作：导入记录 Pro]** 修复懒加载导致的 SES 错误 by @mytharcher
+
+- **[模板打印]** 修复 sql 数据表打印报错 by @jiannx
+
+- **[邮件管理]** 修复邮件不存在时页面报错 by @jiannx
+
 ## [v2.0.19](https://github.com/nocobase/nocobase/compare/v2.0.18...v2.0.19) - 2026-03-17
 
 ### 🚀 优化

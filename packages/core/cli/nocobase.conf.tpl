@@ -12,6 +12,11 @@ log_format apm '"$time_local" client=$remote_addr '
                'upstream_connect_time=$upstream_connect_time '
                'upstream_header_time=$upstream_header_time';
 
+map $http_x_forwarded_proto $upstream_x_forwarded_proto {
+    default $http_x_forwarded_proto;
+    ""      $scheme;
+}
+
 server {
     listen 80;
     server_name _;
@@ -68,7 +73,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
         proxy_set_header Host $host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
@@ -79,6 +84,47 @@ server {
         proxy_read_timeout 600;
         send_timeout 600;
     }
+
+    # RFC 8414 root-mounted discovery compatibility for path-based issuers/resources.
+    location ~ ^/\.well-known/oauth-authorization-server/(.+)$ {
+        rewrite ^/\.well-known/oauth-authorization-server/(.+)$ /$1/.well-known/oauth-authorization-server break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
+    location ~ ^/\.well-known/openid-configuration/(.+)$ {
+        rewrite ^/\.well-known/openid-configuration/(.+)$ /$1/.well-known/openid-configuration break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
+        proxy_set_header Host $host;
+        proxy_set_header Referer $http_referer;
+        proxy_set_header User-Agent $http_user_agent;
+        add_header Cache-Control 'no-cache, no-store';
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 600;
+        proxy_send_timeout 600;
+        proxy_read_timeout 600;
+        send_timeout 600;
+    }
+
+
 
     location {{publicPath}} {
         alias {{cwd}}/node_modules/@nocobase/app/dist/client/;
@@ -103,7 +149,7 @@ server {
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
         proxy_set_header Host $host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
