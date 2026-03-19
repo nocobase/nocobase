@@ -413,7 +413,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     const app = new Application(options);
 
-    if (hook !== false) {
+    if (hook ?? app.serving()) {
       app.on('afterStart', async () => {
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
@@ -722,6 +722,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
+    if (!app.serving()) {
+      return;
+    }
+
     app.on('afterDestroy', async () => {
       delete this.apps[app.name];
       delete this.appStatus[app.name];

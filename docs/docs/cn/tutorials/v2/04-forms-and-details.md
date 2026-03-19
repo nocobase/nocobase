@@ -1,6 +1,10 @@
 # 第 4 章：表单与详情 — 录入、展示、一步到位
 
-上一章我们搭好了工单列表，并用一个简易表单录入了测试数据。这一章我们来**完善表单体验**——优化[表单区块](/interface-builder/blocks/data-blocks/form)的字段布局、添加[详情区块](/interface-builder/blocks/data-blocks/details)、配置[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](/collection-templates/audit-log)追踪工单的每一次修改。
+上一章我们搭好了工单列表，并用一个简易表单录入了测试数据。这一章我们来**完善表单体验**——优化[表单区块](/interface-builder/blocks/data-blocks/form)的字段布局、添加[详情区块](/interface-builder/blocks/data-blocks/details)、配置[联动规则](/interface-builder/linkage-rules)，还能用[变更历史](https://docs.nocobase.com/cn/record-history/)追踪工单的每一次修改。
+
+:::tip
+本章 4.4 节「[历史记录](https://docs.nocobase.com/cn/record-history/)」功能包含在[专业版](https://www.nocobase.com/cn/commercial)中，跳过该节不影响后续章节的学习。
+:::
 
 ## 4.1 完善新建工单表单
 
@@ -226,7 +230,11 @@
 
 ## 4.4 启用历史记录
 
-工单系统最重要的一点是：**谁在什么时候改了什么，必须有迹可循**。NocoBase 内置了「历史记录」插件，帮我们自动记录每一次数据变更。
+:::info 商业插件
+「[历史记录](https://docs.nocobase.com/cn/record-history/)」是 NocoBase [专业版](https://www.nocobase.com/cn/commercial)插件，需要商业版授权才能使用。如果你使用的是社区版，可以跳过本节，不影响后续章节。
+:::
+
+工单系统最重要的一点是：**谁在什么时候改了什么，必须有迹可循**。NocoBase 的「历史记录」插件帮我们自动记录每一次数据变更。
 
 ### 配置历史记录
 
@@ -267,7 +275,7 @@
 - **表单** — 用户可以提交新工单，字段有默认值和验证
 - **联动规则** — 紧急工单自动要求必填描述
 - **详情区块** — 清晰展示工单的完整信息
-- **历史记录** — 自动追踪每一次变更，审计无忧
+- **历史记录** — 自动追踪每一次变更，审计无忧（商业插件，可选）
 
 从「看得见」到「填得进」再到「查得到」——我们的工单系统已经具备了基本的可用性。
 
