@@ -222,12 +222,12 @@ const AdminLayoutContentSlot = () => {
   return <FlowModelRenderer model={model} />;
 };
 
-const actionsRender: any = (props) => {
+const actionsRender = (props: HeaderViewProps): React.ReactNode[] => {
   if (props.isMobile) {
-    return <MobileActions />;
+    return [<MobileActions key="mobile-actions" />];
   }
 
-  return <PinnedPluginList />;
+  return [<PinnedPluginList key="pinned-plugin-list" />];
 };
 
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
