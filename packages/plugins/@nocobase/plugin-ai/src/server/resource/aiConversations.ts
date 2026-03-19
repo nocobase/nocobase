@@ -57,6 +57,7 @@ export default {
     },
 
     async create(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
@@ -64,9 +65,8 @@ export default {
         ctx.throw(400, 'AI employee not found');
       }
 
-      const repo = ctx.db.getRepository('aiConversations');
-      ctx.body = await repo.create({
-        values: {
+      try {
+        ctx.body = await plugin.aiConversationsManager.create({
           userId,
           aiEmployee,
           options: {
@@ -74,30 +74,27 @@ export default {
             skillSettings,
             conversationSettings,
           },
-          thread: 1,
-        },
-      });
+        });
+      } catch (error) {
+        if (error.message === 'AI employee not found') {
+          ctx.throw(400, error.message);
+        }
+        throw error;
+      }
       await next();
     },
 
     async update(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       const { filterByTk: sessionId } = ctx.action.params;
       const { title } = ctx.action.params.values || {};
-      const repo = ctx.db.getRepository('aiConversations');
-      ctx.body = await repo.update({
-        filter: {
-          userId,
-          sessionId,
-        },
-        values: {
-          title,
-        },
-      });
+      ctx.body = await plugin.aiConversationsManager.update({ userId, sessionId, title });
       await next();
     },
 
     async updateOptions(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const userId = ctx.auth?.user.id;
       if (!userId) {
         return ctx.throw(403);
@@ -113,37 +110,18 @@ export default {
         return ctx.throw(400, 'invalid options');
       }
 
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
-          userId,
-        },
-      });
-
-      if (!conversation) {
-        ctx.throw(400, 'invalid sessionId');
-      }
-
-      const options = conversation.options ?? {};
-      if (systemMessage) {
-        options['systemMessage'] = systemMessage;
-      }
-      if (skillSettings) {
-        options['skillSettings'] = skillSettings;
-      }
-      if (conversationSettings) {
-        options['conversationSettings'] = conversationSettings;
-      }
-
-      ctx.body = await ctx.db.getRepository('aiConversations').update({
-        filter: {
+      try {
+        ctx.body = await plugin.aiConversationsManager.update({
           userId,
           sessionId,
-        },
-        values: {
-          options,
-        },
-      });
+          options: { systemMessage, skillSettings, conversationSettings },
+        });
+      } catch (error) {
+        if (error.message === 'invalid sessionId') {
+          ctx.throw(400, error.message);
+        }
+        throw error;
+      }
 
       await next();
     },
@@ -174,95 +152,19 @@ export default {
       }
 
       const paginate = ctx.action.params?.paginate === 'false' ? false : true;
-
-      const conversation = await ctx.db.getRepository('aiConversations').findOne({
-        filter: {
-          sessionId,
+      try {
+        ctx.body = await plugin.aiConversationsManager.getMessages({
           userId,
-        },
-      });
-
-      if (!conversation) {
-        ctx.throw(400);
-      }
-
-      const pageSize = 10;
-      const maxLimit = 200;
-      const messageRepository = ctx.db.getRepository('aiConversations.messages', sessionId);
-      const filter = {
-        role: {
-          $notIn: ['tool'],
-        },
-      };
-      if (paginate && cursor) {
-        filter['messageId'] = {
-          $lt: cursor,
-        };
-      }
-      const rows = await messageRepository.find({
-        sort: ['-messageId'],
-        limit: paginate ? pageSize + 1 : maxLimit,
-        filter,
-      });
-
-      const hasMore = paginate && rows.length > pageSize;
-      const data = hasMore ? rows.slice(0, -1) : rows;
-      const newCursor = data.length ? data[data.length - 1].messageId : null;
-
-      const toolCallIds = data
-        .filter((row: Model) => row?.toolCalls?.length ?? 0 > 0)
-        .flatMap((row: Model) => row.toolCalls)
-        .map((toolCall: any) => toolCall.id);
-      const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
-        filter: {
           sessionId,
-          toolCallId: {
-            $in: toolCallIds,
-          },
-        },
-      });
-      const toolMessageKey = (messageId: string, toolCallId: string) => `${messageId}:${toolCallId}`;
-      const toolMessageMap = new Map<string, any>(
-        toolMessages.map((toolMessage: Model) => [
-          toolMessageKey(toolMessage.messageId, toolMessage.toolCallId),
-          toolMessage,
-        ]),
-      );
-
-      const toolsList = await plugin.ai.toolsManager.listTools();
-      const toolsMap = new Map(toolsList.map((t) => [t.definition.name, t]));
-
-      ctx.body = {
-        rows: data.map((row: Model) => {
-          if (row?.toolCalls?.length ?? 0 > 0) {
-            for (const toolCall of row.toolCalls) {
-              const tools = toolsMap.get(toolCall.name);
-              const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
-              toolCall.invokeStatus = toolMessage?.invokeStatus;
-              toolCall.auto = toolMessage?.auto;
-              toolCall.status = toolMessage?.status;
-              toolCall.content = toolMessage?.content; // [AI_DEBUG] tool execution result
-              toolCall.execution = tools?.execution;
-              toolCall.willInterrupt = tools?.execution === 'frontend' || toolMessage?.auto === false;
-              toolCall.defaultPermission = tools?.defaultPermission;
-            }
-          }
-
-          const providerOptions = plugin.aiManager.llmProviders.get(row.metadata?.provider);
-          if (!providerOptions) {
-            return parseResponseMessage(row);
-          }
-          const Provider = providerOptions.provider;
-          const provider = new Provider({
-            app: ctx.app,
-          });
-          return provider.parseResponseMessage(row);
-        }),
-        ...(paginate && {
-          hasMore,
-          cursor: newCursor,
-        }),
-      };
+          cursor,
+          paginate,
+        });
+      } catch (error) {
+        if (error.message === 'invalid sessionId') {
+          ctx.throw(400);
+        }
+        throw error;
+      }
 
       await next();
     },
