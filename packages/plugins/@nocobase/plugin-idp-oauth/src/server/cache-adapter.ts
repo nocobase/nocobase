@@ -155,7 +155,12 @@ export function createCacheAdapter(cache: Cache, namespace: string) {
         return;
       }
 
-      await Promise.all(grant.map((tokenKey) => cache.del(tokenKey)));
+      await Promise.all(
+        grant.map((tokenKey) => {
+          const id = tokenKey.slice(this.key('').length);
+          return this.destroy(id);
+        }),
+      );
       await cache.del(grantKey);
     }
   };

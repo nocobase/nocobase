@@ -284,6 +284,7 @@ export class IdpOauthService {
       typeof maxExpiresInMs === 'number' && Number.isFinite(maxExpiresInMs)
         ? Math.max(1000, Math.min(config.tokenExpirationTime, maxExpiresInMs))
         : config.tokenExpirationTime;
+    const expiresIn = Math.max(1, Math.floor(expiresInMs / 1000));
 
     return this.app.authManager.jwt.sign(
       {
@@ -293,7 +294,7 @@ export class IdpOauthService {
       },
       {
         jwtid: tokenInfo.jti,
-        expiresIn: expiresInMs,
+        expiresIn,
       },
     );
   }
