@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-notification-manager'
+title: "通知管理概述"
+description: "NocoBase 通知管理：多渠道通知中心，支持站内信、电子邮件、企业微信，统一渠道配置、发送管理、通知日志，可扩展短信、钉钉、飞书等渠道。"
+keywords: "通知管理,站内信,邮件通知,企业微信,渠道配置,通知日志,工作流通知,NocoBase"
 ---
 
 # 通知管理

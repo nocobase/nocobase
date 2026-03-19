@@ -1,3 +1,9 @@
+---
+title: "SQL 模式查询数据"
+description: "SQL 模式编写查询语句获取图表数据，支持多表 JOIN、VIEW、上下文变量、字段映射与 Table/JSON 结果预览。"
+keywords: "SQL 数据查询,SQL 模式,图表数据,字段映射,上下文变量,NocoBase"
+---
+
 # SQL 模式查询数据
 
 在“数据查询”面板切换到 SQL 模式，编写并运行查询语句，直接使用返回结果进行图表映射与渲染。

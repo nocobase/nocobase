@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-text-copy",
-  "version": "2.1.0-alpha.8",
+  "version": "2.1.0-alpha.9",
   "main": "./dist/server/index.js",
   "displayName": "Text copy",
   "displayName.ru-RU": "Копирование текста",

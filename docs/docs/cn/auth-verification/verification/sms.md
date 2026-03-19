@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-verification'
+title: "验证：短信"
+description: "短信验证码：SMS OTP 验证类型，支持阿里云、腾讯云短信服务商，用户绑定手机号、管理员配置、解绑流程。"
+keywords: "短信验证码,SMS OTP,阿里云短信,腾讯云短信,手机号绑定,NocoBase"
 ---
 
 # 验证：短信

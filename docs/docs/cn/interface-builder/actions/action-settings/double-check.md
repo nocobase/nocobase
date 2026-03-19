@@ -1,3 +1,9 @@
+---
+title: "二次确认"
+description: "操作设置：配置操作执行前的二次确认弹窗，防止误操作。"
+keywords: "二次确认,double check,确认弹窗,操作设置,界面搭建,NocoBase"
+---
+
 # 二次确认
 
 ## 介绍

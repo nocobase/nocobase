@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件模板"
+description: "邮件模板配置与管理：创建模板、编辑模板，在发件正文框内选择模板快速插入。"
+keywords: "邮件模板,模板管理,发件模板,NocoBase"
 ---
-
 # 邮件模板
 
 ## 模板配置

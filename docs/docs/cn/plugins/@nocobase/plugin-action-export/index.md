@@ -1,6 +1,8 @@
 ---
 displayName: "操作：导出记录"
 packageName: '@nocobase/plugin-action-export'
+title: "操作：导出记录"
+keywords: "操作：导出记录,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

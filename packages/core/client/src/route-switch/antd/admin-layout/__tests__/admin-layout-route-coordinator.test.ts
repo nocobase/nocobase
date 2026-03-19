@@ -278,4 +278,24 @@ describe('AdminLayoutRouteCoordinator', () => {
     expect(dispatchSpy).toHaveBeenCalled();
     expect(dispatchSpy.mock.calls[0][1]?.target).toBe(pageElement);
   });
+
+  it('should expose live currentRoute from route model context after page meta updates', () => {
+    const engine = createEngine();
+    const coordinator = new AdminLayoutRouteCoordinator(engine);
+
+    coordinator.registerPage('page-1', {
+      active: true,
+      currentRoute: { title: 'Page 1' },
+    });
+
+    const routeModel = engine.getModel<RouteModel>('page-1') as RouteModel;
+
+    expect(routeModel.context.currentRoute.title).toBe('Page 1');
+
+    coordinator.syncPageMeta('page-1', {
+      currentRoute: { title: 'Page 1 updated' },
+    });
+
+    expect(routeModel.context.currentRoute.title).toBe('Page 1 updated');
+  });
 });

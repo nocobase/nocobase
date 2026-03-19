@@ -1,3 +1,9 @@
+---
+title: "数据表字段"
+description: "Collection 字段类型：Interface 与数据类型、标量字段、关系字段、关联配置，字段校验规则。"
+keywords: "数据表字段,字段类型,Field Interface,Collection 字段,NocoBase"
+---
+
 # 数据表字段
 
 ## 字段的 Interface 类型

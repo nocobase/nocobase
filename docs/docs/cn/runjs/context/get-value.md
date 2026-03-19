@@ -1,3 +1,9 @@
+---
+title: "ctx.getValue()"
+description: "ctx.getValue() 获取表单字段或变量值，支持 path 路径、scope 作用域，用于联动、计算、校验。"
+keywords: "ctx.getValue,表单字段,path,scope,联动,计算,校验,RunJS,NocoBase"
+---
+
 # ctx.getValue()
 
 在 JSField、JSItem 等可编辑字段场景中，获取当前字段的最新值。与 `ctx.setValue(v)` 配合可实现与表单的双向绑定。

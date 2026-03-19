@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-sql'
+title: "工作流节点 - SQL 操作"
+description: "SQL 操作节点：执行复杂 SQL 语句，支持流程上下文变量作为参数。"
+keywords: "工作流,SQL 操作,数据库,SQL 语句,变量参数,NocoBase"
 ---
 
 # SQL 操作

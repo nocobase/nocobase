@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "日历区块"
+description: "日历区块以日历视图显示事件与日期数据，适用于会议安排、活动计划，配置标题字段、开始/结束时间、农历、数据范围。"
+keywords: "日历区块,日历视图,事件,会议安排,Calendar,NocoBase"
 ---
-
 # 日历区块
 
 ## 介绍

@@ -10,7 +10,7 @@ En NocoBase 2.0, todas las API se centralizan en FlowEngine, y los plugins puede
 ```ts
 class PluginHello extends Plugin {
   async load() {
-    this.engine.registerModels({ ... });
+    this.engine.registerModelLoaders({ ... });
   }
 }
 ```

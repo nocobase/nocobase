@@ -1,3 +1,9 @@
+---
+title: "ctx.requireAsync()"
+description: "ctx.requireAsync() 按 URL 动态加载 UMD/AMD 模块，适用于 RunJS 需第三方库时，ESM 用 importAsync。"
+keywords: "ctx.requireAsync,UMD,AMD,动态加载,importAsync,RunJS,NocoBase"
+---
+
 # ctx.requireAsync()
 
 按 URL 异步加载 **UMD/AMD** 或挂载到全局的脚本，也可加载 **CSS**。适用于需使用 ECharts、Chart.js、FullCalendar（UMD 版）、jQuery 插件等 UMD/AMD 库的 RunJS 场景；传入 `.css` 地址会加载并注入样式。若库同时提供 ESM 版本，优先使用 [ctx.importAsync()](./import-async.md)。

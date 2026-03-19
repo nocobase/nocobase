@@ -1,3 +1,9 @@
+---
+title: "显示标签"
+description: "字段设置：配置字段标签显示/隐藏，控制表单项的标签展示。"
+keywords: "显示标签,show label,字段标签,界面搭建,NocoBase"
+---
+
 # 显示标签
 
 ## 介绍

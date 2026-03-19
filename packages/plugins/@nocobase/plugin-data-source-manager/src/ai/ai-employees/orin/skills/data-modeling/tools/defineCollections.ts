@@ -59,6 +59,44 @@ const updatedAtField = {
     'x-read-pretty': true,
   },
 };
+const createdByField = {
+  type: 'belongsTo',
+  name: 'createdBy',
+  interface: 'createdBy',
+  target: 'users',
+  foreignKey: 'createdById',
+  uiSchema: {
+    type: 'object',
+    title: '{{t("Created by")}}',
+    'x-component': 'AssociationField',
+    'x-component-props': {
+      fieldNames: {
+        value: 'id',
+        label: 'nickname',
+      },
+    },
+    'x-read-pretty': true,
+  },
+};
+const updatedByField = {
+  type: 'belongsTo',
+  name: 'updatedBy',
+  interface: 'updatedBy',
+  target: 'users',
+  foreignKey: 'updatedById',
+  uiSchema: {
+    type: 'object',
+    title: '{{t("Last updated by")}}',
+    'x-component': 'AssociationField',
+    'x-component-props': {
+      fieldNames: {
+        value: 'id',
+        label: 'nickname',
+      },
+    },
+    'x-read-pretty': true,
+  },
+};
 
 class IntentError extends Error {
   constructor(message: string) {
@@ -147,6 +185,14 @@ export default defineTools({
           if (options.updatedAt !== false) {
             systemFields.push(updatedAtField);
             options.updatedAt = true;
+          }
+          if (options.createdBy) {
+            systemFields.push(createdByField);
+            options.createdBy = true;
+          }
+          if (options.updatedBy) {
+            systemFields.push(updatedByField);
+            options.updatedBy = true;
           }
 
           const baseFields = [...systemFields, ...normalFields];

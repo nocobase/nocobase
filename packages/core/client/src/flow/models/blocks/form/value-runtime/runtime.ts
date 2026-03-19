@@ -568,7 +568,6 @@ export class FormValueRuntime {
       const toWrite = Array.from(writeByPathKey.values())
         .sort((a, b) => a.order - b.order)
         .map((e) => ({ namePath: e.namePath, value: e.value, rawValue: e.rawValue, pathKey: e.pathKey }));
-
       if (!toWrite.length) {
         return;
       }
@@ -584,7 +583,6 @@ export class FormValueRuntime {
         if (next > MAX_WRITES_PER_PATH_PER_TX) continue;
         filteredToWrite.push(w);
       }
-
       if (!filteredToWrite.length) {
         return;
       }

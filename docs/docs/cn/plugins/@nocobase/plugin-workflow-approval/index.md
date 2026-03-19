@@ -1,6 +1,8 @@
 ---
 displayName: "工作流：审批"
 packageName: '@nocobase/plugin-workflow-approval'
+title: "工作流：审批"
+keywords: "工作流：审批,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

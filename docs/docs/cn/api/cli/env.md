@@ -1,3 +1,9 @@
+---
+title: "全局环境变量"
+description: "NocoBase 环境变量：TZ、APP_KEY、DB 等配置项说明。"
+keywords: "环境变量,APP_KEY,TZ,配置,NocoBase"
+---
+
 # 全局环境变量
 
 ## TZ

@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-data-visualization"
+title: "数据可视化概述"
+description: "NocoBase 数据可视化：图表区块、Builder/SQL 数据查询、度量与维度、ECharts 配置、交互事件、页面筛选器联动、多维度分析。"
+keywords: "数据可视化,图表区块,ECharts,仪表盘,度量,维度,Builder,SQL 查询,NocoBase"
 ---
 
 # 概述

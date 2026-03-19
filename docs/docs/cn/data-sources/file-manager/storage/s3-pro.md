@@ -1,3 +1,9 @@
+---
+title: "文件存储：S3 (Pro)"
+description: "S3 Pro 存储引擎，兼容 S3 协议的企业级存储，支持自定义 Endpoint 与高级配置。"
+keywords: "S3 Pro,对象存储,云存储,兼容 S3,NocoBase"
+---
+
 # 文件存储：S3 (Pro)
 
 <PluginInfo commercial="true" name="file-storage-s3-pro"></PluginInfo>

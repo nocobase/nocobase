@@ -1,3 +1,9 @@
+---
+title: "NocoBase 环境变量配置"
+description: "NocoBase 环境变量：TZ 时区、APP_KEY、DB 数据库、CACHE、FILE_STORAGE 等配置说明，Docker 与 create-nocobase-app 设置方式。"
+keywords: "环境变量,APP_KEY,TZ,DB 配置,CACHE,FILE_STORAGE,Docker 环境变量,NocoBase"
+---
+
 # 环境变量
 
 ## 如何设置环境变量？

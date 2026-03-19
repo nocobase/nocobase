@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-manual'
+title: "人工处理"
+description: "人工处理节点：将流程决策权交给用户，生成待办任务，支持审批、继续/等待/终止流程。"
+keywords: "工作流,人工处理,审批,待办,人机协同,NocoBase"
 ---
 
 # 人工处理

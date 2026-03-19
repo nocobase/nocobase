@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-user-data-sync'
+title: "NocoBase 用户数据同步"
+description: "NocoBase 用户数据同步：注册同步来源、HTTP API、企业微信、用户与部门表同步、插件扩展数据源。"
+keywords: "用户数据同步,数据同步,HTTP API,企业微信,同步来源,plugin-user-data-sync,NocoBase"
 ---
 
 # 用户数据同步

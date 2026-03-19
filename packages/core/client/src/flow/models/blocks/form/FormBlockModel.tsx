@@ -92,6 +92,18 @@ export class FormBlockModel<
 
   customModelClasses: CustomFormBlockModelClassesEnum = {};
 
+  private syncRuntimeAssignRules(source = 'unknown') {
+    const params = this.getStepParams('formModelSettings', 'assignRules');
+    const items = (params?.value || []) as any[];
+    this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? items : []);
+
+    const resource: any = (this.context as any)?.resource;
+    const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(items, this.collection);
+    if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
+      resource.addUpdateAssociationValues(updateAssociationValues);
+    }
+  }
+
   renderConfigureActions() {
     return (
       <AddSubModelButton
@@ -383,6 +395,11 @@ export class FormBlockModel<
 
   onInit(options) {
     super.onInit(options);
+    this.emitter.on('onSubModelAdded', (subModel: any) => {
+      if (subModel === this.subModels.grid) {
+        queueMicrotask(() => this.syncRuntimeAssignRules('onSubModelAdded:grid'));
+      }
+    });
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
@@ -395,17 +412,10 @@ export class FormBlockModel<
   protected onMount() {
     super.onMount();
     this.formValueRuntime?.mount({ sync: true });
-    // 将"表单赋值"配置编译为运行时规则
-    const params = this.getStepParams('formModelSettings', 'assignRules');
-    const items = (params?.value || []) as any[];
-    this.formValueRuntime?.syncAssignRules?.(Array.isArray(items) ? (items as any) : []);
-
-    // 若规则目标包含关联字段的嵌套属性（如 user.name），自动补全 updateAssociationValues 以启用后端 nested update
-    const resource: any = (this.context as any)?.resource;
-    const updateAssociationValues = collectUpdateAssociationValuesFromAssignRules(items, this.collection);
-    if (resource?.addUpdateAssociationValues && updateAssociationValues.length) {
-      resource.addUpdateAssociationValues(updateAssociationValues);
-    }
+    // 将"表单赋值"配置编译为运行时规则。
+    // 注意 assignRules 委托存储在 grid 上，刷新后 block 挂载时 grid 的 stepParams 可能尚未就绪，
+    // 因此除首次同步外，还会在 grid 子模型挂载后补同步一次。
+    this.syncRuntimeAssignRules('onMount');
     // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');

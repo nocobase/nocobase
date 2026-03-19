@@ -1,3 +1,9 @@
+---
+title: "插件构建配置"
+description: "NocoBase 插件构建：build.config.ts、Vite 客户端打包、tsup 服务端打包、modifyViteConfig、beforeBuild 钩子。"
+keywords: "插件构建,build.config.ts,Vite,tsup,打包配置,@nocobase/build,NocoBase"
+---
+
 # 构建
 
 ## 自定义打包配置

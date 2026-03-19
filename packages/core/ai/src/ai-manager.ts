@@ -12,6 +12,7 @@ import { DefaultToolsManager, ToolsManager } from './tools-manager';
 import { DefaultSkillsManager, SkillsManager } from './skills-manager';
 import { AIEmployeeManager, DefaultAIEmployeeManager } from './ai-employee-manager';
 import { DefaultMCPManager, MCPManager } from './mcp-manager';
+import { McpToolsManager } from './mcp-tools-manager';
 
 export class AIManager {
   documentManager: DocumentManager;
@@ -19,6 +20,7 @@ export class AIManager {
   skillsManager: SkillsManager;
   employeeManager: AIEmployeeManager;
   mcpManager: MCPManager;
+  mcpToolsManager: McpToolsManager;
 
   constructor(protected readonly app: any) {
     this.documentManager = new DocumentManager();
@@ -26,5 +28,6 @@ export class AIManager {
     this.skillsManager = new DefaultSkillsManager(app);
     this.employeeManager = new DefaultAIEmployeeManager(app);
     this.mcpManager = new DefaultMCPManager(app);
+    this.mcpToolsManager = new McpToolsManager();
   }
 }

@@ -1,6 +1,8 @@
 ---
 displayName: "操作：自定义请求"
 packageName: '@nocobase/plugin-action-custom-request'
+title: "操作：自定义请求"
+keywords: "操作：自定义请求,插件,NocoBase"
 supportedVersions:
   - 1.x
 description: |

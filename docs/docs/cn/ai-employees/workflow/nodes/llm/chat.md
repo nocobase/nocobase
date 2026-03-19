@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "工作流 LLM 节点 - 文本对话"
+description: "工作流 LLM 文本对话节点：选择模型、设置调用参数、Response format、System/User/Assistant 消息类型、变量引用。"
+keywords: "工作流,LLM 节点,文本对话,工作流 AI,NocoBase"
+---
+
 # 文本对话
 
 <PluginInfo name="ai"></PluginInfo>

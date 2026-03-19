@@ -1,3 +1,9 @@
+---
+title: "ctx.message"
+description: "ctx.message 消息提示 API，用于 success、error、warning、info 等轻提示。"
+keywords: "ctx.message,消息提示,success,error,warning,info,RunJS,NocoBase"
+---
+
 # ctx.message
 
 Ant Design 全局 message API，用于在页面顶部中央显示临时轻提示。消息会在一定时间后自动关闭，也可由用户手动关闭。

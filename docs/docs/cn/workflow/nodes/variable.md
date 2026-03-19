@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-variable'
+title: "工作流节点 - 变量"
+description: "变量节点：声明变量或赋值，保存临时数据供流程使用。"
+keywords: "工作流,变量,Variable,流程变量,临时数据,NocoBase"
 ---
 
 # 变量

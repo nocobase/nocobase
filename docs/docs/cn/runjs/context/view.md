@@ -1,3 +1,9 @@
+---
+title: "ctx.view"
+description: "ctx.view 当前页面或区块的视图模型，用于获取路由、打开弹窗、访问页面级状态。"
+keywords: "ctx.view,视图模型,路由,弹窗,页面状态,RunJS,NocoBase"
+---
+
 # ctx.view
 
 当前激活的视图控制器（弹窗、抽屉、气泡层、嵌入式区域等），用于访问视图级信息和操作。由 FlowViewContext 提供，仅在通过 `ctx.viewer` 或 `ctx.openView` 打开的视图内容中可用。

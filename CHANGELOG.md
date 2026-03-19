@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.20](https://github.com/nocobase/nocobase/compare/v2.0.19...v2.0.20) - 2026-03-19
+
+### 🐛 Bug Fixes
+
+- **[server]** Fix the issue where lifecycle events sent by worker cause serving app stops ([#8906](https://github.com/nocobase/nocobase/pull/8906)) by @mytharcher
+
+- **[Data source manager]** Fixed issue that collection created by AI employee always missing `createBy` and `updateBy` fields ([#8895](https://github.com/nocobase/nocobase/pull/8895)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix lazy import caused SES error by @mytharcher
+
+- **[Template print]** Fix sql collection printing error by @jiannx
+
+- **[Email manager]** Fixed page error when the email does not exist by @jiannx
+
+## [v2.0.19](https://github.com/nocobase/nocobase/compare/v2.0.18...v2.0.19) - 2026-03-17
+
+### 🚀 Improvements
+
+- **[Workflow]** Fix the issue where gracefully shutdown not drain all events ([#8894](https://github.com/nocobase/nocobase/pull/8894)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix issue with specified URL for LLM service not taking effect in text embedding model calls. ([#8892](https://github.com/nocobase/nocobase/pull/8892)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix `beforeStop` event on sub app not fired by @mytharcher
+
+## [v2.0.18](https://github.com/nocobase/nocobase/compare/v2.0.17...v2.0.18) - 2026-03-17
+
+### 🎉 New Features
+
+- **[AI employees]**
+  - Scheduled cleanup of AI conversation checkpoint data. ([#8855](https://github.com/nocobase/nocobase/pull/8855)) by @cgyrock
+
+  - Allows to add AI employees in popup of sub tables ([#8873](https://github.com/nocobase/nocobase/pull/8873)) by @2013xile
+
+- **[App supervisor]** Support filtering in the application list<br />Add confirmation dialogs for start and stop actions<br />Sort application status entries by environment name by @2013xile
+
+### 🚀 Improvements
+
+- **[server]** improve pm add logic ([#8875](https://github.com/nocobase/nocobase/pull/8875)) by @chenos
+
+- **[client]** Support showing confirm message before closing popup. ([#8839](https://github.com/nocobase/nocobase/pull/8839)) by @gchust
+
+- **[Async task manager]** async tasks are added to support workers in post error messages ([#8849](https://github.com/nocobase/nocobase/pull/8849)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the issue where the “Select record” popup in the subtable failed to load correctly when opened the second time. ([#8865](https://github.com/nocobase/nocobase/pull/8865)) by @gchust
+
+- **[AI employees]** Fixed potential undefined variable errors in AI plugin upgrade migration scripts. ([#8883](https://github.com/nocobase/nocobase/pull/8883)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix the issue where async tasks do not end after an error occurs in async import by @cgyrock
+
+## [v2.0.17](https://github.com/nocobase/nocobase/compare/v2.0.16...v2.0.17) - 2026-03-14
+
+### 🚀 Improvements
+
+- **[undefined]** README ([#8866](https://github.com/nocobase/nocobase/pull/8866)) by @gaston98765
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the issue where the default values of some fields did not take effect after refreshing the page. ([#8834](https://github.com/nocobase/nocobase/pull/8834)) by @gchust
+
+- **[database]** Fix the server-side validation issue for date fields ([#8867](https://github.com/nocobase/nocobase/pull/8867)) by @2013xile
+
+- **[Localization]** localizationTexts:missing interface permission exception ([#8861](https://github.com/nocobase/nocobase/pull/8861)) by @jiannx
+
+- **[AI: Knowledge base]** Prevent the vector database and vector storage in use from being deleted. by @cgyrock
+
+## [v2.0.16](https://github.com/nocobase/nocobase/compare/v2.0.15...v2.0.16) - 2026-03-12
+
+### 🐛 Bug Fixes
+
+- **[client]**
+  - Fix connectable fields not displaying when linking data blocks under external data sources ([#8848](https://github.com/nocobase/nocobase/pull/8848)) by @zhangzhonghe
+
+  - fixed table block height being invalid ([#8842](https://github.com/nocobase/nocobase/pull/8842)) by @jiannx
+
+  - Fixed the issue where adding a data block or refreshing the page would trigger double refreshes. ([#8851](https://github.com/nocobase/nocobase/pull/8851)) by @gchust
+
+- **[UI templates]** Fixed the errors occurred when using edit form block and detail block template. ([#8859](https://github.com/nocobase/nocobase/pull/8859)) by @gchust
+
+- **[Form drafts]** Fixed the issue where form draft data was lost when the popup was opened multiple times. ([#8858](https://github.com/nocobase/nocobase/pull/8858)) by @gchust
+
+- **[Localization]** unfound entries will not be submitted in the non-editing state of the page. ([#8841](https://github.com/nocobase/nocobase/pull/8841)) by @jiannx
+
+- **[Action: Import records Pro]** Fixed the issue where multiple selections cannot be made for duplicate fields in the imported configuration. by @jiannx
+
+## [v2.0.15](https://github.com/nocobase/nocobase/compare/v2.0.14...v2.0.15) - 2026-03-12
+
+### 🐛 Bug Fixes
+
+- **[Email manager]** reply and reply to all recipient adjustments, fixing table field addition failed and other issues by @jiannx
+
+- **[Migration manager]** Fix the issue that system tables cannot be selected in custom rules by @cgyrock
+
 ## [v2.0.14](https://github.com/nocobase/nocobase/compare/v2.0.13...v2.0.14) - 2026-03-11
 
 ### 🚀 Improvements

@@ -1,3 +1,9 @@
+---
+title: "EventDefinition 事件定义"
+description: "EventDefinition 定义流中的事件处理逻辑，响应事件触发，是 ActionDefinition 的别名，用于 Flow 事件配置。"
+keywords: "EventDefinition,事件定义,Flow 事件,ActionDefinition,事件处理,FlowEngine,NocoBase"
+---
+
 # EventDefinition
 
 EventDefinition 定义了流中的事件处理逻辑，用于响应特定的事件触发。事件是流引擎中用于触发流执行的重要机制。

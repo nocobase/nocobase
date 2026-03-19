@@ -1,0 +1,25 @@
+{
+  "name": "@nocobase/plugin-mcp-server",
+  "main": "dist/server/index.js",
+  "version": "2.1.0-alpha.9",
+  "displayName": "AI: MCP server",
+  "displayName.zh-CN": "AI: MCP 服务器",
+  "description": "An MCP server for building NocoBase systems and supporting business workflows.",
+  "description.zh-CN": "用于构建 NocoBase 系统并支持业务流程的 MCP 服务器。",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "light-my-request": "^6.6.0",
+    "openapi-mcp-generator": "^3.3.0"
+  },
+  "peerDependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@nocobase/ai": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "AI"
+  ]
+}
