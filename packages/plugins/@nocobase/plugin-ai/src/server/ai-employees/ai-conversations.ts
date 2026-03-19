@@ -208,6 +208,6 @@ export class AIConversationsManager {
   }
 
   private get aiConversationsRepo() {
-    return this.plugin.db.getRepository('aiToolMessages');
+    return this.plugin.db.getRepository('aiConversations');
   }
 }

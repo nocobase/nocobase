@@ -47,6 +47,7 @@ import { kimiProviderOptions } from './llm-providers/kimi';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
+import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -59,6 +60,7 @@ export class PluginAIServer extends Plugin {
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   documentLoaders = new DocumentLoaders(this);
+  subAgentsDispatcher = new SubAgentsDispatcher(this);
   snowflake: Snowflake;
 
   /**
