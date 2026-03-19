@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-main"
+title: "继承表"
+description: "继承表基于已有表扩展字段，子表继承父表字段与数据，适用于表结构复用与扩展场景，仅 PostgreSQL 支持。"
+keywords: "继承表,Inheritance Collection,表继承,数据表扩展,PostgreSQL,NocoBase"
 ---
-
 # 继承表
 
 ## 介绍

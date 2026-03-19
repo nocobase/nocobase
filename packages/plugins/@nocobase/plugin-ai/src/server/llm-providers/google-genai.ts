@@ -193,7 +193,7 @@ export class GoogleGenAIEmbeddingProvider extends EmbeddingProvider {
   createEmbedding(): EmbeddingsInterface {
     return new GoogleGenerativeAIEmbeddings({
       apiKey: this.apiKey,
-      baseUrl: this.baseUrl,
+      baseUrl: this.baseURL,
       model: this.model,
     });
   }

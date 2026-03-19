@@ -1,3 +1,9 @@
+---
+title: "NocoBase 插件开发概述"
+description: "NocoBase 微内核架构、插件生命周期、目录结构、即插即用、前后端一体，client/server 源码、package.json 元信息。"
+keywords: "插件开发,NocoBase 插件,微内核,插件生命周期,前后端一体,NocoBase 扩展"
+---
+
 # 插件开发概述
 
 NocoBase 采用 **微内核架构**，核心仅负责插件的生命周期调度、依赖管理和基础能力封装。所有业务功能都以插件形式提供。因此，理解插件的组织结构、生命周期与管理方式，是定制化 NocoBase 的第一步。

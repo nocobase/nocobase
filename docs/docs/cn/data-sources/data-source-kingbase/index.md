@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-kingbase"
+title: "数据源 - 人大金仓（KingbaseES）"
+description: "使用人大金仓 KingbaseES 作为主数据库或外部数据库，支持 pg 模式，环境变量配置与 Docker 部署。"
+keywords: "人大金仓,KingbaseES,主数据库,外部数据库,国产数据库,NocoBase"
 ---
-
 # 数据源 - 人大金仓（KingbaseES）
 
 ## 介绍

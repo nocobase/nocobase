@@ -1,3 +1,9 @@
+---
+title: "日期时间（不含时区）"
+description: "日期时间字段（不含时区），存储本地日期时间。"
+keywords: "日期时间,不含时区,datetime without tz,本地时间,NocoBase"
+---
+
 # 日期时间（不含时区）
 
 ## 介绍

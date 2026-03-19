@@ -1,3 +1,9 @@
+---
+title: "ctx.importAsync()"
+description: "ctx.importAsync() 按 URL 动态加载 ESM 模块或 CSS，适用于 JSBlock、JSField、事件流等 RunJS 场景。"
+keywords: "ctx.importAsync,ESM,动态加载,esm.sh,JSBlock,JSField,RunJS,NocoBase"
+---
+
 # ctx.importAsync()
 
 按 URL 动态加载 **ESM 模块**或 **CSS**，适用于 RunJS 各场景。需要第三方 ESM 库时使用 `ctx.importAsync()`，UMD/AMD 库使用 `ctx.requireAsync()`；传入 `.css` 地址会加载并注入样式。

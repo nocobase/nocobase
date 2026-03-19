@@ -1,7 +1,9 @@
 ---
 pageType: home
 pageName: development
-
+title: "NocoBase 开发指南"
+description: "NocoBase 开发指南：插件开发、FlowEngine、RunJS、区块/字段/操作扩展、数据源扩展、工作流扩展、认证扩展。"
+keywords: "NocoBase,开发指南,插件开发,FlowEngine,RunJS,NocoBase 扩展"
 features:
   - title: 核心架构
     details: 掌握 NocoBase 的底层扩展机制与运行原理，包括插件系统、FlowEngine 与数据库内核模块，构建坚实的开发基础。

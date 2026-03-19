@@ -1,3 +1,9 @@
+---
+title: "ctx.makeResource()"
+description: "ctx.makeResource() 创建 API 资源实例，用于自定义 CRUD、关联操作，配合 initResource 使用。"
+keywords: "ctx.makeResource,initResource,API 资源,CRUD,MultiRecordResource,SingleRecordResource,RunJS,NocoBase"
+---
+
 # ctx.makeResource()
 
 **新建**一个 resource 实例并返回，**不会**写入或改变 `ctx.resource`。适合需要多个独立 resource 或临时使用的场景。

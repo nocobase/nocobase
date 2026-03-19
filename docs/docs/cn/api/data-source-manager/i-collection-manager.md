@@ -1,3 +1,9 @@
+---
+title: "ICollectionManager"
+description: "NocoBase ICollectionManager 接口：管理数据源 Collection 实例的接口。"
+keywords: "ICollectionManager,接口,Collection,数据源,NocoBase"
+---
+
 # ICollectionManager
 
 `ICollectionManager` 接口，用于管理数据源的 `Collection` 实例。

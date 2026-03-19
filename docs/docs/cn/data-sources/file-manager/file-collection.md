@@ -1,3 +1,9 @@
+---
+title: "文件表"
+description: "文件表存储文件元信息，内置 attachments 表或可创建自定义文件表，用于附件字段关联。"
+keywords: "文件表,File Collection,attachments,元信息,附件,NocoBase"
+---
+
 # 文件表
 
 <PluginInfo name="file-manager"></PluginInfo>

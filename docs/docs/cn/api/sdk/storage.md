@@ -1,3 +1,9 @@
+---
+title: "Storage (SDK)"
+description: "NocoBase 前端 SDK Storage：本地存储、sessionStorage 封装。"
+keywords: "Storage SDK,本地存储,sessionStorage,前端存储,NocoBase"
+---
+
 # Storage
 
 ## 概览

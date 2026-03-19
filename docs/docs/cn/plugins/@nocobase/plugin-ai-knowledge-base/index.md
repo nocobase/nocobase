@@ -1,6 +1,8 @@
 ---
 displayName: "AI: 知识库"
 packageName: '@nocobase/plugin-ai-knowledge-base'
+title: "AI: 知识库"
+keywords: "AI: 知识库,插件,NocoBase"
 supportedVersions:
   - 2.x
 description: |

@@ -1,3 +1,9 @@
+---
+title: "Auth (SDK)"
+description: "NocoBase 前端 SDK Auth：登录、登出、token 管理。"
+keywords: "Auth SDK,登录,登出,token 管理,前端认证,NocoBase"
+---
+
 # Auth
 
 ## 概览

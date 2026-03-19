@@ -1,6 +1,10 @@
 # Chapter 4: Forms & Details — Input, Display, All in One
 
-In the last chapter, we built the ticket list and used a quick form to enter test data. In this chapter, we'll **refine the form experience** — optimize [Form block](/interface-builder/blocks/data-blocks/form) field layouts, add [Details blocks](/interface-builder/blocks/data-blocks/details), configure [linkage rules](/interface-builder/linkage-rules), and use [change history](/collection-templates/audit-log) to track every modification.
+In the last chapter, we built the ticket list and used a quick form to enter test data. In this chapter, we'll **refine the form experience** — optimize [Form block](/interface-builder/blocks/data-blocks/form) field layouts, add [Details blocks](/interface-builder/blocks/data-blocks/details), configure [linkage rules](/interface-builder/linkage-rules), and use [change history](https://docs.nocobase.com/record-history/) to track every modification.
+
+:::tip
+Section 4.4 "Change History" requires the [Professional edition](https://www.nocobase.com/en/commercial). Skipping it won't affect later chapters.
+:::
 
 ## 4.1 Refining the New Ticket Form
 
@@ -219,7 +223,11 @@ Once enabled, hovering over a table cell reveals a small pencil icon. Click it t
 
 ## 4.4 Enabling Change History
 
-One of the most important aspects of a ticket system: **who changed what and when must be traceable**. NocoBase has a built-in "Record History" plugin that automatically logs every data change.
+:::info Commercial Plugin
+"[Record History](https://docs.nocobase.com/record-history/)" is included in the NocoBase [Professional edition](https://www.nocobase.com/en/commercial) and requires a commercial license. If you're using the Community edition, feel free to skip this section — it won't affect later chapters.
+:::
+
+One of the most important aspects of a ticket system: **who changed what and when must be traceable**. NocoBase's "Record History" plugin automatically logs every data change.
 
 ### Configuring Change History
 
@@ -260,7 +268,7 @@ In this chapter, we completed the full data lifecycle:
 - **Form** — Users can submit new tickets with default values and validation
 - **Linkage rules** — Urgent tickets automatically require a description
 - **Details block** — Clearly displays a ticket's complete information
-- **[Change history](/collection-templates/audit-log)** — Automatically tracks every modification for worry-free auditing
+- **[Change history](/collection-templates/audit-log)** — Automatically tracks every modification for worry-free auditing (commercial plugin, optional)
 
 From "visible" to "enterable" to "traceable" — our ticket system now has basic usability.
 

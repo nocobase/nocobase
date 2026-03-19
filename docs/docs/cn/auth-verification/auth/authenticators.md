@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth'
+title: "认证器管理"
+description: "NocoBase 认证器管理：激活认证器、添加认证类型、登录页显示配置，支持密码、SAML、OIDC 等扩展认证方式。"
+keywords: "认证器管理,认证类型,激活认证器,登录页配置,NocoBase"
 ---
 
 # 认证器管理

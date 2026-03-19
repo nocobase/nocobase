@@ -1,3 +1,9 @@
+---
+title: "工作流 HTTP 请求节点"
+description: "工作流 HTTP 请求节点调用外部 API：GET/POST/PUT、变量引用、Basic/Bearer/API Key 认证、响应解析、超时重试、与 Webhook 对比。"
+keywords: "工作流 HTTP 请求,HTTP 请求节点,外部 API 调用,Bearer Token,API Key,工作流集成,NocoBase"
+---
+
 # 工作流 HTTP 请求集成
 
 通过 HTTP 请求节点,NocoBase 工作流可以主动向任意 HTTP 服务发送请求,实现与外部系统的数据交互和业务集成。

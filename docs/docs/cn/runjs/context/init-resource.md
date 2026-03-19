@@ -1,3 +1,9 @@
+---
+title: "ctx.initResource()"
+description: "ctx.initResource() 初始化 RunJS 资源，创建可复用的 API 资源实例。"
+keywords: "ctx.initResource,makeResource,API 资源,MultiRecordResource,SingleRecordResource,RunJS,NocoBase"
+---
+
 # ctx.initResource()
 
 **初始化**当前上下文的 resource：若尚未存在 `ctx.resource`，则按指定类型创建一个并绑定到上下文；若已存在则直接使用。之后可通过 `ctx.resource` 访问。

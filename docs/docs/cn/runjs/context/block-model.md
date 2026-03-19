@@ -1,3 +1,9 @@
+---
+title: "ctx.blockModel"
+description: "ctx.blockModel 当前 JS 字段/区块所在的父区块模型，可访问 form、collection、resource，用于 JSField、JSItem、JSColumn 联动。"
+keywords: "ctx.blockModel,BlockModel,form,collection,resource,JSField,JSItem,RunJS,NocoBase"
+---
+
 # ctx.blockModel
 
 当前 JS 字段 / JS 区块所在的父区块模型（BlockModel 实例）。在 JSField、JSItem、JSColumn 等场景下，`ctx.blockModel` 指向承载当前 JS 逻辑的表单区块或表格区块；在 JSBlock 独立区块中可能为 `null` 或与 `ctx.model` 相同。

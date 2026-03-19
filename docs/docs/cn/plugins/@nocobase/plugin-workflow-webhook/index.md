@@ -1,6 +1,8 @@
 ---
 displayName: "工作流：Webhook 触发器"
 packageName: '@nocobase/plugin-workflow-webhook'
+title: "工作流：Webhook 触发器"
+keywords: "工作流：Webhook 触发器,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

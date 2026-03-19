@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 是什么"
+description: "FlowEngine 是 NocoBase 2.0 前端无代码/低代码开发引擎，Model 与 Flow 结合，简化前端逻辑与可配置编排，理解 Flow、Step、Engine 核心概念。"
+keywords: "FlowEngine,无代码,低代码,FlowModel,Flow,Step,前端引擎,可编排,NocoBase"
+---
+
 # FlowEngine 是什么？
 
 FlowEngine 是 NocoBase 2.0 全新推出的前端无代码、低代码开发引擎。它将模型（Model）与流（Flow）结合，简化前端逻辑、提升复用性与可维护性；同时，借助 Flow 的可配置能力，为前端组件和业务逻辑赋予无代码化的配置与编排能力。

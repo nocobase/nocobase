@@ -1,3 +1,9 @@
+---
+title: "FlowModel 核心概念"
+description: "FlowModel 是 FlowEngine 核心，管理组件属性、状态、Flow、渲染，理解 FlowModel 是掌握 FlowEngine 的第一步。"
+keywords: "FlowModel,FlowEngine 核心,组件模型,属性管理,Flow 承载,可编排,NocoBase"
+---
+
 # 从 FlowModel 开始
 
 ## 自定义 FlowModel

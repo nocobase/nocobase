@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 安装"
+description: "模板打印插件安装：商业插件激活、LibreOffice 安装（PDF 生成）、Docker 环境配置。"
+keywords: "模板打印,安装,LibreOffice,PDF,NocoBase"
+---
+
 
 ### 安装插件
 

@@ -1,3 +1,9 @@
+---
+title: "FlowModel 生命周期"
+description: "FlowModel 生命周期：mount、init、Flow 执行、unmount，理解 FlowModel 组件挂载与销毁流程。"
+keywords: "FlowModel 生命周期,mount,init,unmount,Flow 执行,组件生命周期,FlowEngine,NocoBase"
+---
+
 # FlowModel 生命周期
 
 ## model 方法

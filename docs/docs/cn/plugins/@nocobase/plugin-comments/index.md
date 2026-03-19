@@ -1,6 +1,8 @@
 ---
 displayName: "评论"
 packageName: '@nocobase/plugin-comments'
+title: "评论"
+keywords: "评论,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x
