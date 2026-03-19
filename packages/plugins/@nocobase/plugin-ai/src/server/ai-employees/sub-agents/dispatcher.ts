@@ -9,27 +9,31 @@
 
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
-import { AIEmployee, ChatStreamProtocol } from '../ai-employee';
+import { AIEmployee, ChatStreamProtocol, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
 
 export type SubAgentTask = {
   ctx: Context;
   protocol: ChatStreamProtocol;
   employee: Model;
-  prompt: string;
+  model: ModelRef;
+  question: string;
   skillSettings?: Record<string, any>;
 };
 
 export class SubAgentsDispatcher {
   constructor(protected plugin: PluginAIServer) {}
 
-  async run(task: SubAgentTask): Promise<string> {
-    const { ctx, protocol, employee, prompt, skillSettings } = task;
+  async run(task: SubAgentTask): Promise<{
+    sessionId: string;
+    stream: Promise<string>;
+  }> {
+    const { ctx, protocol, employee, model, question, skillSettings } = task;
     const userId = ctx.auth?.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
     }
-    const model = ctx.action.params.values?.model;
+
     if (!model?.llmService || !model?.model) {
       throw new Error('LLM service not configured');
     }
@@ -39,7 +43,7 @@ export class SubAgentsDispatcher {
       aiEmployee: {
         username: employee.get('username'),
       },
-      title: task.prompt.slice(0, 30),
+      title: question.slice(0, 30),
       from: 'sub-agent',
       options: {
         skillSettings,
@@ -55,33 +59,42 @@ export class SubAgentsDispatcher {
       protocol,
     });
 
-    const streamed = await aiEmployee.stream({
-      userMessages: [
-        {
-          role: 'user',
-          content: {
-            type: 'text',
-            content: prompt,
+    const stream = async () => {
+      const streamed = await aiEmployee.stream({
+        userMessages: [
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              content: question,
+            },
           },
-        },
-      ],
-    });
+        ],
+      });
 
-    if (!streamed) {
-      throw new Error('Sub-agent task execution failed');
-    }
+      if (!streamed) {
+        throw new Error('Sub-agent task execution failed');
+      }
 
-    const lastMessage = await this.plugin.db.getRepository('aiConversations.messages', conversation.sessionId).findOne({
-      sort: ['-messageId'],
-      filter: {
-        role: task.employee.get('username'),
-      },
-    });
+      const lastMessage = await this.plugin.db
+        .getRepository('aiConversations.messages', conversation.sessionId)
+        .findOne({
+          sort: ['-messageId'],
+          filter: {
+            role: task.employee.get('username'),
+          },
+        });
 
-    if (!lastMessage?.content) {
-      throw new Error('Sub-agent returned no message');
-    }
+      if (!lastMessage?.content) {
+        throw new Error('Sub-agent returned no message');
+      }
 
-    return typeof lastMessage.content === 'string' ? lastMessage.content : lastMessage.content?.content ?? '';
+      return typeof lastMessage.content === 'string' ? lastMessage.content : lastMessage.content?.content ?? '';
+    };
+
+    return {
+      sessionId: conversation.sessionId,
+      stream: stream(),
+    };
   }
 }
