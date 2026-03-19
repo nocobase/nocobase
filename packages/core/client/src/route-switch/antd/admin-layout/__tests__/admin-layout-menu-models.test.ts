@@ -13,15 +13,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
 import { NocoBaseDesktopRouteType } from '../../../../admin-shell/route-types';
+import { AdminLayoutModel } from '../AdminLayoutModel';
 import {
   AdminLayoutMenuItemModel,
-  AdminLayoutMenuTreeModel,
   getAdminLayoutMenuMovePositionOptions,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
 } from '../AdminLayoutMenuModels';
 
-describe('AdminLayoutMenuTreeModel', () => {
+describe('AdminLayoutModel menu items', () => {
   let engine: FlowEngine;
 
   beforeEach(() => {
@@ -60,13 +60,13 @@ describe('AdminLayoutMenuTreeModel', () => {
     });
   });
 
-  it('should sync route tree into menu subModels and cleanup stale branches', () => {
-    const menuTree = engine.createModel<AdminLayoutMenuTreeModel>({
-      uid: 'admin-layout-menu',
-      use: AdminLayoutMenuTreeModel,
+  it('should sync route tree into menuItems subModels and cleanup stale branches', () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
     });
 
-    menuTree.syncRoutes([
+    adminLayoutModel.syncMenuRoutes([
       {
         id: 1,
         title: 'Group',
@@ -87,17 +87,17 @@ describe('AdminLayoutMenuTreeModel', () => {
       },
     ]);
 
-    expect(menuTree.subModels.items).toHaveLength(2);
-    expect(menuTree.subModels.items?.[0]).toBeInstanceOf(AdminLayoutMenuItemModel);
-    expect(menuTree.subModels.items?.[0].subModels.items).toHaveLength(1);
-    expect(menuTree.subModels.items?.[0].subModels.items?.[0].props.route).toMatchObject({
+    expect(adminLayoutModel.subModels.menuItems).toHaveLength(2);
+    expect(adminLayoutModel.subModels.menuItems?.[0]).toBeInstanceOf(AdminLayoutMenuItemModel);
+    expect(adminLayoutModel.subModels.menuItems?.[0].subModels.menuItems).toHaveLength(1);
+    expect(adminLayoutModel.subModels.menuItems?.[0].subModels.menuItems?.[0].props.route).toMatchObject({
       title: 'Page 1',
       schemaUid: 'page-1',
     });
 
-    const staleGroupUid = menuTree.subModels.items?.[0].uid;
+    const staleGroupUid = adminLayoutModel.subModels.menuItems?.[0].uid;
 
-    menuTree.syncRoutes([
+    adminLayoutModel.syncMenuRoutes([
       {
         id: 2,
         title: 'Link',
@@ -105,8 +105,8 @@ describe('AdminLayoutMenuTreeModel', () => {
       },
     ]);
 
-    expect(menuTree.subModels.items).toHaveLength(1);
-    expect(menuTree.subModels.items?.[0].props.route).toMatchObject({
+    expect(adminLayoutModel.subModels.menuItems).toHaveLength(1);
+    expect(adminLayoutModel.subModels.menuItems?.[0].props.route).toMatchObject({
       title: 'Link',
       type: NocoBaseDesktopRouteType.link,
     });
@@ -114,12 +114,12 @@ describe('AdminLayoutMenuTreeModel', () => {
   });
 
   it('should generate ProLayout route tree from menu models', () => {
-    const menuTree = engine.createModel<AdminLayoutMenuTreeModel>({
-      uid: 'admin-layout-menu',
-      use: AdminLayoutMenuTreeModel,
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
     });
 
-    menuTree.syncRoutes([
+    adminLayoutModel.syncMenuRoutes([
       {
         id: 1,
         title: 'Group',
@@ -140,7 +140,7 @@ describe('AdminLayoutMenuTreeModel', () => {
       },
     ]);
 
-    const route = menuTree.toProLayoutRoute({
+    const route = adminLayoutModel.toProLayoutRoute({
       designable: false,
       isMobile: false,
       t: (title) => title,
@@ -152,7 +152,7 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(route.children[0].redirect).toBe('/admin/page-1');
     expect(route.children[0]._depth).toBe(0);
     expect(route.children[0]._route).toMatchObject({ id: 1, type: NocoBaseDesktopRouteType.group });
-    expect(route.children[0]._model).toBe(menuTree.subModels.items?.[0]);
+    expect(route.children[0]._model).toBe(adminLayoutModel.subModels.menuItems?.[0]);
     expect(route.children[0].routes).toHaveLength(1);
     expect(route.children[0].routes?.[0].path).toBe('/admin/page-1');
     expect(route.children[0].routes?.[0].redirect).toBe('/admin/page-1');
@@ -161,20 +161,22 @@ describe('AdminLayoutMenuTreeModel', () => {
       schemaUid: 'page-1',
       type: NocoBaseDesktopRouteType.page,
     });
-    expect(route.children[0].routes?.[0]._model).toBe(menuTree.subModels.items?.[0].subModels.items?.[0]);
+    expect(route.children[0].routes?.[0]._model).toBe(
+      adminLayoutModel.subModels.menuItems?.[0].subModels.menuItems?.[0],
+    );
     expect(route.children[1].path).toBe('/');
     expect(route.children[1]._depth).toBe(0);
     expect(route.children[1]._route).toMatchObject({ id: 2, type: NocoBaseDesktopRouteType.link });
-    expect(route.children[1]._model).toBe(menuTree.subModels.items?.[1]);
+    expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
   });
 
   it('should insert designer buttons in expected positions', () => {
-    const menuTree = engine.createModel<AdminLayoutMenuTreeModel>({
-      uid: 'admin-layout-menu',
-      use: AdminLayoutMenuTreeModel,
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
     });
 
-    menuTree.syncRoutes([
+    adminLayoutModel.syncMenuRoutes([
       {
         id: 1,
         title: 'Group',
@@ -190,7 +192,7 @@ describe('AdminLayoutMenuTreeModel', () => {
       },
     ]);
 
-    const desktopRoute = menuTree.toProLayoutRoute({
+    const desktopRoute = adminLayoutModel.toProLayoutRoute({
       designable: true,
       isMobile: false,
       t: (title) => title,
@@ -200,7 +202,7 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(React.isValidElement(desktopRoute.children[0].name)).toBe(true);
     expect(desktopRoute.children[1].routes?.[1].key).toBe('x-designer-button');
 
-    const mobileRoute = menuTree.toProLayoutRoute({
+    const mobileRoute = adminLayoutModel.toProLayoutRoute({
       designable: true,
       isMobile: true,
       t: (title) => title,
@@ -210,14 +212,14 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(mobileRoute.children[0].routes?.[1].key).toBe('x-designer-button');
   });
 
-  it('should update ProLayout route result after menu tree sync in observer render', async () => {
-    const menuTree = engine.createModel<AdminLayoutMenuTreeModel>({
-      uid: 'admin-layout-menu',
-      use: AdminLayoutMenuTreeModel,
+  it('should update ProLayout route result after menuItems sync in observer render', async () => {
+    const adminLayoutModel = engine.createModel<AdminLayoutModel>({
+      uid: 'admin-layout-model',
+      use: AdminLayoutModel,
     });
 
     const RouteReader = observer(() => {
-      const route = menuTree.toProLayoutRoute({
+      const route = adminLayoutModel.toProLayoutRoute({
         designable: true,
         isMobile: false,
         t: (title) => title,
@@ -231,7 +233,7 @@ describe('AdminLayoutMenuTreeModel', () => {
     expect(screen.getByTestId('route-length').textContent).toBe('1');
 
     act(() => {
-      menuTree.syncRoutes([
+      adminLayoutModel.syncMenuRoutes([
         {
           id: 1,
           title: 'Page 1',

@@ -408,7 +408,7 @@ export const AdminLayoutShell = (props) => {
 
   useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
-    const nextRoute = adminLayoutModel?.subModels.menu?.toProLayoutRoute({
+    const nextRoute = adminLayoutModel?.toProLayoutRoute({
       designable,
       isMobile: isMobileSider,
       t,

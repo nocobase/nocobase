@@ -38,7 +38,6 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { AdminLayout } from '..';
 import { AdminLayoutModel } from '../AdminLayoutModel';
-import { AdminLayoutMenuTreeModel } from '../AdminLayoutMenuModels';
 
 describe('AdminLayout (phase-1 host)', () => {
   beforeEach(() => {
@@ -61,7 +60,7 @@ describe('AdminLayout (phase-1 host)', () => {
     const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
     expect(model).toBeInstanceOf(AdminLayoutModel);
     expect(model.props.testFlag).toBe('first-render');
-    expect(model.subModels.menu).toBeInstanceOf(AdminLayoutMenuTreeModel);
+    expect((model.subModels as any).menu).toBeUndefined();
     expect((model.subModels as any).layoutContent).toBeUndefined();
     expect((model.subModels as any).headerActions).toBeUndefined();
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model }));
@@ -86,7 +85,7 @@ describe('AdminLayout (phase-1 host)', () => {
     });
 
     expect(engine.getModel('admin-layout-model')).toBe(existingModel);
-    expect(existingModel.subModels.menu).toBeInstanceOf(AdminLayoutMenuTreeModel);
+    expect((existingModel.subModels as any).menu).toBeUndefined();
     expect((existingModel.subModels as any).layoutContent).toBeUndefined();
     expect((existingModel.subModels as any).headerActions).toBeUndefined();
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model: existingModel }));
