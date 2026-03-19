@@ -23,7 +23,11 @@ const createTransportReaction = (transport: 'stdio' | 'remote', required = false
   ];
 };
 
-const createMCPFormProperties = (options: { disableName?: boolean; submitPropsHook: string }) => ({
+const createMCPFormProperties = (options: {
+  disableName?: boolean;
+  submitPropsHook: string;
+  footerComponent?: 'Action.Drawer.Footer' | 'Action.Drawer.FootBar';
+}) => ({
   name: {
     type: 'string',
     'x-decorator': 'FormItem',
@@ -221,7 +225,7 @@ const createMCPFormProperties = (options: { disableName?: boolean; submitPropsHo
   },
   footer: {
     type: 'void',
-    'x-component': 'Action.Drawer.Footer',
+    'x-component': options.footerComponent || 'Action.Drawer.Footer',
     properties: {
       test: {
         type: 'void',
@@ -254,6 +258,7 @@ export const editMCPFormContentSchema = {
   properties: createMCPFormProperties({
     disableName: true,
     submitPropsHook: 'useEditActionProps',
+    footerComponent: 'Action.Drawer.FootBar',
   }),
 };
 
