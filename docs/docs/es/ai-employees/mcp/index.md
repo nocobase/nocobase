@@ -1,0 +1,75 @@
+---
+pkg: '@nocobase/plugin-mcp-server'
+---
+
+# NocoBase MCP
+
+Después de habilitar el plugin NocoBase MCP Server, tu aplicación NocoBase expondrá un endpoint MCP para que los clientes MCP puedan acceder y llamar a las APIs de NocoBase.
+
+## Dirección del servidor
+
+- Aplicación principal:
+
+  `http(s)://<host>:<port>/api/mcp`
+
+- Aplicación no principal:
+
+  `http(s)://<host>:<port>/api/__app/<app_name>/mcp`
+
+Este endpoint utiliza el transporte `streamable HTTP`.
+
+## Capacidades
+
+- APIs del núcleo de NocoBase y de sus plugins
+- Una herramienta CRUD genérica para trabajar con tablas de datos
+
+## Inicio rápido
+
+### Codex
+
+#### Autenticación con API Key
+
+Primero, habilita el plugin API Keys y crea una API key.
+
+```bash
+export NOCOBASE_API_TOKEN=<your_api_key>
+codex mcp add nocobase --url http://<host>:<port>/api/mcp --bearer-token-env-var NOCOBASE_API_TOKEN
+```
+
+#### Autenticación con OAuth
+
+Primero, habilita el plugin IdP: OAuth.
+
+```bash
+codex mcp add nocobase --url http://<host>:<port>/api/mcp
+codex mcp login nocobase --scopes mcp,offline_access
+```
+
+### Claude Code
+
+#### Autenticación con API Key
+
+Primero, habilita el plugin API Keys y crea una API key.
+
+```bash
+claude mcp add --transport http nocobase http://<host>:<port>/api/mcp --header "Authorization: Bearer <your_api_key>"
+```
+
+#### Autenticación con OAuth
+
+Primero, habilita el plugin IdP: OAuth.
+
+```bash
+claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
+```
+
+Después, abre Claude e inicia sesión en el servicio MCP correspondiente:
+
+```bash
+claude
+/mcp
+```
+
+## Uso junto con Skills
+
+Se recomienda usar NocoBase MCP junto con NocoBase Skills. Consulta [NocoBase Skills](../skills/index.md).

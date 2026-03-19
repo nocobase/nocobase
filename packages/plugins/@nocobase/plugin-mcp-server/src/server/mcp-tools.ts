@@ -49,6 +49,79 @@ function mergeSwagger(target: OpenAPIDocument, source: Partial<OpenAPIDocument>)
   }) as OpenAPIDocument;
 }
 
+function resolveLocalRef(document: OpenAPIDocument, ref: string) {
+  if (!ref.startsWith('#/')) {
+    return undefined;
+  }
+
+  return ref
+    .slice(2)
+    .split('/')
+    .reduce<any>((current, segment) => current?.[segment], document);
+}
+
+function dereferenceNode(node: any, document: OpenAPIDocument, seen = new Set<string>()) {
+  if (Array.isArray(node)) {
+    return node.map((item) => dereferenceNode(item, document, seen));
+  }
+
+  if (!node || typeof node !== 'object') {
+    return node;
+  }
+
+  if (typeof node.$ref === 'string') {
+    if (seen.has(node.$ref)) {
+      return {};
+    }
+    const resolved = resolveLocalRef(document, node.$ref);
+    if (!resolved) {
+      return node;
+    }
+    return dereferenceNode(resolved, document, new Set([...seen, node.$ref]));
+  }
+
+  return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, dereferenceNode(value, document, seen)]));
+}
+
+function prepareSwaggerForMcpTools(document: OpenAPIDocument): OpenAPIDocument {
+  const swagger = {
+    ...document,
+    paths: {},
+  } as OpenAPIDocument;
+
+  for (const [path, pathItem] of Object.entries(document.paths || {})) {
+    if (!pathItem) {
+      continue;
+    }
+
+    const nextPathItem: Record<string, any> = {
+      ...pathItem,
+    };
+
+    if (Array.isArray(pathItem.parameters)) {
+      nextPathItem.parameters = dereferenceNode(pathItem.parameters, document);
+    }
+
+    for (const method of ['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace'] as const) {
+      const operation = pathItem[method];
+      if (!operation) {
+        continue;
+      }
+      nextPathItem[method] = {
+        ...operation,
+        parameters: Array.isArray(operation.parameters)
+          ? dereferenceNode(operation.parameters, document)
+          : operation.parameters,
+        requestBody: operation.requestBody ? dereferenceNode(operation.requestBody, document) : operation.requestBody,
+      };
+    }
+
+    swagger.paths[path] = nextPathItem as any;
+  }
+
+  return swagger;
+}
+
 function joinUrl(baseUrl: string, path: string) {
   if (!baseUrl) {
     return path;
@@ -169,6 +242,9 @@ export async function collectMcpToolsFromSwagger(options: {
     }
     swagger = mergeSwagger(swagger, pluginSwagger);
   }
+
+  // Resolve local refs used by tool inputs.
+  swagger = prepareSwaggerForMcpTools(swagger);
 
   const { getToolsFromOpenApi } = await import('openapi-mcp-generator');
   const mcpTools = (await getToolsFromOpenApi(swagger)) as McpToolDefinitionWithBaseUrl[];

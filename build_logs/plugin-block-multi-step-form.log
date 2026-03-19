@@ -1,0 +1,86 @@
+
+> nocobase@ nocobase /Users/mytharcher/.openclaw/workspace/nocobase
+> nocobase build plugin-block-multi-step-form
+
+
+> @nocobase/build@2.1.0-alpha.9 build /Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build
+> tsup
+
+@nocobase/plugin-block-multi-step-form: plugins/@nocobase/plugin-block-multi-step-form build start
+@nocobase/plugin-block-multi-step-form: build plugin client
+asset [1m[32mindex.js[39m[22m 40.3 KiB [1m[32m[emitted][39m[22m (name: main)
+orphan modules 88.7 KiB [1m[33m[orphan][39m[22m 35 modules
+runtime modules 2.47 KiB 6 modules
+cacheable modules 89.3 KiB
+  modules by path [1mexternal "@formily/[39m[22m 84 bytes
+    [1mexternal "@formily/react"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@formily/shared"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  data:text/javascript,%0Avar%20publicPath%20%3D%20window%5B'__webpack_public_path__'%5D%20%7C%7C%20'%2F'%3B%0Aif%20(publicPath.charAt(publicPath.length%20-%201)%20![1m%3D%3D%20'%2F')%20%7B%0A%20%20publicPath%20%2B%3D%20'%2F'%3B%0A%7D%0A__webpack_public_path__%20%3D%20publicPath%20%2B%20'static%2Fplugins%2F%40nocobase%2Fplugin-block-multi-step-form%2Fdist%2Fclient%2F'%3B%0A[39m[22m 248 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1m./src/client/index.tsx + 34 modules[39m[22m 88.7 KiB [1m[33m[code generated][39m[22m
+  [1mexternal "@nocobase/client"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "react"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "@ant-design/icons"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "antd"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "lodash"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "react-i18next"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  [1mexternal "@emotion/css"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+Rspack 1.7.8 compiled [1m[32msuccessfully[39m[22m in 699 ms
+@nocobase/plugin-block-multi-step-form: build plugin server source
+@nocobase/plugin-block-multi-step-form: delete server files
+@nocobase/plugin-block-multi-step-form: build plugin server dependencies
+@nocobase/plugin-block-multi-step-form: These packages @nocobase/server will be exclude. For more information, please refer to: https://docs.nocobase.com/development/others/deps.
+@nocobase/plugin-block-multi-step-form: write external version
+@nocobase/plugin-block-multi-step-form: build declaration
+/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build/lib/buildDeclaration.js:101
+    throw new Error(`Failed to build declarations for ${cwd} 
+          ^
+
+Error: Failed to build declarations for /Users/mytharcher/.openclaw/workspace/nocobase/packages/plugins/@nocobase/plugin-block-multi-step-form 
+[96mpackages/plugins/@nocobase/plugin-block-multi-step-form/src/client/StepsForm/configureActions/index.ts[0m:[93m11[0m:[93m14[0m - [91merror[0m[90m TS2742: [0mThe inferred type of 'configureActionsInitializer' cannot be named without a reference to '@nocobase/client/node_modules/antd'. This is likely not portable. A type annotation is necessary.
+
+[7m11[0m export const configureActionsInitializer = new SchemaInitializer({
+[7m  [0m [91m             ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mpackages/plugins/@nocobase/plugin-block-multi-step-form/src/client/StepsForm/configureFields/index.ts[0m:[93m5[0m:[93m14[0m - [91merror[0m[90m TS2742: [0mThe inferred type of 'configureFieldsInitializer' cannot be named without a reference to '@nocobase/client/node_modules/antd'. This is likely not portable. A type annotation is necessary.
+
+[7m5[0m export const configureFieldsInitializer = new SchemaInitializer({
+[7m [0m [91m             ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mpackages/plugins/@nocobase/plugin-block-multi-step-form/src/client/StepsForm/configureActions/index.ts[0m:[93m11[0m:[93m14[0m - [91merror[0m[90m TS2742: [0mThe inferred type of 'configureActionsInitializer' cannot be named without a reference to '@nocobase/client/node_modules/antd'. This is likely not portable. A type annotation is necessary.
+
+[7m11[0m export const configureActionsInitializer = new SchemaInitializer({
+[7m  [0m [91m             ~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[96mpackages/plugins/@nocobase/plugin-block-multi-step-form/src/client/StepsForm/configureFields/index.ts[0m:[93m5[0m:[93m14[0m - [91merror[0m[90m TS2742: [0mThe inferred type of 'configureFieldsInitializer' cannot be named without a reference to '@nocobase/client/node_modules/antd'. This is likely not portable. A type annotation is necessary.
+
+[7m5[0m export const configureFieldsInitializer = new SchemaInitializer({
+[7m [0m [91m             ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+    at buildDeclaration (/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build/lib/buildDeclaration.js:101:11)
+    at buildPackage (/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build/lib/build.js:120:5)
+    at buildPackages (/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build/lib/build.js:92:5)
+    at build (/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build/lib/build.js:78:3)
+
+Node.js v22.22.1
+/Users/mytharcher/.openclaw/workspace/nocobase/node_modules/.pnpm/execa@5.1.1/node_modules/execa/lib/error.js:60
+		error = new Error(message);
+		        ^
+
+Error: Command failed with exit code 1: nocobase-build plugin-block-multi-step-form    
+    at makeError (/Users/mytharcher/.openclaw/workspace/nocobase/node_modules/.pnpm/execa@5.1.1/node_modules/execa/lib/error.js:60:11)
+    at handlePromise (/Users/mytharcher/.openclaw/workspace/nocobase/node_modules/.pnpm/execa@5.1.1/node_modules/execa/index.js:118:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Command.<anonymous> (/Users/mytharcher/.openclaw/workspace/nocobase/packages/core/cli/src/commands/build.js:71:7) {
+  shortMessage: 'Command failed with exit code 1: nocobase-build plugin-block-multi-step-form    ',
+  command: 'nocobase-build plugin-block-multi-step-form    ',
+  escapedCommand: 'nocobase-build plugin-block-multi-step-form "" "" "" ""',
+  exitCode: 1,
+  signal: undefined,
+  signalDescription: undefined,
+  stdout: undefined,
+  stderr: undefined,
+  failed: true,
+  timedOut: false,
+  isCanceled: false,
+  killed: false
+}
+
+Node.js v22.22.1
+ ELIFECYCLE  Command failed with exit code 1.

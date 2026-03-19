@@ -17,7 +17,8 @@
     "@nocobase/ai": "workspace:*",
     "@nocobase/client": "workspace:*",
     "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*"
+    "@nocobase/test": "workspace:*",
+    "@nocobase/plugin-idp-oauth": "workspace:*"
   },
   "keywords": [
     "AI"

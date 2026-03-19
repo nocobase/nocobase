@@ -1,0 +1,37 @@
+
+> nocobase@ nocobase /Users/mytharcher/.openclaw/workspace/nocobase
+> nocobase build plugin-block-template
+
+
+> @nocobase/build@2.1.0-alpha.9 build /Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build
+> tsup
+
+@nocobase/plugin-block-template: plugins/@nocobase/plugin-block-template build start
+@nocobase/plugin-block-template: build plugin client
+asset [1m[32mindex.js[39m[22m 94.7 KiB [1m[32m[emitted][39m[22m (name: main)
+orphan modules 243 KiB [1m[33m[orphan][39m[22m 42 modules
+runtime modules 2.47 KiB 6 modules
+cacheable modules 243 KiB
+  modules by path [1mexternal "@formily/[39m[22m 126 bytes
+    [1mexternal "@formily/json-schema"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@formily/core"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@formily/react"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  modules by path [1mexternal "@nocobase/[39m[22m 126 bytes
+    [1mexternal "@nocobase/client"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@nocobase/plugin-mobile/client"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@nocobase/utils/client"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+  + 9 modules
+Rspack 1.7.8 compiled [1m[32msuccessfully[39m[22m in 764 ms
+@nocobase/plugin-block-template: build plugin server source
+@nocobase/plugin-block-template: delete server files
+@nocobase/plugin-block-template: build plugin server dependencies
+@nocobase/plugin-block-template: These packages @nocobase/server, @nocobase/actions, @nocobase/database, @nocobase/plugin-ui-schema-storage, sequelize, @nocobase/utils, lodash will be exclude. For more information, please refer to: https://docs.nocobase.com/development/others/deps.
+@nocobase/plugin-block-template: write external version
+@nocobase/plugin-block-template: build declaration
+Rsbuild v1.7.3
+
+(node:15312) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mytharcher/.openclaw/workspace/nocobase/packages/core/app/client-v2/rsbuild.config.ts?t=1773902132154 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mytharcher/.openclaw/workspace/nocobase/packages/core/app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+info    build started...

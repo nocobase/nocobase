@@ -59,6 +59,7 @@
     "@nocobase/plugin-form-drafts": "workspace:*",
     "@nocobase/plugin-gantt": "workspace:*",
     "@nocobase/plugin-graph-collection-manager": "workspace:*",
+    "@nocobase/plugin-idp-oauth": "workspace:*",
     "@nocobase/plugin-kanban": "workspace:*",
     "@nocobase/plugin-license": "workspace:*",
     "@nocobase/plugin-locale-tester": "workspace:*",

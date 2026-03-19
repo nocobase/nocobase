@@ -199,25 +199,23 @@ Congratulations, your first automation is up and running!
 Go back to the workflow management page and click New:
 
 - **Name**: Enter "Auto-record ticket completion time"
-- **Trigger type**: This time let's try a different trigger — select **Post-action event** (fires after a specific action is performed)
+- **Trigger type**: Select **Custom action event** (fires when a user clicks a button bound to this workflow)
 - **Execution mode**: Synchronous
 
 > About synchronous vs asynchronous:
 > - Asynchronous: After the action, you can continue doing other things while the workflow runs in the background
 > - Synchronous: After the action, the UI waits for the workflow to finish before you can do anything else
 
-![06-workflows-2026-03-15-20-28-13](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-28-13.png)
+![06-workflows-2026-03-19-22-56-34](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-56-34.png)
 
 ### Step 2: Configure the Trigger
 
 Open the trigger configuration:
 
 - **Collection**: Select "Tickets"
-- **Trigger mode**: Select "Local mode — triggers after the action bound to this workflow completes"
+- **Execution mode**: Select **Single record mode** (processes only the current ticket each time)
 
-> "Global mode" (checking both operations) is generally recommended. However, to familiarize ourselves with how triggers bind to specific actions, we'll use "Local mode" for this tutorial. Feel free to switch to global mode later!
-
-![06-workflows-2026-03-15-20-32-34](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-32-34.png)
+![06-workflows-2026-03-19-22-58-21](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-58-21.png)
 
 ### Step 3: Add a Condition
 
@@ -227,46 +225,47 @@ Unlike the collection event trigger which has built-in conditions, we need to ad
 
 We recommend selecting "Continue on 'Yes' and 'No' separately" for easier future expansion.
 
-- Condition: **Trigger data → Status** equals **Completed**. Note: you must copy the exact "option value" from the field configuration here, otherwise the condition check will fail.
+- Condition: **Trigger data → Status** does not equal **Completed** (only incomplete tickets pass through; already completed tickets won't be processed again)
 
-![06-workflows-2026-03-15-20-44-08](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-44-08.png)
-
-This way, only when the status is "Completed" will the subsequent actions execute. Other statuses (like "In Progress") won't trigger anything.
+![06-workflows-2026-03-19-22-37-59](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-37-59.png)
 
 ### Step 4: Add an Update Record Node
 
-Click **+** and select an **Update record** node:
+On the "Yes" branch of the condition, click **+** and select an **Update record** node:
 
 ![06-workflows-2026-03-15-20-46-22](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-46-22.png)
 
 - **Collection**: Select "Tickets"
 - **Filter condition**: ID equals Trigger data → ID (to ensure only the current ticket gets updated)
-- **Field values**: Completion time = **System variables / System time**
+- **Field values**:
+  - Status = **Completed**
+  - Completion time = **System variables / System time**
 
-![06-workflows-2026-03-15-20-48-41](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-48-41.png)
+![06-workflows-2026-03-19-22-39-27](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-39-27.png)
+
+> This way, a single node handles both "change status" and "record time" — no need to configure field values on the button separately.
 
 ### Step 5: Create a "Complete" Action Button
 
-The workflow is configured, but a "Post-action event" needs to be bound to a specific action button to trigger. Let's create a dedicated "Complete" button in the ticket list's action column:
+The workflow is configured, but a "Custom action event" needs to be bound to a specific action button to trigger. Let's create a dedicated "Complete" button in the ticket list's action column:
 
-1. Enter UI Editor mode. In the ticket table's action column, click **"+"** and select an **"Update data"** action button
+1. Enter UI Editor mode. In the ticket table's action column, click **"+"** and select a **"Trigger workflow"** action button
+
+![06-workflows-2026-03-19-22-41-31](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-41-31.png)
+
 2. Click the button settings and change the title to **"Complete"**, then select a completion-related icon (e.g., a checkmark icon)
 
-![06-workflows-2026-03-15-20-57-39](https://static-docs.nocobase.com/06-workflows-2026-03-15-20-57-39.png)
+![06-workflows-2026-03-19-22-43-39](https://static-docs.nocobase.com/06-workflows-2026-03-19-22-43-39.png)
 
-3. Configure "Field values" and set "Status = Completed". This way when the user clicks the button, the status update operation is triggered.
-
-![06-workflows-2026-03-15-21-20-37](https://static-docs.nocobase.com/06-workflows-2026-03-15-21-20-37.png)
-
-4. Configure **linkage rules** for the button: hide it when the ticket status is already "Completed" (completed tickets don't need a "Complete" button)
+3. Configure **linkage rules** for the button: hide it when the ticket status is already "Completed" (completed tickets don't need a "Complete" button)
    - Condition: Current data → Status equals Completed
    - Action: Hide
 
 ![06-workflows-2026-03-15-21-15-29](https://static-docs.nocobase.com/06-workflows-2026-03-15-21-15-29.png)
 
-5. Open **"Bind workflows"** in the button settings and select the "Auto-record ticket completion time" workflow we just created
+4. Open **"Bind workflows"** in the button settings and select the "Auto-record ticket completion time" workflow we just created
 
-![06-workflows-2026-03-15-21-18-13](https://static-docs.nocobase.com/06-workflows-2026-03-15-21-18-13.png)
+![06-workflows-2026-03-19-23-00-53](https://static-docs.nocobase.com/06-workflows-2026-03-19-23-00-53.png)
 
 ### Step 6: Enable and Test
 
@@ -279,7 +278,7 @@ Then open a ticket with "In Progress" status and click the **"Complete"** button
 
 ![06-workflows-2026-03-15-21-25-11](https://static-docs.nocobase.com/06-workflows-2026-03-15-21-25-11.gif)
 
-Convenient, right? This is the second common use case for workflows — **automatically updating data**. And by using the "Post-action event + Local mode + Button binding" approach, we've created a precise trigger mechanism: the workflow only runs when a specific button is clicked.
+Convenient, right? This is the second common use case for workflows — **automatically updating data**. And by using the "Custom action event + Button binding" approach, we've created a precise trigger mechanism: the workflow only runs when a specific button is clicked.
 
 ## 6.4 Viewing Execution History
 

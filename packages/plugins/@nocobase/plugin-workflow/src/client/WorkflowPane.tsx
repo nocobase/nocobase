@@ -38,7 +38,7 @@ import { TriggerOptionRender } from './components/TriggerOptionRender';
 import { lang } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
-import { useWorkflowFilterActionProps } from './hooks/useWorkflowFilterActionProps';
+import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 import { ExecutionStatusOptions } from './constants';
 
 function SyncOptionSelect(props) {
@@ -198,7 +198,7 @@ export function WorkflowPane() {
           useTriggersOptions,
           useWorkflowSyncReaction,
           useSyncAction,
-          useWorkflowFilterActionProps,
+          useResourceFilterActionProps,
           useRefreshActionProps,
           useRevisionAction,
           TriggerOptionRender,

@@ -1,0 +1,23 @@
+{
+  "name": "@nocobase/plugin-idp-oauth",
+  "version": "2.1.0-alpha.9",
+  "main": "dist/server/index.js",
+  "displayName": "IdP: OAuth",
+  "displayName.zh-CN": "IdP: OAuth",
+  "description": "Based on OAuth 2.1 and OpenID Connect, this plugin enables NocoBase to act as an identity provider for other systems.",
+  "description.zh-CN": "基于 OAuth 2.1 和 OpenID Connect 协议，支持 NocoBase 作为身份提供方登录其他系统。",
+  "devDependencies": {
+    "jose": "^6.2.1",
+    "oidc-provider": "~9.7.0",
+    "light-my-request": "^6.6.0",
+    "@types/oidc-provider": "^9.5.0"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Authentication"
+  ]
+}

@@ -1,0 +1,151 @@
+
+> nocobase@ nocobase /Users/mytharcher/.openclaw/workspace/nocobase
+> nocobase build plugin-ai
+
+
+> @nocobase/build@2.1.0-alpha.9 build /Users/mytharcher/.openclaw/workspace/nocobase/packages/core/build
+> tsup
+
+@nocobase/plugin-ai: plugins/@nocobase/plugin-ai build start
+@nocobase/plugin-ai: beforeBuild
+@nocobase/plugin-ai: build plugin client
+assets by chunk 3.74 MiB (id hint: vendors)
+  asset [1m[33m30604de49832a60e.js[39m[22m [1m[33m1.52 MiB[39m[22m [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m [1m[33m[big][39m[22m (id hint: vendors)
+  asset [1m[33mbbc315cdeeb18333.js[39m[22m [1m[33m1010 KiB[39m[22m [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m [1m[33m[big][39m[22m (id hint: vendors)
+  asset [1m[33m8524228ecef849b5.js[39m[22m [1m[33m878 KiB[39m[22m [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m [1m[33m[big][39m[22m (id hint: vendors)
+  asset [1m[33m85296c2a21f28762.js[39m[22m [1m[33m334 KiB[39m[22m [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m [1m[33m[big][39m[22m (id hint: vendors)
+  asset [1m[32m0025f185cb379b9e.js[39m[22m 56.3 KiB [1m[32m[emitted][39m[22m [1m[32m[immutable][39m[22m (id hint: vendors)
++ 16 assets
+orphan modules 6.55 MiB [1m[33m[orphan][39m[22m 1314 modules
+runtime modules 8.03 KiB 11 modules
+cacheable modules 9.86 MiB (javascript) 10.8 KiB (asset)
+  modules by path [1m../../../../node_modules/.pnpm/[39m[22m 8.68 MiB 320 modules
+  modules by path [1m./[39m[22m 1.18 MiB (javascript) 10.8 KiB (asset)
+    built modules 245 KiB (javascript) 10.8 KiB (asset) [1m[33m[built][39m[22m 43 modules
+    + 12 modules
+  modules by path [1mexternal "@nocobase/[39m[22m 252 bytes
+    [1mexternal "@nocobase/plugin-acl/client"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    + 5 modules
+  modules by path [1mexternal "@formily/[39m[22m 210 bytes
+    [1mexternal "@formily/react"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    [1mexternal "@formily/antd-v5"[39m[22m 42 bytes [1m[33m[built][39m[22m [1m[33m[code generated][39m[22m
+    + 3 modules
+  + 8 modules
+
+[1m[33mWARNING[39m[22m in [33m⚠[0m asset size limit: The following asset(s) exceed the recommended size limit (244.141 KiB). This can impact web performance.
+  │ Assets:
+  │   85296c2a21f28762.js (334.130 KiB)
+  │   index.js (557.116 KiB)
+  │   bbc315cdeeb18333.js (1013.068 KiB)
+  │   8524228ecef849b5.js (877.839 KiB)
+  │   30604de49832a60e.js (1.516 MiB)
+[0m
+
+[1m[33mWARNING[39m[22m in [33m⚠[0m entrypoint size limit: The following entrypoint(s) combined asset size exceeds the recommended limit (244.141 KiB). This can impact web performance.
+  │ Entrypoints:
+  │   main (557.116 KiB)
+  │       index.js
+[0m
+
+Rspack 1.7.8 compiled with [1m[33m2 warnings[39m[22m in 3.86 s
+@nocobase/plugin-ai: build plugin server source
+@nocobase/plugin-ai: delete server files
+@nocobase/plugin-ai: build plugin server dependencies
+@nocobase/plugin-ai: These packages nodejs-snowflake, zod, openai, fs-extra, fast-glob, flexsearch will be bundled to dist/node_modules. These packages @nocobase/database, @nocobase/utils, @nocobase/server, @nocobase/plugin-workflow, @nocobase/plugin-file-manager, axios, @nocobase/actions, @nocobase/ai, lodash, @langchain/core, langchain, @langchain/langgraph, @langchain/community, @langchain/anthropic, @langchain/openai, @langchain/deepseek, @langchain/google-genai, @langchain/ollama, @nocobase/acl, @nocobase/resourcer, @langchain/langgraph-checkpoint, @nocobase/data-source-manager will be exclude. For more information, please refer to: https://docs.nocobase.com/development/others/deps.
+@nocobase/plugin-ai: write external version
+@nocobase/plugin-ai: build declaration
+@nocobase/plugin-ai: afterBuild
+@nocobase/plugin-ai: copying markdown files from src/server to dist/server
+@nocobase/plugin-ai: remove zod src dir
+Rsbuild v1.7.3
+
+(node:14528) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/mytharcher/.openclaw/workspace/nocobase/packages/core/app/client-v2/rsbuild.config.ts?t=1773901966162 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/mytharcher/.openclaw/workspace/nocobase/packages/core/app/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+info    build started...
+ready   built in 2.37 s
+
+File (web)                                                                  Size        Gzip   
+packages/core/app/dist/client/v2/assets/5698-4ecb0207.js                    0.12 kB     0.09 kB
+packages/core/app/dist/client/v2/assets/7482-15e0f538.js                    0.25 kB     0.20 kB
+packages/core/app/dist/client/v2/assets/6830-217c1e82.js                    0.26 kB     0.21 kB
+packages/core/app/dist/client/v2/assets/3018-fc630932.js                    0.41 kB     0.31 kB
+packages/core/app/dist/client/v2/assets/3937-af967d62.js                    0.41 kB     0.31 kB
+packages/core/app/dist/client/v2/assets/2203-9aa79271.js                    0.47 kB     0.36 kB
+packages/core/app/dist/client/v2/assets/7876-673cbc3c.js                    0.51 kB     0.36 kB
+packages/core/app/dist/client/v2/assets/465-863accbc.js                     0.56 kB     0.33 kB
+packages/core/app/dist/client/v2/assets/4222-29a8147d.js                    0.56 kB     0.39 kB
+packages/core/app/dist/client/v2/assets/7928-065e0c27.js                    0.60 kB     0.39 kB
+packages/core/app/dist/client/v2/assets/2861-da0bb151.js                    0.64 kB     0.43 kB
+packages/core/app/dist/client/v2/assets/7946-09b77e08.js                    0.68 kB     0.46 kB
+packages/core/app/dist/client/v2/assets/1676-5db7433e.js                    0.68 kB     0.45 kB
+packages/core/app/dist/client/v2/assets/338-3d2099ef.js                     0.69 kB     0.46 kB
+packages/core/app/dist/client/v2/assets/7211-b8c71ed2.js                    0.69 kB     0.46 kB
+packages/core/app/dist/client/v2/assets/6373-9d047c6b.js                    0.77 kB     0.49 kB
+packages/core/app/dist/client/v2/assets/754-d9694d45.js                     0.91 kB     0.58 kB
+packages/core/app/dist/client/v2/assets/5064-2ca0d32b.js                    1.2 kB      0.69 kB
+packages/core/app/dist/client/v2/assets/8262-09946e21.js                    1.2 kB      0.70 kB
+packages/core/app/dist/client/v2/assets/3690-3dd94e4c.js                    1.3 kB      0.69 kB
+packages/core/app/dist/client/v2/assets/1507-3a78eb3b.js                    1.6 kB      0.91 kB
+packages/core/app/dist/client/v2/assets/6581-4874c6dc.js                    1.6 kB      0.91 kB
+packages/core/app/dist/client/v2/assets/2702-2f40d8de.js                    1.6 kB      0.92 kB
+packages/core/app/dist/client/v2/index.html                                 1.7 kB      0.53 kB
+packages/core/app/dist/client/v2/assets/6269-1fd42a11.js                    1.8 kB      1.0 kB
+packages/core/app/dist/client/v2/assets/3916-250bcfe2.js                    1.9 kB      1.1 kB
+packages/core/app/dist/client/v2/assets/3660-c7fcb199.js                    2.2 kB      1.2 kB
+packages/core/app/dist/client/v2/assets/6437-18d1e044.js                    2.3 kB      1.3 kB
+packages/core/app/dist/client/v2/assets/158-9800497f.js                     2.5 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/2335-40fc71a2.js                    2.6 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/4313-afee0e7e.js                    2.6 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/3662-b25a5e70.js                    2.6 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/5761-5b4fcc0f.js                    2.6 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/3989-f2860cc7.js                    2.7 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/7201-2049816a.js                    2.7 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/2017-7bc3cc87.js                    2.7 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/7959-f9145d32.js                    2.7 kB      1.4 kB
+packages/core/app/dist/client/v2/assets/5501-a146926a.js                    2.7 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/5721-b76fecc5.js                    2.8 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/3117-54ef67b5.js                    2.8 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/9836-65eadc90.js                    2.8 kB      1.6 kB
+packages/core/app/dist/client/v2/assets/1425-0d0cc788.js                    2.9 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/8562-022da9fa.js                    2.9 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/212-30d011b4.js                     2.9 kB      1.5 kB
+packages/core/app/dist/client/v2/assets/2726-927c9cfb.js                    3.0 kB      1.6 kB
+packages/core/app/dist/client/v2/assets/6738-06ce7af7.js                    3.0 kB      1.6 kB
+packages/core/app/dist/client/v2/assets/3475-d92f065a.js                    3.1 kB      1.3 kB
+packages/core/app/dist/client/v2/assets/8138-f2234325.js                    3.1 kB      1.7 kB
+packages/core/app/dist/client/v2/assets/8434-7296f545.js                    3.1 kB      1.6 kB
+packages/core/app/dist/client/v2/assets/2555-0744d7fe.js                    3.4 kB      1.7 kB
+packages/core/app/dist/client/v2/assets/2710-ddca03eb.js                    3.5 kB      1.8 kB
+packages/core/app/dist/client/v2/assets/3727-da97de5f.js                    3.5 kB      1.8 kB
+packages/core/app/dist/client/v2/assets/1951-3af0a41f.js                    3.8 kB      1.9 kB
+packages/core/app/dist/client/v2/assets/1786-8fd8cc53.js                    3.9 kB      1.7 kB
+packages/core/app/dist/client/v2/assets/700-8f6e9747.js                     3.9 kB      1.7 kB
+packages/core/app/dist/client/v2/assets/1310-fbaee3cb.js                    4.0 kB      2.0 kB
+packages/core/app/dist/client/v2/assets/2898-cf256b0e.js                    4.0 kB      1.7 kB
+packages/core/app/dist/client/v2/assets/runtime-a6cd61c3.js                 4.1 kB      2.2 kB
+packages/core/app/dist/client/v2/assets/5759-11ca4d36.js                    4.6 kB      2.0 kB
+packages/core/app/dist/client/v2/assets/7021-32b49ced.js                    4.8 kB      2.0 kB
+packages/core/app/dist/client/v2/assets/1725-6bb35fdf.js                    4.8 kB      2.2 kB
+packages/core/app/dist/client/v2/assets/8438-55cc74f0.js                    6.0 kB      2.4 kB
+packages/core/app/dist/client/v2/assets/2958-e4b6ff73.js                    6.1 kB      2.3 kB
+packages/core/app/dist/client/v2/assets/1247-0b168523.js                    29.4 kB     7.8 kB
+packages/core/app/dist/client/v2/assets/vendor-lodash-257cb285.js           70.2 kB     25.3 kB
+packages/core/app/dist/client/v2/assets/vendor-ses-fcca9de4.js              70.5 kB     22.9 kB
+packages/core/app/dist/client/v2/assets/2003-91d4b654.js                    137.1 kB    42.8 kB
+packages/core/app/dist/client/v2/assets/7874-c4191b10.css                   147.9 kB    18.2 kB
+packages/core/app/dist/client/v2/assets/1286-6385f313.js                    153.8 kB    36.8 kB
+packages/core/app/dist/client/v2/assets/2534-4f970d18.js                    211.4 kB    48.6 kB
+packages/core/app/dist/client/v2/assets/vendor-moment-3a25b24e.js           296.9 kB    75.8 kB
+packages/core/app/dist/client/v2/assets/7874-4adbd483.js                    337.5 kB    108.5 kB
+packages/core/app/dist/client/v2/assets/3418-f0d606f8.js                    341.1 kB    95.2 kB
+packages/core/app/dist/client/v2/assets/index-c2176bd8.js                   406.9 kB    118.8 kB
+packages/core/app/dist/client/v2/assets/vendor-antd-ecosystem-caab1abb.js   668.4 kB    215.6 kB
+packages/core/app/dist/client/v2/assets/2603-87b9949c.js                    727.4 kB    199.0 kB
+packages/core/app/dist/client/v2/assets/vendor-antd-icons-1c0dbe3d.js       791.0 kB    173.3 kB
+packages/core/app/dist/client/v2/assets/vendor-antd-ef95e031.js             841.2 kB    234.7 kB
+packages/core/app/dist/client/v2/assets/2439-45fa6369.js                    1242.8 kB   377.9 kB
+
+                                                                   Total:   6619.8 kB   1876.1 kB
+

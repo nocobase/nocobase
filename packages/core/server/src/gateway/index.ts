@@ -67,6 +67,11 @@ export interface AppSelectorMiddlewareContext {
   resolvedAppName: string | null;
 }
 
+function normalizeBasePath(path = '') {
+  const normalized = path.replace(/\/+/g, '/').replace(/\/$/, '');
+  return normalized || '/';
+}
+
 function getSocketPath() {
   const { SOCKET_PATH } = process.env;
 
@@ -169,7 +174,10 @@ export class Gateway extends EventEmitter {
     this.addAppSelectorMiddleware(
       async (ctx: AppSelectorMiddlewareContext, next) => {
         const { req } = ctx;
-        const appName = qs.parse(parse(req.url).query)?.__appName as string | null;
+        const parsedUrl = parse(req.url);
+        const appName = qs.parse(parsedUrl.query)?.__appName as string | null;
+        const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+        const appPathPrefix = `${apiBasePath}/__app/`;
 
         if (appName) {
           ctx.resolvedAppName = appName;
@@ -177,6 +185,24 @@ export class Gateway extends EventEmitter {
 
         if (req.headers['x-app']) {
           ctx.resolvedAppName = req.headers['x-app'];
+        }
+
+        if (parsedUrl.pathname?.startsWith(appPathPrefix)) {
+          const restPath = parsedUrl.pathname.slice(appPathPrefix.length);
+          const [pathAppName, ...segments] = restPath.split('/');
+
+          if (pathAppName) {
+            ctx.resolvedAppName = pathAppName;
+
+            const rewrittenPath = `${apiBasePath}${segments.length ? `/${segments.join('/')}` : ''}`;
+            const rewrittenUrl = `${rewrittenPath}${parsedUrl.search || ''}`;
+
+            if (!(req as any).originalUrl) {
+              (req as any).originalUrl = req.url;
+            }
+
+            req.url = rewrittenUrl;
+          }
         }
 
         await next();
