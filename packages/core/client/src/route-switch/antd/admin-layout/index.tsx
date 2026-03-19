@@ -14,7 +14,7 @@ import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { AdminLayoutModel } from './AdminLayoutModel';
 import { AdminLayoutMenuItemModel, AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
-import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
+import { AdminLayoutContentModel } from './AdminLayoutSlotModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { userCenterSettings } from './userCenterSettings';
 
@@ -69,7 +69,6 @@ export class AdminLayoutPlugin extends Plugin {
       AdminLayoutMenuTreeModel,
       AdminLayoutMenuItemModel,
       AdminLayoutContentModel,
-      AdminLayoutHeaderActionsModel,
     });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });

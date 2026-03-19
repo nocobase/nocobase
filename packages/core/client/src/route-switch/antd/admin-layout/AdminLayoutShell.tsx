@@ -10,9 +10,10 @@
 import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layout';
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import type { DragEndEvent } from '@dnd-kit/core';
+import { EllipsisOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { DndProvider, FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import { theme as antdTheme, ConfigProvider, Grid } from 'antd';
+import { theme as antdTheme, ConfigProvider, Grid, Popover } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
@@ -36,6 +37,7 @@ import {
   useMobileLayout,
 } from '../../../admin-shell';
 import { ParentRouteContext, useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
+import { PinnedPluginList } from '../../../plugin-manager';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
 import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
@@ -118,6 +120,12 @@ const contentStyle = {
   paddingBlock: 0,
   paddingInline: 0,
 };
+const popoverStyle = css`
+  .ant-popover-inner {
+    padding: 0;
+    overflow: hidden;
+  }
+`;
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
   const { token } = useToken();
@@ -214,25 +222,12 @@ const AdminLayoutContentSlot = () => {
   return <FlowModelRenderer model={model} />;
 };
 
-/**
- * 渲染 Layout 右上角操作区子模型。
- *
- * 当前阶段仅把原有插件区收口到 FlowModel，
- * 后续再继续拆成更细的 header subModels。
- */
-const AdminLayoutHeaderActionsSlot: FC<{ isMobile?: boolean }> = ({ isMobile }) => {
-  const flowEngine = useFlowEngine();
-  const model = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID)?.subModels.headerActions;
-
-  if (!model) {
-    return null;
+const actionsRender = (props: HeaderViewProps): React.ReactNode[] => {
+  if (props.isMobile) {
+    return [<MobileActions key="mobile-actions" />];
   }
 
-  return model.renderHeaderActions({ isMobile });
-};
-
-const actionsRender: any = (props) => {
-  return <AdminLayoutHeaderActionsSlot isMobile={props.isMobile} />;
+  return [<PinnedPluginList key="pinned-plugin-list" />];
 };
 
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
@@ -254,6 +249,35 @@ const GlobalStyle = () => {
   }, [token.globalStyle]);
 
   return <El />;
+};
+
+const MobileActions: FC = () => {
+  const { token } = useToken();
+  const [open, setOpen] = useState(false);
+
+  const handleContentClick = useCallback(() => {
+    setOpen(false);
+  }, []);
+
+  return (
+    <Popover
+      rootClassName={popoverStyle}
+      content={<PinnedPluginList onClick={handleContentClick} />}
+      color={token.colorBgHeader}
+      trigger="click"
+      open={open}
+      onOpenChange={setOpen}
+    >
+      <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
+        <EllipsisOutlined
+          style={{
+            color: token.colorTextHeaderMenu,
+            fontSize: 20,
+          }}
+        />
+      </div>
+    </Popover>
+  );
 };
 
 /**

@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EllipsisOutlined, HighlightOutlined } from '@ant-design/icons';
+import { HighlightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { FlowModel } from '@nocobase/flow-engine';
-import { Popover, Result } from 'antd';
-import React, { FC, useCallback, useMemo, useRef, useState } from 'react';
+import { Result } from 'antd';
+import React, { FC, useCallback, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
-import { PinnedPluginList } from '../../../plugin-manager';
 import { useDesignable } from '../../../schema-component/hooks';
 import { useToken } from '../../../style';
 import { useAllAccessDesktopRoutes } from '../../../admin-shell';
@@ -49,13 +48,6 @@ const pageContentStyle: React.CSSProperties = {
 const mobileHeight = {
   height: `calc(100dvh - var(--nb-header-height))`,
 };
-
-const popoverStyle = css`
-  .ant-popover-inner {
-    padding: 0;
-    overflow: hidden;
-  }
-`;
 
 /**
  * 检测当前浏览器是否支持 dvh，移动端支持时优先使用它计算可视区域高度。
@@ -133,35 +125,6 @@ export const LayoutContent: FC = () => {
   return <AdminLayoutContentView />;
 };
 
-const MobileActions: FC = () => {
-  const { token } = useToken();
-  const [open, setOpen] = useState(false);
-
-  const handleContentClick = useCallback(() => {
-    setOpen(false);
-  }, []);
-
-  return (
-    <Popover
-      rootClassName={popoverStyle}
-      content={<PinnedPluginList onClick={handleContentClick} />}
-      color={token.colorBgHeader}
-      trigger="click"
-      open={open}
-      onOpenChange={setOpen}
-    >
-      <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
-        <EllipsisOutlined
-          style={{
-            color: token.colorTextHeaderMenu,
-            fontSize: 20,
-          }}
-        />
-      </div>
-    </Popover>
-  );
-};
-
 /**
  * Layout 内容区子模型。
  *
@@ -182,30 +145,5 @@ export class AdminLayoutContentModel extends FlowModel {
 
   render() {
     return <AdminLayoutContentView host={this.parent as LayoutContentHost | undefined} />;
-  }
-}
-
-/**
- * Layout 右上角操作区子模型。
- *
- * 这里先只托管已有的插件区渲染，不改变交互逻辑；
- * 后续再继续拆成更细的 header subModels。
- *
- * @example
- * ```typescript
- * rootModel.subModels.headerActions
- * ```
- */
-export class AdminLayoutHeaderActionsModel extends FlowModel {
-  renderHeaderActions(options: { isMobile?: boolean }) {
-    if (options.isMobile) {
-      return <MobileActions />;
-    }
-
-    return <PinnedPluginList />;
-  }
-
-  render() {
-    return this.renderHeaderActions({ isMobile: this.props.isMobile });
   }
 }
