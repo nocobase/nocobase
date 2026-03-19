@@ -18,6 +18,7 @@ import {
   useBulkDestroyActionProps,
   useCollectionRecordData,
   useDataBlockRequest,
+  useDestroyActionProps,
 } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { CheckCircleOutlined, CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
@@ -29,12 +30,12 @@ import aiMcpClients from '../../../../collections/ai-mcp-clients';
 import { useT } from '../../../locale';
 import { MCPSettingsContext, unwrapResponseData } from './context';
 import { MCPToolsList } from './MCPToolsList';
-import { createMCPSchema, editMCPDrawerSchema, mcpSettingsSchema, viewMCPToolsDrawerSchema } from './schemas';
+import { createMCPSchema, editMCPFormContentSchema, mcpSettingsSchema, viewMCPToolsContentSchema } from './schemas';
 
 type MCPTransport = 'stdio' | 'http' | 'sse';
 
 const transportOptions = [
-  { label: 'stdio', value: 'stdio' },
+  { label: 'Stdio', value: 'stdio' },
   { label: 'HTTP (Streamable)', value: 'http' },
   { label: 'HTTP + SSE (Legacy)', value: 'sse' },
 ];
@@ -468,12 +469,9 @@ const AddNew = () => {
   );
 };
 
-const EditMCP: React.FC<{
-  record: MCPRecord;
-  visible: boolean;
-  setVisible: (visible: boolean) => void;
-}> = ({ record, visible, setVisible }) => {
+const MCPEditDrawerContent: React.FC = () => {
   const t = useT();
+  const record = useCollectionRecordData<MCPRecord>();
   const [result, setResult] = useState<TestConnectionResultData | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -489,38 +487,31 @@ const EditMCP: React.FC<{
 
   return (
     <CollectionRecordProvider record={record}>
-      <ActionContextProvider value={{ visible, setVisible }}>
-        <TestConnectionContext.Provider value={contextValue}>
-          <SchemaComponent
-            components={{ TestConnectionButton, TestConnectionResult, Space }}
-            scope={{
-              t,
-              transportOptions,
-              keyValueRowClassName,
-              useEditFormProps,
-              useCancelActionProps,
-              useEditActionProps,
-            }}
-            schema={editMCPDrawerSchema}
-          />
-        </TestConnectionContext.Provider>
-      </ActionContextProvider>
+      <TestConnectionContext.Provider value={contextValue}>
+        <SchemaComponent
+          components={{ TestConnectionButton, TestConnectionResult, Space }}
+          scope={{
+            t,
+            transportOptions,
+            keyValueRowClassName,
+            useEditFormProps,
+            useCancelActionProps,
+            useEditActionProps,
+          }}
+          schema={editMCPFormContentSchema}
+        />
+      </TestConnectionContext.Provider>
     </CollectionRecordProvider>
   );
 };
 
-const ViewMCPTools: React.FC<{
-  record: MCPRecord;
-  visible: boolean;
-  setVisible: (visible: boolean) => void;
-}> = ({ record, visible, setVisible }) => {
+const MCPViewDrawerContent: React.FC = () => {
   const t = useT();
+  const record = useCollectionRecordData<MCPRecord>();
 
   return (
     <CollectionRecordProvider record={record}>
-      <ActionContextProvider value={{ visible, setVisible }}>
-        <SchemaComponent components={{ MCPToolsList }} scope={{ t }} schema={viewMCPToolsDrawerSchema} />
-      </ActionContextProvider>
+      <SchemaComponent components={{ MCPToolsList }} scope={{ t }} schema={viewMCPToolsContentSchema} />
     </CollectionRecordProvider>
   );
 };
@@ -565,65 +556,17 @@ const EnabledSwitch: React.FC = observer(
   { displayName: 'MCPEnabledSwitch' },
 );
 
-const MCPActions: React.FC = () => {
-  const t = useT();
-  const api = useAPIClient();
-  const { modal, message } = App.useApp();
-  const record = useCollectionRecordData<MCPRecord>();
-  const { refresh } = useDataBlockRequest();
+const useMCPDestroyActionProps = () => {
+  const props = useDestroyActionProps();
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
-  const [viewVisible, setViewVisible] = useState(false);
-  const [editVisible, setEditVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const handleDelete = async () => {
-    setLoading(true);
-    try {
-      await api.resource('aiMcpClients').destroy({
-        filterByTk: record.name,
-      });
+  return {
+    ...props,
+    loading: rebuilding || props.loading,
+    async onClick(e?, callBack?) {
+      await props.onClick?.(e, callBack);
       await rebuildClient();
-      await refresh();
-      message.success(t('Deleted successfully'));
-    } finally {
-      setLoading(false);
-    }
+    },
   };
-
-  return (
-    <>
-      <Space>
-        <Button type="link" style={{ paddingInline: 0 }} disabled={loading} onClick={() => setViewVisible(true)}>
-          {t('View')}
-        </Button>
-        <Button
-          type="link"
-          style={{ paddingInline: 0 }}
-          disabled={loading || rebuilding}
-          onClick={() => setEditVisible(true)}
-        >
-          {t('Edit')}
-        </Button>
-        <Button
-          type="link"
-          style={{ paddingInline: 0 }}
-          loading={loading}
-          disabled={rebuilding}
-          onClick={() =>
-            modal.confirm({
-              title: t('Delete record'),
-              content: t('Are you sure you want to delete it?'),
-              onOk: handleDelete,
-            })
-          }
-        >
-          {t('Delete')}
-        </Button>
-      </Space>
-      <ViewMCPTools record={record} visible={viewVisible} setVisible={setViewVisible} />
-      <EditMCP record={record} visible={editVisible} setVisible={setEditVisible} />
-    </>
-  );
 };
 
 const useMCPBulkDestroyActionProps = () => {
@@ -689,10 +632,9 @@ export const MCPSettings: React.FC = () => {
         <SchemaComponent
           components={{
             AddNew,
-            EditMCP,
-            ViewMCPTools,
+            MCPEditDrawerContent,
+            MCPViewDrawerContent,
             MCPToolsList,
-            MCPActions,
             TestConnectionButton,
             TestConnectionResult,
             TransportTag,
@@ -707,6 +649,7 @@ export const MCPSettings: React.FC = () => {
             useCancelActionProps,
             useCreateActionProps,
             useEditActionProps,
+            useMCPDestroyActionProps,
             useMCPBulkDestroyActionProps,
           }}
           schema={mcpSettingsSchema}

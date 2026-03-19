@@ -122,20 +122,6 @@ export const MCPToolsList: React.FC = () => {
 
   return (
     <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-      <Card size="small">
-        <Space direction="vertical" size={4} style={{ width: '100%' }}>
-          <Typography.Title level={5} style={{ margin: 0 }}>
-            {record.title || record.name}
-          </Typography.Title>
-          {record.title ? <Typography.Text type="secondary">{record.name}</Typography.Text> : null}
-          {record.description ? (
-            <Typography.Paragraph type="secondary" style={{ marginBottom: 0 }}>
-              {record.description}
-            </Typography.Paragraph>
-          ) : null}
-        </Space>
-      </Card>
-
       {loading ? (
         <div style={{ padding: '24px 0', textAlign: 'center' }}>
           <Spin />
