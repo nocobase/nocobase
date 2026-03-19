@@ -9,23 +9,23 @@
 
 import { Plugin } from '@nocobase/client-v2';
 
-export class AppInfoDemoPlugin extends Plugin {
+export class PluginSimpleActionClientV2 extends Plugin {
   async load() {
     this.flowEngine.flowSettings.registerComponentLoaders({
-      DemoFlowSettingsLazyField: () => import('../settings/DemoFlowSettingsLazyField'),
+      DemoFlowSettingsLazyField: () => import('./settings/DemoFlowSettingsLazyField'),
     });
 
-    this.router.add('demo.homepage', {
-      path: '/',
-      componentLoader: () => import('../routes/DemoHomepageRoute'),
+    this.router.add('simple-action-v2.homepage', {
+      path: '/v2-demo/',
+      componentLoader: () => import('./routes/DemoHomepageRoute'),
     });
-    this.router.add('demo.app-info', {
-      path: '/demo/app-info',
-      componentLoader: () => import('../routes/AppInfoDemoRoute'),
+    this.router.add('simple-action-v2.app-info', {
+      path: '/v2-demo/app-info',
+      componentLoader: () => import('./routes/AppInfoDemoRoute'),
     });
-    this.router.add('demo.flow-settings-component-loader', {
-      path: '/demo/flow-settings-component-loader',
-      componentLoader: () => import('../routes/FlowSettingsComponentLoaderDemoRoute'),
+    this.router.add('simple-action-v2.flow-settings-component-loader', {
+      path: '/v2-demo/flow-settings-component-loader',
+      componentLoader: () => import('./routes/FlowSettingsComponentLoaderDemoRoute'),
     });
 
     try {
@@ -38,3 +38,5 @@ export class AppInfoDemoPlugin extends Plugin {
     }
   }
 }
+
+export default PluginSimpleActionClientV2;

@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-function createPluginClientPublicPathDataUri(packageName: string) {
+function createPluginClientPublicPathDataUri(packageName: string, clientDistDir: string) {
   const code = `
 var publicPath = window['__webpack_public_path__'] || '/';
 if (publicPath.charAt(publicPath.length - 1) !== '/') {
   publicPath += '/';
 }
-__webpack_public_path__ = publicPath + 'static/plugins/${packageName}/dist/client/';
+__webpack_public_path__ = publicPath + 'static/plugins/${packageName}/dist/${clientDistDir}/';
 `;
 
   return `data:text/javascript,${encodeURIComponent(code)}`;
 }
 
-function prependPluginClientPublicPathEntry(entry: unknown, packageName: string): unknown {
-  const dataUri = createPluginClientPublicPathDataUri(packageName);
+function prependPluginClientPublicPathEntry(entry: unknown, packageName: string, clientDistDir: string): unknown {
+  const dataUri = createPluginClientPublicPathDataUri(packageName, clientDistDir);
 
   if (typeof entry === 'string') {
     return [dataUri, entry];
@@ -43,16 +43,26 @@ function prependPluginClientPublicPathEntry(entry: unknown, packageName: string)
   }
 
   return Object.fromEntries(
-    Object.entries(entryConfig).map(([name, value]) => [name, prependPluginClientPublicPathEntry(value, packageName)]),
+    Object.entries(entryConfig).map(([name, value]) => [
+      name,
+      prependPluginClientPublicPathEntry(value, packageName, clientDistDir),
+    ]),
   );
 }
 
 export class AutoInjectPublicPathPlugin {
-  constructor(private pluginName: string) {}
+  constructor(
+    private pluginName: string,
+    private clientDistDir = 'client',
+  ) {}
 
   apply(compiler) {
     compiler.hooks.environment.tap('AutoInjectPublicPathPlugin', () => {
-      compiler.options.entry = prependPluginClientPublicPathEntry(compiler.options.entry, this.pluginName) as any;
+      compiler.options.entry = prependPluginClientPublicPathEntry(
+        compiler.options.entry,
+        this.pluginName,
+        this.clientDistDir,
+      ) as any;
     });
   }
 }

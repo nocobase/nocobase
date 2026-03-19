@@ -9,7 +9,6 @@
 
 import { Application } from '@nocobase/client-v2';
 import devDynamicImport from './.plugins';
-import { AppInfoDemoPlugin } from './plugins/AppInfoDemoPlugin';
 
 declare global {
   interface Window {
@@ -98,7 +97,6 @@ const app = new Application({
     url: window.__nocobase_ws_url__ || import.meta.env.WS_URL || '',
     basename: window.__nocobase_ws_path__ || import.meta.env.WS_PATH || `${rootPublicPath}ws`,
   },
-  plugins: [AppInfoDemoPlugin],
   loadRemotePlugins: true,
   devDynamicImport,
 });

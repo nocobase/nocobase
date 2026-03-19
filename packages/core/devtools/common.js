@@ -45,9 +45,15 @@ function getNodeModulesPath(packageDir) {
 class IndexGenerator {
   nocobaseDir = getNodeModulesPath('@nocobase');
 
-  constructor(outputPath, pluginsPath) {
+  constructor(outputPath, pluginsPath, options = {}) {
     this.outputPath = outputPath;
     this.pluginsPath = pluginsPath;
+    this.options = {
+      clientModuleName: 'client',
+      clientRootFile: 'client.js',
+      clientSourceDir: 'client',
+      ...options,
+    };
   }
 
   get indexPath() {
@@ -137,7 +143,7 @@ export default function devDynamicImport(packageName: string): Promise<any> {
     return Array.from(new Set([...pluginFolders, ...storagePluginFolders, ...nocobasePluginFolders]))
       .filter((item) => {
         const pluginDir = dirname(item);
-        const clientJs = join(pluginDir, 'client.js');
+        const clientJs = join(pluginDir, this.options.clientRootFile);
         return existsSync(clientJs);
       })
       .map((pluginPackageJsonPath) => {
@@ -153,11 +159,11 @@ export default function devDynamicImport(packageName: string): Promise<any> {
         if (pluginPackageJsonPath.includes('packages')) {
           const pluginSrcClientPath = relative(
             this.packagesPath,
-            join(dirname(pluginPackageJsonPath), 'src', 'client'),
+            join(dirname(pluginPackageJsonPath), 'src', this.options.clientSourceDir),
           ).replaceAll(sep, '/');
           exportStatement = `export { default } from '${pluginSrcClientPath}';`;
         } else {
-          exportStatement = `export { default } from '${pluginPackageJson.name}/client';`;
+          exportStatement = `export { default } from '${pluginPackageJson.name}/${this.options.clientModuleName}';`;
         }
 
         return { exportStatement, pluginFileName, packageJsonName: pluginPackageJson.name };
@@ -171,9 +177,9 @@ function getPluginDirs() {
     .map((item) => join(process.cwd(), item));
 }
 
-function generatePluginsByOutputPath(outputPluginPath) {
+function generatePluginsByOutputPath(outputPluginPath, options = {}) {
   const pluginDirs = getPluginDirs();
-  const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs);
+  const indexGenerator = new IndexGenerator(outputPluginPath, pluginDirs, options);
   indexGenerator.generate();
 }
 
@@ -182,7 +188,11 @@ function generatePlugins() {
 }
 
 function generateV2Plugins() {
-  generatePluginsByOutputPath(join(process.env.APP_PACKAGE_ROOT, 'client-v2', 'src', '.plugins'));
+  generatePluginsByOutputPath(join(process.env.APP_PACKAGE_ROOT, 'client-v2', 'src', '.plugins'), {
+    clientModuleName: 'client-v2',
+    clientRootFile: 'client-v2.js',
+    clientSourceDir: 'client-v2',
+  });
 }
 
 function generateAllPlugins() {

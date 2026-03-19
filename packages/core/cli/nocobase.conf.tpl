@@ -45,6 +45,14 @@ server {
             allow all;
         }
 
+        location ~ ^/static/plugins/@([^/]+)/([^/]+)/dist/client-v2/(.*)$ {
+            allow all;
+        }
+
+        location ~ ^/static/plugins/([^/]+)/dist/client-v2/(.*)$ {
+            allow all;
+        }
+
         location ~ ^/static/plugins/(.*)$ {
             deny all;
         }
