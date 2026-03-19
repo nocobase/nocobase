@@ -15,12 +15,11 @@ import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/a
 import { AdminLayoutShell } from './AdminLayoutShell';
 import { AdminLayoutMenuTreeModel } from './AdminLayoutMenuModels';
 import React from 'react';
-import { AdminLayoutContentModel, AdminLayoutHeaderActionsModel } from './AdminLayoutSlotModels';
+import { AdminLayoutContentModel } from './AdminLayoutSlotModels';
 
 type AdminLayoutStructure = {
   subModels: {
     layoutContent?: AdminLayoutContentModel;
-    headerActions?: AdminLayoutHeaderActionsModel;
     menu?: AdminLayoutMenuTreeModel;
   };
 };
@@ -30,7 +29,7 @@ type AdminLayoutStructure = {
  *
  * 当前阶段先让它稳定托管 Layout 的核心运行时和关键 slot：
  * - `layoutContent`：页面主体区域
- * - `headerActions`：右上角操作区
+ * - `menu`：菜单树
  *
  * 这样可以在不改页面行为的前提下，把 Layout 渲染逐步收敛到 FlowModel 树中。
  *
@@ -69,13 +68,6 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
       this.setSubModel('layoutContent', {
         uid: `${this.uid}-layout-content`,
         use: AdminLayoutContentModel,
-      });
-    }
-
-    if (!this.subModels.headerActions) {
-      this.setSubModel('headerActions', {
-        uid: `${this.uid}-header-actions`,
-        use: AdminLayoutHeaderActionsModel,
       });
     }
 
