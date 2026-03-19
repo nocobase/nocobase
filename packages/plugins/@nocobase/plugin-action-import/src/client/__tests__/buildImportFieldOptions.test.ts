@@ -75,64 +75,12 @@ describe('buildImportFieldOptions', () => {
     ]);
   });
 
-  it('limits to-many relations to one level of plain fields', () => {
-    const fieldsByTarget = {
-      comments: [
-        createField({ name: 'content' }),
-        createField({ name: 'author', interface: 'm2o', type: 'belongsTo', target: 'users' }),
-      ],
-    };
-
-    const options = buildImportFieldOptions(
-      [createField({ name: 'comments', interface: 'o2m', type: 'hasMany', target: 'comments' })],
-      (field) => field.name,
-      (field) => fieldsByTarget[field.target] || [],
-    );
-
-    expect(options).toEqual([
-      {
-        name: 'comments',
-        title: 'comments',
-        schema: {
-          title: 'comments',
-        },
-        disabled: false,
-        children: [
-          {
-            name: 'content',
-            title: 'content',
-            schema: {
-              title: 'content',
-            },
-            disabled: false,
-          },
-          {
-            name: 'author',
-            title: 'author',
-            schema: {
-              title: 'author',
-            },
-            disabled: true,
-          },
-        ],
-      },
-    ]);
-  });
-
-  it('allows to-one relations to expand to a second relation level ending with plain fields', () => {
+  it('limits relation fields to a single relation level', () => {
     const fieldsByTarget = {
       users: [
-        createField({ name: 'nickname' }),
-        createField({ name: 'department', interface: 'm2o', type: 'belongsTo', target: 'departments' }),
+        createField({ name: 'content' }),
+        createField({ name: 'author', interface: 'm2o', type: 'belongsTo', target: 'users' }),
         createField({ name: 'posts', interface: 'o2m', type: 'hasMany', target: 'posts' }),
-      ],
-      departments: [
-        createField({ name: 'title' }),
-        createField({ name: 'manager', interface: 'm2o', type: 'belongsTo', target: 'managers' }),
-      ],
-      posts: [
-        createField({ name: 'subject' }),
-        createField({ name: 'category', interface: 'm2o', type: 'belongsTo', target: 'categories' }),
       ],
     };
 
@@ -152,38 +100,20 @@ describe('buildImportFieldOptions', () => {
         disabled: false,
         children: [
           {
-            name: 'nickname',
-            title: 'nickname',
+            name: 'content',
+            title: 'content',
             schema: {
-              title: 'nickname',
+              title: 'content',
             },
             disabled: false,
           },
           {
-            name: 'department',
-            title: 'department',
+            name: 'author',
+            title: 'author',
             schema: {
-              title: 'department',
+              title: 'author',
             },
-            disabled: false,
-            children: [
-              {
-                name: 'title',
-                title: 'title',
-                schema: {
-                  title: 'title',
-                },
-                disabled: false,
-              },
-              {
-                name: 'manager',
-                title: 'manager',
-                schema: {
-                  title: 'manager',
-                },
-                disabled: true,
-              },
-            ],
+            disabled: true,
           },
           {
             name: 'posts',
@@ -191,25 +121,7 @@ describe('buildImportFieldOptions', () => {
             schema: {
               title: 'posts',
             },
-            disabled: false,
-            children: [
-              {
-                name: 'subject',
-                title: 'subject',
-                schema: {
-                  title: 'subject',
-                },
-                disabled: false,
-              },
-              {
-                name: 'category',
-                title: 'category',
-                schema: {
-                  title: 'category',
-                },
-                disabled: true,
-              },
-            ],
+            disabled: true,
           },
         ],
       },

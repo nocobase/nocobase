@@ -65,12 +65,14 @@ describe('buildExportFieldOptions', () => {
     ]);
   });
 
-  it('limits to-many relations to one level of plain fields', () => {
+  it('allows to-many relations to expand to a to-one relation but not another to-many relation', () => {
     const fieldsByTarget = {
       comments: [
         createField({ name: 'content' }),
         createField({ name: 'author', interface: 'm2o', type: 'belongsTo', target: 'users' }),
+        createField({ name: 'tags', interface: 'm2m', type: 'belongsToMany', target: 'tags' }),
       ],
+      users: [createField({ name: 'nickname' })],
     };
 
     const options = buildExportFieldOptions(
@@ -102,6 +104,24 @@ describe('buildExportFieldOptions', () => {
             schema: {
               title: 'author',
             },
+            disabled: false,
+            children: [
+              {
+                name: 'nickname',
+                title: 'nickname',
+                schema: {
+                  title: 'nickname',
+                },
+                disabled: false,
+              },
+            ],
+          },
+          {
+            name: 'tags',
+            title: 'tags',
+            schema: {
+              title: 'tags',
+            },
             disabled: true,
           },
         ],
@@ -109,7 +129,7 @@ describe('buildExportFieldOptions', () => {
     ]);
   });
 
-  it('allows to-one relations to expand to a second relation level ending with plain fields', () => {
+  it('allows two relation levels after a to-one relation and stops at plain fields', () => {
     const fieldsByTarget = {
       users: [
         createField({ name: 'nickname' }),
@@ -200,6 +220,50 @@ describe('buildExportFieldOptions', () => {
                 disabled: true,
               },
             ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('does not allow a second to-many relation in the path', () => {
+    const fieldsByTarget = {
+      comments: [
+        createField({ name: 'content' }),
+        createField({ name: 'tags', interface: 'm2m', type: 'belongsToMany', target: 'tags' }),
+      ],
+    };
+
+    const options = buildExportFieldOptions(
+      [createField({ name: 'posts', interface: 'o2m', type: 'hasMany', target: 'comments' })],
+      (field) => field.name,
+      (field) => fieldsByTarget[field.target] || [],
+    );
+
+    expect(options).toEqual([
+      {
+        name: 'posts',
+        title: 'posts',
+        schema: {
+          title: 'posts',
+        },
+        disabled: false,
+        children: [
+          {
+            name: 'content',
+            title: 'content',
+            schema: {
+              title: 'content',
+            },
+            disabled: false,
+          },
+          {
+            name: 'tags',
+            title: 'tags',
+            schema: {
+              title: 'tags',
+            },
+            disabled: true,
           },
         ],
       },

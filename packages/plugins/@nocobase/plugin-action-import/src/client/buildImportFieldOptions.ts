@@ -8,20 +8,11 @@
  */
 
 const EXCLUDE_INTERFACES = ['createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
-const TO_ONE_RELATION_TYPES = ['hasOne', 'belongsTo'];
-const RELATION_TYPES = [...TO_ONE_RELATION_TYPES, 'hasMany', 'belongsToMany', 'belongsToArray'];
+const RELATION_TYPES = ['hasOne', 'belongsTo', 'hasMany', 'belongsToMany', 'belongsToArray'];
 
 const isRelationField = (field) => field?.target && RELATION_TYPES.includes(field.type);
 
 const shouldExcludeField = (field) => !field?.interface || EXCLUDE_INTERFACES.includes(field.interface);
-
-const getRemainingRelationHops = (field) => {
-  if (!isRelationField(field)) {
-    return null;
-  }
-
-  return TO_ONE_RELATION_TYPES.includes(field.type) ? 1 : 0;
-};
 
 const createOption = (field, getTitle, disabled = false) => ({
   name: field.name,
@@ -30,7 +21,7 @@ const createOption = (field, getTitle, disabled = false) => ({
   disabled,
 });
 
-const buildFieldOption = (field, getTitle, getTargetFields, remainingRelationHops = null) => {
+const buildFieldOption = (field, getTitle, getTargetFields, relationDepth = 0) => {
   if (shouldExcludeField(field)) {
     return null;
   }
@@ -50,11 +41,11 @@ const buildFieldOption = (field, getTitle, getTargetFields, remainingRelationHop
         return buildFieldOption(targetField, getTitle, getTargetFields);
       }
 
-      if (remainingRelationHops === null || remainingRelationHops <= 0) {
+      if (relationDepth >= 1) {
         return createOption(targetField, getTitle, true);
       }
 
-      return buildFieldOption(targetField, getTitle, getTargetFields, remainingRelationHops - 1);
+      return buildFieldOption(targetField, getTitle, getTargetFields, relationDepth + 1);
     })
     .filter(Boolean);
 
@@ -70,6 +61,6 @@ const buildFieldOption = (field, getTitle, getTargetFields, remainingRelationHop
 
 export const buildImportFieldOptions = (fields, getTitle, getTargetFields) => {
   return (fields || [])
-    .map((field) => buildFieldOption(field, getTitle, getTargetFields, getRemainingRelationHops(field)))
+    .map((field) => buildFieldOption(field, getTitle, getTargetFields, isRelationField(field) ? 1 : 0))
     .filter(Boolean);
 };
