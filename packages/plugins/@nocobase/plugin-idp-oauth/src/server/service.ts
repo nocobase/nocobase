@@ -594,13 +594,16 @@ export class IdpOauthService {
       return this.pendingProviders.get(issuer);
     }
 
-    const pending = getOidcModule().then(async (oidc) => {
-      const provider = new oidc.Provider(issuer, await this.createConfiguration(providerContext));
-      provider.proxy = true;
-      this.providers.set(issuer, provider);
-      this.pendingProviders.delete(issuer);
-      return provider;
-    });
+    const pending = getOidcModule()
+      .then(async (oidc) => {
+        const provider = new oidc.Provider(issuer, await this.createConfiguration(providerContext));
+        provider.proxy = true;
+        this.providers.set(issuer, provider);
+        return provider;
+      })
+      .finally(() => {
+        this.pendingProviders.delete(issuer);
+      });
 
     this.pendingProviders.set(issuer, pending);
     return pending;
