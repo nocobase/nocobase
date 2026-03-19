@@ -43,6 +43,18 @@ export interface ModelRef {
   model: string;
 }
 
+export interface AIEmployeeOptions {
+  ctx: Context;
+  employee: Model;
+  sessionId: string;
+  systemMessage?: string;
+  skillSettings?: Record<string, any>;
+  webSearch?: boolean;
+  model?: ModelRef;
+  legacy?: boolean;
+  protocol?: ChatStreamProtocol;
+}
+
 export class AIEmployee {
   employee: Model;
   aiChatConversation: AIChatConversation;
@@ -57,16 +69,17 @@ export class AIEmployee {
   private legacy?: boolean;
   private protocol: ChatStreamProtocol;
 
-  constructor(
-    ctx: Context,
-    employee: Model,
-    sessionId: string,
-    systemMessage?: string,
-    skillSettings?: Record<string, any>,
-    webSearch?: boolean,
-    model?: ModelRef,
-    legacy?: boolean,
-  ) {
+  constructor({
+    ctx,
+    employee,
+    sessionId,
+    systemMessage,
+    skillSettings,
+    webSearch,
+    model,
+    legacy,
+    protocol,
+  }: AIEmployeeOptions) {
     this.employee = employee;
     this.ctx = ctx;
     this.plugin = ctx.app.pm.get('ai') as PluginAIServer;
@@ -81,7 +94,7 @@ export class AIEmployee {
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
-    this.protocol = ChatStreamProtocol.create(ctx);
+    this.protocol = protocol ?? ChatStreamProtocol.fromContext(ctx);
   }
 
   // === Chat flow ===
@@ -1445,7 +1458,7 @@ class AgentThread {
   }
 }
 
-class ChatStreamProtocol {
+export class ChatStreamProtocol {
   private _statistics = {
     sent: 0,
     addSent: (s: number) => {
@@ -1456,10 +1469,14 @@ class ChatStreamProtocol {
     },
   };
 
-  constructor(private readonly ctx: Context) {}
+  constructor(private readonly streamConsumer: StreamConsumer) {}
 
-  static create(ctx: Context) {
-    return new ChatStreamProtocol(ctx);
+  static create(streamConsumer: StreamConsumer) {
+    return new ChatStreamProtocol(streamConsumer);
+  }
+
+  static fromContext(ctx: Context) {
+    return new ChatStreamProtocol(ctx.res);
   }
 
   startStream() {
@@ -1539,7 +1556,7 @@ class ChatStreamProtocol {
 
   private write({ type, body }: { type: string; body?: any }) {
     const data = `data: ${JSON.stringify({ type, body })}\n\n`;
-    this.ctx.res.write(data);
+    this.streamConsumer.write(data);
     this._statistics.addSent(data.length);
   }
 }
@@ -1564,3 +1581,7 @@ class ResponseMetadataCollector extends BaseCallbackHandler {
     return this.responseMetadata.get(id);
   }
 }
+
+export type StreamConsumer = {
+  write: (chunk: any) => void;
+};

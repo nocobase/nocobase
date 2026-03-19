@@ -292,16 +292,16 @@ export default {
 
         const legacy = conversation.thread === 0;
 
-        const aiEmployee = new AIEmployee(
+        const aiEmployee = new AIEmployee({
           ctx,
           employee,
           sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
+          systemMessage: conversation.options?.systemMessage,
+          skillSettings: conversation.options?.skillSettings,
           webSearch,
           model,
           legacy,
-        );
+        });
 
         if (!editingMessageId) {
           const toolMessages = await aiEmployee.cancelToolCall();
@@ -409,15 +409,15 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(
+        const aiEmployee = new AIEmployee({
           ctx,
           employee,
           sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
+          systemMessage: conversation.options?.systemMessage,
+          skillSettings: conversation.options?.skillSettings,
           webSearch,
           model,
-        );
+        });
         await aiEmployee.stream({ messageId, userMessages: resendMessages.length ? resendMessages : undefined });
       } catch (err) {
         ctx.log.error(err);
@@ -574,15 +574,15 @@ export default {
           return next();
         }
 
-        const aiEmployee = new AIEmployee(
+        const aiEmployee = new AIEmployee({
           ctx,
           employee,
           sessionId,
-          conversation.options?.systemMessage,
-          conversation.options?.skillSettings,
+          systemMessage: conversation.options?.systemMessage,
+          skillSettings: conversation.options?.skillSettings,
           webSearch,
           model,
-        );
+        });
 
         const userDecisions = await aiEmployee.getUserDecisions(messageId);
         await aiEmployee.stream({
