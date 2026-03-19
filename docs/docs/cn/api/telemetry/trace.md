@@ -1,3 +1,9 @@
+---
+title: "Trace"
+description: "NocoBase 追踪 API：Trace 类方法、分布式追踪。"
+keywords: "Trace,追踪 API,分布式追踪,Telemetry,NocoBase"
+---
+
 # Trace
 
 ## 类方法

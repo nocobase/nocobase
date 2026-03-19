@@ -1,3 +1,9 @@
+---
+title: "用户认证"
+description: "NocoBase 用户认证模块：内核认证接口、密码认证插件，支持 SAML、OIDC、CAS、LDAP、企业微信、钉钉、短信等扩展认证方式。"
+keywords: "用户认证,登录,注册,密码认证,单点登录,认证插件,NocoBase"
+---
+
 # 用户认证
 
 NocoBase 的用户认证模块主要由两部分组成：

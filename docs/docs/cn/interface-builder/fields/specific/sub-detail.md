@@ -1,3 +1,9 @@
+---
+title: "子详情"
+description: "子详情字段：以只读形式展示一对多关联数据的详情。"
+keywords: "子详情,SubDetail,一对多,只读展示,界面搭建,NocoBase"
+---
+
 # 子详情
 
 ## 介绍

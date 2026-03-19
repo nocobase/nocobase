@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mssql"
+title: "外部数据源 - MSSQL"
+description: "接入外部 MSSQL/SQL Server（2014-2019）作为数据源，只读连接已有数据库，数据表同步与字段配置。"
+keywords: "外部 MSSQL,SQL Server 数据源,外部数据库,数据表同步,NocoBase"
 ---
-
 # 外部数据源 - MSSQL
 
 ## 介绍

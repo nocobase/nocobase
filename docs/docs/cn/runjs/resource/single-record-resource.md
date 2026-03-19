@@ -1,3 +1,9 @@
+---
+title: "RunJS SingleRecordResource"
+description: "RunJS 单条记录资源：getData 返回单条对象，setFilterByTk、save、create、update、destroy，适用于详情区块、表单区块、关联资源。"
+keywords: "SingleRecordResource,单条记录,setFilterByTk,save,详情区块,表单区块,RunJS,NocoBase"
+---
+
 # SingleRecordResource
 
 面向**单条记录**的 Resource：数据为单条对象，支持按主键获取、创建/更新（save）与删除。适用于详情、表单等“单条记录”场景。与 [MultiRecordResource](./multi-record-resource.md) 不同，SingleRecordResource 的 `getData()` 返回单条对象，通过 `setFilterByTk(id)` 指定主键，`save()` 会根据 `isNewRecord` 自动调用 create 或 update。

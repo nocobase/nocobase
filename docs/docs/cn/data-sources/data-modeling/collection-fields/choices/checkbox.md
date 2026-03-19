@@ -1,3 +1,9 @@
+---
+title: "勾选"
+description: "勾选字段，布尔值单选，是/否。"
+keywords: "勾选,checkbox,布尔字段,是否,NocoBase"
+---
+
 # 勾选
 
 ## 介绍

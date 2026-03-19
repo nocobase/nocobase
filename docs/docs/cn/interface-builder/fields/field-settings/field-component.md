@@ -1,3 +1,9 @@
+---
+title: "字段组件"
+description: "字段设置：选择字段使用的 UI 组件类型，如 Input、Select、DatePicker 等。"
+keywords: "字段组件,field component,UI 组件,界面搭建,NocoBase"
+---
+
 # 字段组件
 
 ## 介绍

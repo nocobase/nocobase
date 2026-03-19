@@ -1,3 +1,9 @@
+---
+title: "事件流"
+description: "界面搭建事件流：配置区块与字段的交互逻辑，Flow 驱动、Step 串联，实现无代码化业务逻辑编排。"
+keywords: "事件流,Event Flow,Flow,Step,交互逻辑,无代码编排,界面搭建,NocoBase"
+---
+
 # 事件流
 
 ## 介绍

@@ -1,3 +1,9 @@
+---
+title: "ctx.openView()"
+description: "ctx.openView() 打开弹窗、抽屉或页面视图，支持传参、回调，用于详情、编辑、选择等场景。"
+keywords: "ctx.openView,弹窗,抽屉,页面视图,详情,编辑,RunJS,NocoBase"
+---
+
 # ctx.openView()
 
 以编程方式打开指定视图（抽屉、弹窗、内嵌页等）。由 FlowModelContext 提供，用于在 JSBlock、表格单元格、事件流等场景中打开已配置的 ChildPage 或 PopupAction 视图。

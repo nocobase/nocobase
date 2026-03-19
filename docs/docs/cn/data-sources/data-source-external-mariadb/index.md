@@ -1,3 +1,9 @@
+---
+title: "外部数据源 - MariaDB"
+description: "接入外部 MariaDB 数据库作为数据源，只读连接已有数据库，数据表同步与字段配置。"
+keywords: "外部 MariaDB,MariaDB 数据源,外部数据库,数据表同步,NocoBase"
+---
+
 # 外部数据源 - MariaDB
 
 <PluginInfo commercial="true" name="data-source-external-mariadb"></PluginInfo>

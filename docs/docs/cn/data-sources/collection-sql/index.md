@@ -1,3 +1,9 @@
+---
+title: "SQL 表"
+description: "通过 SQL 语句获取数据并配置字段元数据，像普通表一样供表格、图表、工作流使用，适用于关联查询、统计等场景。"
+keywords: "SQL 表,Collection SQL,SQL 查询,关联查询,统计,NocoBase"
+---
+
 # SQL 表
 
 <PluginInfo name="collection-sql"></PluginInfo>

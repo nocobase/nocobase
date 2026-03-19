@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-field-attachment-url"
+title: "附件（URL）字段"
+description: "附件字段支持 URL 格式，存储外部链接，无需上传文件，适用于引用外部图片、文档等。"
+keywords: "附件 URL,Attachment URL,外部链接,URL 附件,NocoBase"
 ---
-
 # 数据表字段：附件（URL）
 
 ## 介绍

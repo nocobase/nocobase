@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-loop'
+title: "工作流节点 - 循环"
+description: "循环节点：类似 for/while/forEach，按次数或数据集合重复执行操作。"
+keywords: "工作流,循环,Loop,forEach,重复执行,NocoBase"
 ---
 
 # 循环

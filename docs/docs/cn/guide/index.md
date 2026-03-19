@@ -1,8 +1,9 @@
 ---
 pageType: home
-
 pageName: guide
-
+title: "NocoBase 功能指南"
+description: "NocoBase 核心功能指南：数据源、界面搭建、AI 员工、用户权限、认证验证、工作流、通知、多应用、集成、安全、运维。"
+keywords: "NocoBase,功能指南,数据源,界面搭建,工作流,NocoBase 文档"
 features:
   - title: 核心功能
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。

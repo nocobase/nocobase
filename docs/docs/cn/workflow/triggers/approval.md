@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
+title: "审批"
+description: "审批触发器：配合审批流程使用，人工发起审批，审批通过/拒绝时触发后续工作流，实现审批驱动自动化。"
+keywords: "工作流,审批触发器,Approval,审批流程,人工审批,NocoBase"
 ---
-
 # 审批
 
 ## 介绍

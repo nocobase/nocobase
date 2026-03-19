@@ -1,3 +1,9 @@
+---
+title: "腾讯云 COS"
+description: "腾讯云 COS 存储引擎配置：Bucket、Region、SecretId，对象存储文件上传。"
+keywords: "腾讯云 COS,腾讯云对象存储,COS 存储,云存储,NocoBase"
+---
+
 # 腾讯云 COS
 
 基于腾讯云 COS 的存储引擎，使用前需要准备相关账号和权限。

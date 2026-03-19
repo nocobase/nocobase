@@ -1,3 +1,9 @@
+---
+title: "Git 源码安装升级指南"
+description: "Git 源码安装的 NocoBase 升级：git pull、yarn install、yarn nocobase upgrade，清缓存与依赖重装。"
+keywords: "Git 源码,升级,git pull,yarn nocobase upgrade,yarn install,NocoBase"
+---
+
 # Git 源码安装的升级
 
 :::warning 升级前的准备

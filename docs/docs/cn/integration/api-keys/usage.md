@@ -1,3 +1,9 @@
+---
+title: "API 密钥使用教程"
+description: "API 密钥实战：待办事项示例、创建角色与密钥、Postman 测试、CRUD 接口、JS 区块调用，含 Authorization Bearer 与 curl 示例。"
+keywords: "API 密钥使用,Postman 测试,CRUD 接口,Authorization Bearer,JS 区块,待办示例,NocoBase"
+---
+
 # 在 NocoBase 中使用 API 密钥
 
 本指南通过实际的"待办事项"示例，演示如何在 NocoBase 中使用 API 密钥来获取数据。请按照以下分步说明理解完整的工作流程。

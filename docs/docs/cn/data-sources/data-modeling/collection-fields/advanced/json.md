@@ -1,3 +1,9 @@
+---
+title: "JSON"
+description: "JSON 字段，存储 JSON 对象或数组。"
+keywords: "JSON,json 字段,JSON 对象,JSON 数组,NocoBase"
+---
+
 # JSON
 
 ## 介绍

@@ -1,3 +1,9 @@
+---
+title: "百分比"
+description: "百分比字段，存储比例数值，支持百分比展示。"
+keywords: "百分比,percent,比例字段,数值字段,NocoBase"
+---
+
 # 百分比
 
 ## 介绍

@@ -1,3 +1,9 @@
+---
+title: "文件管理器 HTTP API"
+description: "附件字段与文件表通过 HTTP API 上传文件，服务端上传（S3/OSS/COS）、客户端直传，支持 JWT 认证与存储引擎指定。"
+keywords: "文件上传 HTTP API,attachments create,服务端上传,客户端直传,NocoBase"
+---
+
 # HTTP API
 
 附件字段和文件表的文件上传均支持通过 HTTP API 进行处理。根据附件或文件表使用的存储引擎不同，分别有不同的调用方式。

@@ -1,3 +1,9 @@
+---
+title: "create-nocobase-app 升级指南"
+description: "create-nocobase-app 安装的 NocoBase 升级：yarn nocobase upgrade、升级到指定版本、备份与注意事项。"
+keywords: "create-nocobase-app,升级,yarn nocobase upgrade,版本升级,NocoBase"
+---
+
 # create-nocobase-app 安装的升级
 
 :::warning 升级前的准备

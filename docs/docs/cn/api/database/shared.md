@@ -1,3 +1,9 @@
+---
+title: "Repository 共享参数"
+description: "NocoBase Repository 方法共享参数：values、whitelist、blacklist、transaction 等。"
+keywords: "Repository,共享参数,CreateOptions,UpdateOptions,NocoBase"
+---
+
 **参数**
 
 | 参数名                 | 类型          | 默认值 | 描述                                            |

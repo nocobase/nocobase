@@ -1,3 +1,9 @@
+---
+title: "ctx.dataSourceManager"
+description: "ctx.dataSourceManager 数据源管理器，用于获取多数据源、Collection、Repository 实例。"
+keywords: "ctx.dataSourceManager,数据源管理器,Collection,Repository,多数据源,RunJS,NocoBase"
+---
+
 # ctx.dataSourceManager
 
 数据源管理器（`DataSourceManager` 实例），用于管理和访问多个数据源（如主库 `main`、日志库 `logging` 等）。在存在多数据源或需要跨数据源访问元数据时使用。
