@@ -8,10 +8,10 @@
  */
 
 import { Model, Op, Transaction } from '@nocobase/database';
-import { LLMProvider, ToolDefinition } from '../llm-providers/provider';
+import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import PluginAIServer from '../plugin';
-import { sendSSEError, parseVariables } from '../utils';
+import { sendSSEError, parseVariables, buildTool } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
 import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, AIToolCall, UserDecision } from '../types';
@@ -291,8 +291,7 @@ export class AIEmployee {
     middleware?: any[];
   }) {
     const model = provider.createModel();
-    const toolDefinitions = tools?.map(ToolDefinition.from('ToolsEntry')) ?? [];
-    const allTools = provider.resolveTools(toolDefinitions);
+    const allTools = provider.resolveTools(tools?.map(buildTool) ?? []);
     const checkpointer = new SequelizeCollectionSaver(() => this.ctx.app.mainDataSource);
     return createLangChainAgent({ model, tools: allTools, middleware, systemPrompt, checkpointer });
   }

@@ -13,13 +13,11 @@ import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { Application } from '@nocobase/server';
 import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
-import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
+import { buildTool, encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
 import { Context } from '@nocobase/actions';
-import { tool } from 'langchain';
 import '@langchain/core/utils/stream';
-import { ToolsEntry } from '@nocobase/ai';
 import { LLMResult } from '@langchain/core/outputs';
 import { ContentBlock } from '@langchain/core/messages';
 
@@ -58,7 +56,7 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    const toolDefinitions = context.tools?.map(ToolDefinition.from('ToolsEntry'));
+    const toolDefinitions = context.tools?.map(buildTool);
 
     if (this.builtInTools()?.length) {
       const tools = [...this.builtInTools()];
@@ -282,39 +280,5 @@ export abstract class EmbeddingProvider {
       throw new Error('Embedding model is required');
     }
     return model;
-  }
-}
-
-type FromType = 'ToolsEntry';
-
-export class ToolDefinition<T> {
-  constructor(
-    private from: FromType,
-    private _tool: T,
-  ) {}
-
-  static from(from: FromType) {
-    return (tool: any) => new ToolDefinition(from, tool).tool;
-  }
-
-  get tool() {
-    if (this.from === 'ToolsEntry') {
-      return this.convertToolOptions();
-    } else {
-      throw new Error('not supported tool definitions');
-    }
-  }
-
-  private convertToolOptions() {
-    const {
-      invoke,
-      definition: { name, description, schema },
-    } = this._tool as ToolsEntry;
-    return tool((input, { toolCall, context }) => invoke(context.ctx, input, toolCall.id), {
-      name,
-      description,
-      schema,
-      returnDirect: false,
-    });
   }
 }

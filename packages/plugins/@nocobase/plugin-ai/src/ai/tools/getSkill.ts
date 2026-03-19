@@ -26,7 +26,7 @@ export default defineTools({
       skillName: z.string().describe('Name of skill to load'),
     }),
   },
-  invoke: async (ctx, args, id) => {
+  invoke: async (ctx, args) => {
     const target = await ctx.app.aiManager.skillsManager.getSkills(args.skillName);
     if (!target) {
       return {

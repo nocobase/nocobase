@@ -17,7 +17,7 @@ export default defineTools({
     description: 'hallow tools',
     schema: null,
   },
-  invoke: async (ctx: Context, args: any, id: string) => {
+  invoke: async (ctx: Context, args: any) => {
     return { status: 'success' };
   },
 });

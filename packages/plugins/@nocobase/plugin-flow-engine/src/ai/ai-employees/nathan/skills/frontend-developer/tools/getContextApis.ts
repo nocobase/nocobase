@@ -23,9 +23,9 @@ export default defineTools({
     description: 'Get available API methods from context',
     schema: z.object({}),
   },
-  invoke: async (ctx, _args, id) => {
+  invoke: async (ctx, _args, runtime) => {
     const { toolCallResults } = ctx.action.params.values || {};
-    const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
+    const { result } = toolCallResults?.find((item) => item.id === runtime.toolCallId) ?? {};
     if (toolCallResults && result) {
       return {
         status: 'success',

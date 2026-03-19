@@ -26,7 +26,7 @@ describe('lintAndTestJS Tool', () => {
       },
     } as any;
 
-    const result = await lintAndTestJS.invoke(mockCtx, {}, 'test-id');
+    const result = await lintAndTestJS.invoke(mockCtx, {}, { toolCallId: 'test-id' });
     expect(result.status).toBe('error');
     const content = JSON.parse(result.content);
     expect(content.success).toBe(false);
@@ -44,7 +44,7 @@ describe('lintAndTestJS Tool', () => {
       },
     } as any;
 
-    const result = await lintAndTestJS.invoke(mockCtx, {}, 'test-id');
+    const result = await lintAndTestJS.invoke(mockCtx, {}, { toolCallId: 'test-id' });
     expect(result.status).toBe('error');
     const content = JSON.parse(result.content);
     expect(content.success).toBe(false);
@@ -72,7 +72,7 @@ describe('lintAndTestJS Tool', () => {
       },
     } as any;
 
-    const result = await lintAndTestJS.invoke(mockCtx, {}, 'test-id');
+    const result = await lintAndTestJS.invoke(mockCtx, {}, { toolCallId: 'test-id' });
     expect(result.status).toBe('success');
     const content = JSON.parse(result.content);
     expect(content.success).toBe(true);
@@ -100,7 +100,7 @@ describe('lintAndTestJS Tool', () => {
       },
     } as any;
 
-    const result = await lintAndTestJS.invoke(mockCtx, {}, 'test-id');
+    const result = await lintAndTestJS.invoke(mockCtx, {}, { toolCallId: 'test-id' });
     expect(result.status).toBe('error');
     const content = JSON.parse(result.content);
     expect(content.success).toBe(false);

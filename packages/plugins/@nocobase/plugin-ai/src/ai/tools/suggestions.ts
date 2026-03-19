@@ -32,7 +32,7 @@ export default defineTools({
         ),
     }),
   },
-  invoke: async (ctx: Context, args, id) => {
+  invoke: async (ctx: Context, args, runtime) => {
     const { messageId } = ctx.action?.params?.values || {};
     if (messageId) {
       const messageRepo = ctx.app.db.getRepository('aiMessages');
@@ -40,7 +40,7 @@ export default defineTools({
         filterByTk: messageId,
       });
       const toolCalls = message?.toolCalls || [];
-      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === id);
+      const index = toolCalls.findIndex((toolCall: { id: string }) => toolCall.id === runtime.toolCallId);
       if (index !== -1) {
         toolCalls[index] = {
           ...toolCalls[index],

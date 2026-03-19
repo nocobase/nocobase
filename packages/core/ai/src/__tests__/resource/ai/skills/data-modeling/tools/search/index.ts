@@ -17,7 +17,7 @@ export default defineTools({
     description: 'search document',
     schema: null,
   },
-  invoke: async (ctx: Context, args: any, id: string) => {
+  invoke: async (ctx: Context, args: any) => {
     return { status: 'success' };
   },
 });
