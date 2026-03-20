@@ -131,6 +131,16 @@
   },
   {
     "type": "custom-link",
+    "label": "NocoBase MCP",
+    "link": "/ai-employees/mcp"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase Skills",
+    "link": "/ai-employees/skills"
+  },
+  {
+    "type": "custom-link",
     "label": "Application Practices",
     "items": [
       {

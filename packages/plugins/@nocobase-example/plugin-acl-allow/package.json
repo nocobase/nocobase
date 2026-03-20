@@ -1,5 +1,7 @@
 {
   "name": "@nocobase-example/plugin-acl-allow",
+  "displayName": "Plugin example: ACL allow",
+  "description": "This plugin demonstrates how to use the ACL allow feature to allow users to access specific resources.",
   "private": true,
   "version": "2.1.0-alpha.9",
   "main": "dist/server/index.js",

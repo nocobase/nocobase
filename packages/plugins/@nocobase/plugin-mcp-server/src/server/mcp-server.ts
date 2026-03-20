@@ -85,7 +85,7 @@ export class McpServer {
   async handlePost(ctx: any) {
     const body = (ctx.request.body || {}) as Record<string, any> | Record<string, any>[];
     const sdkModules = await getMcpSdkModules();
-    const server = this.createServer(sdkModules);
+    const server = this.createServer(sdkModules, ctx.getBearerToken?.());
     const transport = new sdkModules.StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
@@ -102,7 +102,7 @@ export class McpServer {
     ctx.respond = false;
   }
 
-  private createServer(sdkModules: McpSdkModules) {
+  private createServer(sdkModules: McpSdkModules, requestToken?: string) {
     const server = new sdkModules.McpServer(
       {
         name: this.options.name,
@@ -136,7 +136,7 @@ export class McpServer {
       if (!tool) {
         throw new Error(`Tool not found: ${toolName}`);
       }
-      const token = resolveTokenFromExtra(extra);
+      const token = requestToken || resolveTokenFromExtra(extra);
 
       try {
         const result = await tool.call(args, {

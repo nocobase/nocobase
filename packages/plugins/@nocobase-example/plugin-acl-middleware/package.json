@@ -1,5 +1,7 @@
 {
   "name": "@nocobase-example/plugin-acl-middleware",
+  "displayName": "Plugin example: ACL middleware",
+  "description": "This plugin demonstrates how to use the ACL middleware to protect specific resources.",
   "private": true,
   "version": "2.1.0-alpha.9",
   "main": "dist/server/index.js",
