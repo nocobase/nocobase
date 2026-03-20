@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import fse from 'fs-extra';
 import resourceOptions, { PackageUrls } from '../plugin-manager/options/resource';
 
 function createPluginRecord(name: string, packageName: string, enabled = true) {
@@ -40,18 +39,9 @@ describe('pm resource', () => {
 
   it('should keep listEnabled using the client lane', async () => {
     const packageName = '@nocobase/plugin-list-enabled-client';
-    const packageDir = `${process.env.NODE_MODULES_PATH}/${packageName}`;
-    const clientEntry = `${packageDir}/dist/client/index.js`;
-
-    vi.spyOn(fse, 'exists').mockImplementation(async (target: string) => {
-      return target === packageDir || target === clientEntry;
-    });
-    vi.spyOn(fse, 'stat').mockResolvedValue({
-      mtime: new Date('2026-03-19T00:00:00.000Z'),
-    } as any);
-    vi.spyOn(fse, 'readJson').mockResolvedValue({
-      version: '1.0.0',
-    } as any);
+    const getSpy = vi
+      .spyOn(PackageUrls, 'get')
+      .mockResolvedValue(`/static/plugins/${packageName}/dist/client/index.js?hash=12345678`);
 
     const ctx: any = {
       db: {
@@ -63,6 +53,7 @@ describe('pm resource', () => {
 
     await resourceOptions.actions.listEnabled(ctx, vi.fn());
 
+    expect(getSpy).toHaveBeenCalledWith(packageName, 'client');
     expect(ctx.body).toEqual([
       expect.objectContaining({
         name: 'plugin-list-enabled-client',
@@ -76,29 +67,15 @@ describe('pm resource', () => {
     const v2PackageName = '@nocobase/plugin-list-enabled-v2';
     const v1OnlyPackageName = '@nocobase/plugin-list-enabled-v1-only';
     const disabledPackageName = '@nocobase/plugin-list-enabled-v2-disabled';
-
-    const v2PackageDir = `${process.env.NODE_MODULES_PATH}/${v2PackageName}`;
-    const v1OnlyPackageDir = `${process.env.NODE_MODULES_PATH}/${v1OnlyPackageName}`;
-    const disabledPackageDir = `${process.env.NODE_MODULES_PATH}/${disabledPackageName}`;
-
-    vi.spyOn(fse, 'exists').mockImplementation(async (target: string) => {
-      return [
-        v2PackageDir,
-        v1OnlyPackageDir,
-        disabledPackageDir,
-        `${v2PackageDir}/client-v2.js`,
-        `${disabledPackageDir}/client-v2.js`,
-        `${v2PackageDir}/dist/client-v2/index.js`,
-        `${disabledPackageDir}/dist/client-v2/index.js`,
-        `${v1OnlyPackageDir}/dist/client/index.js`,
-      ].includes(target);
+    const hasClientEntrySpy = vi.spyOn(PackageUrls, 'hasClientEntry').mockImplementation(async (packageName, lane) => {
+      expect(lane).toBe('client-v2');
+      return packageName === v2PackageName || packageName === disabledPackageName;
     });
-    vi.spyOn(fse, 'stat').mockResolvedValue({
-      mtime: new Date('2026-03-19T00:00:00.000Z'),
-    } as any);
-    vi.spyOn(fse, 'readJson').mockResolvedValue({
-      version: '1.0.0',
-    } as any);
+    const getSpy = vi
+      .spyOn(PackageUrls, 'get')
+      .mockImplementation(
+        async (packageName, lane) => `/static/plugins/${packageName}/dist/${lane}/index.js?hash=12345678`,
+      );
 
     const ctx: any = {
       db: {
@@ -116,6 +93,9 @@ describe('pm resource', () => {
 
     await resourceOptions.actions.listEnabledV2(ctx, vi.fn());
 
+    expect(hasClientEntrySpy).toHaveBeenCalledWith(v2PackageName, 'client-v2');
+    expect(hasClientEntrySpy).toHaveBeenCalledWith(v1OnlyPackageName, 'client-v2');
+    expect(getSpy).toHaveBeenCalledWith(v2PackageName, 'client-v2');
     expect(ctx.body).toEqual([
       expect.objectContaining({
         name: 'plugin-list-enabled-v2',
