@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { promisify } from 'util';
 import nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
@@ -23,6 +24,27 @@ interface Provider {
   };
 }
 export default class MailerInstruction extends Instruction {
+  configSchema = Joi.object({
+    provider: Joi.object({
+      host: Joi.string().domain(),
+      port: Joi.number().port().default(465),
+      secure: Joi.boolean().default(true),
+      auth: Joi.object({
+        user: Joi.string(),
+        pass: Joi.string(),
+      }),
+      from: Joi.string().email(),
+      to: Joi.array().items(Joi.string().email()),
+      cc: Joi.array().items(Joi.string().email()),
+      bcc: Joi.array().items(Joi.string().email()),
+      subject: Joi.string(),
+      contentType: Joi.string().valid('html', 'text').default('html'),
+      html: Joi.string(),
+      text: Joi.string(),
+      ignoreFail: Joi.boolean().default(false),
+    }),
+  });
+
   private static transporterMap = new Map<string, Transporter>();
   private static configMap = new Map<string, any>();
 

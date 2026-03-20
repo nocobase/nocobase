@@ -23,6 +23,7 @@ export abstract class Trigger {
     workflow: WorkflowModel,
     options: Transactionable & { origin?: WorkflowModel },
   ): object | Promise<object>;
+  validateConfig?(): boolean;
   validateContext?(values: any, workflow: WorkflowModel): null | void | { [key: string]: string };
   sync?: boolean;
   execute?(

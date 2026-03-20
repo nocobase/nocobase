@@ -14,6 +14,7 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-manual",
   "devDependencies": {
     "@ant-design/icons": "5.x",
+    "joi": "^17.13.3",
     "@formily/antd-v5": "1.x",
     "@formily/core": "2.x",
     "@formily/react": "2.x",
