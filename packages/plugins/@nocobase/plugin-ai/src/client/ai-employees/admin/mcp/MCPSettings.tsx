@@ -561,7 +561,7 @@ const useMCPDestroyActionProps = () => {
   const { rebuildClient, rebuilding } = useContext(MCPSettingsContext);
   return {
     ...props,
-    loading: rebuilding || props.loading,
+    loading: rebuilding,
     async onClick(e?, callBack?) {
       await props.onClick?.(e, callBack);
       await rebuildClient();
