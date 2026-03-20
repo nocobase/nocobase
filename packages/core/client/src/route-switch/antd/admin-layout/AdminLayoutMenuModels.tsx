@@ -337,7 +337,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
     return true;
   }
 
-  toProLayoutMenuItem(options: AdminLayoutMenuRouteOptions): AdminLayoutMenuNode | null {
+  toProLayoutRoute(options: AdminLayoutMenuRouteOptions): AdminLayoutMenuNode | null {
     const route = this.props.route as NocoBaseDesktopRoute;
     const parentRoute = this.props.parentRoute as NocoBaseDesktopRoute | undefined;
     const depth = options.depth || 0;
@@ -380,8 +380,8 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       const itemChildren = Array.isArray(route.children) ? route.children : [];
       const children =
         (this.subModels.menuItems || [])
-          .map((item: any) =>
-            item.toProLayoutMenuItem({
+          .map((item: AdminLayoutMenuItemModel) =>
+            item.toProLayoutRoute({
               ...options,
               depth: depth + 1,
             }),

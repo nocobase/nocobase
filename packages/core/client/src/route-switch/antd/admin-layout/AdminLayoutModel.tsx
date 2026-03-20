@@ -99,7 +99,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
     const result =
       (this.subModels.menuItems || [])
         .map((item) =>
-          item.toProLayoutMenuItem({
+          item.toProLayoutRoute({
             ...options,
             depth: 0,
           }),
