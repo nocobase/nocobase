@@ -12,15 +12,7 @@ Think of it like an alarm on your phone that goes off every morning at 8 AM. Tha
 
 NocoBase workflows follow the same idea:
 
-```mermaid
-flowchart LR
-  T["🔔 Trigger<br/><small>When does it start?</small>"]
-  C{"🔀 Condition<br/><small>Should we proceed?</small>"}
-  A["⚡ Action<br/><small>What do we do?</small>"]
-  T --> C
-  C -- Yes --> A
-  C -. No .-> E["⏹ End"]
-```
+![06-workflows-2026-03-20-13-25-38](https://static-docs.nocobase.com/06-workflows-2026-03-20-13-25-38.jpg)
 
 - **[Trigger](/workflow/triggers/collection)**: The entry point for the workflow. For example, "someone created a new ticket" or "a record was updated"
 - **Condition**: An optional filtering step. For example, "only continue if the assignee is not empty"

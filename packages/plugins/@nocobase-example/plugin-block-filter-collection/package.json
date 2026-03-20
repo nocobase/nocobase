@@ -1,6 +1,8 @@
 {
   "private": true,
   "name": "@nocobase-example/plugin-block-filter-collection",
+  "displayName": "Plugin example: Block filter collection",
+  "description": "This plugin demonstrates how to use the block filter collection feature to create a filter collection for a block.",
   "version": "2.1.0-alpha.9",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",

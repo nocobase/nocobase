@@ -12,15 +12,7 @@
 
 NocoBase 的工作流也是同样的思路：
 
-```mermaid
-flowchart LR
-  T["🔔 触发器<br/><small>什么时候启动？</small>"]
-  C{"🔀 条件判断<br/><small>要不要继续？</small>"}
-  A["⚡ 执行动作<br/><small>具体做什么？</small>"]
-  T --> C
-  C -- 是 --> A
-  C -. 否 .-> E["⏹ 结束"]
-```
+![06-workflows-2026-03-20-13-25-38](https://static-docs.nocobase.com/06-workflows-2026-03-20-13-25-38.jpg)
 
 - **[触发器](/workflow/triggers/collection)**：工作流的入口。比如"有人创建了一条新工单"或"某条数据被更新了"
 - **条件判断**：可选的过滤步骤。比如"只有处理人不为空时才继续"
