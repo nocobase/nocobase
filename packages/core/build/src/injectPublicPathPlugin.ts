@@ -9,7 +9,19 @@
 
 function createPluginClientPublicPathDataUri(packageName: string, clientDistDir: string) {
   const code = `
-var publicPath = window['__webpack_public_path__'] || '/';
+var publicPath = window['__nocobase_public_path__'] || '';
+if (!publicPath && window.location && window.location.pathname) {
+  var marker = '/v2/';
+  var pathname = window.location.pathname || '/';
+  var index = pathname.indexOf(marker);
+  publicPath = index >= 0 ? pathname.slice(0, index + 1) : '/';
+}
+if (publicPath) {
+  publicPath = publicPath.replace(/\\/v2\\/?$/, '/');
+}
+if (!publicPath) {
+  publicPath = '/';
+}
 if (publicPath.charAt(publicPath.length - 1) !== '/') {
   publicPath += '/';
 }
