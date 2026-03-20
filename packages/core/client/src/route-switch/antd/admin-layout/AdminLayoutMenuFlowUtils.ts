@@ -321,51 +321,6 @@ export const matchesRoutePath = (
     : false;
 };
 
-export const createMenuRouteSchemaPayload = (
-  meta: AdminLayoutMenuCreationMeta,
-  values: AdminLayoutMenuCreationParams,
-) => {
-  const routeType =
-    meta.menuType === 'flowPage'
-      ? NocoBaseDesktopRouteType.flowPage
-      : meta.menuType === 'page'
-        ? NocoBaseDesktopRouteType.page
-        : meta.menuType === 'group'
-          ? NocoBaseDesktopRouteType.group
-          : NocoBaseDesktopRouteType.link;
-
-  if (meta.menuType === 'group') {
-    return {
-      routeType,
-      route: {
-        type: routeType,
-        title: values.title,
-        icon: values.icon,
-        schemaUid: '',
-      },
-    };
-  }
-
-  if (meta.menuType === 'link') {
-    return {
-      routeType,
-      route: {
-        type: routeType,
-        title: values.title,
-        icon: values.icon,
-        schemaUid: '',
-        options: {
-          href: values.href,
-          params: values.params,
-          openInNewWindow: values.openInNewWindow,
-        },
-      },
-    };
-  }
-
-  return { routeType };
-};
-
 export const buildInsertRouteSchema = (
   menuType: AdminLayoutMenuCreationType,
   pageSchemaUid: string,

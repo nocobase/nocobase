@@ -51,6 +51,8 @@ const insertPositionToMethod = {
 } as const;
 
 export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStructure> {
+  private creationPersisted = false;
+
   onInit(options) {
     super.onInit(options);
     this.syncFromRoute(
@@ -268,17 +270,27 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
   async saveStepParams() {
     if (this.isCreationSession()) {
-      return;
+      if (this.creationPersisted) {
+        return true;
+      }
+
+      const values = this.getStepParams('menuCreation', 'basic') as AdminLayoutMenuCreationParams | undefined;
+      await this.persistMenuCreation(values || {});
+      this.creationPersisted = true;
+      return true;
     }
 
-    return super.saveStepParams();
+    return true;
   }
 
   async save() {
     if (this.isCreationSession()) {
-      const values = this.getStepParams('menuCreation', 'basic') as AdminLayoutMenuCreationParams | undefined;
-      await this.persistMenuCreation(values || {});
-      await this.destroy();
+      if (!this.creationPersisted) {
+        const values = this.getStepParams('menuCreation', 'basic') as AdminLayoutMenuCreationParams | undefined;
+        await this.persistMenuCreation(values || {});
+        this.creationPersisted = true;
+      }
+      this.remove();
       return true;
     }
 
@@ -287,24 +299,7 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
 
   async destroy(): Promise<boolean> {
     if (this.isCreationSession()) {
-      const parent = this.parent as
-        | (FlowModel & {
-            subModels?: {
-              menuItems?: FlowModel[];
-            };
-          })
-        | null;
-      if (parent?.subModels?.menuItems) {
-        parent.subModels.menuItems = parent.subModels.menuItems.filter((item) => item !== this);
-        if (parent.subModels.menuItems.length === 0) {
-          delete parent.subModels.menuItems;
-        }
-      }
-
-      this.observerDispose();
-      this.invalidateFlowCache('beforeRender', true);
-      this.flowEngine.removeModel(this.uid);
-      return true;
+      return this.remove();
     }
 
     const route = this.getRoute();

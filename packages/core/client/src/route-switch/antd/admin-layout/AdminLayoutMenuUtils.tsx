@@ -20,15 +20,16 @@ import { Badge, Tooltip } from 'antd';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType, NocoBaseRouteContext } from '../../../admin-shell';
-import { Icon, ParentRouteContext, useParseURLAndParams, useRouterBasename } from '../../../';
-import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
-import { navigateWithinSelf } from '../../../block-provider/hooks';
+import { useNavigateNoUpdate, useRouterBasename } from '../../../application/CustomRouterContextProvider';
+import { navigateWithinSelf, useParseURLAndParams } from '../../../block-provider/hooks';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { Icon } from '../../../icon/Icon';
+import { ParentRouteContext } from '../../../schema-component/antd/menu/Menu';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { VariableScope } from '../../../variables/VariableScope';
 import { runAfterMobileMenuClosed } from './mobileMenuNavigation';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
-import { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
+import type { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
 import { uid } from '@nocobase/utils/client';
 
 export type AdminLayoutMenuRenderType = 'item' | 'group';
@@ -105,11 +106,59 @@ type AdminLayoutMenuItemsParent = FlowModel & {
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
+export const openAdminLayoutMenuLink = async (options: {
+  href: string;
+  params?: any[];
+  openInNewWindow?: boolean;
+  isMobile?: boolean;
+  closeMobileMenu: () => void;
+  parseURLAndParams: (href: string, params: any[]) => Promise<string>;
+  navigate: (to: string, options?: any) => void;
+  basenameOfCurrentRouter: string;
+}) => {
+  const {
+    href,
+    params,
+    openInNewWindow,
+    isMobile,
+    closeMobileMenu,
+    parseURLAndParams,
+    navigate,
+    basenameOfCurrentRouter,
+  } = options;
+
+  try {
+    const url = await parseURLAndParams(href, params || []);
+
+    if (openInNewWindow !== false) {
+      if (isMobile) {
+        closeMobileMenu();
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    runAfterMobileMenuClosed({
+      isMobile: !!isMobile,
+      closeMobileMenu,
+      callback: () => {
+        navigateWithinSelf(url, navigate, window.location.origin + basenameOfCurrentRouter);
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    if (isMobile) {
+      closeMobileMenu();
+    }
+    window.open(href, '_blank', 'noopener,noreferrer');
+  }
+};
+
 type MenuModelLike = FlowModel & {
   getRoute?: () => NocoBaseDesktopRoute | undefined;
   getParentRoute?: () => NocoBaseDesktopRoute | undefined;
   syncFromRoute?: (route: NocoBaseDesktopRoute, parentRoute?: NocoBaseDesktopRoute) => void;
-  toProLayoutMenuItem?: (options: AdminLayoutMenuRouteOptions) => AdminLayoutMenuNode | null;
+  toProLayoutRoute?: (options: AdminLayoutMenuRouteOptions) => AdminLayoutMenuNode | null;
 };
 
 const isAdminLayoutMenuModel = (model: FlowModel | undefined): model is MenuModelLike => {
@@ -129,7 +178,7 @@ const MENU_TYPE_ITEMS: Array<{ key: string; label: string; menuType: AdminLayout
 
 const createMenuCreationModelOptions = (launcherModel: FlowModel, meta: AdminLayoutMenuCreationMeta) => ({
   uid: `${launcherModel.uid}-menu-creation-${uid()}`,
-  use: AdminLayoutMenuItemModel,
+  use: 'AdminLayoutMenuItemModel',
   props: {
     creationMeta: meta,
   },
@@ -251,7 +300,7 @@ export function reconcileAdminLayoutMenuItems(
     if (!itemModel) {
       itemModel = parent.addSubModel('menuItems', {
         uid,
-        use: AdminLayoutMenuItemModel,
+        use: 'AdminLayoutMenuItemModel',
         props: {
           route,
           parentRoute,
@@ -403,30 +452,16 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
       event.preventDefault();
       event.stopPropagation();
 
-      try {
-        const url = await parseURLAndParams(href, params || []);
-
-        if (openInNewWindow !== false) {
-          if (props.options?.isMobile) {
-            closeMobileMenu();
-          }
-          window.open(url, '_blank');
-        } else {
-          runAfterMobileMenuClosed({
-            isMobile: !!props.options?.isMobile,
-            closeMobileMenu,
-            callback: () => {
-              navigateWithinSelf(href, navigate, window.location.origin + basenameOfCurrentRouter);
-            },
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        if (props.options?.isMobile) {
-          closeMobileMenu();
-        }
-        window.open(href, '_blank');
-      }
+      await openAdminLayoutMenuLink({
+        href,
+        params,
+        openInNewWindow,
+        isMobile: !!props.options?.isMobile,
+        closeMobileMenu,
+        parseURLAndParams,
+        navigate,
+        basenameOfCurrentRouter,
+      });
     },
     [parseURLAndParams, item, props.options?.isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter],
   );
