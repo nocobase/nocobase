@@ -1,6 +1,6 @@
 # CollectionTemplateManager
 
-Used to manage [CollectionTemplate](./collection-template), which is managed by [DataSourceManager](./data-source-manager).
+Used to manage [CollectionTemplate](./collection-template.md), which is managed by [DataSourceManager](./data-source-manager.md).
 
 ## Instance Methods
 
