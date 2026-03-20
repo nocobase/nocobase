@@ -24,6 +24,7 @@ import {
 type AdminLayoutStructure = {
   subModels: {
     menuItems?: AdminLayoutMenuItemModel[];
+    menuCreationSessions?: AdminLayoutMenuItemModel[];
   };
 };
 
@@ -107,8 +108,8 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
     if (options.designable) {
       options.isMobile
-        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'))
-        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'));
+        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this))
+        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this));
     }
 
     return {

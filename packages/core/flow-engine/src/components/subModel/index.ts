@@ -8,5 +8,6 @@
  */
 
 export * from './AddSubModelButton';
+export { default as LazyDropdown } from './LazyDropdown';
 export * from './utils';
 //
