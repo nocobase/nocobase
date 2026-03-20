@@ -158,7 +158,15 @@ export const MCPToolsList: React.FC = () => {
             >
               <div>{tool.title}</div>
               {tool.description ? (
-                <div style={{ color: 'var(--nb-color-text-secondary)', fontSize: 12 }}>{tool.description}</div>
+                <Typography.Paragraph
+                  style={{ color: 'var(--nb-color-text-secondary)', fontSize: 12, marginBottom: 0 }}
+                  ellipsis={{
+                    rows: 3,
+                    expandable: 'collapsible',
+                  }}
+                >
+                  {tool.description}
+                </Typography.Paragraph>
               ) : null}
             </List.Item>
           )}
