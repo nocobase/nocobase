@@ -40,7 +40,7 @@ NocoBase offers several trigger types, which you select when creating a workflow
 | **Pre-action event** | Intercepts a user action synchronously before it completes | Pre-submit validation, auto-fill fields |
 | **AI Employee** | Exposes the workflow as a tool for AI employees to call | AI-driven business operations |
 
-This tutorial uses both **Collection event** and **Post-action event** triggers. The other types work similarly; once you've learned these, you can pick up the rest quickly.
+This tutorial uses both **Collection event** and **Custom action event** triggers. The other types work similarly; once you've learned these, you can pick up the rest quickly.
 
 NocoBase workflows are a built-in plugin — no extra installation needed, ready to use out of the box.
 
@@ -259,14 +259,32 @@ The workflow is configured, but a "Custom action event" needs to be bound to a s
 
 ![06-workflows-2026-03-19-23-00-53](https://static-docs.nocobase.com/06-workflows-2026-03-19-23-00-53.png)
 
-### Step 6: Enable and Test
+### Step 6: Configure Event Flow Refresh
+
+The button is created, but the table won't automatically refresh after clicking — users won't see the status change. We need to configure the button's **event flow** to automatically refresh the table after the workflow completes.
+
+1. Click the second lightning bolt icon (⚡) in the button settings to open the **Event flow** configuration
+2. Configure the trigger event:
+   - **Trigger event**: Select **Click**
+   - **Execution timing**: Select **After all flows**
+3. Click **"Append step"** and select **"Refresh target block"**
+
+![06-workflows-2026-03-20-16-46-59](https://static-docs.nocobase.com/06-workflows-2026-03-20-16-46-59.png)
+
+4. Find the ticket table on the current page, open its settings menu, and click **"Copy UID"** at the bottom. Paste the UID into the refresh step's target block field
+
+![06-workflows-2026-03-20-16-48-39](https://static-docs.nocobase.com/06-workflows-2026-03-20-16-48-39.png)
+
+This way, after clicking the "Complete" button, the table automatically refreshes once the workflow finishes, and users immediately see the status and completion time changes.
+
+### Step 7: Enable and Test
 
 Go back to the workflow management page and enable the "Auto-record ticket completion time" workflow.
 
-Then open a ticket with "In Progress" status and click the **"Complete"** button in the action column. After refreshing the page, you should see:
+Then open a ticket with "In Progress" status and click the **"Complete"** button in the action column. You should see:
 
 - The ticket's "Completion time" field is automatically filled with the current time
-- The "Complete" button has disappeared for this ticket (linkage rule in effect)
+- The table refreshes automatically, and the "Complete" button has disappeared for this ticket (linkage rule in effect)
 
 ![06-workflows-2026-03-15-21-25-11](https://static-docs.nocobase.com/06-workflows-2026-03-15-21-25-11.gif)
 
@@ -293,7 +311,7 @@ If an execution failed, clicking into the details shows which node had the probl
 In this chapter, we created two simple but practical workflows:
 
 - **New ticket notification** (Collection event trigger): Automatically notifies the assignee when a ticket is created or reassigned — no more yelling across the office
-- **Auto-record completion time** (Post-action event trigger): Click "Complete" and the timestamp is filled automatically — no more human oversight
+- **Auto-record completion time** (Custom action event trigger): Click "Complete" and the timestamp is filled automatically — no more human oversight
 
 These two workflows demonstrate two different trigger types, and together took less than 10 minutes to configure. The system can already do things automatically. NocoBase supports many more node types (HTTP requests, calculations, loops, etc.), but for getting started, mastering these combos is enough to handle most scenarios.
 
