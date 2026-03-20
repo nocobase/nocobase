@@ -1364,6 +1364,7 @@ AdminLayoutMenuItemModel.registerFlow({
     basic: {
       title: 'Create',
       preset: true,
+      hideInSettings: true,
       defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) =>
         getMenuCreationDefaultParams(ctx.model.getCreationMeta()),
       uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) =>
