@@ -19,12 +19,7 @@ import {
 import { Badge, Tooltip } from 'antd';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  findFirstPageRoute,
-  NocoBaseDesktopRoute,
-  NocoBaseDesktopRouteType,
-  NocoBaseRouteContext,
-} from '../../../admin-shell';
+import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType, NocoBaseRouteContext } from '../../../admin-shell';
 import { Icon, ParentRouteContext, useParseURLAndParams, useRouterBasename } from '../../../';
 import { useNavigateNoUpdate } from '../../../application/CustomRouterContextProvider';
 import { navigateWithinSelf } from '../../../block-provider/hooks';
@@ -99,7 +94,6 @@ export type AdminLayoutMenuCreationParams = {
 export type AdminLayoutMenuItemStructure = {
   subModels: {
     menuItems?: AdminLayoutMenuItemModel[];
-    menuCreationSessions?: AdminLayoutMenuItemModel[];
   };
 };
 
@@ -165,7 +159,7 @@ const MenuDesignerButton: FC<{ testId: string; launcherModel: FlowModel; parentR
   return (
     <AddSubModelButton
       model={props.launcherModel}
-      subModelKey={'menuCreationSessions'}
+      subModelKey={'menuItems'}
       items={getMenuDesignerItems(props.launcherModel, props.parentRoute)}
     >
       <FlowSettingsButton data-testid={props.testId} style={{ background: 'none' }} icon={<PlusOutlined />}>

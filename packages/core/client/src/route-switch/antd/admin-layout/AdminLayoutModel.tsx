@@ -24,7 +24,6 @@ import {
 type AdminLayoutStructure = {
   subModels: {
     menuItems?: AdminLayoutMenuItemModel[];
-    menuCreationSessions?: AdminLayoutMenuItemModel[];
   };
 };
 

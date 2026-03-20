@@ -290,14 +290,14 @@ export class AdminLayoutMenuItemModel extends FlowModel<AdminLayoutMenuItemStruc
       const parent = this.parent as
         | (FlowModel & {
             subModels?: {
-              menuCreationSessions?: FlowModel[];
+              menuItems?: FlowModel[];
             };
           })
         | null;
-      if (parent?.subModels?.menuCreationSessions) {
-        parent.subModels.menuCreationSessions = parent.subModels.menuCreationSessions.filter((item) => item !== this);
-        if (parent.subModels.menuCreationSessions.length === 0) {
-          delete parent.subModels.menuCreationSessions;
+      if (parent?.subModels?.menuItems) {
+        parent.subModels.menuItems = parent.subModels.menuItems.filter((item) => item !== this);
+        if (parent.subModels.menuItems.length === 0) {
+          delete parent.subModels.menuItems;
         }
       }
 
