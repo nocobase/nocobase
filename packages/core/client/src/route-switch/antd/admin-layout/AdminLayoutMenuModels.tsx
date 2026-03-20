@@ -1362,7 +1362,7 @@ AdminLayoutMenuItemModel.registerFlow({
   title: 'Add menu item',
   steps: {
     basic: {
-      title: 'Create',
+      title: 'Add menu item',
       preset: true,
       hideInSettings: true,
       defaultParams: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) =>
