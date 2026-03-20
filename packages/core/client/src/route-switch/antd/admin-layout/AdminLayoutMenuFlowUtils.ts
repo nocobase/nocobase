@@ -117,7 +117,7 @@ const MENU_TYPE_OPTIONS: Array<{ label: string; value: AdminLayoutMenuCreationTy
   { label: 'Link', value: 'link' },
 ];
 
-const buildMenuBasicSchema = (t: (title: any) => any, options?: { iconTitle?: any }): Record<string, any> => ({
+export const buildMenuBasicSchema = (t: (title: any) => any): Record<string, any> => ({
   title: {
     title: t('Menu item title'),
     required: true,
@@ -125,7 +125,7 @@ const buildMenuBasicSchema = (t: (title: any) => any, options?: { iconTitle?: an
     'x-component': 'Input',
   },
   icon: {
-    title: options?.iconTitle ?? t('Icon'),
+    title: t('Icon'),
     'x-decorator': 'FormItem',
     'x-component': 'IconPicker',
   },

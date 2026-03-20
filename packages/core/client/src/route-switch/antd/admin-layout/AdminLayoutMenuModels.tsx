@@ -28,6 +28,7 @@ import {
   shouldRenderIconInTitle,
 } from './AdminLayoutMenuUtils';
 import {
+  buildMenuBasicSchema,
   buildInsertRouteSchema,
   buildLinkSettingSchema,
   createInsertMenuStep,
@@ -454,19 +455,7 @@ AdminLayoutMenuItemModel.registerFlow({
         getMenuEditDefaultParams(ctx.model.getRoute()),
       uiSchema: async (ctx: FlowSettingsContext<AdminLayoutMenuItemModel>) => {
         const route = ctx.model.getRoute();
-        const schema: Record<string, any> = {
-          title: {
-            title: ctx.t('Menu item title'),
-            required: true,
-            'x-decorator': 'FormItem',
-            'x-component': 'Input',
-          },
-          icon: {
-            title: ctx.t('Menu item icon'),
-            'x-decorator': 'FormItem',
-            'x-component': 'IconPicker',
-          },
-        };
+        const schema: Record<string, any> = buildMenuBasicSchema(ctx.t);
 
         if (route?.type === NocoBaseDesktopRouteType.link) {
           Object.assign(schema, buildLinkSettingSchema(ctx.t));
