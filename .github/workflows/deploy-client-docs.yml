@@ -34,15 +34,19 @@ jobs:
       - run: pnpm install
       - name: Build zh-CN
         run: pnpm doc build core/client --lang=zh-CN
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Build en-US
         run: pnpm doc build core/client --lang=en-US
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
       - name: Set tags
         id: set-tags
         run: |
           if [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "::set-output name=tags::${{ github.ref_name }}"
+            echo "tags=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
           else
-            echo "::set-output name=tags::pr-${{ github.event.pull_request.number }}"
+            echo "tags=pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           fi
       - name: copy files via ssh - ${{ steps.set-tags.outputs.tags }}
         uses: appleboy/scp-action@v0.1.7
