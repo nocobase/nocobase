@@ -68,10 +68,14 @@ const InternalKanbanBlockProvider = (props) => {
 };
 
 export const KanbanBlockProvider = (props) => {
-  const { filter: parsedFilter } = useParsedFilter({
+  const { filter: parsedFilter, parseVariableLoading } = useParsedFilter({
     filterOption: props.params?.filter,
   });
   const params = { ...props.params, filter: parsedFilter };
+
+  if (parseVariableLoading) {
+    return null;
+  }
 
   return (
     <BlockProvider name="kanban" {...props} params={params}>
