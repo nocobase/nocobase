@@ -22,12 +22,12 @@ describe('AutoInjectPublicPathPlugin', () => {
       },
     };
 
-    new AutoInjectPublicPathPlugin('@nocobase-example/plugin-simple-action', 'client-v2').apply(compiler);
+    new AutoInjectPublicPathPlugin('@nocobase/plugin-acl', 'client-v2').apply(compiler);
 
     expect(Array.isArray(compiler.options.entry)).toBe(true);
     const dataUri = compiler.options.entry[0];
     expect(decodeURIComponent(dataUri)).toContain(
-      'static/plugins/@nocobase-example/plugin-simple-action/dist/client-v2/',
+      'static/plugins/@nocobase/plugin-acl/dist/client-v2/',
     );
   });
 });

@@ -44,7 +44,7 @@ describe('IndexGenerator', () => {
     fs.ensureDirSync(process.env.PLUGIN_STORAGE_PATH);
     fs.ensureDirSync(path.join(tempRoot, 'node_modules', '@nocobase'));
 
-    writePluginPackage(tempRoot, '@nocobase/plugin-simple-action', {
+    writePluginPackage(tempRoot, '@nocobase/plugin-acl', {
       clientRootFile: 'client-v2.js',
       clientSourceDir: 'client-v2',
     });
@@ -65,10 +65,10 @@ describe('IndexGenerator', () => {
 
     const packageMap = fs.readJsonSync(path.join(outputPath, 'packageMap.json'));
     expect(packageMap).toEqual({
-      '@nocobase/plugin-simple-action': 'nocobase_plugin_simple_action.ts',
+      '@nocobase/plugin-acl': 'nocobase_plugin_acl.ts',
     });
 
-    const manifest = fs.readFileSync(path.join(outputPath, 'packages', 'nocobase_plugin_simple_action.ts'), 'utf8');
+    const manifest = fs.readFileSync(path.join(outputPath, 'packages', 'nocobase_plugin_acl.ts'), 'utf8');
     expect(manifest).toContain('src/client-v2');
   });
 
@@ -79,7 +79,7 @@ describe('IndexGenerator', () => {
     fs.ensureDirSync(process.env.PLUGIN_STORAGE_PATH);
     fs.ensureDirSync(path.join(tempRoot, 'node_modules', '@nocobase'));
 
-    writePluginPackage(tempRoot, '@nocobase/plugin-simple-action', {
+    writePluginPackage(tempRoot, '@nocobase/plugin-acl', {
       clientRootFile: 'client-v2.js',
       clientSourceDir: 'client-v2',
     });
@@ -110,12 +110,8 @@ describe('IndexGenerator', () => {
     fs.writeJsonSync(path.join(tempRoot, 'tsconfig.paths.json'), {
       compilerOptions: {
         paths: {
-          '@nocobase/plugin-simple-action/client': [
-            'packages/plugins/@nocobase-example/plugin-simple-action/src/client',
-          ],
-          '@nocobase/plugin-simple-action/client-v2': [
-            'packages/plugins/@nocobase-example/plugin-simple-action/src/client-v2',
-          ],
+          '@nocobase/plugin-acl/client': ['packages/plugins/@nocobase/plugin-acl/src/client'],
+          '@nocobase/plugin-acl/client-v2': ['packages/plugins/@nocobase/plugin-acl/src/client-v2'],
         },
       },
     });
@@ -124,14 +120,8 @@ describe('IndexGenerator', () => {
 
     expect(packagePaths).toEqual(
       expect.arrayContaining([
-        [
-          '@nocobase/plugin-simple-action/client',
-          path.join(tempRoot, 'packages/plugins/@nocobase-example/plugin-simple-action/src/client'),
-        ],
-        [
-          '@nocobase/plugin-simple-action/client-v2',
-          path.join(tempRoot, 'packages/plugins/@nocobase-example/plugin-simple-action/src/client-v2'),
-        ],
+        ['@nocobase/plugin-acl/client', path.join(tempRoot, 'packages/plugins/@nocobase/plugin-acl/src/client')],
+        ['@nocobase/plugin-acl/client-v2', path.join(tempRoot, 'packages/plugins/@nocobase/plugin-acl/src/client-v2')],
       ]),
     );
   });
