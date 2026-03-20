@@ -13,9 +13,11 @@
     "@types/oidc-provider": "^9.5.0"
   },
   "peerDependencies": {
-    "@nocobase/client": "2.x",
-    "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x"
+    "@nocobase/cache": "workspace:*",
+    "@nocobase/client": "workspace:*",
+    "@nocobase/database": "workspace:*",
+    "@nocobase/server": "workspace:*",
+    "@nocobase/test": "workspace:*"
   },
   "keywords": [
     "Authentication"

@@ -3484,6 +3484,37 @@ importers:
         specifier: workspace:*
         version: link:../../../core/test
 
+  packages/plugins/@nocobase/plugin-idp-oauth:
+    dependencies:
+      '@nocobase/cache':
+        specifier: workspace:*
+        version: link:../../../core/cache
+      '@nocobase/client':
+        specifier: workspace:*
+        version: link:../../../core/client
+      '@nocobase/database':
+        specifier: workspace:*
+        version: link:../../../core/database
+      '@nocobase/server':
+        specifier: workspace:*
+        version: link:../../../core/server
+      '@nocobase/test':
+        specifier: workspace:*
+        version: link:../../../core/test
+    devDependencies:
+      '@types/oidc-provider':
+        specifier: ^9.5.0
+        version: 9.5.0
+      jose:
+        specifier: ^6.2.1
+        version: 6.2.1
+      light-my-request:
+        specifier: ^6.6.0
+        version: 6.6.0
+      oidc-provider:
+        specifier: ~9.7.0
+        version: 9.7.1
+
   packages/plugins/@nocobase/plugin-kanban:
     dependencies:
       '@nocobase/client':
@@ -3649,6 +3680,9 @@ importers:
       '@nocobase/client':
         specifier: workspace:*
         version: link:../../../core/client
+      '@nocobase/plugin-idp-oauth':
+        specifier: workspace:*
+        version: link:../plugin-idp-oauth
       '@nocobase/server':
         specifier: workspace:*
         version: link:../../../core/server
@@ -5276,6 +5310,9 @@ importers:
       '@nocobase/plugin-graph-collection-manager':
         specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-graph-collection-manager
+      '@nocobase/plugin-idp-oauth':
+        specifier: workspace:*
+        version: link:../../plugins/@nocobase/plugin-idp-oauth
       '@nocobase/plugin-kanban':
         specifier: workspace:*
         version: link:../../plugins/@nocobase/plugin-kanban
@@ -8045,6 +8082,12 @@ packages:
     engines: {node: '>= 18'}
     deprecated: Please upgrade to v13.1.1+ per <https://github.com/koajs/router/pull/181>
 
+  '@koa/router@15.4.0':
+    resolution: {integrity: sha512-vKYlXtoCfcAN8z4dHiveYX55rTYOgHEYJNumK1WM9ZAwaArhreGVkyC1LTMGfUQUJyIO/SbwRFBOHeOCY8/MaQ==}
+    engines: {node: '>= 20'}
+    peerDependencies:
+      koa: ^2.0.0 || ^3.0.0
+
   '@langchain/anthropic@1.3.17':
     resolution: {integrity: sha512-5z/dqw/atLvH1hGtHrF9q4ZT3uSL34Y3XmSYKMtpgsibVnlFG2QmxikkjJnwAYGBTjrsTQuE7khrBPFkJSEucA==}
     engines: {node: '>=20'}
@@ -10512,6 +10555,9 @@ packages:
 
   '@types/npm-package-arg@6.1.4':
     resolution: {integrity: sha512-vDgdbMy2QXHnAruzlv68pUtXCjmqUk3WrBAsRboRovsOmxbfn/WiYCjmecyKjGztnMps5dWp4Uq2prp+Ilo17Q==}
+
+  '@types/oidc-provider@9.5.0':
+    resolution: {integrity: sha512-eEzCRVTSqIHD9Bo/qRJ4XQWQ5Z/zBcG+Z2cGJluRsSuWx1RJihqRyPxhIEpMXTwPzHYRTQkVp7hwisQOwzzSAg==}
 
   '@types/parse-json@4.0.2':
     resolution: {integrity: sha512-dISoDXWWQwUquiKsyZ4Ng+HX2KsPL7LyHKHQwgGFEA3IaKac4Obd+h2a/a6waisAoepJlBcx9paWqjA8/HVjCw==}
@@ -14106,6 +14152,10 @@ packages:
     resolution: {integrity: sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==}
     engines: {node: '>=0.10.0'}
 
+  eta@4.5.1:
+    resolution: {integrity: sha512-EaNCGm+8XEIU7YNcc+THptWAO5NfKBHHARxt+wxZljj9bTr/+arRoOm9/MpGt4n6xn9fLnPFRSoLD0WFYGFUxQ==}
+    engines: {node: '>=20'}
+
   etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
@@ -16292,6 +16342,10 @@ packages:
     resolution: {integrity: sha512-Afhqq0Vq3W7C+/rW6IqHVBDLzqObwZ07JaUNUEF8yCQ6afiyFE3RAy+i7V0E46XOWlH7vPWn/x0vsZwNy6PWxw==}
     engines: {node: ^4.8.4 || ^6.10.1 || ^7.10.1 || >= 8.1.4}
 
+  koa@3.1.2:
+    resolution: {integrity: sha512-2LOQnFKu3m0VxpE+5sb5+BRTSKrXmNxGgxVRiKwD9s5KQB1zID/FRXhtzeV7RT1L2GVpdEEAfVuclFOMGl1ikA==}
+    engines: {node: '>= 18'}
+
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
 
@@ -17554,6 +17608,11 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nanoid@5.1.7:
+    resolution: {integrity: sha512-ua3NDgISf6jdwezAheMOk4mbE1LXjm1DfMUDMuJf4AqxLFK3ccGpgWizwa5YV7Yz9EpXwEaWoRXSb/BnV0t5dQ==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+
   napi-build-utils@2.0.0:
     resolution: {integrity: sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==}
 
@@ -17875,6 +17934,9 @@ packages:
   officeparser@5.2.2:
     resolution: {integrity: sha512-5JrV1CZFqTv/27fXy2bcf+3g6BpDZiJ3XoSRW3fb2i2EFex0DduqjTxiU2RsJ08WBsk4Hp0nZoGi9ZtHMZFaPA==}
     hasBin: true
+
+  oidc-provider@9.7.1:
+    resolution: {integrity: sha512-yzOdAYxQEisPspCy6xVPrK++bYz71011uylwhR3XLDfb3r0NfVuJStApQvXoeMXj928nkZoxRTBC4ECYM94KOw==}
 
   ollama@0.6.3:
     resolution: {integrity: sha512-KEWEhIqE5wtfzEIZbDCLH51VFZ6Z3ZSa6sIOg/E/tBV8S51flyqBOXi+bRxlOYKDf8i327zG9eSTb8IJxvm3Zg==}
@@ -18325,6 +18387,9 @@ packages:
   path-to-regexp@8.2.0:
     resolution: {integrity: sha512-TdrF7fW9Rphjq4RjrW0Kp2AW0Ahwu9sRGTkS6bvDi0SCwZlEZYmcfDbEsTz8RVk0EHIS/Vd1bv3JhG+1xZuAyQ==}
     engines: {node: '>=16'}
+
+  path-to-regexp@8.3.0:
+    resolution: {integrity: sha512-7jdwVIRtsP8MYpdXSwOS0YdD0Du+qOoF/AEPIt88PcCFrZCzx41oxku1jD88hZBwbNUIEfpqvuhjFaMAqMTWnA==}
 
   path-type@3.0.0:
     resolution: {integrity: sha512-T2ZUsdZFHgA3u4e5PfPbjd7HDDpxPnQb5jN0SrDsjNSuVXHJqtwTnWqG0B1jZrgmJ/7lj1EmVIByWt1gxGkWvg==}
@@ -19257,6 +19322,10 @@ packages:
   quick-lru@4.0.1:
     resolution: {integrity: sha512-ARhCpm70fzdcvNQfPoy49IaanKkTlRWF2JMzqhcJbhSFRZv7nPTvZJdcY7301IPmvW+/p0RgIWnQDLJxifsQ7g==}
     engines: {node: '>=8'}
+
+  quick-lru@7.3.0:
+    resolution: {integrity: sha512-k9lSsjl36EJdK7I06v7APZCbyGT2vMTsYSRX1Q2nbYmnkBqgUhRkAuzH08Ciotteu/PLJmIF2+tti7o3C/ts2g==}
+    engines: {node: '>=18'}
 
   quickselect@2.0.0:
     resolution: {integrity: sha512-RKJ22hX8mHe3Y6wH/N3wCM6BWtjaxIyyUIkpHOvfFnxdI4yD4tBXEBKSbriGujF6jnSVkJrffuo6vxACiSSxIw==}
@@ -21805,6 +21874,10 @@ packages:
 
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
+
+  undici@7.24.5:
+    resolution: {integrity: sha512-3IWdCpjgxp15CbJnsi/Y9TCDE7HWVN19j1hmzVhoAkY/+CJx449tVxT5wZc1Gwg8J+P0LWvzlBzxYRnHJ+1i7Q==}
+    engines: {node: '>=20.18.1'}
 
   unescape@1.0.1:
     resolution: {integrity: sha512-O0+af1Gs50lyH1nUu3ZyYS1cRh01Q/kUKatTOkSs7jukXE6/NebucDVxyiDsA9AQ4JC1V1jUH9EO8JX2nMDgGQ==}
@@ -26223,6 +26296,16 @@ snapshots:
       koa-compose: 4.1.0
       path-to-regexp: 6.3.0
 
+  '@koa/router@15.4.0(koa@3.1.2)':
+    dependencies:
+      debug: 4.4.3
+      http-errors: 2.0.1
+      koa: 3.1.2
+      koa-compose: 4.1.0
+      path-to-regexp: 8.3.0
+    transitivePeerDependencies:
+      - supports-color
+
   '@langchain/anthropic@1.3.17(@langchain/core@1.1.24(@opentelemetry/api@1.9.0)(@opentelemetry/sdk-trace-base@2.2.0(@opentelemetry/api@1.9.0))(openai@6.25.0(ws@8.18.0)(zod@4.3.6)))':
     dependencies:
       '@anthropic-ai/sdk': 0.73.0(zod@4.3.6)
@@ -28867,6 +28950,12 @@ snapshots:
   '@types/normalize-package-data@2.4.4': {}
 
   '@types/npm-package-arg@6.1.4': {}
+
+  '@types/oidc-provider@9.5.0':
+    dependencies:
+      '@types/keygrip': 1.0.6
+      '@types/koa': 2.15.0
+      '@types/node': 25.2.3
 
   '@types/parse-json@4.0.2': {}
 
@@ -33823,6 +33912,8 @@ snapshots:
 
   esutils@2.0.3: {}
 
+  eta@4.5.1: {}
+
   etag@1.8.1: {}
 
   event-target-shim@5.0.1: {}
@@ -36463,6 +36554,27 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  koa@3.1.2:
+    dependencies:
+      accepts: 1.3.8
+      content-disposition: 1.0.1
+      content-type: 1.0.5
+      cookies: 0.9.1
+      delegates: 1.0.0
+      destroy: 1.2.0
+      encodeurl: 2.0.0
+      escape-html: 1.0.3
+      fresh: 0.5.2
+      http-assert: 1.5.0
+      http-errors: 2.0.1
+      koa-compose: 4.1.0
+      mime-types: 3.0.2
+      on-finished: 2.4.1
+      parseurl: 1.3.3
+      statuses: 2.0.2
+      type-is: 2.0.1
+      vary: 1.1.2
+
   kolorist@1.8.0: {}
 
   kuler@2.0.0: {}
@@ -38336,6 +38448,8 @@ snapshots:
 
   nanoid@3.3.11: {}
 
+  nanoid@5.1.7: {}
+
   napi-build-utils@2.0.0: {}
 
   natural-compare-lite@1.4.0: {}
@@ -38763,6 +38877,22 @@ snapshots:
       node-ensure: 0.0.0
       pdfjs-dist: 5.4.624
       yauzl: 3.2.0
+
+  oidc-provider@9.7.1:
+    dependencies:
+      '@koa/cors': 5.0.0
+      '@koa/router': 15.4.0(koa@3.1.2)
+      debug: 4.4.3
+      eta: 4.5.1
+      jose: 6.2.1
+      jsesc: 3.1.0
+      koa: 3.1.2
+      nanoid: 5.1.7
+      quick-lru: 7.3.0
+      raw-body: 3.0.2
+      undici: 7.24.5
+    transitivePeerDependencies:
+      - supports-color
 
   ollama@0.6.3:
     dependencies:
@@ -39298,6 +39428,8 @@ snapshots:
   path-to-regexp@6.3.0: {}
 
   path-to-regexp@8.2.0: {}
+
+  path-to-regexp@8.3.0: {}
 
   path-type@3.0.0:
     dependencies:
@@ -40306,6 +40438,8 @@ snapshots:
   quick-format-unescaped@4.0.4: {}
 
   quick-lru@4.0.1: {}
+
+  quick-lru@7.3.0: {}
 
   quickselect@2.0.0: {}
 
@@ -43562,6 +43696,8 @@ snapshots:
   undici-types@5.26.5: {}
 
   undici-types@7.16.0: {}
+
+  undici@7.24.5: {}
 
   unescape@1.0.1:
     dependencies:
