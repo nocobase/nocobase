@@ -1395,6 +1395,57 @@ describe('FlowSchemaRegistry', () => {
     expect(JSON.stringify(bundle)).not.toContain('RuntimeFieldModel');
   });
 
+  it('should match wildcard field binding interfaces without breaking exact matches', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerFieldBindingContexts([{ name: 'editable-field' }]);
+    registry.registerModelManifest({
+      use: 'SchemaRegistryExactFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'exact-field-uid',
+        use: 'SchemaRegistryExactFieldModel',
+      },
+    });
+    registry.registerModelManifest({
+      use: 'SchemaRegistryWildcardFieldModel',
+      exposure: 'internal',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'wildcard-field-uid',
+        use: 'SchemaRegistryWildcardFieldModel',
+      },
+    });
+
+    registry.registerFieldBindings([
+      {
+        context: 'editable-field',
+        use: 'SchemaRegistryExactFieldModel',
+        interfaces: ['input'],
+        isDefault: true,
+      },
+      {
+        context: 'editable-field',
+        use: 'SchemaRegistryWildcardFieldModel',
+        interfaces: ['*'],
+      },
+    ]);
+
+    expect(
+      registry.resolveFieldBindingCandidates('editable-field', { interface: 'uuid' }).map((item) => item.use),
+    ).toEqual(['SchemaRegistryWildcardFieldModel']);
+    expect(
+      registry.resolveFieldBindingCandidates('editable-field', { interface: 'input' }).map((item) => item.use),
+    ).toEqual(['SchemaRegistryExactFieldModel', 'SchemaRegistryWildcardFieldModel']);
+  });
+
   it('should project required and minItems slot constraints into schema documents and bundle catalogs', () => {
     const registry = new FlowSchemaRegistry();
 

@@ -1190,7 +1190,7 @@ export class FlowSchemaRegistry {
       targetCollectionTemplate?: string;
     },
   ) {
-    if (options.interface && !binding.interfaces.includes(options.interface)) {
+    if (options.interface && !binding.interfaces.includes('*') && !binding.interfaces.includes(options.interface)) {
       return false;
     }
 

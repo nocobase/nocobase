@@ -14,9 +14,11 @@ import type {
 } from '@nocobase/flow-engine';
 import {
   createFieldModelSchemaManifest,
+  createFieldModelStepParamsSchema,
   createFieldModelSkeleton,
   createPopupBlockGrid,
   createRuntimeFieldModelSlotSchema,
+  runJsActionSettingsStepParamsSchema,
 } from './shared';
 
 function toTitle(use: string) {
@@ -38,6 +40,35 @@ function createFieldManifest(use: string, options: Partial<FlowModelSchemaManife
     use,
     title: options.title || toTitle(use),
   };
+}
+
+function createJsFieldManifest(use: 'JSFieldModel' | 'JSEditableFieldModel'): FlowModelSchemaManifest {
+  const baseSchema = createFieldModelStepParamsSchema();
+  const skeleton = createFieldModelSkeleton(use);
+
+  return createFieldManifest(use, {
+    title: use === 'JSEditableFieldModel' ? 'JS editable field' : 'JS field',
+    stepParamsSchema: {
+      type: 'object',
+      properties: {
+        ...(baseSchema.properties || {}),
+        jsSettings: runJsActionSettingsStepParamsSchema,
+      },
+      additionalProperties: true,
+    },
+    skeleton: {
+      ...skeleton,
+      stepParams: {
+        ...(skeleton.stepParams || {}),
+        jsSettings: {
+          runJs: {
+            version: 'v2',
+            code: '',
+          },
+        },
+      },
+    },
+  });
 }
 
 function createAssociationDisplayFieldSkeleton(
@@ -254,6 +285,8 @@ const coreFieldModelManifestEntries: Array<string | FlowModelSchemaManifest> = [
   'RichTextFieldModel',
   'ColorFieldModel',
   'IconFieldModel',
+  createJsFieldManifest('JSFieldModel'),
+  createJsFieldManifest('JSEditableFieldModel'),
   createRecordSelectFieldManifest(),
   createRecordPickerFieldManifest(),
   'CascadeSelectFieldModel',
@@ -422,6 +455,11 @@ export const coreFieldBindingManifests: FlowFieldBindingManifest[] = [
     interfaces: ['icon'],
     isDefault: true,
   },
+  {
+    context: 'editable-field',
+    use: 'JSEditableFieldModel',
+    interfaces: ['*'],
+  },
   associationBinding(
     'editable-field',
     'RecordSelectFieldModel',
@@ -554,6 +592,11 @@ export const coreFieldBindingManifests: FlowFieldBindingManifest[] = [
     use: 'DisplayURLFieldModel',
     interfaces: ['url'],
     isDefault: true,
+  },
+  {
+    context: 'display-field',
+    use: 'JSFieldModel',
+    interfaces: ['*'],
   },
   associationBinding('details-item-field', 'DisplaySubItemFieldModel', [
     'm2o',

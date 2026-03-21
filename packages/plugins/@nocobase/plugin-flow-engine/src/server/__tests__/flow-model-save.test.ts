@@ -1303,6 +1303,66 @@ describe('flow-model save', () => {
     expect(displayUrlField.status).toBe(200);
     expect(displayUrlField.body?.data?.use).toBe('DisplayURLFieldModel');
 
+    const jsField = await agent.get('/flowModels:schema').query({
+      use: 'JSFieldModel',
+    });
+    expect(jsField.status).toBe(200);
+    expect(jsField.body?.data?.use).toBe('JSFieldModel');
+    expect(jsField.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
+      properties: {
+        fieldSettings: {
+          type: 'object',
+        },
+        jsSettings: {
+          type: 'object',
+          properties: {
+            runJs: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                },
+                version: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expectStepParamsExampleMatchesDocument(jsField.body?.data, 'skeleton');
+
+    const jsEditableField = await agent.get('/flowModels:schema').query({
+      use: 'JSEditableFieldModel',
+    });
+    expect(jsEditableField.status).toBe(200);
+    expect(jsEditableField.body?.data?.use).toBe('JSEditableFieldModel');
+    expect(jsEditableField.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
+      properties: {
+        fieldSettings: {
+          type: 'object',
+        },
+        jsSettings: {
+          type: 'object',
+          properties: {
+            runJs: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                },
+                version: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expectStepParamsExampleMatchesDocument(jsEditableField.body?.data, 'skeleton');
+
     const bundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['TableColumnModel', 'FormItemModel', 'InputFieldModel'],
     });
@@ -1333,6 +1393,14 @@ describe('flow-model save', () => {
               inheritParentFieldBinding: true,
             }),
           }),
+          expect.objectContaining({
+            use: 'JSFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'display-field',
+              interfaces: ['*'],
+              inheritParentFieldBinding: true,
+            }),
+          }),
         ]),
       },
     });
@@ -1348,6 +1416,14 @@ describe('flow-model save', () => {
               context: 'editable-field',
               interfaces: expect.arrayContaining(['input']),
               isDefault: true,
+              inheritParentFieldBinding: true,
+            }),
+          }),
+          expect.objectContaining({
+            use: 'JSEditableFieldModel',
+            compatibility: expect.objectContaining({
+              context: 'editable-field',
+              interfaces: ['*'],
               inheritParentFieldBinding: true,
             }),
           }),
@@ -1380,6 +1456,82 @@ describe('flow-model save', () => {
       },
     });
     expect(saveTableDisplay.status).toBe(200);
+
+    const saveTableJs = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-table-js-field',
+        use: 'TableColumnModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'website',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-table-js-field-child',
+            use: 'JSFieldModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: 'main',
+                  collectionName: 'flow_field_schema_cases',
+                  fieldPath: 'website',
+                },
+              },
+              jsSettings: {
+                runJs: {
+                  version: 'v2',
+                  code: '',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(saveTableJs.status).toBe(200);
+
+    const saveDetailsJs = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-details-js-field',
+        use: 'DetailsItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'title',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-details-js-field-child',
+            use: 'JSFieldModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: 'main',
+                  collectionName: 'flow_field_schema_cases',
+                  fieldPath: 'title',
+                },
+              },
+              jsSettings: {
+                runJs: {
+                  version: 'v2',
+                  code: '',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(saveDetailsJs.status).toBe(200);
 
     const saveSecondaryDataSourceDisplay = await agent.resource('flowModels').save({
       values: {
@@ -1435,7 +1587,7 @@ describe('flow-model save', () => {
           modelUse: 'TableColumnModel',
           section: 'subModels',
           keyword: 'invalid-use',
-          allowedValues: ['DisplayURLFieldModel'],
+          allowedValues: expect.arrayContaining(['DisplayURLFieldModel', 'JSFieldModel']),
           fieldInterface: 'url',
         }),
       ]),
@@ -1500,6 +1652,44 @@ describe('flow-model save', () => {
     });
     expect(saveFormInput.status).toBe(200);
 
+    const saveFormJs = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-form-js-field',
+        use: 'FormItemModel',
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'flow_field_schema_cases',
+              fieldPath: 'title',
+            },
+          },
+        },
+        subModels: {
+          field: {
+            uid: 'save-form-js-field-child',
+            use: 'JSEditableFieldModel',
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: 'main',
+                  collectionName: 'flow_field_schema_cases',
+                  fieldPath: 'title',
+                },
+              },
+              jsSettings: {
+                runJs: {
+                  version: 'v2',
+                  code: '',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(saveFormJs.status).toBe(200);
+
     const saveFormDisplay = await agent.resource('flowModels').save({
       values: {
         uid: 'save-form-display-field',
@@ -1530,7 +1720,7 @@ describe('flow-model save', () => {
           modelUse: 'FormItemModel',
           section: 'subModels',
           keyword: 'invalid-use',
-          allowedValues: expect.arrayContaining(['InputFieldModel']),
+          allowedValues: expect.arrayContaining(['InputFieldModel', 'JSEditableFieldModel']),
           fieldInterface: 'input',
         }),
       ]),
