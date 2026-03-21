@@ -5,6 +5,94 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.23](https://github.com/nocobase/nocobase/compare/v2.0.22...v2.0.23) - 2026-03-20
+
+### 🐛 Bug Fixes
+
+- **[database]** Use warning instead of error when any of appends parameters invalid ([#8923](https://github.com/nocobase/nocobase/pull/8923)) by @mytharcher
+
+- **[Workflow: Approval]** Fix translation, node selection, and return target issues in the v2 approval form return button by @zhangzhonghe
+
+## [v2.0.22](https://github.com/nocobase/nocobase/compare/v2.0.21...v2.0.22) - 2026-03-20
+
+### 🐛 Bug Fixes
+
+- **[Migration manager]** Fixed the issue where the migration is interrupted due to an error caused by the target environment not having the new table created during the upload migration process. by @Andrew1989Y
+
+## [v2.0.21](https://github.com/nocobase/nocobase/compare/v2.0.20...v2.0.21) - 2026-03-20
+
+### 🚀 Improvements
+
+- **[Workflow]** Add filter executions list ([#8914](https://github.com/nocobase/nocobase/pull/8914)) by @mytharcher
+
+- **[Workflow: Approval]** Avoid to configure approvers' UI when no collection configured in trigger by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[resourcer]** Prevent the `filterByTk` parameter array from being automatically converted into an object when it exceeds 100 items ([#8908](https://github.com/nocobase/nocobase/pull/8908)) by @2013xile
+
+- **[client]** fix the issue where non-administrators cannot clear associated field values ([#8904](https://github.com/nocobase/nocobase/pull/8904)) by @jiannx
+
+- **[Action: Import records Pro]**
+  - Fix the issue where error thrown when import in sync mode by @mytharcher
+
+  - Fix the issue where columns more than ~30 cause importing error, due to stream has been read duplicately by @mytharcher
+
+- **[Workflow: Approval]** Fix concurrency issue when add assignee by @mytharcher
+
+## [v2.0.20](https://github.com/nocobase/nocobase/compare/v2.0.19...v2.0.20) - 2026-03-19
+
+### 🐛 Bug Fixes
+
+- **[server]** Fix the issue where lifecycle events sent by worker cause serving app stops ([#8906](https://github.com/nocobase/nocobase/pull/8906)) by @mytharcher
+
+- **[Data source manager]** Fixed issue that collection created by AI employee always missing `createBy` and `updateBy` fields ([#8895](https://github.com/nocobase/nocobase/pull/8895)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix lazy import caused SES error by @mytharcher
+
+- **[Template print]** Fix sql collection printing error by @jiannx
+
+- **[Email manager]** Fixed page error when the email does not exist by @jiannx
+
+## [v2.0.19](https://github.com/nocobase/nocobase/compare/v2.0.18...v2.0.19) - 2026-03-17
+
+### 🚀 Improvements
+
+- **[Workflow]** Fix the issue where gracefully shutdown not drain all events ([#8894](https://github.com/nocobase/nocobase/pull/8894)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[AI employees]** Fix issue with specified URL for LLM service not taking effect in text embedding model calls. ([#8892](https://github.com/nocobase/nocobase/pull/8892)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix `beforeStop` event on sub app not fired by @mytharcher
+
+## [v2.0.18](https://github.com/nocobase/nocobase/compare/v2.0.17...v2.0.18) - 2026-03-17
+
+### 🎉 New Features
+
+- **[AI employees]**
+  - Scheduled cleanup of AI conversation checkpoint data. ([#8855](https://github.com/nocobase/nocobase/pull/8855)) by @cgyrock
+
+  - Allows to add AI employees in popup of sub tables ([#8873](https://github.com/nocobase/nocobase/pull/8873)) by @2013xile
+
+- **[App supervisor]** Support filtering in the application list<br />Add confirmation dialogs for start and stop actions<br />Sort application status entries by environment name by @2013xile
+
+### 🚀 Improvements
+
+- **[server]** improve pm add logic ([#8875](https://github.com/nocobase/nocobase/pull/8875)) by @chenos
+
+- **[client]** Support showing confirm message before closing popup. ([#8839](https://github.com/nocobase/nocobase/pull/8839)) by @gchust
+
+- **[Async task manager]** async tasks are added to support workers in post error messages ([#8849](https://github.com/nocobase/nocobase/pull/8849)) by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[client]** Fixed the issue where the “Select record” popup in the subtable failed to load correctly when opened the second time. ([#8865](https://github.com/nocobase/nocobase/pull/8865)) by @gchust
+
+- **[AI employees]** Fixed potential undefined variable errors in AI plugin upgrade migration scripts. ([#8883](https://github.com/nocobase/nocobase/pull/8883)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix the issue where async tasks do not end after an error occurs in async import by @cgyrock
+
 ## [v2.0.17](https://github.com/nocobase/nocobase/compare/v2.0.16...v2.0.17) - 2026-03-14
 
 ### 🚀 Improvements

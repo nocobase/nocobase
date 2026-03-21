@@ -88,6 +88,7 @@ export class CommandTaskType extends TaskType {
     const workerPromise = new Promise((resolve, reject) => {
       let settled = false;
       let successPayload: any;
+      let failurePayload: any;
 
       const settleOnce = (err?: Error | null, payload?: any) => {
         if (settled) {
@@ -148,6 +149,11 @@ export class CommandTaskType extends TaskType {
             // Wait for worker exit to ensure app shutdown and DB commits are finished.
             successPayload = message.payload;
           }
+
+          if (message.type === 'failure') {
+            this.logger?.error(`Worker failure for task ${this.record.id} `, message.payload?.error);
+            failurePayload = message.payload;
+          }
         });
 
         worker.on('error', (error) => {
@@ -160,7 +166,7 @@ export class CommandTaskType extends TaskType {
           if (isCancelling) {
             settleOnce(new CancelError());
           } else if (code !== 0) {
-            settleOnce(new Error(`Worker stopped with exit code ${code}`));
+            settleOnce(failurePayload?.error ?? new Error(`Worker stopped with exit code ${code}`));
           } else {
             settleOnce(null, successPayload ?? code);
           }

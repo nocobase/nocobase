@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-workflow-response-message"
+title: "工作流节点 - HTTP 响应"
+description: "HTTP 响应节点：同步 Webhook 中返回给第三方系统的响应，执行后终止流程。"
+keywords: "工作流,HTTP 响应,Response,Webhook 响应,NocoBase"
 ---
 
 # HTTP 响应

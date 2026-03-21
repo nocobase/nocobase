@@ -1,3 +1,9 @@
+---
+title: "Iframe 区块嵌入"
+description: "Iframe 区块嵌入外部网页或 HTML：URL/HTML 配置、Handlebars 模板、变量注入、JS 区块动态创建 iframe、Vue/React 示例、安全注意事项。"
+keywords: "Iframe 区块,嵌入网页,Handlebars 模板,变量注入,JS 区块,外部应用集成,NocoBase"
+---
+
 # Iframe 区块
 
 <PluginInfo name="block-iframe"></PluginInfo>

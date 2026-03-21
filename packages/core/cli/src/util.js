@@ -282,6 +282,21 @@ function parseEnv(name) {
   }
 }
 
+function resolvePublicPath(appPublicPath = '/') {
+  const normalized = String(appPublicPath || '/').trim() || '/';
+  const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
+  return withLeadingSlash.endsWith('/') ? withLeadingSlash : `${withLeadingSlash}/`;
+}
+
+exports.resolvePublicPath = resolvePublicPath;
+
+function resolveV2PublicPath(appPublicPath = '/') {
+  const publicPath = resolvePublicPath(appPublicPath);
+  return `${publicPath.replace(/\/$/, '')}/v2/`;
+}
+
+exports.resolveV2PublicPath = resolveV2PublicPath;
+
 function buildIndexHtml(force = false) {
   const file = `${process.env.APP_PACKAGE_ROOT}/dist/client/index.html`;
   if (!fs.existsSync(file)) {

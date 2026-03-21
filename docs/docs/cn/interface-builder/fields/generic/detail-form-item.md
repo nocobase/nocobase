@@ -1,3 +1,9 @@
+---
+title: "详情字段"
+description: "详情字段：用于详情区块中的只读字段组件，以只读形式展示数据。"
+keywords: "详情字段,DetailFormItem,只读展示,详情区块,界面搭建,NocoBase"
+---
+
 # 详情字段
 
 ## 介绍

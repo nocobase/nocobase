@@ -1,3 +1,9 @@
+---
+title: "数据源概述"
+description: "NocoBase 数据源与数据建模：主数据库、外部 MySQL/PostgreSQL/Oracle/MSSQL、数据源管理、ER 图、普通表、树表、SQL 表、FDW、文件表、REST API。"
+keywords: "数据源,数据建模,主数据库,外部数据库,ER 图,Collection,树表,SQL 表,FDW,NocoBase"
+---
+
 # 概述
 
 数据建模是设计数据库时的关键步骤，它涉及对现实世界各类数据及其相互关系进行深入分析和抽象的过程。在这一过程中，我们试图揭示数据之间的内在联系，并将其形式化描述为数据模型，为信息系统的数据库结构奠定基础。NocoBase 是一个数据模型驱动的平台，具有以下特色：

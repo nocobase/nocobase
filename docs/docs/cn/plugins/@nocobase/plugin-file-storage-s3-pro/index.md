@@ -1,6 +1,8 @@
 ---
 displayName: "文件存储：S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
+title: "文件存储：S3 (Pro)"
+keywords: "文件存储：S3 (Pro),插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

@@ -1,6 +1,8 @@
 ---
 displayName: "认证：LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
+title: "认证：LDAP"
+keywords: "认证：LDAP,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

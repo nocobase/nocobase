@@ -1,3 +1,9 @@
+---
+title: "注册 FlowModel"
+description: "注册 FlowModel：FlowEngine.registerFlowModel 将 FlowModel 注册到引擎，供插件与页面使用，registerFlowModel 用法。"
+keywords: "注册 FlowModel,registerFlowModel,FlowEngine,插件注册,FlowModel 注册,NocoBase"
+---
+
 # 注册 FlowModel
 
 ## 从自定义 FlowModel 开始
@@ -28,7 +34,12 @@ class HelloModel extends FlowModel {
 ```ts
 export class PluginHelloClient extends Plugin {
   async load() {
-    this.engine.registerModels({ HelloModel });
+    this.engine.registerModelLoaders({
+      HelloModel: {
+        // 动态导入，首次真正用到这个 model 时才会加载对应模块
+        loader: () => import('./HelloModel'),
+      },
+    });
   }
 }
 ```

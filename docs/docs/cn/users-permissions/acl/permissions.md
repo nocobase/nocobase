@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "NocoBase 权限配置"
+description: "NocoBase 权限配置：配置界面、安装插件、配置插件权限、权限继承、资源操作权限、allow/deny 规则。"
+keywords: "权限配置,ACL,资源权限,权限继承,allow,deny,NocoBase"
 ---
 
 # 配置权限

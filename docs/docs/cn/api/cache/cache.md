@@ -1,3 +1,9 @@
+---
+title: "Cache"
+description: "NocoBase 缓存 API：Cache 实例 get/set/del 等基本方法。"
+keywords: "Cache API,缓存,get,set,del,缓存实例,NocoBase"
+---
+
 # Cache
 
 ## 基本方法

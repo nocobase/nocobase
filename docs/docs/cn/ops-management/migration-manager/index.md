@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-migration-manager'
+title: "迁移管理"
+description: "运维管理迁移：将应用配置从一环境迁移至另一环境，支持仅结构、覆盖、Upsert、插入忽略重复、跳过等迁移规则，依赖备份管理插件。"
+keywords: "迁移管理,Migration,应用配置迁移,迁移规则,Upsert,数据库迁移,运维管理,NocoBase"
 ---
-
 # 迁移管理
 
 ## 介绍

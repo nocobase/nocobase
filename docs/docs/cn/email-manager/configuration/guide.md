@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件配置流程"
+description: "配置流程：从服务商获取 Client ID/Secret、重定向 URI、邮件服务商配置、OAuth 授权登录、邮箱接入、数据同步。"
+keywords: "邮件配置,Client ID,Client Secret,OAuth,NocoBase"
 ---
-
 # 配置流程
 
 ## 概览

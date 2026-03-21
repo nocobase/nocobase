@@ -1,3 +1,9 @@
+---
+title: "插件客户端开发概述"
+description: "NocoBase 客户端插件开发：Plugin 类、路由、区块、Resource、DataSourceManager、i18n、样式主题、测试。"
+keywords: "客户端插件,Client Plugin,路由,区块,Resource,DataSourceManager,NocoBase"
+---
+
 # 概述
 
 NocoBase 客户端插件开发提供了多种功能和能力，帮助开发者定制和扩展 NocoBase 的前端功能。以下是 NocoBase 客户端插件开发的主要能力和相关章节：

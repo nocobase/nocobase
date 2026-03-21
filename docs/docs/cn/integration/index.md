@@ -1,3 +1,9 @@
+---
+title: "NocoBase 集成概述"
+description: "NocoBase 集成能力：API 密钥与文档、SSO 单点登录、工作流 Webhook/HTTP 请求、外部数据源 FDW、Iframe 嵌入，企业系统对接与第三方服务集成。"
+keywords: "集成,API 集成,Webhook,FDW,SSO,单点登录,工作流集成,外部数据源,NocoBase"
+---
+
 # 集成
 
 ## 概述

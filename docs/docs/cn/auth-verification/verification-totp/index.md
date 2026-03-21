@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-verification-totp-authenticator'
+title: "验证：TOTP 认证器"
+description: "NocoBase TOTP 认证器：符合 RFC-6238 的基于时间一次性密码，支持 Google Authenticator 等认证器，用户绑定与解绑。"
+keywords: "TOTP,Google Authenticator,动态口令,OTP,RFC-6238,认证器绑定,NocoBase"
 ---
 
 # 验证：TOTP 认证器

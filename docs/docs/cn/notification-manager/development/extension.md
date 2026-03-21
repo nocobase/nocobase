@@ -1,3 +1,9 @@
+---
+title: "扩展通知渠道类型"
+description: "扩展通知渠道类型：自定义通知渠道插件，继承 BaseNotificationChannel、registerChannelType 注册，实现短信、钉钉、飞书等第三方通知。"
+keywords: "扩展通知渠道,BaseNotificationChannel,registerChannelType,短信通知,钉钉飞书,自定义渠道,NocoBase"
+---
+
 # 扩展通知渠道类型
 
 NocoBase支持按需扩展通知渠道类型，如短信通知，app推送等。

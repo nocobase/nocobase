@@ -1,3 +1,9 @@
+---
+title: "ctx.getModel()"
+description: "ctx.getModel() 根据 uid 获取区块或表单模型实例，用于跨区块访问、联动、数据刷新。"
+keywords: "ctx.getModel,uid,区块模型,表单模型,跨区块,RunJS,NocoBase"
+---
+
 # ctx.getModel()
 
 根据模型 `uid` 获取当前引擎或视图栈中的模型实例（如 BlockModel、PageModel、ActionModel 等），用于在 RunJS 中跨区块、跨页面或跨弹窗访问其他模型。

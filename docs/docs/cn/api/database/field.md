@@ -1,3 +1,9 @@
+---
+title: "Field"
+description: "NocoBase Database Field API：定义 Collection 字段类型、标量字段、关联字段配置。"
+keywords: "Field API,字段定义,字段类型,标量字段,关联字段,NocoBase"
+---
+
 # Field
 
 ## 概览

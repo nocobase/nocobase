@@ -1,3 +1,9 @@
+---
+title: "外部数据库"
+description: "添加外部 MySQL/MariaDB/PostgreSQL/MSSQL/Oracle 作为数据源，数据表同步、字段配置、关系字段建立，只读连接已有数据库。"
+keywords: "外部数据库,MySQL,PostgreSQL,MSSQL,Oracle,数据表同步,关系字段,NocoBase"
+---
+
 # 外部数据库
 
 ## 介绍

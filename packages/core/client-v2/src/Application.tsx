@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { APIClient, type APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
-import _ from 'lodash';
+import { get, merge, set } from 'lodash-es';
 import React, { ComponentType, FC, ReactElement, ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
@@ -139,10 +139,17 @@ export class Application {
       error: observable.ref,
     });
     this.devDynamicImport = options.devDynamicImport;
-    this.components = _.merge(this.components, options.components);
+    this.components = merge(this.components, options.components);
     this.apiClient = new APIClient(options.apiClient);
     this.i18n = options.i18n || createInstance();
     this.router = new RouterManager(options.router, this);
+    if (typeof options.router?.basename === 'undefined') {
+      const publicPath = this.getPublicPath();
+      const basename = publicPath === '/' ? undefined : publicPath.replace(/\/$/, '');
+      if (basename) {
+        this.router.setBasename(basename);
+      }
+    }
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.flowEngine = new FlowEngine();
     this.flowEngine.registerModels({ ApplicationModel });
@@ -421,7 +428,7 @@ export class Application {
 
     // Component is a string, try to get it from this.components
     if (typeof Component === 'string') {
-      const res = _.get(this.components, Component) as ComponentType<T>;
+      const res = get(this.components, Component) as ComponentType<T>;
       if (!res) {
         showError(`Component ${Component} not found`);
         return;
@@ -443,7 +450,7 @@ export class Application {
       console.error('Component must have a displayName or pass name as second argument');
       return;
     }
-    _.set(this.components, componentName, component);
+    set(this.components, componentName, component);
   }
 
   addComponents(components: Record<string, ComponentType>) {
