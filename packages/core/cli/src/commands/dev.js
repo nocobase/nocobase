@@ -16,6 +16,7 @@ const {
   nodeCheck,
   promptForTs,
   isPortReachable,
+  buildWSURL,
   checkDBDialect,
 } = require('../util');
 const { getPortPromise } = require('portfinder');
@@ -129,8 +130,7 @@ module.exports = (cli) => {
               API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
               API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
               API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-              WEBSOCKET_URL:
-                process.env.WEBSOCKET_URL || (serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : ''),
+              WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
               WS_PATH: process.env.WS_PATH,
               ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
               ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
@@ -169,9 +169,7 @@ module.exports = (cli) => {
             API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
             API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
             API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-            WEBSOCKET_URL:
-              process.env.WEBSOCKET_URL ||
-              (serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : undefined),
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
             PROXY_TARGET_URL:
               process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
           },

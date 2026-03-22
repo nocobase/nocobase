@@ -574,3 +574,28 @@ exports.generatePlugins = function () {
     return;
   }
 };
+
+exports.isURL = function isURL(str) {
+  let url;
+
+  try {
+    url = new URL(str);
+  } catch (e) {
+    return false;
+  }
+
+  return url.protocol === 'http:' || url.protocol === 'https:';
+};
+
+exports.buildWSURL = function buildWSURL(urlString, serverPort) {
+  if (exports.isURL(urlString)) {
+    const parsedUrl = new URL(urlString);
+    parsedUrl.protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    parsedUrl.pathname =
+      process.env.WS_PATH || (process.env.APP_PUBLIC_PATH ? process.env.APP_PUBLIC_PATH + 'ws' : '/ws');
+    const url = parsedUrl.toString();
+    return url;
+  }
+
+  return serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : undefined;
+};
