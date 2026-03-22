@@ -9,17 +9,19 @@
 
 import React from 'react';
 import { Button } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 export default function DemoHomepageRoute() {
+  const navigate = useNavigate();
   return (
     <>
       <div>
         Demo Homepage Route
-        <Button onClick={() => window.location.assign('app-info')}>Go to demo route</Button>
+        <Button onClick={() => navigate('app-info')}>Go to demo route</Button>
       </div>
       <div>
         Demo flow settings page
-        <Button onClick={() => window.location.assign('flow-settings-component-loader')}>Go to demo route</Button>
+        <Button onClick={() => navigate('flow-settings-component-loader')}>Go to demo route</Button>
       </div>
     </>
   );
