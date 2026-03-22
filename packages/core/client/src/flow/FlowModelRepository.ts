@@ -38,6 +38,10 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     return null;
   }
 
+  async ensure(values: Record<string, any>) {
+    return await this.findOne(values);
+  }
+
   async loadByParentId(parentId: string) {
     for (const model of this.models.values()) {
       if (model.parentId == parentId) {
@@ -209,7 +213,6 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const response = await this.app.apiClient.request({
       method: 'POST',
       url: 'flowModels:save',
-      params: { return: 'uid' },
       data,
     });
     return response.data?.data;

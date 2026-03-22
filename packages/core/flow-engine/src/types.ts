@@ -705,10 +705,9 @@ export interface EnsureBatchResult {
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
   /**
-   * Optional: ensure a model exists (create if missing) in a single request.
-   * When not implemented, FlowEngine will fall back to findOne→save.
+   * Ensure a model exists (create if missing) in a single request.
    */
-  ensure?: (
+  ensure: (
     values: Record<string, any>,
     options?: { includeAsyncNode?: boolean },
   ) => Promise<Record<string, any> | null>;

@@ -107,6 +107,35 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     expect(conflict.status).toBe(409);
   });
 
+  it('should return 409 when schemaUid is occupied by a non-FlowRoute uiSchema during createV2', async () => {
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const agent = await app.agent().login(rootUser);
+
+    const schemaUid = 'v2-page-foreign-create';
+    await db.getCollection('uiSchemas').model.create({
+      'x-uid': schemaUid,
+      schema: {
+        type: 'void',
+        'x-uid': schemaUid,
+        'x-component': 'Input',
+      },
+    });
+
+    const res = await agent.resource('desktopRoutes').createV2({
+      values: { schemaUid, title: 'Foreign', icon: 'Icon', parentId: null },
+    });
+
+    expect(res.status).toBe(409);
+    const pageRoute = await db.getRepository('desktopRoutes').findOne({ filter: { type: 'flowPage', schemaUid } });
+    expect(pageRoute).toBeNull();
+    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
+    expect(uiSchema?.get('schema')?.['x-component']).toBe('Input');
+  });
+
   it('should destroy v2 page and cleanup uiSchema + flowModels (idempotent)', async () => {
     const rootUser = await db.getRepository('users').findOne({
       filter: {
@@ -139,5 +168,30 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     const res2 = await agent.resource('desktopRoutes').destroyV2({ values: { schemaUid } });
     expect(res2.status).toBe(200);
     expect(res2.body?.data?.ok).toBeTruthy();
+  });
+
+  it('should not delete a non-FlowRoute uiSchema during destroyV2', async () => {
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
+    });
+    const agent = await app.agent().login(rootUser);
+
+    const schemaUid = 'v2-page-foreign-destroy';
+    await db.getCollection('uiSchemas').model.create({
+      'x-uid': schemaUid,
+      schema: {
+        type: 'void',
+        'x-uid': schemaUid,
+        'x-component': 'Input',
+      },
+    });
+
+    const res = await agent.resource('desktopRoutes').destroyV2({ values: { schemaUid } });
+
+    expect(res.status).toBe(409);
+    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
+    expect(uiSchema?.get('schema')?.['x-component']).toBe('Input');
   });
 });

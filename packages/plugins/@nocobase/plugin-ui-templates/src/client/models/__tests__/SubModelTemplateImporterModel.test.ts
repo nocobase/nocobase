@@ -526,4 +526,107 @@ describe('SubModelTemplateImporterModel', () => {
     expect(saveCalls[1]).toMatchObject({ uid: 'host-grid', use: 'ReferenceFormGridModel' });
     expect((form.subModels as any)?.grid?.use).toBe('ReferenceFormGridModel');
   });
+
+  it('copy mutate should include duplicated grid use in patch upsert payload', async () => {
+    const engine = new FlowEngine();
+
+    class FormBlockModel extends FlowModel {
+      async rerender() {}
+    }
+    class GridModel extends FlowModel {
+      async afterAddAsSubModel() {}
+    }
+
+    const templateStore: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'FormBlockModel',
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              columns: 2,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'GridModel',
+            parentId: 'tpl-root',
+            subKey: 'grid',
+            subType: 'object',
+            stepParams: {},
+          },
+        },
+      },
+    };
+
+    const repo = {
+      findOne: vi.fn(async (query: any) => {
+        const data = templateStore[query?.uid];
+        return data ? JSON.parse(JSON.stringify(data)) : null;
+      }),
+      save: vi.fn(async (model: any) => ({ uid: model?.uid, use: model?.use })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+      mutate: vi.fn(async (payload: any) => {
+        const targetDuplicatedUid = String(payload?.ops?.[0]?.params?.targetUid || '').trim();
+        return {
+          models: {
+            [targetDuplicatedUid]: {
+              uid: targetDuplicatedUid,
+              use: 'GridModel',
+              stepParams: {},
+            },
+          },
+        };
+      }),
+    };
+
+    engine.setModelRepository(repo as any);
+    engine.registerModels({
+      FormBlockModel,
+      GridModel,
+      SubModelTemplateImporterModel,
+    });
+
+    const form = engine.createModel<FormBlockModel>({ uid: 'host-form', use: 'FormBlockModel' });
+    const grid = engine.createModel<GridModel>({
+      uid: 'host-grid',
+      use: 'GridModel',
+      parentId: form.uid,
+      subKey: 'grid',
+      subType: 'object',
+    });
+    form.setSubModel('grid', grid);
+
+    const importer = engine.createModel<SubModelTemplateImporterModel>({
+      uid: 'importer-copy-1',
+      use: 'SubModelTemplateImporterModel',
+      parentId: grid.uid,
+      subKey: 'items',
+      subType: 'array',
+      stepParams: {
+        subModelTemplateImportSettings: {
+          selectTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            mode: 'copy',
+          },
+        },
+      },
+    });
+    grid.addSubModel('items', importer);
+
+    await importer.afterAddAsSubModel();
+
+    expect(repo.mutate).toHaveBeenCalledTimes(1);
+    const mutatePayload = repo.mutate.mock.calls[0][0];
+    const patchOp = mutatePayload?.ops?.find((op: any) => op?.opId === 'patch');
+    expect(patchOp?.params?.values).toMatchObject({
+      use: 'GridModel',
+    });
+    expect(String(patchOp?.params?.values?.uid || '')).toMatch(/^dup_/);
+  });
 });

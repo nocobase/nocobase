@@ -1080,7 +1080,14 @@ ReferenceBlockModel.registerFlow({
           ops.push({
             opId: 'saveParent',
             type: 'upsert',
-            params: { values: { uid: parent.uid, stepParams: parentStepParamsForUpsert, props: parentPropsForUpsert } },
+            params: {
+              values: {
+                uid: parent.uid,
+                use: parent.use,
+                stepParams: parentStepParamsForUpsert,
+                props: parentPropsForUpsert,
+              },
+            },
           });
 
           const mutateResult = await repo.mutate(

@@ -348,13 +348,13 @@ export class PluginUISchemaStorageServer extends Plugin {
           const { return: returnType = 'model', includeAsyncNode = false } = ctx.action.params as any;
           const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
-            const normalizedValues = this.assertValidFlowModelSchema(values);
-            const uid = await repository.upsertModel(normalizedValues);
             if (returnType && returnType !== 'model' && returnType !== 'uid') {
               ctx.throw(400, `Invalid query param 'return': ${returnType}`, {
                 code: 'INVALID_PARAMS',
               });
             }
+            const normalizedValues = this.assertValidFlowModelSchema(values);
+            const uid = await repository.upsertModel(normalizedValues);
             if (returnType === 'uid') {
               ctx.body = uid;
             } else {

@@ -225,7 +225,13 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
           ops.push({
             opId: 'patch',
             type: 'upsert',
-            params: { values: { uid: targetDuplicatedUid, stepParams: patchedGrid.options?.stepParams } },
+            params: {
+              values: {
+                uid: targetDuplicatedUid,
+                use: gridModel.use,
+                stepParams: patchedGrid.options?.stepParams,
+              },
+            },
           });
         }
 

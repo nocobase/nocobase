@@ -343,6 +343,19 @@ describe('flow-model save', () => {
     expect(res.body?.data).toBe('save-uid-1');
   });
 
+  it('should reject invalid return before persisting', async () => {
+    const repository: any = app.db.getCollection('flowModels').repository;
+
+    const res = await agent.resource('flowModels').save({
+      return: 'bad',
+      values: { uid: 'save-invalid-return-1', use: 'RouteModel', async: false },
+    });
+
+    expect(res.status).toBe(400);
+    const saved = await repository.findModelById('save-invalid-return-1', { includeAsyncNode: true });
+    expect(saved).toBeNull();
+  });
+
   it('should expose schema discovery documents', async () => {
     const single = await agent.get('/flowModels:schema').query({
       use: 'SaveSchemaStrictModel',

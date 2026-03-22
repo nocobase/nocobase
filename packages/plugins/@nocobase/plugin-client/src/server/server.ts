@@ -33,6 +33,26 @@ async function getLang(ctx) {
   return lang;
 }
 
+function getModelValue(record: any, key: string) {
+  if (!record) {
+    return undefined;
+  }
+  return typeof record.get === 'function' ? record.get(key) : record[key];
+}
+
+function isManagedFlowRouteShell(record: any, schemaUid: string) {
+  const actualSchemaUid = String(getModelValue(record, 'x-uid') ?? getModelValue(record, 'uid') ?? '').trim();
+  const schema = getModelValue(record, 'schema');
+  if (!_.isPlainObject(schema)) {
+    return false;
+  }
+  return (
+    actualSchemaUid === schemaUid &&
+    schema?.['x-component'] === 'FlowRoute' &&
+    String(schema?.['x-uid'] ?? '').trim() === schemaUid
+  );
+}
+
 export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
@@ -377,6 +397,7 @@ export class PluginClientServer extends Plugin {
       const tabSchemaName = `tab-${schemaUid}`;
 
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const uiSchemasRepository = ctx.db.getRepository('uiSchemas');
       const uiSchemasModel = ctx.db.getCollection('uiSchemas')?.model;
       const flowModelsRepository = ctx.db.getRepository('flowModels') as any;
 
@@ -411,6 +432,16 @@ export class PluginClientServer extends Plugin {
 
         if (existingPage) {
           const pageJson = existingPage.toJSON?.() || existingPage;
+          const existingUiSchema = await uiSchemasRepository.findOne({
+            filterByTk: schemaUid,
+            transaction,
+          });
+          if (existingUiSchema && !isManagedFlowRouteShell(existingUiSchema, schemaUid)) {
+            ctx.throw(409, {
+              code: 'CONFLICT',
+              message: `desktopRoutes:createV2 schemaUid '${schemaUid}' is already occupied by a non-FlowRoute uiSchema`,
+            });
+          }
           const conflict =
             !isSameValue(pageJson?.title, title) ||
             !isSameValue(pageJson?.icon, icon) ||
@@ -439,7 +470,7 @@ export class PluginClientServer extends Plugin {
 
         // 2) Create path: use uiSchemas row as a per-page mutex to avoid duplicate routes without adding schemaUid unique index
         if (uiSchemasModel) {
-          await uiSchemasModel.findOrCreate({
+          const [uiSchemaMutex] = await uiSchemasModel.findOrCreate({
             where: { 'x-uid': schemaUid },
             defaults: {
               'x-uid': schemaUid,
@@ -451,12 +482,24 @@ export class PluginClientServer extends Plugin {
             },
             transaction,
           });
+          if (!isManagedFlowRouteShell(uiSchemaMutex, schemaUid)) {
+            ctx.throw(409, {
+              code: 'CONFLICT',
+              message: `desktopRoutes:createV2 schemaUid '${schemaUid}' is already occupied by a non-FlowRoute uiSchema`,
+            });
+          }
           const dialect = ctx.db.sequelize.getDialect();
           const supportsLock = dialect !== 'sqlite';
-          await uiSchemasModel.findByPk(
+          const lockedUiSchema = await uiSchemasModel.findByPk(
             schemaUid,
             supportsLock ? { transaction, lock: transaction.LOCK.UPDATE } : { transaction },
           );
+          if (lockedUiSchema && !isManagedFlowRouteShell(lockedUiSchema, schemaUid)) {
+            ctx.throw(409, {
+              code: 'CONFLICT',
+              message: `desktopRoutes:createV2 schemaUid '${schemaUid}' is already occupied by a non-FlowRoute uiSchema`,
+            });
+          }
         }
 
         // re-check after lock
@@ -517,16 +560,14 @@ export class PluginClientServer extends Plugin {
         });
 
         // 3) Precreate flowModels under anchors to avoid first-open findOne→save
-        if (typeof flowModelsRepository?.ensureModel === 'function') {
-          await flowModelsRepository.ensureModel(
-            { parentId: schemaUid, subKey: 'page', subType: 'object', use: 'RootPageModel', async: true },
-            { transaction },
-          );
-          await flowModelsRepository.ensureModel(
-            { parentId: tabSchemaUid, subKey: 'grid', subType: 'object', use: 'BlockGridModel', async: true },
-            { transaction },
-          );
-        }
+        await flowModelsRepository.ensureModel(
+          { parentId: schemaUid, subKey: 'page', subType: 'object', use: 'RootPageModel', async: true },
+          { transaction },
+        );
+        await flowModelsRepository.ensureModel(
+          { parentId: tabSchemaUid, subKey: 'grid', subType: 'object', use: 'BlockGridModel', async: true },
+          { transaction },
+        );
 
         await transaction.commit();
 
@@ -558,6 +599,17 @@ export class PluginClientServer extends Plugin {
           filter: { type: 'flowPage', schemaUid },
           transaction,
         });
+        const uiSchema = await uiSchemasRepository.findOne({
+          filterByTk: schemaUid,
+          transaction,
+        });
+
+        if (uiSchema && !isManagedFlowRouteShell(uiSchema, schemaUid)) {
+          ctx.throw(409, {
+            code: 'CONFLICT',
+            message: `desktopRoutes:destroyV2 schemaUid '${schemaUid}' is occupied by a non-FlowRoute uiSchema`,
+          });
+        }
 
         if (page) {
           await desktopRoutesRepository.destroy({
@@ -566,10 +618,12 @@ export class PluginClientServer extends Plugin {
           });
         }
 
-        await uiSchemasRepository.destroy({
-          filterByTk: schemaUid,
-          transaction,
-        });
+        if (uiSchema) {
+          await uiSchemasRepository.destroy({
+            filterByTk: schemaUid,
+            transaction,
+          });
+        }
 
         await transaction.commit();
         ctx.body = { ok: true };

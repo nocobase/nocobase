@@ -712,6 +712,43 @@ describe('ReferenceBlockModel', () => {
       },
       TEST_TIMEOUT,
     );
+
+    it(
+      'copy mutate should include parent use in saveParent upsert payload',
+      async () => {
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-mutate-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        }) as ReferenceBlockModel;
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        const repo = engine.modelRepository as any;
+        repo.mutate = vi.fn(async (payload: any) => {
+          const saveParentOp = payload?.ops?.find((op: any) => op?.opId === 'saveParent');
+          expect(saveParentOp?.params?.values).toMatchObject({
+            uid: 'grid-uid',
+            use: 'GridModel',
+          });
+          throw new Error('STOP');
+        });
+
+        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
+        const step: any = flow?.steps?.target;
+        expect(typeof step?.beforeParamsSave).toBe('function');
+
+        await expect(
+          step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
+            targetUid: 'details-origin-uid',
+            mode: 'copy',
+          }),
+        ).rejects.toThrow('STOP');
+        expect(repo.mutate).toHaveBeenCalledTimes(1);
+      },
+      TEST_TIMEOUT,
+    );
   });
 
   describe('Reference block basics', () => {
@@ -882,7 +919,9 @@ describe('ReferenceBlockModel', () => {
                   associationType === 'hasOne' ||
                   associationType === 'belongsTo' ||
                   Object.keys(init).includes('filterByTk');
-                const resource = this.context.createResource(useSingle ? SingleRecordResource : MultiRecordResource);
+                const resource = this.context.createResource(
+                  useSingle ? (SingleRecordResource as any) : (MultiRecordResource as any),
+                ) as any;
                 resource.setDataSourceKey(init.dataSourceKey);
                 resource.setResourceName(init.associationName || init.collectionName);
                 if (Object.keys(init).includes('sourceId')) {
