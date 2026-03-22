@@ -130,16 +130,6 @@ export default defineConfig(({ command }) => {
         {
           tag: 'link',
           attrs: {
-            rel: 'icon',
-            href: `${htmlPublicPath}favicon_no_exist.ico`,
-          },
-          publicPath: false,
-          head: true,
-          append: false,
-        },
-        {
-          tag: 'link',
-          attrs: {
             rel: 'stylesheet',
             href: `${htmlPublicPath}global.css`,
           },
