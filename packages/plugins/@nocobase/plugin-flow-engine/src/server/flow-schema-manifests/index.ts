@@ -68,6 +68,7 @@ const coreDescendantModelUses = Array.from(
     'JSBlockModel',
     'JSCollectionActionModel',
     'JSFormActionModel',
+    'JSItemModel',
     'JSRecordActionModel',
     'FormSubmitActionModel',
     'JSColumnModel',

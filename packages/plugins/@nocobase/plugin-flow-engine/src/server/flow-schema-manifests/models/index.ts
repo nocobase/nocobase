@@ -43,6 +43,7 @@ import { jsActionModelInternalSchemaManifest } from './JSActionModel';
 import { jsBlockModelSchemaManifest } from './JSBlockModel';
 import { jsCollectionActionModelInternalSchemaManifest } from './JSCollectionActionModel';
 import { jsFormActionModelInternalSchemaManifest } from './JSFormActionModel';
+import { jsItemModelInternalSchemaManifest } from './JSItemModel';
 import { formItemModelInternalSchemaManifest } from './FormItemModel';
 import { jsRecordActionModelInternalSchemaManifest } from './JSRecordActionModel';
 import { formSubmitActionModelInternalSchemaManifest } from './FormSubmitActionModel';
@@ -99,6 +100,7 @@ export {
   jsBlockModelSchemaManifest,
   jsCollectionActionModelInternalSchemaManifest,
   jsFormActionModelInternalSchemaManifest,
+  jsItemModelInternalSchemaManifest,
   formItemModelInternalSchemaManifest,
   jsRecordActionModelInternalSchemaManifest,
   formSubmitActionModelInternalSchemaManifest,
@@ -148,6 +150,7 @@ export const flowSchemaModelManifests: FlowModelSchemaManifest[] = [
   assignFormItemModelInternalSchemaManifest,
   assignFormGridModelInternalSchemaManifest,
   assignFormModelInternalSchemaManifest,
+  jsItemModelInternalSchemaManifest,
   formItemModelInternalSchemaManifest,
   formAssociationItemModelInternalSchemaManifest,
   formGridModelInternalSchemaManifest,

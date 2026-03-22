@@ -486,7 +486,7 @@ export const filterFormActionUses = [
   'FilterFormJSActionModel',
 ];
 
-export const formGridItemUses = ['FormItemModel', 'FormAssociationItemModel'];
+export const formGridItemUses = ['FormItemModel', 'FormAssociationItemModel', 'JSItemModel'];
 
 export const detailsGridItemUses = ['DetailsItemModel'];
 

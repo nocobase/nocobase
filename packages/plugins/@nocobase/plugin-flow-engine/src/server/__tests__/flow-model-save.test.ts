@@ -685,6 +685,7 @@ describe('flow-model save', () => {
                 candidates: expect.arrayContaining([
                   expect.objectContaining({ use: 'FormItemModel' }),
                   expect.objectContaining({ use: 'FormAssociationItemModel' }),
+                  expect.objectContaining({ use: 'JSItemModel' }),
                 ]),
               },
             },
@@ -1363,6 +1364,43 @@ describe('flow-model save', () => {
     });
     expectStepParamsExampleMatchesDocument(jsEditableField.body?.data, 'skeleton');
 
+    const jsItem = await agent.get('/flowModels:schema').query({
+      use: 'JSItemModel',
+    });
+    expect(jsItem.status).toBe(200);
+    expect(jsItem.body?.data?.use).toBe('JSItemModel');
+    expect(jsItem.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
+      properties: {
+        jsSettings: {
+          type: 'object',
+          properties: {
+            runJs: {
+              type: 'object',
+              properties: {
+                code: {
+                  type: 'string',
+                },
+                version: {
+                  type: 'string',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(jsItem.body?.data?.minimalExample).toMatchObject({
+      use: 'JSItemModel',
+      stepParams: {
+        jsSettings: {
+          runJs: {
+            version: 'v2',
+          },
+        },
+      },
+    });
+    expectStepParamsExampleMatchesDocument(jsItem.body?.data, 'skeleton');
+
     const bundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['TableColumnModel', 'FormItemModel', 'InputFieldModel'],
     });
@@ -1689,6 +1727,30 @@ describe('flow-model save', () => {
       },
     });
     expect(saveFormJs.status).toBe(200);
+
+    const saveFormGridJsItem = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-form-grid-js-item',
+        use: 'FormGridModel',
+        subModels: {
+          items: [
+            {
+              uid: 'save-form-grid-js-item-child',
+              use: 'JSItemModel',
+              stepParams: {
+                jsSettings: {
+                  runJs: {
+                    version: 'v2',
+                    code: "ctx.render('<div>Hello JS item.</div>');",
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+    expect(saveFormGridJsItem.status).toBe(200);
 
     const saveFormDisplay = await agent.resource('flowModels').save({
       values: {

@@ -521,8 +521,7 @@ export default {
           icon: { type: 'string', nullable: true },
           path: { type: 'string', nullable: true },
           parentId: {
-            oneOf: [{ type: 'integer' }, { type: 'string' }],
-            nullable: true,
+            anyOf: [{ type: 'integer' }, { type: 'string' }, { type: 'null' }],
           },
           schemaUid: { type: 'string', nullable: true },
           menuSchemaUid: { type: 'string', nullable: true },
@@ -553,8 +552,7 @@ export default {
           tooltip: { type: 'string' },
           icon: { type: 'string' },
           parentId: {
-            oneOf: [{ type: 'integer' }, { type: 'string' }],
-            nullable: true,
+            anyOf: [{ type: 'integer' }, { type: 'string' }, { type: 'null' }],
           },
           schemaUid: { type: 'string' },
           menuSchemaUid: { type: 'string' },
@@ -589,8 +587,7 @@ export default {
         properties: {
           schemaUid: { type: 'string' },
           parentId: {
-            oneOf: [{ type: 'integer' }, { type: 'string' }],
-            nullable: true,
+            anyOf: [{ type: 'integer' }, { type: 'string' }, { type: 'null' }],
           },
           title: { type: 'string' },
           icon: { type: 'string' },
@@ -611,8 +608,7 @@ export default {
               title: { type: 'string' },
               icon: { type: 'string', nullable: true },
               parentId: {
-                oneOf: [{ type: 'integer' }, { type: 'string' }],
-                nullable: true,
+                anyOf: [{ type: 'integer' }, { type: 'string' }, { type: 'null' }],
               },
               menuSchemaUid: { type: 'string', nullable: true },
             },
