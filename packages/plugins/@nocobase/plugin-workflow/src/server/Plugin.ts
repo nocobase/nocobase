@@ -23,6 +23,7 @@ import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
 import initActions from './actions';
 import { NodeValidationError } from './actions/nodes';
+import { WorkflowValidationError } from './actions/workflows';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -313,6 +314,15 @@ export default class PluginWorkflowServer extends Plugin {
     if (PluginErrorHandler?.errorHandler) {
       PluginErrorHandler.errorHandler.register(
         (err) => err instanceof NodeValidationError || err.name === 'NodeValidationError',
+        (err, ctx) => {
+          ctx.status = err.status;
+          ctx.body = {
+            errors: Object.values(err.errors).map((message) => ({ message })),
+          };
+        },
+      );
+      PluginErrorHandler.errorHandler.register(
+        (err) => err instanceof WorkflowValidationError || err.name === 'WorkflowValidationError',
         (err, ctx) => {
           ctx.status = err.status;
           ctx.body = {
