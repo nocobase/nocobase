@@ -37,7 +37,7 @@ import {
   useAllAccessDesktopRoutes,
   useMobileLayout,
 } from '../../../admin-shell';
-import { ParentRouteContext, useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
+import { useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
 import { PinnedPluginList } from '../../../plugin-manager';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
@@ -297,9 +297,7 @@ const DesignerButtonMenuItem: FC<{ item: AdminLayoutMenuNode; fallbackParentRout
 
   return (
     <div ref={divRef}>
-      <ResetThemeTokenAndKeepAlgorithm>
-        <ParentRouteContext.Provider value={parentRoute}>{props.item.name}</ParentRouteContext.Provider>
-      </ResetThemeTokenAndKeepAlgorithm>
+      <ResetThemeTokenAndKeepAlgorithm>{props.item.name}</ResetThemeTokenAndKeepAlgorithm>
     </div>
   );
 };

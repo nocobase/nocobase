@@ -17,15 +17,44 @@ import { AdminLayoutModel } from '../AdminLayoutModel';
 import {
   AdminLayoutMenuItemModel,
   getAdminLayoutMenuMovePositionOptions,
+  openAdminLayoutMenuLink,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
 } from '../AdminLayoutMenuModels';
+
+const { parseURLAndParamsMock, navigateMock } = vi.hoisted(() => ({
+  parseURLAndParamsMock: vi.fn(),
+  navigateMock: vi.fn(),
+}));
+
+vi.mock('../../../../block-provider/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../block-provider/hooks')>();
+  return {
+    ...actual,
+    useParseURLAndParams: () => ({
+      parseURLAndParams: parseURLAndParamsMock,
+    }),
+  };
+});
+
+vi.mock('../../../../application/CustomRouterContextProvider', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../application/CustomRouterContextProvider')>();
+  return {
+    ...actual,
+    useNavigateNoUpdate: () => navigateMock,
+    useRouterBasename: () => '/apps/demo',
+  };
+});
 
 describe('AdminLayoutModel menu items', () => {
   let engine: FlowEngine;
 
   beforeEach(() => {
     engine = new FlowEngine();
+    engine.registerModels({
+      AdminLayoutModel,
+      AdminLayoutMenuItemModel,
+    });
     engine.context.defineProperty('routeRepository', {
       value: {
         listAccessible: () => [],
@@ -58,6 +87,12 @@ describe('AdminLayoutModel menu items', () => {
         scopes: {},
       },
     });
+    engine.context.defineProperty('t', {
+      value: (text) => text,
+    });
+    parseURLAndParamsMock.mockReset();
+    navigateMock.mockReset();
+    vi.spyOn(window, 'open').mockImplementation(() => null);
   });
 
   it('should sync route tree into menuItems subModels and cleanup stale branches', () => {
@@ -210,6 +245,8 @@ describe('AdminLayoutModel menu items', () => {
 
     expect(mobileRoute.children[mobileRoute.children.length - 1].key).toBe('x-designer-button');
     expect(mobileRoute.children[0].routes?.[1].key).toBe('x-designer-button');
+    expect(desktopRoute.children[0]._launcherModel).toBe(adminLayoutModel);
+    expect(desktopRoute.children[1].routes?.[1]._launcherModel).toBe(adminLayoutModel.subModels.menuItems?.[0]);
   });
 
   it('should update ProLayout route result after menuItems sync in observer render', async () => {
@@ -304,10 +341,276 @@ describe('AdminLayoutModel menu items', () => {
       useTypedConstant: true,
       changeOnSelect: true,
     });
-    expect(model.getSchemaComponentOptions().components.FlowSettingsVariableTextArea).toBeTypeOf('function');
   });
 
-  it('should expose nested insert actions and only show insert inner for groups', async () => {
+  it('should keep creation flow defaults compatible with launcher source', async () => {
+    const headerModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-link-header',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'header',
+        },
+      },
+    });
+    const insertModel = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-link-insert',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'insert',
+          insertPosition: 'afterEnd',
+          targetRoute: {
+            id: 2,
+            title: 'Page 2',
+            schemaUid: 'page-2',
+            type: NocoBaseDesktopRouteType.page,
+          },
+        },
+      },
+    });
+
+    const menuCreationFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuCreation');
+    const defaultParams = menuCreationFlow?.steps?.basic?.defaultParams as ((ctx: any) => Promise<any>) | undefined;
+    const uiSchema = menuCreationFlow?.steps?.basic?.uiSchema as ((ctx: any) => Promise<any>) | undefined;
+
+    expect(await defaultParams?.({ model: headerModel })).toEqual({
+      openInNewWindow: true,
+    });
+    expect(await defaultParams?.({ model: insertModel })).toEqual({});
+
+    const schema = await uiSchema?.({ model: headerModel, t: (text) => text });
+    expect(schema?.href?.['x-component']).toBe('FlowSettingsVariableTextArea');
+    expect(schema?.params?.items?.properties?.space?.properties?.value?.['x-component']).toBe(
+      'FlowSettingsVariableTextArea',
+    );
+  });
+
+  it('should persist root link creation through menuCreation flow', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 88,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-link-root',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Docs',
+      icon: 'LinkOutlined',
+      href: 'https://www.nocobase.com',
+      params: [{ name: 'from', value: 'admin' }],
+      openInNewWindow: true,
+    });
+
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NocoBaseDesktopRouteType.link,
+        title: 'Docs',
+        icon: 'LinkOutlined',
+        options: {
+          href: 'https://www.nocobase.com',
+          params: [{ name: 'from', value: 'admin' }],
+          openInNewWindow: true,
+        },
+      }),
+      undefined,
+    );
+  });
+
+  it('should persist creation session during saveStepParams and avoid duplicate route creation on save', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 88,
+        },
+      },
+    });
+    engine.context.routeRepository.createRoute = createRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-link-save-step-params',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'link',
+          source: 'header',
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'Docs',
+      href: 'https://www.nocobase.com',
+      openInNewWindow: true,
+    });
+
+    await model.saveStepParams();
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledTimes(1);
+  });
+
+  it('should persist insert flow page creation through menuCreation flow', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 99,
+        },
+      },
+    });
+    const moveRoute = vi.fn().mockResolvedValue(undefined);
+    const request = vi.fn().mockResolvedValue(undefined);
+
+    engine.context.routeRepository.createRoute = createRoute;
+    engine.context.routeRepository.moveRoute = moveRoute;
+    engine.context.api.request = request;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-create-flow-page-insert',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        creationMeta: {
+          menuType: 'flowPage',
+          source: 'insert',
+          insertPosition: 'beforeBegin',
+          targetRoute: {
+            id: 1,
+            parentId: 10,
+            title: 'Current page',
+            schemaUid: 'current-page',
+            type: NocoBaseDesktopRouteType.page,
+          },
+        },
+      },
+    });
+
+    model.setStepParams('menuCreation', 'basic', {
+      title: 'New page',
+      icon: 'AppstoreOutlined',
+    });
+
+    await model.save();
+
+    expect(createRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parentId: 10,
+        type: NocoBaseDesktopRouteType.flowPage,
+        title: 'New page',
+        icon: 'AppstoreOutlined',
+      }),
+      {
+        refreshAfterMutation: false,
+      },
+    );
+    expect(moveRoute).toHaveBeenCalledWith({
+      sourceId: 99,
+      targetId: 1,
+      sortField: 'sort',
+      method: 'insertBefore',
+    });
+    expect(request).toHaveBeenCalledWith(
+      expect.objectContaining({
+        method: 'POST',
+        url: '/uiSchemas:insert',
+      }),
+    );
+  });
+
+  it('should persist insert step using selected menu type', async () => {
+    const createRoute = vi.fn().mockResolvedValue({
+      data: {
+        data: {
+          id: 66,
+        },
+      },
+    });
+    const moveRoute = vi.fn().mockResolvedValue(undefined);
+
+    engine.context.routeRepository.createRoute = createRoute;
+    engine.context.routeRepository.moveRoute = moveRoute;
+
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-insert-step',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          parentId: 10,
+          title: 'Current page',
+          schemaUid: 'current-page',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    await menuSettingsFlow?.steps?.insertBefore?.beforeParamsSave?.(
+      { model } as any,
+      {
+        menuType: 'group',
+        title: 'New group',
+        icon: 'FolderOutlined',
+      },
+      {},
+    );
+
+    expect(createRoute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NocoBaseDesktopRouteType.group,
+        title: 'New group',
+        icon: 'FolderOutlined',
+        parentId: 10,
+      }),
+      {
+        refreshAfterMutation: false,
+      },
+    );
+    expect(moveRoute).toHaveBeenCalledWith({
+      sourceId: 66,
+      targetId: 1,
+      sortField: 'sort',
+      method: 'insertBefore',
+    });
+  });
+
+  it('should not persist admin layout menu models through flowEngine.saveModel when saving step params', async () => {
+    const saveModel = vi.spyOn(engine, 'saveModel');
+    const model = engine.createModel<AdminLayoutMenuItemModel>({
+      uid: 'menu-item-save-step-params-existing',
+      use: AdminLayoutMenuItemModel,
+      props: {
+        route: {
+          id: 1,
+          title: 'Page 1',
+          schemaUid: 'page-1',
+          type: NocoBaseDesktopRouteType.page,
+        },
+      },
+    });
+
+    await model.saveStepParams();
+
+    expect(saveModel).not.toHaveBeenCalled();
+  });
+
+  it('should expose insert steps and only show insert inner for groups', async () => {
     const groupModel = engine.createModel<AdminLayoutMenuItemModel>({
       uid: 'menu-item-group',
       use: AdminLayoutMenuItemModel,
@@ -333,15 +636,32 @@ describe('AdminLayoutModel menu items', () => {
       },
     });
 
-    const groupExtras = await AdminLayoutMenuItemModel.getExtraMenuItems(groupModel, (text) => text);
-    const pageExtras = await AdminLayoutMenuItemModel.getExtraMenuItems(pageModel, (text) => text);
+    const menuSettingsFlow = AdminLayoutMenuItemModel.globalFlowRegistry.getFlow('menuSettings');
+    const insertBeforeUiSchema = menuSettingsFlow?.steps?.insertBefore?.uiSchema as
+      | ((ctx: any) => Promise<any>)
+      | undefined;
+    const insertBeforeDefaultParams = menuSettingsFlow?.steps?.insertBefore?.defaultParams as
+      | ((ctx: any) => Promise<any>)
+      | undefined;
+    const insertInnerHide = menuSettingsFlow?.steps?.insertInner?.hideInSettings as
+      | ((ctx: any) => Promise<boolean>)
+      | undefined;
+    const schema = await insertBeforeUiSchema?.({ model: groupModel, t: (text) => text });
+    const defaultParams = await insertBeforeDefaultParams?.({ model: groupModel, t: (text) => text });
 
-    const insertBefore = groupExtras.find((item) => item.key === 'menu-insert-before');
-    const insertInner = groupExtras.find((item) => item.key === 'menu-insert-inner');
-
-    expect(insertBefore?.children).toHaveLength(4);
-    expect(insertInner?.children).toHaveLength(4);
-    expect(pageExtras.some((item) => item.key === 'menu-insert-inner')).toBe(false);
+    expect(defaultParams?.menuType).toBe('flowPage');
+    expect(schema?.menuType?.['x-component']).toBe('Radio.Group');
+    expect(schema?.menuType?.enum).toEqual([
+      { label: 'Group', value: 'group' },
+      { label: 'Classic page (v1)', value: 'page' },
+      { label: 'Modern page (v2)', value: 'flowPage' },
+      { label: 'Link', value: 'link' },
+    ]);
+    expect(schema?.href?.['x-reactions']).toMatchObject({
+      dependencies: ['menuType'],
+    });
+    await expect(insertInnerHide?.({ model: groupModel })).resolves.toBe(false);
+    await expect(insertInnerHide?.({ model: pageModel })).resolves.toBe(true);
   });
 
   it('should delete current route and navigate to sibling route', async () => {
@@ -589,6 +909,47 @@ describe('AdminLayoutModel menu items', () => {
     expect(createRoute).toHaveBeenCalled();
     expect(moveRoute).toHaveBeenCalled();
     expect(refreshAccessible).toHaveBeenCalledTimes(1);
+  });
+
+  it('should use parsed url for same-window link navigation', async () => {
+    parseURLAndParamsMock.mockResolvedValue('https://www.nocobase.com/docs?from=admin');
+
+    await openAdminLayoutMenuLink({
+      href: 'https://www.nocobase.com/docs',
+      params: [{ name: 'from', value: 'admin' }],
+      openInNewWindow: false,
+      isMobile: false,
+      closeMobileMenu: vi.fn(),
+      parseURLAndParams: parseURLAndParamsMock,
+      navigate: navigateMock,
+      basenameOfCurrentRouter: '/apps/demo',
+    });
+
+    expect(parseURLAndParamsMock).toHaveBeenCalledWith('https://www.nocobase.com/docs', [
+      { name: 'from', value: 'admin' },
+    ]);
+    expect(window.open).toHaveBeenCalledWith('https://www.nocobase.com/docs?from=admin', '_self');
+  });
+
+  it('should open parsed link url with noopener and noreferrer', async () => {
+    parseURLAndParamsMock.mockResolvedValue('https://www.nocobase.com/docs?from=admin');
+
+    await openAdminLayoutMenuLink({
+      href: 'https://www.nocobase.com/docs',
+      params: [{ name: 'from', value: 'admin' }],
+      openInNewWindow: true,
+      isMobile: false,
+      closeMobileMenu: vi.fn(),
+      parseURLAndParams: parseURLAndParamsMock,
+      navigate: navigateMock,
+      basenameOfCurrentRouter: '/apps/demo',
+    });
+
+    expect(window.open).toHaveBeenCalledWith(
+      'https://www.nocobase.com/docs?from=admin',
+      '_blank',
+      'noopener,noreferrer',
+    );
   });
 
   it('should resolve sibling move options for non-group drag target', () => {

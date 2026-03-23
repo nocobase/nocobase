@@ -98,7 +98,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
     const result =
       (this.subModels.menuItems || [])
         .map((item) =>
-          item.toProLayoutMenuItem({
+          item.toProLayoutRoute({
             ...options,
             depth: 0,
           }),
@@ -107,8 +107,8 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
 
     if (options.designable) {
       options.isMobile
-        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'))
-        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header'));
+        ? result.push(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this))
+        : result.unshift(getAdminLayoutMenuInitializerButton('schema-initializer-Menu-header', this));
     }
 
     return {
