@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FormulaField } from './formula-field';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginFieldFormulaServer extends Plugin {
   afterAdd() {}
 
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   beforeLoad() {

@@ -204,7 +204,7 @@ describe('FlowSchemaRegistry', () => {
       additionalProperties: true,
     });
 
-    registry.registerActionManifest({
+    registry.registerActionContribution({
       name: 'schemaRegistryLateAction',
       paramsSchema: {
         type: 'object',
@@ -391,7 +391,7 @@ describe('FlowSchemaRegistry', () => {
   it('should preserve nested grid layout step params schema in model documents', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryGridModel',
       stepParamsSchema: {
         type: 'object',
@@ -445,12 +445,12 @@ describe('FlowSchemaRegistry', () => {
     expectGridLayoutSchemaDocument(doc);
   });
 
-  it('should build bundle-friendly documents from pure data manifests', () => {
+  it('should build bundle-friendly documents from pure data contributions', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerActionManifest({
-      name: 'schemaRegistryManifestAction',
-      title: 'Manifest action',
+    registry.registerActionContribution({
+      name: 'schemaRegistryContributionAction',
+      title: 'Contribution action',
       paramsSchema: {
         type: 'object',
         properties: {
@@ -467,9 +467,9 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
-      use: 'SchemaRegistryManifestModel',
-      title: 'Manifest model',
+    registry.registerModelContribution({
+      use: 'SchemaRegistryContributionModel',
+      title: 'Contribution model',
       stepParamsSchema: {
         type: 'object',
         properties: {
@@ -512,21 +512,21 @@ describe('FlowSchemaRegistry', () => {
       },
       docs: {
         minimalExample: {
-          uid: 'manifest-model-1',
-          use: 'SchemaRegistryManifestModel',
+          uid: 'contribution-model-1',
+          use: 'SchemaRegistryContributionModel',
           stepParams: {
             settings: {
-              title: 'Manifest model',
+              title: 'Contribution model',
             },
           },
         },
         commonPatterns: [
           {
-            title: 'Minimal manifest model',
+            title: 'Minimal contribution model',
             snippet: {
               stepParams: {
                 settings: {
-                  title: 'Manifest model',
+                  title: 'Contribution model',
                 },
               },
             },
@@ -540,7 +540,7 @@ describe('FlowSchemaRegistry', () => {
         dynamicHints: [
           {
             kind: 'dynamic-children',
-            path: 'SchemaRegistryManifestModel.subModels.body',
+            path: 'SchemaRegistryContributionModel.subModels.body',
             message: 'body slot is curated manually.',
             'x-flow': {
               slotRules: {
@@ -554,27 +554,27 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    const doc = registry.getModelDocument('SchemaRegistryManifestModel');
-    const bundle = registry.getSchemaBundle(['SchemaRegistryManifestModel']);
+    const doc = registry.getModelDocument('SchemaRegistryContributionModel');
+    const bundle = registry.getSchemaBundle(['SchemaRegistryContributionModel']);
 
     expect(doc.minimalExample).toMatchObject({
-      use: 'SchemaRegistryManifestModel',
+      use: 'SchemaRegistryContributionModel',
     });
     expect(doc.skeleton).toMatchObject({
       uid: 'todo-uid',
-      use: 'SchemaRegistryManifestModel',
+      use: 'SchemaRegistryContributionModel',
     });
     expect(doc.commonPatterns).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          title: 'Minimal manifest model',
+          title: 'Minimal contribution model',
         }),
       ]),
     );
     expect(doc.dynamicHints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          path: 'SchemaRegistryManifestModel.subModels.body',
+          path: 'SchemaRegistryContributionModel.subModels.body',
           'x-flow': expect.objectContaining({
             slotRules: expect.objectContaining({
               allowedUses: ['SchemaRegistryChildModel'],
@@ -586,9 +586,9 @@ describe('FlowSchemaRegistry', () => {
     expect(bundle).not.toHaveProperty('generatedAt');
     expect(bundle).not.toHaveProperty('summary');
     expect(bundle.items[0]).toMatchObject({
-      use: 'SchemaRegistryManifestModel',
+      use: 'SchemaRegistryContributionModel',
       skeleton: expect.objectContaining({
-        use: 'SchemaRegistryManifestModel',
+        use: 'SchemaRegistryContributionModel',
       }),
       subModelCatalog: {
         body: expect.objectContaining({
@@ -607,7 +607,7 @@ describe('FlowSchemaRegistry', () => {
   it('should truncate recursive ancestor snapshots in model documents', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLoopRootModel',
       subModelSlots: {
         actions: {
@@ -616,7 +616,7 @@ describe('FlowSchemaRegistry', () => {
         },
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLoopActionModel',
       subModelSlots: {
         page: {
@@ -625,7 +625,7 @@ describe('FlowSchemaRegistry', () => {
         },
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLoopPageModel',
       subModelSlots: {
         tabs: {
@@ -634,7 +634,7 @@ describe('FlowSchemaRegistry', () => {
         },
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLoopTabModel',
       subModelSlots: {
         grid: {
@@ -643,7 +643,7 @@ describe('FlowSchemaRegistry', () => {
         },
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLoopGridModel',
       subModelSlots: {
         items: {
@@ -683,14 +683,14 @@ describe('FlowSchemaRegistry', () => {
   it('should treat abstract models as non-queryable while allowing explicit internal concrete models', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryInternalBaseModel',
       exposure: 'internal',
       abstract: true,
       allowDirectUse: false,
       suggestedUses: ['SchemaRegistryPublicModel'],
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryInternalConcreteModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -703,7 +703,7 @@ describe('FlowSchemaRegistry', () => {
         additionalProperties: true,
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryPublicModel',
       stepParamsSchema: {
         type: 'object',
@@ -732,7 +732,7 @@ describe('FlowSchemaRegistry', () => {
   it('should resolve direct child schema patches by parent slot context', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryContextChildModel',
       stepParamsSchema: {
         type: 'object',
@@ -747,7 +747,7 @@ describe('FlowSchemaRegistry', () => {
       strict: true,
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryParentAlphaModel',
       source: 'official',
       strict: true,
@@ -771,7 +771,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryParentBetaModel',
       source: 'official',
       strict: true,
@@ -868,7 +868,7 @@ describe('FlowSchemaRegistry', () => {
   it('should apply ancestor descendant patches before direct child patches', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryDescLeafModel',
       stepParamsSchema: {
         type: 'object',
@@ -878,7 +878,7 @@ describe('FlowSchemaRegistry', () => {
       strict: true,
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryDescParentModel',
       source: 'official',
       strict: true,
@@ -987,7 +987,7 @@ describe('FlowSchemaRegistry', () => {
   it('should only use legacy slot schema as fallback when no child use can be resolved', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLegacyChildModel',
       stepParamsSchema: {
         type: 'object',
@@ -1001,7 +1001,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryLegacyParentModel',
       subModelSlots: {
         body: {
@@ -1050,7 +1050,7 @@ describe('FlowSchemaRegistry', () => {
   it('should expose anonymous child snapshot patches when slot use is unresolved', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryAnonymousGridModel',
       stepParamsSchema: {
         type: 'object',
@@ -1064,7 +1064,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryAnonymousParentModel',
       subModelSlots: {
         body: {
@@ -1144,7 +1144,7 @@ describe('FlowSchemaRegistry', () => {
   it('should expose recursive sub-model catalogs for internal descendants without promoting them to top-level items', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryBundleLeafModel',
       exposure: 'internal',
       allowDirectUse: false,
@@ -1164,7 +1164,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryBundleChildModel',
       exposure: 'internal',
       allowDirectUse: false,
@@ -1187,7 +1187,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryBundleParentModel',
       subModelSlots: {
         body: {
@@ -1249,7 +1249,7 @@ describe('FlowSchemaRegistry', () => {
       { name: 'form-item-field', inherits: ['editable-field'] },
     ]);
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'InputFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1261,7 +1261,7 @@ describe('FlowSchemaRegistry', () => {
         use: 'InputFieldModel',
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'DisplayTextFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1273,7 +1273,7 @@ describe('FlowSchemaRegistry', () => {
         use: 'DisplayTextFieldModel',
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'RecordSelectFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1285,7 +1285,7 @@ describe('FlowSchemaRegistry', () => {
         use: 'RecordSelectFieldModel',
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'CascadeSelectFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1332,7 +1332,7 @@ describe('FlowSchemaRegistry', () => {
       },
     ]);
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryFieldHostModel',
       subModelSlots: {
         field: {
@@ -1345,7 +1345,7 @@ describe('FlowSchemaRegistry', () => {
         use: 'SchemaRegistryFieldHostModel',
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryDisplayFieldHostModel',
       subModelSlots: {
         field: {
@@ -1432,7 +1432,7 @@ describe('FlowSchemaRegistry', () => {
     const registry = new FlowSchemaRegistry();
 
     registry.registerFieldBindingContexts([{ name: 'editable-field' }]);
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryExactFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1444,7 +1444,7 @@ describe('FlowSchemaRegistry', () => {
         use: 'SchemaRegistryExactFieldModel',
       },
     });
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryWildcardFieldModel',
       exposure: 'internal',
       stepParamsSchema: {
@@ -1482,7 +1482,7 @@ describe('FlowSchemaRegistry', () => {
   it('should project required and minItems slot constraints into schema documents and bundle catalogs', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryRequiredChildModel',
       title: 'Required child',
       stepParamsSchema: {
@@ -1495,7 +1495,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    registry.registerModelManifest({
+    registry.registerModelContribution({
       use: 'SchemaRegistryRequiredParentModel',
       title: 'Required parent',
       subModelSlots: {

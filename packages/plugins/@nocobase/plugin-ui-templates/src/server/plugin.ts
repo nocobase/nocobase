@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import flowModelTemplates from './resources/flowModelTemplates';
 import flowModelTemplateUsages from './resources/flowModelTemplateUsages';
 import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { uid } from '@nocobase/utils';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 export class PluginBlockReferenceServer extends Plugin {
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   async load() {

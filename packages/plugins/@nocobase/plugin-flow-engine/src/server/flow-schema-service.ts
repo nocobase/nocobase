@@ -12,11 +12,11 @@ import { uid } from '@nocobase/utils';
 import {
   FlowSchemaRegistry,
   type ActionDefinition,
-  type FlowActionSchemaManifest,
-  type FlowFieldBindingContextManifest,
-  type FlowFieldBindingManifest,
+  type FlowActionSchemaContribution,
+  type FlowFieldBindingContextContribution,
+  type FlowFieldBindingContribution,
   type FlowSchemaInventoryContribution,
-  type FlowModelSchemaManifest,
+  type FlowModelSchemaContribution,
   type FlowSchemaBundleDocument,
   type FlowSchemaContextEdge,
   type FlowJsonSchema,
@@ -179,12 +179,16 @@ export class FlowSchemaService {
     this.registry.registerActions(actions);
   }
 
-  registerActionManifests(manifests: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>) {
-    this.registry.registerActionManifests(manifests);
+  registerActionContributions(
+    contributions: FlowActionSchemaContribution[] | Record<string, FlowActionSchemaContribution>,
+  ) {
+    this.registry.registerActionContributions(contributions);
   }
 
-  registerModelManifests(manifests: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>) {
-    this.registry.registerModelManifests(manifests);
+  registerModelContributions(
+    contributions: FlowModelSchemaContribution[] | Record<string, FlowModelSchemaContribution>,
+  ) {
+    this.registry.registerModelContributions(contributions);
   }
 
   registerInventory(
@@ -195,19 +199,22 @@ export class FlowSchemaService {
   }
 
   registerFieldBindingContexts(
-    manifests: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest> | undefined,
+    contributions:
+      | FlowFieldBindingContextContribution[]
+      | Record<string, FlowFieldBindingContextContribution>
+      | undefined,
   ) {
-    this.registry.registerFieldBindingContexts(manifests);
+    this.registry.registerFieldBindingContexts(contributions);
   }
 
   registerFieldBindings(
-    manifests:
-      | FlowFieldBindingManifest[]
-      | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>
+    contributions:
+      | FlowFieldBindingContribution[]
+      | Record<string, FlowFieldBindingContribution | FlowFieldBindingContribution[]>
       | undefined,
     source: 'official' | 'plugin' | 'third-party',
   ) {
-    this.registry.registerFieldBindings(manifests, source);
+    this.registry.registerFieldBindings(contributions, source);
   }
 
   setApp(app: any) {

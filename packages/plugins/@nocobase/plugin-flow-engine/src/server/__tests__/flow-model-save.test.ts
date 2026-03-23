@@ -198,7 +198,7 @@ describe('flow-model save', () => {
           },
         },
       },
-      modelManifests: [
+      modelContributions: [
         {
           use: 'SaveContextualChildModel',
           source: 'official',
@@ -793,7 +793,7 @@ describe('flow-model save', () => {
     expect(bundle.status).toBe(200);
     expect(bundle.body?.data).not.toHaveProperty('generatedAt');
     expect(bundle.body?.data).not.toHaveProperty('summary');
-    expect(JSON.stringify(bundle.body?.data)).not.toContain('missing-model-manifest');
+    expect(JSON.stringify(bundle.body?.data)).not.toContain('missing-model-contribution');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -1007,7 +1007,7 @@ describe('flow-model save', () => {
     expect(saveJsBlock.body?.data?.use).toBe('JSBlockModel');
   });
 
-  it('should discover and validate public block manifests from plugin providers', async () => {
+  it('should discover and validate public block contributions from plugin providers', async () => {
     await app.destroy();
     app = await createMockServer({
       registerActions: true,

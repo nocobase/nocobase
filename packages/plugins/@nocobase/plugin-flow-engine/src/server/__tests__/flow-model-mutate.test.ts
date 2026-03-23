@@ -50,7 +50,7 @@ describe('flow-model mutate', () => {
       models: {
         MutateSchemaStrictModel,
       },
-      modelManifests: [
+      modelContributions: [
         {
           use: 'MutateContextualChildModel',
           source: 'official',

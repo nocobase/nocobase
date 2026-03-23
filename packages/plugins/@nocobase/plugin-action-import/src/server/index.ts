@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
 import { ImportError, ImportValidationError } from './errors';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export { ImportError, ImportValidationError } from './errors';
 
 export class PluginActionImportServer extends Plugin {
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   beforeLoad() {

@@ -13,7 +13,7 @@ import {
   createActionStepParamsSchema,
   genericFilterSchema,
   popupActionSettingsStepParamsSchema,
-} from '../flow-schema-manifests/shared';
+} from '../flow-schema-contributions/shared';
 import { FlowSchemaService } from '../flow-schema-service';
 
 function createService() {
@@ -61,7 +61,7 @@ function createService() {
     'official',
   );
 
-  service.registerModelManifests([
+  service.registerModelContributions([
     {
       use: 'FormItemModel',
       source: 'official',
@@ -199,6 +199,43 @@ function createService() {
       stepParamsSchema: {
         type: 'object',
         additionalProperties: true,
+      },
+    },
+    {
+      use: 'SaveExistingLeafModel',
+      source: 'official',
+      strict: true,
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          alpha: {
+            type: 'string',
+          },
+        },
+        required: ['alpha'],
+        additionalProperties: false,
+      },
+    },
+    {
+      use: 'SaveExistingRootModel',
+      source: 'official',
+      strict: true,
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+          },
+        },
+        required: ['enabled'],
+        additionalProperties: false,
+      },
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SaveExistingLeafModel',
+          required: true,
+        },
       },
     },
   ]);
@@ -426,11 +463,68 @@ describe('FlowSchemaService', () => {
     expect(normalized.subModels.tabs[0].subModels?.grid).toBeUndefined();
   });
 
+  it('should skip direct validation for existing root nodes during save-style validation', () => {
+    const service = createService();
+
+    const issues = service.validateModelTree(
+      {
+        uid: 'save-existing-root-1',
+        use: 'SaveExistingRootModel',
+        stepParams: {
+          enabled: 'bad',
+        },
+      },
+      {
+        existingNodeUids: new Set(['save-existing-root-1']),
+      },
+    );
+
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
+  });
+
+  it('should keep validating new child nodes under an existing root during save-style validation', () => {
+    const service = createService();
+
+    const issues = service.validateModelTree(
+      {
+        uid: 'save-existing-root-2',
+        use: 'SaveExistingRootModel',
+        stepParams: {
+          enabled: 'bad',
+        },
+        subModels: {
+          body: {
+            uid: 'save-new-child-2',
+            use: 'SaveExistingLeafModel',
+            stepParams: {
+              alpha: 1,
+            },
+          },
+        },
+      },
+      {
+        existingNodeUids: new Set(['save-existing-root-2']),
+      },
+    );
+
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/body/stepParams/alpha',
+          modelUid: 'save-new-child-2',
+          modelUse: 'SaveExistingLeafModel',
+          section: 'stepParams',
+          keyword: 'type',
+        }),
+      ]),
+    );
+  });
+
   it('should validate generic filter trees as recursive groups or conditions', () => {
     const service = new FlowSchemaService();
     const ajv = new Ajv({ allErrors: true, strict: false });
 
-    service.registerModelManifests([
+    service.registerModelContributions([
       {
         use: 'FilterHostModel',
         source: 'official',
@@ -517,7 +611,7 @@ describe('FlowSchemaService', () => {
 
   it('should accept null action icons for link-style edit actions', () => {
     const service = new FlowSchemaService();
-    service.registerModelManifests([
+    service.registerModelContributions([
       {
         use: 'EditActionModel',
         source: 'official',
@@ -557,7 +651,7 @@ describe('FlowSchemaService', () => {
   it('should re-resolve dynamic step validators when schema changes at the same path', () => {
     const service = new FlowSchemaService();
 
-    service.registerActionManifests([
+    service.registerActionContributions([
       {
         name: 'dynamicBooleanAction',
         paramsSchema: {
@@ -585,7 +679,7 @@ describe('FlowSchemaService', () => {
         },
       },
     ]);
-    service.registerModelManifests([
+    service.registerModelContributions([
       {
         use: 'DynamicStepHostModel',
         source: 'official',
@@ -660,7 +754,7 @@ describe('FlowSchemaService', () => {
   it('should treat paramsSchemaOverride as a JSON schema object in flow definitions', () => {
     const service = new FlowSchemaService();
 
-    service.registerActionManifests([
+    service.registerActionContributions([
       {
         name: 'overrideSchemaAction',
         paramsSchema: {
@@ -675,7 +769,7 @@ describe('FlowSchemaService', () => {
         },
       },
     ]);
-    service.registerModelManifests([
+    service.registerModelContributions([
       {
         use: 'OverrideSchemaHostModel',
         source: 'official',

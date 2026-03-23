@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginBlockMarkdownServer extends Plugin {
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   async afterAdd() {}

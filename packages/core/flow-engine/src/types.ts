@@ -190,7 +190,7 @@ export interface FlowModelSchemaMeta {
   suggestedUses?: string[];
 }
 
-export interface FlowActionSchemaManifest {
+export interface FlowActionSchemaContribution {
   name: string;
   title?: string;
   paramsSchema?: FlowJsonSchema;
@@ -199,7 +199,7 @@ export interface FlowActionSchemaManifest {
   strict?: boolean;
 }
 
-export interface FlowModelSchemaManifest {
+export interface FlowModelSchemaContribution {
   use: string;
   title?: string;
   stepParamsSchema?: FlowJsonSchema;
@@ -218,7 +218,7 @@ export interface FlowModelSchemaManifest {
   suggestedUses?: string[];
 }
 
-export interface FlowSchemaManifestDefaults {
+export interface FlowSchemaContributionDefaults {
   source?: FlowSchemaCoverage['source'];
   strict?: boolean;
 }
@@ -234,12 +234,12 @@ export interface FlowFieldBindingConditions {
   targetCollectionTemplateNotIn?: string[];
 }
 
-export interface FlowFieldBindingContextManifest {
+export interface FlowFieldBindingContextContribution {
   name: string;
   inherits?: string[];
 }
 
-export interface FlowFieldBindingManifest {
+export interface FlowFieldBindingContribution {
   context: string;
   use: string;
   interfaces: string[];
@@ -261,20 +261,19 @@ export interface FlowFieldModelCompatibility {
   inheritParentFieldBinding?: boolean;
 }
 
-export interface FlowSchemaManifestContribution {
-  models?: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>;
-  actions?: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>;
-  fieldBindingContexts?: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest>;
-  fieldBindings?: FlowFieldBindingManifest[] | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>;
+export interface FlowSchemaContribution {
+  models?: FlowModelSchemaContribution[] | Record<string, FlowModelSchemaContribution>;
+  actions?: FlowActionSchemaContribution[] | Record<string, FlowActionSchemaContribution>;
+  fieldBindingContexts?: FlowFieldBindingContextContribution[] | Record<string, FlowFieldBindingContextContribution>;
+  fieldBindings?:
+    | FlowFieldBindingContribution[]
+    | Record<string, FlowFieldBindingContribution | FlowFieldBindingContribution[]>;
   inventory?: FlowSchemaInventoryContribution;
-  defaults?: FlowSchemaManifestDefaults;
+  defaults?: FlowSchemaContributionDefaults;
 }
 
-export interface FlowSchemaManifestProvider {
-  getFlowSchemaManifests():
-    | FlowSchemaManifestContribution
-    | undefined
-    | Promise<FlowSchemaManifestContribution | undefined>;
+export interface FlowSchemaContributionProvider {
+  getFlowSchemaContributions(): FlowSchemaContribution | undefined | Promise<FlowSchemaContribution | undefined>;
 }
 
 /**

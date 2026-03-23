@@ -25,7 +25,7 @@ describe('flow-model ensure', () => {
       plugins: ['flow-engine'],
     });
     (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
-      modelManifests: [
+      modelContributions: [
         {
           use: 'EnsureContextualChildModel',
           source: 'official',

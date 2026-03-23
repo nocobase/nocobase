@@ -19,10 +19,10 @@ import _ from 'lodash';
 import type { ISchema } from '@formily/json-schema';
 import type {
   ActionDefinition,
-  FlowActionSchemaManifest,
+  FlowActionSchemaContribution,
   FlowFieldBindingConditions,
-  FlowFieldBindingContextManifest,
-  FlowFieldBindingManifest,
+  FlowFieldBindingContextContribution,
+  FlowFieldBindingContribution,
   FlowFieldModelCompatibility,
   FlowSchemaBundleDocument,
   FlowSchemaBundleNode,
@@ -34,7 +34,7 @@ import type {
   FlowSchemaInventoryContribution,
   FlowJsonSchema,
   FlowModelSchemaPatch,
-  FlowModelSchemaManifest,
+  FlowModelSchemaContribution,
   FlowModelMeta,
   FlowSchemaCoverage,
   FlowSchemaDocument,
@@ -249,28 +249,28 @@ function normalizeFieldBindingConditions(
   return Object.keys(normalized).length > 0 ? normalized : undefined;
 }
 
-function normalizeFieldBindingContextManifest(
-  manifest?: FlowFieldBindingContextManifest,
+function normalizeFieldBindingContextContribution(
+  contribution?: FlowFieldBindingContextContribution,
   fallbackName?: string,
 ): RegisteredFieldBindingContext | undefined {
-  const name = String(manifest?.name || fallbackName || '').trim();
+  const name = String(contribution?.name || fallbackName || '').trim();
   if (!name) {
     return undefined;
   }
 
   return {
     name,
-    inherits: normalizeStringArray(manifest?.inherits),
+    inherits: normalizeStringArray(contribution?.inherits),
   };
 }
 
-function normalizeFieldBindingManifest(
-  manifest?: FlowFieldBindingManifest,
+function normalizeFieldBindingContribution(
+  contribution?: FlowFieldBindingContribution,
   source: FlowSchemaCoverage['source'] = 'official',
 ): RegisteredFieldBinding | undefined {
-  const context = String(manifest?.context || '').trim();
-  const use = String(manifest?.use || '').trim();
-  const interfaces = normalizeStringArray(manifest?.interfaces);
+  const context = String(contribution?.context || '').trim();
+  const use = String(contribution?.use || '').trim();
+  const interfaces = normalizeStringArray(contribution?.interfaces);
   if (!context || !use || interfaces.length === 0) {
     return undefined;
   }
@@ -279,10 +279,10 @@ function normalizeFieldBindingManifest(
     context,
     use,
     interfaces,
-    isDefault: manifest?.isDefault === true,
-    order: typeof manifest?.order === 'number' ? manifest.order : undefined,
-    conditions: normalizeFieldBindingConditions(manifest?.conditions),
-    defaultProps: manifest?.defaultProps === undefined ? undefined : _.cloneDeep(manifest.defaultProps),
+    isDefault: contribution?.isDefault === true,
+    order: typeof contribution?.order === 'number' ? contribution.order : undefined,
+    conditions: normalizeFieldBindingConditions(contribution?.conditions),
+    defaultProps: contribution?.defaultProps === undefined ? undefined : _.cloneDeep(contribution.defaultProps),
     source,
   };
 }
@@ -838,46 +838,50 @@ export class FlowSchemaRegistry {
     }
   }
 
-  registerActionManifest(manifest: FlowActionSchemaManifest) {
-    const name = String(manifest?.name || '').trim();
+  registerActionContribution(contribution: FlowActionSchemaContribution) {
+    const name = String(contribution?.name || '').trim();
     if (!name) return;
 
     const previous = this.actionSchemas.get(name);
     const docs = normalizeSchemaDocs({
       ...previous?.docs,
-      ...manifest.docs,
-      examples: manifest.docs?.examples || previous?.docs?.examples,
-      dynamicHints: [...(previous?.docs?.dynamicHints || []), ...(manifest.docs?.dynamicHints || [])],
-      commonPatterns: manifest.docs?.commonPatterns || previous?.docs?.commonPatterns,
-      antiPatterns: manifest.docs?.antiPatterns || previous?.docs?.antiPatterns,
+      ...contribution.docs,
+      examples: contribution.docs?.examples || previous?.docs?.examples,
+      dynamicHints: [...(previous?.docs?.dynamicHints || []), ...(contribution.docs?.dynamicHints || [])],
+      commonPatterns: contribution.docs?.commonPatterns || previous?.docs?.commonPatterns,
+      antiPatterns: contribution.docs?.antiPatterns || previous?.docs?.antiPatterns,
       minimalExample:
-        manifest.docs?.minimalExample !== undefined ? manifest.docs.minimalExample : previous?.docs?.minimalExample,
+        contribution.docs?.minimalExample !== undefined
+          ? contribution.docs.minimalExample
+          : previous?.docs?.minimalExample,
     });
     this.actionSchemas.set(name, {
       name,
-      title: manifest.title || previous?.title,
+      title: contribution.title || previous?.title,
       definition: previous?.definition,
-      schema: manifest.paramsSchema ? _.cloneDeep(manifest.paramsSchema) : previous?.schema,
+      schema: contribution.paramsSchema ? _.cloneDeep(contribution.paramsSchema) : previous?.schema,
       docs,
       coverage: {
-        status: manifest.paramsSchema ? 'manual' : previous?.coverage.status || 'unresolved',
-        source: manifest.source || previous?.coverage.source || 'official',
-        strict: manifest.strict ?? previous?.coverage.strict,
+        status: contribution.paramsSchema ? 'manual' : previous?.coverage.status || 'unresolved',
+        source: contribution.source || previous?.coverage.source || 'official',
+        strict: contribution.strict ?? previous?.coverage.strict,
       },
       dynamicHints: normalizeSchemaHints([...(previous?.dynamicHints || []), ...(docs.dynamicHints || [])]),
     });
     this.invalidateDerivedCaches();
   }
 
-  registerActionManifests(manifests: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>) {
-    const values = Array.isArray(manifests) ? manifests : Object.values(manifests || {});
-    for (const manifest of values) {
-      this.registerActionManifest(manifest);
+  registerActionContributions(
+    contributions: FlowActionSchemaContribution[] | Record<string, FlowActionSchemaContribution>,
+  ) {
+    const values = Array.isArray(contributions) ? contributions : Object.values(contributions || {});
+    for (const contribution of values) {
+      this.registerActionContribution(contribution);
     }
   }
 
-  registerFieldBindingContext(manifest: FlowFieldBindingContextManifest, fallbackName?: string) {
-    const normalized = normalizeFieldBindingContextManifest(manifest, fallbackName);
+  registerFieldBindingContext(contribution: FlowFieldBindingContextContribution, fallbackName?: string) {
+    const normalized = normalizeFieldBindingContextContribution(contribution, fallbackName);
     if (!normalized) {
       return;
     }
@@ -891,29 +895,32 @@ export class FlowSchemaRegistry {
   }
 
   registerFieldBindingContexts(
-    manifests: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest> | undefined,
+    contributions:
+      | FlowFieldBindingContextContribution[]
+      | Record<string, FlowFieldBindingContextContribution>
+      | undefined,
   ) {
-    if (!manifests) {
+    if (!contributions) {
       return;
     }
 
-    if (Array.isArray(manifests)) {
-      for (const manifest of manifests) {
-        this.registerFieldBindingContext(manifest);
+    if (Array.isArray(contributions)) {
+      for (const contribution of contributions) {
+        this.registerFieldBindingContext(contribution);
       }
       return;
     }
 
-    for (const [name, manifest] of Object.entries(manifests)) {
-      if (!manifest) {
+    for (const [name, contribution] of Object.entries(contributions)) {
+      if (!contribution) {
         continue;
       }
-      this.registerFieldBindingContext(manifest, name);
+      this.registerFieldBindingContext(contribution, name);
     }
   }
 
-  registerFieldBinding(manifest: FlowFieldBindingManifest, source: FlowSchemaCoverage['source'] = 'official') {
-    const normalized = normalizeFieldBindingManifest(manifest, source);
+  registerFieldBinding(contribution: FlowFieldBindingContribution, source: FlowSchemaCoverage['source'] = 'official') {
+    const normalized = normalizeFieldBindingContribution(contribution, source);
     if (!normalized) {
       return;
     }
@@ -925,29 +932,29 @@ export class FlowSchemaRegistry {
   }
 
   registerFieldBindings(
-    manifests:
-      | FlowFieldBindingManifest[]
-      | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>
+    contributions:
+      | FlowFieldBindingContribution[]
+      | Record<string, FlowFieldBindingContribution | FlowFieldBindingContribution[]>
       | undefined,
     source: FlowSchemaCoverage['source'] = 'official',
   ) {
-    if (!manifests) {
+    if (!contributions) {
       return;
     }
 
-    if (Array.isArray(manifests)) {
-      for (const manifest of manifests) {
-        this.registerFieldBinding(manifest, source);
+    if (Array.isArray(contributions)) {
+      for (const contribution of contributions) {
+        this.registerFieldBinding(contribution, source);
       }
       return;
     }
 
-    for (const [context, manifest] of Object.entries(manifests)) {
-      if (!manifest) {
+    for (const [context, contribution] of Object.entries(contributions)) {
+      if (!contribution) {
         continue;
       }
 
-      const items = Array.isArray(manifest) ? manifest : [manifest];
+      const items = Array.isArray(contribution) ? contribution : [contribution];
       for (const item of items) {
         this.registerFieldBinding(
           {
@@ -994,50 +1001,56 @@ export class FlowSchemaRegistry {
     this.invalidateDerivedCaches();
   }
 
-  registerModelManifest(manifest: FlowModelSchemaManifest) {
-    const use = String(manifest?.use || '').trim();
+  registerModelContribution(contribution: FlowModelSchemaContribution) {
+    const use = String(contribution?.use || '').trim();
     if (!use) return;
 
     const previous = this.modelSchemas.get(use);
     const docs = normalizeSchemaDocs({
       ...previous?.docs,
-      ...manifest.docs,
-      examples: manifest.examples || manifest.docs?.examples || previous?.docs?.examples,
-      dynamicHints: [...(previous?.docs?.dynamicHints || []), ...(manifest.docs?.dynamicHints || [])],
-      commonPatterns: manifest.docs?.commonPatterns || previous?.docs?.commonPatterns,
-      antiPatterns: manifest.docs?.antiPatterns || previous?.docs?.antiPatterns,
+      ...contribution.docs,
+      examples: contribution.examples || contribution.docs?.examples || previous?.docs?.examples,
+      dynamicHints: [...(previous?.docs?.dynamicHints || []), ...(contribution.docs?.dynamicHints || [])],
+      commonPatterns: contribution.docs?.commonPatterns || previous?.docs?.commonPatterns,
+      antiPatterns: contribution.docs?.antiPatterns || previous?.docs?.antiPatterns,
       minimalExample:
-        manifest.docs?.minimalExample !== undefined ? manifest.docs.minimalExample : previous?.docs?.minimalExample,
+        contribution.docs?.minimalExample !== undefined
+          ? contribution.docs.minimalExample
+          : previous?.docs?.minimalExample,
     });
     this.registerModel(use, {
-      title: manifest.title,
-      stepParamsSchema: manifest.stepParamsSchema ? _.cloneDeep(manifest.stepParamsSchema) : undefined,
-      flowRegistrySchema: manifest.flowRegistrySchema ? _.cloneDeep(manifest.flowRegistrySchema) : undefined,
-      subModelSlots: manifest.subModelSlots ? normalizeSubModelSlots(manifest.subModelSlots) : undefined,
-      flowRegistrySchemaPatch: manifest.flowRegistrySchemaPatch
-        ? _.cloneDeep(manifest.flowRegistrySchemaPatch)
+      title: contribution.title,
+      stepParamsSchema: contribution.stepParamsSchema ? _.cloneDeep(contribution.stepParamsSchema) : undefined,
+      flowRegistrySchema: contribution.flowRegistrySchema ? _.cloneDeep(contribution.flowRegistrySchema) : undefined,
+      subModelSlots: contribution.subModelSlots ? normalizeSubModelSlots(contribution.subModelSlots) : undefined,
+      flowRegistrySchemaPatch: contribution.flowRegistrySchemaPatch
+        ? _.cloneDeep(contribution.flowRegistrySchemaPatch)
         : undefined,
-      examples: manifest.examples || docs.examples || [],
+      examples: contribution.examples || docs.examples || [],
       docs,
-      skeleton: manifest.skeleton,
-      dynamicHints: [...(manifest.dynamicHints || []), ...(docs.dynamicHints || [])],
+      skeleton: contribution.skeleton,
+      dynamicHints: [...(contribution.dynamicHints || []), ...(docs.dynamicHints || [])],
       coverage: {
         status:
-          manifest.stepParamsSchema || manifest.flowRegistrySchema || manifest.subModelSlots ? 'manual' : 'unresolved',
-        source: manifest.source || 'official',
-        strict: manifest.strict,
+          contribution.stepParamsSchema || contribution.flowRegistrySchema || contribution.subModelSlots
+            ? 'manual'
+            : 'unresolved',
+        source: contribution.source || 'official',
+        strict: contribution.strict,
       },
-      exposure: manifest.exposure,
-      abstract: manifest.abstract,
-      allowDirectUse: manifest.allowDirectUse,
-      suggestedUses: manifest.suggestedUses,
+      exposure: contribution.exposure,
+      abstract: contribution.abstract,
+      allowDirectUse: contribution.allowDirectUse,
+      suggestedUses: contribution.suggestedUses,
     });
   }
 
-  registerModelManifests(manifests: FlowModelSchemaManifest[] | Record<string, FlowModelSchemaManifest>) {
-    const values = Array.isArray(manifests) ? manifests : Object.values(manifests || {});
-    for (const manifest of values) {
-      this.registerModelManifest(manifest);
+  registerModelContributions(
+    contributions: FlowModelSchemaContribution[] | Record<string, FlowModelSchemaContribution>,
+  ) {
+    const values = Array.isArray(contributions) ? contributions : Object.values(contributions || {});
+    for (const contribution of values) {
+      this.registerModelContribution(contribution);
     }
   }
 
@@ -1426,10 +1439,10 @@ export class FlowSchemaRegistry {
               {
                 kind: 'unresolved-model' as const,
                 path: use,
-                message: `${use} has no registered server-safe schema manifest yet.`,
+                message: `${use} has no registered server-safe schema contribution yet.`,
               },
               {
-                unresolvedReason: 'missing-model-manifest',
+                unresolvedReason: 'missing-model-contribution',
                 recommendedFallback: { use },
               },
             ),
@@ -1862,7 +1875,7 @@ export class FlowSchemaRegistry {
               message: `${path} references unresolved action "${step.use}".`,
             },
             {
-              unresolvedReason: 'missing-action-manifest',
+              unresolvedReason: 'missing-action-contribution',
               recommendedFallback: { use: step.use, params: {} },
             },
           ),

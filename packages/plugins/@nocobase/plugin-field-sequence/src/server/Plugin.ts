@@ -11,21 +11,21 @@ import { randomInt } from 'crypto';
 import path from 'path';
 import { promisify } from 'util';
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Pattern, SequenceField } from './fields/sequence-field';
 import _ from 'lodash';
 import { Field, Model } from '@nocobase/database';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 const asyncRandomInt = promisify(randomInt);
 
 export default class PluginFieldSequenceServer extends Plugin {
   patternTypes = new Registry<Pattern>();
 
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   async load() {

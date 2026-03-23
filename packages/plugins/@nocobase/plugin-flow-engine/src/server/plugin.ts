@@ -8,10 +8,10 @@
  */
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 import PluginUISchemaStorageServer from './server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
 import { JSONValue, resolveJsonTemplate } from './template/resolver';
@@ -22,8 +22,8 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private globalContext!: GlobalContext;
   async afterAdd() {}
 
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   async beforeLoad() {

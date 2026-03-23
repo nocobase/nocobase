@@ -9,13 +9,13 @@
 
 import { MagicAttributeModel } from '@nocobase/database';
 import type {
-  FlowActionSchemaManifest,
-  FlowFieldBindingContextManifest,
-  FlowFieldBindingManifest,
+  FlowActionSchemaContribution,
+  FlowFieldBindingContextContribution,
+  FlowFieldBindingContribution,
   FlowSchemaInventoryContribution,
-  FlowModelSchemaManifest,
-  FlowSchemaManifestContribution,
-  FlowSchemaManifestProvider,
+  FlowModelSchemaContribution,
+  FlowSchemaContribution,
+  FlowSchemaContributionProvider,
 } from '@nocobase/flow-engine';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
@@ -51,9 +51,9 @@ function extractFields(obj) {
   return fields.filter((value) => value !== undefined && value !== '');
 }
 
-type FlowSchemaPluginProvider = Plugin & Partial<FlowSchemaManifestProvider>;
+type FlowSchemaPluginProvider = Plugin & Partial<FlowSchemaContributionProvider>;
 
-function inferFlowSchemaManifestSource(plugin: Plugin) {
+function inferFlowSchemaContributionSource(plugin: Plugin) {
   const packageName = String(plugin?.options?.packageName || '').trim();
   if (plugin?.name === 'flow-engine' || packageName === '@nocobase/plugin-flow-engine') {
     return 'official' as const;
@@ -64,90 +64,90 @@ function inferFlowSchemaManifestSource(plugin: Plugin) {
   return 'third-party' as const;
 }
 
-function normalizeActionManifests(
-  manifests: FlowSchemaManifestContribution['actions'],
-  defaults: NonNullable<FlowSchemaManifestContribution['defaults']>,
-): FlowActionSchemaManifest[] {
-  if (!manifests) {
+function normalizeActionContributions(
+  contributions: FlowSchemaContribution['actions'],
+  defaults: NonNullable<FlowSchemaContribution['defaults']>,
+): FlowActionSchemaContribution[] {
+  if (!contributions) {
     return [];
   }
 
-  if (Array.isArray(manifests)) {
-    return manifests.filter(Boolean).map((manifest) => ({
-      ...manifest,
-      source: manifest.source ?? defaults.source,
-      strict: manifest.strict ?? defaults.strict,
+  if (Array.isArray(contributions)) {
+    return contributions.filter(Boolean).map((contribution) => ({
+      ...contribution,
+      source: contribution.source ?? defaults.source,
+      strict: contribution.strict ?? defaults.strict,
     }));
   }
 
-  return Object.entries(manifests)
-    .filter(([, manifest]) => !!manifest)
-    .map(([name, manifest]) => ({
-      ...manifest,
-      name: manifest.name || name,
-      source: manifest.source ?? defaults.source,
-      strict: manifest.strict ?? defaults.strict,
+  return Object.entries(contributions)
+    .filter(([, contribution]) => !!contribution)
+    .map(([name, contribution]) => ({
+      ...contribution,
+      name: contribution.name || name,
+      source: contribution.source ?? defaults.source,
+      strict: contribution.strict ?? defaults.strict,
     }));
 }
 
-function normalizeModelManifests(
-  manifests: FlowSchemaManifestContribution['models'],
-  defaults: NonNullable<FlowSchemaManifestContribution['defaults']>,
-): FlowModelSchemaManifest[] {
-  if (!manifests) {
+function normalizeModelContributions(
+  contributions: FlowSchemaContribution['models'],
+  defaults: NonNullable<FlowSchemaContribution['defaults']>,
+): FlowModelSchemaContribution[] {
+  if (!contributions) {
     return [];
   }
 
-  if (Array.isArray(manifests)) {
-    return manifests.filter(Boolean).map((manifest) => ({
-      ...manifest,
-      source: manifest.source ?? defaults.source,
-      strict: manifest.strict ?? defaults.strict,
+  if (Array.isArray(contributions)) {
+    return contributions.filter(Boolean).map((contribution) => ({
+      ...contribution,
+      source: contribution.source ?? defaults.source,
+      strict: contribution.strict ?? defaults.strict,
     }));
   }
 
-  return Object.entries(manifests)
-    .filter(([, manifest]) => !!manifest)
-    .map(([use, manifest]) => ({
-      ...manifest,
-      use: manifest.use || use,
-      source: manifest.source ?? defaults.source,
-      strict: manifest.strict ?? defaults.strict,
+  return Object.entries(contributions)
+    .filter(([, contribution]) => !!contribution)
+    .map(([use, contribution]) => ({
+      ...contribution,
+      use: contribution.use || use,
+      source: contribution.source ?? defaults.source,
+      strict: contribution.strict ?? defaults.strict,
     }));
 }
 
 function normalizeFieldBindingContexts(
-  manifests: FlowSchemaManifestContribution['fieldBindingContexts'],
-): FlowFieldBindingContextManifest[] {
-  if (!manifests) {
+  contributions: FlowSchemaContribution['fieldBindingContexts'],
+): FlowFieldBindingContextContribution[] {
+  if (!contributions) {
     return [];
   }
 
-  if (Array.isArray(manifests)) {
-    return manifests.filter(Boolean);
+  if (Array.isArray(contributions)) {
+    return contributions.filter(Boolean);
   }
 
-  return Object.entries(manifests)
-    .filter(([, manifest]) => !!manifest)
-    .map(([name, manifest]) => ({
-      ...manifest,
-      name: manifest.name || name,
+  return Object.entries(contributions)
+    .filter(([, contribution]) => !!contribution)
+    .map(([name, contribution]) => ({
+      ...contribution,
+      name: contribution.name || name,
     }));
 }
 
 function normalizeFieldBindings(
-  manifests: FlowSchemaManifestContribution['fieldBindings'],
-): FlowFieldBindingManifest[] {
-  if (!manifests) {
+  contributions: FlowSchemaContribution['fieldBindings'],
+): FlowFieldBindingContribution[] {
+  if (!contributions) {
     return [];
   }
 
-  if (Array.isArray(manifests)) {
-    return manifests.filter(Boolean);
+  if (Array.isArray(contributions)) {
+    return contributions.filter(Boolean);
   }
 
-  return Object.entries(manifests).flatMap(([context, manifest]) => {
-    const items = Array.isArray(manifest) ? manifest : manifest ? [manifest] : [];
+  return Object.entries(contributions).flatMap(([context, contribution]) => {
+    const items = Array.isArray(contribution) ? contribution : contribution ? [contribution] : [];
     return items.filter(Boolean).map((item) => ({
       ...item,
       context: item.context || context,
@@ -156,7 +156,7 @@ function normalizeFieldBindings(
 }
 
 function normalizeInventoryContribution(
-  inventory: FlowSchemaManifestContribution['inventory'],
+  inventory: FlowSchemaContribution['inventory'],
 ): FlowSchemaInventoryContribution | undefined {
   if (!inventory) {
     return undefined;
@@ -192,7 +192,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
-    await this.collectPluginFlowSchemaManifests();
+    await this.collectPluginFlowSchemaContributions();
 
     this.app.acl.registerSnippet({
       name: 'ui.flowModels',
@@ -594,37 +594,37 @@ export class PluginUISchemaStorageServer extends Plugin {
     this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
   }
 
-  protected async collectPluginFlowSchemaManifests() {
+  protected async collectPluginFlowSchemaContributions() {
     for (const plugin of this.app.pm.getPlugins().values()) {
       if (!plugin?.enabled) {
         continue;
       }
 
       const provider = plugin as FlowSchemaPluginProvider;
-      if (typeof provider.getFlowSchemaManifests !== 'function') {
+      if (typeof provider.getFlowSchemaContributions !== 'function') {
         continue;
       }
 
-      const contribution = await provider.getFlowSchemaManifests();
+      const contribution = await provider.getFlowSchemaContributions();
       if (!contribution) {
         continue;
       }
 
       const defaults = {
-        source: contribution.defaults?.source ?? inferFlowSchemaManifestSource(plugin),
+        source: contribution.defaults?.source ?? inferFlowSchemaContributionSource(plugin),
         strict: contribution.defaults?.strict,
       };
-      const actionManifests = normalizeActionManifests(contribution.actions, defaults);
-      const modelManifests = normalizeModelManifests(contribution.models, defaults);
+      const actionContributions = normalizeActionContributions(contribution.actions, defaults);
+      const modelContributions = normalizeModelContributions(contribution.models, defaults);
       const fieldBindingContexts = normalizeFieldBindingContexts(contribution.fieldBindingContexts);
       const fieldBindings = normalizeFieldBindings(contribution.fieldBindings);
       const inventory = normalizeInventoryContribution(contribution.inventory);
 
-      if (actionManifests.length > 0) {
-        this.flowSchemaService.registerActionManifests(actionManifests);
+      if (actionContributions.length > 0) {
+        this.flowSchemaService.registerActionContributions(actionContributions);
       }
-      if (modelManifests.length > 0) {
-        this.flowSchemaService.registerModelManifests(modelManifests);
+      if (modelContributions.length > 0) {
+        this.flowSchemaService.registerModelContributions(modelContributions);
       }
       if (fieldBindingContexts.length > 0) {
         this.flowSchemaService.registerFieldBindingContexts(fieldBindingContexts);
@@ -670,10 +670,12 @@ export class PluginUISchemaStorageServer extends Plugin {
   registerFlowSchemas(options: {
     models?: Record<string, any>;
     actions?: Record<string, any>;
-    modelManifests?: any[] | Record<string, any>;
-    actionManifests?: any[] | Record<string, any>;
-    fieldBindingContexts?: FlowFieldBindingContextManifest[] | Record<string, FlowFieldBindingContextManifest>;
-    fieldBindings?: FlowFieldBindingManifest[] | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>;
+    modelContributions?: any[] | Record<string, any>;
+    actionContributions?: any[] | Record<string, any>;
+    fieldBindingContexts?: FlowFieldBindingContextContribution[] | Record<string, FlowFieldBindingContextContribution>;
+    fieldBindings?:
+      | FlowFieldBindingContribution[]
+      | Record<string, FlowFieldBindingContribution | FlowFieldBindingContribution[]>;
     inventory?: FlowSchemaInventoryContribution;
   }) {
     const defaults = {
@@ -686,11 +688,15 @@ export class PluginUISchemaStorageServer extends Plugin {
     if (options?.actions) {
       this.flowSchemaService.registerActions(options.actions);
     }
-    if (options?.modelManifests) {
-      this.flowSchemaService.registerModelManifests(normalizeModelManifests(options.modelManifests, defaults));
+    if (options?.modelContributions) {
+      this.flowSchemaService.registerModelContributions(
+        normalizeModelContributions(options.modelContributions, defaults),
+      );
     }
-    if (options?.actionManifests) {
-      this.flowSchemaService.registerActionManifests(normalizeActionManifests(options.actionManifests, defaults));
+    if (options?.actionContributions) {
+      this.flowSchemaService.registerActionContributions(
+        normalizeActionContributions(options.actionContributions, defaults),
+      );
     }
     if (options?.fieldBindingContexts) {
       this.flowSchemaService.registerFieldBindingContexts(options.fieldBindingContexts);

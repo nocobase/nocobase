@@ -7,18 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaManifestContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { listByCurrentRole } from './actions/listByCurrentRole';
 import { send } from './actions/send';
-import { flowSchemaManifestContribution } from './flow-schema-manifests';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginActionCustomRequestServer extends Plugin {
   logger: Logger;
 
-  getFlowSchemaManifests(): FlowSchemaManifestContribution {
-    return flowSchemaManifestContribution;
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
   }
 
   afterAdd() {}
