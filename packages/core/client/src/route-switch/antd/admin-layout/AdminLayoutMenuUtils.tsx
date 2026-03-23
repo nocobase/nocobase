@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType, NocoBaseRouteContext } from '../../../admin-shell';
 import { useNavigateNoUpdate, useRouterBasename } from '../../../application/CustomRouterContextProvider';
 import { navigateWithinSelf, useParseURLAndParams } from '../../../block-provider/hooks';
@@ -113,7 +113,7 @@ export const openAdminLayoutMenuLink = async (options: {
   isMobile?: boolean;
   closeMobileMenu: () => void;
   parseURLAndParams: (href: string, params: any[]) => Promise<string>;
-  navigate: (to: string, options?: any) => void;
+  navigate: NavigateFunction;
   basenameOfCurrentRouter: string;
 }) => {
   const {
