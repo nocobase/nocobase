@@ -11,8 +11,6 @@ import Ajv from 'ajv';
 import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
 import { vi } from 'vitest';
-import { PluginBlockWorkbenchServer } from '../../../../plugin-block-workbench/src/server/plugin';
-import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
 
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
@@ -790,7 +788,7 @@ describe('flow-model save', () => {
     await app.destroy();
     app = await createMockServer({
       registerActions: true,
-      plugins: ['flow-engine', PluginBlockWorkbenchServer, PluginBlockReferenceServer],
+      plugins: ['flow-engine', 'block-workbench', 'ui-templates'],
     });
     agent = app.agent();
 
