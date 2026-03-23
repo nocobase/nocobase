@@ -323,22 +323,244 @@ describe('flow-model save', () => {
     agent = app.agent();
   });
 
-  it('should return model by default', async () => {
+  it('should return uid by default', async () => {
     const res = await agent.resource('flowModels').save({
       values: { uid: 'save-default-1', use: 'RouteModel', async: false },
     });
     expect(res.status).toBe(200);
-    expect(res.body?.data?.uid).toBe('save-default-1');
+    expect(res.body?.data).toBe('save-default-1');
+  });
+
+  it('should return model when return=model', async () => {
+    const res = await agent.resource('flowModels').save({
+      return: 'model',
+      values: { uid: 'save-model-1', use: 'RouteModel', async: false },
+    });
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.uid).toBe('save-model-1');
     expect(res.body?.data?.use).toBe('RouteModel');
   });
 
-  it('should return uid when return=uid', async () => {
+  it('should generate uid for a new root when save payload omits uid', async () => {
+    const repository: any = app.db.getCollection('flowModels').repository;
     const res = await agent.resource('flowModels').save({
-      return: 'uid',
-      values: { uid: 'save-uid-1', use: 'RouteModel', async: false },
+      values: { use: 'RouteModel', async: false },
     });
+
     expect(res.status).toBe(200);
-    expect(res.body?.data).toBe('save-uid-1');
+    expect(typeof res.body?.data).toBe('string');
+
+    const saved = await repository.findModelById(res.body?.data, { includeAsyncNode: true });
+    expect(saved?.uid).toBe(res.body?.data);
+    expect(saved?.use).toBe('RouteModel');
+  });
+
+  it('should allow partial save for an existing root without resubmitting required subModels', async () => {
+    const repository: any = app.db.getCollection('flowModels').repository;
+
+    const createRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-partial-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+        subModels: {
+          body: [
+            {
+              uid: 'save-existing-partial-child',
+              use: 'SaveSchemaChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(createRes.status).toBe(200);
+
+    const updateRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-partial-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(200);
+
+    const saved = await repository.findModelById('save-existing-partial-root', { includeAsyncNode: true });
+    expect(saved?.subModels?.body?.[0]?.uid).toBe('save-existing-partial-child');
+  });
+
+  it('should skip direct schema validation for existing nodes during save', async () => {
+    const repository: any = app.db.getCollection('flowModels').repository;
+
+    const createRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-skip-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+        subModels: {
+          body: [
+            {
+              uid: 'save-existing-skip-child',
+              use: 'SaveSchemaChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(createRes.status).toBe(200);
+
+    const updateRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-skip-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: 'yes',
+            },
+          },
+        },
+      },
+    });
+
+    expect(updateRes.status).toBe(200);
+
+    const saved = await repository.findModelById('save-existing-skip-root', { includeAsyncNode: true });
+    expect(saved?.stepParams?.settings?.save?.enabled).toBe('yes');
+  });
+
+  it('should reject invalid new child nodes even when the root already exists', async () => {
+    const createRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-new-child-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+        subModels: {
+          body: [
+            {
+              uid: 'save-existing-new-child-old',
+              use: 'SaveSchemaChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(createRes.status).toBe(200);
+
+    const res = await agent.resource('flowModels').save({
+      values: {
+        uid: 'save-existing-new-child-root',
+        use: 'SaveSchemaStrictModel',
+        subModels: {
+          body: [
+            {
+              use: 'RuntimeFieldModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(res.status).toBe(400);
+    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
+    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUse: 'RuntimeFieldModel',
+          section: 'model',
+        }),
+      ]),
+    );
+  });
+
+  it('should continue validating legal new child nodes when the root already exists', async () => {
+    const createRes = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-legal-child-root',
+        use: 'SaveSchemaStrictModel',
+        stepParams: {
+          settings: {
+            save: {
+              enabled: true,
+            },
+          },
+        },
+        subModels: {
+          body: [
+            {
+              uid: 'save-existing-legal-child-old',
+              use: 'SaveSchemaChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(createRes.status).toBe(200);
+
+    const res = await agent.resource('flowModels').save({
+      return: 'model',
+      values: {
+        uid: 'save-existing-legal-child-root',
+        use: 'SaveSchemaStrictModel',
+        subModels: {
+          body: [
+            {
+              use: 'SaveSchemaChildModel',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.subModels?.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          uid: 'save-existing-legal-child-old',
+          use: 'SaveSchemaChildModel',
+        }),
+      ]),
+    );
+    const appendedChildren = (res.body?.data?.subModels?.body || []).filter(
+      (item) => item?.uid !== 'save-existing-legal-child-old',
+    );
+    expect(appendedChildren).toHaveLength(1);
+    expect(appendedChildren[0]?.uid).toEqual(expect.any(String));
+    expect(appendedChildren[0]?.use).toBe('SaveSchemaChildModel');
   });
 
   it('should reject invalid return before persisting', async () => {
@@ -767,6 +989,7 @@ describe('flow-model save', () => {
     });
 
     const saveJsBlock = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-js-block-minimal',
         use: 'JSBlockModel',
@@ -939,6 +1162,7 @@ describe('flow-model save', () => {
     expect(formSubmit.body?.data?.use).toBe('FormSubmitActionModel');
 
     const saveConcrete = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-internal-form-grid',
         use: 'FormGridModel',
@@ -949,6 +1173,7 @@ describe('flow-model save', () => {
     expect(saveConcrete.body?.data?.use).toBe('FormGridModel');
 
     const saveItem = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-internal-form-item',
         use: 'FormItemModel',
@@ -959,6 +1184,7 @@ describe('flow-model save', () => {
     expect(saveItem.body?.data?.use).toBe('FormItemModel');
 
     const saveSubmitAction = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-internal-form-submit',
         use: 'FormSubmitActionModel',
@@ -1139,6 +1365,7 @@ describe('flow-model save', () => {
       const payload = clonePayload(popupDocs[use].minimalExample);
       payload.uid = `save-${use.toLowerCase()}`;
       const saveRes = await saveAgent.resource('flowModels').save({
+        return: 'model',
         values: payload,
       });
       expect(saveRes.status).toBe(200);
@@ -2030,6 +2257,7 @@ describe('flow-model save', () => {
 
   it('should tolerate props in payloads without treating them as schema contract', async () => {
     const res = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-ignore-props-1',
         use: 'SaveSchemaStrictModel',
@@ -2052,6 +2280,7 @@ describe('flow-model save', () => {
 
   it('should allow nested child props to be null during save', async () => {
     const res = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-ignore-props-null-parent',
         use: 'SaveSchemaStrictModel',

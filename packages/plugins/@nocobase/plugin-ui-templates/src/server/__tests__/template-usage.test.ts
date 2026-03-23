@@ -314,7 +314,8 @@ describe('ui templates and usages', () => {
       },
     });
     expect(saveResp3.status).toBe(200);
-    const createdUid = saveResp3.body?.data?.uid ?? saveResp3.body?.uid;
+    const createdUid =
+      typeof saveResp3.body?.data === 'string' ? saveResp3.body.data : saveResp3.body?.data?.uid ?? saveResp3.body?.uid;
     expect(typeof createdUid).toBe('string');
     expect(await countUsage({ templateUid: 'tpl-save', modelUid: createdUid })).toBe(1);
 

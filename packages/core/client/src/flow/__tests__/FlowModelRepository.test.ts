@@ -36,6 +36,7 @@ describe('FlowModelRepository', () => {
     expect(request).toHaveBeenCalledWith({
       method: 'POST',
       url: 'flowModels:save',
+      params: { return: 'model' },
       data: {
         uid: 'u1',
         use: 'RouteModel',

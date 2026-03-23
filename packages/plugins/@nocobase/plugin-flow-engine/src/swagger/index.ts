@@ -141,7 +141,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Upsert a flow model tree. Discover model-specific JSON Schema first via flowModels:schema / flowModels:schemas. By default returns the saved model snapshot; use query param return=uid to get only the root uid string.',
+          'Upsert a flow model tree. Discover model-specific JSON Schema first via flowModels:schema / flowModels:schemas. By default returns only the root uid string; use query param return=model to get the saved model snapshot.',
         parameters: [
           {
             name: 'return',
@@ -150,7 +150,7 @@ export default {
             schema: {
               type: 'string',
               enum: ['model', 'uid'],
-              default: 'model',
+              default: 'uid',
             },
           },
           {

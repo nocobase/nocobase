@@ -213,6 +213,7 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const response = await this.app.apiClient.request({
       method: 'POST',
       url: 'flowModels:save',
+      params: { return: 'model' },
       data,
     });
     return response.data?.data;

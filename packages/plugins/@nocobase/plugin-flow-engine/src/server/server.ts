@@ -323,7 +323,7 @@ export class PluginUISchemaStorageServer extends Plugin {
         },
         save: async (ctx, next) => {
           const { values } = ctx.action.params;
-          const { return: returnType = 'model', includeAsyncNode = false } = ctx.action.params as any;
+          const { return: returnType = 'uid', includeAsyncNode = false } = ctx.action.params as any;
           const repository = this.db.getCollection('flowModels').repository as FlowModelRepository;
           try {
             if (returnType && returnType !== 'model' && returnType !== 'uid') {
@@ -331,12 +331,12 @@ export class PluginUISchemaStorageServer extends Plugin {
                 code: 'INVALID_PARAMS',
               });
             }
-            const normalizedValues = this.assertValidFlowModelSchema(values);
+            const normalizedValues = await this.assertValidFlowModelSchemaForSave(values, repository);
             const uid = await repository.upsertModel(normalizedValues);
-            if (returnType === 'uid') {
-              ctx.body = uid;
-            } else {
+            if (returnType === 'model') {
               ctx.body = await repository.findModelById(uid, { includeAsyncNode });
+            } else {
+              ctx.body = uid;
             }
           } catch (error) {
             if (error instanceof FlowModelOperationError) {
@@ -712,6 +712,30 @@ export class PluginUISchemaStorageServer extends Plugin {
     const normalizedValues = this.flowSchemaService.normalizeModelTree(values, [], {
       allowRootObjectLocator: options.allowRootObjectLocator,
     });
+    const validatedValues = this.validateNormalizedFlowModelSchema(normalizedValues, options);
+    if (!options.allowRootObjectLocator) {
+      return validatedValues;
+    }
+    return this.flowSchemaService.assignImplicitUids(validatedValues, {
+      allowRootObjectLocator: options.allowRootObjectLocator,
+    });
+  }
+
+  private async assertValidFlowModelSchemaForSave(values: any, repository: FlowModelRepository) {
+    const { existingNodeUids, existingNodeUses } = await this.getExistingFlowModelSaveTreeMetadata(values, repository);
+    const preparedValues = this.patchExistingFlowModelUses(values, existingNodeUses);
+    const normalizedValues = this.flowSchemaService.normalizeModelTree(preparedValues);
+    const normalizedWithUids = this.flowSchemaService.assignImplicitUids(normalizedValues);
+    return this.validateNormalizedFlowModelSchema(normalizedWithUids, { existingNodeUids });
+  }
+
+  private validateNormalizedFlowModelSchema(
+    normalizedValues: any,
+    options: {
+      allowRootObjectLocator?: boolean;
+      existingNodeUids?: ReadonlySet<string>;
+    } = {},
+  ) {
     const issues = this.flowSchemaService.validateNormalizedModelTree(normalizedValues, options);
     const errors = issues.filter((item) => item.level === 'error');
     const warnings = issues.filter((item) => item.level === 'warning');
@@ -726,12 +750,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     }
 
     if (!errors.length) {
-      if (!options.allowRootObjectLocator) {
-        return normalizedValues;
-      }
-      return this.flowSchemaService.assignImplicitUids(normalizedValues, {
-        allowRootObjectLocator: options.allowRootObjectLocator,
-      });
+      return normalizedValues;
     }
 
     throw new FlowModelOperationError({
@@ -742,6 +761,73 @@ export class PluginUISchemaStorageServer extends Plugin {
         errors: errors.map((item) => this.toValidationError(item)),
       },
     });
+  }
+
+  private async getExistingFlowModelSaveTreeMetadata(values: any, repository: FlowModelRepository) {
+    const rootUid = String(values?.uid || '').trim();
+    const existingNodeUids = new Set<string>();
+    const existingNodeUses = new Map<string, string>();
+
+    if (!rootUid) {
+      return {
+        existingNodeUids,
+        existingNodeUses,
+      };
+    }
+
+    const existingNodes = await repository.findNodesById(rootUid, { includeAsyncNode: true });
+    for (const node of existingNodes || []) {
+      const nodeUid = String(node?.uid || '').trim();
+      if (!nodeUid) {
+        continue;
+      }
+      existingNodeUids.add(nodeUid);
+      const nodeOptions = FlowModelRepository.optionsToJson(node.options);
+      const nodeUse = String(nodeOptions?.use || '').trim();
+      if (nodeUse) {
+        existingNodeUses.set(nodeUid, nodeUse);
+      }
+    }
+
+    return {
+      existingNodeUids,
+      existingNodeUses,
+    };
+  }
+
+  private patchExistingFlowModelUses(values: any, existingNodeUses: ReadonlyMap<string, string>): any {
+    if (!values || typeof values !== 'object') {
+      return values;
+    }
+
+    if (Array.isArray(values)) {
+      return values.map((item) => this.patchExistingFlowModelUses(item, existingNodeUses));
+    }
+
+    const nextValues = { ...values };
+    const nodeUid = String(values?.uid || '').trim();
+    if (nodeUid && !String(values?.use || '').trim()) {
+      const existingUse = existingNodeUses.get(nodeUid);
+      if (existingUse) {
+        nextValues.use = existingUse;
+      }
+    }
+
+    const subModels = values?.subModels;
+    if (!subModels || typeof subModels !== 'object' || Array.isArray(subModels)) {
+      return nextValues;
+    }
+
+    nextValues.subModels = Object.fromEntries(
+      Object.entries(subModels).map(([slotKey, slotValue]) => [
+        slotKey,
+        Array.isArray(slotValue)
+          ? slotValue.map((item) => this.patchExistingFlowModelUses(item, existingNodeUses))
+          : this.patchExistingFlowModelUses(slotValue, existingNodeUses),
+      ]),
+    );
+
+    return nextValues;
   }
 
   private toValidationError(issue: FlowSchemaValidationIssue) {
