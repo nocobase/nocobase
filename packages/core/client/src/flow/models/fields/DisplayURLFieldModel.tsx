@@ -13,8 +13,15 @@ import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 
 export class DisplayURLFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
+    const { style, className } = this.props;
     const content = value && (
-      <a target="_blank" rel="noopener noreferrer" href={value} style={{ overflowWrap: 'anywhere' }}>
+      <a
+        target="_blank"
+        rel="noopener noreferrer"
+        href={value}
+        className={className}
+        style={{ ...(style || {}), overflowWrap: 'anywhere' }}
+      >
         {value}
       </a>
     );
