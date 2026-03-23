@@ -9,7 +9,7 @@
 
 import type { FlowEngine } from '@nocobase/flow-engine';
 import { useEffect, useRef } from 'react';
-import { AdminLayoutModel } from '../../route-switch/antd/admin-layout/AdminLayoutModel';
+import type { AdminLayoutModel } from '../../route-switch/antd/admin-layout/AdminLayoutModel';
 
 type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
