@@ -178,6 +178,60 @@ describe('FlowSchemaRegistry', () => {
     expect(overridden.coverage).toBe('manual');
   });
 
+  it('should invalidate cached model documents after late action registration', () => {
+    class SchemaRegistryLateActionHostModel extends FlowModel {}
+
+    SchemaRegistryLateActionHostModel.define({
+      label: 'Late action host',
+    });
+    SchemaRegistryLateActionHostModel.registerFlow({
+      key: 'settings',
+      steps: {
+        save: {
+          use: 'schemaRegistryLateAction',
+        },
+      },
+    });
+
+    const registry = new FlowSchemaRegistry();
+    registry.registerModels({
+      SchemaRegistryLateActionHostModel,
+    });
+
+    const before = registry.getModelDocument('SchemaRegistryLateActionHostModel');
+    expect((before.jsonSchema.properties?.stepParams as any)?.properties?.settings?.properties?.save).toMatchObject({
+      type: 'object',
+      additionalProperties: true,
+    });
+
+    registry.registerActionManifest({
+      name: 'schemaRegistryLateAction',
+      paramsSchema: {
+        type: 'object',
+        properties: {
+          enabled: {
+            type: 'boolean',
+          },
+        },
+        required: ['enabled'],
+        additionalProperties: false,
+      },
+    });
+
+    const after = registry.getModelDocument('SchemaRegistryLateActionHostModel');
+    expect((after.jsonSchema.properties?.stepParams as any)?.properties?.settings?.properties?.save).toMatchObject({
+      type: 'object',
+      properties: {
+        enabled: {
+          type: 'boolean',
+        },
+      },
+      required: ['enabled'],
+      additionalProperties: false,
+    });
+    expect(after.hash).not.toBe(before.hash);
+  });
+
   it('should build document schema, aggregate flow hints, and infer sub-model slots', () => {
     class SchemaRegistryChildModel extends FlowModel {}
     class SchemaRegistryParentModel extends FlowModel {}

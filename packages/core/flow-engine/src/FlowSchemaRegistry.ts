@@ -780,7 +780,17 @@ export class FlowSchemaRegistry {
   private readonly fieldBindingContexts = new Map<string, RegisteredFieldBindingContext>();
   private readonly fieldBindings = new Map<string, RegisteredFieldBinding[]>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
+  private readonly modelSnapshotSchemaCache = new Map<string, FlowJsonSchema>();
+  private readonly modelSchemaHashCache = new Map<string, string>();
+  private readonly modelDocumentCache = new Map<string, FlowSchemaDocument>();
   private readonly publicTreeRootInventory = new Set<string>();
+
+  private invalidateDerivedCaches() {
+    this.resolvedModelCache.clear();
+    this.modelSnapshotSchemaCache.clear();
+    this.modelSchemaHashCache.clear();
+    this.modelDocumentCache.clear();
+  }
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
     const name = String(action?.name || '').trim();
@@ -819,6 +829,7 @@ export class FlowSchemaRegistry {
         ...(docs.dynamicHints || []),
       ]),
     });
+    this.invalidateDerivedCaches();
   }
 
   registerActions(actions: Record<string, ActionDefinition>) {
@@ -855,6 +866,7 @@ export class FlowSchemaRegistry {
       },
       dynamicHints: normalizeSchemaHints([...(previous?.dynamicHints || []), ...(docs.dynamicHints || [])]),
     });
+    this.invalidateDerivedCaches();
   }
 
   registerActionManifests(manifests: FlowActionSchemaManifest[] | Record<string, FlowActionSchemaManifest>) {
@@ -875,6 +887,7 @@ export class FlowSchemaRegistry {
       name: normalized.name,
       inherits: _.uniq([...(previous?.inherits || []), ...normalized.inherits]),
     });
+    this.invalidateDerivedCaches();
   }
 
   registerFieldBindingContexts(
@@ -908,6 +921,7 @@ export class FlowSchemaRegistry {
     const bindings = this.fieldBindings.get(normalized.context) || [];
     bindings.push(normalized);
     this.fieldBindings.set(normalized.context, bindings);
+    this.invalidateDerivedCaches();
   }
 
   registerFieldBindings(
@@ -977,7 +991,7 @@ export class FlowSchemaRegistry {
       allowDirectUse: options.allowDirectUse ?? previous?.allowDirectUse ?? true,
       suggestedUses: normalizeStringArray(options.suggestedUses || previous?.suggestedUses),
     });
-    this.resolvedModelCache.clear();
+    this.invalidateDerivedCaches();
   }
 
   registerModelManifest(manifest: FlowModelSchemaManifest) {
@@ -1078,6 +1092,7 @@ export class FlowSchemaRegistry {
     for (const use of normalizeStringArray(inventory.publicTreeRoots)) {
       this.publicTreeRootInventory.add(use);
     }
+    this.invalidateDerivedCaches();
   }
 
   resolveFieldBindingCandidates(
@@ -1323,7 +1338,25 @@ export class FlowSchemaRegistry {
   }
 
   getModelDocument(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowSchemaDocument {
-    return this.buildModelDocument(use, contextChain, new Set<string>());
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.modelDocumentCache.get(cacheKey);
+    if (cached) {
+      return _.cloneDeep(cached);
+    }
+    const document = this.buildModelDocument(use, contextChain, new Set<string>());
+    this.modelDocumentCache.set(cacheKey, _.cloneDeep(document));
+    return document;
+  }
+
+  getModelSchemaHash(use: string, contextChain: FlowSchemaContextEdge[] = []): string {
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.modelSchemaHashCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const hash = hashString(stableStringify(this.buildModelSnapshotSchema(use, contextChain)));
+    this.modelSchemaHashCache.set(cacheKey, hash);
+    return hash;
   }
 
   private listPublicTreeRootUses(): string[] {
@@ -1407,7 +1440,7 @@ export class FlowSchemaRegistry {
     const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
     const skeleton = _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema));
     const minimalExample = _.cloneDeep(resolved?.docs?.minimalExample ?? resolved?.examples?.[0] ?? skeleton);
-    const hash = hashString(stableStringify(jsonSchema));
+    const hash = this.getModelSchemaHash(use, contextChain);
 
     return {
       use,
@@ -1547,7 +1580,14 @@ export class FlowSchemaRegistry {
   }
 
   buildModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
-    return this.buildModelSnapshotSchemaInternal(use, contextChain, new Set<string>());
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.modelSnapshotSchemaCache.get(cacheKey);
+    if (cached) {
+      return _.cloneDeep(cached);
+    }
+    const schema = this.buildModelSnapshotSchemaInternal(use, contextChain, new Set<string>());
+    this.modelSnapshotSchemaCache.set(cacheKey, _.cloneDeep(schema));
+    return schema;
   }
 
   private buildModelSnapshotSchemaInternal(
@@ -1691,10 +1731,7 @@ export class FlowSchemaRegistry {
       const stepProperties: Record<string, FlowJsonSchema> = {};
       const steps = flowDef?.steps || {};
       for (const [stepKey, stepDef] of Object.entries(steps)) {
-        stepProperties[stepKey] = this.buildStepDefinitionSchema(
-          stepDef as StepDefinition,
-          `${use}.${flowKey}.${stepKey}`,
-        );
+        stepProperties[stepKey] = this.buildStepDefinitionSchema(stepDef as StepDefinition);
       }
       properties[flowKey] = {
         type: 'object',
@@ -1772,8 +1809,7 @@ export class FlowSchemaRegistry {
     };
   }
 
-  buildStepDefinitionSchema(step: StepDefinition, path: string): FlowJsonSchema {
-    const paramsSchema = this.resolveStepParamsSchema(step, path).schema;
+  buildStepDefinitionSchema(step: StepDefinition): FlowJsonSchema {
     return {
       type: 'object',
       properties: {
@@ -1787,7 +1823,7 @@ export class FlowSchemaRegistry {
         manual: { type: 'boolean' },
         on: this.buildFlowOnSchema(),
         defaultParams: { type: ['object', 'array', 'string', 'number', 'boolean', 'null'] as any },
-        paramsSchemaOverride: paramsSchema || { type: 'object', additionalProperties: true },
+        paramsSchemaOverride: { type: 'object', additionalProperties: true },
       },
       additionalProperties: true,
     };

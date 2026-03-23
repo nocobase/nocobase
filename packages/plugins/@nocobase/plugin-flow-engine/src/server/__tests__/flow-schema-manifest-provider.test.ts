@@ -519,6 +519,68 @@ describe('flow schema manifest provider', () => {
     });
   });
 
+  it('should default direct registerFlowSchemas manifests to third-party source', async () => {
+    const flowEnginePlugin = app.pm.get('flow-engine') as any;
+    flowEnginePlugin.registerFlowSchemas({
+      actionManifests: [
+        {
+          name: 'directManifestAction',
+          paramsSchema: {
+            type: 'object',
+            properties: {
+              enabled: {
+                type: 'boolean',
+              },
+            },
+            required: ['enabled'],
+            additionalProperties: false,
+          },
+        },
+      ],
+      modelManifests: [
+        {
+          use: 'DirectManifestModel',
+          strict: true,
+          stepParamsSchema: {
+            type: 'object',
+            properties: {
+              settings: {
+                type: 'object',
+                properties: {
+                  title: {
+                    type: 'string',
+                  },
+                },
+                required: ['title'],
+                additionalProperties: false,
+              },
+            },
+            additionalProperties: true,
+          },
+        },
+      ],
+    });
+
+    const schema = await agent.get('/flowModels:schema').query({
+      use: 'DirectManifestModel',
+    });
+
+    expect(schema.status).toBe(200);
+    expect(schema.body?.data?.coverage).toMatchObject({
+      source: 'third-party',
+      strict: true,
+      status: 'manual',
+    });
+    expect(flowEnginePlugin.flowSchemaService.registry.getAction('directManifestAction')).toEqual(
+      expect.objectContaining({
+        coverage: expect.objectContaining({
+          source: 'third-party',
+          status: 'manual',
+        }),
+      }),
+    );
+  });
+
   it('should normalize array manifests and keep builtin flow-engine manifests discoverable', async () => {
     const arrayModel = await agent.get('/flowModels:schema').query({
       use: 'ProviderArrayModel',

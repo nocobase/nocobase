@@ -553,4 +553,168 @@ describe('FlowSchemaService', () => {
     const issues = service.validateModelTree(payload);
     expect(issues.filter((item) => item.level === 'error')).toEqual([]);
   });
+
+  it('should re-resolve dynamic step validators when schema changes at the same path', () => {
+    const service = new FlowSchemaService();
+
+    service.registerActionManifests([
+      {
+        name: 'dynamicBooleanAction',
+        paramsSchema: {
+          type: 'object',
+          properties: {
+            enabled: {
+              type: 'boolean',
+            },
+          },
+          required: ['enabled'],
+          additionalProperties: false,
+        },
+      },
+      {
+        name: 'dynamicStringAction',
+        paramsSchema: {
+          type: 'object',
+          properties: {
+            enabled: {
+              type: 'string',
+            },
+          },
+          required: ['enabled'],
+          additionalProperties: false,
+        },
+      },
+    ]);
+    service.registerModelManifests([
+      {
+        use: 'DynamicStepHostModel',
+        source: 'official',
+        strict: true,
+        stepParamsSchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        flowRegistrySchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+    ]);
+
+    const firstIssues = service.validateModelTree({
+      uid: 'dynamic-step-host-1',
+      use: 'DynamicStepHostModel',
+      flowRegistry: {
+        settings: {
+          steps: {
+            save: {
+              use: 'dynamicBooleanAction',
+            },
+          },
+        },
+      },
+      stepParams: {
+        settings: {
+          save: {
+            enabled: true,
+          },
+        },
+      },
+    });
+    expect(firstIssues.filter((item) => item.level === 'error')).toEqual([]);
+
+    const secondIssues = service.validateModelTree({
+      uid: 'dynamic-step-host-2',
+      use: 'DynamicStepHostModel',
+      flowRegistry: {
+        settings: {
+          steps: {
+            save: {
+              use: 'dynamicStringAction',
+            },
+          },
+        },
+      },
+      stepParams: {
+        settings: {
+          save: {
+            enabled: true,
+          },
+        },
+      },
+    });
+
+    expect(secondIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/stepParams/settings/save/enabled',
+          modelUid: 'dynamic-step-host-2',
+          modelUse: 'DynamicStepHostModel',
+          section: 'stepParams',
+          keyword: 'type',
+        }),
+      ]),
+    );
+  });
+
+  it('should treat paramsSchemaOverride as a JSON schema object in flow definitions', () => {
+    const service = new FlowSchemaService();
+
+    service.registerActionManifests([
+      {
+        name: 'overrideSchemaAction',
+        paramsSchema: {
+          type: 'object',
+          properties: {
+            enabled: {
+              type: 'boolean',
+            },
+          },
+          required: ['enabled'],
+          additionalProperties: false,
+        },
+      },
+    ]);
+    service.registerModelManifests([
+      {
+        use: 'OverrideSchemaHostModel',
+        source: 'official',
+        strict: true,
+        stepParamsSchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+        flowRegistrySchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+    ]);
+
+    const issues = service.validateModelTree({
+      uid: 'override-schema-host-1',
+      use: 'OverrideSchemaHostModel',
+      flowRegistry: {
+        settings: {
+          steps: {
+            save: {
+              use: 'overrideSchemaAction',
+              paramsSchemaOverride: {
+                type: 'object',
+                properties: {
+                  label: {
+                    type: 'string',
+                  },
+                },
+                required: ['label'],
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
+  });
 });

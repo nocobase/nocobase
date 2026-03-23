@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import Ajv, { type ErrorObject, type ValidateFunction } from 'ajv';
 import { uid } from '@nocobase/utils';
 import {
@@ -121,6 +113,19 @@ const FLOW_DEFINITION_SHELL_SCHEMA: FlowJsonSchema = {
   required: ['steps'],
   additionalProperties: true,
 };
+
+function stableStringify(input: any): string {
+  if (Array.isArray(input)) {
+    return `[${input.map((item) => stableStringify(item)).join(',')}]`;
+  }
+  if (input && typeof input === 'object') {
+    const entries = Object.entries(input)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${JSON.stringify(key)}:${stableStringify(value)}`);
+    return `{${entries.join(',')}}`;
+  }
+  return JSON.stringify(input) ?? 'null';
+}
 
 function slotAllowsUnknownUses(slot?: FlowSubModelSlotSchema): boolean {
   return !!slot?.schema;
@@ -287,11 +292,22 @@ export class FlowSchemaService {
       allowRootObjectLocator?: boolean;
     } = {},
   ): FlowSchemaValidationIssue[] {
-    const normalized = this.normalizeModelTree(input, [], {
-      allowRootObjectLocator: options.allowRootObjectLocator,
-    });
+    return this.validateNormalizedModelTree(
+      this.normalizeModelTree(input, [], {
+        allowRootObjectLocator: options.allowRootObjectLocator,
+      }),
+      options,
+    );
+  }
+
+  validateNormalizedModelTree(
+    input: any,
+    options: {
+      allowRootObjectLocator?: boolean;
+    } = {},
+  ): FlowSchemaValidationIssue[] {
     const issues: FlowSchemaValidationIssue[] = [];
-    this.validateModelNode(normalized, '#', issues, options, []);
+    this.validateModelNode(input, '#', issues, options, []);
     return issues;
   }
 
@@ -308,6 +324,49 @@ export class FlowSchemaService {
       return input.map((item) => this.normalizeModelTree(item, contextChain, options, false));
     }
     return this.normalizeModelNodeInput(input, contextChain, options, isRoot);
+  }
+
+  assignImplicitUids(
+    input: any,
+    options: {
+      allowRootObjectLocator?: boolean;
+    } = {},
+    isRoot = true,
+  ): any {
+    if (!input || typeof input !== 'object') {
+      return input;
+    }
+    if (Array.isArray(input)) {
+      return input.map((item) => this.assignImplicitUids(item, options, false));
+    }
+
+    const normalizedNode = { ...input };
+    const declaredUid = String(input?.uid || '').trim();
+    const isRootObjectLocator =
+      isRoot &&
+      options.allowRootObjectLocator &&
+      !declaredUid &&
+      String(input?.parentId || '').trim() &&
+      String(input?.subKey || '').trim() &&
+      input?.subType === 'object';
+    if (!declaredUid && !isRootObjectLocator) {
+      normalizedNode.uid = uid();
+    }
+
+    const subModels = input?.subModels;
+    if (!subModels || typeof subModels !== 'object' || Array.isArray(subModels)) {
+      return normalizedNode;
+    }
+
+    normalizedNode.subModels = Object.fromEntries(
+      Object.entries(subModels).map(([slotKey, slotValue]) => [
+        slotKey,
+        Array.isArray(slotValue)
+          ? slotValue.map((item) => this.assignImplicitUids(item, options, false))
+          : this.assignImplicitUids(slotValue, options, false),
+      ]),
+    );
+    return normalizedNode;
   }
 
   private normalizeModelNodeInput(
@@ -412,8 +471,8 @@ export class FlowSchemaService {
     contextChain: FlowSchemaContextEdge[] = [],
   ) {
     const modelUse = String(node?.use || '').trim();
-    const modelDocument = this.registry.getModelDocument(modelUse, contextChain);
-    const schemaHash = modelDocument.hash;
+    const resolved = this.registry.resolveModelSchema(modelUse, contextChain);
+    const schemaHash = this.registry.getModelSchemaHash(modelUse, contextChain);
     const missingUid = !String(node?.uid || '').trim();
     const shellSchema =
       jsonPointer === '#' && options.allowRootObjectLocator && missingUid
@@ -421,13 +480,7 @@ export class FlowSchemaService {
         : options.allowRootObjectLocator && missingUid
           ? MODEL_SHELL_CREATE_SCHEMA
           : MODEL_SHELL_SCHEMA;
-    const shellCacheKey =
-      jsonPointer === '#' && options.allowRootObjectLocator && missingUid
-        ? `shell-object-locator:${node?.use || 'unknown'}`
-        : options.allowRootObjectLocator && missingUid
-          ? `shell-create:${node?.use || 'unknown'}`
-          : `shell:${node?.use || 'unknown'}`;
-    const shellOk = this.validateSchema(shellCacheKey, shellSchema, node);
+    const shellOk = this.validateSchema(shellSchema, node);
     if (!shellOk.valid) {
       this.pushAjvIssues(shellOk.errors, issues, {
         level: 'error',
@@ -453,8 +506,6 @@ export class FlowSchemaService {
       });
       return;
     }
-
-    const resolved = this.registry.resolveModelSchema(modelUse, contextChain);
     const strict =
       resolved.coverage.strict ??
       (resolved.coverage.source !== 'third-party' && resolved.coverage.status !== 'unresolved');
@@ -498,7 +549,6 @@ export class FlowSchemaService {
         value: node?.stepParams || {},
         section: 'stepParams',
         strict,
-        cacheKey: `step-params-shell:${schemaHash}`,
         schemaHash,
       });
     }
@@ -513,7 +563,6 @@ export class FlowSchemaService {
         value: node?.flowRegistry || {},
         section: 'flowRegistry',
         strict,
-        cacheKey: `flow-registry-shell:${schemaHash}`,
         schemaHash,
       });
     }
@@ -573,7 +622,6 @@ export class FlowSchemaService {
         value: flowDef,
         section: 'flowRegistry',
         strict: true,
-        cacheKey: 'flow-definition-shell',
         schemaHash,
       });
       this.validateFlowOn((flowDef as any).on, `${flowPointer}/on`, node, issues, strict, schemaHash);
@@ -609,10 +657,7 @@ export class FlowSchemaService {
           });
           continue;
         }
-        const stepSchema = this.registry.buildStepDefinitionSchema(
-          stepDef as any,
-          `${node?.use}.${flowKey}.${stepKey}`,
-        );
+        const stepSchema = this.registry.buildStepDefinitionSchema(stepDef as any);
         this.validateSchemaSection({
           issues,
           modelUid: node?.uid,
@@ -622,7 +667,6 @@ export class FlowSchemaService {
           value: stepDef,
           section: 'flowRegistry',
           strict: true,
-          cacheKey: `flow-step:${schemaHash}:${flowKey}:${stepKey}`,
           schemaHash,
         });
         if ((stepDef as any).use && !this.registry.getAction((stepDef as any).use)) {
@@ -747,7 +791,6 @@ export class FlowSchemaService {
           value: stepValue,
           section: 'stepParams',
           strict,
-          cacheKey: `step-params:${schemaHash}:${flowKey}:${stepKey}`,
           schemaHash,
         });
       }
@@ -1096,10 +1139,9 @@ export class FlowSchemaService {
     value: any;
     section: FlowSchemaValidationIssue['section'];
     strict: boolean;
-    cacheKey: string;
     schemaHash?: string;
   }) {
-    const result = this.validateSchema(options.cacheKey, options.schema, options.value);
+    const result = this.validateSchema(options.schema, options.value);
     if (!result.valid) {
       this.pushAjvIssues(result.errors, options.issues, {
         level: options.strict ? 'error' : 'warning',
@@ -1112,7 +1154,8 @@ export class FlowSchemaService {
     }
   }
 
-  private validateSchema(cacheKey: string, schema: FlowJsonSchema, value: any) {
+  private validateSchema(schema: FlowJsonSchema, value: any) {
+    const cacheKey = stableStringify(schema);
     let validator = this.validatorCache.get(cacheKey);
     if (!validator) {
       validator = this.ajv.compile(schema);

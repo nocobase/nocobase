@@ -540,6 +540,7 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
+  // JSON Schema object used to fully override the resolved step params schema for this step.
   paramsSchemaOverride?: FlowJsonSchema;
   schemaDocs?: FlowSchemaDocs;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);

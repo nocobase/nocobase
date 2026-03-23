@@ -676,6 +676,10 @@ export class PluginUISchemaStorageServer extends Plugin {
     fieldBindings?: FlowFieldBindingManifest[] | Record<string, FlowFieldBindingManifest | FlowFieldBindingManifest[]>;
     inventory?: FlowSchemaInventoryContribution;
   }) {
+    const defaults = {
+      source: 'third-party' as const,
+      strict: undefined,
+    };
     if (options?.models) {
       this.flowSchemaService.registerModels(options.models);
     }
@@ -683,10 +687,10 @@ export class PluginUISchemaStorageServer extends Plugin {
       this.flowSchemaService.registerActions(options.actions);
     }
     if (options?.modelManifests) {
-      this.flowSchemaService.registerModelManifests(options.modelManifests);
+      this.flowSchemaService.registerModelManifests(normalizeModelManifests(options.modelManifests, defaults));
     }
     if (options?.actionManifests) {
-      this.flowSchemaService.registerActionManifests(options.actionManifests);
+      this.flowSchemaService.registerActionManifests(normalizeActionManifests(options.actionManifests, defaults));
     }
     if (options?.fieldBindingContexts) {
       this.flowSchemaService.registerFieldBindingContexts(options.fieldBindingContexts);
@@ -708,7 +712,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     const normalizedValues = this.flowSchemaService.normalizeModelTree(values, [], {
       allowRootObjectLocator: options.allowRootObjectLocator,
     });
-    const issues = this.flowSchemaService.validateModelTree(normalizedValues, options);
+    const issues = this.flowSchemaService.validateNormalizedModelTree(normalizedValues, options);
     const errors = issues.filter((item) => item.level === 'error');
     const warnings = issues.filter((item) => item.level === 'warning');
 
@@ -725,9 +729,8 @@ export class PluginUISchemaStorageServer extends Plugin {
       if (!options.allowRootObjectLocator) {
         return normalizedValues;
       }
-      return this.flowSchemaService.normalizeModelTree(normalizedValues, [], {
+      return this.flowSchemaService.assignImplicitUids(normalizedValues, {
         allowRootObjectLocator: options.allowRootObjectLocator,
-        assignImplicitUids: true,
       });
     }
 
