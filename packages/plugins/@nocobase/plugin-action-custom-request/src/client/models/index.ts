@@ -7,14 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  CustomRequestCollectionActionModel,
-  CustomRequestFormActionModel,
-  CustomRequestRecordActionModel,
-} from './CustomRequestActionModel';
-
-export default {
-  CustomRequestCollectionActionModel,
-  CustomRequestRecordActionModel,
-  CustomRequestFormActionModel,
-};
+export * from './CustomRequestActionModel';
