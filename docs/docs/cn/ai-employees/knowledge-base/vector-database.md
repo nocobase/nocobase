@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-ai"
+pkg: "@nocobase/plugin-ai-knowledge-base"
 title: "向量数据库"
 description: "向量数据库存储知识库文档的向量化索引，支持 PGVector。配置 Host、Port、Database、Table name，用于 RAG 语义检索。"
 keywords: "向量数据库,PGVector,Embedding,RAG,NocoBase"

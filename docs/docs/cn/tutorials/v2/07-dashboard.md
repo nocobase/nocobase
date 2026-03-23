@@ -140,10 +140,11 @@ Markdown 格式比较固定，如果想要更丰富的效果怎么办？NocoBase
 
 ![07-dashboard-2026-03-15-22-33-24](https://static-docs.nocobase.com/07-dashboard-2026-03-15-22-33-24.png)
 
-JS 区块中可以通过 `{{ ctx.user.nickname }}` 获取当前登录用户的昵称，下面是一个商务简约风格的欢迎横幅：
+JS 区块中可以通过 `ctx.getVar("ctx.user.username")` 获取当前登录用户的用户名，下面是一个商务简约风格的欢迎横幅：
 
 ```js
-const name = '{{ ctx.user.nickname }}' || '{{ ctx.user.username }}' || '用户';
+const uname = await ctx.getVar("ctx.user.username")
+const name = uname || '用户';
 const hour = new Date().getHours();
 const hi = hour < 12 ? '上午好' : hour < 18 ? '下午好' : '晚上好';
 
@@ -151,7 +152,7 @@ const d = new Date();
 const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const week = ['日','一','二','三','四','五','六'][d.getDay()];
 
-ctx.element.innerHTML = `
+ctx.render(`
 <div style="padding: 24px 32px; background: #f7f8fa; border-radius: 8px;">
   <div style="display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
@@ -160,14 +161,14 @@ ctx.element.innerHTML = `
     </div>
     <div style="font-size: 14px; color: #86909c;">${date}　星期${week}</div>
   </div>
-</div>`;
+</div>`);
 ```
 
 ![07-dashboard-2026-03-15-22-51-27](https://static-docs.nocobase.com/07-dashboard-2026-03-15-22-51-27.png)
 
 效果是一个浅灰底的卡片，左侧问候语，右侧日期。简洁、实用、不喧宾夺主。
 
-> **小提示**：`{{ ctx.user.xxx }}` 是 JS 区块中获取当前用户信息的方式，常用字段有 `nickname`（昵称）、`username`（用户名）、`email`（邮箱）等。JS 区块还可以调用 API 查询数据，后续你可以用它做更多自定义内容。
+> **小提示**：`ctx.getVar("ctx.user.xxx")` 是 JS 区块中获取当前用户信息的方式，常用字段有 `nickname`（昵称）、`username`（用户名）、`email`（邮箱）等。JS 区块还可以调用 API 查询数据，后续你可以用它做更多自定义内容。
 
 ## 7.8 操作面板：快捷入口 + 弹窗复用
 
