@@ -12,14 +12,11 @@ import { observer } from '@nocobase/flow-engine';
 import { Button } from 'antd';
 import React, { useContext } from 'react';
 import { CalendarToolbarContext } from './context';
-import { useDesignable, useLazy } from '@nocobase/client';
+import { useDesignable } from '@nocobase/client';
+import { Navigate } from 'react-big-calendar';
 
 export const Nav = observer(
   () => {
-    const Navigate = useLazy<typeof import('react-big-calendar/dist/react-big-calendar.esm').Navigate>(
-      () => import('react-big-calendar/dist/react-big-calendar.esm'),
-      'Navigate',
-    );
     const { DesignableBar } = useDesignable();
     const { onNavigate } = useContext(CalendarToolbarContext);
     return (

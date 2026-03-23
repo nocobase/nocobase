@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-mcp-server",
   "main": "dist/server/index.js",
-  "version": "2.1.0-alpha.9",
+  "version": "2.1.0-alpha.10",
   "displayName": "AI: MCP server",
   "displayName.zh-CN": "AI: MCP 服务器",
   "description": "An MCP server for building NocoBase systems and supporting business workflows.",
@@ -16,9 +16,9 @@
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@nocobase/ai": "2.x",
     "@nocobase/client": "2.x",
+    "@nocobase/plugin-idp-oauth": "2.x",
     "@nocobase/server": "2.x",
-    "@nocobase/test": "2.x",
-    "@nocobase/plugin-idp-oauth": "2.x"
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "AI"

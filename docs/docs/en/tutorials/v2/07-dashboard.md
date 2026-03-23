@@ -138,10 +138,11 @@ Add a **JS block** to the page (Add block → Other blocks → JS block).
 
 ![07-dashboard-2026-03-15-22-33-24](https://static-docs.nocobase.com/07-dashboard-2026-03-15-22-33-24.png)
 
-In the JS block, you can use `{{ ctx.user.nickname }}` to get the current user's display name. Here's a clean, business-style welcome banner:
+In the JS block, you can use `ctx.getVar("ctx.user.username")` to get the current user's username. Here's a clean, business-style welcome banner:
 
 ```js
-const name = '{{ ctx.user.nickname }}' || '{{ ctx.user.username }}' || 'User';
+const uname = await ctx.getVar("ctx.user.username")
+const name = uname || 'User';
 const hour = new Date().getHours();
 const hi = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
@@ -149,7 +150,7 @@ const d = new Date();
 const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const weekDay = d.toLocaleDateString('en-US', { weekday: 'long' });
 
-ctx.element.innerHTML = `
+ctx.render(`
 <div style="padding: 24px 32px; background: #f7f8fa; border-radius: 8px;">
   <div style="display: flex; justify-content: space-between; align-items: flex-end;">
     <div>
@@ -158,14 +159,14 @@ ctx.element.innerHTML = `
     </div>
     <div style="font-size: 14px; color: #86909c;">${date}　${weekDay}</div>
   </div>
-</div>`;
+</div>`);
 ```
 
 ![07-dashboard-2026-03-15-22-51-27](https://static-docs.nocobase.com/07-dashboard-2026-03-15-22-51-27.png)
 
 The result is a light gray card with the greeting on the left and date on the right. Clean, practical, and unobtrusive.
 
-> **Tip**: `{{ ctx.user.xxx }}` is how you access current user info in JS blocks. Common fields include `nickname`, `username`, and `email`. JS blocks can also call APIs to query data — you can use them for much more custom content later.
+> **Tip**: `ctx.getVar("ctx.user.xxx")` is how you access current user info in JS blocks. Common fields include `nickname`, `username`, and `email`. JS blocks can also call APIs to query data — you can use them for much more custom content later.
 
 ## 7.8 Action Panel: Quick Links + Popup Reuse
 
