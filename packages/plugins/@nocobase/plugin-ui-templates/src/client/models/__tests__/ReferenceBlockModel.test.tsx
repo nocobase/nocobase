@@ -323,6 +323,83 @@ describe('ReferenceBlockModel', () => {
     );
 
     it(
+      'should hydrate reference target before saving template references in preset settings flow',
+      async () => {
+        const templateGet = vi.fn(async () => ({
+          name: 'Template One',
+          description: 'Template description',
+          targetUid: 'target-block-uid',
+          dataSourceKey: 'main',
+          collectionName: 'users',
+          associationName: 'users.roles',
+        }));
+        (engine.context.api as any).resource = vi.fn((name: string) => {
+          if (name !== 'flowModelTemplates') {
+            throw new Error(`Unexpected resource ${name}`);
+          }
+          return { get: templateGet };
+        });
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-save-hook',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+              target: {
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        const useTemplateStep = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings')?.steps
+          ?.useTemplate;
+        await useTemplateStep?.beforeParamsSave?.(
+          {
+            api: engine.context.api,
+            engine,
+            model: referenceBlockModel,
+          },
+          {
+            templateUid: 'tpl-1',
+            mode: 'reference',
+          },
+        );
+        await referenceBlockModel.saveStepParams();
+
+        expect(templateGet).toHaveBeenCalledWith({ filterByTk: 'tpl-1' });
+        expect(referenceBlockModel.getStepParams('referenceSettings', 'useTemplate')).toMatchObject({
+          templateUid: 'tpl-1',
+          templateName: 'Template One',
+          templateDescription: 'Template description',
+          targetUid: 'target-block-uid',
+          mode: 'reference',
+        });
+        expect(referenceBlockModel.getStepParams('referenceSettings', 'target')).toMatchObject({
+          targetUid: 'target-block-uid',
+          mode: 'reference',
+        });
+        expect(referenceBlockModel.getStepParams('resourceSettings', 'init')).toMatchObject({
+          dataSourceKey: 'main',
+          collectionName: 'users',
+          associationName: 'users.roles',
+        });
+        expect(lastSavedSnapshot['reference-block-save-hook']?.stepParams?.referenceSettings?.target).toMatchObject({
+          targetUid: 'target-block-uid',
+          mode: 'reference',
+        });
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
       'should expose target collection on reference block context',
       async () => {
         referenceBlockModel = engine.createModel({

@@ -44,6 +44,67 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
 
+const fetchFlowModelTemplate = async (ctx: any, templateUid: string) => {
+  const api = (ctx as any)?.api;
+  if (!api?.resource) return null;
+
+  try {
+    const res = await api.resource('flowModelTemplates').get({
+      filterByTk: templateUid,
+    });
+    return res?.data?.data || res;
+  } catch (e) {
+    console.warn('fetch template failed', e);
+    return null;
+  }
+};
+
+const applyReferenceTemplateSelection = (model: FlowModel, params: Record<string, any>, tpl?: Record<string, any>) => {
+  const templateUid = String(params?.templateUid || '').trim();
+  if (!templateUid) return;
+
+  const mode = params?.mode || 'reference';
+  const templateName = tpl?.name || params?.templateName;
+  const templateDescription = tpl?.description || params?.templateDescription;
+  const targetUid = tpl?.targetUid;
+
+  const useTemplateParams = model.getStepParams('referenceSettings', 'useTemplate') || {};
+  model.setStepParams('referenceSettings', 'useTemplate', {
+    ...useTemplateParams,
+    templateUid,
+    templateName,
+    templateDescription,
+    targetUid: targetUid || useTemplateParams?.targetUid,
+    mode,
+  });
+
+  if (targetUid) {
+    const targetParams = model.getStepParams('referenceSettings', 'target') || {};
+    model.setStepParams('referenceSettings', 'target', {
+      ...targetParams,
+      targetUid,
+      mode,
+    });
+  }
+
+  const resourceInit = model.getStepParams('resourceSettings', 'init') || {};
+  const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
+  const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
+  const associationName = tpl?.associationName ?? resourceInit?.associationName;
+  const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
+  const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
+  if (dataSourceKey || collectionName || associationName || filterByTk || sourceId) {
+    model.setStepParams('resourceSettings', 'init', {
+      ...resourceInit,
+      dataSourceKey,
+      collectionName,
+      associationName,
+      filterByTk,
+      sourceId,
+    });
+  }
+};
+
 /**
  * ReferenceBlockModel（插件版）
  * - 通过配置 targetUid（实例 model.uid）引用并渲染另一个区块；
@@ -836,18 +897,7 @@ ReferenceBlockModel.registerFlow({
         const templateUid = (params?.templateUid || '').trim();
         if (!templateUid) return;
 
-        const api = (ctx as any)?.api;
-        let tpl: any = null;
-        if (api?.resource) {
-          try {
-            const res = await api.resource('flowModelTemplates').get({
-              filterByTk: templateUid,
-            });
-            tpl = res?.data?.data || res;
-          } catch (e) {
-            console.warn('fetch template failed', e);
-          }
-        }
+        const tpl = await fetchFlowModelTemplate(ctx, templateUid);
 
         const targetUid = tpl?.targetUid;
         const mode = params?.mode || 'reference';
@@ -862,7 +912,7 @@ ReferenceBlockModel.registerFlow({
           return;
         }
 
-        // 引用模式：不需要特殊处理，handler 会处理
+        applyReferenceTemplateSelection(ctx.model as FlowModel, params, tpl);
       },
       async handler(ctx, params) {
         const templateUid = (params?.templateUid || '').trim();
@@ -872,59 +922,8 @@ ReferenceBlockModel.registerFlow({
         // 复制模式已在 beforeParamsSave 中处理完毕
         if (mode === 'copy') return;
 
-        const api = (ctx as any)?.api;
-        let tpl: any = null;
-        if (api?.resource) {
-          try {
-            const res = await api.resource('flowModelTemplates').get({
-              filterByTk: templateUid,
-            });
-            tpl = res?.data?.data || res;
-          } catch (e) {
-            console.warn('fetch template failed', e);
-          }
-        }
-
-        const templateName = tpl?.name || params?.templateName;
-        const templateDescription = tpl?.description || params?.templateDescription;
-        const targetUid = tpl?.targetUid;
-
-        // 引用模式：保存参数，ReferenceBlockModel 会在 beforeRender 中加载目标
-        const useTemplateParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'useTemplate') || {};
-        (ctx.model as FlowModel).setStepParams('referenceSettings', 'useTemplate', {
-          ...useTemplateParams,
-          templateUid,
-          templateName,
-          templateDescription,
-          targetUid: targetUid || useTemplateParams?.targetUid,
-          mode,
-        });
-
-        if (targetUid) {
-          const targetParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'target') || {};
-          (ctx.model as FlowModel).setStepParams('referenceSettings', 'target', {
-            ...targetParams,
-            targetUid,
-            mode,
-          });
-        }
-
-        const resourceInit = (ctx.model as FlowModel).getStepParams('resourceSettings', 'init') || {};
-        const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
-        const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
-        const associationName = tpl?.associationName ?? resourceInit?.associationName;
-        const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
-        const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
-        if (dataSourceKey || collectionName || associationName || filterByTk || sourceId) {
-          (ctx.model as FlowModel).setStepParams('resourceSettings', 'init', {
-            ...resourceInit,
-            dataSourceKey,
-            collectionName,
-            associationName,
-            filterByTk,
-            sourceId,
-          });
-        }
+        const tpl = await fetchFlowModelTemplate(ctx, templateUid);
+        applyReferenceTemplateSelection(ctx.model as FlowModel, params, tpl);
       },
     },
     target: {
