@@ -36,7 +36,10 @@ export type AIChatContext = {
     tool_call_id?: string;
     tool_calls?: AIToolCall[];
   }[];
-  decisions?: UserDecision[];
+  decisions?: {
+    interruptId?: string;
+    decisions: UserDecision[];
+  };
   tools?: any[];
   middleware?: any[];
   structuredOutput?: {
@@ -59,7 +62,10 @@ export type AIMessageRemoveOptions = {
 
 export type AIChatContextOptions = {
   userMessages?: AIMessageInput[];
-  userDecisions?: UserDecision[];
+  userDecisions?: {
+    interruptId?: string;
+    decisions: UserDecision[];
+  };
   tools?: any[];
   middleware?: any[];
   getSystemPrompt?: (userMessages: AIMessageInput[]) => Promise<string>;

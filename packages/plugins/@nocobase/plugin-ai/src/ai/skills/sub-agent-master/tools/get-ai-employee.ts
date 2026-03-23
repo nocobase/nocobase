@@ -12,7 +12,8 @@ import { z } from 'zod';
 import { getAccessibleAIEmployee, serializeEmployeeDetail } from '../shared';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   definition: {
     name: 'get-ai-employee',
     description: 'Get the detailed profile of one accessible AI employee by username.',

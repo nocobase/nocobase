@@ -137,6 +137,175 @@ export const useChatMessageActions = () => {
     let result = '';
     let error = false;
 
+    type MessagesStore = {
+      addMessage: (msg: Message) => void;
+      updateLast: (updater: (msg: Message) => Message) => void;
+    };
+
+    const processStreamStart = (data: any) => {
+      if (data.type === 'stream_start') {
+        console.debug('stream_start', data.from, data.sessionId);
+      }
+    };
+
+    const processStreamEnd = (data: any) => {
+      if (data.type === 'stream_end') {
+        console.debug('stream_end', data.from, data.sessionId);
+      }
+    };
+
+    const processReasoning = (data: any, store: MessagesStore) => {
+      if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
+        // [AI_DEBUG] stream_reasoning
+        aiDebugLogger.log(data.sessionId, 'stream_reasoning', {
+          phase: 'delta',
+          preview: data.body.content?.slice?.(0, 120) || '',
+        });
+        store.updateLast((last) => ({
+          ...last,
+          content: {
+            ...last.content,
+            reasoning: {
+              status: data.body.status,
+              content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
+            },
+          },
+          loading: false,
+        }));
+      }
+    };
+
+    const processContent = (data: any, store: MessagesStore) => {
+      if (data.type === 'content' && data.body && typeof data.body === 'string') {
+        // [AI_DEBUG] stream_text
+        aiDebugLogger.log(data.sessionId, 'stream_text', {
+          preview: data.body?.slice?.(0, 100) || '',
+        });
+        store.updateLast((last) => ({
+          ...last,
+          content: {
+            ...last.content,
+            content: (last.content as any).content + data.body,
+          },
+          loading: false,
+        }));
+      }
+    };
+
+    const processToolCallChunks = (data: any, store: MessagesStore) => {
+      if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
+        // [AI_DEBUG] stream_delta
+        aiDebugLogger.log(data.sessionId, 'stream_delta', {
+          chunk: (data.body.toolCalls ?? [])[0],
+        });
+        store.updateLast((last) => {
+          const toolCalls = last.content.tool_calls || [];
+          const toolCallChunk = data.body[0];
+          if (toolCallChunk.name) {
+            toolCalls.push(toolCallChunk);
+          } else if (toolCalls.length > 0) {
+            toolCalls[toolCalls.length - 1].args += data.body[0].args;
+          }
+          return {
+            ...last,
+            content: {
+              ...last.content,
+              tool_calls: toolCalls,
+            },
+            loading: false,
+          };
+        });
+      }
+    };
+
+    const processToolCall = (data: any, store: MessagesStore) => {
+      if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
+        store.updateLast((last) => {
+          return {
+            ...last,
+            content: {
+              ...last.content,
+              tool_calls: data.body.toolCalls,
+            },
+            loading: false,
+          };
+        });
+      }
+    };
+
+    const processToolCallStatus = (data: any, store: MessagesStore) => {
+      if (data.type === 'tool_call_status') {
+        if (data.body?.toolCall) {
+          const { toolCall, invokeStatus } = data.body;
+          if (toolCall.willInterrupt) {
+            updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
+          }
+        }
+        store.updateLast((last) => {
+          const toolCalls = last.content.tool_calls || [];
+          const toolCallId = data.body?.toolCall?.id;
+          const nextToolCalls = toolCalls.map((t) =>
+            t.id === toolCallId
+              ? {
+                  ...t,
+                  invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
+                  status: data.body?.status ?? t.status,
+                }
+              : t,
+          );
+          return {
+            ...last,
+            content: {
+              ...last.content,
+              tool_calls: nextToolCalls,
+            },
+            loading: false,
+          };
+        });
+      }
+    };
+
+    const processWebSearch = (data: any) => {
+      if (data.type === 'web_search' && data.body?.length) {
+        // [AI_DEBUG] stream_search
+        aiDebugLogger.log(data.sessionId, 'stream_search', {
+          actions: data.body,
+        });
+        for (const item of data.body) {
+          setWebSearching(item);
+        }
+      }
+    };
+
+    const processNewMessage = (data: any, store: MessagesStore) => {
+      if (data.type === 'new_message') {
+        // [AI_DEBUG] stream_start
+        aiDebugLogger.log(data.sessionId, 'stream_start', {});
+        store.addMessage({
+          key: uid(),
+          role: aiEmployee.username,
+          content: { type: 'text', content: '' },
+          loading: true,
+        });
+      }
+    };
+
+    const processError = (data: any) => {
+      if (data.type === 'error') {
+        // [AI_DEBUG] stream_error
+        aiDebugLogger.log(data.sessionId, 'stream_error', {
+          message: data.body,
+        });
+        error = true;
+        result = data.errorName ? data.errorName : data.body;
+      }
+    };
+
+    const mainAgentMessageStore = {
+      addMessage,
+      updateLast: updateLastMessage,
+    };
+
     try {
       // eslint-disable-next-line no-constant-condition
       while (true) {
@@ -153,134 +322,94 @@ export const useChatMessageActions = () => {
         for (const line of lines) {
           try {
             const data = JSON.parse(line.replace(/^data: /, ''));
-            if (data.type === 'stream_start') {
-              console.log('stream_start', sessionId);
-            }
-            if (data.type === 'stream_end') {
-              console.log('stream_end', sessionId);
-            }
-            if (data.type === 'reasoning' && data.body?.content && typeof data.body.content === 'string') {
-              // [AI_DEBUG] stream_reasoning
-              aiDebugLogger.log(sessionId, 'stream_reasoning', {
-                phase: 'delta',
-                preview: data.body.content?.slice?.(0, 120) || '',
-              });
-              updateLastMessage((last) => ({
-                ...last,
-                content: {
-                  ...last.content,
-                  reasoning: {
-                    status: data.body.status,
-                    content: `${last.content.reasoning?.content ?? ''}${data.body.content}`,
-                  },
-                },
-                loading: false,
-              }));
-            }
-            if (data.type === 'content' && data.body && typeof data.body === 'string') {
-              // [AI_DEBUG] stream_text
-              aiDebugLogger.log(sessionId, 'stream_text', {
-                preview: data.body?.slice?.(0, 100) || '',
-              });
-              updateLastMessage((last) => ({
-                ...last,
-                content: {
-                  ...last.content,
-                  content: (last.content as any).content + data.body,
-                },
-                loading: false,
-              }));
-            }
-            if (data.type === 'tool_call_chunks' && data.body?.length > 0) {
-              // [AI_DEBUG] stream_delta
-              aiDebugLogger.log(sessionId, 'stream_delta', {
-                chunk: (data.body.toolCalls ?? [])[0],
-              });
-              updateLastMessage((last) => {
-                const toolCalls = last.content.tool_calls || [];
-                const toolCallChunk = data.body[0];
-                if (toolCallChunk.name) {
-                  toolCalls.push(toolCallChunk);
-                } else if (toolCalls.length > 0) {
-                  toolCalls[toolCalls.length - 1].args += data.body[0].args;
-                }
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: toolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'tool_calls' && data.body?.toolCalls?.length > 0) {
-              updateLastMessage((last) => {
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: data.body.toolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'tool_call_status') {
-              if (data.body?.toolCall) {
-                const { toolCall, invokeStatus } = data.body;
-                if (toolCall.willInterrupt) {
-                  updateToolCallInvokeStatus(toolCall.messageId, toolCall.id, invokeStatus);
-                }
+            if (data.from === 'main-agent') {
+              if (sessionId !== data.sessionId) {
+                console.warn('invalid session id, ignore chunks', data);
+                continue;
               }
-              updateLastMessage((last) => {
-                const toolCalls = last.content.tool_calls || [];
-                const toolCallId = data.body?.toolCall?.id;
-                const nextToolCalls = toolCalls.map((t) =>
-                  t.id === toolCallId
-                    ? {
-                        ...t,
-                        invokeStatus: data.body?.invokeStatus ?? t.invokeStatus,
-                        status: data.body?.status ?? t.status,
-                      }
-                    : t,
-                );
-                return {
-                  ...last,
-                  content: {
-                    ...last.content,
-                    tool_calls: nextToolCalls,
-                  },
-                  loading: false,
-                };
-              });
-            }
-            if (data.type === 'web_search' && data.body?.length) {
-              // [AI_DEBUG] stream_search
-              aiDebugLogger.log(sessionId, 'stream_search', {
-                actions: data.body,
-              });
-              for (const item of data.body) {
-                setWebSearching(item);
-              }
-            }
-            if (data.type === 'new_message') {
-              // [AI_DEBUG] stream_start
-              aiDebugLogger.log(sessionId, 'stream_start', {});
-              addMessage({
-                key: uid(),
-                role: aiEmployee.username,
-                content: { type: 'text', content: '' },
-                loading: true,
-              });
-            }
-            if (data.type === 'error') {
-              // [AI_DEBUG] stream_error
-              aiDebugLogger.log(sessionId, 'stream_error', {
-                message: data.body,
-              });
-              error = true;
-              result = data.errorName ? data.errorName : data.body;
+              processStreamStart(data);
+              processStreamEnd(data);
+              processNewMessage(data, mainAgentMessageStore);
+              processReasoning(data, mainAgentMessageStore);
+              processContent(data, mainAgentMessageStore);
+              processToolCallChunks(data, mainAgentMessageStore);
+              processToolCall(data, mainAgentMessageStore);
+              processToolCallStatus(data, mainAgentMessageStore);
+              processWebSearch(data);
+              processError(data);
+            } else if (data.from === 'sub-agent') {
+              const subAgentMessageStore = {
+                addMessage: (msg: Message) => {
+                  msg.role = data.username;
+                  updateLastMessage((last) => {
+                    return {
+                      ...last,
+                      content: {
+                        ...last.content,
+                        subAgentConversations: last.content.subAgentConversations?.map((it) => {
+                          if (it.sessionId !== data.sessionId) {
+                            return it;
+                          }
+
+                          return {
+                            ...it,
+                            messages: [...it.messages, msg],
+                          };
+                        }) ?? [
+                          {
+                            sessionId,
+                            messages: [msg],
+                          },
+                        ],
+                      },
+                      loading: false,
+                    };
+                  });
+                },
+                updateLast: (updater: (msg: Message) => Message) =>
+                  updateLastMessage((last) => {
+                    return {
+                      ...last,
+                      content: {
+                        ...last.content,
+                        subAgentConversations: last.content.subAgentConversations?.map((it) => {
+                          if (it.sessionId !== data.sessionId) {
+                            return it;
+                          }
+
+                          const prev = [...it.messages];
+                          const i = prev.length - 1;
+                          if (i >= 0) prev[i] = updater(prev[i]);
+
+                          return {
+                            ...it,
+                            messages: prev,
+                          };
+                        }) ?? [
+                          {
+                            sessionId,
+                            messages: [
+                              updater({
+                                key: uid(),
+                                role: data.username,
+                                content: { type: 'text', content: '' },
+                                loading: true,
+                              }),
+                            ],
+                          },
+                        ],
+                      },
+                      loading: false,
+                    };
+                  }),
+              };
+
+              processStreamStart(data);
+              processStreamEnd(data);
+              processNewMessage(data, mainAgentMessageStore);
+              processToolCallChunks(data, subAgentMessageStore);
+              processToolCall(data, subAgentMessageStore);
+              processToolCallStatus(data, subAgentMessageStore);
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);

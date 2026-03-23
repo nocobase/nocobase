@@ -78,3 +78,58 @@ async function buildAccessibleEmployeeFilter(ctx: Context) {
 
   return filter;
 }
+
+export const getSkillSettingsFromMain = async (ctx: Context) => {
+  const sessionId = ctx.action?.params?.values?.sessionId;
+  if (!sessionId) {
+    return null;
+  }
+  const aiConversation = await ctx.db.getRepository('aiConversations').findOne({
+    filter: {
+      sessionId,
+      userId: ctx.auth?.user?.id,
+    },
+  });
+  return aiConversation?.options?.skillSettings;
+};
+
+export const updateMessageMetadata = async (ctx: Context, toolCallId: string, subSessionId: string) => {
+  const sessionId = ctx.action?.params?.values?.sessionId;
+  if (!sessionId) {
+    return;
+  }
+  const aiToolMessage = await ctx.db.getRepository('aiToolMessages').findOne({
+    filter: {
+      sessionId,
+      toolCallId,
+    },
+  });
+  if (!aiToolMessage) {
+    return;
+  }
+  const aiMessage = await ctx.db.getRepository('aiMessages').findOne({
+    filter: {
+      sessionId,
+      messageId: aiToolMessage.messageId,
+    },
+  });
+  if (!aiMessage) {
+    return;
+  }
+  const metadata = aiMessage.metadata ?? {};
+  if (!metadata.subAgentConversations) {
+    metadata.subAgentConversations = [];
+  }
+  if (!metadata.subAgentConversations.includes(subSessionId)) {
+    metadata.subAgentConversations.push(subSessionId);
+    await ctx.db.getRepository('aiMessages').update({
+      values: {
+        metadata,
+      },
+      filter: {
+        sessionId,
+        messageId: aiMessage.messageId,
+      },
+    });
+  }
+};

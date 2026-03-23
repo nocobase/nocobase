@@ -148,13 +148,36 @@ export class AIConversationsManager {
     const data = hasMore ? rows.slice(0, -1) : rows;
     const newCursor = data.length ? data[data.length - 1].messageId : null;
 
-    const toolCallIds = data
-      .filter((row: ParsedMessageRow) => row?.toolCalls?.length ?? 0 > 0)
-      .flatMap((row: ParsedMessageRow) => row.toolCalls)
-      .map((toolCall: AIToolCall) => toolCall.id);
-    const toolMessages = await this.aiConversationsRepo.find({
+    const subAgentConversations = data
+      .filter((row: ParsedMessageRow) => row.metadata?.subAgentConversations?.length ?? 0 > 0)
+      .flatMap((row: ParsedMessageRow) => row.metadata.subAgentConversations);
+    const subAgentConversationMessages = subAgentConversations.length
+      ? await this.aiMessagesRepo.find({
+          sort: ['-messageId'],
+          filter: {
+            sessionId: {
+              $in: subAgentConversations,
+            },
+            role: {
+              $notIn: ['tool'],
+            },
+          },
+        })
+      : [];
+    const subAgentConversationMessageMap = new Map<string, any[]>();
+
+    const toolCallIds = [
+      ...data
+        .filter((row: ParsedMessageRow) => row?.toolCalls?.length ?? 0 > 0)
+        .flatMap((row: ParsedMessageRow) => row.toolCalls)
+        .map((toolCall: AIToolCall) => toolCall.id),
+      ...subAgentConversationMessages
+        .filter((row: ParsedMessageRow) => row?.toolCalls?.length ?? 0 > 0)
+        .flatMap((row: ParsedMessageRow) => row.toolCalls)
+        .map((toolCall: AIToolCall) => toolCall.id),
+    ];
+    const toolMessages = await this.aiToolMessagesRepo.find({
       filter: {
-        sessionId,
         toolCallId: {
           $in: toolCallIds,
         },
@@ -176,31 +199,49 @@ export class AIConversationsManager {
         .map((tool) => [tool.name, tool]),
     );
 
+    const parseMessageRow = (row: ParsedMessageRow) => {
+      if (row?.toolCalls?.length ?? 0 > 0) {
+        for (const toolCall of row.toolCalls) {
+          const tool = toolsMap.get(toolCall.name);
+          const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
+          toolCall.invokeStatus = toolMessage?.invokeStatus;
+          toolCall.auto = toolMessage?.auto;
+          toolCall.status = toolMessage?.status;
+          toolCall.content = toolMessage?.content;
+          toolCall.execution = tool?.execution;
+          toolCall.willInterrupt = tool?.execution === 'frontend' || toolMessage?.auto === false;
+          toolCall.defaultPermission = tool?.defaultPermission;
+        }
+      }
+
+      const providerOptions = this.plugin.aiManager.llmProviders.get(row.metadata?.provider);
+      if (!providerOptions) {
+        return parseResponseMessage(row);
+      }
+      const Provider = providerOptions.provider;
+      const provider = new Provider({
+        app: this.plugin.app,
+      });
+      return provider.parseResponseMessage(row);
+    };
+
+    for (const row of subAgentConversationMessages as ParsedMessageRow[]) {
+      const sessionMessages = subAgentConversationMessageMap.get(row.sessionId) ?? [];
+      sessionMessages.push(parseMessageRow(row));
+      subAgentConversationMessageMap.set(row.sessionId, sessionMessages);
+    }
+
     return {
       rows: data.map((row: ParsedMessageRow) => {
-        if (row?.toolCalls?.length ?? 0 > 0) {
-          for (const toolCall of row.toolCalls) {
-            const tool = toolsMap.get(toolCall.name);
-            const toolMessage = toolMessageMap.get(toolMessageKey(row.messageId, toolCall.id));
-            toolCall.invokeStatus = toolMessage?.invokeStatus;
-            toolCall.auto = toolMessage?.auto;
-            toolCall.status = toolMessage?.status;
-            toolCall.content = toolMessage?.content;
-            toolCall.execution = tool?.execution;
-            toolCall.willInterrupt = tool?.execution === 'frontend' || toolMessage?.auto === false;
-            toolCall.defaultPermission = tool?.defaultPermission;
-          }
+        const parsedRow = parseMessageRow(row);
+        const subAgentConversationIds = row.metadata?.subAgentConversations ?? [];
+        if (subAgentConversationIds.length) {
+          parsedRow.content.subAgentConversations = subAgentConversationIds.map((sessionId: string) => ({
+            sessionId,
+            messages: subAgentConversationMessageMap.get(sessionId) ?? [],
+          }));
         }
-
-        const providerOptions = this.plugin.aiManager.llmProviders.get(row.metadata?.provider);
-        if (!providerOptions) {
-          return parseResponseMessage(row);
-        }
-        const Provider = providerOptions.provider;
-        const provider = new Provider({
-          app: this.plugin.app,
-        });
-        return provider.parseResponseMessage(row);
+        return parsedRow;
       }),
       ...(paginate && {
         hasMore,
@@ -211,5 +252,13 @@ export class AIConversationsManager {
 
   private get aiConversationsRepo() {
     return this.plugin.db.getRepository('aiConversations');
+  }
+
+  private get aiMessagesRepo() {
+    return this.plugin.db.getRepository('aiMessages');
+  }
+
+  private get aiToolMessagesRepo() {
+    return this.plugin.db.getRepository('aiToolMessages');
   }
 }

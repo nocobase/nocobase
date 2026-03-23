@@ -9,11 +9,11 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
-import { ChatStreamProtocol } from '../../../../server/ai-employees/ai-employee';
-import { getAccessibleAIEmployee, getAIPlugin } from '../shared';
+import { getAccessibleAIEmployee, getAIPlugin, getSkillSettingsFromMain, updateMessageMetadata } from '../shared';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   definition: {
     name: 'dispatch-sub-agent-task',
     description: 'Dispatch a question to a target AI employee and return the sub-session result.',
@@ -22,39 +22,30 @@ export default defineTools({
       question: z.string().describe('The question or task that should be executed by the target AI employee.'),
     }),
   },
-  async invoke(ctx, args, runtime) {
+  async invoke(ctx, { username, question }, { toolCallId, writer }) {
     const plugin = getAIPlugin(ctx);
-    const employee = await getAccessibleAIEmployee(ctx, args.username);
+    const employee = await getAccessibleAIEmployee(ctx, username);
     if (!employee) {
-      throw new Error(`AI employee "${args.username}" not found`);
+      throw new Error(`AI employee "${username}" not found`);
     }
 
-    const sessionId = ctx.action?.params?.values?.sessionId;
-    const aiConversation = sessionId
-      ? await ctx.db.getRepository('aiConversations').findOne({
-          filter: {
-            sessionId,
-            userId: ctx.auth?.user?.id,
-          },
-        })
-      : null;
+    const skillSettings = await getSkillSettingsFromMain(ctx);
 
-    const protocol = ChatStreamProtocol.create({
-      write: runtime.writer,
-    });
-
-    const { sessionId: subSessionId, stream } = await plugin.subAgentsDispatcher.run({
+    const { sessionId, stream } = await plugin.subAgentsDispatcher.run({
       ctx,
-      protocol,
       employee,
       model: employee.get('modelSettings') ?? ctx.action?.params?.values?.model,
-      question: args.question,
-      skillSettings: aiConversation?.options?.skillSettings,
+      question,
+      skillSettings,
+      writer,
     });
 
+    await updateMessageMetadata(ctx, toolCallId, sessionId);
+    const answer = await stream;
+
     return {
-      sessionId: subSessionId,
-      answer: await stream,
+      sessionId,
+      answer,
     };
   },
 });

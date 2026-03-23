@@ -9,26 +9,60 @@
 
 import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
-import { AIEmployee, ChatStreamProtocol, ModelRef } from '../ai-employee';
+import { AIEmployee, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
 
 export type SubAgentTask = {
   ctx: Context;
-  protocol: ChatStreamProtocol;
   employee: Model;
   model: ModelRef;
   question: string;
   skillSettings?: Record<string, any>;
+  writer?: (chunk: any) => void;
 };
 
 export class SubAgentsDispatcher {
   constructor(protected plugin: PluginAIServer) {}
 
+  private async resolveSubAgentSessionId(ctx: Context): Promise<string | null> {
+    const sessionId = ctx.action?.params?.values?.sessionId;
+    if (!sessionId) {
+      return null;
+    }
+
+    const aiToolMessage = await ctx.db.getRepository('aiToolMessages').findOne({
+      filter: {
+        sessionId,
+        toolName: 'dispatch-sub-agent-task',
+        invokeStatus: {
+          $ne: 'confirmed',
+        },
+      },
+      sort: ['-id'],
+    });
+    if (!aiToolMessage?.messageId) {
+      return null;
+    }
+
+    const aiMessage = await ctx.db.getRepository('aiMessages').findOne({
+      filter: {
+        sessionId,
+        messageId: aiToolMessage.messageId,
+      },
+    });
+    const subAgentConversations = aiMessage?.metadata?.subAgentConversations;
+    if (!Array.isArray(subAgentConversations) || !subAgentConversations.length) {
+      return null;
+    }
+
+    return subAgentConversations.at(-1) ?? null;
+  }
+
   async run(task: SubAgentTask): Promise<{
     sessionId: string;
     stream: Promise<string>;
   }> {
-    const { ctx, protocol, employee, model, question, skillSettings } = task;
+    const { ctx, employee, model, question, skillSettings, writer } = task;
     const userId = ctx.auth?.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
@@ -38,29 +72,34 @@ export class SubAgentsDispatcher {
       throw new Error('LLM service not configured');
     }
 
-    const conversation = await this.plugin.aiConversationsManager.create({
-      userId,
-      aiEmployee: {
-        username: employee.get('username'),
-      },
-      title: question.slice(0, 30),
-      from: 'sub-agent',
-      options: {
-        skillSettings,
-      },
-    });
+    let subSessionId = await this.resolveSubAgentSessionId(ctx);
+    if (!subSessionId) {
+      const conversation = await this.plugin.aiConversationsManager.create({
+        userId,
+        aiEmployee: {
+          username: employee.get('username'),
+        },
+        title: question.slice(0, 30),
+        from: 'sub-agent',
+        options: {
+          skillSettings,
+        },
+      });
+      subSessionId = conversation.sessionId;
+    }
 
     const aiEmployee = new AIEmployee({
       ctx,
       employee,
-      sessionId: conversation.sessionId,
+      sessionId: subSessionId,
       skillSettings,
       model,
-      protocol,
+      from: 'sub-agent',
     });
 
-    const stream = async () => {
-      const streamed = await aiEmployee.stream({
+    return {
+      sessionId: subSessionId,
+      stream: aiEmployee.invoke({
         userMessages: [
           {
             role: 'user',
@@ -70,31 +109,8 @@ export class SubAgentsDispatcher {
             },
           },
         ],
-      });
-
-      if (!streamed) {
-        throw new Error('Sub-agent task execution failed');
-      }
-
-      const lastMessage = await this.plugin.db
-        .getRepository('aiConversations.messages', conversation.sessionId)
-        .findOne({
-          sort: ['-messageId'],
-          filter: {
-            role: task.employee.get('username'),
-          },
-        });
-
-      if (!lastMessage?.content) {
-        throw new Error('Sub-agent returned no message');
-      }
-
-      return typeof lastMessage.content === 'string' ? lastMessage.content : lastMessage.content?.content ?? '';
-    };
-
-    return {
-      sessionId: conversation.sessionId,
-      stream: stream(),
+        writer,
+      }),
     };
   }
 }

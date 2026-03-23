@@ -16,10 +16,11 @@ export const isBuiltIn = (aiEmployee: AIEmployee) => {
 };
 
 export const isEngineer = (aiEmployee: AIEmployee) => {
-  return isBuiltIn(aiEmployee) && aiEmployee.username === 'nathan';
+  return isBuiltIn(aiEmployee) && aiEmployee.username === 'atlas';
 };
+
 export const isDataModelingAssistant = (aiEmployee: AIEmployee) => {
-  return isBuiltIn(aiEmployee) && aiEmployee.username === 'orin';
+  return isBuiltIn(aiEmployee) && aiEmployee.username === 'atlas';
 };
 
 export const isHide = (aiEmployee: AIEmployee) => {

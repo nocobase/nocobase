@@ -453,7 +453,7 @@ export default {
         ctx.throw(400);
       }
 
-      const message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+      const message = await ctx.db.getRepository('aiMessages').findOne({
         filter: {
           messageId,
         },
@@ -469,7 +469,7 @@ export default {
 
       const aiToolMessagesModel = ctx.db.getModel('aiToolMessages');
       const toolCall = await aiToolMessagesModel.findOne({
-        where: { sessionId, messageId, toolCallId },
+        where: { sessionId: message.sessionId, messageId: message.messageId, toolCallId },
       });
       if (!toolCall) {
         ctx.throw(400);
@@ -482,8 +482,8 @@ export default {
         },
         {
           where: {
-            sessionId,
-            messageId,
+            sessionId: message.sessionId,
+            messageId: message.messageId,
             toolCallId,
             invokeStatus: 'interrupted',
           },
@@ -493,8 +493,8 @@ export default {
       const toolCallIds = toolCalls.map((x) => x.id);
       const toolMessages = await ctx.db.getRepository('aiToolMessages').find({
         filter: {
-          sessionId,
-          messageId,
+          sessionId: message.sessionId,
+          messageId: message.messageId,
           toolCallId: {
             $in: toolCallIds,
           },
@@ -555,7 +555,7 @@ export default {
 
         let message: Model;
         if (messageId) {
-          message = await ctx.db.getRepository('aiConversations.messages', sessionId).findOne({
+          message = await ctx.db.getRepository('aiMessages').findOne({
             filter: {
               messageId,
             },

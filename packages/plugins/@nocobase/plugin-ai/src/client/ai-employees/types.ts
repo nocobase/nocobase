@@ -92,6 +92,10 @@ export type Message = Omit<BubbleProps, 'content'> & {
       url: string;
     }[];
     reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      messages: Message[];
+    }[];
   };
 };
 export type Action = {

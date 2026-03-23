@@ -49,6 +49,7 @@ export type AIMessageMetadata = {
   autoCallTools?: string[];
   autoCall?: boolean;
   interrupted?: boolean;
+  subAgentConversations?: string[];
 
   [key: string]: unknown;
 };

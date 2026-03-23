@@ -145,6 +145,7 @@ export const conversationMiddleware = (
     afterModel: async (state, runtime) => {
       try {
         const newState = {
+          messageId: state.messageId,
           lastMessageIndex: {
             lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
             lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
@@ -169,6 +170,7 @@ export const conversationMiddleware = (
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
             state.messageId = result.messageId;
+            newState.messageId = result.messageId;
             if (toolCalls?.length) {
               const toolsMap = await aiEmployee.getToolsMap();
               const initializedToolCalls = await aiEmployee.initToolCall(
@@ -181,11 +183,17 @@ export const conversationMiddleware = (
           });
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
-            body: { id: aiMessage.id, messageId: state.messageId },
+            body: { sessionId: aiEmployee.sessionId, id: aiMessage.id, messageId: state.messageId },
           });
         }
         if (toolCalls?.length) {
+          const conversation = {
+            sessionId: aiEmployee.sessionId,
+            username: aiEmployee.employee.username,
+            from: aiEmployee.from,
+          };
           runtime.writer?.({
+            ...conversation,
             action: 'initToolCalls',
             body: { toolCalls },
           });

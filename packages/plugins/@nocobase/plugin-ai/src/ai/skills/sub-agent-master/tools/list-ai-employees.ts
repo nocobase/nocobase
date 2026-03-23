@@ -12,7 +12,8 @@ import { z } from 'zod';
 import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../shared';
 
 export default defineTools({
-  scope: 'GENERAL',
+  scope: 'SPECIFIED',
+  defaultPermission: 'ALLOW',
   definition: {
     name: 'list-ai-employees',
     description: 'List accessible AI employees with their basic profile and skill settings.',
@@ -20,6 +21,8 @@ export default defineTools({
   },
   async invoke(ctx) {
     const employees = await listAccessibleAIEmployees(ctx);
-    return employees.map((employee) => serializeEmployeeSummary(ctx, employee));
+    return {
+      aiEmployees: employees.map((employee) => serializeEmployeeSummary(ctx, employee)),
+    };
   },
 });

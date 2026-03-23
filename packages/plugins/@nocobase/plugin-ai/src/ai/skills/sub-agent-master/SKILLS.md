@@ -1,5 +1,5 @@
 ---
-scope: GENERAL
+scope: SPECIFIED
 name: sub-agent-master
 description: delegates work to other AI employees after inspecting their profiles and capabilities.
 introduction:
