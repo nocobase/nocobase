@@ -22,7 +22,6 @@ import { resolveViewParamsToViewList, updateViewListHidden, type ViewItem } from
 
 export interface RoutePageMeta {
   active: boolean;
-  currentRoute?: Record<string, any>;
   refreshDesktopRoutes?: () => void;
   layoutContentElement?: HTMLElement | null;
 }
@@ -57,6 +56,10 @@ export class AdminLayoutRouteCoordinator {
   private readonly runtimes = new Map<string, RoutePageRuntime>();
   private layoutContentElement: HTMLElement | null = null;
 
+  private getCurrentRouteByPageUid(pageUid: string) {
+    return this.flowEngine.context.routeRepository?.getRouteBySchemaUid?.(pageUid) || {};
+  }
+
   constructor(flowEngine: FlowEngine) {
     this.flowEngine = flowEngine;
   }
@@ -72,7 +75,6 @@ export class AdminLayoutRouteCoordinator {
       routeModel,
       meta: {
         active: !!meta.active,
-        currentRoute: meta.currentRoute || {},
         refreshDesktopRoutes: meta.refreshDesktopRoutes,
         layoutContentElement: meta.layoutContentElement || null,
       },
@@ -100,11 +102,8 @@ export class AdminLayoutRouteCoordinator {
       ...runtime.meta,
       ...meta,
       active: typeof meta.active === 'boolean' ? meta.active : runtime.meta.active,
-      currentRoute: meta.currentRoute ?? runtime.meta.currentRoute ?? {},
       layoutContentElement:
-        typeof meta.layoutContentElement === 'undefined'
-          ? runtime.meta.layoutContentElement
-          : meta.layoutContentElement,
+        meta.layoutContentElement === undefined ? runtime.meta.layoutContentElement : meta.layoutContentElement,
     };
 
     if (runtime.routeModel.context.pageActive?.value !== runtime.meta.active) {
@@ -300,8 +299,8 @@ export class AdminLayoutRouteCoordinator {
     }
 
     runtime.routeModel.context.defineProperty('currentRoute', {
-      get: () => runtime.meta.currentRoute || {},
-      // 菜单切换后 route meta 会更新，不能缓存旧页面的路由对象。
+      get: () => this.getCurrentRouteByPageUid(runtime.pageUid),
+      // 当前路由来自 routeRepository，菜单更新后必须实时读取最新对象。
       cache: false,
     });
 

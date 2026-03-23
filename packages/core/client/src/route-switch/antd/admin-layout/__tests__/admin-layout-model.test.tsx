@@ -142,6 +142,15 @@ describe('AdminLayout (phase-1 host)', () => {
 
   it('should expose live engine currentRoute when active page changes', async () => {
     const engine = new FlowEngine();
+    const routeMap = {
+      'page-1': { title: 'Page 1' },
+      'page-2': { title: 'Page 2' },
+    };
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => routeMap[pageUid],
+      },
+    });
     const routeRef = observable.ref({
       params: { name: 'page-1' },
       pathname: '/admin/page-1',
@@ -162,11 +171,9 @@ describe('AdminLayout (phase-1 host)', () => {
 
     model.registerRoutePage('page-1', {
       active: true,
-      currentRoute: { title: 'Page 1' },
     });
     model.registerRoutePage('page-2', {
       active: true,
-      currentRoute: { title: 'Page 2' },
     });
 
     await waitFor(() => {

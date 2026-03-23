@@ -44,7 +44,11 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   private routeDisposer?: () => void;
   private activePageUid = '';
   private layoutContentElement: HTMLElement | null = null;
-  private routePageMetaMap = new Map<string, RoutePageMeta>();
+  private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
+
+  private getCurrentRouteByPageUid(pageUid: string) {
+    return this.flowEngine.context.routeRepository?.getRouteBySchemaUid?.(pageUid) || {};
+  }
 
   private getCoordinator() {
     if (!this.routeCoordinator) {
@@ -54,24 +58,20 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
   }
 
   private getCurrentRouteByActivePage() {
-    return this.routePageMetaMap.get(this.activePageUid)?.currentRoute || {};
+    return this.getCurrentRouteByPageUid(this.activePageUid);
   }
 
   registerRoutePage(pageUid: string, meta: RoutePageMeta) {
-    this.routePageMetaMap.set(pageUid, {
-      ...meta,
-      currentRoute: meta.currentRoute || {},
-    });
+    this.routePageMetaMap.set(pageUid, meta);
     return this.getCoordinator().registerPage(pageUid, meta);
   }
 
   updateRoutePage(pageUid: string, meta: Partial<RoutePageMeta>) {
-    const prev = this.routePageMetaMap.get(pageUid) || { active: false, currentRoute: {} };
+    const prev = this.routePageMetaMap.get(pageUid) || { active: false };
     const next = {
       ...prev,
       ...meta,
       active: typeof meta.active === 'boolean' ? meta.active : prev.active,
-      currentRoute: meta.currentRoute ?? prev.currentRoute ?? {},
     };
     this.routePageMetaMap.set(pageUid, next);
     this.getCoordinator().syncPageMeta(pageUid, next);

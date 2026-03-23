@@ -15,7 +15,6 @@ type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
   pageUid: string;
   active: boolean;
-  currentRoute: Record<string, any>;
   refreshDesktopRoutes?: () => void;
   layoutContentRef: React.RefObject<HTMLDivElement>;
 };
@@ -30,14 +29,12 @@ type UseAdminLayoutRoutePageOptions = {
  * @returns {AdminLayoutModel} 当前页面依附的 admin-layout host model
  */
 export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions) {
-  const { flowEngine, pageUid, active, currentRoute, refreshDesktopRoutes, layoutContentRef } = options;
+  const { flowEngine, pageUid, active, refreshDesktopRoutes, layoutContentRef } = options;
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
   const activeRef = useRef(active);
-  const currentRouteRef = useRef(currentRoute);
   const refreshRef = useRef(refreshDesktopRoutes);
 
   activeRef.current = active;
-  currentRouteRef.current = currentRoute;
   refreshRef.current = refreshDesktopRoutes;
 
   if (!adminLayoutModel) {
@@ -47,7 +44,6 @@ export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions)
   useEffect(() => {
     adminLayoutModel.registerRoutePage(pageUid, {
       active: activeRef.current,
-      currentRoute: currentRouteRef.current,
       refreshDesktopRoutes: refreshRef.current,
       layoutContentElement: layoutContentRef.current,
     });
@@ -64,11 +60,10 @@ export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions)
 
   useEffect(() => {
     adminLayoutModel.updateRoutePage(pageUid, {
-      currentRoute,
       refreshDesktopRoutes,
       layoutContentElement: layoutContentRef.current,
     });
-  }, [adminLayoutModel, pageUid, currentRoute, refreshDesktopRoutes, layoutContentRef]);
+  }, [adminLayoutModel, pageUid, refreshDesktopRoutes, layoutContentRef]);
 
   return adminLayoutModel;
 }

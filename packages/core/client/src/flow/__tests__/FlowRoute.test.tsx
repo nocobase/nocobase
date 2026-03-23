@@ -17,7 +17,6 @@ import { FlowRoute } from '../FlowPage';
 const { hookState } = vi.hoisted(() => {
   return {
     hookState: {
-      currentRoute: { title: 'Route A' },
       active: true,
       isMobileLayout: true,
       refresh: vi.fn(),
@@ -29,7 +28,6 @@ vi.mock('../../route-switch', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../route-switch')>();
   return {
     ...actual,
-    useCurrentRoute: () => hookState.currentRoute,
     useKeepAlive: () => ({ active: hookState.active }),
     useMobileLayout: () => ({ isMobileLayout: hookState.isMobileLayout }),
     useAllAccessDesktopRoutes: () => ({ refresh: hookState.refresh }),
@@ -39,7 +37,6 @@ vi.mock('../../route-switch', async (importOriginal) => {
 describe('FlowRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    hookState.currentRoute = { title: 'Route A' };
     hookState.active = true;
     hookState.isMobileLayout = true;
     hookState.refresh = vi.fn();
@@ -57,7 +54,7 @@ describe('FlowRoute', () => {
     const adminLayoutModel = engine.createModel({
       uid: 'admin-layout-model',
       use: 'FlowModel',
-    }) as any;
+    });
     adminLayoutModel.registerRoutePage = vi.fn();
     adminLayoutModel.updateRoutePage = vi.fn();
     adminLayoutModel.unregisterRoutePage = vi.fn();
@@ -77,7 +74,6 @@ describe('FlowRoute', () => {
         'test-page',
         expect.objectContaining({
           active: true,
-          currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
           layoutContentElement: expect.any(HTMLDivElement),
         }),
@@ -89,7 +85,6 @@ describe('FlowRoute', () => {
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
           layoutContentElement: expect.any(HTMLDivElement),
         }),
@@ -97,7 +92,6 @@ describe('FlowRoute', () => {
     });
 
     hookState.active = false;
-    hookState.currentRoute = { title: 'Route B' };
     hookState.refresh = vi.fn();
 
     rerender(
@@ -115,7 +109,6 @@ describe('FlowRoute', () => {
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          currentRoute: hookState.currentRoute,
           refreshDesktopRoutes: hookState.refresh,
           layoutContentElement: expect.any(HTMLDivElement),
         }),

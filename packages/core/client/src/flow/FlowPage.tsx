@@ -11,7 +11,7 @@ import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext 
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useRef } from 'react';
-import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive } from '../route-switch';
+import { useAllAccessDesktopRoutes, useKeepAlive } from '../route-switch';
 import { useAdminLayoutRoutePage } from './admin-shell/useAdminLayoutRoutePage';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { deviceType } from 'react-device-detect';
@@ -36,7 +36,6 @@ function InternalFlowPage({ uid, ...props }) {
 export const FlowRoute = () => {
   const flowEngine = useFlowEngine();
   const route = flowEngine.context.route || {};
-  const currentRoute = useCurrentRoute();
   const { refresh } = useAllAccessDesktopRoutes();
   const pageUidRef = useRef(route?.params?.name);
   const { active } = useKeepAlive();
@@ -79,7 +78,6 @@ export const FlowRoute = () => {
     flowEngine,
     pageUid,
     active,
-    currentRoute,
     refreshDesktopRoutes: refresh,
     layoutContentRef,
   });
