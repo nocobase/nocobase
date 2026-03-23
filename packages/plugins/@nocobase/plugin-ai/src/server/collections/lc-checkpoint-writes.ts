@@ -14,9 +14,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
   recordUniqueKey: ['threadId', 'checkpointNs', 'checkpointId', 'taskId', 'idx'],
   defaultMigrationRule: {
-    overwriteFirst: 'schema-only',
-    upsertFirst: 'schema-only',
-  },
+  overwriteFirst: 'schema-only',
+  upsertFirst: 'schema-only',
+},
   autoGenId: false,
   fields: [
     {

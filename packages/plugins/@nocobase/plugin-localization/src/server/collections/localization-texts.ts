@@ -16,9 +16,9 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-    overwriteFirst: 'overwrite',
-    upsertFirst: 'overwrite',
-  },
+  overwriteFirst: 'overwrite',
+  upsertFirst: 'overwrite',
+},
   name: 'localizationTexts',
   model: 'LocalizationTextModel',
   createdBy: true,

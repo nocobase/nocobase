@@ -17,9 +17,9 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-    overwriteFirst: 'overwrite',
-    upsertFirst: 'overwrite',
-  },
+  overwriteFirst: 'overwrite',
+  upsertFirst: 'overwrite',
+},
   name: MapConfigurationCollectionName,
   shared: true,
   fields: [

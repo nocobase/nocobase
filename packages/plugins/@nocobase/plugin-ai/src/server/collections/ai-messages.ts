@@ -13,9 +13,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
   recordUniqueKey: ['messageId'],
   defaultMigrationRule: {
-    overwriteFirst: 'schema-only',
-    upsertFirst: 'schema-only',
-  },
+  overwriteFirst: 'schema-only',
+  upsertFirst: 'schema-only',
+},
   autoGenId: false,
   name: 'aiMessages',
   fields: [

@@ -18,9 +18,9 @@ export default {
   migrationRules: ['schema-only', 'skip', 'skip'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-    overwriteFirst: 'schema-only',
-    upsertFirst: 'schema-only',
-  },
+  overwriteFirst: 'schema-only',
+  upsertFirst: 'schema-only',
+},
   shared: true,
   createdAt: true,
   updatedAt: true,

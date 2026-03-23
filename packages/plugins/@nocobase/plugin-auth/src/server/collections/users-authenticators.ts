@@ -21,9 +21,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'overwrite', 'skip'],
   recordUniqueKey: ['authenticator'],
   defaultMigrationRule: {
-    overwriteFirst: 'schema-only',
-    upsertFirst: 'schema-only',
-  },
+  overwriteFirst: 'schema-only',
+  upsertFirst: 'schema-only',
+},
   name: 'usersAuthenticators',
   model: 'UserAuthModel',
   createdBy: true,

@@ -15,9 +15,9 @@ export default {
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['uid'],
   defaultMigrationRule: {
-    overwriteFirst: 'overwrite',
-    upsertFirst: 'upsert',
-  },
+  overwriteFirst: 'overwrite',
+  upsertFirst: 'upsert',
+},
   autoGenId: false,
   timestamps: false,
   repository: 'FlowModelRepository',

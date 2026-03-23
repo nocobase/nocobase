@@ -14,9 +14,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'overwrite', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['code'],
   defaultMigrationRule: {
-    overwriteFirst: 'schema-only',
-    upsertFirst: 'upsert',
-  },
+  overwriteFirst: 'schema-only',
+  upsertFirst: 'upsert',
+},
   name: 'chinaRegions',
   autoGenId: false,
   fields: [

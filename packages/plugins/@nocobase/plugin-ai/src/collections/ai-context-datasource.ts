@@ -12,7 +12,12 @@ import type { FilterGroupType } from '@nocobase/utils';
 
 export default {
   name: 'aiContextDatasources',
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   fields: [
     {
       name: 'title',
