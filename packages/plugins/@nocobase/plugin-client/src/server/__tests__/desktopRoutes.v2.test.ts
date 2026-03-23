@@ -14,6 +14,16 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   let app: MockServer;
   let db: Database;
 
+  const getRootAgent = async () => {
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        email: process.env.INIT_ROOT_EMAIL,
+      },
+    });
+
+    return app.agent().login(rootUser);
+  };
+
   beforeEach(async () => {
     app = await createMockServer({
       registerActions: true,
@@ -23,27 +33,27 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
         'client',
         'field-sort',
         'acl',
+        'users',
         'ui-schema-storage',
         'flow-engine',
         'system-settings',
         'data-source-main',
+        'auth',
         'data-source-manager',
       ],
     });
+    await app.runCommand('install', '-f');
     db = app.db;
   });
 
   afterEach(async () => {
-    await app.destroy();
+    if (app) {
+      await app.destroy();
+    }
   });
 
   it('should create v2 page in one action (routes + uiSchema + flowModels)', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-1';
     const res = await agent.resource('desktopRoutes').createV2({
@@ -70,12 +80,7 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   });
 
   it('should be idempotent when replaying the same createV2 request', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-2';
     const body = { schemaUid, title: 'Page 2', icon: 'Icon', parentId: null };
@@ -89,12 +94,7 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   });
 
   it('should return 409 when schemaUid exists but key fields differ', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-3';
     await agent.resource('desktopRoutes').createV2({
@@ -108,12 +108,7 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   });
 
   it('should return 409 when schemaUid is occupied by a non-FlowRoute uiSchema during createV2', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-foreign-create';
     await db.getCollection('uiSchemas').model.create({
@@ -137,12 +132,7 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   });
 
   it('should destroy v2 page and cleanup uiSchema + flowModels (idempotent)', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-4';
     await agent.resource('desktopRoutes').createV2({
@@ -171,12 +161,7 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
   });
 
   it('should not delete a non-FlowRoute uiSchema during destroyV2', async () => {
-    const rootUser = await db.getRepository('users').findOne({
-      filter: {
-        'roles.name': 'root',
-      },
-    });
-    const agent = await app.agent().login(rootUser);
+    const agent = await getRootAgent();
 
     const schemaUid = 'v2-page-foreign-destroy';
     await db.getCollection('uiSchemas').model.create({

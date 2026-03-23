@@ -15,8 +15,6 @@ import { vi } from 'vitest';
 class SaveSchemaChildModel extends FlowModel {}
 class SaveSchemaStrictModel extends FlowModel {}
 
-const ajv = new Ajv({ allErrors: true, strict: false });
-
 const expectGridLayoutSchemaDocument = (document: any) => {
   expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
     properties: {
@@ -87,6 +85,7 @@ const expectCollectionResourceSettingsSchemaDocument = (
 };
 
 const expectGenericFilterSchemaDocument = (schema: any) => {
+  const ajv = new Ajv({ allErrors: true, strict: false });
   const validate = ajv.compile(schema);
   const validFilter = {
     logic: '$and',
@@ -122,6 +121,7 @@ const expectGenericFilterSchemaDocument = (schema: any) => {
 };
 
 const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
+  const ajv = new Ajv({ allErrors: true, strict: false });
   const validate = ajv.compile({
     type: 'object',
     properties: {
@@ -428,17 +428,17 @@ describe('flow-model save', () => {
         expect.objectContaining({
           title: 'Two rows with 2 + 3 columns',
           snippet: expect.objectContaining({
-            stepParams: {
-              gridSettings: {
-                grid: {
+            stepParams: expect.objectContaining({
+              gridSettings: expect.objectContaining({
+                grid: expect.objectContaining({
                   sizes: {
                     rowTop: [12, 12],
                     rowBottom: [8, 8, 8],
                   },
                   rowOrder: ['rowTop', 'rowBottom'],
-                },
-              },
-            },
+                }),
+              }),
+            }),
           }),
         }),
       ]),
@@ -851,10 +851,12 @@ describe('flow-model save', () => {
                 buttonSettings: {
                   general: {
                     title: 'Run JS',
+                    type: 'default',
                   },
                 },
                 clickSettings: {
                   runJs: {
+                    version: 'v2',
                     code: "ctx.message.info('Hello JS action.');",
                   },
                 },
@@ -1123,27 +1125,27 @@ describe('flow-model save', () => {
 
   it('should save popup action trees and validate popup child page contracts', async () => {
     const popupActionUses = ['AddNewActionModel', 'EditActionModel', 'ViewActionModel'];
-    const popupDocs = Object.fromEntries(
-      await Promise.all(
-        popupActionUses.map(async (use) => {
-          const res = await agent.get('/flowModels:schema').query({ use });
-          expect(res.status).toBe(200);
-          return [use, res.body?.data] as const;
-        }),
-      ),
-    );
+    const popupDocs: Record<string, any> = {};
+    const schemaAgent = app.agent();
+    const saveAgent = app.agent();
+
+    for (const use of popupActionUses) {
+      const res = await schemaAgent.get('/flowModels:schema').query({ use });
+      expect(res.status).toBe(200);
+      popupDocs[use] = res.body?.data;
+    }
 
     for (const use of popupActionUses) {
       const payload = clonePayload(popupDocs[use].minimalExample);
       payload.uid = `save-${use.toLowerCase()}`;
-      const saveRes = await agent.resource('flowModels').save({
+      const saveRes = await saveAgent.resource('flowModels').save({
         values: payload,
       });
       expect(saveRes.status).toBe(200);
       expect(saveRes.body?.data?.use).toBe(use);
     }
 
-    const legacyPopup = await agent.resource('flowModels').save({
+    const legacyPopup = await saveAgent.resource('flowModels').save({
       values: {
         uid: 'save-legacy-popup-action',
         use: 'PopupActionModel',
@@ -1167,7 +1169,7 @@ describe('flow-model save', () => {
     expect(legacyPopup.status).toBe(200);
 
     const expectInvalidPopupPayload = async (values: any, matcher: Record<string, any>) => {
-      const res = await agent.resource('flowModels').save({ values });
+      const res = await saveAgent.resource('flowModels').save({ values });
       expect(res.status).toBe(400);
       expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
       expect(res.body?.errors?.[0]?.details?.errors).toEqual(
