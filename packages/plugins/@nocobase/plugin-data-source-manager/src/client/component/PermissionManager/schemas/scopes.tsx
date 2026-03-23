@@ -56,15 +56,15 @@ const useFormBlockProps = () => {
 
 const EditScopeActionComponent = (props) => {
   const { data } = useCollectionRecord();
-  const { id } = data || ({} as any);
-  const actionProps = { ...props, disabled: [1, 2].includes(id) };
+  const { key } = data || ({} as any);
+  const actionProps = { ...props, disabled: ['all', 'own'].includes(key) };
   return <Action.Link {...actionProps} />;
 };
 
 const DestroyScopeActionComponent = (props) => {
   const { data } = useCollectionRecord();
-  const { id } = data || ({} as any);
-  const actionProps = { ...props, ...useDestroyActionProps(), disabled: [1, 2].includes(id) };
+  const { key } = data || ({} as any);
+  const actionProps = { ...props, ...useDestroyActionProps(), disabled: ['all', 'own'].includes(key) };
   return <Action.Link {...actionProps} />;
 };
 

@@ -5,6 +5,28 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.24](https://github.com/nocobase/nocobase/compare/v2.0.23...v2.0.24) - 2026-03-22
+
+### 🐛 修复
+
+- **[resourcer]** 修复外部数据源不能正确加载的问题 ([#8929](https://github.com/nocobase/nocobase/pull/8929)) by @2013xile
+
+- **[操作：导入记录 Pro]** 修复“触发工作流”选项不选时仍然触发工作流的问题 by @mytharcher
+
+## [v2.0.23](https://github.com/nocobase/nocobase/compare/v2.0.22...v2.0.23) - 2026-03-20
+
+### 🐛 修复
+
+- **[database]** 当追加关系数据参数有误时，使用警告类型的日志并跳过该字段，避免报错导致无法执行 ([#8923](https://github.com/nocobase/nocobase/pull/8923)) by @mytharcher
+
+- **[工作流：审批]** 修复 v2 审批表单回退按钮的翻译、节点选择和回退目标问题 by @zhangzhonghe
+
+## [v2.0.22](https://github.com/nocobase/nocobase/compare/v2.0.21...v2.0.22) - 2026-03-20
+
+### 🐛 修复
+
+- **[迁移管理]** 修复上传迁移时，目标环境不存在新建表而抛错导致中断迁移的问题 by @Andrew1989Y
+
 ## [v2.0.21](https://github.com/nocobase/nocobase/compare/v2.0.20...v2.0.21) - 2026-03-20
 
 ### 🚀 优化

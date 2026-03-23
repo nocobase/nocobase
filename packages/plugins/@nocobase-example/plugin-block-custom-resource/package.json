@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "@nocobase-example/plugin-block-custom-resource",
-  "version": "2.1.0-alpha.9",
+  "version": "2.1.0-alpha.10",
   "main": "dist/server/index.js",
   "displayName": "Plugin example: Block custom resource",
   "description": "This plugin demonstrates how to use the block custom resource feature to create a custom resource for a block.",

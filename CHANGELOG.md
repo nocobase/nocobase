@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.24](https://github.com/nocobase/nocobase/compare/v2.0.23...v2.0.24) - 2026-03-22
+
+### 🐛 Bug Fixes
+
+- **[resourcer]** Fix an issue where external data sources fail to load correctly. ([#8929](https://github.com/nocobase/nocobase/pull/8929)) by @2013xile
+
+- **[Action: Import records Pro]** Fix the issue where option of "Trigger workflow" not works when not checked by @mytharcher
+
+## [v2.0.23](https://github.com/nocobase/nocobase/compare/v2.0.22...v2.0.23) - 2026-03-20
+
+### 🐛 Bug Fixes
+
+- **[database]** Use warning instead of error when any of appends parameters invalid ([#8923](https://github.com/nocobase/nocobase/pull/8923)) by @mytharcher
+
+- **[Workflow: Approval]** Fix translation, node selection, and return target issues in the v2 approval form return button by @zhangzhonghe
+
+## [v2.0.22](https://github.com/nocobase/nocobase/compare/v2.0.21...v2.0.22) - 2026-03-20
+
+### 🐛 Bug Fixes
+
+- **[Migration manager]** Fixed the issue where the migration is interrupted due to an error caused by the target environment not having the new table created during the upload migration process. by @Andrew1989Y
+
 ## [v2.0.21](https://github.com/nocobase/nocobase/compare/v2.0.20...v2.0.21) - 2026-03-20
 
 ### 🚀 Improvements
