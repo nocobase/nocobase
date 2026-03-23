@@ -113,9 +113,6 @@ const exportActionModelSchemaManifest: FlowModelSchemaManifest = {
 };
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
-  inventory: {
-    publicModels: ['ExportActionModel'],
-  },
   models: [exportActionModelSchemaManifest],
   defaults: {
     source: 'plugin',

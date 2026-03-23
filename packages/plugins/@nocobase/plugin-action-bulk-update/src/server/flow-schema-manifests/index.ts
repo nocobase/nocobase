@@ -140,9 +140,6 @@ const bulkUpdateActionModelSchemaManifest: FlowModelSchemaManifest = {
 };
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
-  inventory: {
-    publicModels: ['BulkUpdateActionModel'],
-  },
   models: [bulkUpdateActionModelSchemaManifest],
   defaults: {
     source: 'plugin',

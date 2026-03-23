@@ -93,9 +93,6 @@ const importActionModelSchemaManifest: FlowModelSchemaManifest = {
 };
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
-  inventory: {
-    publicModels: ['ImportActionModel'],
-  },
   models: [importActionModelSchemaManifest],
   defaults: {
     source: 'plugin',

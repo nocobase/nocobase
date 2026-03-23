@@ -123,9 +123,6 @@ export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
       },
     },
   ],
-  inventory: {
-    expectedDescendantModels: ['FormulaFieldModel'],
-  },
   defaults: {
     source: 'plugin',
   },

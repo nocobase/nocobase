@@ -58,9 +58,6 @@ export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
       isDefault: true,
     },
   ],
-  inventory: {
-    expectedDescendantModels: ['AttachmentURLFieldModel'],
-  },
   defaults: {
     source: 'plugin',
   },

@@ -224,11 +224,7 @@ export interface FlowSchemaManifestDefaults {
 }
 
 export interface FlowSchemaInventoryContribution {
-  publicModels?: string[];
-  publicActions?: string[];
   publicTreeRoots?: string[];
-  expectedDescendantModels?: string[];
-  expectedDescendantActions?: string[];
 }
 
 export interface FlowFieldBindingConditions {

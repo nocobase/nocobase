@@ -376,9 +376,6 @@ const bulkEditActionModelSchemaManifest: FlowModelSchemaManifest = {
 };
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
-  inventory: {
-    publicModels: ['BulkEditActionModel'],
-  },
   models: [
     bulkEditBlockGridModelInternalSchemaManifest,
     bulkEditChildPageTabModelInternalSchemaManifest,

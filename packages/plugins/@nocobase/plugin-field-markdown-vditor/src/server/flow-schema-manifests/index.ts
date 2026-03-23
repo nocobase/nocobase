@@ -63,9 +63,6 @@ export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
       isDefault: true,
     },
   ],
-  inventory: {
-    expectedDescendantModels: ['VditorFieldModel', 'DisplayVditorFieldModel'],
-  },
   defaults: {
     source: 'plugin',
   },

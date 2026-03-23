@@ -98,7 +98,6 @@ const referenceBlockModelSchemaManifest: FlowModelSchemaManifest = {
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
-    publicModels: ['ReferenceBlockModel'],
     publicTreeRoots: ['ReferenceBlockModel'],
   },
   models: [referenceBlockModelSchemaManifest],

@@ -394,14 +394,6 @@ describe('FlowSchemaRegistry', () => {
   it('should build bundle-friendly documents from pure data manifests', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerInventory(
-      {
-        publicModels: ['SchemaRegistryManifestModel', 'SchemaRegistryMissingModel'],
-        publicActions: ['schemaRegistryManifestAction', 'schemaRegistryMissingAction'],
-      },
-      'official',
-    );
-
     registry.registerActionManifest({
       name: 'schemaRegistryManifestAction',
       title: 'Manifest action',

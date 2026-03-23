@@ -86,9 +86,6 @@ export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
       },
     },
   ],
-  inventory: {
-    expectedDescendantModels: ['UploadFieldModel', 'DisplayPreviewFieldModel'],
-  },
   defaults: {
     source: 'plugin',
   },

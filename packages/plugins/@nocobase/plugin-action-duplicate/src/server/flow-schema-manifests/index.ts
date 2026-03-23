@@ -140,9 +140,6 @@ const duplicateActionModelSchemaManifest: FlowModelSchemaManifest = {
 };
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
-  inventory: {
-    publicModels: ['DuplicateActionModel'],
-  },
   models: [duplicateActionModelSchemaManifest],
   defaults: {
     source: 'plugin',

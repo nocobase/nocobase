@@ -58,9 +58,6 @@ export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
       isDefault: true,
     },
   ],
-  inventory: {
-    expectedDescendantModels: ['SortFieldModel'],
-  },
   defaults: {
     source: 'plugin',
   },

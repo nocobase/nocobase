@@ -780,7 +780,7 @@ export class FlowSchemaRegistry {
   private readonly fieldBindingContexts = new Map<string, RegisteredFieldBindingContext>();
   private readonly fieldBindings = new Map<string, RegisteredFieldBinding[]>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
-  private readonly publicTreeRootInventory = new Map<string, FlowSchemaCoverage['source']>();
+  private readonly publicTreeRootInventory = new Set<string>();
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
     const name = String(action?.name || '').trim();
@@ -1070,13 +1070,13 @@ export class FlowSchemaRegistry {
     }
   }
 
-  registerInventory(inventory: FlowSchemaInventoryContribution | undefined, source: FlowSchemaCoverage['source']) {
+  registerInventory(inventory: FlowSchemaInventoryContribution | undefined, _source: FlowSchemaCoverage['source']) {
     if (!inventory) {
       return;
     }
 
     for (const use of normalizeStringArray(inventory.publicTreeRoots)) {
-      this.publicTreeRootInventory.set(use, source);
+      this.publicTreeRootInventory.add(use);
     }
   }
 
@@ -1327,7 +1327,7 @@ export class FlowSchemaRegistry {
   }
 
   private listPublicTreeRootUses(): string[] {
-    return Array.from(this.publicTreeRootInventory.keys())
+    return Array.from(this.publicTreeRootInventory)
       .filter((use) => {
         const model = this.modelSchemas.get(use);
         return !!model && this.isPublicModel(model) && this.isQueryableModel(model);

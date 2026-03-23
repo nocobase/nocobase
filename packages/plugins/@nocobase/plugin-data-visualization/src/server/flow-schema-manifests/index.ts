@@ -146,7 +146,6 @@ const chartBlockModelSchemaManifest: FlowModelSchemaManifest = {
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
-    publicModels: ['ChartBlockModel'],
     publicTreeRoots: ['ChartBlockModel'],
   },
   models: [chartBlockModelSchemaManifest],

@@ -57,10 +57,6 @@ class RecordManifestPlugin extends Plugin {
       defaults: {
         strict: true,
       },
-      inventory: {
-        publicModels: ['ProviderManifestModel', 'ProviderMissingModel'],
-        publicActions: ['providerRecordAction', 'providerMissingAction'],
-      },
       actions: {
         providerRecordAction: {
           title: 'Provider record action',
@@ -127,10 +123,6 @@ class ArrayManifestPlugin extends Plugin {
       defaults: {
         source: 'plugin',
         strict: false,
-      },
-      inventory: {
-        publicModels: ['ProviderArrayModel', 'ProviderPluginMissingModel'],
-        publicActions: ['providerArrayAction', 'providerPluginMissingAction'],
       },
       actions: [
         {
@@ -987,9 +979,6 @@ describe('flow schema manifest provider', () => {
   });
 
   it('should expose manifest bundles for additional official plugin packages', () => {
-    expect(actionExportFlowSchemaManifestContribution.inventory?.publicModels).toContain('ExportActionModel');
-    expect(actionImportFlowSchemaManifestContribution.inventory?.publicModels).toContain('ImportActionModel');
-    expect(dataVisualizationFlowSchemaManifestContribution.inventory?.publicModels).toContain('ChartBlockModel');
     expect(typeof PluginActionExportServer.prototype.getFlowSchemaManifests).toBe('function');
     expect(typeof PluginActionImportServer.prototype.getFlowSchemaManifests).toBe('function');
     expect(typeof PluginDataVisualizationServer.prototype.getFlowSchemaManifests).toBe('function');

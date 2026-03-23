@@ -162,38 +162,16 @@ function normalizeInventoryContribution(
     return undefined;
   }
 
-  const publicModels = Array.isArray(inventory.publicModels)
-    ? inventory.publicModels.map((item) => String(item || '').trim()).filter(Boolean)
-    : [];
-  const publicActions = Array.isArray(inventory.publicActions)
-    ? inventory.publicActions.map((item) => String(item || '').trim()).filter(Boolean)
-    : [];
   const publicTreeRoots = Array.isArray(inventory.publicTreeRoots)
     ? inventory.publicTreeRoots.map((item) => String(item || '').trim()).filter(Boolean)
     : [];
-  const expectedDescendantModels = Array.isArray(inventory.expectedDescendantModels)
-    ? inventory.expectedDescendantModels.map((item) => String(item || '').trim()).filter(Boolean)
-    : [];
-  const expectedDescendantActions = Array.isArray(inventory.expectedDescendantActions)
-    ? inventory.expectedDescendantActions.map((item) => String(item || '').trim()).filter(Boolean)
-    : [];
 
-  if (
-    !publicModels.length &&
-    !publicActions.length &&
-    !publicTreeRoots.length &&
-    !expectedDescendantModels.length &&
-    !expectedDescendantActions.length
-  ) {
+  if (!publicTreeRoots.length) {
     return undefined;
   }
 
   return {
-    ...(publicModels.length ? { publicModels: _.uniq(publicModels) } : {}),
-    ...(publicActions.length ? { publicActions: _.uniq(publicActions) } : {}),
     ...(publicTreeRoots.length ? { publicTreeRoots: _.uniq(publicTreeRoots) } : {}),
-    ...(expectedDescendantModels.length ? { expectedDescendantModels: _.uniq(expectedDescendantModels) } : {}),
-    ...(expectedDescendantActions.length ? { expectedDescendantActions: _.uniq(expectedDescendantActions) } : {}),
   };
 }
 

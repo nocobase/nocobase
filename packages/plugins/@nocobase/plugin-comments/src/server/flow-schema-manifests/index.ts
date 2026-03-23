@@ -227,9 +227,7 @@ const commentsBlockModelSchemaManifest: FlowModelSchemaManifest = {
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
-    publicModels: ['CommentsBlockModel'],
     publicTreeRoots: ['CommentsBlockModel'],
-    expectedDescendantModels: ['CommentItemModel'],
   },
   models: [commentItemModelInternalSchemaManifest, commentsBlockModelSchemaManifest],
   defaults: {

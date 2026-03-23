@@ -144,9 +144,7 @@ const actionPanelScanActionModelSchemaManifest: FlowModelSchemaManifest = {
 
 export const flowSchemaManifestContribution: FlowSchemaManifestContribution = {
   inventory: {
-    publicModels: ['ActionPanelBlockModel'],
     publicTreeRoots: ['ActionPanelBlockModel'],
-    expectedDescendantModels: ['ActionPanelScanActionModel'],
   },
   models: [actionPanelScanActionModelSchemaManifest, actionPanelBlockModelSchemaManifest],
   defaults: {
