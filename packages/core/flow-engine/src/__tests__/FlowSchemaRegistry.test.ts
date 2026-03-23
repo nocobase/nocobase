@@ -510,7 +510,6 @@ describe('FlowSchemaRegistry', () => {
 
     const doc = registry.getModelDocument('SchemaRegistryManifestModel');
     const bundle = registry.getSchemaBundle(['SchemaRegistryManifestModel']);
-    const summary = registry.getCoverageSummary();
 
     expect(doc.minimalExample).toMatchObject({
       use: 'SchemaRegistryManifestModel',
@@ -538,14 +537,6 @@ describe('FlowSchemaRegistry', () => {
         }),
       ]),
     );
-    expect(summary.registeredModels).toBe(1);
-    expect(summary.registeredActions).toBe(1);
-    expect(summary.publicOfficialModelsTotal).toBe(2);
-    expect(summary.publicOfficialModelsCovered).toBe(1);
-    expect(summary.publicOfficialStrictModels).toBe(0);
-    expect(summary.publicOfficialUnresolvedModels).toBe(0);
-    expect(summary.missingModelUses).toEqual(['SchemaRegistryMissingModel']);
-    expect(summary.missingActionNames).toEqual(['schemaRegistryMissingAction']);
     expect(bundle).not.toHaveProperty('generatedAt');
     expect(bundle).not.toHaveProperty('summary');
     expect(bundle.items[0]).toMatchObject({
@@ -680,16 +671,12 @@ describe('FlowSchemaRegistry', () => {
       },
     });
 
-    expect(registry.hasPublicModel('SchemaRegistryInternalBaseModel')).toBe(false);
     expect(registry.hasQueryableModel('SchemaRegistryInternalBaseModel')).toBe(false);
-    expect(registry.hasPublicModel('SchemaRegistryPublicModel')).toBe(true);
     expect(registry.hasQueryableModel('SchemaRegistryInternalConcreteModel')).toBe(true);
     expect(registry.isDirectUseAllowed('SchemaRegistryInternalBaseModel')).toBe(false);
     expect(registry.isDirectUseAllowed('SchemaRegistryInternalConcreteModel')).toBe(true);
     expect(registry.getSuggestedUses('SchemaRegistryInternalBaseModel')).toEqual(['SchemaRegistryPublicModel']);
     expect(registry.listModelUses({ publicOnly: true })).toEqual(['SchemaRegistryPublicModel']);
-    expect(registry.getCoverageSummary({ publicOnly: true }).registeredModels).toBe(1);
-    expect(registry.getCoverageSummary({ publicOnly: true }).publicOfficialModelsTotal).toBe(0);
     expect(registry.getSchemaBundle().items).toEqual([]);
     expect(registry.getSchemaBundle(['SchemaRegistryInternalConcreteModel']).items.map((item) => item.use)).toEqual([
       'SchemaRegistryInternalConcreteModel',

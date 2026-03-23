@@ -110,28 +110,6 @@ export interface FlowSchemaDocs {
   dynamicHints?: FlowDynamicHint[];
 }
 
-export interface FlowSchemaRegistrySummary {
-  registeredModels: number;
-  registeredActions: number;
-  strictModels: number;
-  unresolvedModels: number;
-  officialModels: number;
-  pluginModels: number;
-  thirdPartyModels: number;
-  publicOfficialModelsTotal: number;
-  publicOfficialModelsCovered: number;
-  publicOfficialStrictModels: number;
-  publicOfficialUnresolvedModels: number;
-  publicOfficialDescendantModelsTotal: number;
-  publicOfficialDescendantModelsCovered: number;
-  publicOfficialDescendantStrictModels: number;
-  publicOfficialDescendantUnresolvedModels: number;
-  missingModelUses: string[];
-  missingActionNames: string[];
-  missingDescendantModelUses: string[];
-  missingDescendantActionNames: string[];
-}
-
 export interface FlowSchemaBundleSlotCatalog {
   type: 'object' | 'array';
   required?: boolean;

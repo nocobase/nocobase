@@ -39,7 +39,6 @@ import type {
   FlowSchemaCoverage,
   FlowSchemaDocument,
   FlowModelSchemaExposure,
-  FlowSchemaRegistrySummary,
   FlowSubModelContextPathStep,
   FlowSubModelSlotSchema,
   ModelConstructor,
@@ -781,11 +780,7 @@ export class FlowSchemaRegistry {
   private readonly fieldBindingContexts = new Map<string, RegisteredFieldBindingContext>();
   private readonly fieldBindings = new Map<string, RegisteredFieldBinding[]>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
-  private readonly publicModelInventory = new Map<string, FlowSchemaCoverage['source']>();
-  private readonly publicActionInventory = new Map<string, FlowSchemaCoverage['source']>();
   private readonly publicTreeRootInventory = new Map<string, FlowSchemaCoverage['source']>();
-  private readonly descendantModelInventory = new Map<string, FlowSchemaCoverage['source']>();
-  private readonly descendantActionInventory = new Map<string, FlowSchemaCoverage['source']>();
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
     const name = String(action?.name || '').trim();
@@ -1080,24 +1075,8 @@ export class FlowSchemaRegistry {
       return;
     }
 
-    for (const use of normalizeStringArray(inventory.publicModels)) {
-      this.publicModelInventory.set(use, source);
-    }
-
-    for (const name of normalizeStringArray(inventory.publicActions)) {
-      this.publicActionInventory.set(name, source);
-    }
-
     for (const use of normalizeStringArray(inventory.publicTreeRoots)) {
       this.publicTreeRootInventory.set(use, source);
-    }
-
-    for (const use of normalizeStringArray(inventory.expectedDescendantModels)) {
-      this.descendantModelInventory.set(use, source);
-    }
-
-    for (const name of normalizeStringArray(inventory.expectedDescendantActions)) {
-      this.descendantActionInventory.set(name, source);
     }
   }
 
@@ -1315,11 +1294,6 @@ export class FlowSchemaRegistry {
       .slice(0, 20);
   }
 
-  hasPublicModel(use: string): boolean {
-    const model = this.modelSchemas.get(String(use || '').trim());
-    return !!model && this.isPublicModel(model) && this.isQueryableModel(model);
-  }
-
   hasQueryableModel(use: string): boolean {
     const model = this.modelSchemas.get(String(use || '').trim());
     return this.isQueryableModel(model);
@@ -1340,61 +1314,6 @@ export class FlowSchemaRegistry {
       .sort();
   }
 
-  listModelDocuments(options: { publicOnly?: boolean; queryableOnly?: boolean } = {}): FlowSchemaDocument[] {
-    return this.listModelUses({ publicOnly: options.publicOnly, queryableOnly: options.queryableOnly }).map((use) =>
-      this.getModelDocument(use),
-    );
-  }
-
-  getCoverageSummary(options: { publicOnly?: boolean } = {}): FlowSchemaRegistrySummary {
-    const { publicOnly = false } = options;
-    const models = Array.from(this.modelSchemas.values()).filter(
-      (model) => !publicOnly || (this.isPublicModel(model) && this.isQueryableModel(model)),
-    );
-    const inventoryModelEntries = Array.from(this.publicModelInventory.entries()).filter(([, source]) =>
-      this.isOfficialInventorySource(source),
-    );
-    const inventoryActionEntries = Array.from(this.publicActionInventory.entries()).filter(([, source]) =>
-      this.isOfficialInventorySource(source),
-    );
-    const descendantModelEntries = Array.from(this.descendantModelInventory.entries()).filter(([, source]) =>
-      this.isOfficialInventorySource(source),
-    );
-    const descendantActionEntries = Array.from(this.descendantActionInventory.entries()).filter(([, source]) =>
-      this.isOfficialInventorySource(source),
-    );
-    const publicModelSummary = this.summarizeInventoryModels(inventoryModelEntries, {
-      publicOnly: true,
-      directUseOnly: true,
-    });
-    const descendantModelSummary = this.summarizeInventoryModels(descendantModelEntries);
-    const missingActionNames = this.summarizeInventoryActions(inventoryActionEntries);
-    const missingDescendantActionNames = this.summarizeInventoryActions(descendantActionEntries);
-
-    return {
-      registeredModels: models.length,
-      registeredActions: this.actionSchemas.size,
-      strictModels: models.filter((item) => item.coverage.strict).length,
-      unresolvedModels: models.filter((item) => item.coverage.status === 'unresolved').length,
-      officialModels: models.filter((item) => item.coverage.source === 'official').length,
-      pluginModels: models.filter((item) => item.coverage.source === 'plugin').length,
-      thirdPartyModels: models.filter((item) => item.coverage.source === 'third-party').length,
-      publicOfficialModelsTotal: inventoryModelEntries.length,
-      publicOfficialModelsCovered: publicModelSummary.coveredModels.length,
-      publicOfficialStrictModels: publicModelSummary.coveredModels.filter((item) => item.coverage.strict).length,
-      publicOfficialUnresolvedModels: publicModelSummary.unresolvedUses.length,
-      publicOfficialDescendantModelsTotal: descendantModelEntries.length,
-      publicOfficialDescendantModelsCovered: descendantModelSummary.coveredModels.length,
-      publicOfficialDescendantStrictModels: descendantModelSummary.coveredModels.filter((item) => item.coverage.strict)
-        .length,
-      publicOfficialDescendantUnresolvedModels: descendantModelSummary.unresolvedUses.length,
-      missingModelUses: publicModelSummary.missingUses,
-      missingActionNames,
-      missingDescendantModelUses: descendantModelSummary.missingUses,
-      missingDescendantActionNames,
-    };
-  }
-
   getSchemaBundle(uses?: string[]): FlowSchemaBundleDocument {
     return {
       items: (Array.isArray(uses) && uses.length > 0 ? uses.filter((use) => this.hasQueryableModel(use)) : []).map(
@@ -1405,56 +1324,6 @@ export class FlowSchemaRegistry {
 
   getModelDocument(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowSchemaDocument {
     return this.buildModelDocument(use, contextChain, new Set<string>());
-  }
-
-  private isOfficialInventorySource(source: FlowSchemaCoverage['source']) {
-    return source === 'official' || source === 'plugin';
-  }
-
-  private summarizeInventoryModels(
-    entries: Array<[string, FlowSchemaCoverage['source']]>,
-    options: { publicOnly?: boolean; directUseOnly?: boolean } = {},
-  ) {
-    const missingUses: string[] = [];
-    const unresolvedUses: string[] = [];
-    const coveredModels: RegisteredModelSchema[] = [];
-
-    for (const [use] of entries) {
-      const model = this.modelSchemas.get(use);
-      if (!model) {
-        missingUses.push(use);
-        continue;
-      }
-      if (options.publicOnly && (!this.isPublicModel(model) || !this.isQueryableModel(model))) {
-        missingUses.push(use);
-        continue;
-      }
-      if (options.directUseOnly && (!this.isQueryableModel(model) || model.allowDirectUse === false)) {
-        missingUses.push(use);
-        continue;
-      }
-      if (model.coverage.status === 'unresolved') {
-        unresolvedUses.push(use);
-        continue;
-      }
-      coveredModels.push(model);
-    }
-
-    return {
-      missingUses: missingUses.sort(),
-      unresolvedUses: unresolvedUses.sort(),
-      coveredModels,
-    };
-  }
-
-  private summarizeInventoryActions(entries: Array<[string, FlowSchemaCoverage['source']]>) {
-    return entries
-      .map(([name]) => name)
-      .filter((name) => {
-        const action = this.actionSchemas.get(name);
-        return !action || action.coverage.status === 'unresolved';
-      })
-      .sort();
   }
 
   private listPublicTreeRootUses(): string[] {
@@ -2429,5 +2298,3 @@ export class FlowSchemaRegistry {
     return slots;
   }
 }
-
-export const globalFlowSchemaRegistry = new FlowSchemaRegistry();
