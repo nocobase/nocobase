@@ -480,7 +480,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
    * Check if the application is serving as a specific worker.
    * @experimental
    */
-  public serving(key?: string): boolean {
+  public static serving(key?: string): boolean {
     const { WORKER_MODE = '' } = process.env;
     if (!WORKER_MODE) {
       return true;
@@ -503,6 +503,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
       return false;
     }
+  }
+
+  /**
+   * @deprecated use static method {@link Application.serving} instead.
+   */
+  public serving(key?: string): boolean {
+    return Application.serving(key);
   }
 
   /**

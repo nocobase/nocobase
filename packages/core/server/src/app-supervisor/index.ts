@@ -443,6 +443,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const app = new Application(options);
     this.registerCommandHandler(app);
     app.on('afterStart', async (app: Application) => {
+      const { WORKER_MODE = '' } = process.env;
+      if (WORKER_MODE === '-') {
+        return;
+      }
       await app.syncMessageManager.subscribe(
         'app_supervisor:sync',
         async (message: { type: string; appName: string }) => {
@@ -473,6 +477,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
           }
         },
       );
+
+      if (!Application.serving()) {
+        return;
+      }
+
       await this.registerEnvironment(app);
       if (process.env.APP_MODE === 'supervisor') {
         this.logger.info('Loading app models...');
@@ -480,6 +489,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }
     });
     app.on('afterDestroy', async (app: Application) => {
+      if (!Application.serving()) {
+        return;
+      }
       await this.unregisterEnvironment();
     });
     return app;
