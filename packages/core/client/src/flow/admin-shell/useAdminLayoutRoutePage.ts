@@ -15,7 +15,7 @@ type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
   pageUid: string;
   active: boolean;
-  refreshDesktopRoutes?: () => void;
+  refreshDesktopRoutes?: () => Promise<unknown>;
   layoutContentRef: React.RefObject<HTMLDivElement>;
 };
 

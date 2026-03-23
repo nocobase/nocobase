@@ -22,7 +22,7 @@ import { resolveViewParamsToViewList, updateViewListHidden, type ViewItem } from
 
 export interface RoutePageMeta {
   active: boolean;
-  refreshDesktopRoutes?: () => void;
+  refreshDesktopRoutes?: () => Promise<unknown>;
   layoutContentElement?: HTMLElement | null;
 }
 
@@ -102,8 +102,7 @@ export class AdminLayoutRouteCoordinator {
       ...runtime.meta,
       ...meta,
       active: typeof meta.active === 'boolean' ? meta.active : runtime.meta.active,
-      layoutContentElement:
-        meta.layoutContentElement === undefined ? runtime.meta.layoutContentElement : meta.layoutContentElement,
+      layoutContentElement: meta.layoutContentElement ?? runtime.meta.layoutContentElement,
     };
 
     if (runtime.routeModel.context.pageActive?.value !== runtime.meta.active) {

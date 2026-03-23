@@ -11,8 +11,14 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, waitFor } from '@testing-library/react';
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import { FlowRoute } from '../FlowPage';
+
+type MockAdminLayoutModel = FlowModel & {
+  registerRoutePage: ReturnType<typeof vi.fn>;
+  updateRoutePage: ReturnType<typeof vi.fn>;
+  unregisterRoutePage: ReturnType<typeof vi.fn>;
+};
 
 const { hookState } = vi.hoisted(() => {
   return {
@@ -30,7 +36,6 @@ vi.mock('../../route-switch', async (importOriginal) => {
     ...actual,
     useKeepAlive: () => ({ active: hookState.active }),
     useMobileLayout: () => ({ isMobileLayout: hookState.isMobileLayout }),
-    useAllAccessDesktopRoutes: () => ({ refresh: hookState.refresh }),
   };
 });
 
@@ -44,20 +49,30 @@ describe('FlowRoute', () => {
 
   it('should bridge page lifecycle to admin-layout-model', async () => {
     const engine = new FlowEngine();
+    const routeRepository = {
+      refreshAccessible: hookState.refresh,
+    };
     engine.context.defineProperty('route', {
       value: {
         params: { name: 'test-page' },
         pathname: '/admin/test-page',
       },
     });
-
-    const adminLayoutModel = engine.createModel({
-      uid: 'admin-layout-model',
-      use: 'FlowModel',
+    engine.context.defineProperty('routeRepository', {
+      value: routeRepository,
     });
-    adminLayoutModel.registerRoutePage = vi.fn();
-    adminLayoutModel.updateRoutePage = vi.fn();
-    adminLayoutModel.unregisterRoutePage = vi.fn();
+
+    const adminLayoutModel: MockAdminLayoutModel = Object.assign(
+      engine.createModel({
+        uid: 'admin-layout-model',
+        use: 'FlowModel',
+      }),
+      {
+        registerRoutePage: vi.fn(),
+        updateRoutePage: vi.fn(),
+        unregisterRoutePage: vi.fn(),
+      },
+    );
 
     const { rerender, unmount } = render(
       <FlowEngineProvider engine={engine}>
@@ -74,25 +89,27 @@ describe('FlowRoute', () => {
         'test-page',
         expect.objectContaining({
           active: true,
-          refreshDesktopRoutes: hookState.refresh,
+          refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
     });
+
+    await adminLayoutModel.registerRoutePage.mock.calls[0][1].refreshDesktopRoutes();
+    expect(hookState.refresh).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith('test-page', { active: true });
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          refreshDesktopRoutes: hookState.refresh,
+          refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
     });
 
     hookState.active = false;
-    hookState.refresh = vi.fn();
 
     rerender(
       <FlowEngineProvider engine={engine}>
@@ -109,7 +126,7 @@ describe('FlowRoute', () => {
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          refreshDesktopRoutes: hookState.refresh,
+          refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),
       );
@@ -125,6 +142,11 @@ describe('FlowRoute', () => {
       value: {
         params: { name: 'test-page' },
         pathname: '/admin/test-page',
+      },
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        refreshAccessible: hookState.refresh,
       },
     });
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
