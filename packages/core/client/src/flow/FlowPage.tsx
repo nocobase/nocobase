@@ -11,7 +11,7 @@ import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext 
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useRef } from 'react';
-import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive } from '../route-switch';
 import { useAdminLayoutRoutePage } from './admin-shell/useAdminLayoutRoutePage';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { deviceType } from 'react-device-detect';
@@ -38,7 +38,6 @@ export const FlowRoute = () => {
   const route = flowEngine.context.route || {};
   const currentRoute = useCurrentRoute();
   const { refresh } = useAllAccessDesktopRoutes();
-  const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(route?.params?.name);
   const { active } = useKeepAlive();
   const layoutContentRef = useRef<HTMLDivElement>(null);
@@ -49,13 +48,6 @@ export const FlowRoute = () => {
   }
 
   useEffect(() => {
-    flowEngine.context.defineProperty('isMobileLayout', {
-      get: () => isMobileLayout,
-      info: {
-        description: 'Whether current layout is mobile layout.',
-        detail: 'boolean',
-      },
-    });
     flowEngine.context.defineProperty('deviceType', {
       get: () => (deviceType === 'browser' ? 'computer' : deviceType),
       cache: false,
@@ -81,7 +73,7 @@ export const FlowRoute = () => {
         detail: 'string',
       },
     });
-  }, [isMobileLayout, flowEngine]);
+  }, [flowEngine]);
 
   useAdminLayoutRoutePage({
     flowEngine,

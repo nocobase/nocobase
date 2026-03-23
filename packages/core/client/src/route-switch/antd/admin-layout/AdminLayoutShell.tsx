@@ -449,6 +449,18 @@ export const AdminLayoutShell = (props) => {
       }
     };
   }, [designable, flowEngine, isMobileSider]);
+
+  // 将 isMobileLayout 注册到 flowEngine.context，供 flow 模型中使用
+  useEffect(() => {
+    flowEngine.context.defineProperty('isMobileLayout', {
+      get: () => isMobileLayout,
+      info: {
+        description: 'Whether current layout is mobile layout.',
+        detail: 'boolean',
+      },
+    });
+  }, [isMobileLayout, flowEngine]);
+
   const layoutToken = useMemo(() => {
     return {
       header: {
