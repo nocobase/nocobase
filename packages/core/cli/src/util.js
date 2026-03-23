@@ -83,6 +83,44 @@ exports.run = (command, args, options = {}) => {
   });
 };
 
+exports.runWithPrefix = (command, args, options = {}) => {
+  if (command === 'tsx') {
+    command = 'node';
+    args = ['./node_modules/tsx/dist/cli.mjs'].concat(args || []);
+  }
+
+  const prefix = options.prefix || 'process';
+  const color = options.color || 'cyan';
+  const label = chalk[color](`[${prefix}]`);
+  const subprocess = execa(command, args, {
+    shell: true,
+    stdio: 'pipe',
+    ...options,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+  });
+
+  const writePrefixed = (chunk, writer) => {
+    const text = chunk.toString();
+    const lines = text.split(/\r?\n/);
+    const trailingNewline = text.endsWith('\n') || text.endsWith('\r');
+
+    lines.forEach((line, index) => {
+      if (!line && index === lines.length - 1 && trailingNewline) {
+        return;
+      }
+      writer.write(`${label} ${line}\n`);
+    });
+  };
+
+  subprocess.stdout?.on('data', (chunk) => writePrefixed(chunk, process.stdout));
+  subprocess.stderr?.on('data', (chunk) => writePrefixed(chunk, process.stderr));
+
+  return subprocess;
+};
+
 exports.isPortReachable = async (port, { timeout = 1000, host } = {}) => {
   const promise = new Promise((resolve, reject) => {
     const socket = new net.Socket();
@@ -232,6 +270,7 @@ exports.genTsConfigPaths = function genTsConfigPaths() {
       .split(sep)
       .join('/');
     paths[`${packageJsonName}/client`] = [`${relativePath}/src/client`];
+    paths[`${packageJsonName}/client-v2`] = [`${relativePath}/src/client-v2`];
     paths[`${packageJsonName}/package.json`] = [`${relativePath}/package.json`];
     paths[packageJsonName] = [`${relativePath}/src`];
     if (packageJsonName === '@nocobase/test') {
@@ -523,10 +562,40 @@ exports.checkDBDialect = function () {
 
 exports.generatePlugins = function () {
   try {
-    require.resolve('@nocobase/devtools/umiConfig');
-    const { generatePlugins } = require('@nocobase/devtools/umiConfig');
-    generatePlugins();
+    require.resolve('@nocobase/devtools/common');
+    const { generateAllPlugins, generatePlugins, generateV2Plugins } = require('@nocobase/devtools/common');
+    if (typeof generateAllPlugins === 'function') {
+      generateAllPlugins();
+      return;
+    }
+    generatePlugins?.();
+    generateV2Plugins?.();
   } catch (error) {
     return;
   }
+};
+
+exports.isURL = function isURL(str) {
+  let url;
+
+  try {
+    url = new URL(str);
+  } catch (e) {
+    return false;
+  }
+
+  return url.protocol === 'http:' || url.protocol === 'https:';
+};
+
+exports.buildWSURL = function buildWSURL(urlString, serverPort) {
+  if (exports.isURL(urlString)) {
+    const parsedUrl = new URL(urlString);
+    parsedUrl.protocol = parsedUrl.protocol === 'https:' ? 'wss:' : 'ws:';
+    parsedUrl.pathname =
+      process.env.WS_PATH || (process.env.APP_PUBLIC_PATH ? process.env.APP_PUBLIC_PATH + 'ws' : '/ws');
+    const url = parsedUrl.toString();
+    return url;
+  }
+
+  return serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : undefined;
 };

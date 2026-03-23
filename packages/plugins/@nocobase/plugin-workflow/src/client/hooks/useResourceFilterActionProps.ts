@@ -14,7 +14,7 @@ import {
   useResourceContext,
 } from '@nocobase/client';
 
-export const useWorkflowFilterActionProps = () => {
+export const useResourceFilterActionProps = () => {
   const { collection } = useResourceContext();
   const options = useFilterFieldOptions(collection.fields);
   const service = useResourceActionContext();

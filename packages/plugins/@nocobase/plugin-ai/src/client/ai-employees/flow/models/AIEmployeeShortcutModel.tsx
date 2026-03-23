@@ -206,6 +206,7 @@ const OptionContent: React.FC<{
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
+        width: '100%',
         minWidth: 0,
         padding: '2px 0',
       }}
@@ -255,7 +256,7 @@ const SkillSettings: React.FC<{
       onChange={handleChange}
       manual={false}
       multiple={true}
-      popupMatchSelectWidth={360}
+      popupMatchSelectWidth
       placeholder={t('Use all AI employee skills')}
       fieldNames={{
         label: 'title',
@@ -300,7 +301,7 @@ const ToolSettings: React.FC<{
       onChange={handleChange}
       manual={false}
       multiple={true}
-      popupMatchSelectWidth={360}
+      popupMatchSelectWidth
       placeholder={t('Use all AI employee tools')}
       fieldNames={{
         label: 'title',

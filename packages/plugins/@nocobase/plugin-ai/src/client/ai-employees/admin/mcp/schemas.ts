@@ -23,7 +23,11 @@ const createTransportReaction = (transport: 'stdio' | 'remote', required = false
   ];
 };
 
-const createMCPFormProperties = (options: { disableName?: boolean; submitPropsHook: string }) => ({
+const createMCPFormProperties = (options: {
+  disableName?: boolean;
+  submitPropsHook: string;
+  footerComponent?: 'Action.Drawer.Footer' | 'Action.Drawer.FootBar';
+}) => ({
   name: {
     type: 'string',
     'x-decorator': 'FormItem',
@@ -221,7 +225,7 @@ const createMCPFormProperties = (options: { disableName?: boolean; submitPropsHo
   },
   footer: {
     type: 'void',
-    'x-component': 'Action.Drawer.Footer',
+    'x-component': options.footerComponent || 'Action.Drawer.Footer',
     properties: {
       test: {
         type: 'void',
@@ -244,6 +248,30 @@ const createMCPFormProperties = (options: { disableName?: boolean; submitPropsHo
   },
 });
 
+export const createMCPFormContentSchema = {
+  type: 'void',
+  properties: createMCPFormProperties({ submitPropsHook: 'useCreateActionProps' }),
+};
+
+export const editMCPFormContentSchema = {
+  type: 'void',
+  properties: createMCPFormProperties({
+    disableName: true,
+    submitPropsHook: 'useEditActionProps',
+    footerComponent: 'Action.Drawer.FootBar',
+  }),
+};
+
+export const viewMCPToolsContentSchema = {
+  type: 'void',
+  properties: {
+    tools: {
+      type: 'void',
+      'x-component': 'MCPToolsList',
+    },
+  },
+};
+
 export const createMCPSchema = {
   type: 'void',
   properties: {
@@ -253,7 +281,7 @@ export const createMCPSchema = {
       'x-component': 'Action.Drawer',
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useCreateFormProps',
-      properties: createMCPFormProperties({ submitPropsHook: 'useCreateActionProps' }),
+      properties: createMCPFormContentSchema.properties,
     },
   },
 };
@@ -267,10 +295,7 @@ export const editMCPDrawerSchema = {
       'x-component': 'Action.Drawer',
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useEditFormProps',
-      properties: createMCPFormProperties({
-        disableName: true,
-        submitPropsHook: 'useEditActionProps',
-      }),
+      properties: editMCPFormContentSchema.properties,
     },
   },
 };
@@ -285,12 +310,7 @@ export const viewMCPToolsDrawerSchema = {
       'x-component-props': {
         width: 720,
       },
-      properties: {
-        tools: {
-          type: 'void',
-          'x-component': 'MCPToolsList',
-        },
-      },
+      properties: viewMCPToolsContentSchema.properties,
     },
   },
 };
@@ -415,7 +435,73 @@ export const mcpSettingsSchema = {
               properties: {
                 actions: {
                   type: 'void',
-                  'x-component': 'MCPActions',
+                  'x-component': 'Space',
+                  'x-component-props': {
+                    split: '|',
+                  },
+                  properties: {
+                    view: {
+                      type: 'void',
+                      title: '{{ t("View") }}',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        openMode: 'drawer',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          title: '{{ t("MCP tools") }}',
+                          'x-component': 'Action.Drawer',
+                          'x-component-props': {
+                            width: 720,
+                          },
+                          properties: {
+                            content: {
+                              type: 'void',
+                              'x-component': 'MCPViewDrawerContent',
+                            },
+                          },
+                        },
+                      },
+                    },
+                    edit: {
+                      type: 'void',
+                      title: '{{ t("Edit") }}',
+                      'x-action': 'update',
+                      'x-component': 'Action.Link',
+                      'x-component-props': {
+                        openMode: 'drawer',
+                      },
+                      properties: {
+                        drawer: {
+                          type: 'void',
+                          title: '{{ t("Edit record") }}',
+                          'x-component': 'Action.Drawer',
+                          'x-decorator': 'FormV2',
+                          'x-use-decorator-props': 'useEditFormProps',
+                          properties: {
+                            content: {
+                              type: 'void',
+                              'x-component': 'MCPEditDrawerContent',
+                            },
+                          },
+                        },
+                      },
+                    },
+                    destroy: {
+                      type: 'void',
+                      title: '{{ t("Delete") }}',
+                      'x-action': 'destroy',
+                      'x-component': 'Action.Link',
+                      'x-use-component-props': 'useMCPDestroyActionProps',
+                      'x-component-props': {
+                        confirm: {
+                          title: "{{t('Delete record')}}",
+                          content: "{{t('Are you sure you want to delete it?')}}",
+                        },
+                      },
+                    },
+                  },
                 },
               },
             },

@@ -101,6 +101,21 @@ export const executionSchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-use-component-props': 'useResourceFilterActionProps',
+              'x-component-props': {
+                icon: 'FilterOutlined',
+                nonfilterable: ['workflow'],
+              },
+              'x-align': 'left',
+              default: {
+                $and: [{ status: { $eq: undefined } }],
+              },
+            },
             refresher: {
               type: 'void',
               title: '{{ t("Refresh") }}',

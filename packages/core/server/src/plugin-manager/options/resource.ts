@@ -18,48 +18,109 @@ import crypto from 'crypto';
 
 import packageJson from '../../../package.json';
 
-class PackageUrls {
-  static items = {};
-  static async get(packageName: string) {
-    if (!this.items[packageName]) {
-      this.items[packageName] = await this.fetch(packageName);
-    }
-    return this.items[packageName];
+export type PluginClientLane = 'client' | 'client-v2';
+
+const PLUGIN_CLIENT_ENTRY_FILES: Record<PluginClientLane, string> = {
+  client: 'dist/client/index.js',
+  'client-v2': 'dist/client-v2/index.js',
+};
+
+const PLUGIN_CLIENT_MARKER_FILES: Record<PluginClientLane, string> = {
+  client: 'client.js',
+  'client-v2': 'client-v2.js',
+};
+
+export class PackageUrls {
+  static items: Record<string, string | undefined> = {};
+
+  static clear() {
+    this.items = {};
   }
-  static async fetch(packageName: string) {
-    const PLUGIN_CLIENT_ENTRY_FILE = 'dist/client/index.js';
+
+  static getCacheKey(packageName: string, lane: PluginClientLane) {
+    return `${lane}:${packageName}`;
+  }
+
+  static async get(packageName: string, lane: PluginClientLane = 'client') {
+    const cacheKey = this.getCacheKey(packageName, lane);
+    if (!this.items[cacheKey]) {
+      this.items[cacheKey] = await this.fetch(packageName, lane);
+    }
+    return this.items[cacheKey];
+  }
+
+  static async hasClientEntry(packageName: string, lane: PluginClientLane) {
     const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
-    const r = await fse.exists(pkgPath);
-    if (r) {
-      let t = '';
-      const dist = path.resolve(pkgPath, PLUGIN_CLIENT_ENTRY_FILE);
-      const distExists = await fse.exists(dist);
-      if (distExists) {
-        const fsState = await fse.stat(distExists ? dist : pkgPath);
-        const appKey = process.env.APP_KEY || '';
-        let version = '';
-        try {
-          const pkgJson = await fse.readJson(path.resolve(pkgPath, 'package.json'));
-          if (pkgJson && typeof pkgJson.version === 'string') {
-            version = pkgJson.version;
-          }
-        } catch (error) {
-          // Ignore errors reading package.json and fall back to empty version
+    if (!(await fse.exists(pkgPath))) {
+      return false;
+    }
+    return await fse.exists(path.resolve(pkgPath, PLUGIN_CLIENT_MARKER_FILES[lane]));
+  }
+
+  static async fetch(packageName: string, lane: PluginClientLane = 'client') {
+    const pluginClientEntryFile = PLUGIN_CLIENT_ENTRY_FILES[lane];
+    const pkgPath = path.resolve(process.env.NODE_MODULES_PATH, packageName);
+    const pkgExists = await fse.exists(pkgPath);
+    if (!pkgExists) {
+      return;
+    }
+
+    let t = '';
+    const dist = path.resolve(pkgPath, pluginClientEntryFile);
+    const distExists = await fse.exists(dist);
+    if (distExists) {
+      const fsState = await fse.stat(dist);
+      const appKey = process.env.APP_KEY || '';
+      let version = '';
+      try {
+        const pkgJson = await fse.readJson(path.resolve(pkgPath, 'package.json'));
+        if (pkgJson && typeof pkgJson.version === 'string') {
+          version = pkgJson.version;
         }
-        const appVersion = packageJson.version;
-        const salt = process.env.PLUGIN_URL_HASH_SALT || '';
-        const hash = crypto
-          .createHash('sha256')
-          .update(fsState.mtime.getTime() + appKey + version + appVersion + salt)
-          .digest('hex')
-          .slice(0, 8);
-        t = `?hash=${hash}`;
+      } catch (error) {
+        // Ignore errors reading package.json and fall back to empty version
       }
-      const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
-      const url = `${cdnBaseUrl}${'/static/plugins/'}${packageName}/${PLUGIN_CLIENT_ENTRY_FILE}${t}`;
-      return url;
+      const appVersion = packageJson.version;
+      const salt = process.env.PLUGIN_URL_HASH_SALT || '';
+      const hash = crypto
+        .createHash('sha256')
+        .update(fsState.mtime.getTime() + appKey + version + appVersion + salt)
+        .digest('hex')
+        .slice(0, 8);
+      t = `?hash=${hash}`;
+    }
+
+    const cdnBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const url = `${cdnBaseUrl}${'/static/plugins/'}${packageName}/${pluginClientEntryFile}${t}`;
+    return url;
+  }
+}
+
+async function listEnabledPlugins(ctx, lane: PluginClientLane = 'client') {
+  const pm = ctx.db.getRepository('applicationPlugins');
+  const items = await pm.find({
+    filter: {
+      enabled: true,
+    },
+  });
+  const arr = [];
+  for (const item of items) {
+    if (lane === 'client-v2' && !(await PackageUrls.hasClientEntry(item.packageName, lane))) {
+      continue;
+    }
+
+    const url = await PackageUrls.get(item.packageName, lane);
+    const { name, packageName, options } = item.toJSON();
+    if (url) {
+      arr.push({
+        name,
+        packageName,
+        options,
+        url,
+      });
     }
   }
+  return arr;
 }
 
 export default {
@@ -178,29 +239,11 @@ export default {
       await next();
     },
     async listEnabled(ctx, next) {
-      const toArr = async () => {
-        const pm = ctx.db.getRepository('applicationPlugins');
-        const items = await pm.find({
-          filter: {
-            enabled: true,
-          },
-        });
-        const arr = [];
-        for (const item of items) {
-          const url = await PackageUrls.get(item.packageName);
-          const { name, packageName, options } = item.toJSON();
-          if (url) {
-            arr.push({
-              name,
-              packageName,
-              options,
-              url,
-            });
-          }
-        }
-        return arr;
-      };
-      ctx.body = await toArr();
+      ctx.body = await listEnabledPlugins(ctx, 'client');
+      await next();
+    },
+    async listEnabledV2(ctx, next) {
+      ctx.body = await listEnabledPlugins(ctx, 'client-v2');
       await next();
     },
     async get(ctx, next) {
