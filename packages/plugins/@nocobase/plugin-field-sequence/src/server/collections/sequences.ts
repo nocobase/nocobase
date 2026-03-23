@@ -65,7 +65,12 @@ export default defineCollection({
       });
     },
   },
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   name: 'sequences',
   shared: true,
   fields: [

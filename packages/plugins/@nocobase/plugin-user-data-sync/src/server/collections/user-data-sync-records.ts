@@ -13,7 +13,12 @@ export default defineCollection({
   dumpRules: {
     group: 'third-party',
   },
-  migrationRules: ['schema-only', 'overwrite'],
+  migrationRules: ['schema-only', 'overwrite', 'skip', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   shared: true,
   name: 'userDataSyncRecords',
   createdAt: true,

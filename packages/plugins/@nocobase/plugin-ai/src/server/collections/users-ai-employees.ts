@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'usersAiEmployees',
-  migrationRules: ['schema-only'],
+  migrationRules: ['upsert', 'insert-ignore', 'overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['aiEmployee', 'userId'],
+  defaultMigrationRule: {
+    overwriteFirst: 'upsert',
+    upsertFirst: 'upsert',
+  },
   fields: [
     { type: 'sort', name: 'sort' },
     {

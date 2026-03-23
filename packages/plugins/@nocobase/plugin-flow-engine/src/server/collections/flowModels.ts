@@ -12,7 +12,12 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   name: 'flowModels',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['uid'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   autoGenId: false,
   timestamps: false,
   repository: 'FlowModelRepository',

@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 import llmServices from '../../collections/llm-services';
 
 export default defineCollection({
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['upsert', 'insert-ignore', 'overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['name'],
+  defaultMigrationRule: {
+    overwriteFirst: 'upsert',
+    upsertFirst: 'upsert',
+  },
   autoGenId: false,
   ...llmServices,
   sortable: true,

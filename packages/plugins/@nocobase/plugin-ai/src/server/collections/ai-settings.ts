@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   name: 'aiSettings',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   fields: [
     {
       type: 'jsonb',

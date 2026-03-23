@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'skipped',
-  migrationRules: ['schema-only', 'overwrite'],
+  migrationRules: ['schema-only', 'overwrite', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['code'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'upsert',
+  },
   name: 'chinaRegions',
   autoGenId: false,
   fields: [

@@ -15,7 +15,12 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only'],
+  migrationRules: ['schema-only', 'skip', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   shared: true,
   fields: [
     {
