@@ -14,7 +14,6 @@ import React, { useEffect, useRef } from 'react';
 import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { useAdminLayoutRoutePage } from './admin-shell/useAdminLayoutRoutePage';
 import { SkeletonFallback } from './components/SkeletonFallback';
-import { useDesignable } from '../schema-component';
 import { deviceType } from 'react-device-detect';
 
 function InternalFlowPage({ uid, ...props }) {
@@ -41,7 +40,6 @@ export const FlowRoute = () => {
   const { refresh } = useAllAccessDesktopRoutes();
   const { isMobileLayout } = useMobileLayout();
   const pageUidRef = useRef(route?.params?.name);
-  const { designable } = useDesignable();
   const { active } = useKeepAlive();
   const layoutContentRef = useRef<HTMLDivElement>(null);
   const pageUid = pageUidRef.current;
@@ -84,27 +82,6 @@ export const FlowRoute = () => {
       },
     });
   }, [isMobileLayout, flowEngine]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const syncFlowSettings = async () => {
-      // 移动端中不允许配置 UI；非设计态也无需启用 flow settings
-      if (isMobileLayout || !designable) {
-        await flowEngine.flowSettings.disable();
-        return;
-      }
-
-      if (!cancelled) {
-        await flowEngine.flowSettings.enable();
-      }
-    };
-
-    syncFlowSettings();
-    return () => {
-      cancelled = true;
-    };
-  }, [designable, flowEngine, isMobileLayout]);
 
   useAdminLayoutRoutePage({
     flowEngine,
