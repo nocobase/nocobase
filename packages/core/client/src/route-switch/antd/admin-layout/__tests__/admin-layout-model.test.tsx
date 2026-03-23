@@ -35,7 +35,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
-import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
 import { AdminLayout } from '..';
 import { AdminLayoutModel } from '../AdminLayoutModel';
 
@@ -189,6 +189,61 @@ describe('AdminLayout (phase-1 host)', () => {
 
     await waitFor(() => {
       expect(engine.context.currentRoute.title).toBe('Page 2');
+    });
+  });
+
+  it('should keep pageActive in sync after non-active route page updates', async () => {
+    const engine = new FlowEngine();
+    const routeRef = observable.ref({
+      params: { name: 'page-1' },
+      pathname: '/admin/page-1',
+    });
+    engine.context.defineProperty('routeRepository', {
+      value: {
+        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      },
+    });
+    engine.context.defineProperty('route', {
+      get: () => routeRef.value,
+      cache: false,
+    });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <AdminLayout />
+      </FlowEngineProvider>,
+    );
+
+    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
+    expect(model).toBeTruthy();
+
+    model.registerRoutePage('page-1', {
+      active: false,
+    });
+
+    const routeModel = engine.getModel<FlowModel>('page-1');
+
+    await waitFor(() => {
+      expect(routeModel.context.pageActive.value).toBe(true);
+    });
+
+    act(() => {
+      model.updateRoutePage('page-1', {
+        refreshDesktopRoutes: vi.fn(),
+      });
+    });
+
+    expect(routeModel.context.pageActive.value).toBe(true);
+
+    act(() => {
+      routeRef.value = {
+        params: { name: 'page-2' },
+        pathname: '/admin/page-2',
+      };
+    });
+
+    await waitFor(() => {
+      expect(routeModel.context.pageActive.value).toBe(false);
     });
   });
 });

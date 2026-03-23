@@ -56,6 +56,13 @@ export class AdminLayoutRouteCoordinator {
   private readonly runtimes = new Map<string, RoutePageRuntime>();
   private layoutContentElement: HTMLElement | null = null;
 
+  private setRuntimeActive(runtime: RoutePageRuntime, active: boolean) {
+    runtime.meta.active = active;
+    if (runtime.routeModel.context.pageActive?.value !== active) {
+      runtime.routeModel.context.pageActive.value = active;
+    }
+  }
+
   private getCurrentRouteByPageUid(pageUid: string) {
     return this.flowEngine.context.routeRepository?.getRouteBySchemaUid?.(pageUid) || {};
   }
@@ -105,9 +112,7 @@ export class AdminLayoutRouteCoordinator {
       layoutContentElement: meta.layoutContentElement ?? runtime.meta.layoutContentElement,
     };
 
-    if (runtime.routeModel.context.pageActive?.value !== runtime.meta.active) {
-      runtime.routeModel.context.pageActive.value = runtime.meta.active;
-    }
+    this.setRuntimeActive(runtime, runtime.meta.active);
   }
 
   unregisterPage(pageUid: string) {
@@ -118,6 +123,11 @@ export class AdminLayoutRouteCoordinator {
   syncRoute(routeLike: RouteLike) {
     const activePageUid = routeLike?.params?.name;
     const pathname = routeLike?.pathname;
+
+    this.runtimes.forEach((runtime) => {
+      this.setRuntimeActive(runtime, runtime.pageUid === activePageUid);
+    });
+
     if (!activePageUid || !pathname) {
       return;
     }

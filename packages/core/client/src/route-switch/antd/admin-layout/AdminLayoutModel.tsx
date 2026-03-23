@@ -74,7 +74,7 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
       active: typeof meta.active === 'boolean' ? meta.active : prev.active,
     };
     this.routePageMetaMap.set(pageUid, next);
-    this.getCoordinator().syncPageMeta(pageUid, next);
+    this.getCoordinator().syncPageMeta(pageUid, meta);
   }
 
   unregisterRoutePage(pageUid: string) {

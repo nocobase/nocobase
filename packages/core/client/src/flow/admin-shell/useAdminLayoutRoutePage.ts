@@ -14,7 +14,6 @@ import type { AdminLayoutModel } from '../../route-switch/antd/admin-layout/Admi
 type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
   pageUid: string;
-  active: boolean;
   refreshDesktopRoutes?: () => Promise<unknown>;
   layoutContentRef: React.RefObject<HTMLDivElement>;
 };
@@ -29,12 +28,10 @@ type UseAdminLayoutRoutePageOptions = {
  * @returns {AdminLayoutModel} 当前页面依附的 admin-layout host model
  */
 export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions) {
-  const { flowEngine, pageUid, active, refreshDesktopRoutes, layoutContentRef } = options;
+  const { flowEngine, pageUid, refreshDesktopRoutes, layoutContentRef } = options;
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
-  const activeRef = useRef(active);
   const refreshRef = useRef(refreshDesktopRoutes);
 
-  activeRef.current = active;
   refreshRef.current = refreshDesktopRoutes;
 
   if (!adminLayoutModel) {
@@ -43,7 +40,7 @@ export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions)
 
   useEffect(() => {
     adminLayoutModel.registerRoutePage(pageUid, {
-      active: activeRef.current,
+      active: false,
       refreshDesktopRoutes: refreshRef.current,
       layoutContentElement: layoutContentRef.current,
     });
@@ -51,12 +48,6 @@ export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions)
       adminLayoutModel.unregisterRoutePage(pageUid);
     };
   }, [adminLayoutModel, pageUid, layoutContentRef]);
-
-  useEffect(() => {
-    adminLayoutModel.updateRoutePage(pageUid, {
-      active,
-    });
-  }, [adminLayoutModel, pageUid, active]);
 
   useEffect(() => {
     adminLayoutModel.updateRoutePage(pageUid, {

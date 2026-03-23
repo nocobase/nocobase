@@ -23,7 +23,6 @@ type MockAdminLayoutModel = FlowModel & {
 const { hookState } = vi.hoisted(() => {
   return {
     hookState: {
-      active: true,
       isMobileLayout: true,
       refresh: vi.fn(),
     },
@@ -34,7 +33,6 @@ vi.mock('../../route-switch', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../route-switch')>();
   return {
     ...actual,
-    useKeepAlive: () => ({ active: hookState.active }),
     useMobileLayout: () => ({ isMobileLayout: hookState.isMobileLayout }),
   };
 });
@@ -42,7 +40,6 @@ vi.mock('../../route-switch', async (importOriginal) => {
 describe('FlowRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    hookState.active = true;
     hookState.isMobileLayout = true;
     hookState.refresh = vi.fn();
   });
@@ -88,7 +85,7 @@ describe('FlowRoute', () => {
       expect(adminLayoutModel.registerRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
-          active: true,
+          active: false,
           refreshDesktopRoutes: expect.any(Function),
           layoutContentElement: expect.any(HTMLDivElement),
         }),
@@ -99,7 +96,6 @@ describe('FlowRoute', () => {
     expect(hookState.refresh).toHaveBeenCalledTimes(1);
 
     await waitFor(() => {
-      expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith('test-page', { active: true });
       expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
         'test-page',
         expect.objectContaining({
@@ -108,8 +104,6 @@ describe('FlowRoute', () => {
         }),
       );
     });
-
-    hookState.active = false;
 
     rerender(
       <FlowEngineProvider engine={engine}>
@@ -120,17 +114,6 @@ describe('FlowRoute', () => {
         </MemoryRouter>
       </FlowEngineProvider>,
     );
-
-    await waitFor(() => {
-      expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith('test-page', { active: false });
-      expect(adminLayoutModel.updateRoutePage).toHaveBeenCalledWith(
-        'test-page',
-        expect.objectContaining({
-          refreshDesktopRoutes: expect.any(Function),
-          layoutContentElement: expect.any(HTMLDivElement),
-        }),
-      );
-    });
 
     unmount();
     expect(adminLayoutModel.unregisterRoutePage).toHaveBeenCalledWith('test-page');
