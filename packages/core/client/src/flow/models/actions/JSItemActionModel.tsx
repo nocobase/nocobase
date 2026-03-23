@@ -10,7 +10,9 @@
 import { ElementProxy, createSafeDocument, createSafeNavigator, createSafeWindow, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
-import { ActionModel, ActionSceneEnum } from '../base';
+import { ActionModel, ActionSceneEnum, CollectionActionGroupModel, RecordActionGroupModel } from '../base';
+import { FormActionGroupModel } from '../blocks/form/FormActionGroupModel';
+import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldModel/PopupSubTableFieldModel/actions/PopupSubTableFormSubmitActionModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 const defaultJSActionItemCode = `
@@ -32,7 +34,7 @@ ctx.render(<JsItem />);
 export class JSItemActionModel extends ActionModel {
   private _offResourceRefresh?: () => void;
   private _mountedOnce = false;
-  static scene = ActionSceneEnum.both;
+  static scene = ActionSceneEnum.all;
 
   render() {
     return <div ref={this.context.ref} style={{ display: 'inline-flex', minHeight: 22, alignItems: 'center' }} />;
@@ -145,4 +147,20 @@ JSItemActionModel.registerFlow({
       },
     },
   },
+});
+
+CollectionActionGroupModel.registerActionModels({
+  JSItemActionModel,
+});
+
+RecordActionGroupModel.registerActionModels({
+  JSItemActionModel,
+});
+
+FormActionGroupModel.registerActionModels({
+  JSItemActionModel,
+});
+
+PopupSubTableFormActionGroupModel.registerActionModels({
+  JSItemActionModel,
 });
