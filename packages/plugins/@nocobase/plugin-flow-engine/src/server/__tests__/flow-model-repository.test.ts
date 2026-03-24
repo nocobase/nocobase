@@ -196,6 +196,7 @@ describe('ui_schema repository', () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
+      async: true,
       subModels: {
         sub1: {
           async: true, // 模拟异步加载
@@ -217,11 +218,15 @@ describe('ui_schema repository', () => {
     expect(model2).toBeDefined();
     expect(model2.uid).toBe('uid1');
     expect(model2.use).toBe('TestModel');
+    expect(model2.async).toBe(true);
     expect(model2.subModels).toBeDefined();
     expect(model2.subModels.sub1).toBeDefined();
+    expect(model2.subModels.sub1.async).toBe(true);
     expect(model2.subModels.sub1.use).toBe('TestSubModel');
     expect(model2.subModels.sub2).toBeDefined();
     expect(model2.subModels.sub2.length).toBe(2);
+    expect(model2.subModels.sub2[0].async).toBe(true);
+    expect(model2.subModels.sub2[1].async).toBe(false);
     expect(model2.subModels.sub2[0].use).toBe('TestSubModel2');
     expect(model2.subModels.sub2[1].use).toBe('TestSubModel3');
     expect(model2.subModels.sub2[0].uid).toBeDefined();

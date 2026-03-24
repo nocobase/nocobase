@@ -129,6 +129,7 @@ describe('flow-model save', () => {
     expect(res.status).toBe(200);
     expect(res.body?.data?.uid).toBe('save-model-1');
     expect(res.body?.data?.use).toBe('RouteModel');
+    expect(res.body?.data?.async).toBe(false);
   });
 
   it('should generate uid for a new root when save payload omits uid', async () => {

@@ -51,6 +51,7 @@ describe('flow-model ensure', () => {
 
   const insertModel = (model: Record<string, any>) => repository.insertModel(model as any);
   const ensureModel = (values: Record<string, any>) => agent.resource('flowModels').ensure({ values });
+  const queryFindOne = (params: Record<string, any>) => agent.get('/flowModels:findOne').query(params);
 
   afterEach(async () => {
     await destroyTestApp(app);
@@ -160,6 +161,28 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.use).toBe('RouteModel');
   });
 
+  it('should preserve full snapshot fields when ensure creates a root model by uid', async () => {
+    const res = await ensureModel({
+      uid: 'ensure-http-root-fields',
+      use: 'RouteModel',
+      async: true,
+      scene: 'update',
+      delegateToParent: false,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.uid).toBe('ensure-http-root-fields');
+    expect(res.body?.data?.use).toBe('RouteModel');
+    expect(res.body?.data?.async).toBe(true);
+    expect(res.body?.data?.scene).toBe('update');
+    expect(res.body?.data?.delegateToParent).toBe(false);
+
+    const saved = await repository.findModelById('ensure-http-root-fields', { includeAsyncNode: true });
+    expect(saved?.async).toBe(true);
+    expect(saved?.scene).toBe('update');
+    expect(saved?.delegateToParent).toBe(false);
+  });
+
   it('should allow ensuring internal concrete child models directly', async () => {
     await insertModel({ uid: 'ensure-tab-parent', use: 'PageTabModel' });
 
@@ -177,6 +200,45 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.subType).toBe('object');
     expect(res.body?.data?.use).toBe('BlockGridModel');
     expect(res.body?.data?.uid).toBeTruthy();
+  });
+
+  it('should preserve full snapshot fields when ensure creates an object child model', async () => {
+    await insertModel({ uid: 'ensure-grid-parent', use: 'PageTabModel' });
+
+    const filterManager = [{ filterId: 'filter-1', targetId: 'target-1' }];
+    const res = await ensureModel({
+      parentId: 'ensure-grid-parent',
+      subKey: 'update.edit-form-grid-block',
+      subType: 'object',
+      use: 'BlockGridModel',
+      async: true,
+      delegateToParent: false,
+      scene: 'update',
+      filterManager,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.parentId).toBe('ensure-grid-parent');
+    expect(res.body?.data?.subKey).toBe('update.edit-form-grid-block');
+    expect(res.body?.data?.subType).toBe('object');
+    expect(res.body?.data?.use).toBe('BlockGridModel');
+    expect(res.body?.data?.async).toBe(true);
+    expect(res.body?.data?.scene).toBe('update');
+    expect(res.body?.data?.delegateToParent).toBe(false);
+    expect(res.body?.data?.filterManager).toEqual(filterManager);
+
+    const findRes = await queryFindOne({
+      parentId: 'ensure-grid-parent',
+      subKey: 'update.edit-form-grid-block',
+      includeAsyncNode: true,
+    });
+
+    expect(findRes.status).toBe(200);
+    expect(findRes.body?.data?.uid).toBe(res.body?.data?.uid);
+    expect(findRes.body?.data?.async).toBe(true);
+    expect(findRes.body?.data?.scene).toBe('update');
+    expect(findRes.body?.data?.delegateToParent).toBe(false);
+    expect(findRes.body?.data?.filterManager).toEqual(filterManager);
   });
 
   it('should allow props to be null during ensure object child creation', async () => {

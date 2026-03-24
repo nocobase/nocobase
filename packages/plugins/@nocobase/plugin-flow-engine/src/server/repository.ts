@@ -1402,6 +1402,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const model = {
       uid,
       ...stripDuplicateReplayMarker(this.optionsToJson(options)),
+      async: !!node?.async,
     };
     return model;
   }
@@ -1430,6 +1431,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       const model: any = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
         uid: child['uid'],
         ...stripDuplicateReplayMarker(this.optionsToJson(child.options)),
+        async: !!child?.async,
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1463,6 +1465,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return {
       uid: rootNode['uid'],
       ...stripDuplicateReplayMarker(this.optionsToJson(rootNode.options)),
+      async: !!rootNode?.async,
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
   }
@@ -1604,19 +1607,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       }
 
       try {
+        const modelToEnsure = {
+          ..._.cloneDeep(values),
+          uid: uidValue,
+          use,
+        };
         await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
-          await this.upsertModel(
-            {
-              uid: uidValue,
-              use,
-              async: !!values?.async,
-              props: values?.props,
-              stepParams: values?.stepParams,
-              flowRegistry: values?.flowRegistry,
-              subModels: values?.subModels,
-            },
-            { transaction: innerTransaction },
-          );
+          await this.upsertModel(modelToEnsure, { transaction: innerTransaction });
         });
       } catch (error) {
         // retry-safety for concurrent ensure by the same uid
@@ -1741,22 +1738,16 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         .slice(0, 24)}`;
 
       try {
+        const modelToEnsure = {
+          ..._.cloneDeep(values),
+          uid: newUid,
+          parentId: parentIdValue,
+          subKey: subKeyValue,
+          subType: 'object',
+          use,
+        };
         await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
-          await this.upsertModel(
-            {
-              uid: newUid,
-              use,
-              async: !!values?.async,
-              props: values?.props,
-              stepParams: values?.stepParams,
-              flowRegistry: values?.flowRegistry,
-              subModels: values?.subModels,
-              parentId: parentIdValue,
-              subKey: subKeyValue,
-              subType: 'object',
-            },
-            { transaction: innerTransaction },
-          );
+          await this.upsertModel(modelToEnsure, { transaction: innerTransaction });
         });
       } catch (error) {
         // retry-safety for concurrent ensure on dialects without row locks (or cross-instance races)
