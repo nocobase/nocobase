@@ -1478,12 +1478,10 @@ export class FlowSchemaRegistry {
     compatibility?: FlowFieldModelCompatibility,
   ): FlowSchemaBundleNode {
     const resolved = this.resolveModelSchema(use, contextChain);
-    const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
     const visitKey = this.createContextVisitKey(use, contextChain);
     const node: FlowSchemaBundleNode = {
       use,
       title: resolved?.title || use,
-      skeleton: _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema)),
     };
 
     if (compatibility) {

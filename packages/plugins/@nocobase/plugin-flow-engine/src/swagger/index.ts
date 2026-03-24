@@ -116,7 +116,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Fetch a lightweight skeleton bundle for explicit uses[]. When uses is empty or omitted, returns an empty directory. For full schema details and validation rules, use flowModels:schema or flowModels:schemas.',
+          'Fetch a lightweight discovery bundle for explicit uses[]. When uses is empty or omitted, returns an empty directory. For full schema details and validation rules, use flowModels:schema or flowModels:schemas.',
         requestBody: {
           required: false,
           content: {
@@ -552,11 +552,10 @@ export default {
       },
       FlowModelSchemaBundleItem: {
         type: 'object',
-        required: ['use', 'skeleton'],
+        required: ['use'],
         properties: {
           use: { type: 'string' },
           title: { type: 'string' },
-          skeleton: {},
           subModelCatalog: {
             type: 'object',
             additionalProperties: { $ref: '#/components/schemas/FlowModelSchemaBundleSlotCatalog' },

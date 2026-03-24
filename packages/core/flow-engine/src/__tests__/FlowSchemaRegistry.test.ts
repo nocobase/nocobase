@@ -587,9 +587,6 @@ describe('FlowSchemaRegistry', () => {
     expect(bundle).not.toHaveProperty('summary');
     expect(bundle.items[0]).toMatchObject({
       use: 'SchemaRegistryContributionModel',
-      skeleton: expect.objectContaining({
-        use: 'SchemaRegistryContributionModel',
-      }),
       subModelCatalog: {
         body: expect.objectContaining({
           type: 'array',
@@ -598,9 +595,7 @@ describe('FlowSchemaRegistry', () => {
       },
     });
     expect(
-      Object.keys(bundle.items[0] || {}).filter(
-        (key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key),
-      ),
+      Object.keys(bundle.items[0] || {}).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key)),
     ).toEqual([]);
   });
 
@@ -857,12 +852,12 @@ describe('FlowSchemaRegistry', () => {
     const alphaItem = bundle.items.find((item) => item.use === 'SchemaRegistryParentAlphaModel');
     const betaItem = bundle.items.find((item) => item.use === 'SchemaRegistryParentBetaModel');
 
-    expect(alphaItem?.subModelCatalog?.body?.candidates?.[0]?.skeleton?.stepParams).toMatchObject({
-      alpha: '',
-    });
-    expect(betaItem?.subModelCatalog?.body?.candidates?.[0]?.skeleton?.stepParams).toMatchObject({
-      beta: 0,
-    });
+    expect(alphaItem?.subModelCatalog?.body?.candidates?.map((item) => item.use)).toEqual([
+      'SchemaRegistryContextChildModel',
+    ]);
+    expect(betaItem?.subModelCatalog?.body?.candidates?.map((item) => item.use)).toEqual([
+      'SchemaRegistryContextChildModel',
+    ]);
   });
 
   it('should apply ancestor descendant patches before direct child patches', () => {

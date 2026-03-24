@@ -646,21 +646,17 @@ describe('flow schema contribution provider', () => {
       expect.arrayContaining([
         expect.objectContaining({
           use: 'PageModel',
-          skeleton: expect.objectContaining({
-            use: 'PageModel',
-          }),
         }),
       ]),
     );
     const pageItem = (bundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
-        [],
-      );
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
       expect(item).not.toHaveProperty('dynamicHints');
       expect(item).not.toHaveProperty('coverage');
       expect(item).not.toHaveProperty('hash');
       expect(item).not.toHaveProperty('source');
+      expect(item).not.toHaveProperty('skeleton');
     }
     expect(pageItem?.subModelCatalog).toMatchObject({
       tabs: {
@@ -688,9 +684,8 @@ describe('flow schema contribution provider', () => {
       ]),
     );
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
-        [],
-      );
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
+      expect(item).not.toHaveProperty('skeleton');
     }
   });
 
@@ -828,9 +823,8 @@ describe('flow schema contribution provider', () => {
         ]),
       );
       for (const item of bundle.body?.data?.items || []) {
-        expect(
-          Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key)),
-        ).toEqual([]);
+        expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
+        expect(item).not.toHaveProperty('skeleton');
       }
 
       const jsBlock = await officialAgent.get('/flowModels:schema').query({
@@ -1027,14 +1021,8 @@ describe('flow schema contribution provider', () => {
       expect(collectionBundle.status).toBe(200);
       const listItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'ListBlockModel');
       const gridCardItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'GridCardBlockModel');
-      expect(listItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
-      expect(gridCardItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
+      expect(listItem).not.toHaveProperty('skeleton');
+      expect(gridCardItem).not.toHaveProperty('skeleton');
     } finally {
       await officialApp.destroy();
     }

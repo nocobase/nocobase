@@ -121,7 +121,6 @@ export interface FlowSchemaBundleSlotCatalog {
 export interface FlowSchemaBundleNode {
   use: string;
   title?: string;
-  skeleton: any;
   compatibility?: FlowFieldModelCompatibility;
   subModelCatalog?: Record<string, FlowSchemaBundleSlotCatalog>;
 }

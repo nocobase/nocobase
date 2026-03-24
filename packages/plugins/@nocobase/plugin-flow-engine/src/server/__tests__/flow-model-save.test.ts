@@ -796,34 +796,18 @@ describe('flow-model save', () => {
       expect.arrayContaining([
         expect.objectContaining({
           use: 'ActionModel',
-          skeleton: expect.objectContaining({
-            uid: 'todo-uid',
-            use: 'ActionModel',
-          }),
         }),
         expect.objectContaining({
           use: 'TableBlockModel',
-          skeleton: expect.objectContaining({
-            use: 'TableBlockModel',
-          }),
         }),
         expect.objectContaining({
           use: 'PageModel',
-          skeleton: expect.objectContaining({
-            use: 'PageModel',
-          }),
         }),
         expect.objectContaining({
           use: 'JSBlockModel',
-          skeleton: expect.objectContaining({
-            use: 'JSBlockModel',
-          }),
         }),
         expect.objectContaining({
           use: 'BlockGridModel',
-          skeleton: expect.objectContaining({
-            use: 'BlockGridModel',
-          }),
         }),
       ]),
     );
@@ -832,9 +816,7 @@ describe('flow-model save', () => {
     const jsBlockItem = (bundle.body?.data?.items || []).find((item) => item.use === 'JSBlockModel');
     const blockGridItem = (bundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
     for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
-        [],
-      );
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
       expect(item).not.toHaveProperty('dynamicHints');
       expect(item).not.toHaveProperty('commonPatterns');
       expect(item).not.toHaveProperty('antiPatterns');
@@ -842,6 +824,7 @@ describe('flow-model save', () => {
       expect(item).not.toHaveProperty('coverage');
       expect(item).not.toHaveProperty('hash');
       expect(item).not.toHaveProperty('source');
+      expect(item).not.toHaveProperty('skeleton');
     }
     expect(tableItem?.subModelCatalog).toMatchObject({
       columns: {
@@ -858,10 +841,6 @@ describe('flow-model save', () => {
           expect.objectContaining({ use: 'RefreshActionModel' }),
         ]),
       },
-    });
-    expect(tableItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'users',
     });
     expect(pageItem?.subModelCatalog).toMatchObject({
       tabs: {
@@ -931,18 +910,9 @@ describe('flow-model save', () => {
         ]),
       },
     });
-    expect(createFormItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'users',
-    });
-    expect(editFormItem?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'users',
-    });
     for (const item of formBundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'skeleton', 'subModelCatalog'].includes(key))).toEqual(
-        [],
-      );
+      expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
+      expect(item).not.toHaveProperty('skeleton');
     }
 
     const details = await agent.get('/flowModels:schema').query({
@@ -1662,7 +1632,7 @@ describe('flow-model save', () => {
     });
 
     const topLevelFieldItem = (bundle.body?.data?.items || []).find((item) => item.use === 'InputFieldModel');
-    expect(topLevelFieldItem?.skeleton?.stepParams?.fieldSettings?.init).toBeUndefined();
+    expect(topLevelFieldItem).not.toHaveProperty('skeleton');
 
     const saveTableDisplay = await agent.resource('flowModels').save({
       values: {
