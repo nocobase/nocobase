@@ -153,7 +153,7 @@ export class AIConversationsManager {
       .flatMap((row: ParsedMessageRow) => row.metadata.subAgentConversations);
     const subAgentConversationMessages = subAgentConversations.length
       ? await this.aiMessagesRepo.find({
-          sort: ['-messageId'],
+          sort: ['messageId'],
           filter: {
             sessionId: {
               $in: subAgentConversations,

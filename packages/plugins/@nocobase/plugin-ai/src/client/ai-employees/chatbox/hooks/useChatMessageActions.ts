@@ -357,7 +357,7 @@ export const useChatMessageActions = () => {
                           };
                         }) ?? [
                           {
-                            sessionId,
+                            sessionId: data.sessionId,
                             messages: [msg],
                           },
                         ],
@@ -387,7 +387,7 @@ export const useChatMessageActions = () => {
                           };
                         }) ?? [
                           {
-                            sessionId,
+                            sessionId: data.sessionId,
                             messages: [
                               updater({
                                 key: uid(),
@@ -404,12 +404,14 @@ export const useChatMessageActions = () => {
                   }),
               };
 
-              processStreamStart(data);
-              processStreamEnd(data);
-              processNewMessage(data, mainAgentMessageStore);
+              processNewMessage(data, subAgentMessageStore);
+              processReasoning(data, subAgentMessageStore);
+              processContent(data, subAgentMessageStore);
               processToolCallChunks(data, subAgentMessageStore);
               processToolCall(data, subAgentMessageStore);
               processToolCallStatus(data, subAgentMessageStore);
+              processWebSearch(data);
+              processError(data);
             }
           } catch (e) {
             console.error('Error parsing stream data:', e);

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect, useRef } from 'react';
+import React, { memo, useEffect, useMemo, useRef } from 'react';
 import { Bubble } from '@ant-design/x';
 import { Spin, Layout } from 'antd';
 import { useT } from '../../locale';
@@ -16,6 +16,18 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
+import { Message } from '../types';
+
+const flattenMessages = (messages: Message[] = []): Message[] => {
+  return messages.flatMap((msg) => [
+    msg,
+    ...flattenMessages(
+      msg.content?.subAgentConversations?.flatMap((conversation) =>
+        conversation.messages.filter((subMessage) => subMessage.role !== 'user'),
+      ) ?? [],
+    ),
+  ]);
+};
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -28,6 +40,7 @@ export const Messages: React.FC = () => {
   const updateTools = useChatToolsStore.use.updateTools();
 
   const { messagesService, lastMessageRef } = useChatMessageActions();
+  const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
 
   useEffect(() => {
     updateTools(messages);
@@ -65,9 +78,9 @@ export const Messages: React.FC = () => {
           }}
         />
       )}
-      {messages?.length ? (
+      {renderedMessages.length ? (
         <div>
-          {messages.map((msg, index) => {
+          {renderedMessages.map((msg, index) => {
             const role = roles[msg.role];
             if (!role) {
               return null;

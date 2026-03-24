@@ -100,20 +100,6 @@ const AITextMessageRenderer: React.FC<{
         {msg.tool_calls?.length ? (
           <ToolCard toolCalls={msg.tool_calls} messageId={msg.messageId} inlineActions={toolInlineActions} />
         ) : null}
-        {msg.subAgentConversations?.length
-          ? msg.subAgentConversations.flatMap((it) => {
-              return it.messages.map((m, idx) =>
-                m.content.tool_calls?.length ? (
-                  <ToolCard
-                    key={`${it.sessionId}:${idx}`}
-                    toolCalls={m.content.tool_calls}
-                    messageId={m.content.messageId}
-                    inlineActions={toolInlineActions}
-                  />
-                ) : null,
-              );
-            })
-          : null}
       </div>
     );
   }
