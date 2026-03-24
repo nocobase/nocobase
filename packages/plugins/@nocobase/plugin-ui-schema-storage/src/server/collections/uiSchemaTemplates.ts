@@ -11,7 +11,12 @@ import { defineCollection } from '@nocobase/database';
 
 export default defineCollection({
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['key'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   name: 'uiSchemaTemplates',
   autoGenId: false,
   fields: [

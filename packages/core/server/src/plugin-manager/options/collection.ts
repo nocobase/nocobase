@@ -12,7 +12,12 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'applicationPlugins',
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['name'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   repository: 'PluginManagerRepository',
   origin: '@nocobase/server',
   fields: [

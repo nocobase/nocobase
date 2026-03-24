@@ -14,9 +14,9 @@ export default {
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['name'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'upsert',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   shared: true,
   name: 'collections',
   sortable: 'sort',

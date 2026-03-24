@@ -13,5 +13,10 @@ import verificators from '../../collections/verificators';
 // Deprecated due to incorrect naming.
 export default defineCollection({
   migrationRules: ['skip'],
+  recordUniqueKey: ['name'],
+  defaultMigrationRule: {
+    overwriteFirst: 'skip',
+    upsertFirst: 'skip',
+  },
   ...verificators,
 });

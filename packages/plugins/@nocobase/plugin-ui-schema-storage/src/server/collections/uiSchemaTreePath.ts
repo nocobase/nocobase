@@ -11,7 +11,12 @@ import { CollectionOptions } from '@nocobase/database';
 
 export default {
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['ancestor'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   name: 'uiSchemaTreePath',
   autoGenId: false,
   timestamps: false,

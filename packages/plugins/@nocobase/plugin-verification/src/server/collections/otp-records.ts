@@ -14,6 +14,11 @@ export default defineCollection({
     group: 'log',
   },
   migrationRules: ['schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   name: 'otpRecords',
   shared: true,
   fields: [

@@ -21,5 +21,10 @@ import { defineCollection } from '@nocobase/database';
 export default defineCollection({
   name: 'departmentsRoles',
   dumpRules: 'required',
-  migrationRules: ['overwrite'],
+  migrationRules: ['overwrite', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['departmentId', 'roleName'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
 });

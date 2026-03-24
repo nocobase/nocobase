@@ -15,9 +15,9 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'upsert',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   autoGenId: false,
   timestamps: false,
   model: 'DataSourcesRolesModel',

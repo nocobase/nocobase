@@ -16,9 +16,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-  overwriteFirst: 'schema-only',
-  upsertFirst: 'schema-only',
-},
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   shared: true,
   name: 'tokenBlacklist',
   model: 'TokenBlacklistModel',

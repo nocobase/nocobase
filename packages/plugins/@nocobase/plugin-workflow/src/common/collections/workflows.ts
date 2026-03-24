@@ -11,7 +11,12 @@ import { NAMESPACE } from '../constants';
 
 export default {
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   name: 'workflows',
   shared: true,
   repository: 'WorkflowRepository',

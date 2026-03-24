@@ -19,9 +19,9 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['name'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'overwrite',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   shared: true,
   name: 'authenticators',
   sortable: true,

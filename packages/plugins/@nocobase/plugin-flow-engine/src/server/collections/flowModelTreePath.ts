@@ -14,9 +14,9 @@ export default {
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['ancestor'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'upsert',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   name: 'flowModelTreePath',
   autoGenId: false,
   timestamps: false,

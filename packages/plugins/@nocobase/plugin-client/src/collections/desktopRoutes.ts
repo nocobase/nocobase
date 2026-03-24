@@ -10,7 +10,12 @@
 export default {
   name: 'desktopRoutes',
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   inherit: false,
   hidden: false,
   description: null,

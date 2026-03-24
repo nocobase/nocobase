@@ -14,7 +14,12 @@ export default defineCollection({
     group: 'third-party',
   },
   name: 'verifications_providers',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'skip',
+    upsertFirst: 'skip',
+  },
   shared: true,
   fields: [
     {

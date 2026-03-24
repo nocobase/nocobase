@@ -13,7 +13,12 @@ export default defineCollection({
   dumpRules: {
     group: 'log',
   },
-  migrationRules: ['schema-only'],
+  migrationRules: ['skip'],
+  recordUniqueKey: ['id'],
+  defaultMigrationRule: {
+    overwriteFirst: 'skip',
+    upsertFirst: 'skip',
+  },
   name: 'verifications',
   shared: true,
   fields: [

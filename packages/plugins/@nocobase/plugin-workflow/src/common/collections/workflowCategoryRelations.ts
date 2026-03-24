@@ -9,7 +9,12 @@
 
 export default {
   dumpRules: 'required',
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['workflowId', 'workflowCategoryId'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   name: 'workflowCategoryRelations',
   shared: true,
   fields: [

@@ -11,6 +11,11 @@ import { defineCollection } from '@nocobase/database';
 import verifiers from '../../collections/verifiers';
 
 export default defineCollection({
-  migrationRules: ['overwrite', 'skip'],
+  migrationRules: ['overwrite', 'skip', 'skip', 'upsert', 'insert-ignore'],
+  recordUniqueKey: ['name'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
   ...verifiers,
 });

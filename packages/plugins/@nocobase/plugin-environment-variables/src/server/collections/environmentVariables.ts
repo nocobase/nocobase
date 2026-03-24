@@ -16,9 +16,9 @@ export default defineCollection({
   migrationRules: ['schema-only', 'skip'],
   recordUniqueKey: ['name'],
   defaultMigrationRule: {
-  overwriteFirst: 'schema-only',
-  upsertFirst: 'schema-only',
-},
+    overwriteFirst: 'schema-only',
+    upsertFirst: 'schema-only',
+  },
   fields: [
     {
       type: 'string',

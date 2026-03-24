@@ -15,9 +15,9 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip'],
   recordUniqueKey: ['id'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'overwrite',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   title: 'mobileRoutes',
   inherit: false,
   hidden: false,

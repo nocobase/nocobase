@@ -20,7 +20,12 @@ export class ApplicationVersion {
     app.db.collection({
       origin: '@nocobase/server',
       name: 'applicationVersion',
-      migrationRules: ['schema-only'],
+      migrationRules: ['schema-only', 'skip'],
+      recordUniqueKey: ['id'],
+      defaultMigrationRule: {
+        overwriteFirst: 'schema-only',
+        upsertFirst: 'schema-only',
+      },
       dataType: 'meta',
       timestamps: false,
       dumpRules: 'required',

@@ -15,7 +15,7 @@ export default defineCollection({
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
   recordUniqueKey: ['customRequestKey', 'roleName'],
   defaultMigrationRule: {
-  overwriteFirst: 'overwrite',
-  upsertFirst: 'upsert',
-},
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'upsert',
+  },
 });
