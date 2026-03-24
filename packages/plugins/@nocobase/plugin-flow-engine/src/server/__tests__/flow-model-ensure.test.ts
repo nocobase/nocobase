@@ -196,6 +196,52 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.use).toBe('BlockGridModel');
   });
 
+  it('should warn and reuse the first object child when duplicate children already exist', async () => {
+    await insertModel({ uid: 'ensure-duplicate-grid-parent', use: 'PageTabModel' });
+    await insertModel({
+      uid: 'ensure-duplicate-grid-a',
+      parentId: 'ensure-duplicate-grid-parent',
+      subKey: 'grid',
+      subType: 'object',
+      use: 'BlockGridModel',
+    });
+    await insertModel({
+      uid: 'ensure-duplicate-grid-b',
+      parentId: 'ensure-duplicate-grid-parent',
+      subKey: 'grid',
+      subType: 'object',
+      use: 'BlockGridModel',
+    });
+
+    const warnSpy = vi.spyOn(app.db.logger, 'warn');
+
+    const res = await ensureModel({
+      parentId: 'ensure-duplicate-grid-parent',
+      subKey: 'grid',
+      subType: 'object',
+      use: 'BlockGridModel',
+      async: true,
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.uid).toBe('ensure-duplicate-grid-a');
+    expect(res.body?.data?.parentId).toBe('ensure-duplicate-grid-parent');
+    expect(res.body?.data?.subKey).toBe('grid');
+    expect(res.body?.data?.subType).toBe('object');
+    expect(res.body?.data?.use).toBe('BlockGridModel');
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toMatchObject({
+      action: 'flowModels:ensure',
+      type: 'flow-model-duplicate-object-child',
+      parentId: 'ensure-duplicate-grid-parent',
+      subKey: 'grid',
+      childUids: ['ensure-duplicate-grid-a', 'ensure-duplicate-grid-b'],
+    });
+    expect(warnSpy.mock.calls[0][1]).toContain('using first child');
+
+    warnSpy.mockRestore();
+  });
+
   it('should allow ensure to create popup child pages with lazy nested tabs missing uid and grid', async () => {
     await insertModel({ uid: 'ensure-popup-parent', use: 'AddNewActionModel' });
 

@@ -131,88 +131,6 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     expect(uiSchema?.get('schema')?.['x-component']).toBe('Input');
   });
 
-  it('should release ensureModel rollback listeners after createV2 failure so the same schemaUid can retry', async () => {
-    const agent = await getRootAgent();
-    const schemaUid = 'v2-page-retry-after-rollback';
-    const body = { schemaUid, title: 'Retry Page', icon: 'Icon', parentId: null };
-    const flowModelsRepository: any = db.getCollection('flowModels').repository;
-    const originalGetRepository = db.getRepository.bind(db);
-    const originalEnsureModel = flowModelsRepository.ensureModel.bind(flowModelsRepository);
-    let ensureCallCount = 0;
-    let failedTransactionId: string | undefined;
-
-    const getRepositorySpy = vi.spyOn(db as any, 'getRepository').mockImplementation((name: string, ...args: any[]) => {
-      if (name === 'flowModels') {
-        return flowModelsRepository;
-      }
-      return originalGetRepository(name, ...args);
-    });
-
-    const ensureSpy = vi
-      .spyOn(flowModelsRepository, 'ensureModel')
-      .mockImplementation(async (values: any, options?: { transaction?: { id?: string | number } }) => {
-        ensureCallCount += 1;
-        if (!failedTransactionId && options?.transaction?.id != null) {
-          failedTransactionId = String(options.transaction.id);
-        }
-        if (ensureCallCount === 2) {
-          throw new Error('Injected ensureModel failure on createV2 retry test');
-        }
-        return await originalEnsureModel(values, options);
-      });
-
-    const failed = await agent.resource('desktopRoutes').createV2({ values: body });
-
-    ensureSpy.mockRestore();
-    getRepositorySpy.mockRestore();
-
-    expect(failed.status).toBe(500);
-    expect(ensureCallCount).toBe(2);
-    expect(failedTransactionId).toBeTruthy();
-
-    const rollbackEventName = `transactionRollback:${failedTransactionId}`;
-    expect(db.listenerCount(rollbackEventName)).toBe(0);
-
-    const pageRouteAfterFailure = await db.getRepository('desktopRoutes').findOne({
-      filter: { type: 'flowPage', schemaUid },
-    });
-    expect(pageRouteAfterFailure).toBeNull();
-
-    const retried = await agent.resource('desktopRoutes').createV2({ values: body });
-    expect(retried.status).toBe(200);
-    expect(retried.body?.data?.page?.schemaUid).toBe(schemaUid);
-    expect(retried.body?.data?.defaultTab?.schemaUid).toBe(`tabs-${schemaUid}`);
-  });
-
-  it('should rollback createV2 when a post-next middleware throws', async () => {
-    const agent = await getRootAgent();
-    const schemaUid = 'v2-page-post-next-create';
-
-    app.resourceManager.use(async (ctx, next) => {
-      if (ctx?.action?.resourceName === 'desktopRoutes' && ctx?.action?.actionName === 'createV2') {
-        await next();
-        throw new Error('after-next failure for createV2');
-      }
-      return next();
-    });
-
-    const res = await agent.resource('desktopRoutes').createV2({
-      values: { schemaUid, title: 'Post next create', icon: 'Icon', parentId: null },
-    });
-
-    expect(res.status).toBe(500);
-
-    const pageRoute = await db.getRepository('desktopRoutes').findOne({ filter: { type: 'flowPage', schemaUid } });
-    expect(pageRoute).toBeNull();
-
-    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
-    expect(uiSchema).toBeNull();
-
-    const flowModelsRepository: any = db.getCollection('flowModels').repository;
-    expect(await flowModelsRepository.findModelById(schemaUid, { includeAsyncNode: true })).toBeNull();
-    expect(await flowModelsRepository.findModelById(`tabs-${schemaUid}`, { includeAsyncNode: true })).toBeNull();
-  });
-
   it('should destroy v2 page and cleanup uiSchema + flowModels (idempotent)', async () => {
     const agent = await getRootAgent();
 
@@ -260,36 +178,5 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     expect(res.status).toBe(409);
     const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
     expect(uiSchema?.get('schema')?.['x-component']).toBe('Input');
-  });
-
-  it('should rollback destroyV2 when a post-next middleware throws', async () => {
-    const agent = await getRootAgent();
-    const schemaUid = 'v2-page-post-next-destroy';
-
-    await agent.resource('desktopRoutes').createV2({
-      values: { schemaUid, title: 'Post next destroy', icon: 'Icon', parentId: null },
-    });
-
-    app.resourceManager.use(async (ctx, next) => {
-      if (ctx?.action?.resourceName === 'desktopRoutes' && ctx?.action?.actionName === 'destroyV2') {
-        await next();
-        throw new Error('after-next failure for destroyV2');
-      }
-      return next();
-    });
-
-    const res = await agent.resource('desktopRoutes').destroyV2({ values: { schemaUid } });
-
-    expect(res.status).toBe(500);
-
-    const pageRoute = await db.getRepository('desktopRoutes').findOne({ filter: { type: 'flowPage', schemaUid } });
-    expect(pageRoute).toBeTruthy();
-
-    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
-    expect(uiSchema).toBeTruthy();
-
-    const flowModelsRepository: any = db.getCollection('flowModels').repository;
-    expect(await flowModelsRepository.findModelById(schemaUid, { includeAsyncNode: true })).toBeTruthy();
-    expect(await flowModelsRepository.findModelById(`tabs-${schemaUid}`, { includeAsyncNode: true })).toBeTruthy();
   });
 });

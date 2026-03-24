@@ -1686,11 +1686,16 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       if (existingChildren?.length) {
         if (existingChildren.length > 1) {
-          throw new FlowModelOperationError({
-            status: 409,
-            code: 'CONFLICT',
-            message: `flowModels:ensure object subKey '${subKeyValue}' already has multiple children on parent '${parentIdValue}'`,
-          });
+          this.database.logger.warn(
+            {
+              action: 'flowModels:ensure',
+              type: 'flow-model-duplicate-object-child',
+              parentId: parentIdValue,
+              subKey: subKeyValue,
+              childUids: existingChildren.map((child) => String(child?.uid || '').trim()).filter(Boolean),
+            },
+            'flowModels:ensure found duplicate object children; using first child',
+          );
         }
 
         const existingChild = existingChildren.at(0);
