@@ -572,7 +572,7 @@ export class FlowSchemaRegistry {
     };
 
     for (const contribution of this.collectContextPatches(name, contextChain)) {
-      this.applyModelSchemaPatch(resolved, contribution.patch, contribution.source, contribution.strict);
+      applyModelSchemaPatch(resolved, contribution.patch, contribution.source, contribution.strict);
     }
 
     const frozen = deepFreezePlainGraph(resolved);
@@ -802,13 +802,12 @@ export class FlowSchemaRegistry {
     return hash;
   }
 
-  private listPublicTreeRootUses(): string[] {
-    return Array.from(this.publicTreeRootInventory)
-      .filter((use) => {
-        const model = this.modelSchemas.get(use);
-        return !!model && this.isPublicModel(model) && this.isQueryableModel(model);
-      })
-      .sort();
+  private createSlotUseExpansionKey(parentUse: string, slotKey: string): string {
+    return `${parentUse}::${slotKey}`;
+  }
+
+  private getSlotUseExpansionUses(parentUse: string, slotKey: string): string[] {
+    return this.slotUseExpansions.get(this.createSlotUseExpansionKey(parentUse, slotKey)) || [];
   }
 
   resolveSlotAllowedUses(parentUse: string, slotKey: string, slot?: FlowSubModelSlotSchema): string[] {
@@ -820,12 +819,7 @@ export class FlowSchemaRegistry {
       return _.uniq(this.resolveFieldBindingCandidates(slot.fieldBindingContext).map((candidate) => candidate.use));
     }
 
-    const allowedUses = collectAllowedUses(slot);
-    if (parentUse === 'BlockGridModel' && slotKey === 'items') {
-      return _.uniq([...allowedUses, ...this.listPublicTreeRootUses()]);
-    }
-
-    return allowedUses;
+    return _.uniq([...collectAllowedUses(slot), ...this.getSlotUseExpansionUses(parentUse, slotKey)]);
   }
 
   private buildModelDocument(
@@ -1094,10 +1088,9 @@ export class FlowSchemaRegistry {
 
   buildStaticFlowRegistrySchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
     const resolved = this.resolveModelSchemaRef(use, contextChain);
-    if (resolved?.flowRegistrySchema) {
-      return _.cloneDeep(
-        mergeSchemas(resolved.flowRegistrySchema, resolved.flowRegistrySchemaPatch) || resolved.flowRegistrySchema,
-      );
+    const schema = mergeSchemas(resolved?.flowRegistrySchema, resolved?.flowRegistrySchemaPatch);
+    if (schema) {
+      return _.cloneDeep(schema);
     }
     return { type: 'object', additionalProperties: true };
   }
@@ -1541,9 +1534,9 @@ export class FlowSchemaRegistry {
       suggestedUses: [],
     };
 
-    const directPatch = this.resolveChildSchemaPatch(slot, '');
+    const directPatch = resolveChildSchemaPatch(slot, '');
     if (directPatch) {
-      this.applyModelSchemaPatch(anonymousResolved, directPatch, 'third-party');
+      applyModelSchemaPatch(anonymousResolved, directPatch, 'third-party');
     }
 
     return anonymousResolved;
@@ -1632,7 +1625,7 @@ export class FlowSchemaRegistry {
 
       const remainingEdges = contextChain.slice(index + 1);
       for (const patch of slot.descendantSchemaPatches || []) {
-        if (this.matchesDescendantSchemaPatch(patch, remainingEdges)) {
+        if (matchesDescendantSchemaPatch(patch, remainingEdges)) {
           contributions.push({
             patch: patch.patch,
             source: parentResolved.coverage.source,
@@ -1642,7 +1635,7 @@ export class FlowSchemaRegistry {
       }
 
       if (index === targetEdgeIndex) {
-        const directPatch = this.resolveChildSchemaPatch(slot, use);
+        const directPatch = resolveChildSchemaPatch(slot, use);
         if (directPatch) {
           contributions.push({
             patch: directPatch,
@@ -1654,97 +1647,6 @@ export class FlowSchemaRegistry {
     }
 
     return contributions;
-  }
-
-  private matchesDescendantSchemaPatch(
-    patch: FlowDescendantSchemaPatch,
-    remainingEdges: FlowSchemaContextEdge[],
-  ): boolean {
-    const path = normalizeSubModelContextPath(patch.path);
-    if (path.length !== remainingEdges.length) {
-      return false;
-    }
-
-    return path.every((step, index) => {
-      const edge = remainingEdges[index];
-      if (step.slotKey !== edge.slotKey) {
-        return false;
-      }
-      if (typeof step.use === 'undefined') {
-        return true;
-      }
-      if (typeof step.use === 'string') {
-        return step.use === edge.childUse;
-      }
-      return step.use.includes(edge.childUse);
-    });
-  }
-
-  private resolveChildSchemaPatch(slot: FlowSubModelSlotSchema, childUse: string): FlowModelSchemaPatch | undefined {
-    const childSchemaPatch = slot.childSchemaPatch;
-    if (!childSchemaPatch || typeof childSchemaPatch !== 'object' || Array.isArray(childSchemaPatch)) {
-      return undefined;
-    }
-
-    const directPatch = normalizeModelSchemaPatch(childSchemaPatch as FlowModelSchemaPatch);
-    if (directPatch) {
-      return directPatch;
-    }
-
-    return normalizeModelSchemaPatch((childSchemaPatch as Record<string, FlowModelSchemaPatch>)[childUse]);
-  }
-
-  private applyModelSchemaPatch(
-    target: RegisteredModelSchema,
-    patch: FlowModelSchemaPatch,
-    source: FlowSchemaCoverage['source'],
-    strict?: boolean,
-  ) {
-    target.stepParamsSchema = mergeSchemas(target.stepParamsSchema, patch.stepParamsSchema);
-    target.flowRegistrySchema = mergeSchemas(target.flowRegistrySchema, patch.flowRegistrySchema);
-    target.flowRegistrySchemaPatch = mergeSchemas(target.flowRegistrySchemaPatch, patch.flowRegistrySchemaPatch);
-    target.subModelSlots = normalizeSubModelSlots(
-      patch.subModelSlots
-        ? deepMergeReplaceArrays(target.subModelSlots || {}, patch.subModelSlots)
-        : target.subModelSlots,
-    );
-    target.docs = normalizeSchemaDocs({
-      ...target.docs,
-      ...patch.docs,
-      examples: patch.docs?.examples || target.docs?.examples,
-      dynamicHints: [...(target.docs?.dynamicHints || []), ...(patch.docs?.dynamicHints || [])],
-      commonPatterns: patch.docs?.commonPatterns || target.docs?.commonPatterns,
-      antiPatterns: patch.docs?.antiPatterns || target.docs?.antiPatterns,
-      minimalExample:
-        patch.docs?.minimalExample !== undefined ? patch.docs.minimalExample : target.docs?.minimalExample,
-    });
-    target.examples = Array.isArray(patch.examples) ? _.cloneDeep(patch.examples) : target.examples;
-    target.skeleton =
-      patch.skeleton !== undefined ? deepMergeReplaceArrays(target.skeleton, patch.skeleton) : target.skeleton;
-    target.dynamicHints = normalizeSchemaHints([
-      ...(target.dynamicHints || []),
-      ...(patch.dynamicHints || []),
-      ...(patch.docs?.dynamicHints || []),
-    ]);
-
-    const hasSchemaPatch =
-      !!patch.stepParamsSchema ||
-      !!patch.flowRegistrySchema ||
-      !!patch.flowRegistrySchemaPatch ||
-      !!patch.subModelSlots;
-    if (hasSchemaPatch) {
-      target.coverage = {
-        ...target.coverage,
-        status:
-          target.coverage.status === 'unresolved'
-            ? 'manual'
-            : target.coverage.status === 'auto'
-              ? 'mixed'
-              : target.coverage.status,
-        source: target.coverage.source === 'third-party' ? source : target.coverage.source,
-        strict: target.coverage.strict ?? strict,
-      };
-    }
   }
 
   private collectModelDynamicHints(use: string, modelClass: ModelConstructor, meta: FlowModelMeta): FlowDynamicHint[] {

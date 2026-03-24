@@ -53,6 +53,17 @@ function isManagedFlowRouteShell(record: any, schemaUid: string) {
   );
 }
 
+async function emitTransactionRollback(database: any, transaction?: Transaction) {
+  const transactionId = (transaction as (Transaction & { id?: string | number }) | undefined)?.id;
+  if (!database || transactionId == null) {
+    return;
+  }
+
+  const eventName = `transactionRollback:${transactionId}`;
+  await database.emitAsync?.(eventName);
+  await database.removeAllListeners?.(eventName);
+}
+
 export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
@@ -578,6 +589,7 @@ export class PluginClientServer extends Plugin {
         await next();
       } catch (error) {
         await transaction.rollback();
+        await emitTransactionRollback(ctx.db, transaction);
         throw error;
       }
     });

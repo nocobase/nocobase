@@ -268,6 +268,130 @@ describe('FlowSchemaRegistry', () => {
     expect(after.hash).not.toBe(before.hash);
   });
 
+  it('should keep existing coverage metadata when later model contributions only add docs', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryCoverageModel',
+      stepParamsSchema: objectSchema(),
+      source: 'official',
+      strict: true,
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryCoverageModel',
+      docs: {
+        description: 'docs only update',
+      },
+      source: 'plugin',
+      strict: false,
+    });
+
+    expect(registry.getModel('SchemaRegistryCoverageModel')?.coverage).toEqual({
+      status: 'manual',
+      source: 'official',
+      strict: true,
+    });
+  });
+
+  it('should treat flowRegistrySchemaPatch-only contributions as schema coverage', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryFlowRegistryPatchModel',
+      flowRegistrySchemaPatch: {
+        properties: {
+          eventFlow: {
+            type: 'object',
+            properties: {
+              enabled: {
+                type: 'boolean',
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      source: 'plugin',
+      strict: true,
+    });
+
+    expect(registry.getModel('SchemaRegistryFlowRegistryPatchModel')?.coverage).toEqual({
+      status: 'manual',
+      source: 'plugin',
+      strict: true,
+    });
+    expect(registry.buildStaticFlowRegistrySchema('SchemaRegistryFlowRegistryPatchModel')).toMatchObject({
+      properties: {
+        eventFlow: {
+          type: 'object',
+          properties: {
+            enabled: {
+              type: 'boolean',
+            },
+          },
+          additionalProperties: false,
+        },
+      },
+    });
+  });
+
+  it('should resolve slot use expansions from inventory without model-specific hardcoding', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryDeclaredSlotChildModel', {
+        title: 'Declared child',
+      }),
+    );
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryExpandedSlotChildModel', {
+        title: 'Expanded child',
+      }),
+    );
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistrySlotExpansionParentModel', {
+        subModelSlots: {
+          items: arraySlot({
+            uses: ['SchemaRegistryDeclaredSlotChildModel'],
+          }),
+        },
+      }),
+    );
+    registry.registerInventory(
+      {
+        slotUseExpansions: [
+          {
+            parentUse: 'SchemaRegistrySlotExpansionParentModel',
+            slotKey: 'items',
+            uses: ['SchemaRegistryExpandedSlotChildModel', 'SchemaRegistryDeclaredSlotChildModel'],
+          },
+        ],
+      },
+      'official',
+    );
+
+    expect(
+      registry.resolveSlotAllowedUses(
+        'SchemaRegistrySlotExpansionParentModel',
+        'items',
+        registry.getModel('SchemaRegistrySlotExpansionParentModel')?.subModelSlots?.items,
+      ),
+    ).toEqual(['SchemaRegistryDeclaredSlotChildModel', 'SchemaRegistryExpandedSlotChildModel']);
+    expect(registry.getSchemaBundle(['SchemaRegistrySlotExpansionParentModel']).items[0]).toMatchObject({
+      use: 'SchemaRegistrySlotExpansionParentModel',
+      subModelCatalog: {
+        items: {
+          type: 'array',
+          candidates: [
+            expect.objectContaining({ use: 'SchemaRegistryDeclaredSlotChildModel' }),
+            expect.objectContaining({ use: 'SchemaRegistryExpandedSlotChildModel' }),
+          ],
+        },
+      },
+    });
+  });
+
   it('should build document schema, aggregate flow hints, and infer sub-model slots', () => {
     class SchemaRegistryChildModel extends FlowModel {}
     class SchemaRegistryParentModel extends FlowModel {}

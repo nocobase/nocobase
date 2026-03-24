@@ -903,6 +903,7 @@ describe('FlowSchemaService', () => {
     const service = new FlowSchemaService();
     service.registerActionContributions(flowSchemaContribution.actions || []);
     service.registerModelContributions(flowSchemaContribution.models || []);
+    service.registerInventory(flowSchemaContribution.inventory, 'official');
 
     const issues = service.validateModelTree({
       uid: 'dynamic-event-actions-host',
@@ -919,6 +920,28 @@ describe('FlowSchemaService', () => {
     });
 
     expect(issues.filter((item) => item.level === 'error')).toEqual([]);
+  });
+
+  it('should resolve official BlockGridModel item candidates from inventory slot expansions', () => {
+    const service = new FlowSchemaService();
+    service.registerModelContributions(flowSchemaContribution.models || []);
+    service.registerInventory(flowSchemaContribution.inventory, 'official');
+
+    const bundle = service.getBundle(['BlockGridModel']);
+
+    expect(bundle.items[0]).toMatchObject({
+      use: 'BlockGridModel',
+      subModelCatalog: {
+        items: {
+          type: 'array',
+          candidates: expect.arrayContaining([
+            expect.objectContaining({ use: 'CreateFormModel' }),
+            expect.objectContaining({ use: 'DetailsBlockModel' }),
+            expect.objectContaining({ use: 'TableBlockModel' }),
+          ]),
+        },
+      },
+    });
   });
 
   it('should accept null action icons for link-style edit actions', () => {
