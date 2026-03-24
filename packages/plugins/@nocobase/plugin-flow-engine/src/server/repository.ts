@@ -1686,16 +1686,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
       if (existingChildren?.length) {
         if (existingChildren.length > 1) {
-          this.database.logger.warn(
-            {
-              action: 'flowModels:ensure',
-              type: 'flow-model-duplicate-object-child',
-              parentId: parentIdValue,
-              subKey: subKeyValue,
-              childUids: existingChildren.map((child) => String(child?.uid || '').trim()).filter(Boolean),
-            },
-            'flowModels:ensure found duplicate object children; using first child',
-          );
+          this.database.logger.warn('flowModels:ensure found duplicate object children; using first child', {
+            action: 'flowModels:ensure',
+            type: 'flow-model-duplicate-object-child',
+            parentId: parentIdValue,
+            subKey: subKeyValue,
+            childUids: existingChildren.map((child) => String(child?.uid || '').trim()).filter(Boolean),
+          });
         }
 
         const existingChild = existingChildren.at(0);
