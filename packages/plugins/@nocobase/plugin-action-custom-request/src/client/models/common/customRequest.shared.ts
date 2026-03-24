@@ -8,10 +8,34 @@
  */
 
 import { uid } from '@nocobase/utils/client';
+import { saveAs } from 'file-saver';
+import type { CustomRequestStepParams } from '../customRequestFlowActionTypes';
 
 type RequestNameValue = {
   name: string;
   value: unknown;
+};
+
+export type CustomRequestRecord = {
+  options?: Record<string, any>;
+  roles?: unknown[];
+};
+
+export type CustomRequestConfigParams = {
+  key?: string;
+  method?: string;
+  url?: string;
+  headers?: Array<{ name?: string; value?: string }>;
+  params?: Array<{ name?: string; value?: string }>;
+  data?: unknown;
+  timeout?: number;
+  responseType?: 'json' | 'stream';
+  variablePaths?: string[];
+  roles?: string[];
+};
+
+export type ExecuteCustomRequestOptions = {
+  throwOnError?: boolean;
 };
 
 export function makeRequestKey() {
@@ -44,23 +68,6 @@ export function normalizeNameValueArray(arr: any): RequestNameValue[] {
     }))
     .filter((item) => !!item.name);
 }
-
-export type CustomRequestRecord = {
-  options?: Record<string, any>;
-  roles?: unknown[];
-};
-
-export type CustomRequestConfigParams = {
-  key?: string;
-  method?: string;
-  url?: string;
-  headers?: Array<{ name?: string; value?: string }>;
-  params?: Array<{ name?: string; value?: string }>;
-  data?: unknown;
-  timeout?: number;
-  responseType?: 'json' | 'stream';
-  roles?: string[];
-};
 
 export const DEFAULT_CUSTOM_REQUEST_SETTINGS: CustomRequestConfigParams = {
   method: 'POST',
@@ -131,7 +138,7 @@ export const loadCustomRequestRecord = async (ctx: any, key?: string): Promise<C
     return undefined;
   }
 
-  const request = ctx?.api?.request || ctx?.model?.context?.api?.request || ctx?.request;
+  const request = getRequestExecutor(ctx);
   if (typeof request !== 'function') {
     return undefined;
   }
@@ -359,4 +366,69 @@ export const buildCustomRequestSendData = async (ctx: any, variablePaths?: strin
     $nSelectedRecord: getSelectedRecordFromContext(ctx),
     vars: await resolveCustomRequestVars(ctx, variablePaths),
   };
+};
+
+function getRequestExecutor(ctx: any) {
+  if (typeof ctx?.request === 'function') {
+    return ctx.request.bind(ctx);
+  }
+
+  if (typeof ctx?.api?.request === 'function') {
+    return ctx.api.request.bind(ctx.api);
+  }
+
+  if (typeof ctx?.model?.context?.api?.request === 'function') {
+    return ctx.model.context.api.request.bind(ctx.model.context.api);
+  }
+
+  return undefined;
+}
+
+export const executeCustomRequest = async (
+  ctx: any,
+  params?: CustomRequestConfigParams,
+  options?: ExecuteCustomRequestOptions,
+) => {
+  const requestKey = params?.key;
+  if (!requestKey) {
+    return {
+      ok: false,
+      status: 400,
+      error: {
+        message: 'custom request key is required',
+      },
+    };
+  }
+
+  const request = getRequestExecutor(ctx);
+  if (typeof request !== 'function') {
+    throw new Error('custom request executor is not available');
+  }
+
+  const responseType: 'json' | 'stream' = params?.responseType || 'json';
+
+  try {
+    const response = await request({
+      url: `/customRequests:send/${requestKey}`,
+      method: 'POST',
+      responseType: responseType === 'stream' ? 'blob' : 'json',
+      data: await buildCustomRequestSendData(ctx, params?.variablePaths),
+    });
+
+    if (responseType === 'stream') {
+      const streamFile = handleCustomRequestStreamResponse(response);
+      if (streamFile) {
+        saveAs(streamFile.data, streamFile.filename);
+      }
+      return;
+    }
+
+    return response;
+  } catch (error) {
+    if (responseType === 'stream' || options?.throwOnError) {
+      throw error;
+    }
+
+    return error;
+  }
 };

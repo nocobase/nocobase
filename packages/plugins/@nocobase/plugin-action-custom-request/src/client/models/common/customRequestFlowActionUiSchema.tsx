@@ -7,93 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useForm } from '@formily/react';
 import { RemoteSelect, TextAreaWithContextSelector } from '@nocobase/client';
-import { useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
-import { Input, InputNumber } from 'antd';
-import React from 'react';
-import { generateNTemplate } from '../locale';
-import { FlowJsonWithContextSelector } from './FlowJsonWithContextSelector';
-import { makeRequestKey } from './utils';
-import { RolesSelect } from './components/RolesSelect';
-
-const requestConfigInFlight = new Map<string, Promise<any>>();
-
-const RequestKeyField = (props: { value?: string; onChange?: (value: string) => void }) => {
-  const { value, onChange } = props;
-  const ctx = useFlowContext();
-  const form = useForm();
-  const loadedKeyRef = React.useRef<string | null>(null);
-
-  React.useEffect(() => {
-    if (!value) {
-      onChange?.(makeRequestKey());
-    }
-  }, [value, onChange]);
-
-  React.useEffect(() => {
-    if (!value || loadedKeyRef.current === value) {
-      return;
-    }
-
-    let mounted = true;
-    (async () => {
-      try {
-        let pending = requestConfigInFlight.get(value);
-        if (!pending) {
-          pending = ctx
-            .request({
-              url: `/customRequests:get/${value}`,
-              method: 'GET',
-              params: {
-                appends: ['roles'],
-              },
-            })
-            .finally(() => {
-              requestConfigInFlight.delete(value);
-            });
-          requestConfigInFlight.set(value, pending);
-        }
-
-        const response = await pending;
-        const record = response?.data?.data;
-        const options = record?.options || {};
-        const roles = Array.isArray(record?.roles) ? record.roles.map((item) => item?.name).filter(Boolean) : [];
-
-        if (!mounted) {
-          return;
-        }
-
-        const data =
-          typeof options?.data === 'undefined' || options?.data === null
-            ? undefined
-            : typeof options?.data === 'string'
-              ? options.data
-              : JSON.stringify(options.data, null, 2);
-        form.setValues({
-          method: options?.method || form.values?.method || 'POST',
-          url: options?.url || form.values?.url,
-          headers: Array.isArray(options?.headers) ? options.headers : [],
-          params: Array.isArray(options?.params) ? options.params : [],
-          data,
-          timeout: options?.timeout || form.values?.timeout || 5000,
-          responseType: options?.responseType || form.values?.responseType || 'json',
-          roles,
-        });
-        loadedKeyRef.current = value;
-      } catch (error) {
-        // ignore - this key may not have existing config yet
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [value, ctx, form]);
-
-  return <Input value={value} disabled />;
-};
+import { InputNumber } from 'antd';
+import { generateNTemplate } from '../../locale';
+import { FlowJsonWithContextSelector } from '../components/FlowJsonWithContextSelector';
+import { RequestKeyField } from '../components/RequestKeyField';
+import { RolesSelect } from '../components/RolesSelect';
 
 export const customRequestFlowActionUiSchema = {
   key: {

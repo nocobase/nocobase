@@ -9,7 +9,7 @@
 
 import { RemoteSelect } from '@nocobase/client';
 import React from 'react';
-import { normalizeRoleNames } from '../utils';
+import { normalizeRoleNames } from '../common/customRequest.shared';
 
 export const RolesSelect = (props: { value?: string[]; onChange?: (value: string[]) => void }) => {
   const { value = [], onChange } = props;
