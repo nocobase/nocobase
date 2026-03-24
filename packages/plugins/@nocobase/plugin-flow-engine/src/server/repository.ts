@@ -74,6 +74,42 @@ interface InsertAdjacentOptions extends removeParentOptions {
 }
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
+const ensureObjectChildLockWaiters = new Map<string, Promise<void>>();
+const ensureObjectChildLockOwners = new Map<string, string>();
+
+function getEnsureObjectChildLockKey(parentId: string, subKey: string) {
+  return `object-child:${parentId}\u0000${subKey}\u0000object`;
+}
+
+async function acquireEnsureObjectChildLock(key: string, ownerTransactionId?: string) {
+  const previous = ensureObjectChildLockWaiters.get(key);
+  let releaseCurrent!: () => void;
+  const current = new Promise<void>((resolve) => {
+    releaseCurrent = resolve;
+  });
+  ensureObjectChildLockWaiters.set(key, current);
+
+  await previous;
+
+  if (ownerTransactionId) {
+    ensureObjectChildLockOwners.set(key, ownerTransactionId);
+  }
+
+  let released = false;
+  return () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    if (ownerTransactionId && ensureObjectChildLockOwners.get(key) === ownerTransactionId) {
+      ensureObjectChildLockOwners.delete(key);
+    }
+    releaseCurrent();
+    if (ensureObjectChildLockWaiters.get(key) === current) {
+      ensureObjectChildLockWaiters.delete(key);
+    }
+  };
+}
 
 export function transaction(transactionAbleArgPosition?: number) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -1696,170 +1732,198 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       });
     }
 
-    const supportsForUpdate =
-      this.database.sequelize.getDialect() === 'postgres' || this.database.isMySQLCompatibleDialect();
+    const ensureObjectChild = async () => {
+      const supportsForUpdate =
+        this.database.sequelize.getDialect() === 'postgres' || this.database.isMySQLCompatibleDialect();
 
-    // lock parent row to make ensure concurrent-safe (best effort for dialects that don't support FOR UPDATE)
-    const lockedParent = await this.database.sequelize.query(
-      this.sqlAdapter(
-        `SELECT "uid" FROM ${this.flowModelsTableName} WHERE "uid" = :uid${supportsForUpdate ? ' FOR UPDATE' : ''}`,
-      ),
-      {
-        type: 'SELECT',
-        replacements: { uid: parentIdValue },
-        transaction,
-      },
-    );
-    if (!lockedParent?.length) {
-      throw new FlowModelOperationError({
-        status: 404,
-        code: 'NOT_FOUND',
-        message: `flowModels:ensure parentId '${parentIdValue}' not found`,
-      });
-    }
-
-    const treeTable = this.flowModelTreePathTableName;
-    const existingChildren = await this.database.sequelize.query<{ uid: string }>(
-      `SELECT TreeTable.descendant as uid
-       FROM ${treeTable} as TreeTable
-                LEFT JOIN ${treeTable} as NodeInfo
-                          ON NodeInfo.descendant = TreeTable.descendant
-                              AND NodeInfo.depth = 0
-       WHERE TreeTable.depth = 1
-         AND TreeTable.ancestor = :ancestor
-         AND NodeInfo.type = :type
-       ORDER BY TreeTable.sort ASC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          ancestor: parentIdValue,
-          type: subKeyValue,
+      // lock parent row to make ensure concurrent-safe (best effort for dialects that don't support FOR UPDATE)
+      const lockedParent = await this.database.sequelize.query(
+        this.sqlAdapter(
+          `SELECT "uid" FROM ${this.flowModelsTableName} WHERE "uid" = :uid${supportsForUpdate ? ' FOR UPDATE' : ''}`,
+        ),
+        {
+          type: 'SELECT',
+          replacements: { uid: parentIdValue },
+          transaction,
         },
-        transaction,
-      },
-    );
-
-    if (existingChildren?.length) {
-      if (existingChildren.length > 1) {
+      );
+      if (!lockedParent?.length) {
         throw new FlowModelOperationError({
-          status: 409,
-          code: 'CONFLICT',
-          message: `flowModels:ensure object subKey '${subKeyValue}' already has multiple children on parent '${parentIdValue}'`,
+          status: 404,
+          code: 'NOT_FOUND',
+          message: `flowModels:ensure parentId '${parentIdValue}' not found`,
         });
       }
 
-      const existingChild = existingChildren.at(0);
-      const childUid = String(existingChild?.uid ?? '').trim();
-      if (!childUid) {
-        throw new FlowModelOperationError({
-          status: 500,
-          code: 'INTERNAL_ERROR',
-          message: 'flowModels:ensure failed to resolve existing child uid',
-        });
-      }
-
-      const childInstance = await this.model.findByPk(childUid, { transaction });
-      if (!childInstance) {
-        throw new FlowModelOperationError({
-          status: 500,
-          code: 'INTERNAL_ERROR',
-          message: `flowModels:ensure child uid '${childUid}' not found`,
-        });
-      }
-
-      const childOptions = FlowModelRepository.optionsToJson(childInstance.get('options'));
-      if (childOptions?.subType && childOptions.subType !== 'object') {
-        throw new FlowModelOperationError({
-          status: 409,
-          code: 'CONFLICT',
-          message: `flowModels:ensure object subKey '${subKeyValue}' conflicts with existing subType '${childOptions.subType}'`,
-        });
-      }
-
-      return await this.findModelById(childUid, { transaction, includeAsyncNode });
-    }
-
-    const use = String(values?.use || '').trim();
-    if (!use) {
-      throw new FlowModelOperationError({
-        status: 400,
-        code: 'INVALID_PARAMS',
-        message: "flowModels:ensure missing required field 'use' when creating object child model",
-      });
-    }
-
-    const newUid = `ens_${createHash('sha256')
-      .update(`${parentIdValue}\u0000${subKeyValue}\u0000object`)
-      .digest('hex')
-      .slice(0, 24)}`;
-
-    try {
-      await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
-        await this.upsertModel(
-          {
-            uid: newUid,
-            use,
-            async: !!values?.async,
-            props: values?.props,
-            stepParams: values?.stepParams,
-            flowRegistry: values?.flowRegistry,
-            subModels: values?.subModels,
-            parentId: parentIdValue,
-            subKey: subKeyValue,
-            subType: 'object',
+      const treeTable = this.flowModelTreePathTableName;
+      const existingChildren = await this.database.sequelize.query<{ uid: string }>(
+        `SELECT TreeTable.descendant as uid
+         FROM ${treeTable} as TreeTable
+                  LEFT JOIN ${treeTable} as NodeInfo
+                            ON NodeInfo.descendant = TreeTable.descendant
+                                AND NodeInfo.depth = 0
+         WHERE TreeTable.depth = 1
+           AND TreeTable.ancestor = :ancestor
+           AND NodeInfo.type = :type
+         ORDER BY TreeTable.sort ASC`,
+        {
+          type: QueryTypes.SELECT,
+          replacements: {
+            ancestor: parentIdValue,
+            type: subKeyValue,
           },
-          { transaction: innerTransaction },
-        );
-      });
-    } catch (error) {
-      // retry-safety for concurrent ensure on dialects without row locks (or cross-instance races)
-      const unwrapSqlError = (error: any) => {
-        return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
-      };
-      const isUniqueConstraint = (error: any) => {
-        if (!error) return false;
-        if (error?.name === 'SequelizeUniqueConstraintError') return true;
-        const err = unwrapSqlError(error);
-        if (!err) return false;
-        if (err?.code === '23505') return true; // postgres unique_violation
-        if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
-        if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
-        return false;
-      };
+          transaction,
+        },
+      );
 
-      if (isUniqueConstraint(error)) {
-        const treeTable = this.flowModelTreePathTableName;
-        const existing = await this.database.sequelize.query<{ uid: string }>(
-          `SELECT TreeTable.descendant as uid
-           FROM ${treeTable} as TreeTable
-                    LEFT JOIN ${treeTable} as NodeInfo
-                              ON NodeInfo.descendant = TreeTable.descendant
-                                  AND NodeInfo.depth = 0
-           WHERE TreeTable.depth = 1
-             AND TreeTable.ancestor = :ancestor
-             AND NodeInfo.type = :type
-           ORDER BY TreeTable.sort ASC`,
-          {
-            type: QueryTypes.SELECT,
-            replacements: {
-              ancestor: parentIdValue,
-              type: subKeyValue,
+      if (existingChildren?.length) {
+        if (existingChildren.length > 1) {
+          throw new FlowModelOperationError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `flowModels:ensure object subKey '${subKeyValue}' already has multiple children on parent '${parentIdValue}'`,
+          });
+        }
+
+        const existingChild = existingChildren.at(0);
+        const childUid = String(existingChild?.uid ?? '').trim();
+        if (!childUid) {
+          throw new FlowModelOperationError({
+            status: 500,
+            code: 'INTERNAL_ERROR',
+            message: 'flowModels:ensure failed to resolve existing child uid',
+          });
+        }
+
+        const childInstance = await this.model.findByPk(childUid, { transaction });
+        if (!childInstance) {
+          throw new FlowModelOperationError({
+            status: 500,
+            code: 'INTERNAL_ERROR',
+            message: `flowModels:ensure child uid '${childUid}' not found`,
+          });
+        }
+
+        const childOptions = FlowModelRepository.optionsToJson(childInstance.get('options'));
+        if (childOptions?.subType && childOptions.subType !== 'object') {
+          throw new FlowModelOperationError({
+            status: 409,
+            code: 'CONFLICT',
+            message: `flowModels:ensure object subKey '${subKeyValue}' conflicts with existing subType '${childOptions.subType}'`,
+          });
+        }
+
+        return await this.findModelById(childUid, { transaction, includeAsyncNode });
+      }
+
+      const use = String(values?.use || '').trim();
+      if (!use) {
+        throw new FlowModelOperationError({
+          status: 400,
+          code: 'INVALID_PARAMS',
+          message: "flowModels:ensure missing required field 'use' when creating object child model",
+        });
+      }
+
+      const newUid = `ens_${createHash('sha256')
+        .update(`${parentIdValue}\u0000${subKeyValue}\u0000object`)
+        .digest('hex')
+        .slice(0, 24)}`;
+
+      try {
+        await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
+          await this.upsertModel(
+            {
+              uid: newUid,
+              use,
+              async: !!values?.async,
+              props: values?.props,
+              stepParams: values?.stepParams,
+              flowRegistry: values?.flowRegistry,
+              subModels: values?.subModels,
+              parentId: parentIdValue,
+              subKey: subKeyValue,
+              subType: 'object',
             },
-            transaction,
-          },
-        );
-        if (existing?.length) {
-          const existingChild = existing.at(0);
-          const childUid = String(existingChild?.uid ?? '').trim();
-          if (childUid) {
-            return await this.findModelById(childUid, { transaction, includeAsyncNode });
+            { transaction: innerTransaction },
+          );
+        });
+      } catch (error) {
+        // retry-safety for concurrent ensure on dialects without row locks (or cross-instance races)
+        const unwrapSqlError = (error: any) => {
+          return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
+        };
+        const isUniqueConstraint = (error: any) => {
+          if (!error) return false;
+          if (error?.name === 'SequelizeUniqueConstraintError') return true;
+          const err = unwrapSqlError(error);
+          if (!err) return false;
+          if (err?.code === '23505') return true; // postgres unique_violation
+          if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
+          if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
+          return false;
+        };
+
+        if (isUniqueConstraint(error)) {
+          const existing = await this.database.sequelize.query<{ uid: string }>(
+            `SELECT TreeTable.descendant as uid
+             FROM ${treeTable} as TreeTable
+                      LEFT JOIN ${treeTable} as NodeInfo
+                                ON NodeInfo.descendant = TreeTable.descendant
+                                    AND NodeInfo.depth = 0
+             WHERE TreeTable.depth = 1
+               AND TreeTable.ancestor = :ancestor
+               AND NodeInfo.type = :type
+             ORDER BY TreeTable.sort ASC`,
+            {
+              type: QueryTypes.SELECT,
+              replacements: {
+                ancestor: parentIdValue,
+                type: subKeyValue,
+              },
+              transaction,
+            },
+          );
+          if (existing?.length) {
+            const existingChild = existing.at(0);
+            const childUid = String(existingChild?.uid ?? '').trim();
+            if (childUid) {
+              return await this.findModelById(childUid, { transaction, includeAsyncNode });
+            }
           }
         }
+        throw error;
       }
-      throw error;
+
+      return await this.findModelById(newUid, { transaction, includeAsyncNode });
+    };
+
+    const lockKey = getEnsureObjectChildLockKey(parentIdValue, subKeyValue);
+    const transactionId = transaction ? String(transaction.id) : undefined;
+
+    if (transactionId && ensureObjectChildLockOwners.get(lockKey) === transactionId) {
+      return await ensureObjectChild();
     }
 
-    return await this.findModelById(newUid, { transaction, includeAsyncNode });
+    const releaseEnsureObjectChildLock = await acquireEnsureObjectChildLock(lockKey, transactionId);
+    let releaseEnsureObjectChildLockAfterTransaction = false;
+
+    try {
+      const model = await ensureObjectChild();
+
+      if (transaction) {
+        const releaseAfterTransaction = lodash.once(releaseEnsureObjectChildLock);
+        transaction.afterCommit(releaseAfterTransaction);
+        this.database.once(`transactionRollback:${transaction.id}`, releaseAfterTransaction);
+        releaseEnsureObjectChildLockAfterTransaction = true;
+      }
+
+      return model;
+    } finally {
+      if (!releaseEnsureObjectChildLockAfterTransaction) {
+        releaseEnsureObjectChildLock();
+      }
+    }
   }
 
   @transaction()
