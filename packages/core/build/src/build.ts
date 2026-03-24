@@ -67,14 +67,17 @@ export async function build(pkgs: string[]) {
   const presetsPackages = getPresetsPackages(packages);
 
   // core/*
-  await buildPackages(cjsPackages, 'lib', buildCjs);
   const clientCore = packages.find((item) => item.location === CORE_CLIENT);
+  const cjsPackagesWithoutClient = clientCore ? cjsPackages.filter((item) => item.location !== CORE_CLIENT) : cjsPackages;
+  await buildPackages(cjsPackagesWithoutClient, 'lib', buildCjs);
+  const esmPackages = packages.filter((pkg) => ESM_PACKAGES.includes(pkg.name));
+  // client 依赖 client-v2 的类型声明；必须先让 esmPackages（尤其是 client-v2）完成构建和 d.ts 产出，
+  // 否则 client 在 build declaration 阶段解析 @nocobase/client-v2 及其子路径时会失败。
+  await buildPackages(esmPackages, 'lib', buildCjs);
+  await buildPackages(esmPackages, 'es', buildEsm);
   if (clientCore) {
     await buildPackage(clientCore, 'es', buildClient);
   }
-  const esmPackages = packages.filter((pkg) => ESM_PACKAGES.includes(pkg.name));
-  await buildPackages(esmPackages, 'lib', buildCjs);
-  await buildPackages(esmPackages, 'es', buildEsm);
 
   // plugins/*、samples/*
   await buildPackages(pluginPackages, 'dist', buildPlugin);
