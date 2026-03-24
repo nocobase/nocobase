@@ -12,8 +12,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { observable } from '@formily/reactive';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { Application } from '../../../../application/Application';
 import { LinkageFilterItem } from '../LinkageFilterItem';
+import { createMockFlowApp } from '../../../__tests__/helpers/mockFlowApp';
 
 vi.mock('@nocobase/flow-engine', async () => {
   const actual = await vi.importActual<any>('@nocobase/flow-engine');
@@ -62,7 +62,7 @@ vi.mock('@nocobase/flow-engine', async () => {
 function createModel() {
   const engine = new FlowEngine();
   const model = new FlowModel({ uid: 'm-linkage-filter', flowEngine: engine });
-  const app = new Application({});
+  const app = createMockFlowApp();
   model.context.defineProperty('app', { value: app });
   return { model, app };
 }

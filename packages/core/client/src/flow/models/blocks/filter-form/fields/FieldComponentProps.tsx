@@ -14,8 +14,7 @@ import { Input, Radio, Checkbox, Space, Button, Select } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
-
-import { isTitleField } from '../../../../../data-source';
+import { isTitleField } from '@nocobase/client-v2/flow-compat';
 
 const RECORD_SELECT_DATA_SOURCE_KEY = 'recordSelectDataSourceKey';
 const RECORD_SELECT_COLLECTION_KEY = 'recordSelectTargetCollection';

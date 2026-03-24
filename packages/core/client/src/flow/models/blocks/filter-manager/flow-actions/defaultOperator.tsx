@@ -8,7 +8,7 @@
  */
 
 import { defineAction, tExpr, FlowModel } from '@nocobase/flow-engine';
-import * as operators from '../../../../../collection-manager/interfaces/properties/operators';
+import { operators } from '@nocobase/client-v2/flow-compat';
 import { FilterFormFieldModel } from '../../filter-form/fields';
 
 export const defaultOperator: any = defineAction<FilterFormFieldModel>({

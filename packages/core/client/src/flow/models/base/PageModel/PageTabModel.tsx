@@ -8,13 +8,11 @@
  */
 
 import { FlowModel, FlowModelRenderer, observable, tExpr } from '@nocobase/flow-engine';
+import { Icon, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import { useRequest } from 'ahooks';
 import React from 'react';
-import { Icon } from '../../../../icon';
-import type { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
-import { RemoteFlowModelRenderer } from '../../../FlowPage';
 import { BlockGridModel } from '../BlockGridModel';
 
 function PageTabChildrenRenderer({ ctx, options }) {
@@ -246,9 +244,16 @@ export class PageTabModel extends FlowModel<{
 }> {
   render() {
     return (
-      <div>
-        <RemoteFlowModelRenderer parentId={this.uid} subKey={'grid'} showFlowSettings={false} />
-      </div>
+      <PageTabChildrenRenderer
+        ctx={this.context}
+        options={{
+          parentId: this.uid,
+          subKey: 'grid',
+          async: true,
+          subType: 'object',
+          use: 'BlockGridModel',
+        }}
+      />
     );
   }
 }

@@ -24,7 +24,6 @@ import {
 // 无需类型导入（避免未使用的类型）
 import { FormItemModel } from '../form/FormItemModel';
 import { EditFormModel } from '../form/EditFormModel';
-import { FieldValidation } from '../../../../collection-manager';
 import { customAlphabet as Alphabet } from 'nanoid';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../../../internal/utils/enumOptionsUtils';
 import { RunJSValueEditor } from '../../../components/RunJSValueEditor';

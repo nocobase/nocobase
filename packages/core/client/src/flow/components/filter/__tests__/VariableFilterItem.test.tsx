@@ -12,9 +12,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VariableFilterItem, VariableFilterItemValue } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { Application } from '../../../../application/Application';
-import { CollectionFieldInterface } from '../../../../data-source/collection-field-interface/CollectionFieldInterface';
 import { observable } from '@formily/reactive';
+import { createMockFlowApp, TestCollectionFieldInterface } from '../../../__tests__/helpers/mockFlowApp';
 
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
@@ -51,13 +50,13 @@ vi.mock('@nocobase/flow-engine', async () => {
 function CreateModel() {
   const engine = new FlowEngine();
   const model = new FlowModel({ uid: 'm-variable-filter', flowEngine: engine });
-  const app = new Application({});
+  const app = createMockFlowApp();
 
   // provide app to ctx for operator metadata
   model.context.defineProperty('app', { value: app });
 
   // Register a minimal 'input' interface with operators used in tests
-  class InputInterface extends CollectionFieldInterface {
+  class InputInterface extends TestCollectionFieldInterface {
     name = 'input';
     group = 'basic';
     filterable = {
@@ -75,7 +74,7 @@ function CreateModel() {
       ],
     };
   }
-  class FormulaInterface extends CollectionFieldInterface {
+  class FormulaInterface extends TestCollectionFieldInterface {
     name = 'formula';
     group = 'advanced';
     filterable = {
@@ -193,7 +192,9 @@ describe('VariableFilterItem', () => {
     );
     // Cast to any is unavoidable here if addComponents is not strictly typed in Application class for arbitrary components,
     // but at least we scope it.
-    (model.context.app as unknown as Application).addComponents({ Input: EventInput });
+    (model.context.app as { addComponents: (components: Record<string, any>) => void }).addComponents({
+      Input: EventInput,
+    });
 
     (globalThis as any).__TEST_PATH__ = 'formulaField';
     (globalThis as any).__TEST_META__ = {
@@ -242,7 +243,7 @@ describe('VariableFilterItem', () => {
     const model = CreateModel();
 
     // 注册一个布尔型接口，提供 noValue=true 且 schema 为 Select 的操作符
-    class CheckboxInterface extends CollectionFieldInterface {
+    class CheckboxInterface extends TestCollectionFieldInterface {
       name = 'checkbox';
       group = 'choices';
       filterable = {
@@ -306,14 +307,16 @@ describe('VariableFilterItem', () => {
 
     // 构造一个没有 operators 的同名接口，替换 app，使当前字段不再有任何可用操作符
     const model2 = CreateModel();
-    class InputInterfaceAlt extends CollectionFieldInterface {
+    class InputInterfaceAlt extends TestCollectionFieldInterface {
       name = 'input';
       group = 'basic';
       filterable = {
         operators: [{ value: '$null', label: 'Is null', noValue: true }],
       };
     }
-    (model2.context.app as unknown as Application).addFieldInterfaces([InputInterfaceAlt]);
+    (model2.context.app as { addFieldInterfaces: (fieldInterfaces: Array<new (...args: any[]) => any>) => void }).addFieldInterfaces([
+      InputInterfaceAlt,
+    ]);
     rerender(<VariableFilterItem value={value} model={model2} rightAsVariable={false} />);
 
     // effect: 当当前 operator 不在新列表中时，自动回退到第一个可用操作符

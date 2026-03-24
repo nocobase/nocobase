@@ -8,8 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { Plugin } from '../application/Plugin';
-import { IconPicker } from '../schema-component/antd/icon-picker';
+import { IconPicker, Plugin } from '@nocobase/client-v2/flow-compat';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
@@ -20,7 +19,7 @@ import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
 import { Markdown } from './common/Markdown/Markdown';
 import { LiquidEngine } from './common/Liquid';
 import type { PreviewRunJSResult } from './components/code-editor/runjsDiagnostics';
-import { FlowSettingsVariableTextArea } from '../modules/actions/link/useURLAndHTMLSchema';
+import { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -37,7 +36,7 @@ export class PluginFlowEngine extends Plugin {
     this.flowEngine.flowSettings.registerComponents({
       IconPicker,
       DefaultValue,
-      FlowSettingsVariableTextArea,
+      FlowSettingsVariableTextArea: TextAreaWithContextSelector,
     });
 
     // 动态流编辑入口

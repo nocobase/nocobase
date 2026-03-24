@@ -12,8 +12,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FlowEngine, FlowModel, FlowSettingsContextProvider } from '@nocobase/flow-engine';
 import { setTargetDataScope } from '../setTargetDataScope';
-import { Application } from '../../../application/Application';
-import { CollectionFieldInterface } from '../../../data-source/collection-field-interface/CollectionFieldInterface';
+import { createMockFlowApp, TestCollectionFieldInterface } from '../../__tests__/helpers/mockFlowApp';
 
 // Mock VariableInput used inside VariableFilterItem and left field selector
 vi.mock('@nocobase/flow-engine', async () => {
@@ -41,7 +40,7 @@ vi.mock('@nocobase/flow-engine', async () => {
 
 function createEngineWithCollections() {
   const engine = new FlowEngine();
-  const app = new Application({});
+  const app = createMockFlowApp();
   const ds = engine.dataSourceManager.getDataSource('main');
   ds.addCollection({
     name: 'posts',
@@ -53,8 +52,8 @@ function createEngineWithCollections() {
   return { engine, app } as const;
 }
 
-function registerFieldInterface(app: Application) {
-  class InputInterface extends CollectionFieldInterface {
+function registerFieldInterface(app: ReturnType<typeof createMockFlowApp>) {
+  class InputInterface extends TestCollectionFieldInterface {
     name = 'input';
     group = 'basic';
     filterable = {

@@ -8,8 +8,8 @@
  */
 
 import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
+import type { Application } from '@nocobase/client-v2';
 import _ from 'lodash';
-import { Application } from '../application';
 
 export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> {
   constructor(protected prefix = '') {}

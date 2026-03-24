@@ -8,8 +8,8 @@
  */
 
 import type { FlowEngine } from '@nocobase/flow-engine';
+import type { AdminLayoutModel } from '@nocobase/client-v2/flow-compat';
 import { useEffect, useRef } from 'react';
-import type { AdminLayoutModel } from '../../route-switch/antd/admin-layout/AdminLayoutModel';
 
 type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;

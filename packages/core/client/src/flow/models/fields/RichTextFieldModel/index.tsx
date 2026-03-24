@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
-import { lazy } from '../../../../lazy-helper';
+import { lazy } from '@nocobase/client-v2/flow-compat';
 import { useRichTextStyles } from './style';
 import { FieldModel } from '../../base';
 import { registerSmartBreak, lineBreakMatcher, handleEnter, handleLinebreak } from './registerSmartBreak';

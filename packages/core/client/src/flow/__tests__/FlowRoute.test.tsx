@@ -23,24 +23,14 @@ type MockAdminLayoutModel = FlowModel & {
 const { hookState } = vi.hoisted(() => {
   return {
     hookState: {
-      isMobileLayout: true,
       refresh: vi.fn(),
     },
-  };
-});
-
-vi.mock('../../route-switch', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../route-switch')>();
-  return {
-    ...actual,
-    useMobileLayout: () => ({ isMobileLayout: hookState.isMobileLayout }),
   };
 });
 
 describe('FlowRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    hookState.isMobileLayout = true;
     hookState.refresh = vi.fn();
   });
 

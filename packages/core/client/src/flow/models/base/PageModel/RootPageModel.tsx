@@ -10,8 +10,8 @@
 import { DragEndEvent } from '@dnd-kit/core';
 import { reaction } from '@nocobase/flow-engine';
 import type { FlowModel } from '@nocobase/flow-engine';
+import type { NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 import _ from 'lodash';
-import type { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
 
 export class RootPageModel extends PageModel {

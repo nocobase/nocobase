@@ -8,7 +8,7 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { getDateRanges, inferPickerType } from '../../../../../../../schema-component';
+import { getDateRanges, inferPickerType } from '@nocobase/client-v2/flow-compat';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import { DatePicker } from 'antd';
 import React, { useMemo } from 'react';

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockGridModel } from '@nocobase/client';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { BlockGridModel } from '../../../base/BlockGridModel';
 import { FilterManager } from '../FilterManager';
 
 // Mock FlowModel

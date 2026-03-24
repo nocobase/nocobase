@@ -12,10 +12,10 @@ import { describe, expect, it } from 'vitest';
 import { App, ConfigProvider } from 'antd';
 import { createForm } from '@formily/core';
 import { Field, FormProvider } from '@formily/react';
+import { operators } from '@nocobase/client-v2/flow-compat';
 import { fireEvent, render, screen, waitFor } from '@nocobase/test/client';
 import { act } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, FlowModel, FlowModelProvider } from '@nocobase/flow-engine';
-import * as operators from '../../../../../collection-manager/interfaces/properties/operators';
 
 import { FieldOperatorSelect } from '../FieldOperatorSelect';
 import { resolveCustomFieldOperatorList, resolveDefaultCustomFieldOperator } from '../customFieldOperators';

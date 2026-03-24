@@ -9,14 +9,11 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { Application } from '../../../../../../application/Application';
 import { defaultOperator } from '../defaultOperator';
 
 function createModel() {
   const engine = new FlowEngine();
   const model = new FlowModel({ uid: 'm-default-operator', flowEngine: engine });
-  const app = new Application({});
-  model.context.defineProperty('app', { value: app });
   return model;
 }
 

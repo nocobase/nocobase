@@ -8,12 +8,12 @@
  */
 
 import { tExpr, observable, useFlowContext, useFlowViewContext, FlowModelRenderer } from '@nocobase/flow-engine';
+import { Icon } from '@nocobase/client-v2/flow-compat';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useMemo } from 'react';
 import { Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
 import { capitalize } from 'lodash';
-import { Icon } from '../../../../../../icon/Icon';
 import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModel';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
 

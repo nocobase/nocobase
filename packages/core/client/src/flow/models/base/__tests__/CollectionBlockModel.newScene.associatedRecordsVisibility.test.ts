@@ -9,7 +9,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
-import { BlockSceneEnum, CollectionBlockModel } from '@nocobase/client';
+import '../../../index';
+import { BlockSceneEnum } from '../BlockModel';
+import { CollectionBlockModel } from '../CollectionBlockModel';
 
 class NewSceneCollectionBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.new;

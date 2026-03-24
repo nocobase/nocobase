@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { CollectionFieldOptions, DataSourceManager } from '../../../data-source';
-import { DEFAULT_DATA_SOURCE_KEY } from '../../../data-source';
+import type { CollectionFieldOptions, DataSourceManager } from '@nocobase/client-v2/flow-compat';
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client-v2/flow-compat';
 
 type CollectionLike = {
   name?: unknown;

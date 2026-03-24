@@ -8,6 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy } from '@nocobase/client-v2/flow-compat';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import uniqBy from 'lodash/uniqBy';
@@ -22,7 +23,6 @@ import {
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
-import { lazy } from '../../../lazy-helper';
 import { mergeItemMetaTreeForAssignValue } from '../FieldAssignValueInput';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 

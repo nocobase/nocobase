@@ -7,15 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useDataSourceManager } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { message } from 'antd';
 import React from 'react';
 import type { SyncAssociationTitleFieldParams } from './FieldAssignRulesEditor';
 import { isTitleUsableField, syncCollectionTitleField } from '../internal/utils/titleFieldQuickSync';
 
 export function useAssociationTitleFieldSync(t: (key: string) => string) {
-  const api = useAPIClient();
-  const dataSourceManager = useDataSourceManager();
+  const { api, dataSourceManager } = useFlowContext();
 
   const isTitleFieldCandidate = React.useCallback(
     (field: any) => {

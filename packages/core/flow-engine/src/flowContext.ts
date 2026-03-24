@@ -2983,6 +2983,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare t: (key: any, options?: any) => string;
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
+  declare isDarkTheme: boolean;
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => Promise<JSRunner>;

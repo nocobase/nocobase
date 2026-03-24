@@ -7,13 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { usePlugin } from '@nocobase/client';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { useFlowContext } from '@nocobase/flow-engine';
 
 export const useCDN = () => {
-  const flowEngine = useFlowEngine();
-  const app = flowEngine.context.app;
-  const plugin: any = usePlugin('@nocobase/plugin-block-markdown');
+  const flowCtx = useFlowContext();
+  const app = flowCtx.app;
+  const plugin: any = app.pm.get('@nocobase/plugin-block-markdown');
   if (!plugin.dependencyLoaded) {
     plugin.initVditorDependency(app);
     plugin.dependencyLoaded = true;

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Icon } from '@nocobase/client-v2/flow-compat';
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
-import { Icon } from '../../../icon';
 import { FieldModel } from '../base';
 
 export class DisplayIconFieldModel extends FieldModel {

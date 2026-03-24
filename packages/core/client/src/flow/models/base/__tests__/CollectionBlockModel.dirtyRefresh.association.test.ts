@@ -9,7 +9,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
-import { CollectionBlockModel } from '@nocobase/client';
+import '../../../index';
+import { CollectionBlockModel } from '../CollectionBlockModel';
 
 class DummyMultiRecordResource extends MultiRecordResource<any> {
   refreshCalls = 0;

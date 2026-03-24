@@ -9,12 +9,12 @@
 
 import { CloseOutlined } from '@ant-design/icons';
 import { useFormLayout } from '@formily/antd-v5';
+import { hasIcon, Icon, icons } from '@nocobase/client-v2/flow-compat';
 import { Button, Empty, Flex, Input, Popover, Radio, Space, theme } from 'antd';
 import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { Icon, hasIcon, icons } from '../../../icon';
 import { FieldModel } from '../base';
 
 const { Search } = Input;

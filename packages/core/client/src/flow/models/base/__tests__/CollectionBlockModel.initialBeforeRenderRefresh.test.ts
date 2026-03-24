@@ -9,7 +9,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, MultiRecordResource } from '@nocobase/flow-engine';
-import { CollectionBlockModel } from '@nocobase/client';
+import '../../../index';
+import { CollectionBlockModel } from '../CollectionBlockModel';
 import { dataLoadingMode } from '../../../actions/dataLoadingMode';
 
 class InitialBeforeRenderTestBlockModel extends CollectionBlockModel {

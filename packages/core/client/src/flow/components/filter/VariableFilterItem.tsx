@@ -8,10 +8,9 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { Input, InputNumber, Select, Space, Switch } from 'antd';
+import { Cascader, Checkbox, Input, InputNumber, Radio, Select, Space, Switch } from 'antd';
+import { lazy } from '@nocobase/client-v2/flow-compat';
 import merge from 'lodash/merge';
-import { createForm, onFieldValueChange } from '@formily/core';
-import type { Form, GeneralField, Field } from '@formily/core';
 import type { ISchema } from '@formily/json-schema';
 import {
   VariableInput,
@@ -26,9 +25,7 @@ import {
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
-import { lazy } from '../../../lazy-helper';
 import { enumToOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
-import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -164,6 +161,55 @@ function createStaticInputRenderer(
               : undefined
           }
           onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Checkbox')
+      return (
+        <Checkbox
+          {...commonProps}
+          {...rest}
+          checked={!!value}
+          onChange={(e) => onChange?.(e.target.checked as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Checkbox.Group')
+      return (
+        <Checkbox.Group
+          {...commonProps}
+          {...rest}
+          value={Array.isArray(value) ? value : undefined}
+          onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Radio.Group')
+      return (
+        <Radio.Group
+          {...commonProps}
+          {...rest}
+          value={
+            Array.isArray(value) || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+              ? (value as unknown)
+              : undefined
+          }
+          onChange={(e) => onChange?.(e.target.value as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Cascader')
+      return (
+        <Cascader
+          {...commonProps}
+          {...rest}
+          value={Array.isArray(value) ? (value as unknown as (string | number)[]) : undefined}
+          onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Input.TextArea' || xComp === 'TextArea')
+      return (
+        <Input.TextArea
+          {...commonProps}
+          {...rest}
+          value={typeof value === 'string' ? value : value == null ? '' : String(value)}
+          onChange={(e) => onChange?.(e.target.value)}
         />
       );
     if (xComp === 'DateFilterDynamicComponent')
@@ -431,77 +477,6 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       [mergedSchema, leftMeta, stableT, model.context.app],
     );
 
-    // 判断是否需要使用 SchemaComponent 动态渲染（支持更多 x-component，如行政区、代码编辑器等）
-    const isStaticSupported = useCallback((xComp?: string) => {
-      if (!xComp) return true; // 无声明时回落到 Input，静态可处理
-      return (
-        xComp === 'Input' ||
-        xComp === 'InputNumber' ||
-        xComp === 'NumberPicker' ||
-        xComp === 'Switch' ||
-        xComp === 'Select' ||
-        xComp === 'DateFilterDynamicComponent'
-      );
-    }, []);
-
-    const DynamicRightValue = useMemo(() => {
-      // 组件类型保持稳定，避免输入过程中重挂载导致失焦
-      function Dynamic({ dynValue }: { dynValue: unknown }) {
-        const onChangeValueRef = React.useRef<(v: unknown) => void>(() => {});
-        // 使用 ref 持有最新回调，避免 form effects 捕获旧闭包
-        onChangeValueRef.current = (v: unknown) => {
-          setRightValue(v as VariableFilterItemValue['value']);
-        };
-
-        const formRef = React.useRef<Form | null>(null);
-        if (!formRef.current) {
-          formRef.current = createForm({
-            values: { value: dynValue },
-            effects() {
-              const hasValue = (f: GeneralField): f is Field => 'value' in f;
-              onFieldValueChange('value', (field: GeneralField) => {
-                if (hasValue(field)) {
-                  onChangeValueRef.current(field.value as unknown);
-                }
-              });
-            },
-          });
-        }
-        // 同步外部值到表单，但不重建表单，避免失焦
-        useEffect(() => {
-          formRef.current?.setValues({ value: dynValue });
-        }, [dynValue]);
-
-        const schemaRHS: ISchema = merge(
-          {
-            name: 'value',
-            'x-component': 'Input',
-            'x-component-props': {
-              style: { width: 200 },
-              placeholder: stableT('Enter value'),
-            },
-            'x-read-pretty': false,
-            'x-validator': undefined,
-            'x-decorator': undefined,
-          },
-          mergedSchema || {},
-        );
-        const form = formRef.current;
-        if (!form) return null;
-
-        return (
-          <FormProvider form={form}>
-            <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-              <SchemaComponent schema={schemaRHS} />
-            </div>
-          </FormProvider>
-        );
-      }
-      return Dynamic;
-    }, [mergedSchema, stableT, setRightValue]);
-
-    //
-
     const renderRightValueComponent = useCallback(() => {
       // 文本类多关键词：优先使用操作符 schema 声明的组件
       const resolved = resolveOperatorComponent(model.context.app, operator, operatorMetaList);
@@ -539,28 +514,13 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         );
       }
 
-      if (isStaticSupported(xComp)) {
-        const Comp = staticInputRenderer;
-        return (
-          <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-            <Comp value={rightValue} onChange={(val) => setRightValue(val)} />
-          </div>
-        );
-      }
-      const DynamicRightInput = DynamicRightValue;
-      return <DynamicRightInput dynValue={rightValue} />;
-    }, [
-      DynamicRightValue,
-      isStaticSupported,
-      operator,
-      operatorMetaList,
-      rightValue,
-      staticInputRenderer,
-      model.context.app,
-      setRightValue,
-      enumOptions,
-      xComp,
-    ]);
+      const Comp = staticInputRenderer;
+      return (
+        <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
+          <Comp value={rightValue} onChange={(val) => setRightValue(val)} />
+        </div>
+      );
+    }, [operator, operatorMetaList, rightValue, staticInputRenderer, model.context.app, setRightValue, enumOptions]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {

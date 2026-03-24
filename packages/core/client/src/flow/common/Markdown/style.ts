@@ -7,27 +7,47 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from '../../../schema-component/antd/__builtins__';
+import { useStyleRegister } from '@ant-design/cssinjs';
+import { theme } from 'antd';
+import { useMemo } from 'react';
 
-export default genStyleHook('nb-markdown-vditor', (token) => {
-  const { componentCls } = token;
+const COMPONENT_CLS = 'nb-markdown-vditor';
+
+export default function useStyle() {
+  const { theme: antdTheme, token, hashId } = theme.useToken();
+
+  const wrapSSR = useStyleRegister(
+    {
+      theme: antdTheme,
+      token,
+      hashId,
+      path: ['flow-markdown', COMPONENT_CLS],
+    },
+    () => ({
+      [`.${COMPONENT_CLS}`]: {
+        '.vditor-reset': { fontSize: `${token.fontSize}px !important`, color: 'unset' },
+        '.vditor': {
+          borderRadius: 8,
+        },
+        '.vditor .vditor-content': { borderRadius: '0 0 8px 8px', overflow: 'hidden' },
+        '.vditor .vditor-toolbar': { paddingLeft: ' 16px !important', borderRadius: '8px 8px 0 0' },
+        '.vditor .vditor-content .vditor-ir .vditor-reset': { padding: '10px !important' },
+        '.vditor-ir pre.vditor-reset': {
+          backgroundColor: `${token.colorBgContainer}!important`,
+        },
+        '.vditor-preview': { display: 'none !important' },
+        '.vditor-preview__action': {
+          display: 'none',
+        },
+      },
+    }),
+  );
+
+  const memoizedWrapSSR = useMemo(() => wrapSSR, [wrapSSR, antdTheme, token, hashId]);
 
   return {
-    [componentCls]: {
-      '.vditor-reset': { fontSize: `${token.fontSize}px !important`, color: 'unset' },
-      '.vditor': {
-        borderRadius: 8,
-      },
-      '.vditor .vditor-content': { borderRadius: '0 0 8px 8px', overflow: 'hidden' },
-      '.vditor .vditor-toolbar': { paddingLeft: ' 16px !important', borderRadius: '8px 8px 0 0' },
-      '.vditor .vditor-content .vditor-ir .vditor-reset': { padding: '10px !important' },
-      '.vditor-ir pre.vditor-reset': {
-        backgroundColor: `${token.colorBgContainer}!important`,
-      },
-      '.vditor-preview': { display: 'none !important' },
-      '.vditor-preview__action': {
-        display: 'none',
-      },
-    },
+    wrapSSR: memoizedWrapSSR,
+    hashId,
+    componentCls: COMPONENT_CLS,
   };
-});
+}

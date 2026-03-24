@@ -8,22 +8,13 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { PageModel } from '@nocobase/client';
-
-const getConfirmUnsavedChangesHandler = () => {
-  const flow = PageModel.globalFlowRegistry.getFlow('closeGuard');
-  const step = flow?.getStep('confirmUnsavedChanges');
-  return step?.serialize().handler;
-};
+import { confirmUnsavedChangesHandler } from '../closeGuard';
 
 describe('PageModel closeGuard flow', () => {
   it('skips confirmation when there are no dirty forms', async () => {
-    const handler = getConfirmUnsavedChangesHandler();
     const modalConfirm = vi.fn();
 
-    expect(typeof handler).toBe('function');
-
-    await handler?.({
+    await confirmUnsavedChangesHandler({
       inputArgs: {
         dirty: {
           hasDirtyForms: false,
@@ -39,14 +30,11 @@ describe('PageModel closeGuard flow', () => {
   });
 
   it('prevents close and exits remaining flows when confirmation is cancelled', async () => {
-    const handler = getConfirmUnsavedChangesHandler();
     const prevent = vi.fn();
     const exitAll = vi.fn();
     const modalConfirm = vi.fn().mockResolvedValue(false);
 
-    expect(typeof handler).toBe('function');
-
-    await handler?.({
+    await confirmUnsavedChangesHandler({
       inputArgs: {
         dirty: {
           hasDirtyForms: true,

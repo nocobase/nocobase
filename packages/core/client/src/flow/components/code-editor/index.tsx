@@ -23,7 +23,7 @@ import { RightExtra as RightExtraPanel } from './panels/RightExtra';
 import { LogsPanel } from './panels/LogsPanel';
 import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
-import { useFullscreenOverlay } from '../../../hooks/useFullscreenOverlay';
+import { useFullscreenOverlay } from '@nocobase/client-v2/flow-compat';
 import { createRunJSCompletionSource } from './runjsCompletionSource';
 interface CodeEditorProps {
   value?: string;

@@ -8,10 +8,10 @@
  */
 
 import { useFlowContext } from '@nocobase/flow-engine';
+import { inferPickerType } from '@nocobase/client-v2/flow-compat';
 import { dayjs, getDateTimeFormat, getPickerFormat } from '@nocobase/utils/client';
 import { DatePicker as AntdDatePicker, Select, Space } from 'antd';
 import React, { useMemo, useState } from 'react';
-import { inferPickerType } from '../../../../../../../schema-component';
 
 const stripTimeFromFormat = (format?: string) =>
   format ? format.replace(/\s*HH?:mm(?::ss)?(?:\.SSS)?/g, '').trim() : format;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from '@nocobase/client';
+import { getZIndex, useZIndexContext } from '@nocobase/client-v2/flow-compat';
 import { Button, QRCode } from 'antd';
 import { css } from '@emotion/css';
 import { createRoot } from 'react-dom/client';
@@ -43,20 +43,20 @@ const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 
 
 const Edit = (props) => {
   const { disabled, onChange, value, fileCollection, toolbar, vditorRef } = props;
+  const flowCtx = useFlowContext();
 
   const [editorReady, setEditorReady] = useState(false);
   const vdRef = useRef<Vditor>();
   const vdFullscreen = useRef(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const containerParentRef = useRef<HTMLDivElement>(null);
-  const apiClient = useAPIClient();
+  const apiClient = flowCtx.api;
   const cdn = useCDN();
   const { wrapSSR, hashId, componentCls: containerClassName } = useStyle();
   const locale = apiClient.auth.locale || 'en-US';
-  const fileManagerPlugin: any = usePlugin('@nocobase/plugin-file-manager');
-  const compile = useCompile();
-  const compileRef = useRef(compile);
-  compileRef.current = compile;
+  const fileManagerPlugin: any = flowCtx.app.pm.get('@nocobase/plugin-file-manager');
+  const translateRef = useRef(flowCtx.t.bind(flowCtx));
+  translateRef.current = flowCtx.t.bind(flowCtx);
   const { t } = useTranslation();
   const parentZIndex = useZIndexContext();
 
@@ -137,7 +137,7 @@ const Edit = (props) => {
           });
 
           if (errorMessage) {
-            vditor.tip(compileRef.current(errorMessage), 3000);
+            vditor.tip(translateRef.current(errorMessage), 3000);
             return;
           }
 

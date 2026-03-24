@@ -8,13 +8,12 @@
  */
 
 import { DefaultStructure, FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
+import { ColorPicker, Icon } from '@nocobase/client-v2/flow-compat';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { useTranslation } from 'react-i18next';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
-import { Icon } from '../../../icon/Icon';
-import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export function ActionWithoutPermission(props) {

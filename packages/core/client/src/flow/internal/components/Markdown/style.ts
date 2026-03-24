@@ -9,12 +9,13 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { css } from '@emotion/css';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { theme } from 'antd';
-import { useGlobalTheme } from '../../../../global-theme';
 
 export const useMarkdownStyles = () => {
+  const flowCtx = useFlowContext();
   const { token } = theme.useToken();
-  const { isDarkTheme } = useGlobalTheme();
+  const isDarkTheme = !!flowCtx.isDarkTheme;
 
   const colorFillAlterSolid = new TinyColor(token.colorFillAlter)
     .onBackground(token.colorBgContainer)

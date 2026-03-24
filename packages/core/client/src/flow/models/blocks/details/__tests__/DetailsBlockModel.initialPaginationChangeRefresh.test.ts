@@ -9,7 +9,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
-import { DetailsBlockModel, DetailsGridModel } from '@nocobase/client';
+import '../../../../index';
+import { DetailsBlockModel } from '../DetailsBlockModel';
+import { DetailsGridModel } from '../DetailsGridModel';
 
 function setupDetailsBlockModel(options?: { filterByTk?: string | number }) {
   const engine = new FlowEngine();

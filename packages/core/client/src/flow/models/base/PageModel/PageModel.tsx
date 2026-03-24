@@ -32,6 +32,7 @@ import { Tabs } from 'antd';
 import React, { ReactNode } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
+import { confirmUnsavedChangesHandler } from './closeGuard';
 import { BasePageTabModel } from './PageTabModel';
 
 type PageModelStructure = {
@@ -400,23 +401,7 @@ PageModel.registerFlow({
   steps: {
     confirmUnsavedChanges: {
       title: tExpr('Unsaved changes confirmation'),
-      async handler(ctx) {
-        if (!ctx.inputArgs?.dirty?.hasDirtyForms) {
-          return;
-        }
-
-        const confirmed = await ctx.modal.confirm({
-          title: ctx.t('Unsaved changes'),
-          content: ctx.t("Are you sure you don't want to save?"),
-          okText: ctx.t('Confirm'),
-          cancelText: ctx.t('Cancel'),
-        });
-
-        if (!confirmed) {
-          ctx.inputArgs?.controller?.prevent?.();
-          ctx.exitAll();
-        }
-      },
+      handler: confirmUnsavedChangesHandler as any,
     },
   },
 });

@@ -8,7 +8,7 @@
  */
 
 import { defineAction, DisplayItemModel, FlowModelContext, tExpr } from '@nocobase/flow-engine';
-import { isTitleField } from '../../data-source';
+import { isTitleField } from '@nocobase/client-v2/flow-compat';
 
 export const titleField = defineAction({
   name: 'titleField',

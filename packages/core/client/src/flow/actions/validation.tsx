@@ -8,7 +8,7 @@
  */
 
 import { defineAction, jioToJoiSchema, tExpr } from '@nocobase/flow-engine';
-import { FieldValidation } from '../../collection-manager';
+import { FieldValidation } from '@nocobase/client-v2/flow-compat';
 
 export const validation = defineAction({
   title: tExpr('Validation'),

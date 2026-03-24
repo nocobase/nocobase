@@ -43,7 +43,7 @@ import {
   getUnknownCountPaginationTotal,
   mergePaginationClassName,
 } from '../../../utils';
-import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
+import { HighPerformanceSpin } from '@nocobase/client-v2/flow-compat';
 import {
   SortHandle,
   initDragSortParams,

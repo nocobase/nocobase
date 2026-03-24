@@ -19,7 +19,7 @@ import {
   mergeAssignRulesWithLegacyDefaults,
 } from '../models/blocks/filter-form/legacyDefaultValueMigration';
 import { getDefaultOperator } from '../models/blocks/filter-manager/utils';
-import { operators } from '../../collection-manager';
+import { operators } from '@nocobase/client-v2/flow-compat';
 
 const FilterFormDefaultValuesUI = observer(
   (props: { value?: FieldAssignRuleItem[]; onChange?: (value: FieldAssignRuleItem[]) => void }) => {

@@ -8,11 +8,11 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { Icon } from '@nocobase/client-v2/flow-compat';
 import { Tag } from 'antd';
 import React from 'react';
 import { castArray } from 'lodash';
 import { ClickableFieldModel } from './ClickableFieldModel';
-import { Icon } from '../../../icon';
 
 interface FieldNames {
   value: string;

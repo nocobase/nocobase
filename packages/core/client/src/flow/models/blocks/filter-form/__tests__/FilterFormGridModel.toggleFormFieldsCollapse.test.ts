@@ -9,7 +9,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
-import '@nocobase/client';
+import '../../../../index';
 import { GRID_FLOW_KEY, GRID_STEP } from '../../../base';
 import { FilterFormGridModel } from '../FilterFormGridModel';
 
