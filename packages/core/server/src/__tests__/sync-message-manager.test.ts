@@ -64,6 +64,34 @@ describe('sync-message-manager', () => {
     await cluster.destroy();
   });
 
+  test('plugin.handleSyncMessage should not be called after app stopped', async () => {
+    const mockListener = vi.fn();
+    class MyPlugin extends Plugin {
+      get name() {
+        return 'test1';
+      }
+      async handleSyncMessage(message) {
+        mockListener(message);
+      }
+    }
+    const cluster = await createMockCluster({
+      plugins: [MyPlugin],
+    });
+    const [app1, app2] = cluster.nodes;
+    // Verify message works before stop
+    await app1.pm.get(MyPlugin).sendSyncMessage('message_before_stop');
+    await sleep(1100);
+    expect(mockListener).toBeCalledTimes(1);
+    mockListener.mockClear();
+    // Stop app2 — its pubSubManager should be closed during beforeStop, before db.close()
+    await app2.stop();
+    // Publish from app1 — app2's handler should NOT be called since pubSub is already closed
+    await app1.pm.get(MyPlugin).sendSyncMessage('message_after_stop');
+    await sleep(1100);
+    expect(mockListener).not.toHaveBeenCalled();
+    await cluster.destroy();
+  });
+
   test('plugin.handleSyncMessage + transaction', async () => {
     const mockListener = vi.fn();
     class MyPlugin extends Plugin {
