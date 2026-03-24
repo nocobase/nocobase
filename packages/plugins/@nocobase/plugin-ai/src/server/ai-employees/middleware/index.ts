@@ -8,4 +8,5 @@
  */
 
 export * from './conversation';
+export * from './skill-tools';
 export * from './tools';

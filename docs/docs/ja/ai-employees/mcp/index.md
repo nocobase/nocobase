@@ -18,6 +18,22 @@ NocoBase MCP Server プラグインを有効にすると、NocoBase アプリは
 
 このエンドポイントは `streamable HTTP` トランスポートを使用します。
 
+`x-mcp-packages` リクエストヘッダーを使うと、MCP が公開するパッケージ API を制御できます。例:
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+このヘッダーには完全なパッケージ名を指定できます。scope が省略されている場合は、自動的に `@nocobase/` が補われます。デフォルトでは、MCP は次のパッケージ API を読み込みます。
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## 提供される機能
 
 - NocoBase コアおよび各種プラグイン API

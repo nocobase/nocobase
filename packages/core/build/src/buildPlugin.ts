@@ -171,17 +171,18 @@ const external = [
   'file-saver',
 
   // langChain
-  "langchain",
-  "@langchain/core",
-  "@langchain/classic",
-  "@langchain/langgraph",
-  "@langchain/langgraph-checkpoint",
-  "@langchain/community",
-  "@langchain/openai",
-  "@langchain/anthropic",
-  "@langchain/google-genai",
-  "@langchain/deepseek",
-  "@langchain/ollama"
+  'langchain',
+  '@langchain/core',
+  '@langchain/classic',
+  '@langchain/langgraph',
+  '@langchain/langgraph-checkpoint',
+  '@langchain/community',
+  '@langchain/openai',
+  '@langchain/anthropic',
+  '@langchain/google-genai',
+  '@langchain/deepseek',
+  '@langchain/ollama',
+  '@langchain/mcp-adapters',
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
@@ -534,7 +535,7 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
   const externalOptions = {
     external: [],
     noExternal: [],
-    onSuccess: async () => { },
+    onSuccess: async () => {},
     esbuildPlugins: [],
   };
   // other plugins build to a bundle just include plugin-commercial
@@ -805,13 +806,13 @@ export async function buildPluginClient(
       }),
       new AutoInjectPublicPathPlugin(packageJson.name, laneConfig.distDir),
       process.env.BUILD_ANALYZE === 'true' &&
-      new RsdoctorRspackPlugin({
-        // plugin options
-        // supports: {
-        //   generateTileGraph: true,
-        // },
-        mode: 'brief',
-      }),
+        new RsdoctorRspackPlugin({
+          // plugin options
+          // supports: {
+          //   generateTileGraph: true,
+          // },
+          mode: 'brief',
+        }),
     ].filter(Boolean),
     node: {
       global: true,

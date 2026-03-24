@@ -45,6 +45,11 @@
       },
       {
         "type": "custom-link",
+        "label": "MCP 接入",
+        "link": "/ai-employees/features/mcp"
+      },
+      {
+        "type": "custom-link",
         "label": "快捷任务",
         "link": "/ai-employees/features/task"
       },

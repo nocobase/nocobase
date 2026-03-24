@@ -8,6 +8,7 @@
  */
 
 import type { McpToolsManager } from '@nocobase/ai';
+import type { McpTool } from '@nocobase/ai';
 
 type McpSdkModules = {
   McpServer: any;
@@ -76,6 +77,7 @@ export class McpServer {
       name: string;
       version: string;
       toolsManager: McpToolsManager;
+      getTools?: (ctx: any) => Promise<McpTool[]>;
       logger: {
         error: (...args: any[]) => void;
       };
@@ -85,7 +87,7 @@ export class McpServer {
   async handlePost(ctx: any) {
     const body = (ctx.request.body || {}) as Record<string, any> | Record<string, any>[];
     const sdkModules = await getMcpSdkModules();
-    const server = this.createServer(sdkModules, ctx.getBearerToken?.());
+    const server = this.createServer(sdkModules, ctx, ctx.getBearerToken?.());
     const transport = new sdkModules.StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
@@ -102,7 +104,7 @@ export class McpServer {
     ctx.respond = false;
   }
 
-  private createServer(sdkModules: McpSdkModules, requestToken?: string) {
+  private createServer(sdkModules: McpSdkModules, ctx: any, requestToken?: string) {
     const server = new sdkModules.McpServer(
       {
         name: this.options.name,
@@ -115,8 +117,9 @@ export class McpServer {
       },
     );
     server.server.setRequestHandler(sdkModules.ListToolsRequestSchema, async () => {
+      const tools = this.options.getTools ? await this.options.getTools(ctx) : this.options.toolsManager.listTools();
       return {
-        tools: this.options.toolsManager.listTools().map((tool) => {
+        tools: tools.map((tool) => {
           return {
             name: tool.name,
             description: tool.description,
@@ -132,7 +135,9 @@ export class McpServer {
     server.server.setRequestHandler(sdkModules.CallToolRequestSchema, async (request, extra) => {
       const toolName = request.params.name;
       const args = (request.params.arguments || {}) as Record<string, any>;
-      const tool = this.options.toolsManager.getTool(toolName);
+      const tool = this.options.getTools
+        ? (await this.options.getTools(ctx)).find((item) => item.name === toolName)
+        : this.options.toolsManager.getTool(toolName);
       if (!tool) {
         throw new Error(`Tool not found: ${toolName}`);
       }

@@ -5,6 +5,20 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v2.0.25](https://github.com/nocobase/nocobase/compare/v2.0.24...v2.0.25) - 2026-03-24
+
+### 🚀 优化
+
+- **[工作流：审批]** 修复加载审批处理记录列表时由于 JSON 字段造成的性能问题 by @mytharcher
+
+### 🐛 修复
+
+- **[server]** 将 Pub-Sub 关闭的时机改为 `beforeStop`，以避免数据库关闭后仍进行了消息发送和处理 ([#8934](https://github.com/nocobase/nocobase/pull/8934)) by @mytharcher
+
+- **[本地化]** 无权限时不应调用 localizationTexts:missing 接口 ([#8903](https://github.com/nocobase/nocobase/pull/8903)) by @chenos
+
+- **[数据源：外部 Oracle]** 修复 Oracle 数据源加载报错的问题 by @2013xile
+
 ## [v2.0.24](https://github.com/nocobase/nocobase/compare/v2.0.23...v2.0.24) - 2026-03-22
 
 ### 🐛 修复

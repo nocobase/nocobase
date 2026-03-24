@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import evaluators from '@nocobase/evaluators';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel, logicCalculate } from '@nocobase/plugin-workflow';
 import { EXIT } from '../constants';
@@ -53,6 +54,10 @@ function calculateCondition(node: FlowNodeModel, processor: Processor) {
 }
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    exit: Joi.number().valid(EXIT.RETURN, EXIT.BREAK, EXIT.CONTINUE),
+  });
+
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const [branch] = processor.getBranches(node);
     const target = processor.getParsedValue(node.config.target, node.id);

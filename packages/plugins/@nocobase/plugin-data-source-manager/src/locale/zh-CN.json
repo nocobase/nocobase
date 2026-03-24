@@ -67,5 +67,11 @@
   "ai.tools.dataQuery.args.appends": "需要查询的关联数据表",
   "ai.tools.dataQuery.args.sort": "排序字段名称，默认升序。字段名前加减号表示降序",
   "ai.tools.dataQuery.args.offset": "查询记录的偏移量",
-  "ai.tools.dataQuery.args.limit": "查询记录的最大数量"
+  "ai.tools.dataQuery.args.limit": "查询记录的最大数量",
+  "ai.skills.dataQuery.title": "数据查询",
+  "ai.skills.dataQuery.about": "使用工具从指定的数据源查询数据",
+  "ai.skills.dataModeling.title": "数据建模",
+  "ai.skills.dataModeling.about": "帮助将业务场景转换为带有表声明和关系图的规范化数据库模式。",
+  "ai.skills.dataMetadata.title": "获取数据模型元信息",
+  "ai.skills.dataMetadata.about": "帮助获取数据模型元数据（如数据库表定义，RESTful API 定义），如数据表定义，字段元数据"
 }

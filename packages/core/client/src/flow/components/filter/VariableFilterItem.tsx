@@ -635,9 +635,12 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
             | undefined;
           if (Array.isArray(childrenDefs) && childrenDefs.length) {
             for (const c of childrenDefs) {
+              // 翻译 filterable.children 的 title（支持 {{t("...")}} 模板）
+              const rawTitle = c.title || c.name;
+              const translatedTitle = model.context?.t ? model.context.t(rawTitle) : rawTitle;
               extraChildren.push({
                 name: c.name,
-                title: c.title || c.name,
+                title: translatedTitle,
                 type: (c.schema?.type as string) || 'string',
                 // 为子项赋予一个可用的接口，以便拿到操作符（使用 input => string operators）
                 interface: c.schema?.['x-component'] === 'Select' ? 'select' : 'input',
