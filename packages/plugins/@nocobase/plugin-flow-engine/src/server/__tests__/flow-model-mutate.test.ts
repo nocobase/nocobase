@@ -37,6 +37,19 @@ describe('flow-model mutate', () => {
 
   const mutate = (values: any) => agent.resource('flowModels').mutate({ values });
   const insertModelTree = (model: Record<string, any>) => repository.insertModel(model as any);
+  const withTimeout = async <T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await new Promise<T>((resolve, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), timeoutMs);
+        return promise.then(resolve).catch(reject);
+      });
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
+  };
 
   afterEach(async () => {
     await destroyTestApp(app);
@@ -173,6 +186,77 @@ describe('flow-model mutate', () => {
     expect(after).toBeNull();
   });
 
+  it('should release ensure object-child lock after rollback and allow retry', async () => {
+    await insertModelTree({ uid: 'mut-ensure-parent', use: 'MutateContextualParentModel' });
+
+    const failed = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'ens',
+          type: 'ensure',
+          params: {
+            parentId: 'mut-ensure-parent',
+            subKey: 'body',
+            subType: 'object',
+            use: 'MutateContextualChildModel',
+          },
+        },
+        {
+          opId: 'badAttach',
+          type: 'attach',
+          params: {
+            uid: '$ref:ens.uid',
+            parentId: 'missing-parent',
+            subKey: 'items',
+            subType: 'array',
+            position: 'last',
+          },
+        },
+      ],
+    });
+
+    expect(failed.status).toBe(404);
+    expect(
+      await repository.findModelByParentId('mut-ensure-parent', {
+        subKey: 'body',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+
+    const retried: any = await withTimeout(
+      mutate({
+        atomic: true,
+        ops: [
+          {
+            opId: 'ens',
+            type: 'ensure',
+            params: {
+              parentId: 'mut-ensure-parent',
+              subKey: 'body',
+              subType: 'object',
+              use: 'MutateContextualChildModel',
+              stepParams: {
+                alpha: 'retry-ok',
+              },
+            },
+          },
+        ],
+        returnModels: ['mut-ensure-parent'],
+      }),
+      3000,
+      'flowModels:mutate ensure retry should not hang after rollback',
+    );
+
+    expect(retried.status).toBe(200);
+    expect(retried.body?.data?.results?.[0]).toMatchObject({
+      opId: 'ens',
+      ok: true,
+    });
+    expect(retried.body?.data?.results?.[0]?.output?.stepParams?.alpha).toBe('retry-ok');
+    expect(retried.body?.data?.models?.['mut-ensure-parent']?.subModels?.body?.stepParams?.alpha).toBe('retry-ok');
+  });
+
   it('should return 409 when duplicate targetUid already exists and is not produced by this op', async () => {
     await insertModelTree({ uid: 'mut-existing', use: 'OtherModel' });
     await insertModelTree({ uid: 'mut-source2', use: 'SourceModel' });
@@ -264,7 +348,7 @@ describe('flow-model mutate', () => {
     expect(res.status).toBe(200);
 
     const seeded = await repository.findModelById('mut-ref-seed', { includeAsyncNode: true });
-    const strict = await repository.findModelById('mut-ref-strict', { includeAsyncNode: true });
+    const strict: any = await repository.findModelById('mut-ref-strict', { includeAsyncNode: true });
     expect(seeded).not.toBeNull();
     expect(strict).not.toBeNull();
     expect(strict?.stepParams?.title).toBe(123);

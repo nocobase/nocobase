@@ -14,6 +14,20 @@ import { default as _, default as lodash } from 'lodash';
 import { createHash } from 'node:crypto';
 import { QueryTypes } from 'sequelize';
 import { ChildOptions, SchemaNode, TargetPosition } from './dao/ui_schema_node_dao';
+import {
+  acquireEnsureObjectChildLock,
+  emitFlowModelTransactionRollback,
+  getEnsureObjectChildLockKey,
+  getTransactionId,
+  isEnsureObjectChildLockOwner,
+  registerEnsureObjectChildLockRelease,
+} from './flow-models/repository-internals/ensure-lock';
+import {
+  dedupeNodesForDuplicate,
+  replaceStepParamsModelUids,
+  stripDuplicateReplayMarker,
+} from './flow-models/repository-internals/duplicate-helpers';
+import { FlowModelOperationError, isFlowModelUniqueConstraintError } from './flow-models/repository-internals/errors';
 
 export interface GetJsonSchemaOptions {
   includeAsyncNode?: boolean;
@@ -35,20 +49,6 @@ export interface FlowModelNodeRecord {
   async?: boolean | null;
   parent?: string | null;
   sort?: number | null;
-}
-
-export class FlowModelOperationError extends Error {
-  status: number;
-  code: string;
-  details?: any;
-
-  constructor(params: { status: number; code: string; message: string; details?: any }) {
-    super(params.message);
-    this.status = params.status;
-    this.code = params.code;
-    this.details = params.details;
-    this.name = 'FlowModelOperationError';
-  }
 }
 
 export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
@@ -74,47 +74,6 @@ interface InsertAdjacentOptions extends removeParentOptions {
 }
 
 const nodeKeys = ['properties', 'definitions', 'patternProperties', 'additionalProperties', 'items'];
-const ensureObjectChildLockWaiters = new Map<string, Promise<void>>();
-const ensureObjectChildLockOwners = new Map<string, string>();
-
-function getEnsureObjectChildLockKey(parentId: string, subKey: string) {
-  return `object-child:${parentId}\u0000${subKey}\u0000object`;
-}
-
-function getTransactionId(transaction?: Transaction) {
-  const rawTransactionId = (transaction as (Transaction & { id?: string | number }) | undefined)?.id;
-  return rawTransactionId == null ? undefined : String(rawTransactionId);
-}
-
-async function acquireEnsureObjectChildLock(key: string, ownerTransactionId?: string) {
-  const previous = ensureObjectChildLockWaiters.get(key);
-  let releaseCurrent!: () => void;
-  const current = new Promise<void>((resolve) => {
-    releaseCurrent = resolve;
-  });
-  ensureObjectChildLockWaiters.set(key, current);
-
-  await previous;
-
-  if (ownerTransactionId) {
-    ensureObjectChildLockOwners.set(key, ownerTransactionId);
-  }
-
-  let released = false;
-  return () => {
-    if (released) {
-      return;
-    }
-    released = true;
-    if (ownerTransactionId && ensureObjectChildLockOwners.get(key) === ownerTransactionId) {
-      ensureObjectChildLockOwners.delete(key);
-    }
-    releaseCurrent();
-    if (ensureObjectChildLockWaiters.get(key) === current) {
-      ensureObjectChildLockWaiters.delete(key);
-    }
-  };
-}
 
 export function transaction(transactionAbleArgPosition?: number) {
   return (target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
@@ -144,6 +103,7 @@ export function transaction(transactionAbleArgPosition?: number) {
           return results;
         } catch (e) {
           await transaction.rollback();
+          await emitFlowModelTransactionRollback(this.database, transaction);
           throw e;
         }
       } else {
@@ -671,83 +631,11 @@ export class FlowModelRepository extends Repository {
   }
 
   private dedupeNodesForDuplicate(nodes: any[], rootUid: string) {
-    if (!Array.isArray(nodes) || nodes.length <= 1) {
-      return nodes;
-    }
-
-    const rowsByUid = lodash.groupBy(nodes, 'uid');
-    const uniqueUids = Object.keys(rowsByUid);
-    if (uniqueUids.length === nodes.length) {
-      return nodes;
-    }
-
-    const uidsInSubtree = new Set(uniqueUids);
-    const rootDepthByUid = new Map<string, number>();
-    for (const uid of uniqueUids) {
-      const rows = rowsByUid[uid] || [];
-      const depths = rows.map((row) => Number(row?.depth ?? 0));
-      rootDepthByUid.set(uid, depths.length ? Math.min(...depths) : 0);
-    }
-
-    const pickRowForUid = (uid: string, rows: any[]) => {
-      if (!rows?.length) return null;
-      if (rows.length === 1) return rows[0];
-      if (uid === rootUid) return rows[0];
-
-      let bestRow = rows[0];
-      let bestParentRootDepth = -1;
-
-      for (const row of rows) {
-        const parentUid = row?.parent;
-        if (!parentUid || !uidsInSubtree.has(parentUid)) {
-          continue;
-        }
-
-        const parentRootDepth = rootDepthByUid.get(parentUid) ?? -1;
-        if (parentRootDepth > bestParentRootDepth) {
-          bestParentRootDepth = parentRootDepth;
-          bestRow = row;
-        }
-      }
-
-      return bestRow;
-    };
-
-    const uidsInQueryOrder: string[] = [];
-    const seenUidsInQueryOrder = new Set<string>();
-    for (const row of nodes) {
-      const uid = row?.uid;
-      if (!uid || seenUidsInQueryOrder.has(uid)) continue;
-      seenUidsInQueryOrder.add(uid);
-      uidsInQueryOrder.push(uid);
-    }
-
-    return uidsInQueryOrder.map((uid) => pickRowForUid(uid, rowsByUid[uid])).filter(Boolean);
+    return dedupeNodesForDuplicate(nodes, rootUid);
   }
 
   private replaceStepParamsModelUids(options: any, uidMap: Record<string, string>) {
-    const opts = options && typeof options === 'object' ? options : {};
-    const replaceUidString = (v: any) => (typeof v === 'string' && uidMap[v] ? uidMap[v] : v);
-
-    const replaceInPlace = (val: any): any => {
-      if (Array.isArray(val)) {
-        for (let i = 0; i < val.length; i++) {
-          val[i] = replaceInPlace(val[i]);
-        }
-        return val;
-      }
-      if (val && typeof val === 'object') {
-        for (const k of Object.keys(val)) {
-          (val as any)[k] = replaceInPlace((val as any)[k]);
-        }
-        return val;
-      }
-      return replaceUidString(val);
-    };
-
-    if (opts.stepParams) opts.stepParams = replaceInPlace(opts.stepParams);
-
-    return opts;
+    return replaceStepParamsModelUids(options, uidMap);
   }
 
   @transaction()
@@ -1484,7 +1372,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const { uid: uid, name, options } = node;
     const model = {
       uid,
-      ...options,
+      ...stripDuplicateReplayMarker(this.optionsToJson(options)),
     };
     return model;
   }
@@ -1510,9 +1398,9 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       const { subKey, subType } = this.optionsToJson(child.options);
       if (!subKey) continue;
       // 递归处理子节点
-      const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
+      const model: any = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
         uid: child['uid'],
-        ...this.optionsToJson(child.options),
+        ...stripDuplicateReplayMarker(this.optionsToJson(child.options)),
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1545,7 +1433,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 7. 返回最终 model
     return {
       uid: rootNode['uid'],
-      ...this.optionsToJson(rootNode.options),
+      ...stripDuplicateReplayMarker(this.optionsToJson(rootNode.options)),
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
   }
@@ -1686,20 +1574,6 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         });
       }
 
-      const unwrapSqlError = (error: any) => {
-        return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
-      };
-      const isUniqueConstraint = (error: any) => {
-        if (!error) return false;
-        if (error?.name === 'SequelizeUniqueConstraintError') return true;
-        const err = unwrapSqlError(error);
-        if (!err) return false;
-        if (err?.code === '23505') return true; // postgres unique_violation
-        if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
-        if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
-        return false;
-      };
-
       try {
         await this.database.sequelize.transaction({ transaction }, async (innerTransaction) => {
           await this.upsertModel(
@@ -1717,7 +1591,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         });
       } catch (error) {
         // retry-safety for concurrent ensure by the same uid
-        if (isUniqueConstraint(error)) {
+        if (isFlowModelUniqueConstraintError(error)) {
           const createdByOther = await this.model.findByPk(uidValue, { transaction });
           if (createdByOther) {
             return await this.findModelById(uidValue, { transaction, includeAsyncNode });
@@ -1855,21 +1729,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         });
       } catch (error) {
         // retry-safety for concurrent ensure on dialects without row locks (or cross-instance races)
-        const unwrapSqlError = (error: any) => {
-          return error?.original?.parent ?? error?.parent ?? error?.original ?? error;
-        };
-        const isUniqueConstraint = (error: any) => {
-          if (!error) return false;
-          if (error?.name === 'SequelizeUniqueConstraintError') return true;
-          const err = unwrapSqlError(error);
-          if (!err) return false;
-          if (err?.code === '23505') return true; // postgres unique_violation
-          if (err?.errno === 1062) return true; // mysql/mariadb duplicate entry
-          if (typeof err?.code === 'string' && err.code.startsWith('SQLITE_CONSTRAINT')) return true;
-          return false;
-        };
-
-        if (isUniqueConstraint(error)) {
+        if (isFlowModelUniqueConstraintError(error)) {
           const existing = await this.database.sequelize.query<{ uid: string }>(
             `SELECT TreeTable.descendant as uid
              FROM ${treeTable} as TreeTable
@@ -1904,22 +1764,18 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     };
 
     const lockKey = getEnsureObjectChildLockKey(parentIdValue, subKeyValue);
-    const transactionId = getTransactionId(transaction);
 
-    if (transactionId && ensureObjectChildLockOwners.get(lockKey) === transactionId) {
+    if (isEnsureObjectChildLockOwner(lockKey, transaction)) {
       return await ensureObjectChild();
     }
 
-    const releaseEnsureObjectChildLock = await acquireEnsureObjectChildLock(lockKey, transactionId);
+    const releaseEnsureObjectChildLock = await acquireEnsureObjectChildLock(lockKey, getTransactionId(transaction));
     let releaseEnsureObjectChildLockAfterTransaction = false;
 
     try {
       const model = await ensureObjectChild();
 
-      if (transaction && transactionId) {
-        const releaseAfterTransaction = lodash.once(releaseEnsureObjectChildLock);
-        transaction.afterCommit(releaseAfterTransaction);
-        this.database.once(`transactionRollback:${transactionId}`, releaseAfterTransaction);
+      if (registerEnsureObjectChildLockRelease(this.database, transaction, releaseEnsureObjectChildLock)) {
         releaseEnsureObjectChildLockAfterTransaction = true;
       }
 
@@ -2194,41 +2050,61 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       return as - bs;
     });
 
-    for (const n of sorted) {
-      const oldUid = n['uid'];
-      const newUid = uidMap[oldUid];
-      const oldParentUid = n['parent'];
-      const newParentUid = uidMap[oldParentUid] ?? null;
+    try {
+      for (const n of sorted) {
+        const oldUid = n['uid'];
+        const newUid = uidMap[oldUid];
+        const oldParentUid = n['parent'];
+        const newParentUid = uidMap[oldParentUid] ?? null;
 
-      const optionsObj = this.replaceStepParamsModelUids(
-        lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
-        uidMap,
-      );
+        const optionsObj = this.replaceStepParamsModelUids(
+          lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
+          uidMap,
+        );
 
-      if (oldUid === sourceUid) {
-        optionsObj.__mutateDuplicate = { sourceUid };
-      }
+        if (oldUid === sourceUid) {
+          optionsObj.__mutateDuplicate = { sourceUid };
+        }
 
-      if (newParentUid) {
-        optionsObj.parent = newParentUid;
-        optionsObj.parentId = newParentUid;
-      }
+        if (newParentUid) {
+          optionsObj.parent = newParentUid;
+          optionsObj.parentId = newParentUid;
+        }
 
-      const schemaNode: SchemaNode = {
-        uid: newUid,
-        ['x-async']: !!n.async,
-        ...optionsObj,
-      };
-
-      if (newParentUid) {
-        schemaNode.childOptions = {
-          parentUid: newParentUid,
-          type: n.type,
-          position: 'last',
+        const schemaNode: SchemaNode = {
+          uid: newUid,
+          ['x-async']: !!n.async,
+          ...optionsObj,
         };
-      }
 
-      await this.insertSingleNode(schemaNode, { transaction });
+        if (newParentUid) {
+          schemaNode.childOptions = {
+            parentUid: newParentUid,
+            type: n.type,
+            position: 'last',
+          };
+        }
+
+        await this.insertSingleNode(schemaNode, { transaction });
+      }
+    } catch (error) {
+      if (isFlowModelUniqueConstraintError(error)) {
+        const existingTarget = await this.model.findByPk(desiredUid, { transaction });
+        if (existingTarget) {
+          const targetOptions = FlowModelRepository.optionsToJson(existingTarget.get('options'));
+          const marker = targetOptions?.__mutateDuplicate;
+          if (marker?.sourceUid === sourceUid) {
+            return await this.findModelById(desiredUid, { transaction, includeAsyncNode });
+          }
+        }
+
+        throw new FlowModelOperationError({
+          status: 409,
+          code: 'CONFLICT',
+          message: `flowModels:mutate duplicate targetUid '${desiredUid}' already exists`,
+        });
+      }
+      throw error;
     }
 
     return await this.findModelById(desiredUid, { transaction, includeAsyncNode });

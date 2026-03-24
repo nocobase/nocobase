@@ -350,6 +350,28 @@ describe('ui templates and usages', () => {
     expect(await countUsage({ modelUid: 'popup-save' })).toBe(0);
   });
 
+  it('should maintain usages via flowModels:ensure action', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-ensure',
+        name: 'Template Ensure',
+        targetUid: 'target-block',
+      },
+    });
+
+    const ensureResp = await agent.resource('flowModels').ensure({
+      values: {
+        uid: 'ref-ensure',
+        ...buildOptions('tpl-ensure'),
+      },
+    });
+
+    expect(ensureResp.status).toBe(200);
+    expect(ensureResp.body?.data?.uid).toBe('ref-ensure');
+    expect(await countUsage({ templateUid: 'tpl-ensure', modelUid: 'ref-ensure' })).toBe(1);
+  });
+
   it('should maintain usages via flowModels:mutate duplicate/upsert/destroy actions', async () => {
     const agent = app.agent();
     await agent.resource('flowModelTemplates').create({
@@ -439,6 +461,40 @@ describe('ui templates and usages', () => {
       ok: true,
     });
     expect(await countUsage({ modelUid: 'ref-mutate-copy' })).toBe(0);
+  });
+
+  it('should maintain usages via flowModels:mutate ensure action', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-mut-ensure',
+        name: 'Template Mutate Ensure',
+        targetUid: 'target-block',
+      },
+    });
+
+    const mutateResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'ensure',
+            type: 'ensure',
+            params: {
+              uid: 'ref-mutate-ensure',
+              ...buildOptions('tpl-mut-ensure'),
+            },
+          },
+        ],
+      },
+    });
+
+    expect(mutateResp.status).toBe(200);
+    expect(mutateResp.body?.data?.results?.[0]).toMatchObject({
+      opId: 'ensure',
+      ok: true,
+    });
+    expect(await countUsage({ templateUid: 'tpl-mut-ensure', modelUid: 'ref-mutate-ensure' })).toBe(1);
   });
 
   it('should remove usages when duplicate is destroyed in the same mutate request', async () => {

@@ -258,6 +258,14 @@ export class PluginBlockReferenceServer extends Plugin {
         return;
       }
 
+      if (actionName === 'ensure') {
+        await next();
+        await syncUsagesFromTree(ctx.body?.data ?? ctx.body, {
+          transaction: ctx.transaction,
+        });
+        return;
+      }
+
       if (actionName === 'mutate') {
         const values = ctx?.action?.params?.values;
         const ops = Array.isArray(values?.ops) ? values.ops : [];
@@ -292,6 +300,11 @@ export class PluginBlockReferenceServer extends Plugin {
               transaction: ctx.transaction,
               skipNodesWithoutTemplateRefs: true,
             });
+            continue;
+          }
+
+          if (op?.type === 'ensure') {
+            await syncUsagesFromTree(result?.output, { transaction: ctx.transaction });
             continue;
           }
 

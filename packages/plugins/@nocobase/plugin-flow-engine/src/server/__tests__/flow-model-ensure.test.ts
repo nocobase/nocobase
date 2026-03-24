@@ -88,12 +88,12 @@ describe('flow-model ensure', () => {
   });
 
   it('should ensure by uid (create when missing, return when exists)', async () => {
-    const created = await repository.ensureModel({ uid: 'ensure-root', use: 'RouteModel' });
+    const created: any = await repository.ensureModel({ uid: 'ensure-root', use: 'RouteModel' });
     expect(created).toBeTruthy();
     expect(created.uid).toBe('ensure-root');
     expect(created.use).toBe('RouteModel');
 
-    const ensuredAgain = await repository.ensureModel({ uid: 'ensure-root', use: 'AnotherModel' });
+    const ensuredAgain: any = await repository.ensureModel({ uid: 'ensure-root', use: 'AnotherModel' });
     expect(ensuredAgain).toBeTruthy();
     expect(ensuredAgain.uid).toBe('ensure-root');
     // should not overwrite existing model
@@ -146,6 +146,18 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.subType).toBe('object');
     expect(res.body?.data?.use).toBe('RootPageModel');
     expect(res.body?.data?.uid).toBeTruthy();
+  });
+
+  it('should allow HTTP ensure to return an existing uid without requiring use', async () => {
+    await insertModel({ uid: 'ensure-api-existing', use: 'RouteModel' });
+
+    const res = await ensureModel({
+      uid: 'ensure-api-existing',
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.uid).toBe('ensure-api-existing');
+    expect(res.body?.data?.use).toBe('RouteModel');
   });
 
   it('should allow ensuring internal concrete child models directly', async () => {
