@@ -14,7 +14,7 @@ export default defineCollection({
   migrationRules: ['upsert', 'insert-ignore', 'overwrite', 'schema-only', 'skip'],
   recordUniqueKey: ['username'],
   defaultMigrationRule: {
-    overwriteFirst: 'upsert',
+    overwriteFirst: 'overwrite',
     upsertFirst: 'upsert',
   },
   autoGenId: false,
