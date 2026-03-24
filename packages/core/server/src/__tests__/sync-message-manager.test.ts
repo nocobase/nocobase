@@ -92,6 +92,31 @@ describe('sync-message-manager', () => {
     await cluster.destroy();
   });
 
+  test('debounced handler should not be called after app stopped', async () => {
+    const mockListener = vi.fn();
+    class MyPlugin extends Plugin {
+      get name() {
+        return 'test1';
+      }
+      async handleSyncMessage(message) {
+        mockListener(message);
+      }
+    }
+    const cluster = await createMockCluster({
+      plugins: [MyPlugin],
+    });
+    const [app1, app2] = cluster.nodes;
+    // Send message — it arrives at app2 but the debounced handler has not fired yet
+    await app1.pm.get(MyPlugin).sendSyncMessage('message_debounced');
+    // Stop app2 immediately before debounce fires
+    await app2.stop();
+    // Wait for debounce period to elapse (default debounce is 500ms in mock server)
+    await sleep(1000);
+    // Handler should NOT have been called because the guard checks app.stopped/db.closed()
+    expect(mockListener).not.toHaveBeenCalled();
+    await cluster.destroy();
+  });
+
   test('plugin.handleSyncMessage + transaction', async () => {
     const mockListener = vi.fn();
     class MyPlugin extends Plugin {

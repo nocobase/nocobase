@@ -138,7 +138,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
 
   async afterRemove() {}
 
-  async handleSyncMessage(message: any) {}
+  abstract handleSyncMessage(message: any): Promise<void>;
   async sendSyncMessage(message: any, options?: Transactionable) {
     if (!this.name) {
       throw new Error(`plugin name invalid`);
