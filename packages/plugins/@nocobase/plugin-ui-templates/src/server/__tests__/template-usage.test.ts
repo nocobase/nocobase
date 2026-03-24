@@ -349,4 +349,95 @@ describe('ui templates and usages', () => {
     expect(destroyResp3.status).toBe(200);
     expect(await countUsage({ modelUid: 'popup-save' })).toBe(0);
   });
+
+  it('should maintain usages via flowModels:mutate duplicate/upsert/destroy actions', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-mut-1',
+        name: 'Template Mutate 1',
+        targetUid: 'target-block',
+      },
+    });
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-mut-2',
+        name: 'Template Mutate 2',
+        targetUid: 'target-block',
+      },
+    });
+
+    const saveResp = await agent.resource('flowModels').save({
+      values: {
+        uid: 'ref-mutate-source',
+        ...buildOptions('tpl-mut-1'),
+      },
+    });
+    expect(saveResp.status).toBe(200);
+    expect(await countUsage({ templateUid: 'tpl-mut-1', modelUid: 'ref-mutate-source' })).toBe(1);
+
+    const duplicateResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'dup',
+            type: 'duplicate',
+            params: { uid: 'ref-mutate-source', targetUid: 'ref-mutate-copy' },
+          },
+        ],
+      },
+    });
+    expect(duplicateResp.status).toBe(200);
+    expect(duplicateResp.body?.data?.results?.[0]).toMatchObject({
+      opId: 'dup',
+      ok: true,
+    });
+    expect(await countUsage({ templateUid: 'tpl-mut-1', modelUid: 'ref-mutate-copy' })).toBe(1);
+
+    const upsertResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'upsert',
+            type: 'upsert',
+            params: {
+              values: {
+                uid: 'ref-mutate-copy',
+                ...buildOptions('tpl-mut-2'),
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(upsertResp.status).toBe(200);
+    expect(upsertResp.body?.data?.results?.[0]).toMatchObject({
+      opId: 'upsert',
+      ok: true,
+    });
+    expect(await countUsage({ templateUid: 'tpl-mut-1', modelUid: 'ref-mutate-copy' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-mut-2', modelUid: 'ref-mutate-copy' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-mut-1', modelUid: 'ref-mutate-source' })).toBe(1);
+
+    const destroyResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'destroy',
+            type: 'destroy',
+            params: { uid: 'ref-mutate-copy' },
+          },
+        ],
+      },
+    });
+    expect(destroyResp.status).toBe(200);
+    expect(destroyResp.body?.data?.results?.[0]).toMatchObject({
+      opId: 'destroy',
+      ok: true,
+    });
+    expect(await countUsage({ modelUid: 'ref-mutate-copy' })).toBe(0);
+  });
 });
