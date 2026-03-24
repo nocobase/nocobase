@@ -26,6 +26,17 @@ export interface GetPropertiesOptions {
   transaction?: Transaction;
 }
 
+export interface FlowModelNodeRecord {
+  uid: string;
+  name?: string | null;
+  options?: unknown;
+  depth?: number | null;
+  type?: string | null;
+  async?: boolean | null;
+  parent?: string | null;
+  sort?: number | null;
+}
+
 export class FlowModelOperationError extends Error {
   status: number;
   code: string;
@@ -1278,7 +1289,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     return lodash.pick(schema, ['type', 'properties']);
   }
 
-  async findNodesById(uid: string, options?: GetJsonSchemaOptions) {
+  async findNodesById(uid: string, options?: GetJsonSchemaOptions): Promise<FlowModelNodeRecord[]> {
     const db = this.database;
 
     const treeTable = this.flowModelTreePathTableName;
@@ -1296,18 +1307,19 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         }
     `;
 
-    const nodes = await db.sequelize.query(this.sqlAdapter(rawSql), {
+    const nodes = await db.sequelize.query<FlowModelNodeRecord>(this.sqlAdapter(rawSql), {
       replacements: {
         ancestor: uid,
       },
+      type: QueryTypes.SELECT,
       transaction: options?.transaction,
     });
 
-    if (nodes[0].length == 0) {
+    if (nodes.length === 0) {
       return [];
     }
 
-    return nodes[0];
+    return nodes;
   }
 
   private async doGetJsonSchema(uid: string, options?: GetJsonSchemaOptions) {
