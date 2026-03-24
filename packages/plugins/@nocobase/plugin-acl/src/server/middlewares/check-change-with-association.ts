@@ -146,7 +146,7 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     roles,
     currentRole: ctx.state.currentRole,
     currentUser: ctx.state.currentUser,
-    state: ctx.state,
+    state: _.clone(ctx.state),
     aclParams: ctx.permission?.can?.params,
     timezone,
     userProvider: createUserProvider({
