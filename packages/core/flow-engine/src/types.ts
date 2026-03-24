@@ -243,6 +243,7 @@ export interface FlowSchemaSlotUseExpansion {
 }
 
 export interface FlowSchemaInventoryContribution {
+  publicTreeRoots?: string[];
   slotUseExpansions?: FlowSchemaSlotUseExpansion[];
 }
 

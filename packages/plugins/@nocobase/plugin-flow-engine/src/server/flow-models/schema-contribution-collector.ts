@@ -143,6 +143,10 @@ function normalizeInventoryContribution(
     return undefined;
   }
 
+  const publicTreeRoots = Array.isArray(inventory.publicTreeRoots)
+    ? _.uniq(inventory.publicTreeRoots.map((item) => String(item || '').trim()).filter(Boolean))
+    : [];
+
   const slotUseExpansions = Array.isArray(inventory.slotUseExpansions)
     ? inventory.slotUseExpansions
         .map((item) => {
@@ -163,11 +167,12 @@ function normalizeInventoryContribution(
         .filter(Boolean)
     : [];
 
-  if (!slotUseExpansions.length) {
+  if (!publicTreeRoots.length && !slotUseExpansions.length) {
     return undefined;
   }
 
   return {
+    publicTreeRoots,
     slotUseExpansions,
   };
 }

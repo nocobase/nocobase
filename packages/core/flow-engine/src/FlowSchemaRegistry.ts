@@ -112,6 +112,7 @@ export class FlowSchemaRegistry {
   private readonly modelDocumentCache = new Map<string, FlowSchemaDocument>();
   private readonly modelLocalDynamicHintsCache = new Map<string, FlowDynamicHint[]>();
   private readonly publicModelDocumentCache = new Map<string, FlowSchemaPublicDocument>();
+  private readonly publicTreeRoots = new Set<string>();
   private readonly slotUseExpansions = new Map<string, string[]>();
 
   private invalidateDerivedCaches() {
@@ -443,6 +444,10 @@ export class FlowSchemaRegistry {
       return;
     }
 
+    for (const use of normalizeStringArray(inventory.publicTreeRoots)) {
+      this.publicTreeRoots.add(use);
+    }
+
     for (const item of inventory.slotUseExpansions || []) {
       const parentUse = String(item?.parentUse || '').trim();
       const slotKey = String(item?.slotKey || '').trim();
@@ -610,6 +615,10 @@ export class FlowSchemaRegistry {
   isDirectUseAllowed(use: string): boolean {
     const model = this.modelSchemas.get(String(use || '').trim());
     return model ? this.isQueryableModel(model) && model.allowDirectUse !== false : true;
+  }
+
+  listPublicTreeRoots(): string[] {
+    return Array.from(this.publicTreeRoots).sort();
   }
 
   listModelUses(options: { publicOnly?: boolean; directUseOnly?: boolean; queryableOnly?: boolean } = {}): string[] {

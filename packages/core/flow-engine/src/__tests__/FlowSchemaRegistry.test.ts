@@ -392,6 +392,27 @@ describe('FlowSchemaRegistry', () => {
     });
   });
 
+  it('should accept public tree roots in inventory contributions', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryInventoryRootModel', {
+        exposure: 'internal',
+      }),
+    );
+
+    expect(() =>
+      registry.registerInventory(
+        {
+          publicTreeRoots: ['SchemaRegistryInventoryRootModel'],
+        },
+        'official',
+      ),
+    ).not.toThrow();
+    expect(registry.hasQueryableModel('SchemaRegistryInventoryRootModel')).toBe(true);
+    expect(registry.listPublicTreeRoots()).toEqual(['SchemaRegistryInventoryRootModel']);
+  });
+
   it('should build document schema, aggregate flow hints, and infer sub-model slots', () => {
     class SchemaRegistryChildModel extends FlowModel {}
     class SchemaRegistryParentModel extends FlowModel {}
