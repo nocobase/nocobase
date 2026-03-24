@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AssociationFieldGroupModel } from '../../base';
+import { AssociationFieldGroupModel } from '../../base/AssociationFieldGroupModel';
 
 export class DetailsAssociationFieldGroupModel extends AssociationFieldGroupModel {
   static itemModelName = 'DetailsItemModel';

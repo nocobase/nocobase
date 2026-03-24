@@ -28,14 +28,15 @@ import {
   markSaveStepParamsWithSubModels,
   saveStepParamsWithSubModelsIfNeeded,
 } from '../../../internal/utils/saveStepParamsWithSubModels';
-import { BlockSceneEnum, FilterBlockModel } from '../../base';
+import { BlockSceneEnum } from '../../base/BlockModel';
+import { FilterBlockModel } from '../../base/FilterBlockModel';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
 import { isEmptyValue } from '../form/value-runtime/utils';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
 import { clearLegacyDefaultValuesFromFilterFormModel } from './legacyDefaultValueMigration';
 import { findFormItemModelByFieldPath } from '../../../internal/utils/modelUtils';
-import { FormItemModel } from '../form';
+import { FormItemModel } from '../form/FormItemModel';
 import { getDefaultOperator } from '../filter-manager/utils';
 import { normalizeFilterValueByOperator } from './valueNormalization';
 

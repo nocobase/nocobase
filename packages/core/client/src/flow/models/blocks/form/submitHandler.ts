@@ -8,13 +8,14 @@
  */
 
 import { MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
-import { EditFormModel } from './EditFormModel';
 import type { FormBlockModel } from './FormBlockModel';
 import { getValidationNamePathsExcludingHiddenModels, omitHiddenModelValuesFromSubmit } from './submitValues';
 
 export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?: any) => void) {
   const resource = ctx.resource;
   const blockModel = ctx.blockModel as FormBlockModel;
+  const { EditFormModel } = await import('./EditFormModel');
+  const isEditFormModel = blockModel instanceof EditFormModel;
 
   const validateNamePaths = ctx?.flowSettingsEnabled ? getValidationNamePathsExcludingHiddenModels(blockModel) : null;
   if (Array.isArray(validateNamePaths)) {
@@ -27,7 +28,7 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
   const rawValues = blockModel.form.getFieldsValue(true);
   const values = omitHiddenModelValuesFromSubmit(rawValues, blockModel);
   if (resource instanceof SingleRecordResource) {
-    if (blockModel instanceof EditFormModel) {
+    if (isEditFormModel) {
       const currentFilterByTk = resource.getMeta('currentFilterByTk');
       if (!currentFilterByTk) {
         resource.isNewRecord = true; // 设置为新记录
@@ -36,7 +37,7 @@ export async function submitHandler(ctx, params, cb?: (values?: any, filterByTk?
       }
     }
     const data: any = cb ? await cb(values) : await resource.save(values, params.requestConfig);
-    if (blockModel instanceof EditFormModel) {
+    if (isEditFormModel) {
       resource.isNewRecord = false;
       // 编辑表单保存成功后，表单应回到“已同步”状态：下一次刷新应允许覆盖为服务端值
       blockModel.resetUserModifiedFields?.();

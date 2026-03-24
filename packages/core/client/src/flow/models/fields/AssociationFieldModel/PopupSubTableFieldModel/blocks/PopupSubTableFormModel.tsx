@@ -21,7 +21,7 @@ import {
 import _ from 'lodash';
 import { Space } from 'antd';
 import React from 'react';
-import { BlockSceneEnum } from '../../../../base';
+import { BlockSceneEnum } from '../../../../base/BlockModel';
 import { FormBlockModel, FormComponent } from '../../../../blocks/form/FormBlockModel';
 import {
   buildCurrentItemTitle,

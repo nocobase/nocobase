@@ -21,9 +21,8 @@ import {
 import { Pagination, Space } from 'antd';
 import { isEqual } from 'lodash';
 import React from 'react';
-import { BlockSceneEnum } from '../../base';
+import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockContent, FormBlockModel } from './FormBlockModel';
-import { submitHandler } from './submitHandler';
 import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
@@ -83,10 +82,12 @@ export class EditFormModel extends FormBlockModel {
   };
 
   async submitHandler(ctx, params: any, cb?: (values?: any, filterByTk?: any) => void) {
+    const { submitHandler } = await import('./submitHandler');
     await submitHandler(ctx, params, cb);
   }
 
   async submit(params: any = {}, cb?: (values?: any, filterByTk?: any) => void) {
+    const { submitHandler } = await import('./submitHandler');
     await submitHandler(this.context, params, cb);
   }
 

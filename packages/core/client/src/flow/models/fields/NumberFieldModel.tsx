@@ -13,7 +13,7 @@ import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
 import React from 'react';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 function toSafeNumber(value) {
   if (!value) {

@@ -9,8 +9,8 @@
 
 export * from './CreateFormModel';
 export * from './EditFormModel';
-export * from './FormActionGroupModel';
 export * from './FormActionModel';
+export * from './FormActionGroupModel';
 export * from './FormBlockModel';
 export * from './FormCustomItemModel';
 export * from './FormGridModel';

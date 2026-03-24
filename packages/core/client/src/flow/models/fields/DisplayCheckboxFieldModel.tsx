@@ -11,7 +11,7 @@ import React from 'react';
 import { Checkbox } from 'antd';
 import { CheckOutlined, CloseOutlined } from '@ant-design/icons';
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class DisplayCheckboxFieldModel extends FieldModel {
   public render() {

@@ -9,7 +9,9 @@
 
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { ActionGroupModel, ActionModel } from '../../../../base';
+import '../../../../base/ActionModel';
+import { ActionGroupModel } from '../../../../base/ActionGroupModel';
+import { ActionModel } from '../../../../base/ActionModelCore';
 import {
   getValidationNamePathsExcludingHiddenModels,
   omitHiddenModelValuesFromSubmit,

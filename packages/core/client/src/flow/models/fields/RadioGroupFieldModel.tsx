@@ -10,7 +10,7 @@
 import { Radio } from 'antd';
 import React from 'react';
 import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class RadioGroupFieldModel extends FieldModel {
   render() {

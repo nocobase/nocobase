@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { FieldModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';

@@ -11,7 +11,7 @@ import { Input } from 'antd';
 import React from 'react';
 import _ from 'lodash';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 @largeField()
 export class TextareaFieldModel extends FieldModel {

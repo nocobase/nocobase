@@ -8,7 +8,7 @@
  */
 
 import { FilterableItemModel, tExpr } from '@nocobase/flow-engine';
-import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel';
+import { RecordSelectFieldModel } from '../../../fields/AssociationFieldModel/RecordSelectFieldModel';
 
 export class FilterFormRecordSelectFieldModel extends RecordSelectFieldModel {
   onInit(options) {

@@ -12,7 +12,7 @@ import { Select } from 'antd';
 import { castArray } from 'lodash';
 import { EditableItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 const CollectionSelector = (props) => {
   const { filter, options, ...others } = props;

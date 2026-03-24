@@ -11,7 +11,7 @@ import { TimePicker } from 'antd';
 import React from 'react';
 import { EditableItemModel, FilterableItemModel, tExpr, useFlowModelContext } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 import { MobileTimePicker } from './mobile-components/MobileTimePicker';
 
 const TimePickerCom = (props) => {

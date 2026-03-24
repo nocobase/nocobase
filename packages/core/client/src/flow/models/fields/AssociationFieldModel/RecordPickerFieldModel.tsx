@@ -21,7 +21,7 @@ import { useRequest } from 'ahooks';
 import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
-import { FieldModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
 import {
   buildCurrentItemTitle,
   createAssociationItemChainContextPropertyOptions,

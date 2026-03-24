@@ -15,7 +15,7 @@ import { debounce, groupBy } from 'lodash';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EditableItemModel } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 const { Search } = Input;
 interface IconPickerProps {

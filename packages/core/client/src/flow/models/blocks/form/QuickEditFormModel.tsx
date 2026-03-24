@@ -24,7 +24,7 @@ import {
 import { Button, Form, Skeleton, Space } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { FieldModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
 import { FormComponent } from './FormBlockModel';
 import { FormItemModel } from './FormItemModel';
 

@@ -35,9 +35,9 @@ import {
   type LazySelectProps,
 } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
-import { BlockSceneEnum } from '../../base';
+import { BlockSceneEnum } from '../../base/BlockModel';
 import { ActionWithoutPermission } from '../../base/ActionModel';
-import { EditFormModel } from '../../blocks';
+import { EditFormModel } from '../../blocks/form/EditFormModel';
 
 function isPlainObject(val: unknown): val is Record<string, any> {
   return !!val && typeof val === 'object' && !Array.isArray(val);

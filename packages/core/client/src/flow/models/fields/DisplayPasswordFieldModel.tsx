@@ -9,7 +9,7 @@
 
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import React from 'react';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class DisplayPasswordFieldModel extends FieldModel {
   public render() {
