@@ -292,14 +292,14 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.subType).toBe('object');
     expect(res.body?.data?.use).toBe('BlockGridModel');
     expect(warnSpy).toHaveBeenCalledTimes(1);
-    expect(warnSpy.mock.calls[0][0]).toMatchObject({
+    expect(warnSpy.mock.calls[0][0]).toContain('using first child');
+    expect(warnSpy.mock.calls[0][1]).toMatchObject({
       action: 'flowModels:ensure',
       type: 'flow-model-duplicate-object-child',
       parentId: 'ensure-duplicate-grid-parent',
       subKey: 'grid',
       childUids: ['ensure-duplicate-grid-a', 'ensure-duplicate-grid-b'],
     });
-    expect(warnSpy.mock.calls[0][1]).toContain('using first child');
 
     warnSpy.mockRestore();
   });
