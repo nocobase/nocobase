@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { pick } from 'lodash';
 import { isValidFilter } from '@nocobase/utils';
 import { Collection, Model } from '@nocobase/database';
@@ -18,7 +19,7 @@ import {
 } from '@nocobase/data-source-manager';
 
 import Trigger from '.';
-import { toJSON } from '../utils';
+import { toJSON, validateCollectionField } from '../utils';
 import type { WorkflowModel } from '../types';
 import type { EventOptions } from '../Dispatcher';
 import PluginWorkflowServer from '../Plugin';
@@ -54,6 +55,30 @@ function getFieldRawName(collection: ICollection, name: string) {
 }
 
 export default class CollectionTrigger extends Trigger {
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+    mode: Joi.number().valid(...Object.values(MODE_BITMAP)),
+    changed: Joi.when('mode', {
+      is: (mode) => (mode & MODE_BITMAP.UPDATE) === MODE_BITMAP.UPDATE,
+      then: Joi.array().items(Joi.string()).optional(),
+      otherwise: Joi.forbidden(),
+    }),
+    condition: Joi.object(),
+    appends: Joi.when('mode', {
+      is: (mode) => mode !== MODE_BITMAP.DESTROY,
+      then: Joi.array().items(Joi.string()).optional(),
+      otherwise: Joi.forbidden(),
+    }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
+
   events = new Map();
 
   constructor(public readonly workflow: PluginWorkflowServer) {

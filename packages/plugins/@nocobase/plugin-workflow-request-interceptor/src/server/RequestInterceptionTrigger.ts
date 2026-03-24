@@ -17,9 +17,16 @@
  */
 
 import { pick } from 'lodash';
+import Joi from 'joi';
 
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
-import { EventOptions, EXECUTION_STATUS, Trigger, WorkflowModel } from '@nocobase/plugin-workflow';
+import {
+  EventOptions,
+  EXECUTION_STATUS,
+  Trigger,
+  validateCollectionField,
+  WorkflowModel,
+} from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 import { INTERCEPTABLE_ACTIONS } from '../common/constants';
 
@@ -34,6 +41,18 @@ class RequestInterceptionError extends Error {
 
 export default class RequestInterceptionTrigger extends Trigger {
   static TYPE = 'request-interception';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   sync = true;
 

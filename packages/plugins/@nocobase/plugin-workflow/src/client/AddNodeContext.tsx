@@ -313,6 +313,8 @@ function PresetFieldset() {
   }
   return (
     <SchemaComponent
+      components={presetting.instruction.components}
+      scope={presetting.instruction.scope}
       schema={{
         type: 'void',
         properties: {

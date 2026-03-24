@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.25](https://github.com/nocobase/nocobase/compare/v2.0.24...v2.0.25) - 2026-03-24
+
+### 🚀 Improvements
+
+- **[Workflow: Approval]** Fix JSON field caused performance issue when loading approval records list by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[server]** Change close timing of Pub-Sub to `beforeStop`, to avoid message sent or handled after database closed ([#8934](https://github.com/nocobase/nocobase/pull/8934)) by @mytharcher
+
+- **[Localization]** prevent localizationTexts:missing request on permission denial ([#8903](https://github.com/nocobase/nocobase/pull/8903)) by @chenos
+
+- **[Data source: External Oracle]** Fix an error that occurs when loading the Oracle external data source by @2013xile
+
 ## [v2.0.24](https://github.com/nocobase/nocobase/compare/v2.0.23...v2.0.24) - 2026-03-22
 
 ### 🐛 Bug Fixes

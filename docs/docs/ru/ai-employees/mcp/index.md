@@ -18,6 +18,22 @@ pkg: '@nocobase/plugin-mcp-server'
 
 Этот эндпоинт использует транспорт `streamable HTTP`.
 
+Вы можете использовать заголовок запроса `x-mcp-packages`, чтобы управлять тем, API каких пакетов MCP будет предоставлять, например:
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+Этот заголовок принимает полные имена пакетов. Если scope опущен, `@nocobase/` будет добавлен автоматически. По умолчанию MCP загружает API следующих пакетов:
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## Возможности
 
 - API ядра NocoBase и его плагинов
