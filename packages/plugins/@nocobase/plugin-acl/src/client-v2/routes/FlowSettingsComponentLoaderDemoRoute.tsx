@@ -1,21 +1,13 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { useApp } from '../../../../client-v2/src/hooks/useApp';
+import type { Application } from '@nocobase/client-v2';
 
 const SchemaField = createSchemaField();
 
 export default function FlowSettingsComponentLoaderDemoRoute() {
-  const app = useApp();
+  const app = useFlowEngineContext().app as Application;
   const form = React.useMemo(() => createForm(), []);
 
   return (

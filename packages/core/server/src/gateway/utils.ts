@@ -32,6 +32,12 @@ export function rewriteV2AssetPublicPath(html: string, assetPublicPath: string) 
 }
 
 export function injectRuntimeScript(html: string, runtimeScript: string) {
+  const browserCheckerScriptMatch = html.match(/<script\b[^>]*browser-checker\.js[^>]*><\/script>/i);
+
+  if (browserCheckerScriptMatch?.[0]) {
+    return html.replace(browserCheckerScriptMatch[0], `${runtimeScript}\n${browserCheckerScriptMatch[0]}`);
+  }
+
   const moduleScriptMatch = html.match(/<script\b[^>]*type=["']module["'][^>]*>/i);
 
   if (moduleScriptMatch?.[0]) {

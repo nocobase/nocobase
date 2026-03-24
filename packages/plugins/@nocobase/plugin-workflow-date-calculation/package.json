@@ -7,6 +7,7 @@
   "version": "2.1.0-alpha.10",
   "main": "dist/server/index.js",
   "devDependencies": {
+    "joi": "^17.13.3",
     "moment-timezone": "0.5.48"
   },
   "nocobase": {

@@ -32,9 +32,42 @@ import { obfuscate } from './utils/obfuscationResult';
 import { AutoInjectPublicPathPlugin } from './injectPublicPathPlugin';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
-const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
-const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
+const serverGlobalFiles: string[] = ['src/**', '!src/client/**', '!src/client-v2/**', ...globExcludeFiles];
 const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
+
+type PluginClientLane = 'client' | 'client-v2';
+
+const pluginClientLaneConfig: Record<
+  PluginClientLane,
+  {
+    distDir: string;
+    entryDir: string;
+    rootEntryFile: string;
+    externalSubpaths: string[];
+  }
+> = {
+  client: {
+    distDir: 'client',
+    entryDir: 'client',
+    rootEntryFile: 'client.js',
+    externalSubpaths: ['client'],
+  },
+  'client-v2': {
+    distDir: 'client-v2',
+    entryDir: 'client-v2',
+    rootEntryFile: 'client-v2.js',
+    externalSubpaths: ['client', 'client-v2'],
+  },
+};
+
+function getClientGlobalFiles(lane: PluginClientLane) {
+  const entryDir = pluginClientLaneConfig[lane].entryDir;
+  const excludedClientDirs = Object.values(pluginClientLaneConfig)
+    .map((item) => item.entryDir)
+    .filter((dir) => dir !== entryDir)
+    .map((dir) => `!src/${dir}/**`);
+  return ['src/**', '!src/server/**', ...excludedClientDirs, ...globExcludeFiles];
+}
 
 
 const external = [
@@ -268,7 +301,19 @@ export function deleteServerFiles(cwd: string, log: PkgLog) {
     deep: 1,
     onlyDirectories: true,
   });
-  [...files, ...dirs].forEach((item) => {
+  const extraClientDirs = fg.globSync(['client-v2'], {
+    cwd: path.join(cwd, target_dir),
+    absolute: true,
+    deep: 1,
+    onlyDirectories: true,
+  });
+  [...files, ...dirs.filter((item) => !extraClientDirs.includes(item)), ...extraClientDirs].forEach((item) => {
+    if (item.endsWith(`${path.sep}client-v2`)) {
+      return;
+    }
+    if (item.endsWith(`${path.sep}client`)) {
+      return;
+    }
     fs.removeSync(item);
   });
 }
@@ -542,10 +587,33 @@ export async function buildPluginClient(
   userConfig: any,
   sourcemap: boolean,
   log: PkgLog,
+  lane: PluginClientLane = 'client',
   isCommercial = false,
 ) {
-  log('build plugin client');
+  const laneConfig = pluginClientLaneConfig[lane];
+  const entryDir = path.join(cwd, 'src', laneConfig.entryDir);
+  const rootEntryFile = path.join(cwd, laneConfig.rootEntryFile);
+
+  if (!fs.existsSync(rootEntryFile)) {
+    log('skip plugin %s build, root entry not found', lane);
+    return false;
+  }
+
+  if (!fs.existsSync(entryDir)) {
+    log('Missing %s. Please create it.', chalk.red(`src/${laneConfig.entryDir}`));
+    process.exit(-1);
+  }
+
+  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: entryDir });
+  if (!entry[0]) {
+    log('Missing %s entry file.', chalk.red(`src/${laneConfig.entryDir}/index.{ts,tsx,js,jsx}`));
+    process.exit(-1);
+    return false;
+  }
+
+  log('build plugin %s', lane);
   const packageJson = getPackageJson(cwd);
+  const clientGlobalFiles = getClientGlobalFiles(lane);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
   if (isCommercial) {
     const commercialFiles = fg.globSync(clientGlobalFiles, {
@@ -559,24 +627,25 @@ export async function buildPluginClient(
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
 
   checkRequire(clientFiles, log);
-  buildCheck({ cwd, packageJson, entry: 'client', files: clientFiles, log });
-  const outDir = path.join(cwd, target_dir, 'client');
+  buildCheck({ cwd, packageJson, entry: lane, files: clientFiles, log });
+  const outDir = path.join(cwd, target_dir, laneConfig.distDir);
 
   const globals = excludePackages.reduce<Record<string, string>>((prev, curr) => {
     if (curr.startsWith('@nocobase')) {
-      prev[`${curr}/client`] = `${curr}/client`;
+      laneConfig.externalSubpaths.forEach((subpath) => {
+        prev[`${curr}/${subpath}`] = `${curr}/${subpath}`;
+      });
     }
     prev[curr] = curr;
     return prev;
   }, {});
 
-  const entry = fg.globSync('index.{ts,tsx,js,jsx}', { absolute: false, cwd: path.join(cwd, 'src/client') });
   const outputFileName = 'index.js';
   const compiler = rspack({
     mode: 'production',
     // mode: "development",
     context: cwd,
-    entry: './src/client/' + entry[0],
+    entry: `./src/${laneConfig.entryDir}/` + entry[0],
     target: ['web', 'es5'],
     output: {
       path: outDir,
@@ -654,18 +723,6 @@ export async function buildPluginClient(
           issuer: /\.[jt]sx?$/,
           resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
-        },
-        {
-          test: /\.(?:js|mjs|cjs|ts|tsx)$/,
-          exclude: /node_modules/,
-          use: {
-            loader: 'babel-loader',
-            options: {
-              targets: 'defaults',
-              // presets: [['@babel/preset-env']],
-              plugins: ['react-imported-component/babel'],
-            },
-          },
         },
         {
           test: /\.jsx$/,
@@ -746,7 +803,7 @@ export async function buildPluginClient(
         'process.env.NODE_ENV': JSON.stringify('production'),
         'process.env.NODE_DEBUG': false,
       }),
-      new AutoInjectPublicPathPlugin(packageJson.name),
+      new AutoInjectPublicPathPlugin(packageJson.name, laneConfig.distDir),
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({
         // plugin options
@@ -828,10 +885,12 @@ export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap
     cwd.includes('/pro-plugins/') &&
     fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))
   ) {
-    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client', true);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client-v2', true);
     await buildProPluginServer(cwd, userConfig, sourcemap, log);
   } else {
-    await buildPluginClient(cwd, userConfig, sourcemap, log);
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client');
+    await buildPluginClient(cwd, userConfig, sourcemap, log, 'client-v2');
     await buildPluginServer(cwd, userConfig, sourcemap, log);
   }
   writeExternalPackageVersion(cwd, log);

@@ -7,15 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import { JOB_STATUS } from '../constants';
-import { toJSON } from '../utils';
+import { toJSON, validateCollectionField } from '../utils';
 import type Processor from '../Processor';
 import type { FlowNodeModel } from '../types';
 import { Instruction } from '.';
 
 export class CreateInstruction extends Instruction {
+  configSchema = Joi.object({
+    collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, params: { appends = [], ...params } = {} } = node.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);
