@@ -17,11 +17,12 @@ import {
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
 import { Badge, Tooltip } from 'antd';
+import qs from 'qs';
 import React, { FC, useCallback, useContext, useEffect } from 'react';
 import { Link, useLocation, type NavigateFunction } from 'react-router-dom';
 import { NocoBaseDesktopRoute, NocoBaseDesktopRouteType, NocoBaseRouteContext } from '../../../admin-shell';
 import { useNavigateNoUpdate, useRouterBasename } from '../../../application/CustomRouterContextProvider';
-import { navigateWithinSelf, useParseURLAndParams } from '../../../block-provider/hooks';
+import { appendQueryStringToUrl, navigateWithinSelf, reduceValueSize } from '../../../block-provider/hooks';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 import { Icon } from '../../../icon/Icon';
 import { ParentRouteContext } from '../../../schema-component/antd/menu/Menu';
@@ -106,29 +107,115 @@ type AdminLayoutMenuItemsParent = FlowModel & {
 
 const menuItemStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between' };
 
+const LEGACY_FLOW_MENU_VARIABLE_MAPPINGS: Array<{
+  pattern: RegExp;
+  resolve: (match: RegExpMatchArray) => string;
+}> = [
+  {
+    pattern: /^\$user(?:\.(.+))?$/,
+    resolve: (match) => `ctx.user${match[1] ? `.${match[1]}` : ''}`,
+  },
+  {
+    pattern: /^currentUser(?:\.(.+))?$/,
+    resolve: (match) => `ctx.user${match[1] ? `.${match[1]}` : ''}`,
+  },
+  {
+    pattern: /^\$nRole$/,
+    resolve: () => 'ctx.role',
+  },
+  {
+    pattern: /^\$nToken$/,
+    resolve: () => 'ctx.token',
+  },
+  {
+    pattern: /^\$nURLSearchParams(?:\.(.+))?$/,
+    resolve: (match) => `ctx.urlSearchParams${match[1] ? `.${match[1]}` : ''}`,
+  },
+];
+
+/**
+ * 仅在模板表达式内部兼容历史菜单变量写法，避免误改普通文本。
+ * @param template 原始模板字符串
+ * @returns 归一化后的模板字符串
+ */
+export const normalizeAdminLayoutMenuLegacyVariables = (template: string) => {
+  if (typeof template !== 'string' || !template.includes('{{')) {
+    return template;
+  }
+
+  return template.replace(/\{\{\s*([\s\S]*?)\s*\}\}/g, (full, expression: string) => {
+    const trimmed = String(expression || '').trim();
+
+    for (const mapping of LEGACY_FLOW_MENU_VARIABLE_MAPPINGS) {
+      const match = trimmed.match(mapping.pattern);
+      if (match) {
+        return `{{ ${mapping.resolve(match)} }}`;
+      }
+    }
+
+    return full;
+  });
+};
+
+/**
+ * 使用 FlowContext 解析 admin-layout link 菜单的 URL 和查询参数。
+ * @param options 解析所需参数
+ * @returns 最终可跳转的 URL
+ */
+export const resolveAdminLayoutMenuLink = async (options: {
+  context: FlowModel['context'];
+  href: string;
+  params?: Array<{ name: string; value: any }>;
+}) => {
+  const { context, href, params = [] } = options;
+
+  const targetHref = typeof href === 'string' ? normalizeAdminLayoutMenuLegacyVariables(href) : href;
+  const resolvedHref = await context.resolveJsonTemplate(targetHref);
+  const query: Record<string, any> = {};
+
+  for (const { name, value } of params) {
+    if (!name) {
+      continue;
+    }
+
+    try {
+      const nextValue =
+        typeof value === 'string'
+          ? await context.resolveJsonTemplate(normalizeAdminLayoutMenuLegacyVariables(value))
+          : value;
+
+      if (nextValue === undefined || nextValue === null) {
+        continue;
+      }
+
+      query[name] = reduceValueSize(nextValue);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return appendQueryStringToUrl(String(resolvedHref ?? href ?? ''), qs.stringify(query));
+};
+
 export const openAdminLayoutMenuLink = async (options: {
+  context: FlowModel['context'];
   href: string;
   params?: any[];
   openInNewWindow?: boolean;
   isMobile?: boolean;
   closeMobileMenu: () => void;
-  parseURLAndParams: (href: string, params: any[]) => Promise<string>;
   navigate: NavigateFunction;
   basenameOfCurrentRouter: string;
 }) => {
-  const {
-    href,
-    params,
-    openInNewWindow,
-    isMobile,
-    closeMobileMenu,
-    parseURLAndParams,
-    navigate,
-    basenameOfCurrentRouter,
-  } = options;
+  const { context, href, params, openInNewWindow, isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter } =
+    options;
 
   try {
-    const url = await parseURLAndParams(href, params || []);
+    const url = await resolveAdminLayoutMenuLink({
+      context,
+      href,
+      params: params || [],
+    });
 
     if (openInNewWindow !== false) {
       if (isMobile) {
@@ -434,7 +521,6 @@ const WithTooltip: FC<{ title: React.ReactNode; hidden: boolean; badgeProps: any
 
 const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderOptions }> = (props) => {
   const { item } = props;
-  const { parseURLAndParams } = useParseURLAndParams();
   const location = useLocation();
   const badgeCount = useEvaluatedExpression(item._route.options?.badge?.count);
   const navigate = useNavigateNoUpdate();
@@ -453,17 +539,17 @@ const MenuItem: FC<{ item: AdminLayoutMenuNode; options?: AdminLayoutMenuRenderO
       event.stopPropagation();
 
       await openAdminLayoutMenuLink({
+        context: item._model?.context,
         href,
         params,
         openInNewWindow,
         isMobile: !!props.options?.isMobile,
         closeMobileMenu,
-        parseURLAndParams,
         navigate,
         basenameOfCurrentRouter,
       });
     },
-    [parseURLAndParams, item, props.options?.isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter],
+    [item, props.options?.isMobile, closeMobileMenu, navigate, basenameOfCurrentRouter],
   );
 
   const handleClickMenuItem = useCallback(

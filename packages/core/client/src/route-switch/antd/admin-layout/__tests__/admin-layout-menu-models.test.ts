@@ -17,25 +17,16 @@ import { AdminLayoutModel } from '../AdminLayoutModel';
 import {
   AdminLayoutMenuItemModel,
   getAdminLayoutMenuMovePositionOptions,
+  normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
+  resolveAdminLayoutMenuLink,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
 } from '../AdminLayoutMenuModels';
 
-const { parseURLAndParamsMock, navigateMock } = vi.hoisted(() => ({
-  parseURLAndParamsMock: vi.fn(),
+const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),
 }));
-
-vi.mock('../../../../block-provider/hooks', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../../block-provider/hooks')>();
-  return {
-    ...actual,
-    useParseURLAndParams: () => ({
-      parseURLAndParams: parseURLAndParamsMock,
-    }),
-  };
-});
 
 vi.mock('../../../../application/CustomRouterContextProvider', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../application/CustomRouterContextProvider')>();
@@ -67,6 +58,10 @@ describe('AdminLayoutModel menu items', () => {
     });
     engine.context.defineProperty('api', {
       value: {
+        auth: {
+          role: 'admin',
+          token: 'token-1',
+        },
         request: vi.fn(),
         resource: vi.fn(() => ({})),
       },
@@ -79,6 +74,7 @@ describe('AdminLayoutModel menu items', () => {
     engine.context.defineProperty('location', {
       value: {
         pathname: '/admin/current-page',
+        search: '?from=header',
       },
     });
     engine.context.defineProperty('app', {
@@ -90,9 +86,92 @@ describe('AdminLayoutModel menu items', () => {
     engine.context.defineProperty('t', {
       value: (text) => text,
     });
-    parseURLAndParamsMock.mockReset();
     navigateMock.mockReset();
     vi.spyOn(window, 'open').mockImplementation(() => null);
+  });
+
+  it('should normalize legacy variables only inside template expressions', () => {
+    expect(normalizeAdminLayoutMenuLegacyVariables('https://a.com?id={{ $user.id }}')).toBe(
+      'https://a.com?id={{ ctx.user.id }}',
+    );
+    expect(normalizeAdminLayoutMenuLegacyVariables('prefix-{{ currentUser.name }}-{{ $nRole }}')).toBe(
+      'prefix-{{ ctx.user.name }}-{{ ctx.role }}',
+    );
+    expect(normalizeAdminLayoutMenuLegacyVariables('https://a.com/currentUser/profile')).toBe(
+      'https://a.com/currentUser/profile',
+    );
+  });
+
+  it('should resolve admin-layout link with FlowContext variables', async () => {
+    engine.context.defineProperty('user', {
+      value: {
+        id: 7,
+        name: 'Jane',
+      },
+    });
+
+    const result = await resolveAdminLayoutMenuLink({
+      context: engine.context,
+      href: 'https://www.nocobase.com/docs?role={{ ctx.role }}',
+      params: [
+        { name: 'userId', value: '{{ ctx.user.id }}' },
+        { name: 'userName', value: 'user-{{ ctx.user.name }}' },
+      ],
+    });
+
+    expect(result).toBe('https://www.nocobase.com/docs?role=admin&userId=7&userName=user-Jane');
+  });
+
+  it('should keep legacy variable syntax working in admin-layout link parser', async () => {
+    engine.context.defineProperty('user', {
+      value: {
+        id: 9,
+      },
+    });
+
+    const result = await resolveAdminLayoutMenuLink({
+      context: engine.context,
+      href: 'https://www.nocobase.com/docs',
+      params: [
+        { name: 'userId', value: '{{ $user.id }}' },
+        { name: 'legacyUserId', value: '{{ currentUser.id }}' },
+        { name: 'role', value: '{{ $nRole }}' },
+        { name: 'token', value: '{{ $nToken }}' },
+        { name: 'from', value: '{{ $nURLSearchParams.from }}' },
+      ],
+    });
+
+    expect(result).toBe('https://www.nocobase.com/docs?userId=9&legacyUserId=9&role=admin&token=token-1&from=header');
+  });
+
+  it('should keep falsy values except null and undefined in query params', async () => {
+    const result = await resolveAdminLayoutMenuLink({
+      context: engine.context,
+      href: 'https://www.nocobase.com/docs',
+      params: [
+        { name: 'zero', value: 0 },
+        { name: 'bool', value: false },
+        { name: 'empty', value: '' },
+        { name: 'nil', value: null },
+        { name: 'undef', value: undefined },
+      ],
+    });
+
+    expect(result).toBe('https://www.nocobase.com/docs?zero=0&bool=false&empty=');
+  });
+
+  it('should append query params into hash route url', async () => {
+    engine.context.defineProperty('role', {
+      value: 'admin',
+    });
+
+    const result = await resolveAdminLayoutMenuLink({
+      context: engine.context,
+      href: '/admin#/?tab=1',
+      params: [{ name: 'role', value: '{{ ctx.role }}' }],
+    });
+
+    expect(result).toBe('/admin#/?tab=1&role=admin');
   });
 
   it('should sync route tree into menuItems subModels and cleanup stale branches', () => {
@@ -912,35 +991,28 @@ describe('AdminLayoutModel menu items', () => {
   });
 
   it('should use parsed url for same-window link navigation', async () => {
-    parseURLAndParamsMock.mockResolvedValue('https://www.nocobase.com/docs?from=admin');
-
     await openAdminLayoutMenuLink({
+      context: engine.context,
       href: 'https://www.nocobase.com/docs',
       params: [{ name: 'from', value: 'admin' }],
       openInNewWindow: false,
       isMobile: false,
       closeMobileMenu: vi.fn(),
-      parseURLAndParams: parseURLAndParamsMock,
       navigate: navigateMock,
       basenameOfCurrentRouter: '/apps/demo',
     });
 
-    expect(parseURLAndParamsMock).toHaveBeenCalledWith('https://www.nocobase.com/docs', [
-      { name: 'from', value: 'admin' },
-    ]);
     expect(window.open).toHaveBeenCalledWith('https://www.nocobase.com/docs?from=admin', '_self');
   });
 
   it('should open parsed link url with noopener and noreferrer', async () => {
-    parseURLAndParamsMock.mockResolvedValue('https://www.nocobase.com/docs?from=admin');
-
     await openAdminLayoutMenuLink({
+      context: engine.context,
       href: 'https://www.nocobase.com/docs',
       params: [{ name: 'from', value: 'admin' }],
       openInNewWindow: true,
       isMobile: false,
       closeMobileMenu: vi.fn(),
-      parseURLAndParams: parseURLAndParamsMock,
       navigate: navigateMock,
       basenameOfCurrentRouter: '/apps/demo',
     });
