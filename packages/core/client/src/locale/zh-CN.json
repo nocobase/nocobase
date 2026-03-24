@@ -669,6 +669,7 @@
   "Form values": "表单值",
   "Form values change": "表单值变更",
   "Form variable": "表单变量",
+  "JS variable": "JS变量",
   "Format": "格式",
   "Formula": "Formula",
   "Formula description": "Compute a value in each record based on other fields in the same record.",
