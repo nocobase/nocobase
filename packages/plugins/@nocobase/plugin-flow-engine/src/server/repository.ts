@@ -51,6 +51,10 @@ export interface FlowModelNodeRecord {
   sort?: number | null;
 }
 
+type DuplicateUidBuilder = (oldUid: string) => string;
+
+type DuplicateRootOptionsPatch = (options: Record<string, any>) => void;
+
 export type FlowModelAttachPosition = 'first' | 'last' | TargetPosition;
 
 export interface FlowModelAttachOptions {
@@ -568,66 +572,18 @@ export class FlowModelRepository extends Repository {
 
   @transaction()
   async duplicate(modelUid: string, options?: Transactionable) {
-    let nodes = await this.findNodesById(modelUid, { ...options, includeAsyncNode: true });
-    if (!nodes?.length) {
+    const nodes = await this.prepareNodesForDuplicate(modelUid, { ...options, includeAsyncNode: true });
+    if (!nodes.length) {
       return null;
     }
 
-    nodes = this.dedupeNodesForDuplicate(nodes, modelUid);
-
-    // 1) 生成 old -> new uid 映射
-    const uidMap: Record<string, string> = {};
-    for (const n of nodes) {
-      uidMap[n['uid']] = uid();
-    }
-    // 2) 父先于子，同时在同一父/同一分组内按原 sort 顺序插入
-    const sorted: any[] = [...nodes].sort((a: any, b: any) => {
-      if (a.depth !== b.depth) return a.depth - b.depth;
-      const ap = a.parent || '';
-      const bp = b.parent || '';
-      if (ap !== bp) return ap < bp ? -1 : 1;
-      const at = a.type || '';
-      const bt = b.type || '';
-      if (at !== bt) return at < bt ? -1 : 1;
-      const as = a.sort ?? 0;
-      const bs = b.sort ?? 0;
-      return as - bs;
+    const duplicatedRootUid = await this.cloneNodesWithUidMap(nodes, {
+      sourceUid: modelUid,
+      transaction: options?.transaction,
+      buildUid: () => uid(),
     });
 
-    for (const n of sorted) {
-      const oldUid = n['uid'];
-      const newUid = uidMap[oldUid];
-      const oldParentUid = n['parent'];
-      const newParentUid = uidMap[oldParentUid] ?? null;
-
-      const optionsObj = this.replaceStepParamsModelUids(
-        lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
-        uidMap,
-      );
-      if (newParentUid) {
-        optionsObj.parent = newParentUid;
-        optionsObj.parentId = newParentUid;
-      }
-
-      const schemaNode: SchemaNode = {
-        uid: newUid,
-        ['x-async']: !!n.async,
-        ...optionsObj,
-      };
-
-      if (newParentUid) {
-        schemaNode.childOptions = {
-          parentUid: newParentUid,
-          type: n.type,
-          position: 'last',
-        };
-      }
-
-      await this.insertSingleNode(schemaNode, { transaction: (options as any)?.transaction });
-    }
-
-    // 3) 返回新根节点的完整模型
-    return this.findModelById(uidMap[modelUid], { ...options });
+    return this.findModelById(duplicatedRootUid, { ...options });
   }
 
   private dedupeNodesForDuplicate(nodes: any[], rootUid: string) {
@@ -636,6 +592,79 @@ export class FlowModelRepository extends Repository {
 
   private replaceStepParamsModelUids(options: any, uidMap: Record<string, string>) {
     return replaceStepParamsModelUids(options, uidMap);
+  }
+
+  private sortNodesForDuplicate(nodes: FlowModelNodeRecord[]) {
+    return [...nodes].sort((a, b) => {
+      if (a.depth !== b.depth) return Number(a.depth ?? 0) - Number(b.depth ?? 0);
+      const ap = a.parent || '';
+      const bp = b.parent || '';
+      if (ap !== bp) return ap < bp ? -1 : 1;
+      const at = a.type || '';
+      const bt = b.type || '';
+      if (at !== bt) return at < bt ? -1 : 1;
+      return Number(a.sort ?? 0) - Number(b.sort ?? 0);
+    });
+  }
+
+  private async prepareNodesForDuplicate(uid: string, options?: GetJsonSchemaOptions): Promise<FlowModelNodeRecord[]> {
+    const nodes = await this.findNodesById(uid, { ...options, includeAsyncNode: true });
+    if (!nodes.length) {
+      return [];
+    }
+    return this.sortNodesForDuplicate(this.dedupeNodesForDuplicate(nodes, uid));
+  }
+
+  private async cloneNodesWithUidMap(
+    nodes: FlowModelNodeRecord[],
+    options: {
+      sourceUid: string;
+      transaction?: Transaction;
+      buildUid: DuplicateUidBuilder;
+      patchRootOptions?: DuplicateRootOptionsPatch;
+    },
+  ) {
+    const uidMap: Record<string, string> = {};
+    for (const node of nodes) {
+      uidMap[node.uid] = options.buildUid(node.uid);
+    }
+
+    for (const node of nodes) {
+      const oldUid = node.uid;
+      const newUid = uidMap[oldUid];
+      const newParentUid = node.parent ? uidMap[node.parent] ?? null : null;
+      const optionsObj = this.replaceStepParamsModelUids(
+        lodash.cloneDeep(FlowModelRepository.optionsToJson(node.options ?? {})),
+        uidMap,
+      );
+
+      if (oldUid === options.sourceUid) {
+        options.patchRootOptions?.(optionsObj);
+      }
+
+      if (newParentUid) {
+        optionsObj.parent = newParentUid;
+        optionsObj.parentId = newParentUid;
+      }
+
+      const schemaNode: SchemaNode = {
+        uid: newUid,
+        ['x-async']: !!node.async,
+        ...optionsObj,
+      };
+
+      if (newParentUid) {
+        schemaNode.childOptions = {
+          parentUid: newParentUid,
+          type: node.type,
+          position: 'last',
+        };
+      }
+
+      await this.insertSingleNode(schemaNode, { transaction: options.transaction });
+    }
+
+    return uidMap[options.sourceUid];
   }
 
   @transaction()
@@ -2015,8 +2044,8 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       });
     }
 
-    let nodes = await this.findNodesById(sourceUid, { ...options, includeAsyncNode: true });
-    if (!nodes?.length) {
+    const nodes = await this.prepareNodesForDuplicate(sourceUid, { ...options, includeAsyncNode: true });
+    if (!nodes.length) {
       throw new FlowModelOperationError({
         status: 404,
         code: 'NOT_FOUND',
@@ -2024,69 +2053,21 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       });
     }
 
-    nodes = this.dedupeNodesForDuplicate(nodes, sourceUid);
-
     const buildUid = (root: string, old: string) => {
       if (old === sourceUid) return root;
       const h = createHash('sha256').update(`${root}:${old}`).digest('hex').slice(0, 24);
       return `d_${h}`;
     };
 
-    const uidMap: Record<string, string> = {};
-    for (const n of nodes) {
-      uidMap[n['uid']] = buildUid(desiredUid, n['uid']);
-    }
-
-    const sorted: any[] = [...nodes].sort((a: any, b: any) => {
-      if (a.depth !== b.depth) return a.depth - b.depth;
-      const ap = a.parent || '';
-      const bp = b.parent || '';
-      if (ap !== bp) return ap < bp ? -1 : 1;
-      const at = a.type || '';
-      const bt = b.type || '';
-      if (at !== bt) return at < bt ? -1 : 1;
-      const as = a.sort ?? 0;
-      const bs = b.sort ?? 0;
-      return as - bs;
-    });
-
     try {
-      for (const n of sorted) {
-        const oldUid = n['uid'];
-        const newUid = uidMap[oldUid];
-        const oldParentUid = n['parent'];
-        const newParentUid = uidMap[oldParentUid] ?? null;
-
-        const optionsObj = this.replaceStepParamsModelUids(
-          lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
-          uidMap,
-        );
-
-        if (oldUid === sourceUid) {
-          optionsObj.__mutateDuplicate = { sourceUid };
-        }
-
-        if (newParentUid) {
-          optionsObj.parent = newParentUid;
-          optionsObj.parentId = newParentUid;
-        }
-
-        const schemaNode: SchemaNode = {
-          uid: newUid,
-          ['x-async']: !!n.async,
-          ...optionsObj,
-        };
-
-        if (newParentUid) {
-          schemaNode.childOptions = {
-            parentUid: newParentUid,
-            type: n.type,
-            position: 'last',
-          };
-        }
-
-        await this.insertSingleNode(schemaNode, { transaction });
-      }
+      await this.cloneNodesWithUidMap(nodes, {
+        sourceUid,
+        transaction,
+        buildUid: (oldUid) => buildUid(desiredUid, oldUid),
+        patchRootOptions: (rootOptions) => {
+          rootOptions.__mutateDuplicate = { sourceUid };
+        },
+      });
     } catch (error) {
       if (isFlowModelUniqueConstraintError(error)) {
         const existingTarget = await this.model.findByPk(desiredUid, { transaction });
@@ -2126,6 +2107,13 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
         code: 'INVALID_PARAMS',
         message: "flowModels:move requires 'sourceId'+'targetId'+'position=before|after'",
       });
+    }
+
+    if (sourceId === targetId) {
+      const currentModel = await this.findModelById(sourceId, { transaction, includeAsyncNode: true });
+      if (currentModel) {
+        return currentModel;
+      }
     }
 
     return await this.insertAdjacent(

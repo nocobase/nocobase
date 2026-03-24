@@ -312,6 +312,45 @@ describe('flow-model mutate', () => {
     expect(m1?.subModels?.inner?.uid).toBe(m2?.subModels?.inner?.uid);
   });
 
+  it('should no-op when mutate move targets itself', async () => {
+    await insertModelTree({
+      uid: 'mut-self-parent',
+      use: 'ParentModel',
+      subModels: {
+        items: [
+          {
+            uid: 'mut-self-1',
+            use: 'SourceModel',
+          },
+          {
+            uid: 'mut-self-2',
+            use: 'SourceModel',
+          },
+        ],
+      },
+    });
+
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'move-self',
+          type: 'move',
+          params: { sourceId: 'mut-self-1', targetId: 'mut-self-1', position: 'after' },
+        },
+      ],
+      returnModels: ['mut-self-parent'],
+    });
+
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.results?.[0]).toMatchObject({
+      opId: 'move-self',
+      ok: true,
+    });
+    expect(res.body?.data?.models?.['mut-self-parent']?.subModels?.items?.[0]?.uid).toBe('mut-self-1');
+    expect(res.body?.data?.models?.['mut-self-parent']?.subModels?.items?.[1]?.uid).toBe('mut-self-2');
+  });
+
   it('should validate resolved $ref payloads before commit and rollback atomically', async () => {
     const res = await mutate({
       atomic: true,

@@ -53,15 +53,24 @@ function isManagedFlowRouteShell(record: any, schemaUid: string) {
   );
 }
 
-async function emitTransactionRollback(database: any, transaction?: Transaction) {
-  const transactionId = (transaction as (Transaction & { id?: string | number }) | undefined)?.id;
-  if (!database || transactionId == null) {
+function isTransactionFinished(transaction?: Transaction) {
+  return !!(transaction as (Transaction & { finished?: string }) | undefined)?.finished;
+}
+
+async function rollbackTransaction(
+  transaction: Transaction | undefined,
+  options: {
+    flowModelsRepository?: {
+      emitTransactionRollback?: (transaction?: Transaction) => Promise<void>;
+    };
+  } = {},
+) {
+  if (!transaction || isTransactionFinished(transaction)) {
     return;
   }
 
-  const eventName = `transactionRollback:${transactionId}`;
-  await database.emitAsync?.(eventName);
-  await database.removeAllListeners?.(eventName);
+  await transaction.rollback();
+  await options.flowModelsRepository?.emitTransactionRollback?.(transaction);
 }
 
 export class PluginClientServer extends Plugin {
@@ -474,9 +483,10 @@ export class PluginClientServer extends Plugin {
             transaction,
           });
 
-          await transaction.commit();
           ctx.body = { page: pickPage(pageJson), defaultTab: pickTab(existingTab?.toJSON?.() || existingTab) };
-          return await next();
+          await next();
+          await transaction.commit();
+          return;
         }
 
         // 2) Create path: use uiSchemas row as a per-page mutex to avoid duplicate routes without adding schemaUid unique index
@@ -541,9 +551,10 @@ export class PluginClientServer extends Plugin {
             transaction,
           });
 
-          await transaction.commit();
           ctx.body = { page: pickPage(pageJson), defaultTab: pickTab(existingTab?.toJSON?.() || existingTab) };
-          return await next();
+          await next();
+          await transaction.commit();
+          return;
         }
 
         const createdPage = await desktopRoutesRepository.create({
@@ -580,16 +591,14 @@ export class PluginClientServer extends Plugin {
           { transaction },
         );
 
-        await transaction.commit();
-
         ctx.body = {
           page: pickPage(createdPage.toJSON()),
           defaultTab: pickTab(createdTab.toJSON()),
         };
         await next();
+        await transaction.commit();
       } catch (error) {
-        await transaction.rollback();
-        await emitTransactionRollback(ctx.db, transaction);
+        await rollbackTransaction(transaction, { flowModelsRepository });
         throw error;
       }
     });
@@ -637,11 +646,11 @@ export class PluginClientServer extends Plugin {
           });
         }
 
-        await transaction.commit();
         ctx.body = { ok: true };
         await next();
+        await transaction.commit();
       } catch (error) {
-        await transaction.rollback();
+        await rollbackTransaction(transaction);
         throw error;
       }
     });

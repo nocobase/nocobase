@@ -293,6 +293,12 @@ export default {
                     async: false,
                   },
                 },
+                ensureExistingByUid: {
+                  summary: 'Ensure existing model by uid only',
+                  value: {
+                    uid: 'page-uid-001',
+                  },
+                },
                 ensureObjectChild: {
                   summary: 'Ensure object child by parentId+subKey',
                   value: {
@@ -501,7 +507,7 @@ export default {
         oneOf: [
           {
             type: 'object',
-            required: ['uid', 'use'],
+            required: ['uid'],
             properties: {
               uid: { type: 'string' },
               use: { type: 'string' },

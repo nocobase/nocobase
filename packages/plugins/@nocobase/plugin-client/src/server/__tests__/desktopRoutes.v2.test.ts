@@ -184,6 +184,35 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     expect(retried.body?.data?.defaultTab?.schemaUid).toBe(`tabs-${schemaUid}`);
   });
 
+  it('should rollback createV2 when a post-next middleware throws', async () => {
+    const agent = await getRootAgent();
+    const schemaUid = 'v2-page-post-next-create';
+
+    app.resourceManager.use(async (ctx, next) => {
+      if (ctx?.action?.resourceName === 'desktopRoutes' && ctx?.action?.actionName === 'createV2') {
+        await next();
+        throw new Error('after-next failure for createV2');
+      }
+      return next();
+    });
+
+    const res = await agent.resource('desktopRoutes').createV2({
+      values: { schemaUid, title: 'Post next create', icon: 'Icon', parentId: null },
+    });
+
+    expect(res.status).toBe(500);
+
+    const pageRoute = await db.getRepository('desktopRoutes').findOne({ filter: { type: 'flowPage', schemaUid } });
+    expect(pageRoute).toBeNull();
+
+    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
+    expect(uiSchema).toBeNull();
+
+    const flowModelsRepository: any = db.getCollection('flowModels').repository;
+    expect(await flowModelsRepository.findModelById(schemaUid, { includeAsyncNode: true })).toBeNull();
+    expect(await flowModelsRepository.findModelById(`tabs-${schemaUid}`, { includeAsyncNode: true })).toBeNull();
+  });
+
   it('should destroy v2 page and cleanup uiSchema + flowModels (idempotent)', async () => {
     const agent = await getRootAgent();
 
@@ -231,5 +260,36 @@ describe('desktopRoutes:createV2 / destroyV2', () => {
     expect(res.status).toBe(409);
     const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
     expect(uiSchema?.get('schema')?.['x-component']).toBe('Input');
+  });
+
+  it('should rollback destroyV2 when a post-next middleware throws', async () => {
+    const agent = await getRootAgent();
+    const schemaUid = 'v2-page-post-next-destroy';
+
+    await agent.resource('desktopRoutes').createV2({
+      values: { schemaUid, title: 'Post next destroy', icon: 'Icon', parentId: null },
+    });
+
+    app.resourceManager.use(async (ctx, next) => {
+      if (ctx?.action?.resourceName === 'desktopRoutes' && ctx?.action?.actionName === 'destroyV2') {
+        await next();
+        throw new Error('after-next failure for destroyV2');
+      }
+      return next();
+    });
+
+    const res = await agent.resource('desktopRoutes').destroyV2({ values: { schemaUid } });
+
+    expect(res.status).toBe(500);
+
+    const pageRoute = await db.getRepository('desktopRoutes').findOne({ filter: { type: 'flowPage', schemaUid } });
+    expect(pageRoute).toBeTruthy();
+
+    const uiSchema = await db.getRepository('uiSchemas').findOne({ filterByTk: schemaUid });
+    expect(uiSchema).toBeTruthy();
+
+    const flowModelsRepository: any = db.getCollection('flowModels').repository;
+    expect(await flowModelsRepository.findModelById(schemaUid, { includeAsyncNode: true })).toBeTruthy();
+    expect(await flowModelsRepository.findModelById(`tabs-${schemaUid}`, { includeAsyncNode: true })).toBeTruthy();
   });
 });
