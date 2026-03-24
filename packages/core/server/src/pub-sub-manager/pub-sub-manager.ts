@@ -23,7 +23,7 @@ export const createPubSubManager = (app: Application, options: PubSubManagerOpti
   app.on('afterStart', async () => {
     await pubSubManager.connect();
   });
-  app.on('afterStop', async () => {
+  app.on('beforeStop', async () => {
     await pubSubManager.close();
   });
   return pubSubManager;

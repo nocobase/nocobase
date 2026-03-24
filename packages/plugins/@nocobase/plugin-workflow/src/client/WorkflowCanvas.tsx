@@ -50,6 +50,7 @@ import { AddNodeContextProvider } from './AddNodeContext';
 import { RemoveNodeContextProvider } from './RemoveNodeContext';
 import { NodeDragContextProvider } from './NodeDragContext';
 import { NodeClipboardContextProvider } from './NodeClipboardContext';
+import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -393,6 +394,7 @@ function WorkflowMenu() {
           }}
           scope={{
             useRefreshActionProps,
+            useResourceFilterActionProps,
             ExecutionStatusOptions,
           }}
         />
