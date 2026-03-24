@@ -5,6 +5,19 @@
   "main": "lib/index.js",
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./es/index.d.ts",
+      "import": "./es/index.mjs",
+      "require": "./lib/index.js"
+    },
+    "./flow-compat": {
+      "types": "./es/flow-compat/index.d.ts",
+      "import": "./es/flow-compat/index.mjs",
+      "require": "./lib/flow-compat/index.js"
+    },
+    "./package.json": "./package.json"
+  },
   "dependencies": {
     "@ant-design/icons": "^5.6.1",
     "@emotion/css": "^11.7.1",
