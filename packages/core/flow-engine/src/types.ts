@@ -101,6 +101,20 @@ export interface FlowSchemaDocument {
   source: FlowSchemaCoverage['source'];
 }
 
+export type FlowSchemaDetail = 'compact' | 'full';
+
+export interface FlowSchemaPublicDocument {
+  use: string;
+  title?: string;
+  jsonSchema: FlowJsonSchema;
+  dynamicHints: FlowDynamicHint[];
+  minimalExample?: any;
+  commonPatterns: FlowSchemaPattern[];
+  antiPatterns: FlowSchemaPattern[];
+  hash: string;
+  source: FlowSchemaCoverage['source'];
+}
+
 export interface FlowSchemaDocs {
   description?: string;
   examples?: any[];

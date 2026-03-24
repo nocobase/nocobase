@@ -120,7 +120,13 @@ const expectGenericFilterSchemaDocument = (schema: any) => {
   expect(validate(invalidFilter), JSON.stringify(validate.errors)).toBe(false);
 };
 
-const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
+const expectPublicSchemaDocument = (document: any) => {
+  expect(document).not.toHaveProperty('coverage');
+  expect(document).not.toHaveProperty('skeleton');
+  expect(document).not.toHaveProperty('examples');
+};
+
+const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample') => {
   const ajv = new Ajv({ allErrors: true, strict: false });
   const validate = ajv.compile({
     type: 'object',
@@ -581,7 +587,8 @@ describe('flow-model save', () => {
 
     expect(single.status).toBe(200);
     expect(single.body?.data?.use).toBe('SaveSchemaStrictModel');
-    expect(single.body?.data?.coverage?.source).toBe('official');
+    expectPublicSchemaDocument(single.body?.data);
+    expect(single.body?.data?.source).toBe('official');
     expect(single.body?.data?.jsonSchema?.properties?.props).toBeUndefined();
     expect(single.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
       properties: {
@@ -597,10 +604,6 @@ describe('flow-model save', () => {
     expect(single.body?.data?.minimalExample).toMatchObject({
       use: 'SaveSchemaStrictModel',
     });
-    expect(single.body?.data?.skeleton).toMatchObject({
-      uid: 'todo-uid',
-      use: 'SaveSchemaStrictModel',
-    });
 
     const batch = await agent.post('/flowModels:schemas').send({
       uses: ['SaveSchemaStrictModel'],
@@ -609,6 +612,34 @@ describe('flow-model save', () => {
     expect(batch.status).toBe(200);
     expect(batch.body?.data).toHaveLength(1);
     expect(batch.body?.data?.[0]?.use).toBe('SaveSchemaStrictModel');
+    expectPublicSchemaDocument(batch.body?.data?.[0]);
+
+    const compactTableBlock = await agent.get('/flowModels:schema').query({
+      use: 'TableBlockModel',
+    });
+    const fullTableBlock = await agent.get('/flowModels:schema').query({
+      use: 'TableBlockModel',
+      detail: 'full',
+    });
+    const fullTableBlockBatch = await agent.post('/flowModels:schemas').send({
+      uses: ['TableBlockModel'],
+      detail: 'full',
+    });
+    expect(compactTableBlock.status).toBe(200);
+    expect(fullTableBlock.status).toBe(200);
+    expect(fullTableBlockBatch.status).toBe(200);
+    expectPublicSchemaDocument(compactTableBlock.body?.data);
+    expectPublicSchemaDocument(fullTableBlock.body?.data);
+    expectPublicSchemaDocument(fullTableBlockBatch.body?.data?.[0]);
+    expect((compactTableBlock.body?.data?.dynamicHints || []).length).toBeLessThan(
+      (fullTableBlock.body?.data?.dynamicHints || []).length,
+    );
+    expect(JSON.stringify(compactTableBlock.body?.data?.jsonSchema || {}).length).toBeLessThan(
+      JSON.stringify(fullTableBlock.body?.data?.jsonSchema || {}).length,
+    );
+    expect(JSON.stringify(fullTableBlockBatch.body?.data?.[0]?.jsonSchema || {}).length).toBeGreaterThan(
+      JSON.stringify(compactTableBlock.body?.data?.jsonSchema || {}).length,
+    );
 
     const internalConcrete = await agent.post('/flowModels:schemas').send({
       uses: ['FormGridModel', 'FormItemModel', 'FormSubmitActionModel', 'BlockGridModel'],
@@ -687,12 +718,8 @@ describe('flow-model save', () => {
         dataSourceKey: 'main',
         collectionName: 'users',
       });
-      expect(collectionDocs[use]?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
+      expectPublicSchemaDocument(collectionDocs[use]);
       expectStepParamsExampleMatchesDocument(collectionDocs[use], 'minimalExample');
-      expectStepParamsExampleMatchesDocument(collectionDocs[use], 'skeleton');
     }
 
     expectCollectionResourceSettingsSchemaDocument(collectionDocs.TableBlockModel, {
@@ -702,12 +729,8 @@ describe('flow-model save', () => {
       dataSourceKey: 'main',
       collectionName: 'users',
     });
-    expect(collectionDocs.TableBlockModel?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-      dataSourceKey: 'main',
-      collectionName: 'users',
-    });
+    expectPublicSchemaDocument(collectionDocs.TableBlockModel);
     expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'minimalExample');
-    expectStepParamsExampleMatchesDocument(collectionDocs.TableBlockModel, 'skeleton');
     expectGenericFilterSchemaDocument(
       collectionDocs.TableBlockModel?.jsonSchema?.properties?.stepParams?.properties?.tableSettings?.properties
         ?.dataScope?.properties?.filter,
@@ -1494,7 +1517,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expectStepParamsExampleMatchesDocument(jsField.body?.data, 'skeleton');
+    expectPublicSchemaDocument(jsField.body?.data);
+    expectStepParamsExampleMatchesDocument(jsField.body?.data, 'minimalExample');
 
     const jsEditableField = await agent.get('/flowModels:schema').query({
       use: 'JSEditableFieldModel',
@@ -1524,7 +1548,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expectStepParamsExampleMatchesDocument(jsEditableField.body?.data, 'skeleton');
+    expectPublicSchemaDocument(jsEditableField.body?.data);
+    expectStepParamsExampleMatchesDocument(jsEditableField.body?.data, 'minimalExample');
 
     const jsItem = await agent.get('/flowModels:schema').query({
       use: 'JSItemModel',
@@ -1561,7 +1586,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expectStepParamsExampleMatchesDocument(jsItem.body?.data, 'skeleton');
+    expectPublicSchemaDocument(jsItem.body?.data);
+    expectStepParamsExampleMatchesDocument(jsItem.body?.data, 'minimalExample');
 
     const bundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['TableColumnModel', 'FormItemModel', 'InputFieldModel'],

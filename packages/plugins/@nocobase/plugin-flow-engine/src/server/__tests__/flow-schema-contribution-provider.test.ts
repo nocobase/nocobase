@@ -415,7 +415,13 @@ const expectCollectionResourceSettingsSchemaDocument = (
   }
 };
 
-const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample' | 'skeleton') => {
+const expectPublicSchemaDocument = (document: any) => {
+  expect(document).not.toHaveProperty('coverage');
+  expect(document).not.toHaveProperty('skeleton');
+  expect(document).not.toHaveProperty('examples');
+};
+
+const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample') => {
   const validate = ajv.compile({
     type: 'object',
     properties: {
@@ -470,11 +476,8 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(single.status).toBe(200);
-    expect(single.body?.data?.coverage).toMatchObject({
-      source: 'third-party',
-      strict: true,
-      status: 'manual',
-    });
+    expectPublicSchemaDocument(single.body?.data);
+    expect(single.body?.data?.source).toBe('third-party');
     expect(single.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
       properties: {
         settings: {
@@ -566,11 +569,8 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(schema.status).toBe(200);
-    expect(schema.body?.data?.coverage).toMatchObject({
-      source: 'third-party',
-      strict: true,
-      status: 'manual',
-    });
+    expectPublicSchemaDocument(schema.body?.data);
+    expect(schema.body?.data?.source).toBe('third-party');
     expect(flowEnginePlugin.flowSchemaService.registry.getAction('directContributionAction')).toEqual(
       expect.objectContaining({
         coverage: expect.objectContaining({
@@ -587,11 +587,8 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(arrayModel.status).toBe(200);
-    expect(arrayModel.body?.data?.coverage).toMatchObject({
-      source: 'plugin',
-      strict: false,
-      status: 'manual',
-    });
+    expectPublicSchemaDocument(arrayModel.body?.data);
+    expect(arrayModel.body?.data?.source).toBe('plugin');
     expect(arrayModel.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
       properties: {
         settings: {
@@ -621,11 +618,8 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(builtin.status).toBe(200);
-    expect(builtin.body?.data?.coverage).toMatchObject({
-      source: 'official',
-      strict: false,
-      status: 'manual',
-    });
+    expectPublicSchemaDocument(builtin.body?.data);
+    expect(builtin.body?.data?.source).toBe('official');
     expect(builtin.body?.data?.dynamicHints).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -956,12 +950,8 @@ describe('flow schema contribution provider', () => {
         dataSourceKey: 'main',
         collectionName: 'users',
       });
-      expect(listBlock.body?.data?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
+      expectPublicSchemaDocument(listBlock.body?.data);
       expectStepParamsExampleMatchesDocument(listBlock.body?.data, 'minimalExample');
-      expectStepParamsExampleMatchesDocument(listBlock.body?.data, 'skeleton');
       expect(listBlock.body?.data?.commonPatterns).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
@@ -991,12 +981,8 @@ describe('flow schema contribution provider', () => {
         dataSourceKey: 'main',
         collectionName: 'users',
       });
-      expect(gridCardBlock.body?.data?.skeleton?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
+      expectPublicSchemaDocument(gridCardBlock.body?.data);
       expectStepParamsExampleMatchesDocument(gridCardBlock.body?.data, 'minimalExample');
-      expectStepParamsExampleMatchesDocument(gridCardBlock.body?.data, 'skeleton');
       expect(gridCardBlock.body?.data?.commonPatterns).toEqual(
         expect.arrayContaining([
           expect.objectContaining({

@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { describe, expect, it } from 'vitest';
 import { FlowSchemaRegistry } from '../FlowSchemaRegistry';
 import { FlowModel } from '../models';
@@ -1557,6 +1549,101 @@ describe('FlowSchemaRegistry', () => {
         required: true,
         minItems: 1,
         candidates: [expect.objectContaining({ use: 'SchemaRegistryRequiredChildModel' })],
+      },
+    });
+  });
+
+  it('should expose compact public documents without recursive schema or nested hints by default', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryCompactLeafModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          leaf: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      dynamicHints: [
+        {
+          kind: 'dynamic-ui-schema',
+          path: 'SchemaRegistryCompactLeafModel.stepParams.leaf',
+          message: 'Leaf settings are dynamic.',
+        },
+      ],
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryCompactChildModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          child: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      dynamicHints: [
+        {
+          kind: 'dynamic-ui-schema',
+          path: 'SchemaRegistryCompactChildModel.stepParams.child',
+          message: 'Child settings are dynamic.',
+        },
+      ],
+      subModelSlots: {
+        footer: {
+          type: 'object',
+          use: 'SchemaRegistryCompactLeafModel',
+        },
+      },
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryCompactParentModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean' },
+        },
+        additionalProperties: false,
+      },
+      subModelSlots: {
+        body: {
+          type: 'object',
+          use: 'SchemaRegistryCompactChildModel',
+          required: true,
+        },
+      },
+    });
+
+    const compact = registry.getPublicModelDocument('SchemaRegistryCompactParentModel');
+    const full = registry.getPublicModelDocument('SchemaRegistryCompactParentModel', { detail: 'full' });
+
+    expect(compact).not.toHaveProperty('coverage');
+    expect(compact).not.toHaveProperty('skeleton');
+    expect(compact).not.toHaveProperty('examples');
+    expect(compact.dynamicHints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          path: 'SchemaRegistryCompactParentModel.subModels.body',
+        }),
+      ]),
+    );
+    expect(JSON.stringify(compact.dynamicHints)).not.toContain('SchemaRegistryCompactChildModel.stepParams.child');
+    expect(
+      (compact.jsonSchema.properties?.subModels as any)?.properties?.body?.properties?.subModels?.properties?.footer,
+    ).toBeUndefined();
+    expect((full.dynamicHints || []).length).toBeGreaterThan(compact.dynamicHints.length);
+    expect(
+      (full.jsonSchema.properties?.subModels as any)?.properties?.body?.properties?.subModels?.properties,
+    ).toMatchObject({
+      footer: {
+        type: 'object',
+        properties: {
+          use: {
+            const: 'SchemaRegistryCompactLeafModel',
+          },
+        },
       },
     });
   });

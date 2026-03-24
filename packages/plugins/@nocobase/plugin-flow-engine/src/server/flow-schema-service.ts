@@ -21,6 +21,8 @@ import {
   type FlowSchemaContextEdge,
   type FlowJsonSchema,
   type FlowSchemaDocument,
+  type FlowSchemaDetail,
+  type FlowSchemaPublicDocument,
   type ModelConstructor,
   type FlowSubModelSlotSchema,
 } from '@nocobase/flow-engine/server';
@@ -221,15 +223,90 @@ export class FlowSchemaService {
     this.app = app;
   }
 
-  getDocument(use: string): FlowSchemaDocument | undefined {
-    return this.registry.hasQueryableModel(use) ? this.registry.getModelDocument(use) : undefined;
+  private readDocumentFromRegistry(use: string, clone = true): FlowSchemaDocument {
+    const registry = this.registry as typeof this.registry & {
+      getModelDocumentRef?: (use: string) => Readonly<FlowSchemaDocument>;
+    };
+    if (!clone && typeof registry.getModelDocumentRef === 'function') {
+      return registry.getModelDocumentRef(use) as FlowSchemaDocument;
+    }
+    return this.registry.getModelDocument(use);
   }
 
-  getDocuments(uses?: string[]): FlowSchemaDocument[] {
+  getDocument(use: string, options: { clone?: boolean } = {}): FlowSchemaDocument | undefined {
+    if (!this.registry.hasQueryableModel(use)) {
+      return undefined;
+    }
+    return this.readDocumentFromRegistry(use, options.clone !== false);
+  }
+
+  getDocuments(uses?: string[], options: { clone?: boolean } = {}): FlowSchemaDocument[] {
     if (!Array.isArray(uses) || uses.length === 0) {
       return [];
     }
-    return uses.filter((use) => this.registry.hasQueryableModel(use)).map((use) => this.registry.getModelDocument(use));
+    return uses
+      .filter((use) => this.registry.hasQueryableModel(use))
+      .map((use) => this.readDocumentFromRegistry(use, options.clone !== false));
+  }
+
+  private projectDocument(document: FlowSchemaDocument): FlowSchemaPublicDocument {
+    return {
+      use: document.use,
+      title: document.title,
+      jsonSchema: document.jsonSchema,
+      dynamicHints: document.dynamicHints,
+      minimalExample: document.minimalExample,
+      commonPatterns: document.commonPatterns,
+      antiPatterns: document.antiPatterns,
+      hash: document.hash,
+      source: document.source,
+    };
+  }
+
+  getPublicDocument(
+    use: string,
+    options: { clone?: boolean; detail?: FlowSchemaDetail } = {},
+  ): FlowSchemaPublicDocument | undefined {
+    if (!this.registry.hasQueryableModel(use)) {
+      return undefined;
+    }
+
+    const detail = options.detail === 'full' ? 'full' : 'compact';
+    const registry = this.registry as typeof this.registry & {
+      getPublicModelDocument?: (
+        use: string,
+        options?: { detail?: FlowSchemaDetail },
+      ) => Readonly<FlowSchemaPublicDocument>;
+      getPublicModelDocumentRef?: (
+        use: string,
+        options?: { detail?: FlowSchemaDetail },
+      ) => Readonly<FlowSchemaPublicDocument>;
+    };
+
+    if (!options.clone && typeof registry.getPublicModelDocumentRef === 'function') {
+      return registry.getPublicModelDocumentRef(use, { detail }) as FlowSchemaPublicDocument;
+    }
+
+    if (typeof registry.getPublicModelDocument === 'function') {
+      return registry.getPublicModelDocument(use, { detail }) as FlowSchemaPublicDocument;
+    }
+
+    const document = this.readDocumentFromRegistry(use, options.clone !== false);
+    return document ? this.projectDocument(document) : undefined;
+  }
+
+  getPublicDocuments(
+    uses?: string[],
+    options: { clone?: boolean; detail?: FlowSchemaDetail } = {},
+  ): FlowSchemaPublicDocument[] {
+    if (!Array.isArray(uses) || uses.length === 0) {
+      return [];
+    }
+
+    return uses
+      .filter((use) => this.registry.hasQueryableModel(use))
+      .map((use) => this.getPublicDocument(use, options))
+      .filter(Boolean) as FlowSchemaPublicDocument[];
   }
 
   getBundle(uses?: string[]): FlowSchemaBundleDocument {

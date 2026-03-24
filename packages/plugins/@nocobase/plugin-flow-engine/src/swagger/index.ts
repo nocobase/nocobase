@@ -62,8 +62,16 @@ export default {
       get: {
         tags: ['flowModels'],
         description:
-          'Get the server-side JSON Schema document for a specific registered concrete flow model use. Use this discovery endpoint before composing flowModels:save/ensure/mutate payloads.',
-        parameters: [{ name: 'use', in: 'query', required: true, schema: { type: 'string' } }],
+          'Get the server-side flow model schema document for a specific registered concrete flow model use. By default returns a compact document; pass detail=full for the recursive version.',
+        parameters: [
+          { name: 'use', in: 'query', required: true, schema: { type: 'string' } },
+          {
+            name: 'detail',
+            in: 'query',
+            required: false,
+            schema: { type: 'string', enum: ['compact', 'full'], default: 'compact' },
+          },
+        ],
         responses: {
           200: {
             description: 'OK',
@@ -88,7 +96,7 @@ export default {
       post: {
         tags: ['flowModels'],
         description:
-          'Batch fetch flow model JSON Schema documents for explicit uses[]. When uses is empty or omitted, returns an empty array.',
+          'Batch fetch flow model schema documents for explicit uses[]. By default returns compact documents; pass detail=full for recursive versions. When uses is empty or omitted, returns an empty array.',
         requestBody: {
           required: false,
           content: {
@@ -517,34 +525,21 @@ export default {
         type: 'object',
         properties: {
           uses: { type: 'array', items: { type: 'string' } },
+          detail: { type: 'string', enum: ['compact', 'full'], default: 'compact' },
         },
         additionalProperties: false,
       },
       FlowModelSchemaDocument: {
         type: 'object',
-        required: [
-          'use',
-          'jsonSchema',
-          'coverage',
-          'dynamicHints',
-          'examples',
-          'commonPatterns',
-          'antiPatterns',
-          'skeleton',
-          'hash',
-          'source',
-        ],
+        required: ['use', 'jsonSchema', 'dynamicHints', 'commonPatterns', 'antiPatterns', 'hash', 'source'],
         properties: {
           use: { type: 'string' },
           title: { type: 'string' },
           jsonSchema: { type: 'object', additionalProperties: true },
-          coverage: { $ref: '#/components/schemas/FlowSchemaCoverage' },
           dynamicHints: { type: 'array', items: { $ref: '#/components/schemas/FlowDynamicHint' } },
-          examples: { type: 'array', items: { type: 'object', additionalProperties: true } },
           minimalExample: {},
           commonPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
           antiPatterns: { type: 'array', items: { $ref: '#/components/schemas/FlowSchemaPattern' } },
-          skeleton: {},
           hash: { type: 'string' },
           source: { type: 'string', enum: ['official', 'plugin', 'third-party'] },
         },

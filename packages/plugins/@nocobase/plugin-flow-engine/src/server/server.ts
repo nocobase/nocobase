@@ -29,6 +29,10 @@ import FlowModelRepository, { FlowModelOperationError } from './repository';
 
 export const compile = (title: string) => (title || '').replace(/{{\s*t\(["|'|`](.*)["|'|`]\)\s*}}/g, '$1');
 
+function normalizeSchemaDetail(value: any) {
+  return String(value || '').trim() === 'full' ? 'full' : 'compact';
+}
+
 function extractFields(obj) {
   const fields = [
     obj.title,
@@ -270,14 +274,17 @@ export class PluginUISchemaStorageServer extends Plugin {
           await next();
         },
         schema: async (ctx, next) => {
-          const { use } = ctx.action.params as any;
+          const { use, detail } = ctx.action.params as any;
           const modelUse = String(use || '').trim();
           if (!modelUse) {
             ctx.throw(400, "flowModels:schema requires non-empty 'use'", {
               code: 'INVALID_PARAMS',
             });
           }
-          const document = this.flowSchemaService.getDocument(modelUse);
+          const document = this.flowSchemaService.getPublicDocument(modelUse, {
+            clone: false,
+            detail: normalizeSchemaDetail(detail),
+          });
           if (!document) {
             ctx.throw(404, `No flow schema document found for use "${modelUse}"`, {
               code: 'FLOW_MODEL_SCHEMA_NOT_FOUND',
@@ -291,7 +298,10 @@ export class PluginUISchemaStorageServer extends Plugin {
           const uses = Array.isArray(payload?.uses)
             ? payload.uses.map((item) => String(item || '').trim()).filter(Boolean)
             : [];
-          ctx.body = this.flowSchemaService.getDocuments(uses);
+          ctx.body = this.flowSchemaService.getPublicDocuments(uses, {
+            clone: false,
+            detail: normalizeSchemaDetail(payload?.detail),
+          });
           await next();
         },
         schemaBundle: async (ctx, next) => {

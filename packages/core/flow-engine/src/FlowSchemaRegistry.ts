@@ -7,14 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import _ from 'lodash';
 import type { ISchema } from '@formily/json-schema';
 import type {
@@ -37,8 +29,10 @@ import type {
   FlowModelSchemaContribution,
   FlowModelMeta,
   FlowSchemaCoverage,
+  FlowSchemaDetail,
   FlowSchemaDocument,
   FlowModelSchemaExposure,
+  FlowSchemaPublicDocument,
   FlowSubModelContextPathStep,
   FlowSubModelSlotSchema,
   ModelConstructor,
@@ -120,6 +114,34 @@ function stableStringify(input: any): string {
     return `{${entries.join(',')}}`;
   }
   return JSON.stringify(input) ?? 'null';
+}
+
+function deepFreezePlainGraph<T>(input: T, seen = new WeakSet<object>()): T {
+  if (Array.isArray(input)) {
+    if (seen.has(input)) {
+      return input;
+    }
+    seen.add(input);
+    for (const item of input) {
+      deepFreezePlainGraph(item, seen);
+    }
+    return Object.freeze(input);
+  }
+
+  if (!_.isPlainObject(input)) {
+    return input;
+  }
+
+  const objectValue = input as Record<string, any>;
+  if (seen.has(objectValue)) {
+    return input;
+  }
+
+  seen.add(objectValue);
+  for (const value of Object.values(objectValue)) {
+    deepFreezePlainGraph(value, seen);
+  }
+  return Object.freeze(objectValue) as T;
 }
 
 function hashString(input: string): string {
@@ -781,15 +803,23 @@ export class FlowSchemaRegistry {
   private readonly fieldBindings = new Map<string, RegisteredFieldBinding[]>();
   private readonly resolvedModelCache = new Map<string, RegisteredModelSchema>();
   private readonly modelSnapshotSchemaCache = new Map<string, FlowJsonSchema>();
+  private readonly compactModelSnapshotSchemaCache = new Map<string, FlowJsonSchema>();
   private readonly modelSchemaHashCache = new Map<string, string>();
+  private readonly compactModelSchemaHashCache = new Map<string, string>();
   private readonly modelDocumentCache = new Map<string, FlowSchemaDocument>();
+  private readonly modelLocalDynamicHintsCache = new Map<string, FlowDynamicHint[]>();
+  private readonly publicModelDocumentCache = new Map<string, FlowSchemaPublicDocument>();
   private readonly publicTreeRootInventory = new Set<string>();
 
   private invalidateDerivedCaches() {
     this.resolvedModelCache.clear();
     this.modelSnapshotSchemaCache.clear();
+    this.compactModelSnapshotSchemaCache.clear();
     this.modelSchemaHashCache.clear();
+    this.compactModelSchemaHashCache.clear();
     this.modelDocumentCache.clear();
+    this.modelLocalDynamicHintsCache.clear();
+    this.publicModelDocumentCache.clear();
   }
 
   registerAction(action: ActionDefinition | ({ name: string } & Partial<ActionDefinition>)) {
@@ -1262,12 +1292,12 @@ export class FlowSchemaRegistry {
     return compatibility;
   }
 
-  resolveModelSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
+  private resolveModelSchemaRef(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
     const name = String(use || '').trim();
     const cacheKey = `${name}::${stableStringify(contextChain)}`;
     const cached = this.resolvedModelCache.get(cacheKey);
     if (cached) {
-      return _.cloneDeep(cached);
+      return cached;
     }
 
     const registered = this.modelSchemas.get(name);
@@ -1300,8 +1330,13 @@ export class FlowSchemaRegistry {
       this.applyModelSchemaPatch(resolved, contribution.patch, contribution.source, contribution.strict);
     }
 
-    this.resolvedModelCache.set(cacheKey, _.cloneDeep(resolved));
-    return resolved;
+    const frozen = deepFreezePlainGraph(resolved);
+    this.resolvedModelCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  resolveModelSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
+    return _.cloneDeep(this.resolveModelSchemaRef(use, contextChain));
   }
 
   private isPublicModel(model?: Pick<RegisteredModelSchema, 'exposure'>): boolean {
@@ -1351,14 +1386,153 @@ export class FlowSchemaRegistry {
   }
 
   getModelDocument(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowSchemaDocument {
+    return _.cloneDeep(this.getModelDocumentRef(use, contextChain));
+  }
+
+  getModelDocumentRef(use: string, contextChain: FlowSchemaContextEdge[] = []): Readonly<FlowSchemaDocument> {
     const cacheKey = this.createContextVisitKey(use, contextChain);
     const cached = this.modelDocumentCache.get(cacheKey);
     if (cached) {
-      return _.cloneDeep(cached);
+      return cached;
     }
     const document = this.buildModelDocument(use, contextChain, new Set<string>());
-    this.modelDocumentCache.set(cacheKey, _.cloneDeep(document));
-    return document;
+    const frozen = deepFreezePlainGraph(document);
+    this.modelDocumentCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  getPublicModelDocument(
+    use: string,
+    options: { detail?: FlowSchemaDetail; contextChain?: FlowSchemaContextEdge[] } = {},
+  ): FlowSchemaPublicDocument {
+    return _.cloneDeep(this.getPublicModelDocumentRef(use, options));
+  }
+
+  getPublicModelDocumentRef(
+    use: string,
+    options: { detail?: FlowSchemaDetail; contextChain?: FlowSchemaContextEdge[] } = {},
+  ): Readonly<FlowSchemaPublicDocument> {
+    const detail = options.detail === 'full' ? 'full' : 'compact';
+    const contextChain = options.contextChain || [];
+    const cacheKey = `${detail}::${this.createContextVisitKey(use, contextChain)}`;
+    const cached = this.publicModelDocumentCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const document =
+      detail === 'full'
+        ? this.buildFullPublicModelDocument(use, contextChain)
+        : this.buildCompactPublicModelDocument(use, contextChain);
+    const frozen = deepFreezePlainGraph(document);
+    this.publicModelDocumentCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  private buildFullPublicModelDocument(use: string, contextChain: FlowSchemaContextEdge[]): FlowSchemaPublicDocument {
+    const document = this.getModelDocumentRef(use, contextChain);
+    return {
+      use: document.use,
+      title: document.title,
+      jsonSchema: document.jsonSchema,
+      dynamicHints: document.dynamicHints,
+      minimalExample: document.minimalExample,
+      commonPatterns: document.commonPatterns,
+      antiPatterns: document.antiPatterns,
+      hash: document.hash,
+      source: document.source,
+    };
+  }
+
+  private buildCompactPublicModelDocument(
+    use: string,
+    contextChain: FlowSchemaContextEdge[],
+  ): FlowSchemaPublicDocument {
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
+    const jsonSchema = this.buildCompactModelSnapshotSchemaRef(use, contextChain);
+    const minimalExample = _.cloneDeep(
+      resolved?.docs?.minimalExample ??
+        resolved?.examples?.[0] ??
+        resolved?.skeleton ??
+        buildSkeletonFromSchema(jsonSchema),
+    );
+
+    return {
+      use,
+      title: resolved?.title || use,
+      jsonSchema,
+      dynamicHints: this.getModelLocalDynamicHintsRef(use, contextChain),
+      minimalExample,
+      commonPatterns: _.cloneDeep(resolved?.docs?.commonPatterns || []),
+      antiPatterns: _.cloneDeep(resolved?.docs?.antiPatterns || []),
+      hash: this.getCompactModelSchemaHash(use, contextChain),
+      source: (resolved?.coverage || { source: 'third-party' as const }).source,
+    };
+  }
+
+  private getModelLocalDynamicHintsRef(
+    use: string,
+    contextChain: FlowSchemaContextEdge[] = [],
+  ): Readonly<FlowDynamicHint[]> {
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.modelLocalDynamicHintsCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const hints = this.buildModelLocalDynamicHints(use, contextChain);
+    const frozen = deepFreezePlainGraph(hints);
+    this.modelLocalDynamicHintsCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  private buildModelLocalDynamicHints(use: string, contextChain: FlowSchemaContextEdge[]): FlowDynamicHint[] {
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
+    const baseCoverage = resolved.coverage || { status: 'unresolved', source: 'third-party' as const };
+    const flowDiagnostics = this.collectFlowSchemaDiagnostics(use);
+    const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) => {
+      const allowedUses = this.resolveSlotAllowedUses(use, slotKey, slot);
+      return createFlowHint(
+        {
+          kind: slot.dynamic || slot.fieldBindingContext ? 'dynamic-children' : 'manual-schema-required',
+          path: `${use}.subModels.${slotKey}`,
+          message:
+            slot.description ||
+            `${use}.subModels.${slotKey} accepts ${slot.type}${
+              allowedUses.length ? `: ${allowedUses.join(', ')}` : ''
+            }.`,
+        },
+        {
+          slotRules: {
+            slotKey,
+            type: slot.type,
+            allowedUses,
+          },
+        },
+      );
+    });
+    const coverage = this.buildDocumentCoverage(baseCoverage, flowDiagnostics.statuses);
+
+    return normalizeSchemaHints([
+      ...(resolved?.dynamicHints || []),
+      ...slotHints,
+      ...flowDiagnostics.hints,
+      ...(coverage.status === 'unresolved'
+        ? [
+            createFlowHint(
+              {
+                kind: 'unresolved-model' as const,
+                path: use,
+                message: `${use} has no registered server-safe schema contribution yet.`,
+              },
+              {
+                unresolvedReason: 'missing-model-contribution',
+                recommendedFallback: { use },
+              },
+            ),
+          ]
+        : []),
+    ]);
   }
 
   getModelSchemaHash(use: string, contextChain: FlowSchemaContextEdge[] = []): string {
@@ -1367,8 +1541,19 @@ export class FlowSchemaRegistry {
     if (cached) {
       return cached;
     }
-    const hash = hashString(stableStringify(this.buildModelSnapshotSchema(use, contextChain)));
+    const hash = hashString(stableStringify(this.buildModelSnapshotSchemaRef(use, contextChain)));
     this.modelSchemaHashCache.set(cacheKey, hash);
+    return hash;
+  }
+
+  getCompactModelSchemaHash(use: string, contextChain: FlowSchemaContextEdge[] = []): string {
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.compactModelSchemaHashCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const hash = hashString(stableStringify(this.buildCompactModelSnapshotSchemaRef(use, contextChain)));
+    this.compactModelSchemaHashCache.set(cacheKey, hash);
     return hash;
   }
 
@@ -1403,54 +1588,16 @@ export class FlowSchemaRegistry {
     contextChain: FlowSchemaContextEdge[],
     visited: Set<string>,
   ): FlowSchemaDocument {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     const baseCoverage = resolved.coverage || { status: 'unresolved', source: 'third-party' as const };
     const flowDiagnostics = this.collectFlowSchemaDiagnostics(use);
-    const slotHints = Object.entries(resolved?.subModelSlots || {}).map(([slotKey, slot]) => {
-      const allowedUses = this.resolveSlotAllowedUses(use, slotKey, slot);
-      return createFlowHint(
-        {
-          kind: slot.dynamic || slot.fieldBindingContext ? 'dynamic-children' : 'manual-schema-required',
-          path: `${use}.subModels.${slotKey}`,
-          message:
-            slot.description ||
-            `${use}.subModels.${slotKey} accepts ${slot.type}${
-              allowedUses.length ? `: ${allowedUses.join(', ')}` : ''
-            }.`,
-        },
-        {
-          slotRules: {
-            slotKey,
-            type: slot.type,
-            allowedUses,
-          },
-        },
-      );
-    });
     const coverage = this.buildDocumentCoverage(baseCoverage, flowDiagnostics.statuses);
     const dynamicHints = normalizeSchemaHints([
-      ...(resolved?.dynamicHints || []),
-      ...slotHints,
-      ...flowDiagnostics.hints,
+      ...this.getModelLocalDynamicHintsRef(use, contextChain),
       ...this.collectNestedDocumentHints(use, contextChain, visited),
-      ...(coverage.status === 'unresolved'
-        ? [
-            createFlowHint(
-              {
-                kind: 'unresolved-model' as const,
-                path: use,
-                message: `${use} has no registered server-safe schema contribution yet.`,
-              },
-              {
-                unresolvedReason: 'missing-model-contribution',
-                recommendedFallback: { use },
-              },
-            ),
-          ]
-        : []),
     ]);
 
-    const jsonSchema = this.buildModelSnapshotSchema(use, contextChain);
+    const jsonSchema = this.buildModelSnapshotSchemaRef(use, contextChain);
     const skeleton = _.cloneDeep(resolved?.skeleton ?? buildSkeletonFromSchema(jsonSchema));
     const minimalExample = _.cloneDeep(resolved?.docs?.minimalExample ?? resolved?.examples?.[0] ?? skeleton);
     const hash = this.getModelSchemaHash(use, contextChain);
@@ -1477,7 +1624,7 @@ export class FlowSchemaRegistry {
     visited: Set<string>,
     compatibility?: FlowFieldModelCompatibility,
   ): FlowSchemaBundleNode {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     const visitKey = this.createContextVisitKey(use, contextChain);
     const node: FlowSchemaBundleNode = {
       use,
@@ -1591,14 +1738,41 @@ export class FlowSchemaRegistry {
   }
 
   buildModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    return _.cloneDeep(this.buildModelSnapshotSchemaRef(use, contextChain));
+  }
+
+  buildCompactModelSnapshotSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    return _.cloneDeep(this.buildCompactModelSnapshotSchemaRef(use, contextChain));
+  }
+
+  private buildModelSnapshotSchemaRef(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
     const cacheKey = this.createContextVisitKey(use, contextChain);
     const cached = this.modelSnapshotSchemaCache.get(cacheKey);
     if (cached) {
-      return _.cloneDeep(cached);
+      return cached;
     }
     const schema = this.buildModelSnapshotSchemaInternal(use, contextChain, new Set<string>());
-    this.modelSnapshotSchemaCache.set(cacheKey, _.cloneDeep(schema));
-    return schema;
+    const frozen = deepFreezePlainGraph(schema);
+    this.modelSnapshotSchemaCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  private buildCompactModelSnapshotSchemaRef(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
+    const cacheKey = this.createContextVisitKey(use, contextChain);
+    const cached = this.compactModelSnapshotSchemaCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    const schema = this.buildCompactModelSnapshotSchemaInternal(use, contextChain);
+    const frozen = deepFreezePlainGraph(schema);
+    this.compactModelSnapshotSchemaCache.set(cacheKey, frozen);
+    return frozen;
+  }
+
+  private buildCompactModelSnapshotSchemaInternal(use: string, contextChain: FlowSchemaContextEdge[]): FlowJsonSchema {
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
+    const subModelsSchema = this.buildCompactSubModelsSchemaFromSlots(use, resolved?.subModelSlots, contextChain);
+    return this.buildSnapshotShellSchema(use, resolved, subModelsSchema);
   }
 
   private buildModelSnapshotSchemaInternal(
@@ -1606,7 +1780,7 @@ export class FlowSchemaRegistry {
     contextChain: FlowSchemaContextEdge[],
     visited: Set<string>,
   ): FlowJsonSchema {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     const visitKey = this.createContextVisitKey(use, contextChain);
 
     if (visited.has(visitKey) || this.isContextCycle(use, contextChain)) {
@@ -1674,7 +1848,7 @@ export class FlowSchemaRegistry {
   }
 
   buildStaticFlowRegistrySchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     if (resolved?.flowRegistrySchema) {
       return _.cloneDeep(
         mergeSchemas(resolved.flowRegistrySchema, resolved.flowRegistrySchemaPatch) || resolved.flowRegistrySchema,
@@ -1684,7 +1858,7 @@ export class FlowSchemaRegistry {
   }
 
   buildStaticStepParamsSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     if (resolved?.stepParamsSchema) {
       return _.cloneDeep(resolved.stepParamsSchema);
     }
@@ -1692,8 +1866,42 @@ export class FlowSchemaRegistry {
   }
 
   buildSubModelsSchema(use: string, contextChain: FlowSchemaContextEdge[] = []): FlowJsonSchema {
-    const resolved = this.resolveModelSchema(use, contextChain);
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
     return this.buildSubModelsSchemaFromSlots(use, resolved?.subModelSlots, contextChain, new Set<string>());
+  }
+
+  private buildCompactSubModelsSchemaFromSlots(
+    parentUse: string,
+    slots: Record<string, FlowSubModelSlotSchema> | undefined,
+    contextChain: FlowSchemaContextEdge[] = [],
+  ): FlowJsonSchema {
+    if (!slots || Object.keys(slots).length === 0) {
+      return { type: 'object', additionalProperties: true };
+    }
+
+    const properties: Record<string, FlowJsonSchema> = {};
+    const required: string[] = [];
+    for (const [slotKey, slot] of Object.entries(slots)) {
+      const itemSchema = this.buildCompactSlotTargetSchema(parentUse, slotKey, slot, contextChain);
+      properties[slotKey] =
+        slot.type === 'array'
+          ? {
+              type: 'array',
+              ...(typeof slot.minItems === 'number' ? { minItems: slot.minItems } : {}),
+              items: itemSchema,
+            }
+          : itemSchema;
+      if (slot.required) {
+        required.push(slotKey);
+      }
+    }
+
+    return {
+      type: 'object',
+      properties,
+      ...(required.length ? { required } : {}),
+      additionalProperties: true,
+    };
   }
 
   private buildSubModelsSchemaFromSlots(
@@ -1965,6 +2173,85 @@ export class FlowSchemaRegistry {
     return { type: 'object', additionalProperties: true };
   }
 
+  private buildCompactSlotTargetSchema(
+    parentUse: string,
+    slotKey: string,
+    slot: FlowSubModelSlotSchema,
+    contextChain: FlowSchemaContextEdge[],
+  ): FlowJsonSchema {
+    if (slot.fieldBindingContext) {
+      const candidateUses = _.uniq(
+        this.resolveFieldBindingCandidates(slot.fieldBindingContext).map((item) => item.use),
+      );
+      if (candidateUses.length > 0) {
+        const candidateSchemas = candidateUses.map((use) =>
+          this.buildCompactSlotCandidateSchema(use, [
+            ...contextChain,
+            {
+              parentUse,
+              slotKey,
+              childUse: use,
+            },
+          ]),
+        );
+
+        if (slot.schema) {
+          return {
+            anyOf: [...candidateSchemas, _.cloneDeep(slot.schema)],
+          };
+        }
+
+        return candidateSchemas.length === 1 ? candidateSchemas[0] : { oneOf: candidateSchemas };
+      }
+    }
+
+    const allowedUses = this.resolveSlotAllowedUses(parentUse, slotKey, slot);
+    if (allowedUses.length > 0) {
+      const knownSchemas = allowedUses.map((use) =>
+        this.buildCompactSlotCandidateSchema(use, [
+          ...contextChain,
+          {
+            parentUse,
+            slotKey,
+            childUse: use,
+          },
+        ]),
+      );
+
+      if (slot.schema) {
+        return {
+          anyOf: [...knownSchemas, _.cloneDeep(slot.schema)],
+        };
+      }
+
+      return knownSchemas.length === 1 ? knownSchemas[0] : { oneOf: knownSchemas };
+    }
+
+    if (slot.childSchemaPatch || slot.descendantSchemaPatches?.length) {
+      return this.buildCompactAnonymousSlotSnapshotSchema(parentUse, slotKey, slot);
+    }
+
+    if (slot.schema && !slot.childSchemaPatch && !slot.descendantSchemaPatches?.length) {
+      return _.cloneDeep(slot.schema);
+    }
+
+    return { type: 'object', additionalProperties: true };
+  }
+
+  private buildCompactSlotCandidateSchema(use: string, contextChain: FlowSchemaContextEdge[]): FlowJsonSchema {
+    const resolved = this.resolveModelSchemaRef(use, contextChain);
+    return this.buildTruncatedSnapshotSchema(use, resolved);
+  }
+
+  private buildCompactAnonymousSlotSnapshotSchema(
+    parentUse: string,
+    slotKey: string,
+    slot: FlowSubModelSlotSchema,
+  ): FlowJsonSchema {
+    const anonymousResolved = this.createAnonymousResolvedSchema(parentUse, slotKey, slot);
+    return this.buildTruncatedSnapshotSchema(undefined, anonymousResolved);
+  }
+
   private buildAnonymousSlotSnapshotSchema(
     parentUse: string,
     slotKey: string,
@@ -1972,6 +2259,27 @@ export class FlowSchemaRegistry {
     contextChain: FlowSchemaContextEdge[],
     visited: Set<string>,
   ): FlowJsonSchema {
+    const anonymousResolved = this.createAnonymousResolvedSchema(parentUse, slotKey, slot);
+    return this.buildSnapshotSchemaFromResolved(
+      '',
+      anonymousResolved,
+      [
+        ...contextChain,
+        {
+          parentUse,
+          slotKey,
+          childUse: '',
+        },
+      ],
+      visited,
+    );
+  }
+
+  private createAnonymousResolvedSchema(
+    parentUse: string,
+    slotKey: string,
+    slot: FlowSubModelSlotSchema,
+  ): RegisteredModelSchema {
     const anonymousResolved: RegisteredModelSchema = {
       use: '',
       title: slot.description || `${parentUse || 'AnonymousModel'}.${slotKey}`,
@@ -1993,19 +2301,7 @@ export class FlowSchemaRegistry {
       this.applyModelSchemaPatch(anonymousResolved, directPatch, 'third-party');
     }
 
-    return this.buildSnapshotSchemaFromResolved(
-      '',
-      anonymousResolved,
-      [
-        ...contextChain,
-        {
-          parentUse,
-          slotKey,
-          childUse: '',
-        },
-      ],
-      visited,
-    );
+    return anonymousResolved;
   }
 
   private collectNestedDocumentHints(
@@ -2020,7 +2316,7 @@ export class FlowSchemaRegistry {
 
     visited.add(visitKey);
     try {
-      const resolved = this.resolveModelSchema(use, contextChain);
+      const resolved = this.resolveModelSchemaRef(use, contextChain);
       const hints: FlowDynamicHint[] = [];
       for (const [slotKey, slot] of Object.entries(resolved.subModelSlots || {})) {
         const childUses = this.resolveSlotAllowedUses(use, slotKey, slot);
@@ -2083,7 +2379,7 @@ export class FlowSchemaRegistry {
     for (let index = 0; index < contextChain.length; index++) {
       const edge = contextChain[index];
       const parentContext = contextChain.slice(0, index);
-      const parentResolved = this.resolveModelSchema(edge.parentUse, parentContext);
+      const parentResolved = this.resolveModelSchemaRef(edge.parentUse, parentContext);
       const slot = parentResolved.subModelSlots?.[edge.slotKey];
       if (!slot) {
         continue;
