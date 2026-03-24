@@ -81,6 +81,11 @@ function getEnsureObjectChildLockKey(parentId: string, subKey: string) {
   return `object-child:${parentId}\u0000${subKey}\u0000object`;
 }
 
+function getTransactionId(transaction?: Transaction) {
+  const rawTransactionId = (transaction as (Transaction & { id?: string | number }) | undefined)?.id;
+  return rawTransactionId == null ? undefined : String(rawTransactionId);
+}
+
 async function acquireEnsureObjectChildLock(key: string, ownerTransactionId?: string) {
   const previous = ensureObjectChildLockWaiters.get(key);
   let releaseCurrent!: () => void;
@@ -1899,7 +1904,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     };
 
     const lockKey = getEnsureObjectChildLockKey(parentIdValue, subKeyValue);
-    const transactionId = transaction ? String(transaction.id) : undefined;
+    const transactionId = getTransactionId(transaction);
 
     if (transactionId && ensureObjectChildLockOwners.get(lockKey) === transactionId) {
       return await ensureObjectChild();
@@ -1911,10 +1916,10 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     try {
       const model = await ensureObjectChild();
 
-      if (transaction) {
+      if (transaction && transactionId) {
         const releaseAfterTransaction = lodash.once(releaseEnsureObjectChildLock);
         transaction.afterCommit(releaseAfterTransaction);
-        this.database.once(`transactionRollback:${transaction.id}`, releaseAfterTransaction);
+        this.database.once(`transactionRollback:${transactionId}`, releaseAfterTransaction);
         releaseEnsureObjectChildLockAfterTransaction = true;
       }
 

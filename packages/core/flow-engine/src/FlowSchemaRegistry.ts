@@ -1461,7 +1461,7 @@ export class FlowSchemaRegistry {
       use,
       title: resolved?.title || use,
       jsonSchema,
-      dynamicHints: this.getModelLocalDynamicHintsRef(use, contextChain),
+      dynamicHints: [...this.getModelLocalDynamicHintsRef(use, contextChain)],
       minimalExample,
       commonPatterns: _.cloneDeep(resolved?.docs?.commonPatterns || []),
       antiPatterns: _.cloneDeep(resolved?.docs?.antiPatterns || []),
