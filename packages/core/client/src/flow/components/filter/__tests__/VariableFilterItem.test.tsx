@@ -314,9 +314,9 @@ describe('VariableFilterItem', () => {
         operators: [{ value: '$null', label: 'Is null', noValue: true }],
       };
     }
-    (model2.context.app as { addFieldInterfaces: (fieldInterfaces: Array<new (...args: any[]) => any>) => void }).addFieldInterfaces([
-      InputInterfaceAlt,
-    ]);
+    (
+      model2.context.app as { addFieldInterfaces: (fieldInterfaces: Array<new (...args: any[]) => any>) => void }
+    ).addFieldInterfaces([InputInterfaceAlt]);
     rerender(<VariableFilterItem value={value} model={model2} rightAsVariable={false} />);
 
     // effect: 当当前 operator 不在新列表中时，自动回退到第一个可用操作符
