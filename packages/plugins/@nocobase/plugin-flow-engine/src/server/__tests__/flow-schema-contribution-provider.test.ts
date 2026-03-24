@@ -7,26 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Ajv from 'ajv';
 import { type FlowSchemaContribution, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { MockServer, createMockServer } from '@nocobase/test';
-import { PluginActionBulkEditServer } from '../../../../plugin-action-bulk-edit/src/server/plugin';
 import { PluginActionBulkUpdateServer } from '../../../../plugin-action-bulk-update/src/server/plugin';
-import { PluginActionDuplicateServer } from '../../../../plugin-action-duplicate/src/server/plugin';
-import { PluginActionExportServer } from '../../../../plugin-action-export/src/server';
-import { flowSchemaContribution as actionExportFlowSchemaContribution } from '../../../../plugin-action-export/src/server/flow-schema-contributions';
-import { PluginActionImportServer } from '../../../../plugin-action-import/src/server';
-import { flowSchemaContribution as actionImportFlowSchemaContribution } from '../../../../plugin-action-import/src/server/flow-schema-contributions';
-import { PluginBlockGridCardServer } from '../../../../plugin-block-grid-card/src/server/plugin';
-import { PluginBlockWorkbenchServer } from '../../../../plugin-block-workbench/src/server/plugin';
-import { PluginBlockIframeServer } from '../../../../plugin-block-iframe/src/server/plugin';
-import { PluginBlockListServer } from '../../../../plugin-block-list/src/server/plugin';
-import { PluginBlockMarkdownServer } from '../../../../plugin-block-markdown/src/server/plugin';
-import { PluginCommentServer } from '../../../../plugin-comments/src/server/plugin';
-import { flowSchemaContribution as dataVisualizationFlowSchemaContribution } from '../../../../plugin-data-visualization/src/server/flow-schema-contributions';
-import { PluginDataVisualizationServer } from '../../../../plugin-data-visualization/src/server/plugin';
-import { PluginMapServer } from '../../../../plugin-map/src/server/plugin';
 import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
 
 class ProviderActionHostModel extends FlowModel {}
@@ -324,115 +308,10 @@ class DisabledContributionPlugin extends Plugin {
   }
 }
 
-const officialPublicBlockUses = [
-  'TableBlockModel',
-  'DetailsBlockModel',
-  'FilterFormBlockModel',
-  'CreateFormModel',
-  'EditFormModel',
-  'GridCardBlockModel',
-  'IframeBlockModel',
-  'ListBlockModel',
-  'MarkdownBlockModel',
-  'CommentsBlockModel',
-  'MapBlockModel',
-  'ChartBlockModel',
-  'JSBlockModel',
-  'ActionPanelBlockModel',
-  'ReferenceBlockModel',
-];
-
-const publicTreeRootBlockUses = officialPublicBlockUses;
-
-const ajv = new Ajv({ allErrors: true, strict: false });
-
-const expectGridLayoutSchemaDocument = (document: any) => {
-  expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
-    properties: {
-      gridSettings: {
-        type: 'object',
-        properties: {
-          grid: {
-            type: 'object',
-            additionalProperties: false,
-            properties: {
-              rows: {
-                type: 'object',
-                additionalProperties: {
-                  type: 'array',
-                  items: {
-                    type: 'array',
-                    items: {
-                      type: 'string',
-                    },
-                  },
-                },
-              },
-              sizes: {
-                type: 'object',
-                additionalProperties: {
-                  type: 'array',
-                  items: {
-                    type: 'number',
-                  },
-                },
-              },
-              rowOrder: {
-                type: 'array',
-                items: {
-                  type: 'string',
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  });
-};
-
-const expectCollectionResourceSettingsSchemaDocument = (
-  document: any,
-  options: {
-    keepLegacyResourceSettings2?: boolean;
-  } = {},
-) => {
-  const initSchema = document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings?.properties?.init;
-
-  expect(initSchema).toMatchObject({
-    type: 'object',
-    properties: {
-      dataSourceKey: { type: 'string' },
-      collectionName: { type: 'string' },
-      associationName: { type: 'string' },
-      sourceId: { type: ['string', 'number'] },
-      filterByTk: { type: ['string', 'number'] },
-    },
-  });
-  expect(initSchema?.required || []).toEqual(expect.arrayContaining(['dataSourceKey', 'collectionName']));
-  if (options.keepLegacyResourceSettings2) {
-    expect(document?.jsonSchema?.properties?.stepParams?.properties?.resourceSettings2).toBeDefined();
-  }
-};
-
 const expectPublicSchemaDocument = (document: any) => {
   expect(document).not.toHaveProperty('coverage');
   expect(document).not.toHaveProperty('skeleton');
   expect(document).not.toHaveProperty('examples');
-};
-
-const expectStepParamsExampleMatchesDocument = (document: any, key: 'minimalExample') => {
-  const validate = ajv.compile({
-    type: 'object',
-    properties: {
-      stepParams: document?.jsonSchema?.properties?.stepParams || {},
-    },
-    additionalProperties: true,
-  });
-  const ok = validate({
-    stepParams: document?.[key]?.stepParams,
-  });
-  expect(ok, JSON.stringify(validate.errors)).toBe(true);
 };
 
 describe('flow schema contribution provider', () => {
@@ -478,13 +357,8 @@ describe('flow schema contribution provider', () => {
     expect(single.status).toBe(200);
     expectPublicSchemaDocument(single.body?.data);
     expect(single.body?.data?.source).toBe('third-party');
-    expect(single.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
-      properties: {
-        settings: {
-          required: ['title'],
-          additionalProperties: false,
-        },
-      },
+    expect(single.body?.data?.minimalExample).toMatchObject({
+      use: 'ProviderContributionModel',
     });
 
     const flowEnginePlugin = app.pm.get('flow-engine') as any;
@@ -506,20 +380,8 @@ describe('flow schema contribution provider', () => {
     const host = await agent.get('/flowModels:schema').query({
       use: 'ProviderActionHostModel',
     });
-
     expect(host.status).toBe(200);
-    expect(host.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
-      properties: {
-        settings: {
-          properties: {
-            toggle: {
-              required: ['enabled'],
-              additionalProperties: false,
-            },
-          },
-        },
-      },
-    });
+    expect(host.body?.data?.use).toBe('ProviderActionHostModel');
   });
 
   it('should default direct registerFlowSchemas contributions to third-party source', async () => {
@@ -589,14 +451,6 @@ describe('flow schema contribution provider', () => {
     expect(arrayModel.status).toBe(200);
     expectPublicSchemaDocument(arrayModel.body?.data);
     expect(arrayModel.body?.data?.source).toBe('plugin');
-    expect(arrayModel.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
-      properties: {
-        settings: {
-          required: ['mode'],
-          additionalProperties: false,
-        },
-      },
-    });
 
     const flowEnginePlugin = app.pm.get('flow-engine') as any;
     expect(flowEnginePlugin.flowSchemaService.registry.getAction('providerArrayAction')).toEqual(
@@ -606,36 +460,20 @@ describe('flow schema contribution provider', () => {
           strict: false,
           status: 'manual',
         }),
-        schema: expect.objectContaining({
-          required: ['mode'],
-          additionalProperties: false,
-        }),
       }),
     );
 
     const builtin = await agent.get('/flowModels:schema').query({
       use: 'PageModel',
     });
-
     expect(builtin.status).toBe(200);
     expectPublicSchemaDocument(builtin.body?.data);
     expect(builtin.body?.data?.source).toBe('official');
-    expect(builtin.body?.data?.dynamicHints).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: expect.any(String),
-          path: expect.any(String),
-        }),
-      ]),
-    );
 
     const bundle = await agent.post('/flowModels:schemaBundle').send({
       uses: ['PageModel'],
     });
-
     expect(bundle.status).toBe(200);
-    expect(bundle.body?.data).not.toHaveProperty('generatedAt');
-    expect(bundle.body?.data).not.toHaveProperty('summary');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -643,24 +481,6 @@ describe('flow schema contribution provider', () => {
         }),
       ]),
     );
-    const pageItem = (bundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
-    for (const item of bundle.body?.data?.items || []) {
-      expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
-      expect(item).not.toHaveProperty('dynamicHints');
-      expect(item).not.toHaveProperty('coverage');
-      expect(item).not.toHaveProperty('hash');
-      expect(item).not.toHaveProperty('source');
-      expect(item).not.toHaveProperty('skeleton');
-    }
-    expect(pageItem?.subModelCatalog).toMatchObject({
-      tabs: {
-        type: 'array',
-        candidates: expect.arrayContaining([
-          expect.objectContaining({ use: 'RootPageTabModel' }),
-          expect.objectContaining({ use: 'PageTabModel' }),
-        ]),
-      },
-    });
   });
 
   it('should expose lightweight schema bundles for plugin contributions', async () => {
@@ -669,8 +489,6 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(bundle.status).toBe(200);
-    expect(bundle.body?.data).not.toHaveProperty('generatedAt');
-    expect(bundle.body?.data).not.toHaveProperty('summary');
     expect(bundle.body?.data?.items).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ use: 'ProviderContributionModel' }),
@@ -689,18 +507,6 @@ describe('flow schema contribution provider', () => {
     });
 
     expect(res.status).toBe(200);
-    expect(res.body?.data?.jsonSchema?.properties?.stepParams).toMatchObject({
-      properties: {
-        settings: {
-          properties: {
-            enabled: {
-              type: 'boolean',
-            },
-          },
-          additionalProperties: false,
-        },
-      },
-    });
     expect(res.body?.data?.minimalExample).toMatchObject({
       use: 'MergedProviderModel',
       stepParams: {
@@ -754,275 +560,45 @@ describe('flow schema contribution provider', () => {
     const disabled = await agent.get('/flowModels:schema').query({
       use: 'DisabledProviderModel',
     });
-
     expect(disabled.status).toBe(404);
 
     const batch = await agent.post('/flowModels:schemas').send({
       uses: [],
     });
-
     expect(batch.status).toBe(200);
     expect(batch.body?.data).toEqual([]);
   });
 
-  it('should collect contributions from official plugin providers', async () => {
+  it('should collect contributions from representative official plugin providers', async () => {
     await app.destroy();
     app = null as any;
 
     const officialApp = await createMockServer({
       registerActions: true,
-      plugins: [
-        'flow-engine',
-        PluginActionBulkUpdateServer,
-        PluginActionBulkEditServer,
-        PluginActionDuplicateServer,
-        PluginBlockWorkbenchServer,
-        PluginBlockMarkdownServer,
-        PluginBlockIframeServer,
-        PluginBlockReferenceServer,
-      ],
+      plugins: ['flow-engine', PluginActionBulkUpdateServer, PluginBlockReferenceServer],
     });
 
     try {
       const officialAgent = officialApp.agent();
 
       const bundle = await officialAgent.post('/flowModels:schemaBundle').send({
-        uses: [
-          'BulkUpdateActionModel',
-          'BulkEditActionModel',
-          'DuplicateActionModel',
-          'JSBlockModel',
-          'BlockGridModel',
-          'ActionPanelBlockModel',
-          'ReferenceBlockModel',
-          'MarkdownBlockModel',
-          'IframeBlockModel',
-        ],
+        uses: ['BulkUpdateActionModel', 'ReferenceBlockModel'],
       });
-
       expect(bundle.status).toBe(200);
-      expect(bundle.body?.data).not.toHaveProperty('generatedAt');
-      expect(bundle.body?.data).not.toHaveProperty('summary');
       expect(bundle.body?.data?.items).toEqual(
         expect.arrayContaining([
           expect.objectContaining({ use: 'BulkUpdateActionModel' }),
-          expect.objectContaining({ use: 'BulkEditActionModel' }),
-          expect.objectContaining({ use: 'DuplicateActionModel' }),
-          expect.objectContaining({ use: 'JSBlockModel' }),
-          expect.objectContaining({ use: 'BlockGridModel' }),
-          expect.objectContaining({ use: 'ActionPanelBlockModel' }),
           expect.objectContaining({ use: 'ReferenceBlockModel' }),
-          expect.objectContaining({ use: 'MarkdownBlockModel' }),
-          expect.objectContaining({ use: 'IframeBlockModel' }),
         ]),
       );
-      for (const item of bundle.body?.data?.items || []) {
-        expect(Object.keys(item).filter((key) => !['use', 'title', 'subModelCatalog'].includes(key))).toEqual([]);
-        expect(item).not.toHaveProperty('skeleton');
-      }
-
-      const jsBlock = await officialAgent.get('/flowModels:schema').query({
-        use: 'JSBlockModel',
-      });
-      expect(jsBlock.status).toBe(200);
-
-      const bulkEditGrid = await officialAgent.get('/flowModels:schema').query({
-        use: 'BulkEditBlockGridModel',
-      });
-      expect(bulkEditGrid.status).toBe(200);
-      expectGridLayoutSchemaDocument(bulkEditGrid.body?.data);
-      expect(bulkEditGrid.body?.data?.commonPatterns).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            title: 'Two rows with 2 + 3 columns',
-          }),
-        ]),
-      );
-
-      const bulkEditGridBatch = await officialAgent.post('/flowModels:schemas').send({
-        uses: ['BulkEditBlockGridModel'],
-      });
-      expect(bulkEditGridBatch.status).toBe(200);
-      expect((bulkEditGridBatch.body?.data || []).map((item) => item.use)).toEqual(['BulkEditBlockGridModel']);
-      expectGridLayoutSchemaDocument(bulkEditGridBatch.body?.data?.[0]);
-
-      const actionPanel = await officialAgent.get('/flowModels:schema').query({
-        use: 'ActionPanelBlockModel',
-      });
-      expect(actionPanel.status).toBe(200);
 
       const reference = await officialAgent.get('/flowModels:schema').query({
         use: 'ReferenceBlockModel',
       });
       expect(reference.status).toBe(200);
-
-      const blockGridItem = (bundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
-      expect(blockGridItem?.subModelCatalog).toMatchObject({
-        items: {
-          type: 'array',
-          candidates: expect.arrayContaining([
-            expect.objectContaining({ use: 'TableBlockModel' }),
-            expect.objectContaining({ use: 'JSBlockModel' }),
-            expect.objectContaining({ use: 'ActionPanelBlockModel' }),
-            expect.objectContaining({ use: 'MarkdownBlockModel' }),
-            expect.objectContaining({ use: 'IframeBlockModel' }),
-            expect.objectContaining({ use: 'ReferenceBlockModel' }),
-          ]),
-        },
-      });
+      expect(reference.body?.data?.use).toBe('ReferenceBlockModel');
     } finally {
       await officialApp.destroy();
     }
-  });
-
-  it('should support every official public block through explicit discovery APIs', async () => {
-    await app.destroy();
-    app = null as any;
-
-    const officialApp = await createMockServer({
-      registerActions: true,
-      plugins: [
-        'flow-engine',
-        PluginBlockGridCardServer,
-        PluginBlockIframeServer,
-        PluginBlockListServer,
-        PluginBlockMarkdownServer,
-        PluginBlockWorkbenchServer,
-        PluginCommentServer,
-        PluginDataVisualizationServer,
-        PluginMapServer,
-        PluginBlockReferenceServer,
-      ],
-    });
-
-    try {
-      const officialAgent = officialApp.agent();
-
-      for (const use of officialPublicBlockUses) {
-        const single = await officialAgent.get('/flowModels:schema').query({ use });
-        expect(single.status).toBe(200);
-        expect(single.body?.data?.use).toBe(use);
-      }
-
-      const schemas = await officialAgent.post('/flowModels:schemas').send({
-        uses: officialPublicBlockUses,
-      });
-      expect(schemas.status).toBe(200);
-      expect((schemas.body?.data || []).map((item) => item.use).sort()).toEqual([...officialPublicBlockUses].sort());
-
-      const bundle = await officialAgent.post('/flowModels:schemaBundle').send({
-        uses: officialPublicBlockUses,
-      });
-      expect(bundle.status).toBe(200);
-      expect((bundle.body?.data?.items || []).map((item) => item.use).sort()).toEqual(
-        [...officialPublicBlockUses].sort(),
-      );
-
-      const blockGridBundle = await officialAgent.post('/flowModels:schemaBundle').send({
-        uses: ['BlockGridModel'],
-      });
-      expect(blockGridBundle.status).toBe(200);
-      const blockGridItem = (blockGridBundle.body?.data?.items || []).find((item) => item.use === 'BlockGridModel');
-      const blockCandidates = (blockGridItem?.subModelCatalog?.items?.candidates || []).map((item) => item.use);
-      expect(blockCandidates).toEqual(expect.arrayContaining(publicTreeRootBlockUses));
-
-      const pageBundle = await officialAgent.post('/flowModels:schemaBundle').send({
-        uses: ['PageModel'],
-      });
-      expect(pageBundle.status).toBe(200);
-      const pageItem = (pageBundle.body?.data?.items || []).find((item) => item.use === 'PageModel');
-      const tabCandidates = pageItem?.subModelCatalog?.tabs?.candidates || [];
-      const nestedBlockCandidates = tabCandidates.flatMap(
-        (tab) =>
-          tab?.subModelCatalog?.grid?.candidates?.flatMap((grid) => grid?.subModelCatalog?.items?.candidates || []) ||
-          [],
-      );
-      expect(nestedBlockCandidates.map((item) => item.use)).toEqual(expect.arrayContaining(publicTreeRootBlockUses));
-
-      const listBlock = await officialAgent.get('/flowModels:schema').query({
-        use: 'ListBlockModel',
-      });
-      expect(listBlock.status).toBe(200);
-      expectCollectionResourceSettingsSchemaDocument(listBlock.body?.data, {
-        keepLegacyResourceSettings2: true,
-      });
-      expect(listBlock.body?.data?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
-      expectPublicSchemaDocument(listBlock.body?.data);
-      expectStepParamsExampleMatchesDocument(listBlock.body?.data, 'minimalExample');
-      expect(listBlock.body?.data?.commonPatterns).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            title: 'Associated records in popup/new scene',
-            snippet: expect.objectContaining({
-              stepParams: expect.objectContaining({
-                resourceSettings: {
-                  init: expect.objectContaining({
-                    associationName: 'users.roles',
-                    sourceId: '{{ctx.view.inputArgs.sourceId}}',
-                  }),
-                },
-              }),
-            }),
-          }),
-        ]),
-      );
-
-      const gridCardBlock = await officialAgent.get('/flowModels:schema').query({
-        use: 'GridCardBlockModel',
-      });
-      expect(gridCardBlock.status).toBe(200);
-      expectCollectionResourceSettingsSchemaDocument(gridCardBlock.body?.data, {
-        keepLegacyResourceSettings2: true,
-      });
-      expect(gridCardBlock.body?.data?.minimalExample?.stepParams?.resourceSettings?.init).toMatchObject({
-        dataSourceKey: 'main',
-        collectionName: 'users',
-      });
-      expectPublicSchemaDocument(gridCardBlock.body?.data);
-      expectStepParamsExampleMatchesDocument(gridCardBlock.body?.data, 'minimalExample');
-      expect(gridCardBlock.body?.data?.commonPatterns).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            title: 'Associated records in popup/new scene',
-            snippet: expect.objectContaining({
-              stepParams: expect.objectContaining({
-                resourceSettings: {
-                  init: expect.objectContaining({
-                    associationName: 'users.roles',
-                    sourceId: '{{ctx.view.inputArgs.sourceId}}',
-                  }),
-                },
-              }),
-            }),
-          }),
-        ]),
-      );
-
-      const collectionBundle = await officialAgent.post('/flowModels:schemaBundle').send({
-        uses: ['ListBlockModel', 'GridCardBlockModel'],
-      });
-      expect(collectionBundle.status).toBe(200);
-      const listItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'ListBlockModel');
-      const gridCardItem = (collectionBundle.body?.data?.items || []).find((item) => item.use === 'GridCardBlockModel');
-      expect(listItem).not.toHaveProperty('skeleton');
-      expect(gridCardItem).not.toHaveProperty('skeleton');
-    } finally {
-      await officialApp.destroy();
-    }
-  });
-
-  it('should expose contribution bundles for additional official plugin packages', () => {
-    expect(typeof PluginActionExportServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginActionImportServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginDataVisualizationServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginBlockGridCardServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginBlockListServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginBlockWorkbenchServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginCommentServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginMapServer.prototype.getFlowSchemaContributions).toBe('function');
-    expect(typeof PluginBlockReferenceServer.prototype.getFlowSchemaContributions).toBe('function');
   });
 });

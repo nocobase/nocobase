@@ -1553,6 +1553,212 @@ describe('FlowSchemaRegistry', () => {
     });
   });
 
+  it('should expose nested popup page slots in schema documents and bundle catalogs', () => {
+    const registry = new FlowSchemaRegistry();
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryPopupGridModel',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      skeleton: {
+        uid: 'popup-grid',
+        use: 'SchemaRegistryPopupGridModel',
+      },
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryPopupTabModel',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      subModelSlots: {
+        grid: {
+          type: 'object',
+          use: 'SchemaRegistryPopupGridModel',
+          required: true,
+        },
+      },
+      skeleton: {
+        uid: 'popup-tab',
+        use: 'SchemaRegistryPopupTabModel',
+        subModels: {
+          grid: {
+            uid: 'popup-tab-grid',
+            use: 'SchemaRegistryPopupGridModel',
+          },
+        },
+      },
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryPopupPageModel',
+      stepParamsSchema: {
+        type: 'object',
+        additionalProperties: true,
+      },
+      subModelSlots: {
+        tabs: {
+          type: 'array',
+          uses: ['SchemaRegistryPopupTabModel'],
+          required: true,
+          minItems: 1,
+        },
+      },
+      skeleton: {
+        uid: 'popup-page',
+        use: 'SchemaRegistryPopupPageModel',
+        subModels: {
+          tabs: [
+            {
+              uid: 'popup-page-tab',
+              use: 'SchemaRegistryPopupTabModel',
+              subModels: {
+                grid: {
+                  uid: 'popup-page-tab-grid',
+                  use: 'SchemaRegistryPopupGridModel',
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    registry.registerModelContribution({
+      use: 'SchemaRegistryPopupActionModel',
+      stepParamsSchema: {
+        type: 'object',
+        properties: {
+          popupSettings: {
+            type: 'object',
+            properties: {
+              openView: {
+                type: 'object',
+                properties: {
+                  pageModelClass: {
+                    type: 'string',
+                    enum: ['SchemaRegistryPopupPageModel', 'SchemaRegistryRootPageModel'],
+                  },
+                },
+                additionalProperties: false,
+              },
+            },
+            additionalProperties: true,
+          },
+        },
+        additionalProperties: true,
+      },
+      subModelSlots: {
+        page: {
+          type: 'object',
+          use: 'SchemaRegistryPopupPageModel',
+        },
+      },
+      skeleton: {
+        uid: 'popup-action',
+        use: 'SchemaRegistryPopupActionModel',
+        stepParams: {
+          popupSettings: {
+            openView: {
+              pageModelClass: 'SchemaRegistryPopupPageModel',
+            },
+          },
+        },
+        subModels: {
+          page: {
+            uid: 'popup-action-page',
+            use: 'SchemaRegistryPopupPageModel',
+            subModels: {
+              tabs: [
+                {
+                  uid: 'popup-action-page-tab',
+                  use: 'SchemaRegistryPopupTabModel',
+                  subModels: {
+                    grid: {
+                      uid: 'popup-action-page-grid',
+                      use: 'SchemaRegistryPopupGridModel',
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    const doc = registry.getModelDocument('SchemaRegistryPopupActionModel');
+    const bundle = registry.getSchemaBundle(['SchemaRegistryPopupActionModel']);
+    const item = bundle.items[0];
+
+    expect((doc.jsonSchema.properties?.subModels as any)?.properties?.page).toMatchObject({
+      type: 'object',
+      properties: {
+        use: {
+          const: 'SchemaRegistryPopupPageModel',
+        },
+      },
+    });
+    expect(
+      (doc.jsonSchema.properties?.stepParams as any)?.properties?.popupSettings?.properties?.openView,
+    ).toMatchObject({
+      type: 'object',
+      properties: {
+        pageModelClass: {
+          type: 'string',
+          enum: ['SchemaRegistryPopupPageModel', 'SchemaRegistryRootPageModel'],
+        },
+      },
+    });
+    expect(doc.minimalExample).toMatchObject({
+      use: 'SchemaRegistryPopupActionModel',
+      subModels: {
+        page: {
+          use: 'SchemaRegistryPopupPageModel',
+        },
+      },
+      stepParams: {
+        popupSettings: {
+          openView: {
+            pageModelClass: 'SchemaRegistryPopupPageModel',
+          },
+        },
+      },
+    });
+    expect(item?.subModelCatalog).toMatchObject({
+      page: {
+        type: 'object',
+        candidates: [
+          expect.objectContaining({
+            use: 'SchemaRegistryPopupPageModel',
+            subModelCatalog: {
+              tabs: {
+                type: 'array',
+                required: true,
+                minItems: 1,
+                candidates: [
+                  expect.objectContaining({
+                    use: 'SchemaRegistryPopupTabModel',
+                    subModelCatalog: {
+                      grid: {
+                        type: 'object',
+                        required: true,
+                        candidates: [expect.objectContaining({ use: 'SchemaRegistryPopupGridModel' })],
+                      },
+                    },
+                  }),
+                ],
+              },
+            },
+          }),
+        ],
+      },
+    });
+  });
+
   it('should expose compact public documents without recursive schema or nested hints by default', () => {
     const registry = new FlowSchemaRegistry();
 

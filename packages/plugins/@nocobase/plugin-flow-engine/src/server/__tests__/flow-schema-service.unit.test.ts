@@ -14,6 +14,7 @@ import {
   genericFilterSchema,
   popupActionSettingsStepParamsSchema,
 } from '../flow-schema-contributions/shared';
+import { flowSchemaContribution } from '../flow-schema-contributions';
 import { FlowSchemaService } from '../flow-schema-service';
 
 function createService() {
@@ -242,6 +243,109 @@ function createService() {
 
   return service;
 }
+
+const buildDynamicEventFlowRegistry = () => ({
+  eventFlow: {
+    title: 'Dynamic event flow coverage',
+    on: {
+      eventName: 'formValuesChange',
+      defaultParams: {
+        condition: {
+          logic: '$and',
+          items: [],
+        },
+      },
+    },
+    steps: {
+      showMessageStep: {
+        key: 'showMessageStep',
+        use: 'showMessage',
+        sort: 1,
+        defaultParams: {
+          value: {
+            type: 'info',
+            content: 'Saved successfully',
+            duration: 3,
+          },
+        },
+      },
+      showNotificationStep: {
+        key: 'showNotificationStep',
+        use: 'showNotification',
+        sort: 2,
+        defaultParams: {
+          value: {
+            type: 'info',
+            title: 'Sync completed',
+            description: 'The target blocks were refreshed.',
+            duration: 5,
+            placement: 'topRight',
+          },
+        },
+      },
+      navigateToURLStep: {
+        key: 'navigateToURLStep',
+        use: 'navigateToURL',
+        sort: 3,
+        defaultParams: {
+          value: {
+            url: '/admin/users',
+            searchParams: [
+              {
+                name: 'status',
+                value: 'active',
+              },
+            ],
+            openInNewWindow: false,
+          },
+        },
+      },
+      refreshTargetBlocksStep: {
+        key: 'refreshTargetBlocksStep',
+        use: 'refreshTargetBlocks',
+        sort: 4,
+        defaultParams: {
+          targets: ['table-users'],
+        },
+      },
+      setTargetDataScopeStep: {
+        key: 'setTargetDataScopeStep',
+        use: 'setTargetDataScope',
+        sort: 5,
+        defaultParams: {
+          targetBlockUid: 'table-users',
+          filter: {
+            logic: '$and',
+            items: [],
+          },
+        },
+      },
+      customVariableStep: {
+        key: 'customVariableStep',
+        use: 'customVariable',
+        sort: 6,
+        defaultParams: {
+          variables: [
+            {
+              key: 'var_form',
+              title: 'Current form',
+              type: 'formValue',
+              formUid: 'edit-form-uid',
+            },
+          ],
+        },
+      },
+      runjsStep: {
+        key: 'runjsStep',
+        use: 'runjs',
+        sort: 7,
+        defaultParams: {
+          code: 'return 1;',
+        },
+      },
+    },
+  },
+});
 
 describe('FlowSchemaService', () => {
   it('should normalize fieldBinding-driven field switches and prune stale subModels', () => {
@@ -607,6 +711,315 @@ describe('FlowSchemaService', () => {
         }),
       ]),
     );
+  });
+
+  it('should validate the same child use differently under different parent contexts', () => {
+    const service = new FlowSchemaService();
+
+    service.registerModelContributions([
+      {
+        use: 'ContextChildModel',
+        source: 'official',
+        strict: true,
+        stepParamsSchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      {
+        use: 'ContextParentAlphaModel',
+        source: 'official',
+        strict: true,
+        subModelSlots: {
+          body: {
+            type: 'object',
+            use: 'ContextChildModel',
+            childSchemaPatch: {
+              stepParamsSchema: {
+                type: 'object',
+                properties: {
+                  alpha: {
+                    type: 'string',
+                  },
+                },
+                required: ['alpha'],
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+      },
+      {
+        use: 'ContextParentBetaModel',
+        source: 'official',
+        strict: true,
+        subModelSlots: {
+          body: {
+            type: 'object',
+            use: 'ContextChildModel',
+            childSchemaPatch: {
+              stepParamsSchema: {
+                type: 'object',
+                properties: {
+                  beta: {
+                    type: 'number',
+                  },
+                },
+                required: ['beta'],
+                additionalProperties: false,
+              },
+            },
+          },
+        },
+      },
+    ]);
+
+    const alphaIssues = service.validateModelTree({
+      uid: 'ctx-alpha-1',
+      use: 'ContextParentAlphaModel',
+      subModels: {
+        body: {
+          uid: 'ctx-child-alpha-1',
+          use: 'ContextChildModel',
+          stepParams: {
+            alpha: 'ok',
+          },
+        },
+      },
+    });
+    expect(alphaIssues.filter((item) => item.level === 'error')).toEqual([]);
+
+    const betaIssues = service.validateModelTree({
+      uid: 'ctx-beta-1',
+      use: 'ContextParentBetaModel',
+      subModels: {
+        body: {
+          uid: 'ctx-child-beta-1',
+          use: 'ContextChildModel',
+          stepParams: {
+            alpha: 'ok',
+          },
+        },
+      },
+    });
+    expect(betaIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          modelUid: 'ctx-child-beta-1',
+          modelUse: 'ContextChildModel',
+          section: 'stepParams',
+          level: 'error',
+        }),
+      ]),
+    );
+  });
+
+  it('should validate descendant patches through the full ancestor chain', () => {
+    const service = new FlowSchemaService();
+
+    service.registerModelContributions([
+      {
+        use: 'AncestorChildModel',
+        source: 'official',
+        strict: true,
+        stepParamsSchema: {
+          type: 'object',
+          additionalProperties: true,
+        },
+      },
+      {
+        use: 'AncestorBridgeModel',
+        source: 'official',
+        strict: true,
+      },
+      {
+        use: 'AncestorRootModel',
+        source: 'official',
+        strict: true,
+        subModelSlots: {
+          body: {
+            type: 'object',
+            use: 'AncestorBridgeModel',
+            childSchemaPatch: {
+              subModelSlots: {
+                leaf: {
+                  type: 'object',
+                  use: 'AncestorChildModel',
+                  childSchemaPatch: {
+                    stepParamsSchema: {
+                      type: 'object',
+                      properties: {
+                        marker: {
+                          type: 'string',
+                        },
+                        directOnly: {
+                          type: 'string',
+                        },
+                      },
+                      required: ['directOnly'],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+              },
+            },
+            descendantSchemaPatches: [
+              {
+                path: [
+                  {
+                    slotKey: 'leaf',
+                    use: 'AncestorChildModel',
+                  },
+                ],
+                patch: {
+                  stepParamsSchema: {
+                    type: 'object',
+                    properties: {
+                      marker: {
+                        type: 'number',
+                      },
+                      ancestorOnly: {
+                        type: 'boolean',
+                      },
+                    },
+                    required: ['ancestorOnly'],
+                    additionalProperties: true,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    ]);
+
+    const passIssues = service.validateModelTree({
+      uid: 'ctx-ancestor-1',
+      use: 'AncestorRootModel',
+      subModels: {
+        body: {
+          uid: 'ctx-bridge-1',
+          use: 'AncestorBridgeModel',
+          subModels: {
+            leaf: {
+              uid: 'ctx-leaf-1',
+              use: 'AncestorChildModel',
+              stepParams: {
+                ancestorOnly: true,
+                directOnly: 'ok',
+                marker: 'direct',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(passIssues.filter((item) => item.level === 'error')).toEqual([]);
+
+    const failIssues = service.validateModelTree({
+      uid: 'ctx-ancestor-2',
+      use: 'AncestorRootModel',
+      subModels: {
+        body: {
+          uid: 'ctx-bridge-2',
+          use: 'AncestorBridgeModel',
+          subModels: {
+            leaf: {
+              uid: 'ctx-leaf-2',
+              use: 'AncestorChildModel',
+              stepParams: {
+                ancestorOnly: 'bad',
+                directOnly: 'ok',
+                marker: 'direct',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(failIssues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/subModels/body/subModels/leaf/stepParams/ancestorOnly',
+          modelUid: 'ctx-leaf-2',
+          modelUse: 'AncestorChildModel',
+          section: 'stepParams',
+          keyword: 'type',
+          level: 'error',
+        }),
+      ]),
+    );
+  });
+
+  it('should downgrade invalid generic filter trees to warnings when validation is loose', () => {
+    const service = new FlowSchemaService();
+
+    service.registerModelContributions([
+      {
+        use: 'LooseFilterHostModel',
+        source: 'official',
+        strict: false,
+        stepParamsSchema: {
+          type: 'object',
+          properties: {
+            filter: genericFilterSchema,
+          },
+          required: ['filter'],
+          additionalProperties: false,
+        },
+      },
+    ]);
+
+    const issues = service.validateModelTree({
+      uid: 'loose-filter-host-1',
+      use: 'LooseFilterHostModel',
+      stepParams: {
+        filter: {
+          logic: '$and',
+          items: [
+            {
+              foo: 'bar',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          jsonPointer: '#/stepParams/filter/items/0',
+          modelUid: 'loose-filter-host-1',
+          modelUse: 'LooseFilterHostModel',
+          section: 'stepParams',
+          keyword: 'oneOf',
+          level: 'warning',
+        }),
+      ]),
+    );
+  });
+
+  it('should validate representative dynamic event flow actions with official contributions', () => {
+    const service = new FlowSchemaService();
+    service.registerActionContributions(flowSchemaContribution.actions || []);
+    service.registerModelContributions(flowSchemaContribution.models || []);
+
+    const issues = service.validateModelTree({
+      uid: 'dynamic-event-actions-host',
+      use: 'EditFormModel',
+      stepParams: {
+        resourceSettings: {
+          init: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+        },
+      },
+      flowRegistry: buildDynamicEventFlowRegistry(),
+    });
+
+    expect(issues.filter((item) => item.level === 'error')).toEqual([]);
   });
 
   it('should accept null action icons for link-style edit actions', () => {

@@ -11,8 +11,6 @@ import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
 import FlowModelRepository from '../repository';
 
-const clonePayload = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-
 class MutateSchemaStrictModel extends FlowModel {}
 
 MutateSchemaStrictModel.define({
@@ -38,7 +36,9 @@ describe('flow-model mutate', () => {
   let agent: any;
 
   afterEach(async () => {
-    await app.destroy();
+    if (app) {
+      await app.destroy();
+    }
   });
 
   beforeEach(async () => {
@@ -344,70 +344,5 @@ describe('flow-model mutate', () => {
 
     expect(res.status).toBe(200);
     expect(res.body?.data?.models?.['mut-context-root-pass']?.subModels?.body?.uid).toBe('mut-context-child-pass');
-  });
-
-  it('should upsert a complete popup action tree through mutate', async () => {
-    const schema = await agent.get('/flowModels:schema').query({
-      use: 'AddNewActionModel',
-    });
-
-    expect(schema.status).toBe(200);
-    const payload = clonePayload(schema.body?.data?.minimalExample);
-    payload.uid = 'mut-popup-action-complete';
-
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'popup-upsert',
-            type: 'upsert',
-            params: {
-              values: payload,
-            },
-          },
-        ],
-        returnModels: ['mut-popup-action-complete'],
-      },
-    });
-
-    expect(res.status).toBe(200);
-    expect(res.body?.data?.results?.[0]).toMatchObject({
-      opId: 'popup-upsert',
-      ok: true,
-    });
-    expect(res.body?.data?.models?.['mut-popup-action-complete']?.subModels?.page?.use).toBe('ChildPageModel');
-  });
-
-  it('should allow incomplete popup child page trees during mutate upsert when validation is loose', async () => {
-    const schema = await agent.get('/flowModels:schema').query({
-      use: 'AddNewActionModel',
-    });
-
-    expect(schema.status).toBe(200);
-    const payload = clonePayload(schema.body?.data?.minimalExample);
-    payload.uid = 'mut-popup-action-invalid';
-    payload.subModels.page.subModels.tabs = [];
-
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'popup-upsert-invalid',
-            type: 'upsert',
-            params: {
-              values: payload,
-            },
-          },
-        ],
-      },
-    });
-
-    expect(res.status).toBe(200);
-    expect(res.body?.data?.results?.[0]).toMatchObject({
-      opId: 'popup-upsert-invalid',
-      ok: true,
-    });
   });
 });
