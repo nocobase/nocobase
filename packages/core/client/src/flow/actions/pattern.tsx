@@ -45,12 +45,13 @@ export const pattern = defineAction({
     return ctx.model.collectionField.inputable === false;
   },
   defaultParams: (ctx) => {
+    const collectionField = ctx.model.collectionField;
     return {
       pattern:
-        ctx.model.collectionField.inputable === false ||
+        collectionField?.inputable === false ||
         ctx.model.context.parentDisabled ||
         ctx.model.props.disabled ||
-        ctx.model.collectionField.readonly
+        collectionField?.readonly
           ? 'disabled'
           : 'editable',
     };

@@ -434,7 +434,7 @@ TableColumnModel.registerFlow({
       title: tExpr('Enable quick edit'),
       uiMode: { type: 'switch', key: 'editable' },
       defaultParams(ctx) {
-        if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
+        if (ctx.model.collectionField?.readonly || ctx.model.associationPathName || !ctx.model.collectionField) {
           return {
             editable: false,
           };
@@ -517,7 +517,7 @@ TableColumnModel.registerFlow({
         ctx.model.setProps(targetCollectionField.getComponentProps());
       },
       defaultParams: (ctx: any) => {
-        const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        const titleField = ctx.model.context.collectionField?.targetCollectionTitleFieldName;
         return {
           label: ctx.model.props.titleField || titleField,
         };

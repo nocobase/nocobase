@@ -769,10 +769,10 @@ RecordSelectFieldModel.registerFlow({
         );
       },
       defaultParams(ctx) {
+        const collectionField = ctx.collectionField || ctx.model.context.collectionField;
         return {
           allowMultiple:
-            ctx.collectionField &&
-            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
+            !!collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type),
         };
       },
       handler(ctx, params) {

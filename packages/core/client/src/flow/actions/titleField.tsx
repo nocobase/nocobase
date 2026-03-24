@@ -14,7 +14,7 @@ export const titleField = defineAction({
   name: 'titleField',
   title: tExpr('Title field'),
   uiMode: (ctx) => {
-    const targetCollection = ctx.collectionField.targetCollection;
+    const targetCollection = ctx.collectionField?.targetCollection;
     const dataSourceManager = ctx.app.dataSourceManager;
     const targetFields = targetCollection?.getFields?.() ?? [];
     const options = targetFields
@@ -32,7 +32,7 @@ export const titleField = defineAction({
     };
   },
   defaultParams: (ctx: any) => {
-    const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+    const titleField = ctx.model.context.collectionField?.targetCollectionTitleFieldName;
     return {
       label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };

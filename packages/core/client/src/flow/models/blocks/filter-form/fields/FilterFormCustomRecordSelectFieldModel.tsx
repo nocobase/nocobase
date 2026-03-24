@@ -480,6 +480,7 @@ FilterFormCustomRecordSelectFieldModel.registerFlow({
         );
       },
       defaultParams(ctx) {
+        const collectionField = ctx.collectionField || ctx.model.context.collectionField;
         if (typeof ctx.model.props.allowMultiple === 'boolean') {
           return {
             allowMultiple: ctx.model.props.allowMultiple,
@@ -487,8 +488,7 @@ FilterFormCustomRecordSelectFieldModel.registerFlow({
         }
         return {
           allowMultiple:
-            ctx.collectionField &&
-            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
+            !!collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(collectionField.type),
         };
       },
       handler(ctx, params) {
