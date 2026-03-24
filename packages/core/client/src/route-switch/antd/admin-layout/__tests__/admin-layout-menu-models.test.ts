@@ -111,7 +111,7 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     const result = await resolveAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: 'https://www.nocobase.com/docs?role={{ ctx.role }}',
       params: [
         { name: 'userId', value: '{{ ctx.user.id }}' },
@@ -130,7 +130,7 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     const result = await resolveAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: 'https://www.nocobase.com/docs',
       params: [
         { name: 'userId', value: '{{ $user.id }}' },
@@ -146,7 +146,7 @@ describe('AdminLayoutModel menu items', () => {
 
   it('should keep falsy values except null and undefined in query params', async () => {
     const result = await resolveAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: 'https://www.nocobase.com/docs',
       params: [
         { name: 'zero', value: 0 },
@@ -166,7 +166,7 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     const result = await resolveAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: '/admin#/?tab=1',
       params: [{ name: 'role', value: '{{ ctx.role }}' }],
     });
@@ -417,8 +417,14 @@ describe('AdminLayoutModel menu items', () => {
       'FlowSettingsVariableTextArea',
     );
     expect(schema?.params?.items?.properties?.space?.properties?.value?.['x-component-props']).toMatchObject({
+      rows: 1,
+      maxRows: 1,
       useTypedConstant: true,
       changeOnSelect: true,
+    });
+    expect(schema?.href?.['x-component-props']).toMatchObject({
+      rows: 1,
+      maxRows: 1,
     });
   });
 
@@ -992,7 +998,7 @@ describe('AdminLayoutModel menu items', () => {
 
   it('should use parsed url for same-window link navigation', async () => {
     await openAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: 'https://www.nocobase.com/docs',
       params: [{ name: 'from', value: 'admin' }],
       openInNewWindow: false,
@@ -1007,7 +1013,7 @@ describe('AdminLayoutModel menu items', () => {
 
   it('should open parsed link url with noopener and noreferrer', async () => {
     await openAdminLayoutMenuLink({
-      context: engine.context,
+      context: engine.context as any,
       href: 'https://www.nocobase.com/docs',
       params: [{ name: 'from', value: 'admin' }],
       openInNewWindow: true,

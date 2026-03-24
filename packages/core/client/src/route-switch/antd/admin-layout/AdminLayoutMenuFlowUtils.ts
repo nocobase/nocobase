@@ -26,6 +26,10 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
     type: 'string',
     'x-decorator': 'FormItem',
     'x-component': 'FlowSettingsVariableTextArea',
+    'x-component-props': {
+      rows: 1,
+      maxRows: 1,
+    },
     description: t('Do not concatenate search params in the URL'),
   },
   params: {
@@ -54,6 +58,8 @@ const buildLinkSettingSchema = (t: (title: any) => any) => ({
               'x-component': 'FlowSettingsVariableTextArea',
               'x-component-props': {
                 placeholder: t('Value'),
+                rows: 1,
+                maxRows: 1,
                 useTypedConstant: true,
                 changeOnSelect: true,
               },
