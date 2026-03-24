@@ -27,7 +27,13 @@ export const flowSchemaContribution: FlowSchemaContribution = {
   fieldBindingContexts: coreFieldBindingContextContributions,
   fieldBindings: coreFieldBindingContributions,
   inventory: {
-    publicTreeRoots: Array.from(new Set(publicBlockRootUses)).sort(),
+    slotUseExpansions: [
+      {
+        parentUse: 'BlockGridModel',
+        slotKey: 'items',
+        uses: Array.from(new Set(publicBlockRootUses)).sort(),
+      },
+    ],
   },
   defaults: {
     source: 'official',

@@ -236,8 +236,14 @@ export interface FlowSchemaContributionDefaults {
   strict?: boolean;
 }
 
+export interface FlowSchemaSlotUseExpansion {
+  parentUse: string;
+  slotKey: string;
+  uses: string[];
+}
+
 export interface FlowSchemaInventoryContribution {
-  publicTreeRoots?: string[];
+  slotUseExpansions?: FlowSchemaSlotUseExpansion[];
 }
 
 export interface FlowFieldBindingConditions {

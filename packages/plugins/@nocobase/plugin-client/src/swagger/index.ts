@@ -117,10 +117,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  type: 'array',
-                  items: { $ref: '#/components/schemas/DesktopRoute' },
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedDesktopRouteListResponse' },
               },
             },
           },
@@ -141,9 +138,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  anyOf: [{ $ref: '#/components/schemas/DesktopRoute' }, { type: 'null' }],
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedNullableDesktopRouteResponse' },
               },
             },
           },
@@ -169,7 +164,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/DesktopRoute' },
+                schema: { $ref: '#/components/schemas/DataWrappedDesktopRouteResponse' },
               },
             },
           },
@@ -198,7 +193,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/DesktopRoute' },
+                schema: { $ref: '#/components/schemas/DataWrappedDesktopRouteResponse' },
               },
             },
           },
@@ -224,15 +219,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  anyOf: [
-                    { $ref: '#/components/schemas/DesktopRoute' },
-                    {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/DesktopRoute' },
-                    },
-                  ],
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedDesktopRouteOrListResponse' },
               },
             },
           },
@@ -302,7 +289,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/DesktopRouteCreateV2Response' },
+                schema: { $ref: '#/components/schemas/DataWrappedDesktopRouteCreateV2Response' },
               },
             },
           },
@@ -350,7 +337,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/OkResponse' },
+                schema: { $ref: '#/components/schemas/DataWrappedOkResponse' },
               },
             },
           },
@@ -506,6 +493,61 @@ export default {
             type: 'array',
             items: { $ref: '#/components/schemas/ErrorItem' },
           },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedDesktopRouteListResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/DesktopRoute' },
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedNullableDesktopRouteResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            anyOf: [{ $ref: '#/components/schemas/DesktopRoute' }, { type: 'null' }],
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedDesktopRouteResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/DesktopRoute' },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedDesktopRouteOrListResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            anyOf: [
+              { $ref: '#/components/schemas/DesktopRoute' },
+              {
+                type: 'array',
+                items: { $ref: '#/components/schemas/DesktopRoute' },
+              },
+            ],
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedDesktopRouteCreateV2Response: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/DesktopRouteCreateV2Response' },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedOkResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/OkResponse' },
         },
         additionalProperties: true,
       },

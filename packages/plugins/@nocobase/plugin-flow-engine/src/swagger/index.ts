@@ -49,9 +49,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  anyOf: [{ $ref: '#/components/schemas/FlowModelSnapshot' }, { type: 'null' }],
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedNullableFlowModelSnapshotResponse' },
               },
             },
           },
@@ -77,7 +75,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSchemaDocumentResponse' },
               },
             },
           },
@@ -110,10 +108,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  type: 'array',
-                  items: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSchemaDocumentListResponse' },
               },
             },
           },
@@ -138,7 +133,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/FlowModelSchemaBundleDocument' },
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSchemaBundleDocumentResponse' },
               },
             },
           },
@@ -183,9 +178,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: {
-                  oneOf: [{ $ref: '#/components/schemas/FlowModelSnapshot' }, { type: 'string' }],
-                },
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSnapshotOrUidResponse' },
               },
             },
           },
@@ -232,7 +225,11 @@ export default {
         responses: {
           200: {
             description: 'OK',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/FlowModelSnapshot' } } },
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSnapshotResponse' },
+              },
+            },
           },
         },
       },
@@ -315,7 +312,7 @@ export default {
             description: 'OK',
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/FlowModelSnapshot' },
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelSnapshotResponse' },
               },
             },
           },
@@ -387,7 +384,11 @@ export default {
         responses: {
           200: {
             description: 'OK',
-            content: { 'application/json': { schema: { $ref: '#/components/schemas/FlowModelsMutateResponse' } } },
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/DataWrappedFlowModelsMutateResponse' },
+              },
+            },
           },
           400: {
             description: 'Bad Request',
@@ -437,6 +438,62 @@ export default {
         required: ['errors'],
         properties: {
           errors: { type: 'array', items: { $ref: '#/components/schemas/ErrorItem' } },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedNullableFlowModelSnapshotResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            anyOf: [{ $ref: '#/components/schemas/FlowModelSnapshot' }, { type: 'null' }],
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelSchemaDocumentResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelSchemaDocumentListResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/FlowModelSchemaDocument' },
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelSchemaBundleDocumentResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/FlowModelSchemaBundleDocument' },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelSnapshotOrUidResponse: {
+        type: 'object',
+        properties: {
+          data: {
+            oneOf: [{ $ref: '#/components/schemas/FlowModelSnapshot' }, { type: 'string' }],
+          },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelSnapshotResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/FlowModelSnapshot' },
+        },
+        additionalProperties: true,
+      },
+      DataWrappedFlowModelsMutateResponse: {
+        type: 'object',
+        properties: {
+          data: { $ref: '#/components/schemas/FlowModelsMutateResponse' },
         },
         additionalProperties: true,
       },

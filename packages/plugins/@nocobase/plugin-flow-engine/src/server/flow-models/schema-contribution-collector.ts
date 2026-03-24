@@ -143,16 +143,32 @@ function normalizeInventoryContribution(
     return undefined;
   }
 
-  const publicTreeRoots = Array.isArray(inventory.publicTreeRoots)
-    ? inventory.publicTreeRoots.map((item) => String(item || '').trim()).filter(Boolean)
+  const slotUseExpansions = Array.isArray(inventory.slotUseExpansions)
+    ? inventory.slotUseExpansions
+        .map((item) => {
+          const parentUse = String(item?.parentUse || '').trim();
+          const slotKey = String(item?.slotKey || '').trim();
+          const uses = Array.isArray(item?.uses)
+            ? _.uniq(item.uses.map((use) => String(use || '').trim()).filter(Boolean))
+            : [];
+          if (!parentUse || !slotKey || uses.length === 0) {
+            return undefined;
+          }
+          return {
+            parentUse,
+            slotKey,
+            uses,
+          };
+        })
+        .filter(Boolean)
     : [];
 
-  if (!publicTreeRoots.length) {
+  if (!slotUseExpansions.length) {
     return undefined;
   }
 
   return {
-    ...(publicTreeRoots.length ? { publicTreeRoots: _.uniq(publicTreeRoots) } : {}),
+    slotUseExpansions,
   };
 }
 

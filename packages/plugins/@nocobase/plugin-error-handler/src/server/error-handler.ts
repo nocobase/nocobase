@@ -26,38 +26,13 @@ export class ErrorHandler {
       message += `: ${err.cause.message}`;
     }
 
-    const errorData: {
-      message: string;
-      code: string;
-      title?: string;
-      details?: any;
-      opId?: string;
-      opIndex?: number;
-    } = {
+    const errorData: { message: string; code: string; title?: string } = {
       message,
       code: err.code,
     };
 
     if (err?.title) {
       errorData.title = err.title;
-    }
-
-    if (typeof err?.details !== 'undefined') {
-      errorData.details = err.details;
-    }
-    const opId =
-      typeof err?.opId === 'string' ? err.opId : typeof err?.details?.opId === 'string' ? err.details.opId : undefined;
-    if (opId) {
-      errorData.opId = opId;
-    }
-    const opIndex =
-      typeof err?.opIndex === 'number'
-        ? err.opIndex
-        : typeof err?.details?.opIndex === 'number'
-          ? err.details.opIndex
-          : undefined;
-    if (typeof opIndex === 'number') {
-      errorData.opIndex = opIndex;
     }
     ctx.body = {
       errors: [errorData],

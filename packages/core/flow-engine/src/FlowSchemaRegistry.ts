@@ -8,11 +8,9 @@
  */
 
 import _ from 'lodash';
-import type { ISchema } from '@formily/json-schema';
 import type {
   ActionDefinition,
   FlowActionSchemaContribution,
-  FlowFieldBindingConditions,
   FlowFieldBindingContextContribution,
   FlowFieldBindingContribution,
   FlowFieldModelCompatibility,
@@ -20,7 +18,6 @@ import type {
   FlowSchemaBundleNode,
   FlowSchemaBundleSlotCatalog,
   FlowSchemaContextEdge,
-  FlowDescendantSchemaPatch,
   FlowSchemaDocs,
   FlowDynamicHint,
   FlowSchemaInventoryContribution,
@@ -33,11 +30,39 @@ import type {
   FlowSchemaDocument,
   FlowModelSchemaExposure,
   FlowSchemaPublicDocument,
-  FlowSubModelContextPathStep,
   FlowSubModelSlotSchema,
   ModelConstructor,
   StepDefinition,
 } from './types';
+import {
+  buildFieldModelCompatibility,
+  matchesFieldBinding,
+  normalizeFieldBindingContextContribution,
+  normalizeFieldBindingContribution,
+  type RegisteredFieldBinding,
+  type RegisteredFieldBindingContext,
+} from './flow-schema-registry/fieldBinding';
+import {
+  applyModelSchemaPatch,
+  matchesDescendantSchemaPatch,
+  normalizeSubModelSlots,
+  resolveChildSchemaPatch,
+} from './flow-schema-registry/modelPatches';
+import { inferParamsSchemaFromUiSchema, type StepSchemaResolution } from './flow-schema-registry/schemaInference';
+import {
+  JSON_SCHEMA_DRAFT_07,
+  buildSkeletonFromSchema,
+  collectAllowedUses,
+  createFlowHint,
+  deepFreezePlainGraph,
+  hashString,
+  mergeSchemas,
+  normalizeSchemaDocs,
+  normalizeSchemaHints,
+  normalizeStringArray,
+  stableStringify,
+  toSchemaTitle,
+} from './flow-schema-registry/utils';
 
 export type RegisteredActionSchema = {
   name: string;
@@ -68,733 +93,11 @@ export type RegisteredModelSchema = {
   suggestedUses: string[];
 };
 
-type StepSchemaResolution = {
-  schema?: FlowJsonSchema;
-  hints: FlowDynamicHint[];
-  coverage: FlowSchemaCoverage['status'];
-};
-
 type ModelPatchContribution = {
   patch: FlowModelSchemaPatch;
   source: FlowSchemaCoverage['source'];
   strict?: boolean;
 };
-
-type UiSchemaLike =
-  | Record<string, ISchema>
-  | ((...args: any[]) => Record<string, ISchema> | Promise<Record<string, ISchema>>)
-  | undefined;
-
-type RegisteredFieldBindingContext = {
-  name: string;
-  inherits: string[];
-};
-
-type RegisteredFieldBinding = {
-  context: string;
-  use: string;
-  interfaces: string[];
-  isDefault: boolean;
-  order?: number;
-  conditions?: FlowFieldBindingConditions;
-  defaultProps?: any;
-  source: FlowSchemaCoverage['source'];
-};
-
-const JSON_SCHEMA_DRAFT_07 = 'http://json-schema.org/draft-07/schema#';
-
-function stableStringify(input: any): string {
-  if (Array.isArray(input)) {
-    return `[${input.map((item) => stableStringify(item)).join(',')}]`;
-  }
-  if (_.isPlainObject(input)) {
-    const entries = Object.entries(input)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`);
-    return `{${entries.join(',')}}`;
-  }
-  return JSON.stringify(input) ?? 'null';
-}
-
-function deepFreezePlainGraph<T>(input: T, seen = new WeakSet<object>()): T {
-  if (Array.isArray(input)) {
-    if (seen.has(input)) {
-      return input;
-    }
-    seen.add(input);
-    for (const item of input) {
-      deepFreezePlainGraph(item, seen);
-    }
-    return Object.freeze(input);
-  }
-
-  if (!_.isPlainObject(input)) {
-    return input;
-  }
-
-  const objectValue = input as Record<string, any>;
-  if (seen.has(objectValue)) {
-    return input;
-  }
-
-  seen.add(objectValue);
-  for (const value of Object.values(objectValue)) {
-    deepFreezePlainGraph(value, seen);
-  }
-  return Object.freeze(objectValue) as T;
-}
-
-function hashString(input: string): string {
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash.toString(16).padStart(8, '0');
-}
-
-function deepMergeReplaceArrays<T>(base: T, patch: any): T {
-  if (typeof patch === 'undefined') {
-    return _.cloneDeep(base);
-  }
-  if (typeof base === 'undefined') {
-    return _.cloneDeep(patch);
-  }
-  return _.mergeWith({}, _.cloneDeep(base), _.cloneDeep(patch), (objValue, srcValue) => {
-    if (Array.isArray(srcValue)) {
-      return _.cloneDeep(srcValue);
-    }
-    return undefined;
-  });
-}
-
-function mergeSchemas(base?: FlowJsonSchema, patch?: FlowJsonSchema): FlowJsonSchema | undefined {
-  if (!base && !patch) return undefined;
-  if (!base) return _.cloneDeep(patch);
-  if (!patch) return _.cloneDeep(base);
-  return deepMergeReplaceArrays(base, patch);
-}
-
-function normalizeFlowHintMetadata(metadata?: FlowDynamicHint['x-flow']): FlowDynamicHint['x-flow'] | undefined {
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    return undefined;
-  }
-
-  const slotRules =
-    metadata.slotRules && typeof metadata.slotRules === 'object' && !Array.isArray(metadata.slotRules)
-      ? _.pickBy(
-          {
-            slotKey: metadata.slotRules.slotKey,
-            type: metadata.slotRules.type,
-            allowedUses: Array.isArray(metadata.slotRules.allowedUses)
-              ? metadata.slotRules.allowedUses.filter(Boolean)
-              : metadata.slotRules.allowedUses,
-          },
-          (value) => value !== undefined,
-        )
-      : undefined;
-
-  const normalized = _.pickBy(
-    {
-      slotRules: slotRules && Object.keys(slotRules).length > 0 ? slotRules : undefined,
-      contextRequirements: Array.isArray(metadata.contextRequirements)
-        ? metadata.contextRequirements.filter(Boolean)
-        : metadata.contextRequirements,
-      unresolvedReason: metadata.unresolvedReason,
-      recommendedFallback: metadata.recommendedFallback,
-    },
-    (value) => value !== undefined,
-  ) as FlowDynamicHint['x-flow'];
-
-  return Object.keys(normalized).length > 0 ? normalized : undefined;
-}
-
-function normalizeFlowHint(hint: FlowDynamicHint): FlowDynamicHint {
-  const normalizedHint = { ...hint };
-  const flowMetadata = normalizeFlowHintMetadata(hint['x-flow']);
-  if (flowMetadata) {
-    normalizedHint['x-flow'] = flowMetadata;
-  } else {
-    delete normalizedHint['x-flow'];
-  }
-  return normalizedHint;
-}
-
-function normalizeSchemaHints(hints?: FlowDynamicHint[]): FlowDynamicHint[] {
-  return Array.isArray(hints)
-    ? _.uniqBy(
-        hints.map((item) => normalizeFlowHint(item)),
-        (item) => `${item.kind}:${item.path || ''}:${item.message}`,
-      )
-    : [];
-}
-
-function normalizeSchemaDocs(docs?: FlowSchemaDocs): FlowSchemaDocs {
-  return {
-    description: docs?.description,
-    examples: Array.isArray(docs?.examples) ? _.cloneDeep(docs?.examples) : [],
-    minimalExample: docs?.minimalExample === undefined ? undefined : _.cloneDeep(docs.minimalExample),
-    commonPatterns: Array.isArray(docs?.commonPatterns) ? _.cloneDeep(docs?.commonPatterns) : [],
-    antiPatterns: Array.isArray(docs?.antiPatterns) ? _.cloneDeep(docs?.antiPatterns) : [],
-    dynamicHints: normalizeSchemaHints(docs?.dynamicHints),
-  };
-}
-
-function normalizeStringArray(values?: string[]): string[] {
-  if (!Array.isArray(values)) {
-    return [];
-  }
-  return _.uniq(values.map((item) => String(item || '').trim()).filter(Boolean));
-}
-
-function normalizeFieldBindingConditions(
-  conditions?: FlowFieldBindingConditions,
-): FlowFieldBindingConditions | undefined {
-  if (!conditions || typeof conditions !== 'object' || Array.isArray(conditions)) {
-    return undefined;
-  }
-
-  const normalized = _.pickBy(
-    {
-      association: typeof conditions.association === 'boolean' ? conditions.association : undefined,
-      fieldTypes: normalizeStringArray(conditions.fieldTypes),
-      targetCollectionTemplateIn: normalizeStringArray(conditions.targetCollectionTemplateIn),
-      targetCollectionTemplateNotIn: normalizeStringArray(conditions.targetCollectionTemplateNotIn),
-    },
-    (value) => {
-      if (Array.isArray(value)) {
-        return value.length > 0;
-      }
-      return value !== undefined;
-    },
-  ) as FlowFieldBindingConditions;
-
-  return Object.keys(normalized).length > 0 ? normalized : undefined;
-}
-
-function normalizeFieldBindingContextContribution(
-  contribution?: FlowFieldBindingContextContribution,
-  fallbackName?: string,
-): RegisteredFieldBindingContext | undefined {
-  const name = String(contribution?.name || fallbackName || '').trim();
-  if (!name) {
-    return undefined;
-  }
-
-  return {
-    name,
-    inherits: normalizeStringArray(contribution?.inherits),
-  };
-}
-
-function normalizeFieldBindingContribution(
-  contribution?: FlowFieldBindingContribution,
-  source: FlowSchemaCoverage['source'] = 'official',
-): RegisteredFieldBinding | undefined {
-  const context = String(contribution?.context || '').trim();
-  const use = String(contribution?.use || '').trim();
-  const interfaces = normalizeStringArray(contribution?.interfaces);
-  if (!context || !use || interfaces.length === 0) {
-    return undefined;
-  }
-
-  return {
-    context,
-    use,
-    interfaces,
-    isDefault: contribution?.isDefault === true,
-    order: typeof contribution?.order === 'number' ? contribution.order : undefined,
-    conditions: normalizeFieldBindingConditions(contribution?.conditions),
-    defaultProps: contribution?.defaultProps === undefined ? undefined : _.cloneDeep(contribution.defaultProps),
-    source,
-  };
-}
-
-function normalizeSubModelContextPath(path?: FlowSubModelContextPathStep[]): FlowSubModelContextPathStep[] {
-  if (!Array.isArray(path)) {
-    return [];
-  }
-  return path
-    .map((step) => ({
-      slotKey: String(step?.slotKey || '').trim(),
-      ...(typeof step?.use === 'string'
-        ? { use: step.use.trim() }
-        : Array.isArray(step?.use)
-          ? { use: step.use.map((item) => String(item || '').trim()).filter(Boolean) }
-          : {}),
-    }))
-    .filter((step) => !!step.slotKey);
-}
-
-function normalizeModelSchemaPatch(patch?: FlowModelSchemaPatch): FlowModelSchemaPatch | undefined {
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
-    return undefined;
-  }
-
-  const normalizedDynamicHints = Array.isArray(patch.dynamicHints)
-    ? normalizeSchemaHints(patch.dynamicHints)
-    : undefined;
-
-  const normalized = _.pickBy(
-    {
-      stepParamsSchema: patch.stepParamsSchema ? _.cloneDeep(patch.stepParamsSchema) : undefined,
-      flowRegistrySchema: patch.flowRegistrySchema ? _.cloneDeep(patch.flowRegistrySchema) : undefined,
-      flowRegistrySchemaPatch: patch.flowRegistrySchemaPatch ? _.cloneDeep(patch.flowRegistrySchemaPatch) : undefined,
-      subModelSlots: normalizeSubModelSlots(patch.subModelSlots),
-      docs: patch.docs ? normalizeSchemaDocs(patch.docs) : undefined,
-      examples: Array.isArray(patch.examples) ? _.cloneDeep(patch.examples) : undefined,
-      skeleton: patch.skeleton === undefined ? undefined : _.cloneDeep(patch.skeleton),
-      dynamicHints: normalizedDynamicHints,
-    },
-    (value) => value !== undefined && (!Array.isArray(value) || value.length > 0),
-  ) as FlowModelSchemaPatch;
-
-  return Object.keys(normalized).length > 0 ? normalized : undefined;
-}
-
-function normalizeDescendantSchemaPatches(
-  patches?: FlowDescendantSchemaPatch[],
-): FlowDescendantSchemaPatch[] | undefined {
-  if (!Array.isArray(patches)) {
-    return undefined;
-  }
-
-  const normalized = patches
-    .map((item) => {
-      const path = normalizeSubModelContextPath(item?.path);
-      const patch = normalizeModelSchemaPatch(item?.patch);
-      if (!patch) {
-        return undefined;
-      }
-      return { path, patch };
-    })
-    .filter(Boolean) as FlowDescendantSchemaPatch[];
-
-  return normalized.length > 0 ? normalized : undefined;
-}
-
-function normalizeChildSchemaPatch(
-  patch?: FlowSubModelSlotSchema['childSchemaPatch'],
-): FlowSubModelSlotSchema['childSchemaPatch'] | undefined {
-  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
-    return undefined;
-  }
-
-  const directPatch = normalizeModelSchemaPatch(patch as FlowModelSchemaPatch);
-  if (directPatch) {
-    return directPatch;
-  }
-
-  const entries = Object.entries(patch as Record<string, FlowModelSchemaPatch>)
-    .map(([childUse, childPatch]) => [String(childUse || '').trim(), normalizeModelSchemaPatch(childPatch)] as const)
-    .filter(([childUse, childPatch]) => !!childUse && !!childPatch);
-
-  if (!entries.length) {
-    return undefined;
-  }
-
-  return Object.fromEntries(entries);
-}
-
-function normalizeSubModelSlots(
-  slots?: Record<string, FlowSubModelSlotSchema>,
-): Record<string, FlowSubModelSlotSchema> | undefined {
-  if (!slots || typeof slots !== 'object' || Array.isArray(slots)) {
-    return undefined;
-  }
-
-  const normalizedEntries = Object.entries(slots)
-    .map(([slotKey, slot]) => {
-      const normalizedType = slot?.type;
-      if (!normalizedType) {
-        return undefined;
-      }
-
-      const normalizedSlot: FlowSubModelSlotSchema = {
-        type: normalizedType,
-      };
-
-      const normalizedUse = typeof slot?.use === 'string' ? slot.use.trim() : undefined;
-      if (normalizedUse) {
-        normalizedSlot.use = normalizedUse;
-      }
-
-      const normalizedUses = Array.isArray(slot?.uses)
-        ? slot.uses.map((item) => String(item || '').trim()).filter(Boolean)
-        : undefined;
-      if (normalizedUses?.length) {
-        normalizedSlot.uses = normalizedUses;
-      }
-
-      if (slot?.required !== undefined) {
-        normalizedSlot.required = slot.required;
-      }
-
-      if (slot?.type === 'array' && typeof slot?.minItems === 'number' && Number.isFinite(slot.minItems)) {
-        normalizedSlot.minItems = Math.max(0, Math.trunc(slot.minItems));
-      }
-
-      if (slot?.dynamic !== undefined) {
-        normalizedSlot.dynamic = slot.dynamic;
-      }
-
-      if (slot?.schema) {
-        normalizedSlot.schema = _.cloneDeep(slot.schema);
-      }
-
-      if (typeof slot?.fieldBindingContext === 'string' && slot.fieldBindingContext.trim()) {
-        normalizedSlot.fieldBindingContext = slot.fieldBindingContext.trim();
-      }
-
-      const childSchemaPatch = normalizeChildSchemaPatch(slot?.childSchemaPatch);
-      if (childSchemaPatch) {
-        normalizedSlot.childSchemaPatch = childSchemaPatch;
-      }
-
-      const descendantSchemaPatches = normalizeDescendantSchemaPatches(slot?.descendantSchemaPatches);
-      if (descendantSchemaPatches?.length) {
-        normalizedSlot.descendantSchemaPatches = descendantSchemaPatches;
-      }
-
-      if (slot?.description !== undefined) {
-        normalizedSlot.description = slot.description;
-      }
-
-      return [slotKey, normalizedSlot] as const;
-    })
-    .filter(Boolean) as Array<readonly [string, FlowSubModelSlotSchema]>;
-
-  return normalizedEntries.length > 0 ? Object.fromEntries(normalizedEntries) : undefined;
-}
-
-function createFlowHint(hint: FlowDynamicHint, metadata?: FlowDynamicHint['x-flow']): FlowDynamicHint {
-  const result = { ...hint };
-  const flowMetadata = normalizeFlowHintMetadata({
-    ...(hint['x-flow'] || {}),
-    ...(metadata || {}),
-  });
-  if (flowMetadata) {
-    result['x-flow'] = flowMetadata;
-  } else {
-    delete result['x-flow'];
-  }
-  return result;
-}
-
-function collectAllowedUses(slot?: FlowSubModelSlotSchema): string[] {
-  if (!slot) return [];
-  if (Array.isArray(slot.uses)) {
-    return slot.uses.filter(Boolean);
-  }
-  return slot.use ? [slot.use] : [];
-}
-
-function buildSkeletonFromSchema(
-  schema?: FlowJsonSchema,
-  options: {
-    propertyName?: string;
-    depth?: number;
-  } = {},
-): any {
-  if (!schema) return undefined;
-  if (schema.default !== undefined) return _.cloneDeep(schema.default);
-  if (schema.const !== undefined) return _.cloneDeep(schema.const);
-  if (Array.isArray(schema.enum) && schema.enum.length > 0) return _.cloneDeep(schema.enum[0]);
-
-  const depth = options.depth || 0;
-  if (depth > 4) {
-    return undefined;
-  }
-
-  const type = Array.isArray(schema.type) ? schema.type[0] : schema.type;
-  if (type === 'object' || (!type && _.isPlainObject(schema.properties))) {
-    const result: Record<string, any> = {};
-    const properties = (schema.properties || {}) as Record<string, FlowJsonSchema>;
-    const required = new Set<string>(schema.required || []);
-    for (const [key, value] of Object.entries(properties)) {
-      const child = buildSkeletonFromSchema(value, {
-        propertyName: key,
-        depth: depth + 1,
-      });
-      const includeOptionalTopLevelShell =
-        depth === 0 &&
-        ['stepParams', 'subModels', 'flowRegistry'].includes(key) &&
-        child !== undefined &&
-        ((_.isPlainObject(child) && Object.keys(child).length > 0) || Array.isArray(child));
-      if (
-        !includeOptionalTopLevelShell &&
-        !required.has(key) &&
-        value.default === undefined &&
-        value.const === undefined
-      ) {
-        continue;
-      }
-      if (child !== undefined) {
-        result[key] = child;
-      }
-    }
-    return result;
-  }
-
-  if (type === 'array') {
-    return [];
-  }
-
-  if (type === 'boolean') {
-    return false;
-  }
-
-  if (type === 'integer' || type === 'number') {
-    return 0;
-  }
-
-  if (type === 'string') {
-    const propertyName = options.propertyName || 'value';
-    if (propertyName === 'uid') return 'todo-uid';
-    return '';
-  }
-
-  if (schema.oneOf?.length) {
-    return buildSkeletonFromSchema(schema.oneOf[0], {
-      propertyName: options.propertyName,
-      depth: depth + 1,
-    });
-  }
-
-  if (schema.anyOf?.length) {
-    return buildSkeletonFromSchema(schema.anyOf[0], {
-      propertyName: options.propertyName,
-      depth: depth + 1,
-    });
-  }
-
-  return undefined;
-}
-
-function collectKeyEnums(
-  schema?: FlowJsonSchema,
-  path = '#',
-  bucket: Record<string, any[]> = {},
-  depth = 0,
-  limit = 24,
-): Record<string, any[]> {
-  if (!schema || depth > 3 || Object.keys(bucket).length >= limit) {
-    return bucket;
-  }
-
-  if (Array.isArray(schema.enum) && schema.enum.length) {
-    bucket[path] = _.cloneDeep(schema.enum);
-  } else if (schema.const !== undefined) {
-    bucket[path] = [_.cloneDeep(schema.const)];
-  }
-
-  if (_.isPlainObject(schema.properties)) {
-    for (const [key, child] of Object.entries(schema.properties as Record<string, FlowJsonSchema>)) {
-      collectKeyEnums(child, `${path}/properties/${key}`, bucket, depth + 1, limit);
-      if (Object.keys(bucket).length >= limit) break;
-    }
-  }
-
-  if (_.isPlainObject(schema.items)) {
-    collectKeyEnums(schema.items as FlowJsonSchema, `${path}/items`, bucket, depth + 1, limit);
-  }
-
-  if (Array.isArray(schema.oneOf)) {
-    schema.oneOf
-      .slice(0, 2)
-      .forEach((child, index) => collectKeyEnums(child, `${path}/oneOf/${index}`, bucket, depth + 1, limit));
-  }
-
-  return bucket;
-}
-
-function toSchemaTitle(input: any, fallback: string): string {
-  if (typeof input === 'string') {
-    return input;
-  }
-  if (typeof input === 'number' || typeof input === 'boolean') {
-    return String(input);
-  }
-  return fallback;
-}
-
-function inferSchemaFromUiSchemaValue(
-  name: string,
-  uiSchema: ISchema,
-  path: string,
-  hints: FlowDynamicHint[],
-): FlowJsonSchema {
-  if (!uiSchema || typeof uiSchema !== 'object' || Array.isArray(uiSchema)) {
-    return { type: 'object', additionalProperties: true };
-  }
-
-  const xComponent = (uiSchema as any)['x-component'];
-  if (typeof xComponent === 'function') {
-    hints.push(
-      createFlowHint(
-        {
-          kind: 'custom-component',
-          path,
-          message: `${name} uses a custom component and needs manual schema review.`,
-        },
-        {
-          unresolvedReason: 'function-x-component',
-          recommendedFallback: { type: 'object', additionalProperties: true },
-        },
-      ),
-    );
-  }
-
-  const reactions = (uiSchema as any)['x-reactions'];
-  if (
-    reactions &&
-    ((Array.isArray(reactions) && reactions.some((item) => typeof item === 'function')) ||
-      typeof reactions === 'function')
-  ) {
-    hints.push(
-      createFlowHint(
-        {
-          kind: 'x-reactions',
-          path,
-          message: `${name} contains function-based x-reactions and only static schema is generated.`,
-        },
-        {
-          unresolvedReason: 'function-x-reactions',
-        },
-      ),
-    );
-  }
-
-  const schema: FlowJsonSchema = {};
-  const type = (uiSchema as any).type;
-  if (type) {
-    schema.type = type;
-  }
-  if ((uiSchema as any).description) {
-    schema.description = (uiSchema as any).description;
-  }
-  if ((uiSchema as any).default !== undefined) {
-    schema.default = _.cloneDeep((uiSchema as any).default);
-  }
-  if ((uiSchema as any).enum) {
-    if (
-      Array.isArray((uiSchema as any).enum) &&
-      (uiSchema as any).enum.every((item) => _.isPlainObject(item) && 'value' in item)
-    ) {
-      schema.enum = (uiSchema as any).enum.map((item) => item.value);
-    } else {
-      schema.enum = _.cloneDeep((uiSchema as any).enum);
-    }
-  }
-  if ((uiSchema as any).const !== undefined) {
-    schema.const = _.cloneDeep((uiSchema as any).const);
-  }
-  if ((uiSchema as any).required === true) {
-    schema.__required = true;
-  }
-
-  const validator = (uiSchema as any)['x-validator'];
-  if (_.isPlainObject(validator)) {
-    if (validator.minimum !== undefined) schema.minimum = validator.minimum;
-    if (validator.maximum !== undefined) schema.maximum = validator.maximum;
-    if (validator.minLength !== undefined) schema.minLength = validator.minLength;
-    if (validator.maxLength !== undefined) schema.maxLength = validator.maxLength;
-    if (validator.pattern !== undefined) schema.pattern = validator.pattern;
-  } else if (Array.isArray(validator)) {
-    for (const item of validator) {
-      if (_.isPlainObject(item)) {
-        Object.assign(schema, _.pick(item, ['minimum', 'maximum', 'minLength', 'maxLength', 'pattern']));
-      }
-    }
-  } else if (typeof validator === 'string') {
-    if (validator === 'integer') schema.type = 'integer';
-    if (validator === 'email') schema.format = 'email';
-    if (validator === 'url') schema.format = 'uri';
-    if (validator === 'uid') schema.pattern = '^[A-Za-z0-9_-]+$';
-  }
-
-  if ((uiSchema as any).properties && _.isPlainObject((uiSchema as any).properties)) {
-    schema.type = schema.type || 'object';
-    schema.properties = {};
-    const required: string[] = [];
-    for (const [propName, propValue] of Object.entries((uiSchema as any).properties)) {
-      const childSchema = inferSchemaFromUiSchemaValue(propName, propValue as ISchema, `${path}.${propName}`, hints);
-      if ((childSchema as any).__required) {
-        required.push(propName);
-        delete (childSchema as any).__required;
-      }
-      (schema.properties as any)[propName] = childSchema;
-    }
-    if (required.length) schema.required = required;
-    schema.additionalProperties = false;
-  }
-
-  if ((uiSchema as any).items) {
-    schema.type = schema.type || 'array';
-    if (_.isPlainObject((uiSchema as any).items)) {
-      schema.items = inferSchemaFromUiSchemaValue(`${name}.items`, (uiSchema as any).items, `${path}.items`, hints);
-    } else if (Array.isArray((uiSchema as any).items)) {
-      schema.items = (uiSchema as any).items.map((item, index) =>
-        inferSchemaFromUiSchemaValue(`${name}.items[${index}]`, item, `${path}.items[${index}]`, hints),
-      );
-    }
-  }
-
-  if (!schema.type) {
-    schema.type = 'object';
-    schema.additionalProperties = true;
-  }
-
-  return schema;
-}
-
-function inferParamsSchemaFromUiSchema(name: string, uiSchema: UiSchemaLike, path: string): StepSchemaResolution {
-  const hints: FlowDynamicHint[] = [];
-  if (!uiSchema) {
-    return { schema: undefined, hints, coverage: 'unresolved' };
-  }
-  if (typeof uiSchema === 'function') {
-    hints.push(
-      createFlowHint(
-        {
-          kind: 'dynamic-ui-schema',
-          path,
-          message: `${name} uses function-based uiSchema and requires manual schema patch.`,
-        },
-        {
-          unresolvedReason: 'function-ui-schema',
-          recommendedFallback: { type: 'object', additionalProperties: true },
-        },
-      ),
-    );
-    return {
-      schema: { type: 'object', additionalProperties: true },
-      hints,
-      coverage: 'unresolved',
-    };
-  }
-
-  const properties: Record<string, any> = {};
-  const required: string[] = [];
-  for (const [key, value] of Object.entries(uiSchema || {})) {
-    const childSchema = inferSchemaFromUiSchemaValue(key, value, `${path}.${key}`, hints);
-    if ((childSchema as any).__required) {
-      required.push(key);
-      delete (childSchema as any).__required;
-    }
-    properties[key] = childSchema;
-  }
-
-  return {
-    schema: {
-      type: 'object',
-      properties,
-      ...(required.length ? { required } : {}),
-      additionalProperties: false,
-    },
-    hints,
-    coverage: hints.length ? 'mixed' : 'auto',
-  };
-}
 
 export class FlowSchemaRegistry {
   private readonly modelSchemas = new Map<string, RegisteredModelSchema>();
@@ -809,7 +112,7 @@ export class FlowSchemaRegistry {
   private readonly modelDocumentCache = new Map<string, FlowSchemaDocument>();
   private readonly modelLocalDynamicHintsCache = new Map<string, FlowDynamicHint[]>();
   private readonly publicModelDocumentCache = new Map<string, FlowSchemaPublicDocument>();
-  private readonly publicTreeRootInventory = new Set<string>();
+  private readonly slotUseExpansions = new Map<string, string[]>();
 
   private invalidateDerivedCaches() {
     this.resolvedModelCache.clear();
@@ -1036,6 +339,11 @@ export class FlowSchemaRegistry {
     if (!use) return;
 
     const previous = this.modelSchemas.get(use);
+    const hasSchemaContribution =
+      !!contribution.stepParamsSchema ||
+      !!contribution.flowRegistrySchema ||
+      !!contribution.flowRegistrySchemaPatch ||
+      !!contribution.subModelSlots;
     const docs = normalizeSchemaDocs({
       ...previous?.docs,
       ...contribution.docs,
@@ -1060,14 +368,17 @@ export class FlowSchemaRegistry {
       docs,
       skeleton: contribution.skeleton,
       dynamicHints: [...(contribution.dynamicHints || []), ...(docs.dynamicHints || [])],
-      coverage: {
-        status:
-          contribution.stepParamsSchema || contribution.flowRegistrySchema || contribution.subModelSlots
-            ? 'manual'
-            : 'unresolved',
-        source: contribution.source || 'official',
-        strict: contribution.strict,
-      },
+      coverage: hasSchemaContribution
+        ? {
+            status: previous?.coverage.status === 'auto' ? 'mixed' : 'manual',
+            source: contribution.source || previous?.coverage.source || 'official',
+            strict: contribution.strict ?? previous?.coverage.strict,
+          }
+        : previous?.coverage || {
+            status: 'unresolved',
+            source: contribution.source || 'official',
+            strict: contribution.strict,
+          },
       exposure: contribution.exposure,
       abstract: contribution.abstract,
       allowDirectUse: contribution.allowDirectUse,
@@ -1132,8 +443,16 @@ export class FlowSchemaRegistry {
       return;
     }
 
-    for (const use of normalizeStringArray(inventory.publicTreeRoots)) {
-      this.publicTreeRootInventory.add(use);
+    for (const item of inventory.slotUseExpansions || []) {
+      const parentUse = String(item?.parentUse || '').trim();
+      const slotKey = String(item?.slotKey || '').trim();
+      const uses = normalizeStringArray(item?.uses);
+      if (!parentUse || !slotKey || uses.length === 0) {
+        continue;
+      }
+
+      const key = this.createSlotUseExpansionKey(parentUse, slotKey);
+      this.slotUseExpansions.set(key, _.uniq([...(this.slotUseExpansions.get(key) || []), ...uses]));
     }
     this.invalidateDerivedCaches();
   }
@@ -1157,7 +476,7 @@ export class FlowSchemaRegistry {
     );
 
     const candidates = entries
-      .filter(({ binding }) => this.matchesFieldBinding(binding, options))
+      .filter(({ binding }) => matchesFieldBinding(binding, options))
       .filter(({ binding }) => this.hasQueryableModel(binding.use))
       .sort((a, b) => {
         if (a.binding.isDefault !== b.binding.isDefault) {
@@ -1179,7 +498,7 @@ export class FlowSchemaRegistry {
       .map(({ binding }) => ({
         use: binding.use,
         defaultProps: binding.defaultProps === undefined ? undefined : _.cloneDeep(binding.defaultProps),
-        compatibility: this.buildFieldModelCompatibility(binding),
+        compatibility: buildFieldModelCompatibility(binding),
       }));
 
     return _.uniqBy(candidates, (candidate) => `${candidate.use}:${stableStringify(candidate.compatibility)}`);
@@ -1216,80 +535,6 @@ export class FlowSchemaRegistry {
     }
 
     return chain;
-  }
-
-  private matchesFieldBinding(
-    binding: RegisteredFieldBinding,
-    options: {
-      interface?: string;
-      fieldType?: string;
-      association?: boolean;
-      targetCollectionTemplate?: string;
-    },
-  ) {
-    if (options.interface && !binding.interfaces.includes('*') && !binding.interfaces.includes(options.interface)) {
-      return false;
-    }
-
-    const conditions = binding.conditions;
-    if (!conditions) {
-      return true;
-    }
-
-    if (typeof conditions.association === 'boolean' && options.association !== undefined) {
-      if (conditions.association !== options.association) {
-        return false;
-      }
-    }
-
-    if (conditions.fieldTypes?.length && options.fieldType) {
-      if (!conditions.fieldTypes.includes(options.fieldType)) {
-        return false;
-      }
-    }
-
-    if (conditions.targetCollectionTemplateIn?.length && options.targetCollectionTemplate) {
-      if (!conditions.targetCollectionTemplateIn.includes(options.targetCollectionTemplate)) {
-        return false;
-      }
-    }
-
-    if (conditions.targetCollectionTemplateNotIn?.length && options.targetCollectionTemplate) {
-      if (conditions.targetCollectionTemplateNotIn.includes(options.targetCollectionTemplate)) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  private buildFieldModelCompatibility(binding: RegisteredFieldBinding): FlowFieldModelCompatibility {
-    const compatibility: FlowFieldModelCompatibility = {
-      context: binding.context,
-      interfaces: _.cloneDeep(binding.interfaces),
-      inheritParentFieldBinding: true,
-    };
-
-    if (binding.isDefault) {
-      compatibility.isDefault = true;
-    }
-    if (typeof binding.order === 'number') {
-      compatibility.order = binding.order;
-    }
-    if (typeof binding.conditions?.association === 'boolean') {
-      compatibility.association = binding.conditions.association;
-    }
-    if (binding.conditions?.fieldTypes?.length) {
-      compatibility.fieldTypes = _.cloneDeep(binding.conditions.fieldTypes);
-    }
-    if (binding.conditions?.targetCollectionTemplateIn?.length) {
-      compatibility.targetCollectionTemplateIn = _.cloneDeep(binding.conditions.targetCollectionTemplateIn);
-    }
-    if (binding.conditions?.targetCollectionTemplateNotIn?.length) {
-      compatibility.targetCollectionTemplateNotIn = _.cloneDeep(binding.conditions.targetCollectionTemplateNotIn);
-    }
-
-    return compatibility;
   }
 
   private resolveModelSchemaRef(use: string, contextChain: FlowSchemaContextEdge[] = []): RegisteredModelSchema {
