@@ -440,4 +440,82 @@ describe('ui templates and usages', () => {
     });
     expect(await countUsage({ modelUid: 'ref-mutate-copy' })).toBe(0);
   });
+
+  it('should remove usages when duplicate is destroyed in the same mutate request', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-mut-chain',
+        name: 'Template Mutate Chain',
+        targetUid: 'target-block',
+      },
+    });
+
+    const saveResp = await agent.resource('flowModels').save({
+      values: {
+        uid: 'ref-mutate-chain-source',
+        ...buildOptions('tpl-mut-chain'),
+      },
+    });
+    expect(saveResp.status).toBe(200);
+
+    const mutateResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'dup',
+            type: 'duplicate',
+            params: { uid: 'ref-mutate-chain-source', targetUid: 'ref-mutate-chain-copy' },
+          },
+          {
+            opId: 'destroy',
+            type: 'destroy',
+            params: { uid: 'ref-mutate-chain-copy' },
+          },
+        ],
+      },
+    });
+    expect(mutateResp.status).toBe(200);
+    expect(await countUsage({ modelUid: 'ref-mutate-chain-copy' })).toBe(0);
+  });
+
+  it('should remove usages when destroy uid is resolved from $ref', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-mut-ref',
+        name: 'Template Mutate Ref',
+        targetUid: 'target-block',
+      },
+    });
+
+    const saveResp = await agent.resource('flowModels').save({
+      values: {
+        uid: 'ref-mutate-ref-source',
+        ...buildOptions('tpl-mut-ref'),
+      },
+    });
+    expect(saveResp.status).toBe(200);
+
+    const mutateResp = await agent.resource('flowModels').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'dup',
+            type: 'duplicate',
+            params: { uid: 'ref-mutate-ref-source', targetUid: 'ref-mutate-ref-copy' },
+          },
+          {
+            opId: 'destroy',
+            type: 'destroy',
+            params: { uid: '$ref:dup.uid' },
+          },
+        ],
+      },
+    });
+    expect(mutateResp.status).toBe(200);
+    expect(await countUsage({ modelUid: 'ref-mutate-ref-copy' })).toBe(0);
+  });
 });

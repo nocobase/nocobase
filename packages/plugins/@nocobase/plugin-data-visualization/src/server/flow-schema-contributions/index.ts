@@ -33,6 +33,32 @@ const chartBlockModelSchemaContribution: FlowModelSchemaContribution = {
                   collectionPath: {
                     type: 'array',
                     items: { type: 'string' },
+                    minItems: 2,
+                    maxItems: 2,
+                  },
+                  measures: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        field: { type: 'string' },
+                        aggregation: { type: 'string' },
+                        alias: { type: 'string' },
+                      },
+                      additionalProperties: true,
+                    },
+                  },
+                  dimensions: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        field: { type: 'string' },
+                        alias: { type: 'string' },
+                        format: { type: 'string' },
+                      },
+                      additionalProperties: true,
+                    },
                   },
                   sqlDatasource: { type: 'string' },
                   sql: { type: 'string' },
@@ -84,10 +110,28 @@ const chartBlockModelSchemaContribution: FlowModelSchemaContribution = {
         configure: {
           query: {
             mode: 'builder',
+            collectionPath: ['main', 'orders'],
+            measures: [
+              {
+                field: 'id',
+                aggregation: 'count',
+                alias: 'count_id',
+              },
+            ],
+            dimensions: [
+              {
+                field: 'createdAt',
+              },
+            ],
           },
           chart: {
             option: {
               mode: 'basic',
+              builder: {
+                type: 'line',
+                xField: 'createdAt',
+                yField: 'count_id',
+              },
             },
           },
         },
@@ -103,10 +147,28 @@ const chartBlockModelSchemaContribution: FlowModelSchemaContribution = {
           configure: {
             query: {
               mode: 'builder',
+              collectionPath: ['main', 'orders'],
+              measures: [
+                {
+                  field: 'id',
+                  aggregation: 'count',
+                  alias: 'count_id',
+                },
+              ],
+              dimensions: [
+                {
+                  field: 'createdAt',
+                },
+              ],
             },
             chart: {
               option: {
                 mode: 'basic',
+                builder: {
+                  type: 'line',
+                  xField: 'createdAt',
+                  yField: 'count_id',
+                },
               },
             },
           },
@@ -117,7 +179,8 @@ const chartBlockModelSchemaContribution: FlowModelSchemaContribution = {
       {
         kind: 'dynamic-ui-schema',
         path: 'ChartBlockModel.stepParams.chartSettings.configure.query',
-        message: 'Chart query configuration depends on runtime collections, query builders, and optional SQL editors.',
+        message:
+          'Chart query configuration depends on runtime collections and query builders. Builder charts are renderable only when collectionPath includes datasource+collection and measures are present.',
         'x-flow': {
           contextRequirements: ['collection metadata', 'query builder', 'optional SQL resource'],
           unresolvedReason: 'runtime-chart-query-config',
@@ -129,7 +192,8 @@ const chartBlockModelSchemaContribution: FlowModelSchemaContribution = {
       {
         kind: 'dynamic-ui-schema',
         path: 'ChartBlockModel.stepParams.chartSettings.configure.chart',
-        message: 'Chart option builders and event scripts depend on runtime chart builders and RunJS execution.',
+        message:
+          'Chart option builders and event scripts depend on runtime chart builders and RunJS execution. Basic mode still needs option.builder; custom mode does not bypass query/dataSource requirements.',
         'x-flow': {
           contextRequirements: ['chart builder', 'RunJS'],
           unresolvedReason: 'runtime-chart-option-builder',

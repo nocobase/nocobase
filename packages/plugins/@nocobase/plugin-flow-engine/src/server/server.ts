@@ -253,6 +253,48 @@ export class PluginUISchemaStorageServer extends Plugin {
       await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
+    this.app.resourceManager.use(async (ctx: any, next) => {
+      const isFlowModelsMutate = ctx?.action?.resourceName === 'flowModels' && ctx?.action?.actionName === 'mutate';
+      if (!isFlowModelsMutate) {
+        return next();
+      }
+
+      const previousTransaction = ctx.transaction;
+      const previousMutateMeta = ctx.state?.flowModelsMutateMeta;
+      const ownsTransaction = !previousTransaction;
+      const transaction = previousTransaction || (await ctx.db.sequelize.transaction());
+      ctx.transaction = transaction;
+
+      try {
+        await next();
+        if (ownsTransaction) {
+          await transaction.commit();
+        }
+      } catch (error) {
+        if (ownsTransaction) {
+          await transaction.rollback();
+        }
+        if (error instanceof FlowModelOperationError) {
+          this.respondWithFlowModelOperationError(ctx, error);
+          return;
+        }
+        throw error;
+      } finally {
+        if (ctx.state) {
+          if (previousMutateMeta === undefined) {
+            delete ctx.state.flowModelsMutateMeta;
+          } else {
+            ctx.state.flowModelsMutateMeta = previousMutateMeta;
+          }
+        }
+        if (previousTransaction === undefined) {
+          delete ctx.transaction;
+        } else {
+          ctx.transaction = previousTransaction;
+        }
+      }
+    });
+
     this.app.resourceManager.define({
       name: 'flowModels',
       actions: {
@@ -410,6 +452,21 @@ export class PluginUISchemaStorageServer extends Plugin {
           }
 
           const outputsByOpId = new Map<string, any>();
+          const transaction = ctx.transaction;
+          const destroyedNodesByOpId: Record<string, Array<{ uid?: string }>> = {};
+
+          ctx.state ||= {};
+          ctx.state.flowModelsMutateMeta = {
+            ...(ctx.state.flowModelsMutateMeta && typeof ctx.state.flowModelsMutateMeta === 'object'
+              ? ctx.state.flowModelsMutateMeta
+              : {}),
+            destroyedNodesByOpId,
+          };
+          if (!transaction) {
+            ctx.throw(500, 'Missing flowModels:mutate transaction', {
+              code: 'INTERNAL_ERROR',
+            });
+          }
 
           const resolveRefs = (input: any, meta: { opId: string; opIndex: number }): any => {
             if (typeof input === 'string' && input.startsWith('$ref:')) {
@@ -454,140 +511,132 @@ export class PluginUISchemaStorageServer extends Plugin {
             }
             return input;
           };
+          const results: Array<{ opId: string; ok: boolean; output?: any }> = [];
 
-          const transaction = await ctx.db.sequelize.transaction();
-          try {
-            const results: Array<{ opId: string; ok: boolean; output?: any }> = [];
+          for (let i = 0; i < ops.length; i++) {
+            const op = ops[i] || {};
+            const opId = String(op.opId || '').trim();
+            const type = String(op.type || '').trim();
+            const meta = { opId, opIndex: i };
 
-            for (let i = 0; i < ops.length; i++) {
-              const op = ops[i] || {};
-              const opId = String(op.opId || '').trim();
-              const type = String(op.type || '').trim();
-              const meta = { opId, opIndex: i };
+            if (!type) {
+              throw new FlowModelOperationError({
+                status: 400,
+                code: 'INVALID_PARAMS',
+                message: `flowModels:mutate ops[${i}].type is required`,
+                details: meta,
+              });
+            }
 
-              if (!type) {
-                throw new FlowModelOperationError({
-                  status: 400,
-                  code: 'INVALID_PARAMS',
-                  message: `flowModels:mutate ops[${i}].type is required`,
-                  details: meta,
-                });
-              }
+            const params = resolveRefs(op.params || {}, meta);
 
-              const params = resolveRefs(op.params || {}, meta);
+            try {
+              let output: any;
 
-              try {
-                let output: any;
-
-                if (type === 'ensure') {
-                  const normalizedParams = this.assertValidFlowModelSchema(params, { allowRootObjectLocator: true });
-                  output = await repository.ensureModel(normalizedParams, { transaction, includeAsyncNode });
-                } else if (type === 'upsert') {
-                  const modelValues = params?.values;
-                  const modelUid = String(modelValues?.uid || '').trim();
-                  if (!modelUid) {
-                    throw new FlowModelOperationError({
-                      status: 400,
-                      code: 'INVALID_PARAMS',
-                      message: "flowModels:mutate upsert requires 'params.values.uid' for retry-safety",
-                    });
-                  }
-                  const normalizedModelValues = this.assertValidFlowModelSchema(modelValues);
-                  await repository.upsertModel(normalizedModelValues, { transaction });
-                  output = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
-                } else if (type === 'destroy') {
-                  const uid = String(params?.uid || '').trim();
-                  if (!uid) {
-                    throw new FlowModelOperationError({
-                      status: 400,
-                      code: 'INVALID_PARAMS',
-                      message: "flowModels:mutate destroy requires 'params.uid'",
-                    });
-                  }
-                  await repository.remove(uid, { transaction });
-                  output = { ok: true, uid };
-                } else if (type === 'attach') {
-                  output = await repository.attach(
-                    String(params?.uid || ''),
-                    {
-                      parentId: String(params?.parentId || ''),
-                      subKey: String(params?.subKey || ''),
-                      subType: params?.subType,
-                      position: params?.position,
-                    } as any,
-                    { transaction },
-                  );
-                } else if (type === 'move') {
-                  await repository.move(
-                    {
-                      sourceId: String(params?.sourceId || ''),
-                      targetId: String(params?.targetId || ''),
-                      position: params?.position,
-                    },
-                    { transaction },
-                  );
-                  output = { ok: true };
-                } else if (type === 'duplicate') {
-                  output = await repository.duplicateWithTargetUid(
-                    String(params?.uid || ''),
-                    String(params?.targetUid || ''),
-                    {
-                      transaction,
-                      includeAsyncNode,
-                    },
-                  );
-                } else {
+              if (type === 'ensure') {
+                const normalizedParams = this.assertValidFlowModelSchema(params, { allowRootObjectLocator: true });
+                output = await repository.ensureModel(normalizedParams, { transaction, includeAsyncNode });
+              } else if (type === 'upsert') {
+                const modelValues = params?.values;
+                const modelUid = String(modelValues?.uid || '').trim();
+                if (!modelUid) {
                   throw new FlowModelOperationError({
                     status: 400,
                     code: 'INVALID_PARAMS',
-                    message: `flowModels:mutate unsupported op type '${type}'`,
+                    message: "flowModels:mutate upsert requires 'params.values.uid' for retry-safety",
                   });
                 }
-
-                outputsByOpId.set(opId, output);
-                results.push({ opId, ok: true, output });
-              } catch (error) {
-                if (error instanceof FlowModelOperationError) {
+                const normalizedModelValues = this.assertValidFlowModelSchema(modelValues);
+                await repository.upsertModel(normalizedModelValues, { transaction });
+                output = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
+              } else if (type === 'destroy') {
+                const uid = String(params?.uid || '').trim();
+                if (!uid) {
                   throw new FlowModelOperationError({
-                    status: error.status,
-                    code: error.code,
-                    message: error.message,
-                    details: { ...(error.details || {}), ...meta },
+                    status: 400,
+                    code: 'INVALID_PARAMS',
+                    message: "flowModels:mutate destroy requires 'params.uid'",
                   });
                 }
+                const nodesToDestroy = await repository.findNodesById(uid, {
+                  includeAsyncNode: true,
+                  transaction,
+                });
+                destroyedNodesByOpId[opId] = _.uniqBy(nodesToDestroy, 'uid').map((node) => ({ uid: node.uid }));
+                await repository.remove(uid, { transaction });
+                output = { ok: true, uid };
+              } else if (type === 'attach') {
+                output = await repository.attach(
+                  String(params?.uid || ''),
+                  {
+                    parentId: String(params?.parentId || ''),
+                    subKey: String(params?.subKey || ''),
+                    subType: params?.subType,
+                    position: params?.position,
+                  } as any,
+                  { transaction },
+                );
+              } else if (type === 'move') {
+                await repository.move(
+                  {
+                    sourceId: String(params?.sourceId || ''),
+                    targetId: String(params?.targetId || ''),
+                    position: params?.position,
+                  },
+                  { transaction },
+                );
+                output = { ok: true };
+              } else if (type === 'duplicate') {
+                output = await repository.duplicateWithTargetUid(
+                  String(params?.uid || ''),
+                  String(params?.targetUid || ''),
+                  {
+                    transaction,
+                    includeAsyncNode,
+                  },
+                );
+              } else {
                 throw new FlowModelOperationError({
-                  status: 500,
-                  code: 'INTERNAL_ERROR',
-                  message: error?.message || 'Internal error',
-                  details: meta,
+                  status: 400,
+                  code: 'INVALID_PARAMS',
+                  message: `flowModels:mutate unsupported op type '${type}'`,
                 });
               }
-            }
 
-            let models: Record<string, any> | undefined;
-            if (Array.isArray(returnModels) && returnModels.length) {
-              models = {};
-              for (const uid of returnModels) {
-                const modelUid = String(uid || '').trim();
-                if (!modelUid) continue;
-                models[modelUid] = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
+              outputsByOpId.set(opId, output);
+              results.push({ opId, ok: true, output });
+            } catch (error) {
+              if (error instanceof FlowModelOperationError) {
+                throw new FlowModelOperationError({
+                  status: error.status,
+                  code: error.code,
+                  message: error.message,
+                  details: { ...(error.details || {}), ...meta },
+                });
               }
+              throw new FlowModelOperationError({
+                status: 500,
+                code: 'INTERNAL_ERROR',
+                message: error?.message || 'Internal error',
+                details: meta,
+              });
             }
-
-            await transaction.commit();
-
-            ctx.body = {
-              results,
-              ...(models ? { models } : {}),
-            };
-          } catch (error) {
-            await transaction.rollback();
-            if (error instanceof FlowModelOperationError) {
-              this.respondWithFlowModelOperationError(ctx, error);
-              return;
-            }
-            throw error;
           }
+
+          let models: Record<string, any> | undefined;
+          if (Array.isArray(returnModels) && returnModels.length) {
+            models = {};
+            for (const uid of returnModels) {
+              const modelUid = String(uid || '').trim();
+              if (!modelUid) continue;
+              models[modelUid] = await repository.findModelById(modelUid, { transaction, includeAsyncNode });
+            }
+          }
+
+          ctx.body = {
+            results,
+            ...(models ? { models } : {}),
+          };
 
           await next();
         },

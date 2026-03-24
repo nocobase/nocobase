@@ -332,4 +332,30 @@ describe('flow-model mutate', () => {
     expect(res.status).toBe(200);
     expect(res.body?.data?.models?.['mut-context-root-pass']?.subModels?.body?.uid).toBe('mut-context-child-pass');
   });
+
+  it('should rollback when a post-next middleware throws', async () => {
+    await insertModelTree({ uid: 'mut-source-after-next', use: 'SourceModel' });
+
+    app.resourceManager.use(async (ctx, next) => {
+      if (ctx?.action?.resourceName === 'flowModels' && ctx?.action?.actionName === 'mutate') {
+        await next();
+        throw new Error('after-next failure');
+      }
+      return next();
+    });
+
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'dup',
+          type: 'duplicate',
+          params: { uid: 'mut-source-after-next', targetUid: 'mut-target-after-next' },
+        },
+      ],
+    });
+
+    expect(res.status).toBe(500);
+    expect(await repository.findModelById('mut-target-after-next', { includeAsyncNode: true })).toBeNull();
+  });
 });

@@ -262,21 +262,6 @@ export class PluginBlockReferenceServer extends Plugin {
         const values = ctx?.action?.params?.values;
         const ops = Array.isArray(values?.ops) ? values.ops : [];
         const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
-        const destroyedNodesByOpId = new Map<string, Array<{ uid?: string }>>();
-
-        for (const op of ops) {
-          if (op?.type !== 'destroy') continue;
-          const opId = String(op?.opId || '').trim();
-          const rootUid = String(op?.params?.uid || '').trim();
-          if (!opId || !rootUid) continue;
-          destroyedNodesByOpId.set(
-            opId,
-            (await flowRepo.findNodesById(rootUid, {
-              includeAsyncNode: true,
-              transaction: ctx.transaction,
-            })) as Array<{ uid?: string }>,
-          );
-        }
 
         await next();
 
@@ -292,6 +277,8 @@ export class PluginBlockReferenceServer extends Plugin {
           if (!opId) continue;
           resultsByOpId.set(opId, result);
         }
+
+        const destroyedNodesByOpId = ctx?.state?.flowModelsMutateMeta?.destroyedNodesByOpId || {};
 
         for (const op of ops) {
           const opId = String(op?.opId || '').trim();
@@ -323,7 +310,7 @@ export class PluginBlockReferenceServer extends Plugin {
           }
 
           if (op?.type === 'destroy') {
-            await removeUsagesFromNodes(destroyedNodesByOpId.get(opId) || [], {
+            await removeUsagesFromNodes(destroyedNodesByOpId[opId] || [], {
               transaction: ctx.transaction,
             });
           }
