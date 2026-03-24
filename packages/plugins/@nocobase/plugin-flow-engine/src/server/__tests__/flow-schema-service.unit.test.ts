@@ -17,6 +17,47 @@ import {
 import { flowSchemaContribution } from '../flow-schema-contributions';
 import { FlowSchemaService } from '../flow-schema-service';
 
+function objectSchema(
+  properties: Record<string, any> = {},
+  options: {
+    required?: string[];
+    additionalProperties?: boolean | Record<string, any>;
+  } = {},
+) {
+  const { required = [], additionalProperties = true } = options;
+
+  return {
+    type: 'object',
+    properties,
+    ...(required.length ? { required } : {}),
+    additionalProperties,
+  };
+}
+
+function modelContribution(use: string, extra: Record<string, any> = {}) {
+  return {
+    use,
+    source: 'official',
+    strict: true,
+    stepParamsSchema: objectSchema(),
+    ...extra,
+  };
+}
+
+function objectSlot(extra: Record<string, any> = {}) {
+  return {
+    type: 'object',
+    ...extra,
+  };
+}
+
+function arraySlot(extra: Record<string, any> = {}) {
+  return {
+    type: 'array',
+    ...extra,
+  };
+}
+
 function createService() {
   const service = new FlowSchemaService();
 
@@ -63,182 +104,90 @@ function createService() {
   );
 
   service.registerModelContributions([
-    {
-      use: 'FormItemModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    modelContribution('FormItemModel', {
       subModelSlots: {
-        field: {
-          type: 'object',
+        field: objectSlot({
           fieldBindingContext: 'form-item-field',
-        },
+        }),
       },
-    },
-    {
-      use: 'InputFieldModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-    },
-    {
-      use: 'RecordSelectFieldModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('InputFieldModel'),
+    modelContribution('RecordSelectFieldModel', {
       subModelSlots: {
-        field: {
-          type: 'object',
+        field: objectSlot({
           fieldBindingContext: 'editable-field',
-        },
+        }),
       },
-    },
-    {
-      use: 'RecordPickerFieldModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('RecordPickerFieldModel', {
       subModelSlots: {
-        field: {
-          type: 'object',
+        field: objectSlot({
           fieldBindingContext: 'display-field',
-        },
-        'grid-block': {
-          type: 'object',
+        }),
+        'grid-block': objectSlot({
           use: 'BlockGridModel',
-        },
+        }),
       },
-    },
-    {
-      use: 'SubTableFieldModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('SubTableFieldModel', {
       subModelSlots: {
-        columns: {
-          type: 'array',
+        columns: arraySlot({
           uses: ['SubTableColumnModel'],
-        },
+        }),
       },
-    },
-    {
-      use: 'SubTableColumnModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('SubTableColumnModel', {
       subModelSlots: {
-        field: {
-          type: 'object',
+        field: objectSlot({
           fieldBindingContext: 'editable-field',
-        },
+        }),
       },
-    },
-    {
-      use: 'BlockGridModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-    },
-    {
-      use: 'ChildPageModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('BlockGridModel'),
+    modelContribution('ChildPageModel', {
       subModelSlots: {
-        tabs: {
-          type: 'array',
+        tabs: arraySlot({
           uses: ['ChildPageTabModel'],
           required: true,
           minItems: 1,
-        },
+        }),
       },
-    },
-    {
-      use: 'ChildPageTabModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
+    }),
+    modelContribution('ChildPageTabModel', {
       subModelSlots: {
-        grid: {
-          type: 'object',
+        grid: objectSlot({
           use: 'BlockGridModel',
           required: true,
-        },
+        }),
       },
-    },
-    {
-      use: 'DisplayTextFieldModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-    },
-    {
-      use: 'SaveExistingLeafModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
+    }),
+    modelContribution('DisplayTextFieldModel'),
+    modelContribution('SaveExistingLeafModel', {
+      stepParamsSchema: objectSchema(
+        {
           alpha: {
             type: 'string',
           },
         },
-        required: ['alpha'],
-        additionalProperties: false,
-      },
-    },
-    {
-      use: 'SaveExistingRootModel',
-      source: 'official',
-      strict: true,
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
+        { required: ['alpha'], additionalProperties: false },
+      ),
+    }),
+    modelContribution('SaveExistingRootModel', {
+      stepParamsSchema: objectSchema(
+        {
           enabled: {
             type: 'boolean',
           },
         },
-        required: ['enabled'],
-        additionalProperties: false,
-      },
+        { required: ['enabled'], additionalProperties: false },
+      ),
       subModelSlots: {
-        body: {
-          type: 'object',
+        body: objectSlot({
           use: 'SaveExistingLeafModel',
           required: true,
-        },
+        }),
       },
-    },
+    }),
   ]);
 
   return service;
@@ -629,19 +578,14 @@ describe('FlowSchemaService', () => {
     const ajv = new Ajv({ allErrors: true, strict: false });
 
     service.registerModelContributions([
-      {
-        use: 'FilterHostModel',
-        source: 'official',
-        strict: true,
-        stepParamsSchema: {
-          type: 'object',
-          properties: {
+      modelContribution('FilterHostModel', {
+        stepParamsSchema: objectSchema(
+          {
             filter: genericFilterSchema,
           },
-          required: ['filter'],
-          additionalProperties: false,
-        },
-      },
+          { required: ['filter'], additionalProperties: false },
+        ),
+      }),
     ]);
 
     const document = service.getDocument('FilterHostModel');
@@ -717,61 +661,41 @@ describe('FlowSchemaService', () => {
     const service = new FlowSchemaService();
 
     service.registerModelContributions([
-      {
-        use: 'ContextChildModel',
-        source: 'official',
-        strict: true,
-        stepParamsSchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-      },
-      {
-        use: 'ContextParentAlphaModel',
-        source: 'official',
-        strict: true,
+      modelContribution('ContextChildModel'),
+      modelContribution('ContextParentAlphaModel', {
         subModelSlots: {
-          body: {
-            type: 'object',
+          body: objectSlot({
             use: 'ContextChildModel',
             childSchemaPatch: {
-              stepParamsSchema: {
-                type: 'object',
-                properties: {
+              stepParamsSchema: objectSchema(
+                {
                   alpha: {
                     type: 'string',
                   },
                 },
-                required: ['alpha'],
-                additionalProperties: false,
-              },
+                { required: ['alpha'], additionalProperties: false },
+              ),
             },
-          },
+          }),
         },
-      },
-      {
-        use: 'ContextParentBetaModel',
-        source: 'official',
-        strict: true,
+      }),
+      modelContribution('ContextParentBetaModel', {
         subModelSlots: {
-          body: {
-            type: 'object',
+          body: objectSlot({
             use: 'ContextChildModel',
             childSchemaPatch: {
-              stepParamsSchema: {
-                type: 'object',
-                properties: {
+              stepParamsSchema: objectSchema(
+                {
                   beta: {
                     type: 'number',
                   },
                 },
-                required: ['beta'],
-                additionalProperties: false,
-              },
+                { required: ['beta'], additionalProperties: false },
+              ),
             },
-          },
+          }),
         },
-      },
+      }),
     ]);
 
     const alphaIssues = service.validateModelTree({
@@ -818,37 +742,19 @@ describe('FlowSchemaService', () => {
     const service = new FlowSchemaService();
 
     service.registerModelContributions([
-      {
-        use: 'AncestorChildModel',
-        source: 'official',
-        strict: true,
-        stepParamsSchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-      },
-      {
-        use: 'AncestorBridgeModel',
-        source: 'official',
-        strict: true,
-      },
-      {
-        use: 'AncestorRootModel',
-        source: 'official',
-        strict: true,
+      modelContribution('AncestorChildModel'),
+      modelContribution('AncestorBridgeModel'),
+      modelContribution('AncestorRootModel', {
         subModelSlots: {
-          body: {
-            type: 'object',
+          body: objectSlot({
             use: 'AncestorBridgeModel',
             childSchemaPatch: {
               subModelSlots: {
-                leaf: {
-                  type: 'object',
+                leaf: objectSlot({
                   use: 'AncestorChildModel',
                   childSchemaPatch: {
-                    stepParamsSchema: {
-                      type: 'object',
-                      properties: {
+                    stepParamsSchema: objectSchema(
+                      {
                         marker: {
                           type: 'string',
                         },
@@ -856,11 +762,10 @@ describe('FlowSchemaService', () => {
                           type: 'string',
                         },
                       },
-                      required: ['directOnly'],
-                      additionalProperties: false,
-                    },
+                      { required: ['directOnly'], additionalProperties: false },
+                    ),
                   },
-                },
+                }),
               },
             },
             descendantSchemaPatches: [
@@ -872,9 +777,8 @@ describe('FlowSchemaService', () => {
                   },
                 ],
                 patch: {
-                  stepParamsSchema: {
-                    type: 'object',
-                    properties: {
+                  stepParamsSchema: objectSchema(
+                    {
                       marker: {
                         type: 'number',
                       },
@@ -882,15 +786,14 @@ describe('FlowSchemaService', () => {
                         type: 'boolean',
                       },
                     },
-                    required: ['ancestorOnly'],
-                    additionalProperties: true,
-                  },
+                    { required: ['ancestorOnly'] },
+                  ),
                 },
               },
             ],
-          },
+          }),
         },
-      },
+      }),
     ]);
 
     const passIssues = service.validateModelTree({
@@ -955,19 +858,15 @@ describe('FlowSchemaService', () => {
     const service = new FlowSchemaService();
 
     service.registerModelContributions([
-      {
-        use: 'LooseFilterHostModel',
-        source: 'official',
+      modelContribution('LooseFilterHostModel', {
         strict: false,
-        stepParamsSchema: {
-          type: 'object',
-          properties: {
+        stepParamsSchema: objectSchema(
+          {
             filter: genericFilterSchema,
           },
-          required: ['filter'],
-          additionalProperties: false,
-        },
-      },
+          { required: ['filter'], additionalProperties: false },
+        ),
+      }),
     ]);
 
     const issues = service.validateModelTree({
@@ -1025,14 +924,11 @@ describe('FlowSchemaService', () => {
   it('should accept null action icons for link-style edit actions', () => {
     const service = new FlowSchemaService();
     service.registerModelContributions([
-      {
-        use: 'EditActionModel',
-        source: 'official',
-        strict: true,
+      modelContribution('EditActionModel', {
         stepParamsSchema: createActionStepParamsSchema({
           popupSettings: popupActionSettingsStepParamsSchema,
         }),
-      },
+      }),
     ]);
 
     const payload = {
@@ -1093,19 +989,9 @@ describe('FlowSchemaService', () => {
       },
     ]);
     service.registerModelContributions([
-      {
-        use: 'DynamicStepHostModel',
-        source: 'official',
-        strict: true,
-        stepParamsSchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-        flowRegistrySchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-      },
+      modelContribution('DynamicStepHostModel', {
+        flowRegistrySchema: objectSchema(),
+      }),
     ]);
 
     const firstIssues = service.validateModelTree({
@@ -1183,19 +1069,9 @@ describe('FlowSchemaService', () => {
       },
     ]);
     service.registerModelContributions([
-      {
-        use: 'OverrideSchemaHostModel',
-        source: 'official',
-        strict: true,
-        stepParamsSchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-        flowRegistrySchema: {
-          type: 'object',
-          additionalProperties: true,
-        },
-      },
+      modelContribution('OverrideSchemaHostModel', {
+        flowRegistrySchema: objectSchema(),
+      }),
     ]);
 
     const issues = service.validateModelTree({

@@ -56,6 +56,50 @@ const expectGridLayoutSchemaDocument = (document: any) => {
   });
 };
 
+const objectSchema = (
+  properties: Record<string, any> = {},
+  options: {
+    required?: string[];
+    additionalProperties?: boolean | Record<string, any>;
+  } = {},
+) => {
+  const { required = [], additionalProperties = true } = options;
+
+  return {
+    type: 'object',
+    properties,
+    ...(required.length ? { required } : {}),
+    additionalProperties,
+  };
+};
+
+const modelContribution = (use: string, extra: Record<string, any> = {}) => ({
+  use,
+  stepParamsSchema: objectSchema(),
+  ...extra,
+});
+
+const internalModelContribution = (use: string, uid: string, extra: Record<string, any> = {}) => ({
+  use,
+  exposure: 'internal',
+  stepParamsSchema: objectSchema(),
+  skeleton: {
+    uid,
+    use,
+  },
+  ...extra,
+});
+
+const objectSlot = (extra: Record<string, any> = {}) => ({
+  type: 'object',
+  ...extra,
+});
+
+const arraySlot = (extra: Record<string, any> = {}) => ({
+  type: 'array',
+  ...extra,
+});
+
 describe('FlowSchemaRegistry', () => {
   it('should infer JSON schema from static uiSchema', () => {
     const registry = new FlowSchemaRegistry();
@@ -1131,67 +1175,58 @@ describe('FlowSchemaRegistry', () => {
   it('should expose recursive sub-model catalogs for internal descendants without promoting them to top-level items', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryBundleLeafModel',
-      exposure: 'internal',
-      allowDirectUse: false,
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
-          label: {
-            type: 'string',
+    registry.registerModelContribution(
+      internalModelContribution('SchemaRegistryBundleLeafModel', 'bundle-leaf-uid', {
+        allowDirectUse: false,
+        stepParamsSchema: objectSchema(
+          {
+            label: {
+              type: 'string',
+            },
           },
-        },
-        required: ['label'],
-        additionalProperties: false,
-      },
-      skeleton: {
-        uid: 'bundle-leaf-uid',
-        use: 'SchemaRegistryBundleLeafModel',
-      },
-    });
+          { required: ['label'], additionalProperties: false },
+        ),
+      }),
+    );
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryBundleChildModel',
-      exposure: 'internal',
-      allowDirectUse: false,
-      subModelSlots: {
-        items: {
-          type: 'array',
-          uses: ['SchemaRegistryBundleLeafModel'],
-        },
-        dynamicZone: {
-          type: 'array',
-        },
-      },
-      skeleton: {
-        uid: 'bundle-child-uid',
-        use: 'SchemaRegistryBundleChildModel',
-        subModels: {
-          items: [],
-          dynamicZone: [],
-        },
-      },
-    });
-
-    registry.registerModelContribution({
-      use: 'SchemaRegistryBundleParentModel',
-      subModelSlots: {
-        body: {
-          type: 'object',
+    registry.registerModelContribution(
+      internalModelContribution('SchemaRegistryBundleChildModel', 'bundle-child-uid', {
+        allowDirectUse: false,
+        skeleton: {
+          uid: 'bundle-child-uid',
           use: 'SchemaRegistryBundleChildModel',
-        },
-      },
-      skeleton: {
-        uid: 'bundle-parent-uid',
-        use: 'SchemaRegistryBundleParentModel',
-        subModels: {
-          body: {
-            use: 'SchemaRegistryBundleChildModel',
+          subModels: {
+            items: [],
+            dynamicZone: [],
           },
         },
-      },
-    });
+        subModelSlots: {
+          items: arraySlot({
+            uses: ['SchemaRegistryBundleLeafModel'],
+          }),
+          dynamicZone: arraySlot(),
+        },
+      }),
+    );
+
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryBundleParentModel', {
+        skeleton: {
+          uid: 'bundle-parent-uid',
+          use: 'SchemaRegistryBundleParentModel',
+          subModels: {
+            body: {
+              use: 'SchemaRegistryBundleChildModel',
+            },
+          },
+        },
+        subModelSlots: {
+          body: objectSlot({
+            use: 'SchemaRegistryBundleChildModel',
+          }),
+        },
+      }),
+    );
 
     const publicBundle = registry.getSchemaBundle();
     const bundle = registry.getSchemaBundle(['SchemaRegistryBundleParentModel']);
@@ -1236,54 +1271,12 @@ describe('FlowSchemaRegistry', () => {
       { name: 'form-item-field', inherits: ['editable-field'] },
     ]);
 
-    registry.registerModelContribution({
-      use: 'InputFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'input-field-uid',
-        use: 'InputFieldModel',
-      },
-    });
-    registry.registerModelContribution({
-      use: 'DisplayTextFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'display-text-field-uid',
-        use: 'DisplayTextFieldModel',
-      },
-    });
-    registry.registerModelContribution({
-      use: 'RecordSelectFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'record-select-field-uid',
-        use: 'RecordSelectFieldModel',
-      },
-    });
-    registry.registerModelContribution({
-      use: 'CascadeSelectFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'cascade-select-field-uid',
-        use: 'CascadeSelectFieldModel',
-      },
-    });
+    registry.registerModelContribution(internalModelContribution('InputFieldModel', 'input-field-uid'));
+    registry.registerModelContribution(internalModelContribution('DisplayTextFieldModel', 'display-text-field-uid'));
+    registry.registerModelContribution(internalModelContribution('RecordSelectFieldModel', 'record-select-field-uid'));
+    registry.registerModelContribution(
+      internalModelContribution('CascadeSelectFieldModel', 'cascade-select-field-uid'),
+    );
     registry.registerFieldBindings([
       {
         context: 'editable-field',
@@ -1319,32 +1312,32 @@ describe('FlowSchemaRegistry', () => {
       },
     ]);
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryFieldHostModel',
-      subModelSlots: {
-        field: {
-          type: 'object',
-          fieldBindingContext: 'form-item-field',
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryFieldHostModel', {
+        skeleton: {
+          uid: 'field-host-uid',
+          use: 'SchemaRegistryFieldHostModel',
         },
-      },
-      skeleton: {
-        uid: 'field-host-uid',
-        use: 'SchemaRegistryFieldHostModel',
-      },
-    });
-    registry.registerModelContribution({
-      use: 'SchemaRegistryDisplayFieldHostModel',
-      subModelSlots: {
-        field: {
-          type: 'object',
-          fieldBindingContext: 'table-column-field',
+        subModelSlots: {
+          field: objectSlot({
+            fieldBindingContext: 'form-item-field',
+          }),
         },
-      },
-      skeleton: {
-        uid: 'display-field-host-uid',
-        use: 'SchemaRegistryDisplayFieldHostModel',
-      },
-    });
+      }),
+    );
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryDisplayFieldHostModel', {
+        skeleton: {
+          uid: 'display-field-host-uid',
+          use: 'SchemaRegistryDisplayFieldHostModel',
+        },
+        subModelSlots: {
+          field: objectSlot({
+            fieldBindingContext: 'table-column-field',
+          }),
+        },
+      }),
+    );
 
     expect(
       registry.resolveFieldBindingCandidates('form-item-field', { interface: 'input' }).map((item) => item.use),
@@ -1419,30 +1412,10 @@ describe('FlowSchemaRegistry', () => {
     const registry = new FlowSchemaRegistry();
 
     registry.registerFieldBindingContexts([{ name: 'editable-field' }]);
-    registry.registerModelContribution({
-      use: 'SchemaRegistryExactFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'exact-field-uid',
-        use: 'SchemaRegistryExactFieldModel',
-      },
-    });
-    registry.registerModelContribution({
-      use: 'SchemaRegistryWildcardFieldModel',
-      exposure: 'internal',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'wildcard-field-uid',
-        use: 'SchemaRegistryWildcardFieldModel',
-      },
-    });
+    registry.registerModelContribution(internalModelContribution('SchemaRegistryExactFieldModel', 'exact-field-uid'));
+    registry.registerModelContribution(
+      internalModelContribution('SchemaRegistryWildcardFieldModel', 'wildcard-field-uid'),
+    );
 
     registry.registerFieldBindings([
       {
@@ -1469,52 +1442,48 @@ describe('FlowSchemaRegistry', () => {
   it('should project required and minItems slot constraints into schema documents and bundle catalogs', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryRequiredChildModel',
-      title: 'Required child',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'required-child',
-        use: 'SchemaRegistryRequiredChildModel',
-      },
-    });
-
-    registry.registerModelContribution({
-      use: 'SchemaRegistryRequiredParentModel',
-      title: 'Required parent',
-      subModelSlots: {
-        page: {
-          type: 'object',
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryRequiredChildModel', {
+        title: 'Required child',
+        skeleton: {
+          uid: 'required-child',
           use: 'SchemaRegistryRequiredChildModel',
-          required: true,
         },
-        tabs: {
-          type: 'array',
-          uses: ['SchemaRegistryRequiredChildModel'],
-          required: true,
-          minItems: 1,
-        },
-      },
-      skeleton: {
-        uid: 'required-parent',
-        use: 'SchemaRegistryRequiredParentModel',
-        subModels: {
-          page: {
-            uid: 'required-parent-page',
+      }),
+    );
+
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryRequiredParentModel', {
+        title: 'Required parent',
+        subModelSlots: {
+          page: objectSlot({
             use: 'SchemaRegistryRequiredChildModel',
-          },
-          tabs: [
-            {
-              uid: 'required-parent-tab',
+            required: true,
+          }),
+          tabs: arraySlot({
+            uses: ['SchemaRegistryRequiredChildModel'],
+            required: true,
+            minItems: 1,
+          }),
+        },
+        skeleton: {
+          uid: 'required-parent',
+          use: 'SchemaRegistryRequiredParentModel',
+          subModels: {
+            page: {
+              uid: 'required-parent-page',
               use: 'SchemaRegistryRequiredChildModel',
             },
-          ],
+            tabs: [
+              {
+                uid: 'required-parent-tab',
+                use: 'SchemaRegistryRequiredChildModel',
+              },
+            ],
+          },
         },
-      },
-    });
+      }),
+    );
 
     const doc = registry.getModelDocument('SchemaRegistryRequiredParentModel');
     const bundle = registry.getSchemaBundle(['SchemaRegistryRequiredParentModel']);
@@ -1556,139 +1525,122 @@ describe('FlowSchemaRegistry', () => {
   it('should expose nested popup page slots in schema documents and bundle catalogs', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryPopupGridModel',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      skeleton: {
-        uid: 'popup-grid',
-        use: 'SchemaRegistryPopupGridModel',
-      },
-    });
-
-    registry.registerModelContribution({
-      use: 'SchemaRegistryPopupTabModel',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      subModelSlots: {
-        grid: {
-          type: 'object',
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryPopupGridModel', {
+        skeleton: {
+          uid: 'popup-grid',
           use: 'SchemaRegistryPopupGridModel',
-          required: true,
         },
-      },
-      skeleton: {
-        uid: 'popup-tab',
-        use: 'SchemaRegistryPopupTabModel',
-        subModels: {
-          grid: {
-            uid: 'popup-tab-grid',
+      }),
+    );
+
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryPopupTabModel', {
+        subModelSlots: {
+          grid: objectSlot({
             use: 'SchemaRegistryPopupGridModel',
+            required: true,
+          }),
+        },
+        skeleton: {
+          uid: 'popup-tab',
+          use: 'SchemaRegistryPopupTabModel',
+          subModels: {
+            grid: {
+              uid: 'popup-tab-grid',
+              use: 'SchemaRegistryPopupGridModel',
+            },
           },
         },
-      },
-    });
+      }),
+    );
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryPopupPageModel',
-      stepParamsSchema: {
-        type: 'object',
-        additionalProperties: true,
-      },
-      subModelSlots: {
-        tabs: {
-          type: 'array',
-          uses: ['SchemaRegistryPopupTabModel'],
-          required: true,
-          minItems: 1,
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryPopupPageModel', {
+        subModelSlots: {
+          tabs: arraySlot({
+            uses: ['SchemaRegistryPopupTabModel'],
+            required: true,
+            minItems: 1,
+          }),
         },
-      },
-      skeleton: {
-        uid: 'popup-page',
-        use: 'SchemaRegistryPopupPageModel',
-        subModels: {
-          tabs: [
-            {
-              uid: 'popup-page-tab',
-              use: 'SchemaRegistryPopupTabModel',
-              subModels: {
-                grid: {
-                  uid: 'popup-page-tab-grid',
-                  use: 'SchemaRegistryPopupGridModel',
+        skeleton: {
+          uid: 'popup-page',
+          use: 'SchemaRegistryPopupPageModel',
+          subModels: {
+            tabs: [
+              {
+                uid: 'popup-page-tab',
+                use: 'SchemaRegistryPopupTabModel',
+                subModels: {
+                  grid: {
+                    uid: 'popup-page-tab-grid',
+                    use: 'SchemaRegistryPopupGridModel',
+                  },
                 },
               },
-            },
-          ],
+            ],
+          },
         },
-      },
-    });
+      }),
+    );
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryPopupActionModel',
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
-          popupSettings: {
-            type: 'object',
-            properties: {
-              openView: {
-                type: 'object',
-                properties: {
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryPopupActionModel', {
+        stepParamsSchema: objectSchema({
+          popupSettings: objectSchema(
+            {
+              openView: objectSchema(
+                {
                   pageModelClass: {
                     type: 'string',
                     enum: ['SchemaRegistryPopupPageModel', 'SchemaRegistryRootPageModel'],
                   },
                 },
-                additionalProperties: false,
+                { additionalProperties: false },
+              ),
+            },
+            { additionalProperties: true },
+          ),
+        }),
+        subModelSlots: {
+          page: objectSlot({
+            use: 'SchemaRegistryPopupPageModel',
+          }),
+        },
+        skeleton: {
+          uid: 'popup-action',
+          use: 'SchemaRegistryPopupActionModel',
+          stepParams: {
+            popupSettings: {
+              openView: {
+                pageModelClass: 'SchemaRegistryPopupPageModel',
               },
             },
-            additionalProperties: true,
           },
-        },
-        additionalProperties: true,
-      },
-      subModelSlots: {
-        page: {
-          type: 'object',
-          use: 'SchemaRegistryPopupPageModel',
-        },
-      },
-      skeleton: {
-        uid: 'popup-action',
-        use: 'SchemaRegistryPopupActionModel',
-        stepParams: {
-          popupSettings: {
-            openView: {
-              pageModelClass: 'SchemaRegistryPopupPageModel',
-            },
-          },
-        },
-        subModels: {
-          page: {
-            uid: 'popup-action-page',
-            use: 'SchemaRegistryPopupPageModel',
-            subModels: {
-              tabs: [
-                {
-                  uid: 'popup-action-page-tab',
-                  use: 'SchemaRegistryPopupTabModel',
-                  subModels: {
-                    grid: {
-                      uid: 'popup-action-page-grid',
-                      use: 'SchemaRegistryPopupGridModel',
+          subModels: {
+            page: {
+              uid: 'popup-action-page',
+              use: 'SchemaRegistryPopupPageModel',
+              subModels: {
+                tabs: [
+                  {
+                    uid: 'popup-action-page-tab',
+                    use: 'SchemaRegistryPopupTabModel',
+                    subModels: {
+                      grid: {
+                        uid: 'popup-action-page-grid',
+                        use: 'SchemaRegistryPopupGridModel',
+                      },
                     },
                   },
-                },
-              ],
+                ],
+              },
             },
           },
         },
-      },
-    });
+      }),
+    );
 
     const doc = registry.getModelDocument('SchemaRegistryPopupActionModel');
     const bundle = registry.getSchemaBundle(['SchemaRegistryPopupActionModel']);
@@ -1762,65 +1714,63 @@ describe('FlowSchemaRegistry', () => {
   it('should expose compact public documents without recursive schema or nested hints by default', () => {
     const registry = new FlowSchemaRegistry();
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryCompactLeafModel',
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
-          leaf: { type: 'string' },
-        },
-        additionalProperties: false,
-      },
-      dynamicHints: [
-        {
-          kind: 'dynamic-ui-schema',
-          path: 'SchemaRegistryCompactLeafModel.stepParams.leaf',
-          message: 'Leaf settings are dynamic.',
-        },
-      ],
-    });
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryCompactLeafModel', {
+        stepParamsSchema: objectSchema(
+          {
+            leaf: { type: 'string' },
+          },
+          { additionalProperties: false },
+        ),
+        dynamicHints: [
+          {
+            kind: 'dynamic-ui-schema',
+            path: 'SchemaRegistryCompactLeafModel.stepParams.leaf',
+            message: 'Leaf settings are dynamic.',
+          },
+        ],
+      }),
+    );
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryCompactChildModel',
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
-          child: { type: 'string' },
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryCompactChildModel', {
+        stepParamsSchema: objectSchema(
+          {
+            child: { type: 'string' },
+          },
+          { additionalProperties: false },
+        ),
+        dynamicHints: [
+          {
+            kind: 'dynamic-ui-schema',
+            path: 'SchemaRegistryCompactChildModel.stepParams.child',
+            message: 'Child settings are dynamic.',
+          },
+        ],
+        subModelSlots: {
+          footer: objectSlot({
+            use: 'SchemaRegistryCompactLeafModel',
+          }),
         },
-        additionalProperties: false,
-      },
-      dynamicHints: [
-        {
-          kind: 'dynamic-ui-schema',
-          path: 'SchemaRegistryCompactChildModel.stepParams.child',
-          message: 'Child settings are dynamic.',
-        },
-      ],
-      subModelSlots: {
-        footer: {
-          type: 'object',
-          use: 'SchemaRegistryCompactLeafModel',
-        },
-      },
-    });
+      }),
+    );
 
-    registry.registerModelContribution({
-      use: 'SchemaRegistryCompactParentModel',
-      stepParamsSchema: {
-        type: 'object',
-        properties: {
-          enabled: { type: 'boolean' },
+    registry.registerModelContribution(
+      modelContribution('SchemaRegistryCompactParentModel', {
+        stepParamsSchema: objectSchema(
+          {
+            enabled: { type: 'boolean' },
+          },
+          { additionalProperties: false },
+        ),
+        subModelSlots: {
+          body: objectSlot({
+            use: 'SchemaRegistryCompactChildModel',
+            required: true,
+          }),
         },
-        additionalProperties: false,
-      },
-      subModelSlots: {
-        body: {
-          type: 'object',
-          use: 'SchemaRegistryCompactChildModel',
-          required: true,
-        },
-      },
-    });
+      }),
+    );
 
     const compact = registry.getPublicModelDocument('SchemaRegistryCompactParentModel');
     const full = registry.getPublicModelDocument('SchemaRegistryCompactParentModel', { detail: 'full' });

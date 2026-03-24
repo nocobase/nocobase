@@ -7,61 +7,84 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
+import { createFlowEngineTestApp, destroyTestApp } from './test-utils';
+
+function objectSchema(
+  properties: Record<string, any> = {},
+  options: {
+    required?: string[];
+    additionalProperties?: boolean | Record<string, any>;
+  } = {},
+) {
+  const { required = [], additionalProperties = true } = options;
+
+  return {
+    type: 'object',
+    properties,
+    ...(required.length ? { required } : {}),
+    additionalProperties,
+  };
+}
+
+function looseModelContribution(use: string, extra: Record<string, any> = {}) {
+  return {
+    use,
+    source: 'official',
+    strict: false,
+    stepParamsSchema: objectSchema(),
+    ...extra,
+  };
+}
+
+function objectSlot(extra: Record<string, any> = {}) {
+  return {
+    type: 'object',
+    ...extra,
+  };
+}
 
 describe('flow-model ensure', () => {
-  let app: MockServer;
+  let app: any;
   let agent: any;
   let repository: FlowModelRepository;
 
+  const insertModel = (model: Record<string, any>) => repository.insertModel(model as any);
+  const ensureModel = (values: Record<string, any>) => agent.resource('flowModels').ensure({ values });
+
   afterEach(async () => {
-    await app.destroy();
+    await destroyTestApp(app);
+    app = null;
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
-      registerActions: true,
-      plugins: ['flow-engine'],
-    });
-    (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
-      modelContributions: [
-        {
-          use: 'EnsureContextualChildModel',
-          source: 'official',
-          strict: false,
-          stepParamsSchema: {
-            type: 'object',
-            additionalProperties: true,
-          },
-        },
-        {
-          use: 'EnsureContextualParentModel',
-          source: 'official',
-          strict: false,
-          subModelSlots: {
-            body: {
-              type: 'object',
-              use: 'EnsureContextualChildModel',
-              childSchemaPatch: {
-                stepParamsSchema: {
-                  type: 'object',
-                  properties: {
-                    alpha: {
-                      type: 'string',
-                    },
+    ({ app, agent } = await createFlowEngineTestApp({
+      registerSchemas(flowEnginePlugin) {
+        flowEnginePlugin.registerFlowSchemas({
+          modelContributions: [
+            looseModelContribution('EnsureContextualChildModel'),
+            looseModelContribution('EnsureContextualParentModel', {
+              subModelSlots: {
+                body: objectSlot({
+                  use: 'EnsureContextualChildModel',
+                  childSchemaPatch: {
+                    stepParamsSchema: objectSchema(
+                      {
+                        alpha: {
+                          type: 'string',
+                        },
+                      },
+                      { required: ['alpha'], additionalProperties: false },
+                    ),
                   },
-                  required: ['alpha'],
-                  additionalProperties: false,
-                },
+                }),
               },
-            },
-          },
-        },
-      ],
-    });
+            }),
+          ],
+        });
+      },
+    }));
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
-    agent = app.agent();
   });
 
   it('should ensure by uid (create when missing, return when exists)', async () => {
@@ -78,7 +101,7 @@ describe('flow-model ensure', () => {
   });
 
   it('should ensure object child by (parentId+subKey) concurrently', async () => {
-    await repository.insertModel({ uid: 'ensure-parent', use: 'ParentModel' } as any);
+    await insertModel({ uid: 'ensure-parent', use: 'ParentModel' });
 
     const [a, b] = await Promise.all([
       repository.ensureModel({
@@ -107,16 +130,14 @@ describe('flow-model ensure', () => {
   });
 
   it('should allow ensure object child payloads without uid through schema validation', async () => {
-    await repository.insertModel({ uid: 'ensure-api-parent', use: 'ParentModel' } as any);
+    await insertModel({ uid: 'ensure-api-parent', use: 'ParentModel' });
 
-    const res = await agent.resource('flowModels').ensure({
-      values: {
-        parentId: 'ensure-api-parent',
-        subKey: 'page',
-        subType: 'object',
-        use: 'RootPageModel',
-        async: true,
-      },
+    const res = await ensureModel({
+      parentId: 'ensure-api-parent',
+      subKey: 'page',
+      subType: 'object',
+      use: 'RootPageModel',
+      async: true,
     });
 
     expect(res.status).toBe(200);
@@ -128,16 +149,14 @@ describe('flow-model ensure', () => {
   });
 
   it('should allow ensuring internal concrete child models directly', async () => {
-    await repository.insertModel({ uid: 'ensure-tab-parent', use: 'PageTabModel' } as any);
+    await insertModel({ uid: 'ensure-tab-parent', use: 'PageTabModel' });
 
-    const res = await agent.resource('flowModels').ensure({
-      values: {
-        parentId: 'ensure-tab-parent',
-        subKey: 'grid',
-        subType: 'object',
-        use: 'BlockGridModel',
-        async: true,
-      },
+    const res = await ensureModel({
+      parentId: 'ensure-tab-parent',
+      subKey: 'grid',
+      subType: 'object',
+      use: 'BlockGridModel',
+      async: true,
     });
 
     expect(res.status).toBe(200);
@@ -149,16 +168,14 @@ describe('flow-model ensure', () => {
   });
 
   it('should allow props to be null during ensure object child creation', async () => {
-    await repository.insertModel({ uid: 'ensure-null-props-parent', use: 'PageTabModel' } as any);
+    await insertModel({ uid: 'ensure-null-props-parent', use: 'PageTabModel' });
 
-    const res = await agent.resource('flowModels').ensure({
-      values: {
-        parentId: 'ensure-null-props-parent',
-        subKey: 'grid',
-        subType: 'object',
-        use: 'BlockGridModel',
-        props: null,
-      },
+    const res = await ensureModel({
+      parentId: 'ensure-null-props-parent',
+      subKey: 'grid',
+      subType: 'object',
+      use: 'BlockGridModel',
+      props: null,
     });
 
     expect(res.status).toBe(200);
@@ -168,37 +185,35 @@ describe('flow-model ensure', () => {
   });
 
   it('should allow ensure to create popup child pages with lazy nested tabs missing uid and grid', async () => {
-    await repository.insertModel({ uid: 'ensure-popup-parent', use: 'AddNewActionModel' } as any);
+    await insertModel({ uid: 'ensure-popup-parent', use: 'AddNewActionModel' });
 
-    const res = await agent.resource('flowModels').ensure({
-      values: {
-        parentId: 'ensure-popup-parent',
-        subKey: 'page',
-        subType: 'object',
-        use: 'ChildPageModel',
-        async: true,
-        stepParams: {
-          pageSettings: {
-            general: {
-              displayTitle: false,
-              enableTabs: true,
-            },
+    const res = await ensureModel({
+      parentId: 'ensure-popup-parent',
+      subKey: 'page',
+      subType: 'object',
+      use: 'ChildPageModel',
+      async: true,
+      stepParams: {
+        pageSettings: {
+          general: {
+            displayTitle: false,
+            enableTabs: true,
           },
         },
-        subModels: {
-          tabs: [
-            {
-              use: 'ChildPageTabModel',
-              stepParams: {
-                pageTabSettings: {
-                  tab: {
-                    title: 'Details',
-                  },
+      },
+      subModels: {
+        tabs: [
+          {
+            use: 'ChildPageTabModel',
+            stepParams: {
+              pageTabSettings: {
+                tab: {
+                  title: 'Details',
                 },
               },
             },
-          ],
-        },
+          },
+        ],
       },
     });
 
@@ -220,17 +235,15 @@ describe('flow-model ensure', () => {
   });
 
   it('should allow nested child schema mismatches with parent context during ensure when validation is loose', async () => {
-    const pass = await agent.resource('flowModels').ensure({
-      values: {
-        uid: 'ensure-context-root-pass',
-        use: 'EnsureContextualParentModel',
-        subModels: {
-          body: {
-            uid: 'ensure-context-child-pass',
-            use: 'EnsureContextualChildModel',
-            stepParams: {
-              alpha: 'ok',
-            },
+    const pass = await ensureModel({
+      uid: 'ensure-context-root-pass',
+      use: 'EnsureContextualParentModel',
+      subModels: {
+        body: {
+          uid: 'ensure-context-child-pass',
+          use: 'EnsureContextualChildModel',
+          stepParams: {
+            alpha: 'ok',
           },
         },
       },
@@ -238,17 +251,15 @@ describe('flow-model ensure', () => {
 
     expect(pass.status).toBe(200);
 
-    const fail = await agent.resource('flowModels').ensure({
-      values: {
-        uid: 'ensure-context-root-fail',
-        use: 'EnsureContextualParentModel',
-        subModels: {
-          body: {
-            uid: 'ensure-context-child-fail',
-            use: 'EnsureContextualChildModel',
-            stepParams: {
-              beta: 1,
-            },
+    const fail = await ensureModel({
+      uid: 'ensure-context-root-fail',
+      use: 'EnsureContextualParentModel',
+      subModels: {
+        body: {
+          uid: 'ensure-context-child-fail',
+          use: 'EnsureContextualChildModel',
+          stepParams: {
+            beta: 1,
           },
         },
       },

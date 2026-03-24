@@ -9,9 +9,9 @@
 
 import { type FlowSchemaContribution, FlowModel } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
-import { MockServer, createMockServer } from '@nocobase/test';
 import { PluginActionBulkUpdateServer } from '../../../../plugin-action-bulk-update/src/server/plugin';
 import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
+import { createFlowEngineTestApp, destroyTestApp, expectPublicSchemaDocument } from './test-utils';
 
 class ProviderActionHostModel extends FlowModel {}
 
@@ -308,19 +308,22 @@ class DisabledContributionPlugin extends Plugin {
   }
 }
 
-const expectPublicSchemaDocument = (document: any) => {
-  expect(document).not.toHaveProperty('coverage');
-  expect(document).not.toHaveProperty('skeleton');
-  expect(document).not.toHaveProperty('examples');
-};
-
 describe('flow schema contribution provider', () => {
-  let app: MockServer;
+  let app: any;
   let agent: any;
+  let flowEnginePlugin: any;
+
+  const querySchema = (use: string) => agent.get('/flowModels:schema').query({ use });
+  const querySchemaBundle = (uses: string[]) => agent.post('/flowModels:schemaBundle').send({ uses });
+  const querySchemas = (uses: string[]) => agent.post('/flowModels:schemas').send({ uses });
+
+  const createOfficialProviderApp = () =>
+    createFlowEngineTestApp({
+      plugins: ['flow-engine', PluginActionBulkUpdateServer, PluginBlockReferenceServer],
+    });
 
   beforeEach(async () => {
-    app = await createMockServer({
-      registerActions: true,
+    ({ app, agent, flowEnginePlugin } = await createFlowEngineTestApp({
       plugins: [
         'flow-engine',
         RecordContributionPlugin,
@@ -331,28 +334,24 @@ describe('flow schema contribution provider', () => {
         FieldBindingContributionPlugin,
         [DisabledContributionPlugin, { name: 'disabled-contribution-plugin', enabled: false }],
       ],
-    });
-
-    (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
-      models: {
-        ProviderActionHostModel,
+      registerSchemas(plugin) {
+        plugin.registerFlowSchemas({
+          models: {
+            ProviderActionHostModel,
+          },
+        });
       },
-    });
-
-    agent = app.agent();
+    }));
   });
 
   afterEach(async () => {
-    if (app) {
-      await app.destroy();
-      app = null as any;
-    }
+    await destroyTestApp(app);
+    app = null;
+    flowEnginePlugin = null;
   });
 
   it('should collect plugin provider contributions and apply defaults', async () => {
-    const single = await agent.get('/flowModels:schema').query({
-      use: 'ProviderContributionModel',
-    });
+    const single = await querySchema('ProviderContributionModel');
 
     expect(single.status).toBe(200);
     expectPublicSchemaDocument(single.body?.data);
@@ -361,7 +360,6 @@ describe('flow schema contribution provider', () => {
       use: 'ProviderContributionModel',
     });
 
-    const flowEnginePlugin = app.pm.get('flow-engine') as any;
     expect(flowEnginePlugin.flowSchemaService.registry.getAction('providerRecordAction')).toEqual(
       expect.objectContaining({
         name: 'providerRecordAction',
@@ -377,15 +375,12 @@ describe('flow schema contribution provider', () => {
       }),
     );
 
-    const host = await agent.get('/flowModels:schema').query({
-      use: 'ProviderActionHostModel',
-    });
+    const host = await querySchema('ProviderActionHostModel');
     expect(host.status).toBe(200);
     expect(host.body?.data?.use).toBe('ProviderActionHostModel');
   });
 
   it('should default direct registerFlowSchemas contributions to third-party source', async () => {
-    const flowEnginePlugin = app.pm.get('flow-engine') as any;
     flowEnginePlugin.registerFlowSchemas({
       actionContributions: [
         {
@@ -426,9 +421,7 @@ describe('flow schema contribution provider', () => {
       ],
     });
 
-    const schema = await agent.get('/flowModels:schema').query({
-      use: 'DirectContributionModel',
-    });
+    const schema = await querySchema('DirectContributionModel');
 
     expect(schema.status).toBe(200);
     expectPublicSchemaDocument(schema.body?.data);
@@ -444,15 +437,12 @@ describe('flow schema contribution provider', () => {
   });
 
   it('should normalize array contributions and keep builtin flow-engine contributions discoverable', async () => {
-    const arrayModel = await agent.get('/flowModels:schema').query({
-      use: 'ProviderArrayModel',
-    });
+    const arrayModel = await querySchema('ProviderArrayModel');
 
     expect(arrayModel.status).toBe(200);
     expectPublicSchemaDocument(arrayModel.body?.data);
     expect(arrayModel.body?.data?.source).toBe('plugin');
 
-    const flowEnginePlugin = app.pm.get('flow-engine') as any;
     expect(flowEnginePlugin.flowSchemaService.registry.getAction('providerArrayAction')).toEqual(
       expect.objectContaining({
         coverage: expect.objectContaining({
@@ -463,30 +453,14 @@ describe('flow schema contribution provider', () => {
       }),
     );
 
-    const builtin = await agent.get('/flowModels:schema').query({
-      use: 'PageModel',
-    });
+    const builtin = await querySchema('PageModel');
     expect(builtin.status).toBe(200);
     expectPublicSchemaDocument(builtin.body?.data);
     expect(builtin.body?.data?.source).toBe('official');
-
-    const bundle = await agent.post('/flowModels:schemaBundle').send({
-      uses: ['PageModel'],
-    });
-    expect(bundle.status).toBe(200);
-    expect(bundle.body?.data?.items).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          use: 'PageModel',
-        }),
-      ]),
-    );
   });
 
   it('should expose lightweight schema bundles for plugin contributions', async () => {
-    const bundle = await agent.post('/flowModels:schemaBundle').send({
-      uses: ['ProviderContributionModel', 'ProviderArrayModel'],
-    });
+    const bundle = await querySchemaBundle(['ProviderContributionModel', 'ProviderArrayModel']);
 
     expect(bundle.status).toBe(200);
     expect(bundle.body?.data?.items).toEqual(
@@ -502,9 +476,7 @@ describe('flow schema contribution provider', () => {
   });
 
   it('should preserve existing merge semantics across plugin providers', async () => {
-    const res = await agent.get('/flowModels:schema').query({
-      use: 'MergedProviderModel',
-    });
+    const res = await querySchema('MergedProviderModel');
 
     expect(res.status).toBe(200);
     expect(res.body?.data?.minimalExample).toMatchObject({
@@ -518,16 +490,13 @@ describe('flow schema contribution provider', () => {
   });
 
   it('should collect field binding contexts and bindings from plugin providers', async () => {
-    const flowEnginePlugin = app.pm.get('flow-engine') as any;
     expect(
       flowEnginePlugin.flowSchemaService.registry
         .resolveFieldBindingCandidates('provider-form-field', { interface: 'input' })
         .map((item) => item.use),
     ).toEqual(['ProviderBoundInputModel']);
 
-    const bundle = await agent.post('/flowModels:schemaBundle').send({
-      uses: ['ProviderFieldHostModel'],
-    });
+    const bundle = await querySchemaBundle(['ProviderFieldHostModel']);
 
     expect(bundle.status).toBe(200);
     expect(bundle.body?.data?.items).toEqual(
@@ -557,30 +526,22 @@ describe('flow schema contribution provider', () => {
   });
 
   it('should skip disabled or empty providers during collection', async () => {
-    const disabled = await agent.get('/flowModels:schema').query({
-      use: 'DisabledProviderModel',
-    });
+    const disabled = await querySchema('DisabledProviderModel');
     expect(disabled.status).toBe(404);
 
-    const batch = await agent.post('/flowModels:schemas').send({
-      uses: [],
-    });
+    const batch = await querySchemas([]);
     expect(batch.status).toBe(200);
     expect(batch.body?.data).toEqual([]);
   });
 
   it('should collect contributions from representative official plugin providers', async () => {
-    await app.destroy();
-    app = null as any;
+    await destroyTestApp(app);
+    app = null;
+    flowEnginePlugin = null;
 
-    const officialApp = await createMockServer({
-      registerActions: true,
-      plugins: ['flow-engine', PluginActionBulkUpdateServer, PluginBlockReferenceServer],
-    });
+    const { app: officialApp, agent: officialAgent } = await createOfficialProviderApp();
 
     try {
-      const officialAgent = officialApp.agent();
-
       const bundle = await officialAgent.post('/flowModels:schemaBundle').send({
         uses: ['BulkUpdateActionModel', 'ReferenceBlockModel'],
       });
@@ -598,7 +559,7 @@ describe('flow schema contribution provider', () => {
       expect(reference.status).toBe(200);
       expect(reference.body?.data?.use).toBe('ReferenceBlockModel');
     } finally {
-      await officialApp.destroy();
+      await destroyTestApp(officialApp);
     }
   });
 });

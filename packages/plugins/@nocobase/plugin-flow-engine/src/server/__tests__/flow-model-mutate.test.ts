@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
 import { FlowModel } from '@nocobase/flow-engine';
 import FlowModelRepository from '../repository';
+import { createFlowEngineTestApp, destroyTestApp } from './test-utils';
 
 class MutateSchemaStrictModel extends FlowModel {}
 
@@ -31,67 +31,68 @@ MutateSchemaStrictModel.define({
 });
 
 describe('flow-model mutate', () => {
-  let app: MockServer;
+  let app: any;
   let repository: FlowModelRepository;
   let agent: any;
 
+  const mutate = (values: any) => agent.resource('flowModels').mutate({ values });
+  const insertModelTree = (model: Record<string, any>) => repository.insertModel(model as any);
+
   afterEach(async () => {
-    if (app) {
-      await app.destroy();
-    }
+    await destroyTestApp(app);
+    app = null;
   });
 
   beforeEach(async () => {
-    app = await createMockServer({
-      registerActions: true,
-      plugins: ['flow-engine'],
-    });
-    (app.pm.get('flow-engine') as any)?.registerFlowSchemas({
-      models: {
-        MutateSchemaStrictModel,
-      },
-      modelContributions: [
-        {
-          use: 'MutateContextualChildModel',
-          source: 'official',
-          strict: false,
-          stepParamsSchema: {
-            type: 'object',
-            additionalProperties: true,
+    ({ app, agent } = await createFlowEngineTestApp({
+      registerSchemas(flowEnginePlugin) {
+        flowEnginePlugin.registerFlowSchemas({
+          models: {
+            MutateSchemaStrictModel,
           },
-        },
-        {
-          use: 'MutateContextualParentModel',
-          source: 'official',
-          strict: false,
-          subModelSlots: {
-            body: {
-              type: 'object',
+          modelContributions: [
+            {
               use: 'MutateContextualChildModel',
-              childSchemaPatch: {
-                stepParamsSchema: {
+              source: 'official',
+              strict: false,
+              stepParamsSchema: {
+                type: 'object',
+                additionalProperties: true,
+              },
+            },
+            {
+              use: 'MutateContextualParentModel',
+              source: 'official',
+              strict: false,
+              subModelSlots: {
+                body: {
                   type: 'object',
-                  properties: {
-                    alpha: {
-                      type: 'string',
+                  use: 'MutateContextualChildModel',
+                  childSchemaPatch: {
+                    stepParamsSchema: {
+                      type: 'object',
+                      properties: {
+                        alpha: {
+                          type: 'string',
+                        },
+                      },
+                      required: ['alpha'],
+                      additionalProperties: false,
                     },
                   },
-                  required: ['alpha'],
-                  additionalProperties: false,
                 },
               },
             },
-          },
-        },
-      ],
-    });
+          ],
+        });
+      },
+    }));
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
-    agent = app.agent();
   });
 
   it('should support $ref chaining (duplicate -> attach)', async () => {
-    await repository.insertModel({ uid: 'mut-parent', use: 'ParentModel' } as any);
-    await repository.insertModel({
+    await insertModelTree({ uid: 'mut-parent', use: 'ParentModel' });
+    await insertModelTree({
       uid: 'mut-source',
       use: 'SourceModel',
       subModels: {
@@ -100,31 +101,29 @@ describe('flow-model mutate', () => {
           use: 'InnerModel',
         },
       },
-    } as any);
+    });
 
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'dup',
-            type: 'duplicate',
-            params: { uid: 'mut-source', targetUid: 'mut-target' },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'dup',
+          type: 'duplicate',
+          params: { uid: 'mut-source', targetUid: 'mut-target' },
+        },
+        {
+          opId: 'att',
+          type: 'attach',
+          params: {
+            uid: '$ref:dup.uid',
+            parentId: 'mut-parent',
+            subKey: 'items',
+            subType: 'array',
+            position: 'last',
           },
-          {
-            opId: 'att',
-            type: 'attach',
-            params: {
-              uid: '$ref:dup.uid',
-              parentId: 'mut-parent',
-              subKey: 'items',
-              subType: 'array',
-              position: 'last',
-            },
-          },
-        ],
-        returnModels: ['mut-parent', 'mut-target'],
-      },
+        },
+      ],
+      returnModels: ['mut-parent', 'mut-target'],
     });
 
     expect(res.status).toBe(200);
@@ -146,28 +145,26 @@ describe('flow-model mutate', () => {
   });
 
   it('should rollback when an op fails (atomic)', async () => {
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'up1',
-            type: 'upsert',
-            params: { values: { uid: 'mut-rollback', use: 'TestModel' } },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'up1',
+          type: 'upsert',
+          params: { values: { uid: 'mut-rollback', use: 'TestModel' } },
+        },
+        {
+          opId: 'badAttach',
+          type: 'attach',
+          params: {
+            uid: '$ref:up1.uid',
+            parentId: 'missing-parent',
+            subKey: 'items',
+            subType: 'array',
+            position: 'last',
           },
-          {
-            opId: 'badAttach',
-            type: 'attach',
-            params: {
-              uid: '$ref:up1.uid',
-              parentId: 'missing-parent',
-              subKey: 'items',
-              subType: 'array',
-              position: 'last',
-            },
-          },
-        ],
-      },
+        },
+      ],
     });
 
     expect(res.status).toBe(404);
@@ -177,27 +174,25 @@ describe('flow-model mutate', () => {
   });
 
   it('should return 409 when duplicate targetUid already exists and is not produced by this op', async () => {
-    await repository.insertModel({ uid: 'mut-existing', use: 'OtherModel' } as any);
-    await repository.insertModel({ uid: 'mut-source2', use: 'SourceModel' } as any);
+    await insertModelTree({ uid: 'mut-existing', use: 'OtherModel' });
+    await insertModelTree({ uid: 'mut-source2', use: 'SourceModel' });
 
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'dup',
-            type: 'duplicate',
-            params: { uid: 'mut-source2', targetUid: 'mut-existing' },
-          },
-        ],
-      },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'dup',
+          type: 'duplicate',
+          params: { uid: 'mut-source2', targetUid: 'mut-existing' },
+        },
+      ],
     });
 
     expect(res.status).toBe(409);
   });
 
   it('should be retry-safe for duplicate(targetUid) replays', async () => {
-    await repository.insertModel({
+    await insertModelTree({
       uid: 'mut-source3',
       use: 'SourceModel',
       subModels: {
@@ -206,24 +201,22 @@ describe('flow-model mutate', () => {
           use: 'InnerModel',
         },
       },
-    } as any);
+    });
 
     const request = {
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'dup',
-            type: 'duplicate',
-            params: { uid: 'mut-source3', targetUid: 'mut-target3' },
-          },
-        ],
-        returnModels: ['mut-target3'],
-      },
+      atomic: true,
+      ops: [
+        {
+          opId: 'dup',
+          type: 'duplicate',
+          params: { uid: 'mut-source3', targetUid: 'mut-target3' },
+        },
+      ],
+      returnModels: ['mut-target3'],
     };
 
-    const res1 = await agent.resource('flowModels').mutate(request as any);
-    const res2 = await agent.resource('flowModels').mutate(request as any);
+    const res1 = await mutate(request);
+    const res2 = await mutate(request);
 
     expect(res1.status).toBe(200);
     expect(res2.status).toBe(200);
@@ -236,38 +229,36 @@ describe('flow-model mutate', () => {
   });
 
   it('should validate resolved $ref payloads before commit and rollback atomically', async () => {
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'seed',
-            type: 'upsert',
-            params: {
-              values: {
-                uid: 'mut-ref-seed',
-                use: 'LooseSourceModel',
-                stepParams: {
-                  title: 123,
-                },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'seed',
+          type: 'upsert',
+          params: {
+            values: {
+              uid: 'mut-ref-seed',
+              use: 'LooseSourceModel',
+              stepParams: {
+                title: 123,
               },
             },
           },
-          {
-            opId: 'strict',
-            type: 'upsert',
-            params: {
-              values: {
-                uid: 'mut-ref-strict',
-                use: 'MutateSchemaStrictModel',
-                stepParams: {
-                  title: '$ref:seed.stepParams.title',
-                },
+        },
+        {
+          opId: 'strict',
+          type: 'upsert',
+          params: {
+            values: {
+              uid: 'mut-ref-strict',
+              use: 'MutateSchemaStrictModel',
+              stepParams: {
+                title: '$ref:seed.stepParams.title',
               },
             },
           },
-        ],
-      },
+        },
+      ],
     });
 
     expect(res.status).toBe(200);
@@ -280,31 +271,29 @@ describe('flow-model mutate', () => {
   });
 
   it('should allow contextual nested child schema mismatches during mutate upsert when validation is loose', async () => {
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'ctx-upsert',
-            type: 'upsert',
-            params: {
-              values: {
-                uid: 'mut-context-root',
-                use: 'MutateContextualParentModel',
-                subModels: {
-                  body: {
-                    uid: 'mut-context-child',
-                    use: 'MutateContextualChildModel',
-                    stepParams: {
-                      beta: 1,
-                    },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'ctx-upsert',
+          type: 'upsert',
+          params: {
+            values: {
+              uid: 'mut-context-root',
+              use: 'MutateContextualParentModel',
+              subModels: {
+                body: {
+                  uid: 'mut-context-child',
+                  use: 'MutateContextualChildModel',
+                  stepParams: {
+                    beta: 1,
                   },
                 },
               },
             },
           },
-        ],
-      },
+        },
+      ],
     });
 
     expect(res.status).toBe(200);
@@ -313,33 +302,31 @@ describe('flow-model mutate', () => {
   });
 
   it('should allow props to be null in nested mutate upsert payloads', async () => {
-    const res = await agent.resource('flowModels').mutate({
-      values: {
-        atomic: true,
-        ops: [
-          {
-            opId: 'ctx-upsert-pass',
-            type: 'upsert',
-            params: {
-              values: {
-                uid: 'mut-context-root-pass',
-                use: 'MutateContextualParentModel',
-                subModels: {
-                  body: {
-                    uid: 'mut-context-child-pass',
-                    use: 'MutateContextualChildModel',
-                    props: null,
-                    stepParams: {
-                      alpha: 'ok',
-                    },
+    const res = await mutate({
+      atomic: true,
+      ops: [
+        {
+          opId: 'ctx-upsert-pass',
+          type: 'upsert',
+          params: {
+            values: {
+              uid: 'mut-context-root-pass',
+              use: 'MutateContextualParentModel',
+              subModels: {
+                body: {
+                  uid: 'mut-context-child-pass',
+                  use: 'MutateContextualChildModel',
+                  props: null,
+                  stepParams: {
+                    alpha: 'ok',
                   },
                 },
               },
             },
           },
-        ],
-        returnModels: ['mut-context-root-pass'],
-      },
+        },
+      ],
+      returnModels: ['mut-context-root-pass'],
     });
 
     expect(res.status).toBe(200);
