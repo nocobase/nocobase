@@ -288,6 +288,11 @@ export class SubModelTemplateImporterModel extends CommonItemModel {
       mountTarget.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
       if (canMutate) {
+        // mutate 快路径只持久化了 duplicate/move/destroy 和 stepParams patch，
+        // mapped item use 的结构改写发生在本地 normalize 之后，这里补一次整棵 grid 保存。
+        if (mappedUse) {
+          await newGrid.save();
+        }
         mountTarget.flowEngine.removeModelWithSubModels(existingGrid.uid);
       } else {
         await mountTarget.flowEngine.destroyModel(existingGrid.uid);
