@@ -1091,6 +1091,40 @@ describe('workflow > instructions > loop', () => {
       expect(jobs[0].status).toBe(JOB_STATUS.RESOLVED);
     });
   });
+
+  describe('validation', () => {
+    let agent;
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      agent = (app as any).agent();
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should reject when exit is invalid', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'loop', config: { exit: 99 } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid exit value', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'loop', config: { exit: EXIT.RETURN } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with empty config', async () => {
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'loop', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+  });
 });
 
 describe('process.env.WORKFLOW_LOOP_LIMIT', () => {

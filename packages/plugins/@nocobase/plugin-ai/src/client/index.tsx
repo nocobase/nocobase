@@ -53,6 +53,7 @@ import { setupDataModeling } from './ai-employees/data-modeling/setup';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
+const { MCPSettings } = lazy(() => import('./ai-employees/admin/mcp/MCPSettings'), 'MCPSettings');
 const { MessagesSettings } = lazy(() => import('./chat-settings/Messages'), 'MessagesSettings');
 const { StructuredOutputSettings } = lazy(() => import('./chat-settings/StructuredOutput'), 'StructuredOutputSettings');
 const { AdminSettings } = lazy(() => import('./admin-settings/AdminSettings'), 'AdminSettings');
@@ -114,6 +115,12 @@ export class PluginAIClient extends Plugin {
       title: tval('LLM services', { ns: namespace }),
       aclSnippet: 'pm.ai.llm-services',
       Component: LLMServices,
+    });
+    this.app.pluginSettingsManager.add('ai.mcp-settings', {
+      icon: 'ApiOutlined',
+      title: tval('MCP settings', { ns: namespace }),
+      aclSnippet: 'pm.ai.mcp-settings',
+      Component: MCPSettings,
     });
     this.app.pluginSettingsManager.add('ai.datasource', {
       sort: 99,

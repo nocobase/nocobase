@@ -14,6 +14,7 @@ export function getSystemPrompt({
   environment,
   dataSources,
   knowledgeBase,
+  availableSkills,
 }: {
   aiEmployee: { nickname: string; about: string };
   personal?: string;
@@ -21,6 +22,7 @@ export function getSystemPrompt({
   environment: { database: string; locale: string };
   dataSources?: string;
   knowledgeBase?: string;
+  availableSkills?: { name: string; description: string; content?: string }[];
 }) {
   // Helper function to get database-specific identifier quoting rules
   const getDatabaseQuotingRules = (): string => {
@@ -123,6 +125,17 @@ ${task.context ? `<context>\n${task.context}\n</context>` : ''}
 <main_database>${environment.database}</main_database>
 <locale>${environment.locale}</locale>
 </environment>
+
+${
+  availableSkills?.length
+    ? `<skills>
+You have access to the following skills (tools groups). When a user's request matches a skill's description, use the getSkill tool to load that skill's detailed content and available tools:
+
+${availableSkills.map((skill) => `- **${skill.name}**: ${skill.description || 'No description'}`).join('\n')}
+</skills>
+`
+    : ''
+}
 
 ${knowledgeBase ? `<knowledgeBase>${knowledgeBase}</knowledgeBase>` : ''}
 `;

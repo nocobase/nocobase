@@ -69,6 +69,10 @@ export abstract class Trigger {
   // group: string;
   useVariables?(config: Record<string, any>, options?: UseVariableOptions): VariableOption[];
   fieldset: Record<string, ISchema>;
+  /**
+   * @experimental
+   */
+  presetFieldset?: Record<string, ISchema>;
   triggerFieldset?: Record<string, ISchema>;
   validate(config: Record<string, any>): boolean {
     return true;
