@@ -97,13 +97,7 @@ export class AIEmployee {
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
     this.webSearch = webSearch;
-    this.protocol = ChatStreamProtocol.fromContext(ctx, {
-      sessionId,
-      from,
-      aiEmployee: {
-        username: employee.get('username'),
-      },
-    });
+    this.protocol = ChatStreamProtocol.fromContext(ctx);
   }
 
   // === Chat flow ===
@@ -252,14 +246,19 @@ export class AIEmployee {
         userMessages,
         userDecisions,
       });
-      const { threadId } = await this.getCurrentThread();
+
       const invokeConfig = {
-        // configurable: { thread_id: threadId },
         context: { ctx: this.ctx },
         recursionLimit: 100,
         writer,
         ...config,
       };
+
+      if (this.from === 'main-agent') {
+        const { threadId } = await this.getCurrentThread();
+        invokeConfig.configurable = { thread_id: threadId };
+      }
+
       return await this.agentInvoke(provider, chatContext, invokeConfig, state);
     } catch (err) {
       if (err.name === 'GraphInterrupt') {
@@ -364,14 +363,14 @@ export class AIEmployee {
     if (this.from === 'sub-agent') {
       delete config.configurable;
     }
-    return agent.stream(input, config);
+    return agent.stream(input, this.withRunMetadata(config));
   }
 
   async agentInvoke(provider: LLMProvider, context: AIChatContext, config?: any, state?: any): Promise<any> {
     const { systemPrompt, tools, middleware } = context;
     const agent = await this.createAgent({ provider, systemPrompt, tools, middleware });
     const input = this.getAgentInput(context, state);
-    return agent.invoke(input, config);
+    return agent.invoke(input, this.withRunMetadata(config));
   }
 
   async prepareChatStream({
@@ -445,36 +444,42 @@ export class AIEmployee {
     });
 
     try {
-      this.protocol.startStream();
+      const aiEmployeeConversation = {
+        sessionId: this.sessionId,
+        from: this.from,
+        username: this.employee.username,
+      };
+      this.protocol.with(aiEmployeeConversation).startStream();
       for await (const [mode, chunks] of stream) {
         if (mode === 'messages') {
-          const [chunk] = chunks;
+          const [chunk, metadata] = chunks;
+          const { currentConversation } = metadata;
           if (chunk.type === 'ai') {
             gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
             if (chunk.content) {
               if (isReasoning) {
                 isReasoning = false;
-                this.protocol.stopReasoning();
+                this.protocol.with(currentConversation).stopReasoning();
               }
               const parsedContent = provider.parseResponseChunk(chunk.content);
               if (parsedContent) {
-                this.protocol.content(parsedContent);
+                this.protocol.with(currentConversation).content(parsedContent);
               }
             }
 
             if (chunk.tool_call_chunks?.length) {
-              this.protocol.toolCallChunks(chunk.tool_call_chunks);
+              this.protocol.with(currentConversation).toolCallChunks(chunk.tool_call_chunks);
             }
 
             const webSearch = provider.parseWebSearchAction(chunk);
             if (webSearch?.length) {
-              this.protocol.webSearch(webSearch);
+              this.protocol.with(currentConversation).webSearch(webSearch);
             }
 
             const reasoningContent = provider.parseReasoningContent(chunk);
             if (reasoningContent) {
               isReasoning = true;
-              this.protocol.reasoning(reasoningContent);
+              this.protocol.with(currentConversation).reasoning(reasoningContent);
             }
           }
         } else if (mode === 'updates') {
@@ -484,17 +489,19 @@ export class AIEmployee {
             if (interruptActions.size) {
               const toolsMap = await this.getToolsMap();
               for (const interruptAction of interruptActions.values()) {
-                if (!interruptAction.payload) {
+                if (!interruptAction.currentConversation || !interruptAction.toolCall) {
+                  this.logger.warn('currentConversation or toolCall not exist in __interrupt__', interruptAction);
                   continue;
                 }
-                const { sessionId, from, username, toolCallId, toolCallName } = interruptAction.payload;
+                const { sessionId, from, username } = interruptAction.currentConversation;
+                const { id: toolCallId, name: toolCallName } = interruptAction.toolCall;
                 const messageId = aiMessageIdMap.get(sessionId);
                 if (!messageId) {
                   continue;
                 }
 
                 await this.updateToolCallInterrupted(sessionId, messageId, toolCallId, interruptId, interruptAction);
-                this.protocol.toolCallStatus({
+                this.protocol.with(interruptAction.currentConversation).toolCallStatus({
                   toolCall: {
                     messageId: messageId,
                     id: toolCallId,
@@ -503,18 +510,14 @@ export class AIEmployee {
                   },
                   invokeStatus: 'interrupted',
                   interruptAction,
-                  conversation: {
-                    sessionId,
-                    from,
-                    username,
-                  },
                 });
               }
             }
           }
         } else if (mode === 'custom') {
+          const { currentConversation } = chunks;
           if (chunks.action === 'AfterAIMessageSaved') {
-            aiMessageIdMap.set(chunks.body.sessionId, chunks.body.messageId);
+            aiMessageIdMap.set(currentConversation.sessionId, chunks.body.messageId);
 
             const data = responseMetadata.get(chunks.body.id);
             if (data) {
@@ -543,11 +546,11 @@ export class AIEmployee {
               }
             }
           } else if (chunks.action === 'initToolCalls') {
-            this.protocol.toolCalls(chunks.body);
+            this.protocol.with(currentConversation).toolCalls(chunks.body);
           } else if (chunks.action === 'beforeToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.toolCallStatus({
+            this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -555,16 +558,11 @@ export class AIEmployee {
                 willInterrupt,
               },
               invokeStatus: 'pending',
-              conversation: {
-                sessionId: chunks.sessionId,
-                from: chunks.from,
-                username: chunks.username,
-              },
             });
           } else if (chunks.action === 'afterToolCall') {
             const toolsMap = await this.getToolsMap();
             const willInterrupt = this.shouldInterruptToolCall(toolsMap.get(chunks.body?.toolCall?.name));
-            this.protocol.toolCallStatus({
+            this.protocol.with(currentConversation).toolCallStatus({
               toolCall: {
                 messageId: chunks.body?.toolCall?.messageId,
                 id: chunks.body?.toolCall?.id,
@@ -573,11 +571,6 @@ export class AIEmployee {
               },
               invokeStatus: 'done',
               status: chunks.body?.toolCallResult?.status,
-              conversation: {
-                sessionId: chunks.sessionId,
-                from: chunks.from,
-                username: chunks.username,
-              },
             });
           } else if (chunks.action === 'beforeSendToolMessage') {
             const { messageId, messages } = chunks.body ?? {};
@@ -590,7 +583,7 @@ export class AIEmployee {
               for (const { metadata } of messages) {
                 const tools = toolsMap.get(metadata.toolName);
                 const toolCallResult = toolCallResultMap.get(metadata.toolCallId);
-                this.protocol.toolCallStatus({
+                this.protocol.with(currentConversation).toolCallStatus({
                   toolCall: {
                     messageId,
                     id: metadata.toolCallId,
@@ -599,16 +592,11 @@ export class AIEmployee {
                   },
                   invokeStatus: 'confirmed',
                   status: toolCallResult?.status,
-                  conversation: {
-                    sessionId: chunks.sessionId,
-                    from: chunks.from,
-                    username: chunks.username,
-                  },
                 });
               }
             }
 
-            this.protocol.newMessage();
+            this.protocol.with(currentConversation).newMessage();
           }
         }
       }
@@ -618,7 +606,7 @@ export class AIEmployee {
         return;
       }
 
-      this.protocol.endStream();
+      this.protocol.with(aiEmployeeConversation).endStream();
     } catch (err) {
       this.ctx.log.error(err);
       if (err.name === 'GraphRecursionError') {
@@ -1345,7 +1333,12 @@ If information is missing, clearly state it in the summary.</Important>`;
       order: number;
       description: string;
       allowedDecisions: string[];
-      payload?: { sessionId: string; from: string; username: string; toolCallId: string; toolCallName: string };
+      toolCall?: { id: string; name: string };
+      currentConversation?: {
+        sessionId: string;
+        from: string;
+        username: string;
+      };
     }
   > {
     const result = new Map();
@@ -1363,7 +1356,15 @@ If information is missing, clearly state it in the summary.</Important>`;
         order: order++,
         description: actionRequest.description,
         allowedDecisions: reviewConfigsMap.get(name)?.allowedDecisions,
-        payload,
+        toolCall: {
+          id: payload.toolCallId,
+          name: payload.toolCallName,
+        },
+        currentConversation: {
+          sessionId: payload.sessionId,
+          from: payload.from,
+          username: payload.username,
+        },
       });
     }
     return result;
@@ -1522,6 +1523,20 @@ If information is missing, clearly state it in the summary.</Important>`;
     return this.toolsManager.listTools(filter);
   }
 
+  private withRunMetadata(config?: any) {
+    return {
+      ...config,
+      metadata: {
+        ...(config?.metadata ?? {}),
+        currentConversation: {
+          sessionId: this.sessionId,
+          from: this.from,
+          username: this.employee.get('username'),
+        },
+      },
+    };
+  }
+
   private get toolsManager(): ToolsManager {
     return this.ctx.app.aiManager.toolsManager;
   }
@@ -1578,14 +1593,6 @@ class AgentThread {
   }
 }
 
-export type ChatStreamProtocolOptions = {
-  sessionId: string;
-  aiEmployee: {
-    username: string;
-  };
-  from: 'main-agent' | 'sub-agent';
-};
-
 export class ChatStreamProtocol {
   private _statistics = {
     sent: 0,
@@ -1597,134 +1604,96 @@ export class ChatStreamProtocol {
     },
   };
 
-  constructor(
-    private readonly streamConsumer: StreamConsumer,
-    private readonly options: ChatStreamProtocolOptions,
-  ) {}
+  constructor(private readonly streamConsumer: StreamConsumer) {}
 
-  static create(streamConsumer: StreamConsumer, options: ChatStreamProtocolOptions) {
-    return new ChatStreamProtocol(streamConsumer, options);
+  static fromContext(ctx: Context) {
+    return new ChatStreamProtocol(ctx.res);
   }
 
-  static fromContext(ctx: Context, options: ChatStreamProtocolOptions) {
-    return new ChatStreamProtocol(ctx.res, options);
-  }
+  with(conversation: { sessionId: string; from: string; username: string }) {
+    const write = ({ type, body }: { type: string; body?: any }) => {
+      const { sessionId, from, username } = conversation;
+      const data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
+      this.streamConsumer.write(data);
+      this._statistics.addSent(data.length);
+    };
 
-  startStream() {
-    this._statistics.reset();
-    this.write({ type: 'stream_start' });
-  }
-
-  endStream() {
-    this.write({ type: 'stream_end' });
-  }
-
-  newMessage(content?: unknown) {
-    this.write({ type: 'new_message', body: content });
-  }
-
-  content(content: string): void {
-    this.write({ type: 'content', body: content });
-  }
-
-  webSearch(content: { type: string; query: string }[]) {
-    this.write({ type: 'web_search', body: content });
-  }
-
-  reasoning(content: { status: string; content: string }) {
-    this.write({ type: 'reasoning', body: content });
-  }
-
-  stopReasoning() {
-    this.write({
-      type: 'reasoning',
-      body: {
-        status: 'stop',
-        content: '',
+    return {
+      startStream: () => {
+        this._statistics.reset();
+        write({ type: 'stream_start' });
       },
-    });
-  }
 
-  toolCallChunks(content: unknown) {
-    this.write({ type: 'tool_call_chunks', body: content });
-  }
+      endStream: () => {
+        write({ type: 'stream_end' });
+      },
 
-  toolCalls(
-    content: unknown,
-    conversation?: {
-      sessionId: string;
-      from: string;
-      username: string;
-    },
-  ) {
-    this.write({ ...(conversation ?? {}), type: 'tool_calls', body: content });
-  }
+      newMessage: (content?: unknown) => {
+        write({ type: 'new_message', body: content });
+      },
 
-  toolCallStatus({
-    toolCall,
-    invokeStatus,
-    status,
-    interruptAction,
-    conversation,
-  }: {
-    toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
-    invokeStatus: string;
-    status?: string;
-    interruptAction?: {
-      order: number;
-      description: string;
-      allowedDecisions: string[];
-    };
-    conversation?: {
-      sessionId: string;
-      from: string;
-      username: string;
-    };
-  }) {
-    this.write({
-      ...(conversation ?? {}),
-      type: 'tool_call_status',
-      body: {
+      content: (content: string): void => {
+        write({ type: 'content', body: content });
+      },
+
+      webSearch: (content: { type: string; query: string }[]) => {
+        write({ type: 'web_search', body: content });
+      },
+
+      reasoning: (content: { status: string; content: string }) => {
+        write({ type: 'reasoning', body: content });
+      },
+
+      stopReasoning: () => {
+        write({
+          type: 'reasoning',
+          body: {
+            status: 'stop',
+            content: '',
+          },
+        });
+      },
+
+      toolCallChunks: (content: unknown) => {
+        write({ type: 'tool_call_chunks', body: content });
+      },
+
+      toolCalls: (content: unknown) => {
+        write({ type: 'tool_calls', body: content });
+      },
+
+      toolCallStatus: ({
         toolCall,
         invokeStatus,
         status,
         interruptAction,
+      }: {
+        toolCall: { messageId: string; id: string; name: string; willInterrupt: boolean };
+        invokeStatus: string;
+        status?: string;
+        interruptAction?: {
+          order: number;
+          description: string;
+          allowedDecisions: string[];
+        };
+      }) => {
+        write({
+          type: 'tool_call_status',
+          body: {
+            toolCall,
+            invokeStatus,
+            status,
+            interruptAction,
+          },
+        });
       },
-    });
+    };
   }
 
   get statistics() {
     return {
       sent: this._statistics.sent,
     };
-  }
-
-  private write({
-    sessionId,
-    from,
-    username,
-    type,
-    body,
-  }: {
-    sessionId?: string;
-    from?: string;
-    username?: string;
-    type: string;
-    body?: any;
-  }) {
-    let data;
-    if (sessionId && from && username) {
-      data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
-    } else {
-      const {
-        sessionId,
-        from,
-        aiEmployee: { username },
-      } = this.options;
-      data = `data: ${JSON.stringify({ sessionId, from, username, type, body })}\n\n`;
-    }
-    this.streamConsumer.write(data);
-    this._statistics.addSent(data.length);
   }
 }
 

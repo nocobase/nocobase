@@ -46,7 +46,7 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
       const { runtime, toolCall } = request;
       const { messageId } = request.state;
 
-      const conversation = {
+      const currentConversation = {
         sessionId: aiEmployee.sessionId,
         username: aiEmployee.employee.username,
         from: aiEmployee.from,
@@ -59,7 +59,8 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
       if (tm.status === 'error') {
         runtime.writer?.({
           action: 'afterToolCall',
-          body: { ...conversation, toolCall, toolCallResult: tm },
+          body: { toolCall, toolCallResult: tm },
+          currentConversation,
         });
         return new ToolMessage({
           tool_call_id: request.toolCall.id,
@@ -72,7 +73,7 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
       }
 
       await aiEmployee.updateToolCallPending(messageId, request.toolCall.id);
-      runtime.writer?.({ ...conversation, action: 'beforeToolCall', body: { toolCall } });
+      runtime.writer?.({ action: 'beforeToolCall', body: { toolCall }, currentConversation });
       let result;
       try {
         const toolMessage = await handler(request);
@@ -103,9 +104,9 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
         aiEmployee.logger.error(e);
         result = { status: 'error', content: e.message };
         runtime.writer?.({
-          ...conversation,
           action: 'afterToolCallError',
           body: { toolCall, error: e },
+          currentConversation,
         });
         return new ToolMessage({
           tool_call_id: request.toolCall.id,
@@ -120,9 +121,9 @@ export const toolCallStatusMiddleware = (aiEmployee: AIEmployee): ReturnType<typ
           await aiEmployee.updateToolCallDone(messageId, request.toolCall.id, result);
           const toolCallResult = await aiEmployee.getToolCallResult(messageId, request.toolCall.id);
           runtime.writer?.({
-            ...conversation,
             action: 'afterToolCall',
             body: { toolCall, toolCallResult },
+            currentConversation,
           });
         }
       }

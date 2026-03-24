@@ -139,11 +139,25 @@ export const conversationMiddleware = (
             toolMessages.map((x) => x.metadata.toolCallId as string),
           );
         });
-        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messageId, messages: toolMessages } });
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
+        runtime.writer?.({
+          action: 'beforeSendToolMessage',
+          body: { messageId, messages: toolMessages },
+          currentConversation,
+        });
       }
     },
     afterModel: async (state, runtime) => {
       try {
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
         const newState = {
           messageId: state.messageId,
           lastMessageIndex: {
@@ -181,21 +195,18 @@ export const conversationMiddleware = (
               fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
             }
           });
+
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
-            body: { sessionId: aiEmployee.sessionId, id: aiMessage.id, messageId: state.messageId },
+            body: { id: aiMessage.id, messageId: state.messageId },
+            currentConversation,
           });
         }
         if (toolCalls?.length) {
-          const conversation = {
-            sessionId: aiEmployee.sessionId,
-            username: aiEmployee.employee.username,
-            from: aiEmployee.from,
-          };
           runtime.writer?.({
-            ...conversation,
             action: 'initToolCalls',
             body: { toolCalls },
+            currentConversation,
           });
         }
 
