@@ -28,7 +28,7 @@ export const filterFormBlockModelSchemaContribution: FlowModelSchemaContribution
   use: 'FilterFormBlockModel',
   title: 'Filter form block',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

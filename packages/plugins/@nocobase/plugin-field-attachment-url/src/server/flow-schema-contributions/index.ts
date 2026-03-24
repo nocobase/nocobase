@@ -13,7 +13,7 @@ const attachmentUrlFieldModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'AttachmentURLFieldModel',
   title: 'Attachment URL',
   source: 'plugin',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   stepParamsSchema: {
     type: 'object',

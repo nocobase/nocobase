@@ -14,7 +14,7 @@ export const refreshActionModelInternalSchemaContribution: FlowModelSchemaContri
   use: 'RefreshActionModel',
   title: 'Refresh action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

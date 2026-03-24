@@ -623,7 +623,7 @@ describe('flow schema contribution provider', () => {
     expect(builtin.status).toBe(200);
     expect(builtin.body?.data?.coverage).toMatchObject({
       source: 'official',
-      strict: true,
+      strict: false,
       status: 'manual',
     });
     expect(builtin.body?.data?.dynamicHints).toEqual(

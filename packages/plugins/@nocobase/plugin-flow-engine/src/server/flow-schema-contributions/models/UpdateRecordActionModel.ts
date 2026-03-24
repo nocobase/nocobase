@@ -23,7 +23,7 @@ export const updateRecordActionModelSchemaContribution: FlowModelSchemaContribut
   use: 'UpdateRecordActionModel',
   title: 'Update record action',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

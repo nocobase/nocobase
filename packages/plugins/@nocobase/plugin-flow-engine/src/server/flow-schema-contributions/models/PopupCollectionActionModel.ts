@@ -50,7 +50,7 @@ export const popupCollectionActionModelInternalSchemaContribution: FlowModelSche
   use: 'PopupCollectionActionModel',
   title: 'Popup collection action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel', 'TableActionsColumnModel', 'DetailsBlockModel'],
   subModelSlots: {

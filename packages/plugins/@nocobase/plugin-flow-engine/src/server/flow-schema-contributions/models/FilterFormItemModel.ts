@@ -18,7 +18,7 @@ export const filterFormItemModelInternalSchemaContribution: FlowModelSchemaContr
   use: 'FilterFormItemModel',
   title: 'Filter form item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: filterFormItemStepParamsSchema,

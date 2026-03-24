@@ -14,7 +14,7 @@ export const filterFormCollapseActionModelInternalSchemaContribution: FlowModelS
   use: 'FilterFormCollapseActionModel',
   title: 'Filter form collapse action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {

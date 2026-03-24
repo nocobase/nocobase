@@ -14,7 +14,7 @@ export const filterFormResetActionModelInternalSchemaContribution: FlowModelSche
   use: 'FilterFormResetActionModel',
   title: 'Filter form reset action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {

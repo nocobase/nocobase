@@ -13,7 +13,7 @@ const sortFieldModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'SortFieldModel',
   title: 'Sort',
   source: 'plugin',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   stepParamsSchema: {
     type: 'object',

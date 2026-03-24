@@ -43,7 +43,7 @@ const actionPanelBlockModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'ActionPanelBlockModel',
   title: 'Action panel block',
   source: 'plugin',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {
@@ -122,7 +122,7 @@ const actionPanelScanActionModelSchemaContribution: FlowModelSchemaContribution 
   use: 'ActionPanelScanActionModel',
   title: 'Action panel scan action',
   source: 'plugin',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['ActionPanelBlockModel'],
   stepParamsSchema: {

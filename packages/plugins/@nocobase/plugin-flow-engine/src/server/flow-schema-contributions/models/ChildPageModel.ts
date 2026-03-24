@@ -14,7 +14,7 @@ export const childPageModelInternalSchemaContribution: FlowModelSchemaContributi
   use: 'ChildPageModel',
   title: 'Popup child page',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: [
     'PopupActionModel',

@@ -13,7 +13,7 @@ export const filterFormCustomFieldModelInternalSchemaContribution: FlowModelSche
   use: 'FilterFormCustomFieldModel',
   title: 'Filter form custom field item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {

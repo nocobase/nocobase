@@ -9,7 +9,7 @@
 
 import type { FlowJsonSchema, FlowModelSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-engine';
 
-const genericFilterSchemaId = 'https://nocobase.dev/schemas/plugin-map/generic-filter.json';
+const genericFilterSchemaId = 'urn:nocobase:schema:plugin-map:generic-filter';
 
 const genericFilterSchema: FlowJsonSchema = {
   $id: genericFilterSchemaId,
@@ -308,7 +308,7 @@ function createFieldContribution(use: string, title: string): FlowModelSchemaCon
     use,
     title,
     source: 'plugin',
-    strict: true,
+    strict: false,
     exposure: 'internal',
     stepParamsSchema: {
       type: 'object',

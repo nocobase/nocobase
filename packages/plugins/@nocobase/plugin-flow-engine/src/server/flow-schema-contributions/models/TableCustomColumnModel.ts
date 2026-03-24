@@ -14,7 +14,7 @@ export const tableCustomColumnModelInternalSchemaContribution: FlowModelSchemaCo
   use: 'TableCustomColumnModel',
   title: 'Table custom column',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: {

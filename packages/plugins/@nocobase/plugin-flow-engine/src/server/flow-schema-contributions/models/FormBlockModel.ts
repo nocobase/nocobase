@@ -13,7 +13,7 @@ export const formBlockModelInternalSchemaContribution: FlowModelSchemaContributi
   use: 'FormBlockModel',
   title: 'Form block base',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   abstract: true,
   allowDirectUse: false,

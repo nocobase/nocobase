@@ -14,7 +14,7 @@ export const childPageTabModelInternalSchemaContribution: FlowModelSchemaContrib
   use: 'ChildPageTabModel',
   title: 'Popup child page tab',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['ChildPageModel', 'PopupActionModel', 'BulkEditActionModel'],
   stepParamsSchema: pageTabSettingsStepParamsSchema,

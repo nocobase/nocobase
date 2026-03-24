@@ -19,7 +19,7 @@ export const blockGridModelInternalSchemaContribution: FlowModelSchemaContributi
   use: 'BlockGridModel',
   title: 'Block grid',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['PageModel', 'RootPageModel'],
   stepParamsSchema: createGridLayoutStepParamsSchema(),

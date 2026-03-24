@@ -19,7 +19,7 @@ export const detailsGridModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'DetailsGridModel',
   title: 'Details grid',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['DetailsBlockModel'],
   stepParamsSchema: createGridLayoutStepParamsSchema(),

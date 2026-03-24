@@ -14,7 +14,7 @@ export const bulkDeleteActionModelInternalSchemaContribution: FlowModelSchemaCon
   use: 'BulkDeleteActionModel',
   title: 'Bulk delete action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

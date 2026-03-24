@@ -14,7 +14,7 @@ export const pageModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'PageModel',
   title: 'Page',
   source: 'official',
-  strict: true,
+  strict: false,
   subModelSlots: {
     tabs: {
       type: 'array',

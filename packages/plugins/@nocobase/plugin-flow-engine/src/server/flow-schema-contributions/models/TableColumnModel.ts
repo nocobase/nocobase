@@ -18,7 +18,7 @@ export const tableColumnModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'TableColumnModel',
   title: 'Table column',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: tableColumnStepParamsSchema,

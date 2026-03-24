@@ -14,7 +14,7 @@ export const assignFormModelInternalSchemaContribution: FlowModelSchemaContribut
   use: 'AssignFormModel',
   title: 'Field assignments',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['UpdateRecordActionModel'],
   stepParamsSchema: {

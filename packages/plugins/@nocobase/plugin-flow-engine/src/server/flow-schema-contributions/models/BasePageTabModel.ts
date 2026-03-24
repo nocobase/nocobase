@@ -14,7 +14,7 @@ export const basePageTabModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'BasePageTabModel',
   title: 'Base page tab',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   abstract: true,
   allowDirectUse: false,

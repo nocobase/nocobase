@@ -14,7 +14,7 @@ export const linkActionModelInternalSchemaContribution: FlowModelSchemaContribut
   use: 'LinkActionModel',
   title: 'Link action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel', 'TableActionsColumnModel', 'DetailsBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

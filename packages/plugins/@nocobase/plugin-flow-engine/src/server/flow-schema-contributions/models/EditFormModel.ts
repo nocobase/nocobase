@@ -27,7 +27,7 @@ export const editFormModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'EditFormModel',
   title: 'Form (Edit)',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     ...formBlockBaseStepParamsSchema,
     properties: {

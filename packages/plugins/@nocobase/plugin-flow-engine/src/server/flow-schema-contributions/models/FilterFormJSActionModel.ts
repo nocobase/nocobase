@@ -14,7 +14,7 @@ export const filterFormJsActionModelInternalSchemaContribution: FlowModelSchemaC
   use: 'FilterFormJSActionModel',
   title: 'Filter form JS action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {

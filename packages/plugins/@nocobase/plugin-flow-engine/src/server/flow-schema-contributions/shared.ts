@@ -14,7 +14,7 @@ import type {
   FlowSubModelSlotSchema,
 } from '@nocobase/flow-engine';
 
-const genericFilterSchemaId = 'https://nocobase.dev/schemas/plugin-flow-engine/generic-filter.json';
+const genericFilterSchemaId = 'urn:nocobase:schema:plugin-flow-engine:generic-filter';
 
 export const genericFilterSchema: FlowJsonSchema = {
   $id: genericFilterSchemaId,
@@ -1360,7 +1360,7 @@ export function createFieldModelSchemaContribution(options: {
     use: options.use,
     title: options.title,
     source: options.source ?? 'official',
-    strict: options.strict ?? true,
+    strict: options.strict ?? false,
     exposure: options.exposure ?? 'internal',
     abstract: options.abstract,
     allowDirectUse: options.allowDirectUse,

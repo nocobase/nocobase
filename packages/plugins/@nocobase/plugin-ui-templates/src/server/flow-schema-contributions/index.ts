@@ -13,7 +13,7 @@ const referenceBlockModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'ReferenceBlockModel',
   title: 'Block template',
   source: 'plugin',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

@@ -24,7 +24,7 @@ export const addNewActionModelInternalSchemaContribution: FlowModelSchemaContrib
   use: 'AddNewActionModel',
   title: 'Add new action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   subModelSlots: {

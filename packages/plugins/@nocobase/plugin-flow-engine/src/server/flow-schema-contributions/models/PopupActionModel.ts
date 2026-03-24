@@ -34,7 +34,7 @@ export const popupActionModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'PopupActionModel',
   title: 'Popup action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['ActionPanelBlockModel'],
   subModelSlots: {

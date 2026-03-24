@@ -14,7 +14,7 @@ export const jsActionModelInternalSchemaContribution: FlowModelSchemaContributio
   use: 'JSActionModel',
   title: 'JS action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['ActionPanelBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

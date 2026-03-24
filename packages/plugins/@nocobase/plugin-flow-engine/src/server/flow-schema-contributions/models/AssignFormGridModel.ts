@@ -14,7 +14,7 @@ export const assignFormGridModelInternalSchemaContribution: FlowModelSchemaContr
   use: 'AssignFormGridModel',
   title: 'Assign form grid',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['UpdateRecordActionModel'],
   stepParamsSchema: createGridLayoutStepParamsSchema(),

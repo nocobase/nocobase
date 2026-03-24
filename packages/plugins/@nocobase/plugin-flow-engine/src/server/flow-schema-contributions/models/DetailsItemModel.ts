@@ -18,7 +18,7 @@ export const detailsItemModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'DetailsItemModel',
   title: 'Details item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['DetailsBlockModel'],
   stepParamsSchema: detailItemStepParamsSchema,

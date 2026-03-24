@@ -19,7 +19,7 @@ export const filterFormGridModelInternalSchemaContribution: FlowModelSchemaContr
   use: 'FilterFormGridModel',
   title: 'Filter form grid',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: createGridLayoutStepParamsSchema(),

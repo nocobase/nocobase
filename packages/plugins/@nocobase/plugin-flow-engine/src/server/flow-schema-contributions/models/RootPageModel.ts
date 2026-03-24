@@ -40,7 +40,7 @@ export const rootPageModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'RootPageModel',
   title: 'Root page',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: pageSettingsStepParamsSchema,
   subModelSlots: {
     tabs: {

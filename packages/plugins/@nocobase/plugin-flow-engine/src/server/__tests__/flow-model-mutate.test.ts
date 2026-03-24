@@ -54,7 +54,7 @@ describe('flow-model mutate', () => {
         {
           use: 'MutateContextualChildModel',
           source: 'official',
-          strict: true,
+          strict: false,
           stepParamsSchema: {
             type: 'object',
             additionalProperties: true,
@@ -63,7 +63,7 @@ describe('flow-model mutate', () => {
         {
           use: 'MutateContextualParentModel',
           source: 'official',
-          strict: true,
+          strict: false,
           subModelSlots: {
             body: {
               type: 'object',
@@ -270,27 +270,16 @@ describe('flow-model mutate', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'mut-ref-strict',
-          modelUse: 'MutateSchemaStrictModel',
-          section: 'stepParams',
-          expectedType: 'string',
-          schemaHash: expect.any(String),
-        }),
-      ]),
-    );
+    expect(res.status).toBe(200);
 
     const seeded = await repository.findModelById('mut-ref-seed', { includeAsyncNode: true });
     const strict = await repository.findModelById('mut-ref-strict', { includeAsyncNode: true });
-    expect(seeded).toBeNull();
-    expect(strict).toBeNull();
+    expect(seeded).not.toBeNull();
+    expect(strict).not.toBeNull();
+    expect(strict?.stepParams?.title).toBe(123);
   });
 
-  it('should validate contextual nested child schema during mutate upsert', async () => {
+  it('should allow contextual nested child schema mismatches during mutate upsert when validation is loose', async () => {
     const res = await agent.resource('flowModels').mutate({
       values: {
         atomic: true,
@@ -318,17 +307,9 @@ describe('flow-model mutate', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'mut-context-child',
-          modelUse: 'MutateContextualChildModel',
-          section: 'stepParams',
-        }),
-      ]),
-    );
+    expect(res.status).toBe(200);
+    const saved = await repository.findModelById('mut-context-root', { includeAsyncNode: true });
+    expect(saved?.subModels?.body?.uid).toBe('mut-context-child');
   });
 
   it('should allow props to be null in nested mutate upsert payloads', async () => {
@@ -398,7 +379,7 @@ describe('flow-model mutate', () => {
     expect(res.body?.data?.models?.['mut-popup-action-complete']?.subModels?.page?.use).toBe('ChildPageModel');
   });
 
-  it('should reject invalid popup child page trees during mutate upsert', async () => {
+  it('should allow incomplete popup child page trees during mutate upsert when validation is loose', async () => {
     const schema = await agent.get('/flowModels:schema').query({
       use: 'AddNewActionModel',
     });
@@ -423,17 +404,10 @@ describe('flow-model mutate', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/subModels/page/subModels/tabs',
-          modelUse: 'ChildPageModel',
-          section: 'subModels',
-          keyword: 'minItems',
-        }),
-      ]),
-    );
+    expect(res.status).toBe(200);
+    expect(res.body?.data?.results?.[0]).toMatchObject({
+      opId: 'popup-upsert-invalid',
+      ok: true,
+    });
   });
 });

@@ -14,7 +14,7 @@ export const jsColumnModelInternalSchemaContribution: FlowModelSchemaContributio
   use: 'JSColumnModel',
   title: 'JS column',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: {

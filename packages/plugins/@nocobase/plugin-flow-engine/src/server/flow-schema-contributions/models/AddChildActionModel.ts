@@ -14,7 +14,7 @@ export const addChildActionModelInternalSchemaContribution: FlowModelSchemaContr
   use: 'AddChildActionModel',
   title: 'Add child action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableActionsColumnModel', 'DetailsBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

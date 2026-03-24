@@ -14,7 +14,7 @@ export const formItemModelInternalSchemaContribution: FlowModelSchemaContributio
   use: 'FormItemModel',
   title: 'Form item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: formItemStepParamsSchema,

@@ -23,7 +23,7 @@ export const createFormModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'CreateFormModel',
   title: 'Form (Add new)',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: formBlockBaseStepParamsSchema,
   subModelSlots: createFormBlockSubModelSlots(),
   skeleton: createFormBlockSkeleton('CreateFormModel'),

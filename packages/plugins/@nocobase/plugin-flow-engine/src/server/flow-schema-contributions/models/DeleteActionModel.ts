@@ -14,7 +14,7 @@ export const deleteActionModelInternalSchemaContribution: FlowModelSchemaContrib
   use: 'DeleteActionModel',
   title: 'Delete action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableActionsColumnModel', 'DetailsBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

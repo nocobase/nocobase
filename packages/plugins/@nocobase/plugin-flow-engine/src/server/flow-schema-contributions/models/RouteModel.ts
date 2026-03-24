@@ -13,7 +13,7 @@ export const routeModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'RouteModel',
   title: 'Route',
   source: 'official',
-  strict: true,
+  strict: false,
   subModelSlots: {
     page: {
       type: 'object',

@@ -14,7 +14,7 @@ export const jsBlockModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'JSBlockModel',
   title: 'JS block',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

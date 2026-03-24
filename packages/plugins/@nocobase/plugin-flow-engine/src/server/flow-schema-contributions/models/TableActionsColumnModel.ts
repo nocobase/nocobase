@@ -14,7 +14,7 @@ export const tableActionsColumnModelInternalSchemaContribution: FlowModelSchemaC
   use: 'TableActionsColumnModel',
   title: 'Table actions column',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: {

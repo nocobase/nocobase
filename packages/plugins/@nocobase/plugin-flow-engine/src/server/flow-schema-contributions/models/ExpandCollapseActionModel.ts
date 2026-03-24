@@ -14,7 +14,7 @@ export const expandCollapseActionModelInternalSchemaContribution: FlowModelSchem
   use: 'ExpandCollapseActionModel',
   title: 'Expand collapse action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

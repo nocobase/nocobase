@@ -29,7 +29,7 @@ describe('flow-model ensure', () => {
         {
           use: 'EnsureContextualChildModel',
           source: 'official',
-          strict: true,
+          strict: false,
           stepParamsSchema: {
             type: 'object',
             additionalProperties: true,
@@ -38,7 +38,7 @@ describe('flow-model ensure', () => {
         {
           use: 'EnsureContextualParentModel',
           source: 'official',
-          strict: true,
+          strict: false,
           subModelSlots: {
             body: {
               type: 'object',
@@ -219,7 +219,7 @@ describe('flow-model ensure', () => {
     expect(res.body?.data?.subModels?.tabs?.[0]?.subModels?.grid).toBeUndefined();
   });
 
-  it('should validate nested child schema with parent context during ensure', async () => {
+  it('should allow nested child schema mismatches with parent context during ensure when validation is loose', async () => {
     const pass = await agent.resource('flowModels').ensure({
       values: {
         uid: 'ensure-context-root-pass',
@@ -254,16 +254,7 @@ describe('flow-model ensure', () => {
       },
     });
 
-    expect(fail.status).toBe(400);
-    expect(fail.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(fail.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'ensure-context-child-fail',
-          modelUse: 'EnsureContextualChildModel',
-          section: 'stepParams',
-        }),
-      ]),
-    );
+    expect(fail.status).toBe(200);
+    expect(fail.body?.data?.uid).toBe('ensure-context-root-fail');
   });
 });

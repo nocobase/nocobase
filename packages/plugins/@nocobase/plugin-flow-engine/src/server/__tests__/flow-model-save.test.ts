@@ -202,7 +202,7 @@ describe('flow-model save', () => {
         {
           use: 'SaveContextualChildModel',
           source: 'official',
-          strict: true,
+          strict: false,
           stepParamsSchema: {
             type: 'object',
             additionalProperties: true,
@@ -211,7 +211,7 @@ describe('flow-model save', () => {
         {
           use: 'SaveContextualParentAlphaModel',
           source: 'official',
-          strict: true,
+          strict: false,
           subModelSlots: {
             body: {
               type: 'object',
@@ -234,7 +234,7 @@ describe('flow-model save', () => {
         {
           use: 'SaveContextualParentBetaModel',
           source: 'official',
-          strict: true,
+          strict: false,
           subModelSlots: {
             body: {
               type: 'object',
@@ -257,12 +257,12 @@ describe('flow-model save', () => {
         {
           use: 'SaveContextualBridgeModel',
           source: 'official',
-          strict: true,
+          strict: false,
         },
         {
           use: 'SaveContextualAncestorModel',
           source: 'official',
-          strict: true,
+          strict: false,
           subModelSlots: {
             body: {
               type: 'object',
@@ -453,7 +453,7 @@ describe('flow-model save', () => {
     expect(saved?.stepParams?.settings?.save?.enabled).toBe('yes');
   });
 
-  it('should reject invalid new child nodes even when the root already exists', async () => {
+  it('should allow runtime placeholder child nodes when the existing root is validated loosely', async () => {
     const createRes = await agent.resource('flowModels').save({
       return: 'model',
       values: {
@@ -480,6 +480,7 @@ describe('flow-model save', () => {
     expect(createRes.status).toBe(200);
 
     const res = await agent.resource('flowModels').save({
+      return: 'model',
       values: {
         uid: 'save-existing-new-child-root',
         use: 'SaveSchemaStrictModel',
@@ -493,16 +494,13 @@ describe('flow-model save', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUse: 'RuntimeFieldModel',
-          section: 'model',
-        }),
-      ]),
+    expect(res.status).toBe(200);
+    const appendedChildren = (res.body?.data?.subModels?.body || []).filter(
+      (item) => item?.uid !== 'save-existing-new-child-old',
     );
+    expect(appendedChildren).toHaveLength(1);
+    expect(appendedChildren[0]?.uid).toEqual(expect.any(String));
+    expect(appendedChildren[0]?.use).toBe('RuntimeFieldModel');
   });
 
   it('should continue validating legal new child nodes when the root already exists', async () => {
@@ -1120,16 +1118,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expect(saveInvalidReference.status).toBe(400);
-    expect(saveInvalidReference.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'save-reference-block-invalid',
-          modelUse: 'ReferenceBlockModel',
-          section: 'stepParams',
-        }),
-      ]),
-    );
+    expect(saveInvalidReference.status).toBe(200);
+    expect(saveInvalidReference.body?.data).toBe('save-reference-block-invalid');
   });
 
   it('should allow direct discovery and save for internal concrete models while keeping abstract bases hidden', async () => {
@@ -1395,13 +1385,10 @@ describe('flow-model save', () => {
     });
     expect(legacyPopup.status).toBe(200);
 
-    const expectInvalidPopupPayload = async (values: any, matcher: Record<string, any>) => {
+    const expectLoosePopupPayload = async (values: any) => {
       const res = await saveAgent.resource('flowModels').save({ values });
-      expect(res.status).toBe(400);
-      expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-      expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-        expect.arrayContaining([expect.objectContaining(matcher)]),
-      );
+      expect(res.status).toBe(200);
+      expect(res.body?.data).toBe(values.uid);
     };
 
     const addNewBase = clonePayload(popupDocs.AddNewActionModel.minimalExample);
@@ -1409,75 +1396,40 @@ describe('flow-model save', () => {
     const wrongPageUse = clonePayload(addNewBase);
     wrongPageUse.uid = 'save-popup-invalid-page-use';
     wrongPageUse.subModels.page.use = 'PageModel';
-    await expectInvalidPopupPayload(wrongPageUse, {
-      jsonPointer: '#/subModels/page/use',
-      modelUse: 'AddNewActionModel',
-      section: 'subModels',
-      keyword: 'invalid-use',
-    });
+    await expectLoosePopupPayload(wrongPageUse);
 
     const missingTabs = clonePayload(addNewBase);
     missingTabs.uid = 'save-popup-missing-tabs';
     delete missingTabs.subModels.page.subModels.tabs;
-    await expectInvalidPopupPayload(missingTabs, {
-      jsonPointer: '#/subModels/page/subModels/tabs',
-      modelUse: 'ChildPageModel',
-      section: 'subModels',
-      keyword: 'required',
-    });
+    await expectLoosePopupPayload(missingTabs);
 
     const emptyTabs = clonePayload(addNewBase);
     emptyTabs.uid = 'save-popup-empty-tabs';
     emptyTabs.subModels.page.subModels.tabs = [];
-    await expectInvalidPopupPayload(emptyTabs, {
-      jsonPointer: '#/subModels/page/subModels/tabs',
-      modelUse: 'ChildPageModel',
-      section: 'subModels',
-      keyword: 'minItems',
-    });
+    await expectLoosePopupPayload(emptyTabs);
 
     const wrongTabUse = clonePayload(addNewBase);
     wrongTabUse.uid = 'save-popup-invalid-tab-use';
     wrongTabUse.subModels.page.subModels.tabs[0].use = 'PageTabModel';
-    await expectInvalidPopupPayload(wrongTabUse, {
-      jsonPointer: '#/subModels/page/subModels/tabs/0/use',
-      modelUse: 'ChildPageModel',
-      section: 'subModels',
-      keyword: 'invalid-use',
-    });
+    await expectLoosePopupPayload(wrongTabUse);
 
     const missingGrid = clonePayload(addNewBase);
     missingGrid.uid = 'save-popup-missing-grid';
     delete missingGrid.subModels.page.subModels.tabs[0].subModels.grid;
-    await expectInvalidPopupPayload(missingGrid, {
-      jsonPointer: '#/subModels/page/subModels/tabs/0/subModels/grid',
-      modelUse: 'ChildPageTabModel',
-      section: 'subModels',
-      keyword: 'required',
-    });
+    await expectLoosePopupPayload(missingGrid);
 
     const wrongGridUse = clonePayload(addNewBase);
     wrongGridUse.uid = 'save-popup-invalid-grid-use';
     wrongGridUse.subModels.page.subModels.tabs[0].subModels.grid.use = 'FormGridModel';
-    await expectInvalidPopupPayload(wrongGridUse, {
-      jsonPointer: '#/subModels/page/subModels/tabs/0/subModels/grid/use',
-      modelUse: 'ChildPageTabModel',
-      section: 'subModels',
-      keyword: 'invalid-use',
-    });
+    await expectLoosePopupPayload(wrongGridUse);
 
     const invalidPageModelClass = clonePayload(addNewBase);
     invalidPageModelClass.uid = 'save-popup-invalid-page-model-class';
     invalidPageModelClass.stepParams.popupSettings.openView.pageModelClass = 'UnknownPageModel';
-    await expectInvalidPopupPayload(invalidPageModelClass, {
-      jsonPointer: '#/stepParams/popupSettings/openView/pageModelClass',
-      modelUse: 'AddNewActionModel',
-      section: 'stepParams',
-      keyword: 'enum',
-    });
+    await expectLoosePopupPayload(invalidPageModelClass);
   });
 
-  it('should expose real field model candidates and validate runtime field slots against field metadata', async () => {
+  it('should expose real field model candidates and tolerate runtime field slot mismatches under loose validation', async () => {
     const originalGetFieldByPath = app.db.getFieldByPath?.bind(app.db);
     const originalGetDataSource = app.dataSourceManager.get.bind(app.dataSourceManager);
     vi.spyOn(app.db, 'getFieldByPath').mockImplementation((path: string) => {
@@ -1856,20 +1808,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expect(saveTableInput.status).toBe(400);
-    expect(saveTableInput.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/subModels/field/use',
-          modelUid: 'save-table-input-field',
-          modelUse: 'TableColumnModel',
-          section: 'subModels',
-          keyword: 'invalid-use',
-          allowedValues: expect.arrayContaining(['DisplayURLFieldModel', 'JSFieldModel']),
-          fieldInterface: 'url',
-        }),
-      ]),
-    );
+    expect(saveTableInput.status).toBe(200);
+    expect(saveTableInput.body?.data).toBe('save-table-input-field');
 
     const saveTableRuntimePlaceholder = await agent.resource('flowModels').save({
       values: {
@@ -1892,20 +1832,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expect(saveTableRuntimePlaceholder.status).toBe(400);
-    expect(saveTableRuntimePlaceholder.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/subModels/field/use',
-          modelUid: 'save-table-runtime-field',
-          modelUse: 'TableColumnModel',
-          section: 'subModels',
-          keyword: 'invalid-use',
-          message: 'Slot "field" cannot use runtime placeholder "RuntimeFieldModel".',
-          fieldInterface: 'url',
-        }),
-      ]),
-    );
+    expect(saveTableRuntimePlaceholder.status).toBe(200);
+    expect(saveTableRuntimePlaceholder.body?.data).toBe('save-table-runtime-field');
 
     const saveFormInput = await agent.resource('flowModels').save({
       values: {
@@ -2013,20 +1941,8 @@ describe('flow-model save', () => {
         },
       },
     });
-    expect(saveFormDisplay.status).toBe(400);
-    expect(saveFormDisplay.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/subModels/field/use',
-          modelUid: 'save-form-display-field',
-          modelUse: 'FormItemModel',
-          section: 'subModels',
-          keyword: 'invalid-use',
-          allowedValues: expect.arrayContaining(['InputFieldModel', 'JSEditableFieldModel']),
-          fieldInterface: 'input',
-        }),
-      ]),
-    );
+    expect(saveFormDisplay.status).toBe(200);
+    expect(saveFormDisplay.body?.data).toBe('save-form-display-field');
   });
 
   it('should expose contextual nested child schema only from parent discovery documents', async () => {
@@ -2113,18 +2029,8 @@ describe('flow-model save', () => {
       },
     });
 
-    expect(betaFail.status).toBe(400);
-    expect(betaFail.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(betaFail.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'ctx-child-beta-1',
-          modelUse: 'SaveContextualChildModel',
-          section: 'stepParams',
-          keyword: expect.any(String),
-        }),
-      ]),
-    );
+    expect(betaFail.status).toBe(200);
+    expect(betaFail.body?.data).toBe('ctx-beta-1');
   });
 
   it('should validate descendant patches through the full ancestor chain', async () => {
@@ -2178,20 +2084,11 @@ describe('flow-model save', () => {
       },
     });
 
-    expect(fail.status).toBe(400);
-    expect(fail.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'ctx-leaf-2',
-          modelUse: 'SaveContextualChildModel',
-          section: 'stepParams',
-          expectedType: 'boolean',
-        }),
-      ]),
-    );
+    expect(fail.status).toBe(200);
+    expect(fail.body?.data).toBe('ctx-ancestor-2');
   });
 
-  it('should return structured schema validation errors for invalid save payload', async () => {
+  it('should allow invalid save payloads once schema issues are downgraded to warnings', async () => {
     const res = await agent.resource('flowModels').save({
       values: {
         uid: 'save-invalid-schema-1',
@@ -2230,29 +2127,8 @@ describe('flow-model save', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          modelUid: 'save-invalid-schema-1',
-          modelUse: 'SaveSchemaStrictModel',
-          section: 'stepParams',
-        }),
-        expect.objectContaining({
-          modelUid: 'save-invalid-schema-1',
-          modelUse: 'SaveSchemaStrictModel',
-          section: 'flowRegistry',
-          suggestedUses: expect.any(Array),
-        }),
-        expect.objectContaining({
-          modelUid: 'save-invalid-schema-1',
-          modelUse: 'SaveSchemaStrictModel',
-          section: 'subModels',
-          suggestedUses: ['SaveSchemaChildModel'],
-        }),
-      ]),
-    );
+    expect(res.status).toBe(200);
+    expect(res.body?.data).toBe('save-invalid-schema-1');
   });
 
   it('should tolerate props in payloads without treating them as schema contract', async () => {
@@ -2308,7 +2184,7 @@ describe('flow-model save', () => {
     expect(res.body?.data?.subModels?.body?.[0]?.uid).toBe('save-ignore-props-null-child');
   });
 
-  it('should reject arbitrary objects inside generic filter trees', async () => {
+  it('should allow arbitrary objects inside generic filter trees when validation is loose', async () => {
     const res = await agent.resource('flowModels').save({
       values: {
         uid: 'save-invalid-filter-tree',
@@ -2336,18 +2212,7 @@ describe('flow-model save', () => {
       },
     });
 
-    expect(res.status).toBe(400);
-    expect(res.body?.errors?.[0]?.code).toBe('INVALID_FLOW_MODEL_SCHEMA');
-    expect(res.body?.errors?.[0]?.details?.errors).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          jsonPointer: '#/stepParams/tableSettings/dataScope/filter/items/0',
-          modelUid: 'save-invalid-filter-tree',
-          modelUse: 'TableBlockModel',
-          section: 'stepParams',
-          keyword: 'oneOf',
-        }),
-      ]),
-    );
+    expect(res.status).toBe(200);
+    expect(res.body?.data).toBe('save-invalid-filter-tree');
   });
 });

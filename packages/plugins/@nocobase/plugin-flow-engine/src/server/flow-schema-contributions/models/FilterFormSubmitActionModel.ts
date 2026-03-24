@@ -14,7 +14,7 @@ export const filterFormSubmitActionModelInternalSchemaContribution: FlowModelSch
   use: 'FilterFormSubmitActionModel',
   title: 'Filter form submit action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['FilterFormBlockModel'],
   stepParamsSchema: {

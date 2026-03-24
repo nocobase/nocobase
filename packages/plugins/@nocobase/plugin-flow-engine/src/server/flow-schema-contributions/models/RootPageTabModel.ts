@@ -14,7 +14,7 @@ export const rootPageTabModelInternalSchemaContribution: FlowModelSchemaContribu
   use: 'RootPageTabModel',
   title: 'Root page tab',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['RootPageModel', 'PageModel'],
   stepParamsSchema: pageTabSettingsStepParamsSchema,

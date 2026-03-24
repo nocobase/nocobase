@@ -14,7 +14,7 @@ export const jsFormActionModelInternalSchemaContribution: FlowModelSchemaContrib
   use: 'JSFormActionModel',
   title: 'JS form action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: createActionStepParamsSchema({

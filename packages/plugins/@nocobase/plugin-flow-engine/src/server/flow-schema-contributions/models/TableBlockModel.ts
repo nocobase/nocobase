@@ -23,7 +23,7 @@ export const tableBlockModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'TableBlockModel',
   title: 'Table block',
   source: 'official',
-  strict: true,
+  strict: false,
   subModelSlots: {
     columns: {
       type: 'array',

@@ -19,7 +19,7 @@ export const actionModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'ActionModel',
   title: 'Action',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

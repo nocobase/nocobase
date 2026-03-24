@@ -19,7 +19,7 @@ export const jsItemModelInternalSchemaContribution: FlowModelSchemaContribution 
   use: 'JSItemModel',
   title: 'JS item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: {

@@ -9,7 +9,7 @@
 
 import type { FlowJsonSchema, FlowModelSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-engine';
 
-const genericFilterSchemaId = 'https://nocobase.dev/schemas/plugin-block-list/generic-filter.json';
+const genericFilterSchemaId = 'urn:nocobase:schema:plugin-block-list:generic-filter';
 
 const genericFilterSchema: FlowJsonSchema = {
   $id: genericFilterSchemaId,

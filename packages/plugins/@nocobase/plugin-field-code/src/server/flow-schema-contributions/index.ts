@@ -14,7 +14,7 @@ function createFieldContribution(use: string, title: string): FlowModelSchemaCon
     use,
     title,
     source: 'plugin',
-    strict: true,
+    strict: false,
     exposure: 'internal',
     stepParamsSchema: {
       type: 'object',

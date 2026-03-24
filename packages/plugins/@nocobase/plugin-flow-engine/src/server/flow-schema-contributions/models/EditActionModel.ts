@@ -24,7 +24,7 @@ export const editActionModelInternalSchemaContribution: FlowModelSchemaContribut
   use: 'EditActionModel',
   title: 'Edit action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableActionsColumnModel', 'DetailsBlockModel'],
   subModelSlots: {

@@ -25,7 +25,7 @@ export const detailsBlockModelSchemaContribution: FlowModelSchemaContribution = 
   use: 'DetailsBlockModel',
   title: 'Details block',
   source: 'official',
-  strict: true,
+  strict: false,
   stepParamsSchema: {
     type: 'object',
     properties: {

@@ -18,7 +18,7 @@ export const formAssociationItemModelInternalSchemaContribution: FlowModelSchema
   use: 'FormAssociationItemModel',
   title: 'Form association item',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['CreateFormModel', 'EditFormModel'],
   stepParamsSchema: detailItemStepParamsSchema,

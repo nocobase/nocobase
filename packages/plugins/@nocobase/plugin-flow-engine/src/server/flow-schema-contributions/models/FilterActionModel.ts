@@ -14,7 +14,7 @@ export const filterActionModelInternalSchemaContribution: FlowModelSchemaContrib
   use: 'FilterActionModel',
   title: 'Filter action',
   source: 'official',
-  strict: true,
+  strict: false,
   exposure: 'internal',
   suggestedUses: ['TableBlockModel'],
   stepParamsSchema: createActionStepParamsSchema({

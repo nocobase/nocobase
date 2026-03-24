@@ -476,9 +476,7 @@ export class FlowSchemaService {
     const resolved = this.registry.resolveModelSchema(modelUse, contextChain);
     const schemaHash = this.registry.getModelSchemaHash(modelUse, contextChain);
     const missingUid = !String(node?.uid || '').trim();
-    const strict =
-      resolved.coverage.strict ??
-      (resolved.coverage.source !== 'third-party' && resolved.coverage.status !== 'unresolved');
+    const strict = resolved.coverage.strict ?? false;
 
     if (!isExistingNode) {
       const shellSchema =
@@ -495,20 +493,6 @@ export class FlowSchemaService {
           modelUid: node?.uid,
           modelUse: node?.use,
           section: 'model',
-          schemaHash,
-        });
-        return;
-      }
-
-      if (modelUse === 'RuntimeFieldModel') {
-        issues.push({
-          level: 'error',
-          jsonPointer: `${jsonPointer}/use`,
-          modelUid: node?.uid,
-          modelUse: node?.use,
-          section: 'model',
-          keyword: 'invalid-use',
-          message: 'Model use "RuntimeFieldModel" is a runtime placeholder and cannot be submitted directly.',
           schemaHash,
         });
         return;
@@ -910,7 +894,6 @@ export class FlowSchemaService {
         }
         slotValue.forEach((item, index) => {
           const itemPointer = `${slotPointer}/${index}`;
-          const itemUse = readModelUse(item);
           const nextContext = this.validateSubModelChildUse({
             parentNode: node,
             slotKey,
@@ -922,9 +905,6 @@ export class FlowSchemaService {
             schemaHash,
             contextChain,
           });
-          if (itemUse === 'RuntimeFieldModel') {
-            return;
-          }
           this.validateModelNode(item, itemPointer, issues, validationOptions, nextContext);
         });
       } else {
@@ -953,9 +933,6 @@ export class FlowSchemaService {
           schemaHash,
           contextChain,
         });
-        if (readModelUse(slotValue) === 'RuntimeFieldModel') {
-          continue;
-        }
         this.validateModelNode(slotValue, slotPointer, issues, validationOptions, nextContext);
       }
     }
@@ -1010,24 +987,6 @@ export class FlowSchemaService {
     const allowedUses = fieldBinding.allowedUses || [];
     const allowUnknownUses =
       !!options.slotSchema && !options.slotSchema.fieldBindingContext && slotAllowsUnknownUses(options.slotSchema);
-
-    if (childUse === 'RuntimeFieldModel') {
-      options.issues.push({
-        level: 'error',
-        jsonPointer: `${options.jsonPointer}/use`,
-        modelUid: options.parentNode?.uid,
-        modelUse: options.parentNode?.use,
-        section: 'subModels',
-        keyword: 'invalid-use',
-        message: `Slot "${options.slotKey}" cannot use runtime placeholder "RuntimeFieldModel".`,
-        allowedValues: allowedUses,
-        suggestedUses: allowedUses,
-        fieldInterface: fieldBinding.metadata?.interface,
-        fieldType: fieldBinding.metadata?.fieldType,
-        targetCollectionTemplate: fieldBinding.metadata?.targetCollectionTemplate,
-        schemaHash: options.schemaHash,
-      });
-    }
 
     if (childUse && allowedUses.length > 0 && !allowedUses.includes(childUse) && !allowUnknownUses) {
       options.issues.push({
