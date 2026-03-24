@@ -14,6 +14,7 @@ export class FlowModelOperationError extends Error {
 
   constructor(params: { status: number; code: string; message: string; details?: any }) {
     super(params.message);
+    Object.setPrototypeOf(this, new.target.prototype);
     this.status = params.status;
     this.code = params.code;
     this.details = params.details;

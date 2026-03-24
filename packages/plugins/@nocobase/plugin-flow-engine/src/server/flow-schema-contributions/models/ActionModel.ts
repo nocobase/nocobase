@@ -166,7 +166,7 @@ export const actionModelSchemaContribution: FlowModelSchemaContribution = {
     dynamicHints: [
       {
         kind: 'dynamic-ui-schema',
-        path: 'ActionModel.buttonSettings.general',
+        path: 'ActionModel.stepParams.buttonSettings.general',
         message: 'Editable fields depend on ActionModel runtime flags such as enableEditTitle and enableEditIcon.',
         'x-flow': {
           contextRequirements: ['enableEditTitle', 'enableEditTooltip', 'enableEditIcon', 'enableEditColor'],

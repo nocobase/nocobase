@@ -314,28 +314,24 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
       },
       refreshAfterCreate = true,
     ) => {
-      const res = await api.request({
-        method: 'POST',
-        url: 'desktopRoutes:createV2',
-        data: values,
+      const res = await resource.createV2({
+        values,
       });
       refreshAfterCreate && refreshRoutes();
       return res;
     },
-    [api, refreshRoutes],
+    [refreshRoutes, resource],
   );
 
   const destroyV2 = useCallback(
     async (schemaUid: string, refreshAfterDestroy = true) => {
-      const res = await api.request({
-        method: 'POST',
-        url: 'desktopRoutes:destroyV2',
-        data: { schemaUid },
+      const res = await resource.destroyV2({
+        values: { schemaUid },
       });
       refreshAfterDestroy && refreshRoutes();
       return res;
     },
-    [api, refreshRoutes],
+    [refreshRoutes, resource],
   );
 
   return { createRoute, createV2, updateRoute, deleteRoute, destroyV2, moveRoute };

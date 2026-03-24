@@ -17,13 +17,13 @@ export default defineConfig({
       await fs.rm(localeDir, { recursive: true });
     }
 
-    log('coping client locale');
+    log('copying client locale');
     await fs.cp(clientLocaleDir, localeDir, {
       recursive: true,
       force: true,
     });
 
-    log('coping antd locale');
+    log('copying antd locale');
     const files = await fs.readdir(path.resolve(path.dirname(antd), 'locale'));
     await fs.mkdir(path.resolve(localeDir, 'antd'), { recursive: true });
     for (const file of files) {

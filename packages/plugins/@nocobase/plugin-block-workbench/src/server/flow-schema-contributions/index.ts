@@ -19,7 +19,7 @@ const actionButtonGeneralStepParamsSchema: FlowJsonSchema = {
       enum: ['default', 'primary', 'dashed', 'link', 'text'],
     },
     danger: { type: 'boolean' },
-    icon: { type: 'string' },
+    icon: { type: ['string', 'null'] },
     color: { type: 'string' },
   },
   additionalProperties: true,

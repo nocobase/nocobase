@@ -260,14 +260,14 @@ describe('flow-model ensure', () => {
 
   it('should warn and reuse the first object child when duplicate children already exist', async () => {
     await insertModel({ uid: 'ensure-duplicate-grid-parent', use: 'PageTabModel' });
-    await insertModel({
+    await repository.upsertModel({
       uid: 'ensure-duplicate-grid-a',
       parentId: 'ensure-duplicate-grid-parent',
       subKey: 'grid',
       subType: 'object',
       use: 'BlockGridModel',
     });
-    await insertModel({
+    await repository.upsertModel({
       uid: 'ensure-duplicate-grid-b',
       parentId: 'ensure-duplicate-grid-parent',
       subKey: 'grid',
