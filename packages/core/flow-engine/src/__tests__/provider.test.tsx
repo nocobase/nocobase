@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, expect, it } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { render, renderHook } from '@testing-library/react';
 import { App, ConfigProvider, theme } from 'antd';
 import { FlowEngine } from '../flowEngine';
 import { FlowEngineGlobalsContextProvider, FlowEngineProvider, useFlowEngine } from '../provider';
@@ -22,8 +22,13 @@ describe('FlowEngineProvider/useFlowEngine', () => {
     expect(result.current).toBe(engine);
   });
 
-  it('registers isDarkTheme within globals provider', async () => {
+  it('registers isDarkTheme within globals provider before first child render', () => {
     const engine = new FlowEngine();
+    const reads: boolean[] = [];
+    const Reader = () => {
+      reads.push(engine.context.isDarkTheme);
+      return null;
+    };
     const wrapper = ({ children }: any) => (
       <ConfigProvider theme={{ algorithm: theme.darkAlgorithm }}>
         <App>
@@ -33,9 +38,8 @@ describe('FlowEngineProvider/useFlowEngine', () => {
         </App>
       </ConfigProvider>
     );
-    renderHook(() => null, { wrapper });
-    await waitFor(() => {
-      expect(engine.context.isDarkTheme).toBe(true);
-    });
+    render(<Reader />, { wrapper });
+    expect(reads[0]).toBe(true);
+    expect(engine.context.isDarkTheme).toBe(true);
   });
 });
