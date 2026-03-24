@@ -10,7 +10,7 @@
 import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
 import { EditableItemModel, tExpr, useFlowEngineContext } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export const NBColorPicker = (props) => {
   const ctx = useFlowEngineContext();

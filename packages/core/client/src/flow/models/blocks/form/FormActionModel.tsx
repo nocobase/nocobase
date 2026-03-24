@@ -10,8 +10,8 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
-import { ActionModel } from '../../base';
-import { submitHandler } from './submitHandler';
+import '../../base/ActionModel';
+import { ActionModel } from '../../base/ActionModelCore';
 import { getValidationNamePathsExcludingHiddenModels } from './submitValues';
 
 export class FormActionModel extends ActionModel {}
@@ -89,6 +89,7 @@ FormSubmitActionModel.registerFlow({
         }
         try {
           ctx.model.setProps('loading', true);
+          const { submitHandler } = await import('./submitHandler');
           await submitHandler(ctx, params);
           ctx.message.success(ctx.t('Saved successfully'));
           ctx.model.setProps('loading', false);

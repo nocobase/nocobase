@@ -23,7 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Skeleton, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel } from '../../base';
+import { ActionModel } from '../../base/ActionModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { getRowKey } from './utils';
 import { FormBlockModel } from '../form/FormBlockModel';

@@ -10,7 +10,7 @@
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
 import _ from 'lodash';
-import { CommonItemModel } from '../base';
+import { CommonItemModel } from '../base/CommonItemModel';
 import { editMarkdownFlow } from '../../flows/editMarkdownFlow';
 
 const MarkdownRenderer = ({ ctx, raw, record }) => {

@@ -13,7 +13,7 @@ import React from 'react';
 import * as math from 'mathjs';
 import { useMemo } from 'react';
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 

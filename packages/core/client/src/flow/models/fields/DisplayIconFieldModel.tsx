@@ -10,7 +10,7 @@
 import React from 'react';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { Icon } from '../../../icon';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class DisplayIconFieldModel extends FieldModel {
   public render() {

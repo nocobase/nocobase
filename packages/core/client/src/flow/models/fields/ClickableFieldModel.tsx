@@ -13,7 +13,7 @@ import { castArray, get } from 'lodash';
 import React from 'react';
 import { EllipsisWithTooltip } from '../../components';
 import { openViewFlow } from '../../flows/openViewFlow';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 import { EditFormModel } from '../blocks/form/EditFormModel';
 
 export function transformNestedData(inputData) {

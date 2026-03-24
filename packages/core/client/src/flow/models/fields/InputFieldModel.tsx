@@ -11,7 +11,7 @@ import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-en
 import { Input } from 'antd';
 import React from 'react';
 import { customAlphabet as Alphabet } from 'nanoid';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class InputFieldModel extends FieldModel {
   render() {

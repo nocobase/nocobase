@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel } from '../../base';
+import { ActionGroupModel } from '../../base/ActionGroupModel';
 import { FormActionModel } from './FormActionModel';
 
 export class FormActionGroupModel extends ActionGroupModel {

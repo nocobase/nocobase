@@ -18,7 +18,7 @@ import {
 import { uid } from '@formily/shared';
 import { get, castArray } from 'lodash';
 import React from 'react';
-import { FieldModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 import { useJsonTemplateResolver } from '../../../utils/useJsonTemplateResolver';
 

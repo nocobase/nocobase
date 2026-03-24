@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ColorPicker } from 'antd';
 import React from 'react';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class DisplayColorFieldModel extends FieldModel {
   public render() {

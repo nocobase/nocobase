@@ -9,7 +9,7 @@
 
 import { tExpr, observable } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
-import { BlockSceneEnum } from '../../base';
+import { BlockSceneEnum } from '../../base/BlockModel';
 import { TableBlockModel } from './TableBlockModel';
 
 export class TableSelectModel extends TableBlockModel {

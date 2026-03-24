@@ -10,7 +10,8 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocobase/flow-engine';
 import React from 'react';
-import { FieldModel, GridModel } from '../../base';
+import { FieldModel } from '../../base/FieldModel';
+import { GridModel } from '../../base/GridModel';
 import { FormBlockModel } from './FormBlockModel';
 import { Skeleton } from 'antd';
 

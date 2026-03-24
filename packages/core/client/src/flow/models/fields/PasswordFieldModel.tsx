@@ -10,7 +10,7 @@
 import React from 'react';
 import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Password } from '../../../schema-component/antd/password';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 export class PasswordFieldModel extends FieldModel {
   render() {

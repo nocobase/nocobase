@@ -11,7 +11,7 @@ import { Input } from 'antd';
 import { cx, css } from '@emotion/css';
 import JSON5 from 'json5';
 import React, { useState, useEffect, useRef } from 'react';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 
 const jsonCss = css`
   font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;

@@ -14,7 +14,8 @@ import { Button, Tooltip } from 'antd';
 import { useRequest } from 'ahooks';
 import { capitalize } from 'lodash';
 import { Icon } from '../../../../../../icon/Icon';
-import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModel';
+import '../../../../base/ActionModel';
+import { ActionModel, ActionWithoutPermission } from '../../../../base/ActionModelCore';
 import { SkeletonFallback } from '../../../../../components/SkeletonFallback';
 
 function FieldWithoutPermissionPlaceholder({ targetModel, children }) {

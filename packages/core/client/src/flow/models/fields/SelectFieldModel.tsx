@@ -10,7 +10,7 @@
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Select, Tag, Tooltip } from 'antd';
 import React from 'react';
-import { FieldModel } from '../base';
+import { FieldModel } from '../base/FieldModel';
 import { MobileSelect } from './mobile-components/MobileSelect';
 
 export class SelectFieldModel extends FieldModel {
