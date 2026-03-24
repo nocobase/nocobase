@@ -10,7 +10,57 @@
 import { describe, expect, it, vi } from 'vitest';
 import { confirmUnsavedChangesHandler } from '../closeGuard';
 
+const { registerFlowMock } = vi.hoisted(() => ({
+  registerFlowMock: vi.fn(),
+}));
+
+vi.mock('@nocobase/flow-engine', async (importOriginal) => {
+  const actual = await importOriginal<any>();
+
+  class MockFlowModel extends actual.FlowModel {
+    static registerFlow(flow: any) {
+      registerFlowMock(flow);
+    }
+
+    static registerEvents() {}
+  }
+
+  return {
+    ...actual,
+    FlowModel: MockFlowModel,
+  };
+});
+
+vi.mock('../../../components/ConditionBuilder', () => ({
+  ConditionBuilder: () => null,
+  commonConditionHandler: vi.fn(),
+}));
+
+vi.mock('../../../components/TextAreaWithContextSelector', () => ({
+  TextAreaWithContextSelector: () => null,
+}));
+
+vi.mock('../PageTabModel', () => ({
+  BasePageTabModel: class {},
+}));
+
+vi.mock('../index', () => ({}));
+vi.mock('../../../../index', () => ({}));
+
 describe('PageModel closeGuard flow', () => {
+  it('registers closeGuard flow on PageModel', async () => {
+    vi.resetModules();
+    registerFlowMock.mockClear();
+    const { confirmUnsavedChangesHandler: registeredHandler } = await import('../closeGuard');
+    await import('../PageModel');
+    const flow = registerFlowMock.mock.calls.find((call) => call[0]?.key === 'closeGuard')?.[0];
+    const step = flow?.steps?.confirmUnsavedChanges;
+
+    expect(flow).toBeTruthy();
+    expect(step).toBeTruthy();
+    expect(step?.handler).toBe(registeredHandler);
+  });
+
   it('skips confirmation when there are no dirty forms', async () => {
     const modalConfirm = vi.fn();
 
