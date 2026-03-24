@@ -13,7 +13,12 @@ import { tokenPolicyCollectionName } from '../../constants';
 
 export default defineCollection({
   name: tokenPolicyCollectionName,
-  migrationRules: ['overwrite', 'schema-only'],
+  migrationRules: ['overwrite', 'schema-only', 'skip'],
+  recordUniqueKey: ['key'],
+  defaultMigrationRule: {
+    overwriteFirst: 'overwrite',
+    upsertFirst: 'overwrite',
+  },
   autoGenId: false,
   createdAt: true,
   createdBy: true,
