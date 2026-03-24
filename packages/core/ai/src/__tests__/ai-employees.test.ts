@@ -26,7 +26,7 @@ describe('AI employee loader test cases', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'field-sort', 'workflow'],
+      plugins: ['nocobase'],
     });
     await app.pm.enable('ai');
     aiManager = app.aiManager;
@@ -34,7 +34,13 @@ describe('AI employee loader test cases', () => {
     loader = new AIEmployeeLoader(aiManager, {
       scan: {
         basePath,
-        pattern: ['**/ai-employees/*.ts', '**/ai-employees/*/index.ts', '!**/ai-employees/**/*.d.ts'],
+        pattern: [
+          '**/ai-employees/*.ts',
+          '**/ai-employees/*/index.ts',
+          '**/ai-employees/*.js',
+          '**/ai-employees/*/index.js',
+          '!**/ai-employees/**/*.d.ts',
+        ],
       },
     });
   });

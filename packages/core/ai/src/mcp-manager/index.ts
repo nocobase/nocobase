@@ -46,7 +46,7 @@ export class DefaultMCPManager implements MCPManager {
       }
     } else {
       for (const [name, options] of Object.entries(registration)) {
-        this.persistenceEntry({
+        await this.persistenceEntry({
           name,
           ...this.normalizeEntry(name, options),
         });
