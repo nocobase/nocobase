@@ -18,6 +18,22 @@ pkg: '@nocobase/plugin-mcp-server'
 
 该地址使用 `streamable HTTP` 传输协议。
 
+支持通过请求头 `x-mcp-packages` 控制 MCP 暴露哪些包的接口，例如：
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+该请求头支持传完整包名，未带 scope 时会自动补成 `@nocobase/`。默认加载以下包接口：
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## 提供能力
 
 - NocoBase 内核及各类插件接口

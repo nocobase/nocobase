@@ -8,8 +8,9 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import type { McpTool } from '@nocobase/ai';
 import type PluginIdpOauthServer from '@nocobase/plugin-idp-oauth';
-import { collectMcpToolsFromSwagger } from './mcp-tools';
+import { collectMcpToolsFromSwagger, normalizePackagePatterns } from './mcp-tools';
 import { McpServer } from './mcp-server';
 import { createCrudTool } from './crud-tool';
 
@@ -18,9 +19,12 @@ function normalizeBasePath(path = '') {
   return normalized || '/';
 }
 
+const MCP_PACKAGES_HEADER = 'x-mcp-packages';
+
 export class PluginMcpServerServer extends Plugin {
   private mcpServer: McpServer;
   private readonly mcpScopes = ['mcp', 'offline_access'] as const;
+  private readonly mcpToolsCache = new Map<string, Promise<McpTool[]>>();
 
   private getApiBasePath() {
     return normalizeBasePath(process.env.API_BASE_PATH || '/api');
@@ -109,11 +113,39 @@ export class PluginMcpServerServer extends Plugin {
     this.getIdpOauthPlugin()?.service?.unregisterResourceServer?.('mcp');
   }
 
-  private async registerMcpTools() {
-    const apiTools = await collectMcpToolsFromSwagger({
-      app: this.app,
-    });
-    this.ai.mcpToolsManager.registerTools([...apiTools, createCrudTool({ app: this.app })]);
+  private parsePackagePatterns(ctx: any) {
+    const value = ctx?.headers?.[MCP_PACKAGES_HEADER] ?? ctx?.request?.headers?.[MCP_PACKAGES_HEADER];
+    if (typeof value === 'undefined') {
+      return undefined;
+    }
+    const rawValues = (Array.isArray(value) ? value : [value]).flatMap((item) => String(item).split(','));
+    return normalizePackagePatterns(rawValues);
+  }
+
+  private getMcpToolsCacheKey(packagePatterns?: string[]) {
+    if (typeof packagePatterns === 'undefined') {
+      return '__default__';
+    }
+    return packagePatterns.slice().sort().join(',');
+  }
+
+  private async getMcpTools(ctx: any) {
+    const packagePatterns = this.parsePackagePatterns(ctx);
+    const cacheKey = this.getMcpToolsCacheKey(packagePatterns);
+    let toolsPromise = this.mcpToolsCache.get(cacheKey);
+    if (!toolsPromise) {
+      toolsPromise = collectMcpToolsFromSwagger({
+        app: this.app,
+        packagePatterns,
+      })
+        .then((apiTools) => [...apiTools, createCrudTool({ app: this.app })])
+        .catch((error) => {
+          this.mcpToolsCache.delete(cacheKey);
+          throw error;
+        });
+      this.mcpToolsCache.set(cacheKey, toolsPromise);
+    }
+    return toolsPromise;
   }
 
   async afterAdd() {}
@@ -121,7 +153,6 @@ export class PluginMcpServerServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    await this.registerMcpTools();
     if (this.getIdpOauthPlugin()?.service) {
       this.registerIdpResource();
       this.registerProtectedResourceMetadataRoute();
@@ -131,6 +162,7 @@ export class PluginMcpServerServer extends Plugin {
       name: 'nocobase-mcp-server',
       version: this.options.version || '0.0.0',
       toolsManager: this.ai.mcpToolsManager,
+      getTools: async (ctx) => this.getMcpTools(ctx),
       logger: this.log,
     });
 

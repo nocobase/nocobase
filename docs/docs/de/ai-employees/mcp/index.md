@@ -18,6 +18,22 @@ Nach dem Aktivieren des NocoBase MCP-Server-Plugins stellt deine NocoBase-Anwend
 
 Dieser Endpunkt verwendet das Transportprotokoll `streamable HTTP`.
 
+Über den Request-Header `x-mcp-packages` kannst du steuern, welche Paket-APIs MCP bereitstellt, zum Beispiel:
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+Der Header akzeptiert vollständige Paketnamen. Wenn kein Scope angegeben ist, wird automatisch `@nocobase/` ergänzt. Standardmäßig lädt MCP die APIs dieser Pakete:
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## Funktionen
 
 - NocoBase-Kern- und Plugin-APIs
