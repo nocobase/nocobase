@@ -8,10 +8,10 @@ If you want to customize the build configuration, you can create a `build.config
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // vite is used to bundle `src/client` code
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild is used to bundle `src/client` code
 
-    // Modify Vite configuration, see: https://vitejs.dev/guide/
+    // Modify Rsbuild configuration, see: https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {
@@ -28,4 +28,3 @@ export default defineConfig({
   };
 });
 ```
-

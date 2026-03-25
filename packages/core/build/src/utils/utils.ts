@@ -12,7 +12,7 @@ import path from 'path';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import { Options as TsupConfig } from 'tsup'
-import { InlineConfig as ViteConfig } from 'vite'
+import type { RsbuildConfig } from '@rsbuild/core'
 import { register } from 'esbuild-register/dist/node';
 import { NODE_MODULES } from '../constant';
 
@@ -62,7 +62,7 @@ export function getPackageJson(cwd: string) {
 
 export interface UserConfig {
   modifyTsupConfig?: (config: TsupConfig) => TsupConfig;
-  modifyViteConfig?: (config: ViteConfig) => ViteConfig;
+  modifyRsbuildConfig?: (config: RsbuildConfig) => RsbuildConfig;
   beforeBuild?: (log: PkgLog) => void | Promise<void>;
   afterBuild?: (log: PkgLog) => void | Promise<void>;
 }
@@ -74,7 +74,7 @@ export function defineConfig(config: UserConfig): UserConfig {
 export function getUserConfig(cwd: string) {
   const config = defineConfig({
     modifyTsupConfig: (config: TsupConfig) => config,
-    modifyViteConfig: (config: ViteConfig) => config,
+    modifyRsbuildConfig: (config: RsbuildConfig) => config,
   });
 
   const buildConfigs = fg.sync(['build.config.js', 'build.config.ts'], { cwd });
