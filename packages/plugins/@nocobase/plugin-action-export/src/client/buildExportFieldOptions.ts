@@ -50,7 +50,8 @@ const buildFieldOption = (field, getTitle, getTargetFields, relationDepth = 0) =
       }
 
       if (!canNestRelationField(field, targetField, relationDepth)) {
-        return createOption(targetField, getTitle, true);
+        // return createOption(targetField, getTitle, true);
+        return null;
       }
 
       return buildFieldOption(targetField, getTitle, getTargetFields, relationDepth + 1);
