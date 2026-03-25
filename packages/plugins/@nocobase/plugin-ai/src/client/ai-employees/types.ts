@@ -94,6 +94,8 @@ export type Message = Omit<BubbleProps, 'content'> & {
     reasoning?: { status: string; content: string };
     subAgentConversations?: {
       sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
       messages: Message[];
     }[];
   };

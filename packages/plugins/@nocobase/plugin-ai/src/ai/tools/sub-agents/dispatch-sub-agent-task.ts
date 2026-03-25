@@ -40,8 +40,9 @@ export default defineTools({
       writer,
     });
 
-    await updateMessageMetadata(ctx, toolCallId, sessionId);
+    await updateMessageMetadata(ctx, toolCallId, sessionId, 'pending');
     const answer = await running;
+    await updateMessageMetadata(ctx, toolCallId, sessionId, 'completed');
 
     return {
       sessionId,

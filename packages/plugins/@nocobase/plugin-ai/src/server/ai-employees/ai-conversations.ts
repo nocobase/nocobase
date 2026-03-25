@@ -9,7 +9,7 @@
 
 import { Model } from '@nocobase/database';
 import PluginAIServer from '../plugin';
-import { AIMessage, AIToolCall, AIToolMessage } from '../types';
+import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata } from '../types';
 import { parseResponseMessage } from '../utils';
 
 export type AIConversationsOptions = {
@@ -150,13 +150,14 @@ export class AIConversationsManager {
 
     const subAgentConversations = data
       .filter((row: ParsedMessageRow) => row.metadata?.subAgentConversations?.length ?? 0 > 0)
-      .flatMap((row: ParsedMessageRow) => row.metadata.subAgentConversations);
-    const subAgentConversationMessages = subAgentConversations.length
+      .flatMap((row: ParsedMessageRow) => row.metadata.subAgentConversations as SubAgentConversationMetadata[]);
+    const subAgentConversationSessionIds = [...new Set(subAgentConversations.map((item) => item.sessionId))];
+    const subAgentConversationMessages = subAgentConversationSessionIds.length
       ? await this.aiMessagesRepo.find({
           sort: ['messageId'],
           filter: {
             sessionId: {
-              $in: subAgentConversations,
+              $in: subAgentConversationSessionIds,
             },
             role: {
               $notIn: ['tool'],
@@ -234,11 +235,13 @@ export class AIConversationsManager {
     return {
       rows: data.map((row: ParsedMessageRow) => {
         const parsedRow = parseMessageRow(row);
-        const subAgentConversationIds = row.metadata?.subAgentConversations ?? [];
-        if (subAgentConversationIds.length) {
-          parsedRow.content.subAgentConversations = subAgentConversationIds.map((sessionId: string) => ({
-            sessionId,
-            messages: subAgentConversationMessageMap.get(sessionId) ?? [],
+        const subAgentConversationItems = (row.metadata?.subAgentConversations as SubAgentConversationMetadata[]) ?? [];
+        if (subAgentConversationItems.length) {
+          parsedRow.content.subAgentConversations = subAgentConversationItems.map((item) => ({
+            sessionId: item.sessionId,
+            toolCallId: item.toolCallId,
+            status: item.status,
+            messages: subAgentConversationMessageMap.get(item.sessionId) ?? [],
           }));
         }
         return parsedRow;

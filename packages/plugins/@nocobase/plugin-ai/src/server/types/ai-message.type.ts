@@ -49,9 +49,15 @@ export type AIMessageMetadata = {
   autoCallTools?: string[];
   autoCall?: boolean;
   interrupted?: boolean;
-  subAgentConversations?: string[];
+  subAgentConversations?: SubAgentConversationMetadata[];
 
   [key: string]: unknown;
+};
+
+export type SubAgentConversationMetadata = {
+  sessionId: string;
+  toolCallId: string;
+  status: 'pending' | 'completed';
 };
 
 export type AIToolMessage = {

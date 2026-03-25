@@ -11,6 +11,7 @@ import type { Context } from '@nocobase/actions';
 import type { Model } from '@nocobase/database';
 import type PluginAIServer from '../../../server/plugin';
 import type { AIEmployee as AIEmployeeType } from '../../../collections/ai-employees';
+import type { SubAgentConversationMetadata } from '../../../server/types';
 
 export const getAIPlugin = (ctx: Context) => ctx.app.pm.get('ai') as PluginAIServer;
 
@@ -93,7 +94,12 @@ export const getSkillSettingsFromMain = async (ctx: Context) => {
   return aiConversation?.options?.skillSettings;
 };
 
-export const updateMessageMetadata = async (ctx: Context, toolCallId: string, subSessionId: string) => {
+export const updateMessageMetadata = async (
+  ctx: Context,
+  toolCallId: string,
+  subSessionId: string,
+  status: 'pending' | 'completed',
+) => {
   const sessionId = ctx.action?.params?.values?.sessionId;
   if (!sessionId) {
     return;
@@ -120,16 +126,30 @@ export const updateMessageMetadata = async (ctx: Context, toolCallId: string, su
   if (!metadata.subAgentConversations) {
     metadata.subAgentConversations = [];
   }
-  if (!metadata.subAgentConversations.includes(subSessionId)) {
-    metadata.subAgentConversations.push(subSessionId);
-    await ctx.db.getRepository('aiMessages').update({
-      values: {
-        metadata,
-      },
-      filter: {
-        sessionId,
-        messageId: aiMessage.messageId,
-      },
+
+  const subAgentConversations = metadata.subAgentConversations as SubAgentConversationMetadata[];
+  const existingConversation = subAgentConversations.find((item) => item.sessionId === subSessionId);
+
+  if (existingConversation) {
+    existingConversation.toolCallId = toolCallId;
+    existingConversation.status = status;
+  } else {
+    subAgentConversations.push({
+      sessionId: subSessionId,
+      toolCallId,
+      status,
     });
   }
+
+  metadata.subAgentConversations = subAgentConversations;
+
+  await ctx.db.getRepository('aiMessages').update({
+    values: {
+      metadata,
+    },
+    filter: {
+      sessionId,
+      messageId: aiMessage.messageId,
+    },
+  });
 };
