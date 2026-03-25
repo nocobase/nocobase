@@ -259,6 +259,14 @@ export default defineConfig(({ command }) => {
             maxInitialRequests: Infinity,
             minSize: 0,
             cacheGroups: {
+              reactCore: {
+                test: /[\\/]node_modules[\\/](?:react|react-dom|react-is|react-router|react-router-dom|scheduler|use-sync-external-store)[\\/]/,
+                name: 'vendor-core',
+                chunks: 'all',
+                priority: 65,
+                enforce: true,
+                minSize: 0,
+              },
               antdEcosystem: {
                 test: /[\\/]node_modules[\\/](?:rc-[^\\/]+|@rc-component[\\/][^\\/]+|@ant-design[\\/](?!(?:icons|icons-svg)[\\/])[^\\/]+)[\\/]/,
                 name: 'vendor-antd-ecosystem',
@@ -276,7 +284,7 @@ export default defineConfig(({ command }) => {
                 minSize: 0,
               },
               lodashCjs: {
-                test: /[\\/]node_modules[\\/]lodash[\\/]lodash\.js$/,
+                test: /[\\/]node_modules[\\/]lodash(?:-es)?[\\/]/,
                 name: 'vendor-lodash',
                 chunks: 'all',
                 priority: 58,
@@ -362,6 +370,14 @@ export default defineConfig(({ command }) => {
                 priority: 48,
                 enforce: true,
                 minSize: 0,
+              },
+              commons: {
+                name: 'commons',
+                test: /[\\/]src[\\/]/,
+                chunks: 'async',
+                minChunks: 2,
+                priority: 5,
+                minSize: 20 * 1024,
               },
               vendor: {
                 test: /[\\/]node_modules[\\/]/,
