@@ -89,6 +89,7 @@
   "Diagnose and fix the error": "诊断并修复错误",
   "Direction": "排序方向",
   "Disable search": "禁用搜索",
+  "Switching to {{ nickname }}": "切换为 {{ nickname }}",
   "Displays the AI employee’s assigned tasks on the profile when hovering over the button.": "当鼠标悬停在按钮上时，会在员工资料卡片上显示任务描述。",
   "Down": "下移",
   "Edit AI employee": "编辑 AI 员工",

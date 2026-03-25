@@ -48,6 +48,7 @@ import {
 } from './ai-employees/ai-coding/tools/context-tools';
 import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 import { suggestionsTool } from './ai-employees/suggestions/tools';
+import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
@@ -181,6 +182,7 @@ export class PluginAIClient extends Plugin {
     this.ai.toolsManager.registerTools(...listCodeSnippetTool);
     this.ai.toolsManager.registerTools(...getCodeSnippetTool);
     this.ai.toolsManager.registerTools(...suggestionsTool);
+    this.ai.toolsManager.registerTools(...dispatchSubAgentTaskTool);
     this.ai.toolsManager.registerTools(...getContextApisTool);
     this.ai.toolsManager.registerTools(...getContextEnvsTool);
     this.ai.toolsManager.registerTools(...getContextVarsTool);
