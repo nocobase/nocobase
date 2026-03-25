@@ -34,6 +34,11 @@ export const recommendedModels: Record<string, { label: string; value: string }[
     { label: 'Kimi K2', value: 'kimi-k2-0905-Preview' },
     { label: 'Kimi K2 Turbo', value: 'kimi-k2-turbo-preview' },
   ],
+  xai: [
+    { label: 'Grok 4', value: 'grok-4' },
+    { label: 'Grok 4.1', value: 'grok-4-1' },
+    { label: 'Grok 3', value: 'grok-3' },
+  ],
   ollama: [],
 };
 
