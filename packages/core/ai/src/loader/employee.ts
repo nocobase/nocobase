@@ -92,11 +92,9 @@ export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
       return;
     }
     const { employeeManager } = this.ai;
-    await Promise.all(
-      this.employeeDescriptors.map(async (descriptor) => {
-        await employeeManager.registerEmployee(descriptor.options);
-      }),
-    );
+    for (const descriptor of this.employeeDescriptors) {
+      await employeeManager.registerEmployee(descriptor.options);
+    }
   }
 }
 

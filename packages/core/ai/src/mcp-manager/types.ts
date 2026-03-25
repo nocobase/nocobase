@@ -11,6 +11,7 @@ import type { MultiServerMCPClient } from '@langchain/mcp-adapters';
 import type { DynamicToolsProvider, Permission } from '../tools-manager/types';
 
 export interface MCPManager extends MCPRegistration {
+  init(): Promise<void>;
   getMCP(name: string): Promise<MCPEntry>;
   listMCP(filter: MCPFilter): Promise<MCPEntry[]>;
   testConnection(options: MCPOptions): Promise<MCPTestResult>;

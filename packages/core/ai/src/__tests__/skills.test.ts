@@ -24,7 +24,7 @@ describe('Skills loader test cases', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'field-sort', 'workflow'],
+      plugins: ['nocobase'],
     });
     // with mysql add ai plugin in createMockServer will occur error with create usersAiEmployees collection at app startup
     await app.pm.enable('ai');
