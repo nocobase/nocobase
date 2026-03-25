@@ -10,7 +10,7 @@
 import { SubAgentsDispatcher } from '../ai-employees/sub-agents/dispatcher';
 
 const aiEmployeeCtor = vi.fn();
-const streamMock = vi.fn().mockResolvedValue(true);
+const invokeMock = vi.fn().mockResolvedValue(true);
 
 vi.mock('../ai-employees/ai-employee', () => {
   class MockChatStreamProtocol {}
@@ -20,8 +20,8 @@ vi.mock('../ai-employees/ai-employee', () => {
       aiEmployeeCtor(options);
     }
 
-    async stream(...args: any[]) {
-      return streamMock(...args);
+    async invoke(...args: any[]) {
+      return invokeMock(...args);
     }
   }
 
@@ -34,7 +34,7 @@ vi.mock('../ai-employees/ai-employee', () => {
 describe('SubAgentsDispatcher', () => {
   beforeEach(() => {
     aiEmployeeCtor.mockClear();
-    streamMock.mockClear();
+    invokeMock.mockClear();
   });
 
   it('should prefer task.model when creating sub-agent AIEmployee', async () => {
@@ -42,13 +42,6 @@ describe('SubAgentsDispatcher', () => {
       aiConversationsManager: {
         create: vi.fn().mockResolvedValue({
           sessionId: 'sub-session-1',
-        }),
-      },
-      db: {
-        getRepository: vi.fn().mockReturnValue({
-          findOne: vi.fn().mockResolvedValue({
-            content: 'sub-agent answer',
-          }),
         }),
       },
     } as any;
@@ -79,9 +72,21 @@ describe('SubAgentsDispatcher', () => {
       },
     } as any;
 
+    invokeMock.mockResolvedValueOnce({
+      messages: [
+        { content: 'ignored' },
+        {
+          content: [
+            { type: 'text', text: 'sub-agent ' },
+            { type: 'tool_use', id: 'tool-1' },
+            { type: 'text', text: 'answer' },
+          ],
+        },
+      ],
+    });
+
     const result = await dispatcher.run({
       ctx,
-      protocol: {} as any,
       employee,
       model: { llmService: 'task-service', model: 'task-model' },
       question: 'Handle this task',
@@ -105,10 +110,9 @@ describe('SubAgentsDispatcher', () => {
         sessionId: 'sub-session-1',
         skillSettings: { skills: ['document-search'] },
         model: { llmService: 'task-service', model: 'task-model' },
-        protocol: {},
       }),
     );
-    expect(await result.stream).toBe('sub-agent answer');
+    expect(await result.running).toBe('sub-agent answer');
     expect(result.sessionId).toBe('sub-session-1');
   });
 });

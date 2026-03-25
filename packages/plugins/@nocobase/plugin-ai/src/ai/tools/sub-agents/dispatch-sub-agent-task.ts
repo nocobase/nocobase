@@ -31,7 +31,7 @@ export default defineTools({
 
     const skillSettings = await getSkillSettingsFromMain(ctx);
 
-    const { sessionId, stream } = await plugin.subAgentsDispatcher.run({
+    const { sessionId, running } = await plugin.subAgentsDispatcher.run({
       ctx,
       employee,
       model: employee.get('modelSettings') ?? ctx.action?.params?.values?.model,
@@ -41,7 +41,7 @@ export default defineTools({
     });
 
     await updateMessageMetadata(ctx, toolCallId, sessionId);
-    const answer = await stream;
+    const answer = await running;
 
     return {
       sessionId,

@@ -24,6 +24,41 @@ export type SubAgentTask = {
 export class SubAgentsDispatcher {
   constructor(protected plugin: PluginAIServer) {}
 
+  private extractTextContent(content: unknown): string {
+    if (typeof content === 'string') {
+      return content;
+    }
+
+    if (Array.isArray(content)) {
+      return content
+        .map((block) => {
+          if (typeof block === 'string') {
+            return block;
+          }
+          if (block && typeof block === 'object' && 'type' in block && (block as any).type === 'text') {
+            return typeof (block as any).text === 'string' ? (block as any).text : '';
+          }
+          return '';
+        })
+        .join('');
+    }
+
+    if (content && typeof content === 'object' && 'content' in content) {
+      return this.extractTextContent((content as any).content);
+    }
+
+    return '';
+  }
+
+  private extractLastMessageText(result: any): string {
+    const messages = result?.messages;
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return '';
+    }
+
+    return this.extractTextContent(messages.at(-1)?.content);
+  }
+
   private async resolveSubAgentSessionId(ctx: Context): Promise<string | null> {
     const sessionId = ctx.action?.params?.values?.sessionId;
     if (!sessionId) {
@@ -60,7 +95,7 @@ export class SubAgentsDispatcher {
 
   async run(task: SubAgentTask): Promise<{
     sessionId: string;
-    stream: Promise<string>;
+    running: Promise<string>;
   }> {
     const { ctx, employee, model, question, skillSettings, writer } = task;
     const userId = ctx.auth?.user?.id;
@@ -97,9 +132,8 @@ export class SubAgentsDispatcher {
       from: 'sub-agent',
     });
 
-    return {
-      sessionId: subSessionId,
-      stream: aiEmployee.invoke({
+    const running = async () => {
+      const result = await aiEmployee.invoke({
         userMessages: [
           {
             role: 'user',
@@ -110,7 +144,14 @@ export class SubAgentsDispatcher {
           },
         ],
         writer,
-      }),
+      });
+
+      return this.extractLastMessageText(result);
+    };
+
+    return {
+      sessionId: subSessionId,
+      running: running(),
     };
   }
 }
