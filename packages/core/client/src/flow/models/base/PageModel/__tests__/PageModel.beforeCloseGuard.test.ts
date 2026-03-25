@@ -71,7 +71,7 @@ describe('PageModel closeGuard flow', () => {
     expect(exitAll).toHaveBeenCalledTimes(1);
   });
 
-  it('clears dirty forms after confirming discard', async () => {
+  it('does not clear dirty forms before the view close is finalized', async () => {
     const handler = getConfirmUnsavedChangesHandler();
     const resetUserModifiedFields = vi.fn();
     const modalConfirm = vi.fn().mockResolvedValue(true);
@@ -103,6 +103,6 @@ describe('PageModel closeGuard flow', () => {
     });
 
     expect(modalConfirm).toHaveBeenCalledTimes(1);
-    expect(resetUserModifiedFields).toHaveBeenCalledTimes(1);
+    expect(resetUserModifiedFields).not.toHaveBeenCalled();
   });
 });

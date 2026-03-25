@@ -11,15 +11,23 @@ import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException 
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
-import { createBeforeCloseDirtyState } from '../utils/dirtyForms';
+import { createBeforeCloseDirtyState, resetDirtyFormModels } from '../utils/dirtyForms';
 
 function createViewBeforeCloseHandler(pageModel: FlowModel) {
-  return async ({ result, force }: { result?: any; force?: boolean }) => {
+  return async ({
+    result,
+    force,
+    ignoredDirtyFormModelUids,
+  }: {
+    result?: any;
+    force?: boolean;
+    ignoredDirtyFormModelUids?: string[];
+  }) => {
     if (force) {
       return true;
     }
 
-    const dirty = createBeforeCloseDirtyState(pageModel);
+    const dirty = createBeforeCloseDirtyState(pageModel, ignoredDirtyFormModelUids);
 
     let prevented = false;
     const dispatchResults = await pageModel.dispatchEvent('close', {
@@ -37,7 +45,13 @@ function createViewBeforeCloseHandler(pageModel: FlowModel) {
       (dispatchResults as any)?.__abortedByExitAll === true ||
       (Array.isArray(dispatchResults) ? dispatchResults.some((item) => item instanceof FlowExitAllException) : false);
 
-    return !prevented && !exited;
+    const shouldClose = !prevented && !exited;
+
+    if (shouldClose && dirty.hasDirtyForms) {
+      resetDirtyFormModels(pageModel, dirty.formModelUids);
+    }
+
+    return shouldClose;
   };
 }
 
@@ -316,10 +330,11 @@ export const openView = defineAction({
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;
     finalInputArgs.sourceId = mergedSourceId;
+    const { triggerByRouter, ...viewInputArgs } = finalInputArgs;
     await ctx.viewer.open({
       type: openMode,
-      triggerByRouter: finalInputArgs.triggerByRouter,
-      inputArgs: _.omit(finalInputArgs, 'triggerByRouter'),
+      triggerByRouter,
+      inputArgs: viewInputArgs,
       preventClose: runtimePreventClose,
       destroyOnClose: true,
       inheritContext: false,

@@ -8,10 +8,16 @@
  */
 
 import type { FlowModel } from '@nocobase/flow-engine';
-import { createDirtyConfirmBeforeCloseHandler } from '../../../../../utils/dirtyForms';
+import { createDirtyConfirmBeforeCloseHandler, resetDirtyFormModels } from '../../../../../utils/dirtyForms';
+
+type PopupBeforeClosePayload = {
+  result?: any;
+  force?: boolean;
+  ignoredDirtyFormModelUids?: string[];
+};
 
 type PopupViewLike = {
-  beforeClose?: (payload: { result?: any; force?: boolean }) => Promise<boolean | void> | boolean | void;
+  beforeClose?: (payload: PopupBeforeClosePayload) => Promise<boolean | void> | boolean | void;
 };
 
 export function bindPopupSubTableBeforeClose({
@@ -35,13 +41,30 @@ export function bindPopupSubTableBeforeClose({
   const previousBeforeClose = view.beforeClose;
   const dirtyBeforeClose = createDirtyConfirmBeforeCloseHandler({ model, modal, t });
 
-  const beforeClose = async (payload: { result?: any; force?: boolean }) => {
-    const shouldClose = await dirtyBeforeClose(payload);
+  const beforeClose = async (payload: PopupBeforeClosePayload) => {
+    const dirty = await dirtyBeforeClose(payload);
+    if (!dirty) {
+      return false;
+    }
+
+    const ignoredDirtyFormModelUids = Array.from(
+      new Set([...(payload.ignoredDirtyFormModelUids || []), ...dirty.formModelUids]),
+    );
+    const shouldClose =
+      (await previousBeforeClose?.({
+        ...payload,
+        ignoredDirtyFormModelUids,
+      })) !== false;
+
     if (!shouldClose) {
       return false;
     }
 
-    return (await previousBeforeClose?.(payload)) !== false;
+    if (dirty.hasDirtyForms) {
+      resetDirtyFormModels(model, dirty.formModelUids);
+    }
+
+    return true;
   };
 
   view.beforeClose = beforeClose;

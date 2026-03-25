@@ -47,6 +47,25 @@ describe('dirtyForms utilities', () => {
     });
   });
 
+  it('supports ignoring already confirmed dirty forms', () => {
+    const dirtyChild = createDirtyModel('dirty-child', ['title']);
+    const dirtyGrandchild = createDirtyModel('dirty-grandchild', ['roles']);
+    const root = createDirtyModel('root', [], {
+      items: [dirtyChild],
+      nested: {
+        uid: 'nested',
+        subModels: {
+          forms: [dirtyGrandchild],
+        },
+      },
+    });
+
+    expect(createBeforeCloseDirtyState(root as any, ['dirty-child'])).toEqual({
+      hasDirtyForms: true,
+      formModelUids: ['dirty-grandchild'],
+    });
+  });
+
   it('resets only the targeted dirty forms', () => {
     const dirtyChild = createDirtyModel('dirty-child', ['title']);
     const anotherDirtyChild = createDirtyModel('dirty-child-2', ['roles']);
@@ -61,7 +80,7 @@ describe('dirtyForms utilities', () => {
     expect(collectDirtyFormModelUids(root as any)).toEqual(['dirty-child-2']);
   });
 
-  it('confirms and clears dirty state for direct popup beforeClose handlers', async () => {
+  it('confirms dirty state without resetting it immediately', async () => {
     const dirtyChild = createDirtyModel('dirty-child', ['title']);
     const modalConfirm = vi.fn().mockResolvedValue(true);
     const handler = createDirtyConfirmBeforeCloseHandler({
@@ -70,16 +89,16 @@ describe('dirtyForms utilities', () => {
       t: (value: string) => value,
     });
 
-    await expect(handler({ force: false })).resolves.toBe(true);
+    await expect(handler({ force: false })).resolves.toEqual({
+      hasDirtyForms: true,
+      formModelUids: ['dirty-child'],
+    });
     expect(modalConfirm).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Unsaved changes',
         content: "Are you sure you don't want to save?",
       }),
     );
-    expect(dirtyChild.resetUserModifiedFields).toHaveBeenCalledTimes(1);
-
-    await expect(handler({ force: false })).resolves.toBe(true);
-    expect(modalConfirm).toHaveBeenCalledTimes(1);
+    expect(dirtyChild.resetUserModifiedFields).not.toHaveBeenCalled();
   });
 });

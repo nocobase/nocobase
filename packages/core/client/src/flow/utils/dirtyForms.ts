@@ -23,6 +23,7 @@ export type BeforeCloseDirtyState = {
 type BeforeClosePayload = {
   result?: any;
   force?: boolean;
+  ignoredDirtyFormModelUids?: string[];
 };
 
 type ConfirmModal = {
@@ -61,12 +62,13 @@ function walkFlowModels(model: FlowModel | null | undefined, visitor: (current: 
   walk(model as DirtyAwareFlowModel);
 }
 
-export function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
+export function collectDirtyFormModelUids(model?: FlowModel | null, ignoredDirtyFormModelUids: string[] = []): string[] {
   const dirtyModelUids: string[] = [];
+  const ignoredUidSet = ignoredDirtyFormModelUids.length ? new Set(ignoredDirtyFormModelUids) : null;
 
   walkFlowModels(model, (current) => {
     const userModifiedFields = current.getUserModifiedFields?.();
-    if (current.uid && userModifiedFields?.size) {
+    if (current.uid && userModifiedFields?.size && !ignoredUidSet?.has(current.uid)) {
       dirtyModelUids.push(current.uid);
     }
   });
@@ -74,8 +76,11 @@ export function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
   return dirtyModelUids;
 }
 
-export function createBeforeCloseDirtyState(model?: FlowModel | null): BeforeCloseDirtyState {
-  const formModelUids = collectDirtyFormModelUids(model);
+export function createBeforeCloseDirtyState(
+  model?: FlowModel | null,
+  ignoredDirtyFormModelUids: string[] = [],
+): BeforeCloseDirtyState {
+  const formModelUids = collectDirtyFormModelUids(model, ignoredDirtyFormModelUids);
   return {
     hasDirtyForms: formModelUids.length > 0,
     formModelUids,
@@ -102,14 +107,17 @@ export function createDirtyConfirmBeforeCloseHandler({
   modal: ConfirmModal;
   t: (key: string) => string;
 }) {
-  return async ({ force }: BeforeClosePayload) => {
+  return async ({ force }: BeforeClosePayload): Promise<BeforeCloseDirtyState | false> => {
     if (force) {
-      return true;
+      return {
+        hasDirtyForms: false,
+        formModelUids: [],
+      };
     }
 
     const dirty = createBeforeCloseDirtyState(model);
     if (!dirty.hasDirtyForms) {
-      return true;
+      return dirty;
     }
 
     const confirmed = await modal.confirm({
@@ -123,7 +131,6 @@ export function createDirtyConfirmBeforeCloseHandler({
       return false;
     }
 
-    resetDirtyFormModels(model, dirty.formModelUids);
-    return true;
+    return dirty;
   };
 }

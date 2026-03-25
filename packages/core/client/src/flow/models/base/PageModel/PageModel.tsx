@@ -32,7 +32,6 @@ import { Tabs } from 'antd';
 import React, { ReactNode } from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
-import { resetDirtyFormModels } from '../../../utils/dirtyForms';
 import { BasePageTabModel } from './PageTabModel';
 
 type PageModelStructure = {
@@ -418,8 +417,6 @@ PageModel.registerFlow({
           ctx.exitAll();
           return;
         }
-
-        resetDirtyFormModels(ctx.model, ctx.inputArgs?.dirty?.formModelUids);
       },
     },
   },

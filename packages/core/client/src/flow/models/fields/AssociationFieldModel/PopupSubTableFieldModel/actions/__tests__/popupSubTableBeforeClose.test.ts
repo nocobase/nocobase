@@ -40,9 +40,32 @@ describe('bindPopupSubTableBeforeClose', () => {
     expect(view.beforeClose).toBeUndefined();
   });
 
-  it('clears dirty state after discard confirmation so the parent popup is not prompted again', async () => {
+  it('keeps dirty state when downstream beforeClose still blocks closing', async () => {
     const model = createDirtyModel('row-form', ['nickname']);
-    const view = { beforeClose: undefined } as any;
+    const previousBeforeClose = vi.fn().mockResolvedValue(false);
+    const view = { beforeClose: previousBeforeClose } as any;
+    const modalConfirm = vi.fn().mockResolvedValue(true);
+
+    bindPopupSubTableBeforeClose({
+      view,
+      model: model as any,
+      modal: { confirm: modalConfirm },
+      t: (value: string) => value,
+    });
+
+    await expect(view.beforeClose({ force: false })).resolves.toBe(false);
+    expect(previousBeforeClose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ignoredDirtyFormModelUids: ['row-form'],
+      }),
+    );
+    expect(model.resetUserModifiedFields).not.toHaveBeenCalled();
+  });
+
+  it('clears dirty state after discard confirmation once closing is finally allowed', async () => {
+    const model = createDirtyModel('row-form', ['nickname']);
+    const previousBeforeClose = vi.fn().mockResolvedValue(true);
+    const view = { beforeClose: previousBeforeClose } as any;
     const modalConfirm = vi.fn().mockResolvedValue(true);
 
     bindPopupSubTableBeforeClose({
@@ -53,6 +76,11 @@ describe('bindPopupSubTableBeforeClose', () => {
     });
 
     await expect(view.beforeClose({ force: false })).resolves.toBe(true);
+    expect(previousBeforeClose).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ignoredDirtyFormModelUids: ['row-form'],
+      }),
+    );
     expect(model.resetUserModifiedFields).toHaveBeenCalledTimes(1);
 
     await expect(view.beforeClose({ force: false })).resolves.toBe(true);
