@@ -18,8 +18,7 @@ import {
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { NAMESPACE } from '../locale';
-import { getCustomRequestConfigActionDefinition } from './common/customRequestDefinition';
-import { executeCustomRequest } from './common/customRequest.shared';
+import { CUSTOM_REQUEST_ACTION_NAME } from './customRequestFlowAction';
 
 export class CustomRequestActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;
@@ -30,22 +29,9 @@ export class CustomRequestActionModel extends ActionModel {
 
 CustomRequestActionModel.define({
   label: tExpr('Custom request', { ns: NAMESPACE }),
-  sort: 9999,
+  sort: 5000,
   createModelOptions: {
     use: 'CustomRequestActionModel',
-  },
-});
-
-CustomRequestActionModel.registerFlow({
-  key: 'customRequestSettings',
-  manual: true,
-  title: tExpr('Request settings', { ns: NAMESPACE }),
-  steps: {
-    requestConfig: {
-      title: tExpr('Request settings', { ns: NAMESPACE }),
-      ...getCustomRequestConfigActionDefinition(),
-      handler() {},
-    },
   },
 });
 
@@ -63,25 +49,13 @@ CustomRequestActionModel.registerFlow({
       },
     },
     sendRequest: {
-      async handler(ctx) {
+      use: CUSTOM_REQUEST_ACTION_NAME,
+      defaultParams(ctx) {
         const params = ctx.model.getStepParams?.('customRequestSettings', 'requestConfig') || {};
-        const requestKey = params?.key;
-
-        if (!requestKey) {
-          ctx.message.error(ctx.t('Please configure the request settings first', { ns: NAMESPACE }));
-          ctx.exit();
-          return;
-        }
-
-        ctx.model.setProps('loading', true);
-        try {
-          return await executeCustomRequest(ctx, { ...params, key: requestKey }, { throwOnError: true });
-        } catch (error) {
-          ctx.exit();
-          throw error;
-        } finally {
-          ctx.model.setProps('loading', false);
-        }
+        return {
+          ...params,
+          key: params?.key,
+        };
       },
     },
   },

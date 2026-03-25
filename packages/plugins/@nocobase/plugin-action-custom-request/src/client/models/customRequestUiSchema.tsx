@@ -10,12 +10,12 @@
 import { RemoteSelect, TextAreaWithContextSelector } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { InputNumber } from 'antd';
-import { generateNTemplate } from '../../locale';
-import { FlowJsonWithContextSelector } from '../components/FlowJsonWithContextSelector';
-import { RequestKeyField } from '../components/RequestKeyField';
-import { RolesSelect } from '../components/RolesSelect';
+import { generateNTemplate } from '../locale';
+import { FlowJsonWithContextSelector } from './components/FlowJsonWithContextSelector';
+import { RequestKeyField } from './components/RequestKeyField';
+import { RolesSelect } from './components/RolesSelect';
 
-export const customRequestFlowActionUiSchema = {
+export const customRequestUiSchema = {
   key: {
     type: 'string',
     title: generateNTemplate('Key'),

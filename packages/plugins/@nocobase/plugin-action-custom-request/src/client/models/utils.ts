@@ -9,7 +9,6 @@
 
 import { uid } from '@nocobase/utils/client';
 import { saveAs } from 'file-saver';
-import type { CustomRequestStepParams } from '../customRequestFlowActionTypes';
 
 type RequestNameValue = {
   name: string;

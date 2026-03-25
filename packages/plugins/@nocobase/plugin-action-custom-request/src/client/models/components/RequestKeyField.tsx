@@ -11,11 +11,7 @@ import { useForm } from '@formily/react';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React from 'react';
-import {
-  loadCustomRequestRecord,
-  makeRequestKey,
-  toCustomRequestConfigurationInitialValues,
-} from '../common/customRequest.shared';
+import { loadCustomRequestRecord, makeRequestKey, toCustomRequestConfigurationInitialValues } from '../utils';
 
 const requestConfigInFlight = new Map<string, Promise<any>>();
 
