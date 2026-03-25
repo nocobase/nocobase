@@ -85,7 +85,7 @@ export async function build(pkgs: string[]) {
   // core/app
   const appClient = packages.find((item) => item.location === CORE_APP);
   if (appClient) {
-    await runScript(['umi', 'build'], ROOT_PATH, {
+    await runScript(['rsbuild', 'build', '--config', path.join(CORE_APP, 'client', 'rsbuild.config.ts')], ROOT_PATH, {
       APP_ROOT: path.join(CORE_APP, 'client'),
       ANALYZE: process.env.BUILD_ANALYZE === 'true' ? '1' : undefined,
     });

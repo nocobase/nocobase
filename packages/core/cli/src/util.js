@@ -360,7 +360,8 @@ function buildIndexHtml(force = false) {
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
     .replace(/\{\{env.ESM_CDN_BASE_URL\}\}/g, process.env.ESM_CDN_BASE_URL || '')
     .replace(/\{\{env.ESM_CDN_SUFFIX\}\}/g, process.env.ESM_CDN_SUFFIX || '')
-    .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+    .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`)
+    .replace(/((?:src|href)="[^"]*?)\/{2,}(assets\/)/g, '$1/$2');
 
   if (process.env.CDN_BASE_URL) {
     const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
