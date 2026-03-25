@@ -185,28 +185,6 @@ describe('openView action - close behavior', () => {
     expect(remainingReset).toHaveBeenCalledTimes(1);
   });
 
-  it('resets dirty forms only after closing is allowed', async () => {
-    const resetUserModifiedFields = vi.fn();
-    const pageModel = createPageModel({
-      subModels: {
-        items: [
-          {
-            uid: 'dirty-form-uid',
-            subModels: {},
-            getUserModifiedFields: () => new Set(['title']),
-            resetUserModifiedFields,
-          },
-        ],
-      },
-    });
-    const { currentView } = await openAndLoad(pageModel);
-
-    const allowed = await currentView.beforeClose({ force: false });
-
-    expect(allowed).toBe(true);
-    expect(resetUserModifiedFields).toHaveBeenCalledTimes(1);
-  });
-
   it('allows dynamic close flows to prevent closing after confirmation', async () => {
     const resetUserModifiedFields = vi.fn();
     const dispatchEvent = vi.fn().mockImplementation(async (_eventName: string, inputArgs: any) => {

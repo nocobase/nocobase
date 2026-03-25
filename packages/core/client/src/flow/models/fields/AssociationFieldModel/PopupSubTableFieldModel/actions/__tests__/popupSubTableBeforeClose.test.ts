@@ -10,6 +10,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { bindPopupSubTableBeforeClose } from '../popupSubTableBeforeClose';
 
+const t = (value: string) => value;
+
 const createDirtyModel = (uid: string, dirtyFields: string[] = []) => {
   const modifiedFields = new Set(dirtyFields);
   return {
@@ -30,7 +32,7 @@ describe('bindPopupSubTableBeforeClose', () => {
       view,
       model: model as any,
       modal: { confirm: modalConfirm },
-      t: (value: string) => value,
+      t,
     });
 
     await expect(view.beforeClose({ force: false })).resolves.toBe(false);
@@ -50,7 +52,7 @@ describe('bindPopupSubTableBeforeClose', () => {
       view,
       model: model as any,
       modal: { confirm: modalConfirm },
-      t: (value: string) => value,
+      t,
     });
 
     await expect(view.beforeClose({ force: false })).resolves.toBe(false);
@@ -62,28 +64,35 @@ describe('bindPopupSubTableBeforeClose', () => {
     expect(model.resetUserModifiedFields).not.toHaveBeenCalled();
   });
 
-  it('clears dirty state after discard confirmation once closing is finally allowed', async () => {
-    const model = createDirtyModel('row-form', ['nickname']);
+  it('removes a cleaned-up handler even when it is no longer on top of the chain', async () => {
+    const staleModel = createDirtyModel('stale-row', ['nickname']);
+    const activeModel = createDirtyModel('active-row', ['title']);
+    const staleConfirm = vi.fn().mockResolvedValue(true);
+    const activeConfirm = vi.fn().mockResolvedValue(true);
     const previousBeforeClose = vi.fn().mockResolvedValue(true);
     const view = { beforeClose: previousBeforeClose } as any;
-    const modalConfirm = vi.fn().mockResolvedValue(true);
+
+    const cleanupStale = bindPopupSubTableBeforeClose({
+      view,
+      model: staleModel as any,
+      modal: { confirm: staleConfirm },
+      t,
+    });
 
     bindPopupSubTableBeforeClose({
       view,
-      model: model as any,
-      modal: { confirm: modalConfirm },
-      t: (value: string) => value,
+      model: activeModel as any,
+      modal: { confirm: activeConfirm },
+      t,
     });
 
-    await expect(view.beforeClose({ force: false })).resolves.toBe(true);
-    expect(previousBeforeClose).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ignoredDirtyFormModelUids: ['row-form'],
-      }),
-    );
-    expect(model.resetUserModifiedFields).toHaveBeenCalledTimes(1);
+    cleanupStale();
 
     await expect(view.beforeClose({ force: false })).resolves.toBe(true);
-    expect(modalConfirm).toHaveBeenCalledTimes(1);
+    expect(staleConfirm).not.toHaveBeenCalled();
+    expect(activeConfirm).toHaveBeenCalledTimes(1);
+    expect(previousBeforeClose).toHaveBeenCalledTimes(1);
+    expect(staleModel.resetUserModifiedFields).not.toHaveBeenCalled();
+    expect(activeModel.resetUserModifiedFields).toHaveBeenCalledTimes(1);
   });
 });

@@ -415,7 +415,6 @@ PageModel.registerFlow({
         if (!confirmed) {
           ctx.inputArgs?.controller?.prevent?.();
           ctx.exitAll();
-          return;
         }
       },
     },

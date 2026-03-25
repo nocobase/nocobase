@@ -11,7 +11,92 @@ import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException 
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
-import { createBeforeCloseDirtyState, resetDirtyFormModels } from '../utils/dirtyForms';
+import _ from 'lodash';
+
+type DirtyAwareFlowModel = FlowModel & {
+  getUserModifiedFields?: () => Set<string> | undefined;
+  resetUserModifiedFields?: () => void;
+};
+
+type BeforeCloseDirtyState = {
+  hasDirtyForms: boolean;
+  formModelUids: string[];
+};
+
+function collectDirtyFormModelUids(model?: FlowModel | null, ignoredDirtyFormModelUids: string[] = []): string[] {
+  if (!model) {
+    return [];
+  }
+
+  const visited = new Set<string>();
+  const dirtyModelUids: string[] = [];
+  const ignoredUidSet = ignoredDirtyFormModelUids.length ? new Set(ignoredDirtyFormModelUids) : null;
+
+  const walk = (current?: DirtyAwareFlowModel | null) => {
+    if (!current?.uid || visited.has(current.uid)) {
+      return;
+    }
+
+    visited.add(current.uid);
+
+    const userModifiedFields = current.getUserModifiedFields?.();
+    if (userModifiedFields?.size && !ignoredUidSet?.has(current.uid)) {
+      dirtyModelUids.push(current.uid);
+    }
+
+    Object.values(current.subModels || {}).forEach((subModelValue) => {
+      _.castArray(subModelValue).forEach((subModel) => {
+        if (subModel && typeof subModel === 'object') {
+          walk(subModel as DirtyAwareFlowModel);
+        }
+      });
+    });
+  };
+
+  walk(model as DirtyAwareFlowModel);
+  return dirtyModelUids;
+}
+
+function createBeforeCloseDirtyState(
+  model?: FlowModel | null,
+  ignoredDirtyFormModelUids: string[] = [],
+): BeforeCloseDirtyState {
+  const formModelUids = collectDirtyFormModelUids(model, ignoredDirtyFormModelUids);
+  return {
+    hasDirtyForms: formModelUids.length > 0,
+    formModelUids,
+  };
+}
+
+function resetDirtyFormModels(model?: FlowModel | null, formModelUids: string[] = []) {
+  if (!model || !formModelUids.length) {
+    return;
+  }
+
+  const visited = new Set<string>();
+  const targetUids = new Set(formModelUids);
+
+  const walk = (current?: DirtyAwareFlowModel | null) => {
+    if (!current?.uid || visited.has(current.uid)) {
+      return;
+    }
+
+    visited.add(current.uid);
+    if (targetUids.has(current.uid)) {
+      current.resetUserModifiedFields?.();
+    }
+
+    Object.values(current.subModels || {}).forEach((subModelValue) => {
+      _.castArray(subModelValue).forEach((subModel) => {
+        if (subModel && typeof subModel === 'object') {
+          walk(subModel as DirtyAwareFlowModel);
+        }
+      });
+    });
+  };
+
+  walk(model as DirtyAwareFlowModel);
+}
 
 function createViewBeforeCloseHandler(pageModel: FlowModel) {
   return async ({
@@ -330,11 +415,10 @@ export const openView = defineAction({
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = mergedFilterByTk;
     finalInputArgs.sourceId = mergedSourceId;
-    const { triggerByRouter, ...viewInputArgs } = finalInputArgs;
     await ctx.viewer.open({
       type: openMode,
-      triggerByRouter,
-      inputArgs: viewInputArgs,
+      triggerByRouter: finalInputArgs.triggerByRouter,
+      inputArgs: _.omit(finalInputArgs, 'triggerByRouter'),
       preventClose: runtimePreventClose,
       destroyOnClose: true,
       inheritContext: false,
