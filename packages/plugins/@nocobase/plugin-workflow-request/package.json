@@ -6,7 +6,7 @@
   "description": "Send HTTP requests to any HTTP service for data interaction in workflow.",
   "description.ru-RU": "Отправляет HTTP-запросы к любому HTTP-сервису для взаимодействия с данными в рабочем процессе.",
   "description.zh-CN": "可用于在工作流中向任意 HTTP 服务发送请求，进行数据交互。",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.11",
   "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-request",
@@ -14,8 +14,8 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-request",
   "devDependencies": {
     "antd": "5.x",
-    "joi": "^17.13.3",
     "axios": "^1.7.0",
+    "joi": "^17.13.3",
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },

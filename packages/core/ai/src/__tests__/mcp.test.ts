@@ -22,7 +22,7 @@ describe('MCP loader test cases', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['nocobase', 'field-sort', 'workflow'],
+      plugins: ['nocobase'],
     });
     await app.pm.enable('ai');
     aiManager = app.aiManager;
@@ -41,7 +41,6 @@ describe('MCP loader test cases', () => {
 
   it('should load mcp definitions in mcp root directory', async () => {
     await loader.load();
-    await mcpManager.persistence();
 
     const entry = await mcpManager.getMCP('weather');
     expect(entry).toBeDefined();

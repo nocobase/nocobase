@@ -55,6 +55,7 @@ export type AIEmployeeFilter = {
 };
 
 export interface AIEmployeeManager {
+  init(): Promise<void>;
   getEmployee(username: string): Promise<AIEmployeeEntry>;
   listEmployees(filter?: AIEmployeeFilter): Promise<AIEmployeeEntry[]>;
   registerEmployee(options: AIEmployeeOptions): Promise<void>;
