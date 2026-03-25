@@ -70,4 +70,39 @@ describe('PageModel closeGuard flow', () => {
     expect(prevent).toHaveBeenCalledTimes(1);
     expect(exitAll).toHaveBeenCalledTimes(1);
   });
+
+  it('clears dirty forms after confirming discard', async () => {
+    const handler = getConfirmUnsavedChangesHandler();
+    const resetUserModifiedFields = vi.fn();
+    const modalConfirm = vi.fn().mockResolvedValue(true);
+
+    const formModel = {
+      uid: 'form-1',
+      subModels: {},
+      resetUserModifiedFields,
+    };
+
+    const pageModel = {
+      uid: 'page-1',
+      subModels: {
+        items: [formModel],
+      },
+    };
+
+    await handler?.({
+      model: pageModel,
+      inputArgs: {
+        dirty: {
+          hasDirtyForms: true,
+          formModelUids: ['form-1'],
+        },
+      },
+      modal: { confirm: modalConfirm },
+      t: (value: string) => value,
+      exitAll: vi.fn(),
+    });
+
+    expect(modalConfirm).toHaveBeenCalledTimes(1);
+    expect(resetUserModifiedFields).toHaveBeenCalledTimes(1);
+  });
 });

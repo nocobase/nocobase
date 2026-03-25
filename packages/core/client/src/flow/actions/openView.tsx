@@ -11,57 +11,7 @@ import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException 
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
-import _ from 'lodash';
-
-type DirtyAwareFlowModel = FlowModel & {
-  getUserModifiedFields?: () => Set<string> | undefined;
-};
-
-type BeforeCloseDirtyState = {
-  hasDirtyForms: boolean;
-  formModelUids: string[];
-};
-
-function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
-  if (!model) {
-    return [];
-  }
-
-  const visited = new Set<string>();
-  const dirtyModelUids: string[] = [];
-
-  const walk = (current?: DirtyAwareFlowModel | null) => {
-    if (!current?.uid || visited.has(current.uid)) {
-      return;
-    }
-
-    visited.add(current.uid);
-
-    const userModifiedFields = current.getUserModifiedFields?.();
-    if (userModifiedFields?.size) {
-      dirtyModelUids.push(current.uid);
-    }
-
-    Object.values(current.subModels || {}).forEach((subModelValue) => {
-      _.castArray(subModelValue).forEach((subModel) => {
-        if (subModel && typeof subModel === 'object') {
-          walk(subModel as DirtyAwareFlowModel);
-        }
-      });
-    });
-  };
-
-  walk(model as DirtyAwareFlowModel);
-  return dirtyModelUids;
-}
-
-function createBeforeCloseDirtyState(model?: FlowModel | null): BeforeCloseDirtyState {
-  const formModelUids = collectDirtyFormModelUids(model);
-  return {
-    hasDirtyForms: formModelUids.length > 0,
-    formModelUids,
-  };
-}
+import { createBeforeCloseDirtyState } from '../utils/dirtyForms';
 
 function createViewBeforeCloseHandler(pageModel: FlowModel) {
   return async ({ result, force }: { result?: any; force?: boolean }) => {
