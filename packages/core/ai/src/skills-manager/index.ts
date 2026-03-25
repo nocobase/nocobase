@@ -20,12 +20,13 @@ export class DefaultSkillsManager implements SkillsManager {
 
   constructor(private readonly app: any) {
     this.provideCollectionManager = () => app.mainDataSource;
-    this.app.on('afterStart', async () => {
-      if (this.mode === 'memory') {
-        await this.persistence();
-        this.mode = 'database';
-      }
-    });
+  }
+
+  async init() {
+    if (this.mode === 'memory') {
+      await this.persistence();
+      this.mode = 'database';
+    }
   }
 
   getSkills(name: string[]): Promise<SkillsEntry[]>;

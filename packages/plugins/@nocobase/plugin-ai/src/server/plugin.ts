@@ -90,6 +90,11 @@ export class PluginAIServer extends Plugin {
         }
       },
     });
+    this.app.on('afterStart', async () => {
+      await this.ai.skillsManager.init();
+      await this.ai.employeeManager.init();
+      await this.ai.mcpManager.init();
+    });
   }
 
   async load() {

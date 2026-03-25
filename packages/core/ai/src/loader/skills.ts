@@ -101,18 +101,16 @@ export class SkillsLoader extends LoadAndRegister<SkillsLoaderOptions> {
       return;
     }
     const { skillsManager } = this.ai;
-    await Promise.all(
-      this.skillsDescriptors.map(async (descriptor) => {
-        await skillsManager.registerSkills({
-          scope: descriptor.scope,
-          name: descriptor.name,
-          description: descriptor.description,
-          content: descriptor.content,
-          tools: descriptor.tools,
-          introduction: descriptor.introduction,
-        });
-      }),
-    );
+    for (const descriptor of this.skillsDescriptors) {
+      await skillsManager.registerSkills({
+        scope: descriptor.scope,
+        name: descriptor.name,
+        description: descriptor.description,
+        content: descriptor.content,
+        tools: descriptor.tools,
+        introduction: descriptor.introduction,
+      });
+    }
   }
 }
 
