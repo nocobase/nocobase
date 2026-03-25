@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import 'dayjs/plugin/isoWeek';
+import 'dayjs/plugin/quarterOfYear';
 import dayjs from 'dayjs';
+
+type DateRangeUnit = 'day' | 'days' | 'month' | 'year' | 'quarter' | 'isoWeek';
 
 export function inferPickerType(dateString: string, picker?): 'year' | 'month' | 'quarter' | 'date' {
   if (/^\d{4}$/.test(dateString)) {
@@ -23,16 +27,28 @@ export function inferPickerType(dateString: string, picker?): 'year' | 'month' |
   }
 }
 
-const getStart = (offset: number, unit: dayjs.ManipulateType | 'isoWeek') => {
-  return dayjs()
-    .add(offset, unit === 'isoWeek' ? 'week' : unit)
-    .startOf(unit);
+const getStart = (offset: number, unit: DateRangeUnit) => {
+  if (unit === 'isoWeek') {
+    return dayjs().add(offset, 'week').startOf('isoWeek');
+  }
+
+  if (unit === 'quarter') {
+    return dayjs().add(offset, 'quarter').startOf('quarter');
+  }
+
+  return dayjs().add(offset, unit).startOf(unit);
 };
 
-const getEnd = (offset: number, unit: dayjs.ManipulateType | 'isoWeek') => {
-  return dayjs()
-    .add(offset, unit === 'isoWeek' ? 'week' : unit)
-    .endOf(unit);
+const getEnd = (offset: number, unit: DateRangeUnit) => {
+  if (unit === 'isoWeek') {
+    return dayjs().add(offset, 'week').endOf('isoWeek');
+  }
+
+  if (unit === 'quarter') {
+    return dayjs().add(offset, 'quarter').endOf('quarter');
+  }
+
+  return dayjs().add(offset, unit).endOf(unit);
 };
 
 function withParams(value: any[], params?: { fieldOperator?: string; isParsingVariable?: boolean }) {
