@@ -659,10 +659,12 @@ const FormContentHarness = ({
   heightMode,
   height,
   gridModel,
+  layoutProps,
 }: {
   heightMode?: string;
   height?: number;
   gridModel: any;
+  layoutProps?: any;
 }) => {
   const [form] = Form.useForm();
   const modelRef = useRef<any>();
@@ -680,6 +682,7 @@ const FormContentHarness = ({
     <FormBlockContent
       model={modelRef.current}
       gridModel={gridModel}
+      layoutProps={layoutProps}
       heightMode={heightMode}
       height={height}
       grid={<div data-testid="grid" />}
@@ -747,6 +750,20 @@ describe('FormBlockModel block height', () => {
     await waitFor(() => {
       expect(gridModel.setProps).toHaveBeenCalledWith({ height: undefined });
     });
+  });
+
+  it('offsets actions to align with controls in horizontal layout', () => {
+    const gridModel: any = {
+      props: {},
+      setProps: vi.fn(),
+    };
+
+    const { container } = render(
+      <FormContentHarness gridModel={gridModel} layoutProps={{ layout: 'horizontal', labelWidth: 160 }} />,
+    );
+
+    const actionsWrapper = container.querySelector('[data-testid="actions"]')?.parentElement as HTMLElement;
+    expect(actionsWrapper.style.marginInlineStart).toBe('160px');
   });
 });
 

@@ -1,7 +1,7 @@
 ---
 title: "插件构建配置"
-description: "NocoBase 插件构建：build.config.ts、Vite 客户端打包、tsup 服务端打包、modifyViteConfig、beforeBuild 钩子。"
-keywords: "插件构建,build.config.ts,Vite,tsup,打包配置,@nocobase/build,NocoBase"
+description: "NocoBase 插件构建：build.config.ts、Rsbuild 客户端打包、tsup 服务端打包、modifyRsbuildConfig、beforeBuild 钩子。"
+keywords: "插件构建,build.config.ts,Rsbuild,tsup,打包配置,@nocobase/build,NocoBase"
 ---
 
 # 构建
@@ -14,10 +14,10 @@ keywords: "插件构建,build.config.ts,Vite,tsup,打包配置,@nocobase/build,N
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // vite 是用来打包 `src/client` 端代码的
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild 是用来打包 `src/client` 端代码的
 
-    // 修改 Vite 配置，具体可参考：https://vitejs.dev/guide/
+    // 修改 Rsbuild 配置，具体可参考：https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {
