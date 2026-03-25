@@ -13,6 +13,7 @@ import path from 'path';
 import { AIManager } from '../ai-manager';
 import { AIEmployeeManager, AIEmployeeEntry } from '../ai-employee-manager';
 
+const normalizeEOL = (value: string) => value.replace(/\r\n?/g, '\n');
 const normalizeTools = (entry: AIEmployeeEntry) =>
   [...(entry.skillSettings?.tools ?? [])].sort((a, b) => a.name.localeCompare(b.name));
 const normalizeSkills = (entry: AIEmployeeEntry) => [...(entry.skillSettings?.skills ?? [])].sort();
@@ -39,6 +40,7 @@ describe('AI employee loader test cases', () => {
           '**/ai-employees/*/index.ts',
           '**/ai-employees/*.js',
           '**/ai-employees/*/index.js',
+          '**/ai-employees/*/prompt.md',
           '!**/ai-employees/**/*.d.ts',
         ],
       },
@@ -67,6 +69,7 @@ describe('AI employee loader test cases', () => {
     expect(employee).toBeDefined();
     expect(employee.username).toBe('index-employee');
     expect(employee.nickname).toBe('Index Employee');
+    expect(normalizeEOL(employee.defaultPrompt)).toBe('Prompt from markdown file.\n');
     expect(normalizeTools(employee)).toEqual([]);
     expect(normalizeSkills(employee)).toEqual([]);
   });

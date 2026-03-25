@@ -10,6 +10,7 @@
 import { importModule } from '@nocobase/utils';
 import { DirectoryScanner, DirectoryScannerOptions, FileDescriptor } from './scanner';
 import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
 import { AIManager } from '../ai-manager';
 import { LoadAndRegister } from './types';
 import { Logger } from '@nocobase/logger';
@@ -45,7 +46,7 @@ export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
 
     const grouped = new Map<string, FileDescriptor[]>();
     for (const fd of this.files) {
-      const employeeRoot = getEmployeeRoot(fd.path);
+      const employeeRoot = getEmployeeRoot(fd);
       const group = grouped.get(employeeRoot) ?? [];
       group.push(fd);
       grouped.set(employeeRoot, group);
@@ -53,10 +54,12 @@ export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
 
     const descriptors = await Promise.all(
       Array.from(grouped.entries()).map(async ([employeeRoot, fds]) => {
-        const file = selectEmployeeDefinitionFile(fds, employeeRoot, this.log);
+        const file = fds.find((fd) => fd.extname === '.ts' || fd.extname === '.js');
         if (!file || !existsSync(file.path)) {
           return null;
         }
+        const promptFile = fds.find((fd) => fd.basename === 'prompt.md');
+
         const name = path.basename(employeeRoot);
         try {
           const imported = await importModule(file.path);
@@ -67,6 +70,19 @@ export class AIEmployeeLoader extends LoadAndRegister<AIEmployeeLoaderOptions> {
             return null;
           }
           const { skills = [], tools = [] } = employeeOptions;
+
+          if (promptFile && existsSync(promptFile.path)) {
+            try {
+              employeeOptions.systemPrompt = await readFile(promptFile.path, 'utf-8');
+            } catch (e) {
+              this.log?.error(
+                `ai employee [${name}] load fail: error occur when reading prompt.md at ${promptFile.path}`,
+                e,
+              );
+              return null;
+            }
+          }
+
           return {
             name,
             employeeRoot,
@@ -105,25 +121,11 @@ export type AIEmployeeDescriptor = {
   options: AIEmployeeOptions;
 };
 
-function getEmployeeRoot(filePath: string) {
-  if (isIndexFile(filePath)) {
-    return path.dirname(filePath);
+function getEmployeeRoot(fd: FileDescriptor) {
+  if (fd.basename === 'index.ts' || fd.basename === 'index.js' || fd.basename === 'prompt.md') {
+    return path.dirname(fd.path);
   }
-  const { dir, name } = path.parse(filePath);
-  return path.join(dir, name);
-}
-
-function selectEmployeeDefinitionFile(files: FileDescriptor[], employeeRoot: string, log?: Logger) {
-  const direct = files.find((fd) => !isIndexFile(fd.path));
-  const nested = files.find((fd) => isIndexFile(fd.path));
-  if (direct && nested) {
-    log?.warn(
-      `ai employee [${path.basename(employeeRoot)}] duplicate definition found, use ${direct.path} instead of ${
-        nested.path
-      }`,
-    );
-  }
-  return direct ?? nested;
+  return fd.path;
 }
 
 async function discoverSkills(employeeRoot: string): Promise<string[]> {
@@ -159,11 +161,6 @@ async function discoverTools(employeeRoot: string): Promise<AIEmployeeToolSettin
       .filter((tool): tool is AIEmployeeToolSetting => Boolean(tool?.name)),
     'name',
   );
-}
-
-function isIndexFile(filePath: string) {
-  const basename = path.basename(filePath);
-  return basename === 'index.ts' || basename === 'index.js';
 }
 
 function uniq<T>(values: T[]) {

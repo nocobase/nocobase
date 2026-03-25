@@ -249,6 +249,7 @@ export abstract class Plugin<O = any> implements PluginInterface {
           '**/ai-employees/*/index.ts',
           '**/ai-employees/*.js',
           '**/ai-employees/*/index.js',
+          '**/ai-employees/*/prompt.md',
           '!**/ai-employees/**/*.d.ts',
         ],
       },
