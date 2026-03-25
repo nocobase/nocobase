@@ -26,17 +26,18 @@ export class DefaultMCPManager implements MCPManager {
 
   constructor(private readonly app: any) {
     this.provideCollectionManager = () => app.mainDataSource;
-    this.app.on('afterStart', async () => {
-      if (this.mode === 'memory') {
-        await this.persistence();
-        this.mode = 'database';
-      }
-      try {
-        await this.rebuildClient();
-      } catch (e) {
-        this.app.log.error('fail to init mcp clients', e);
-      }
-    });
+  }
+
+  async init() {
+    if (this.mode === 'memory') {
+      await this.persistence();
+      this.mode = 'database';
+    }
+    try {
+      await this.rebuildClient();
+    } catch (e) {
+      this.app.log.error('fail to init mcp clients', e);
+    }
   }
 
   async registerMCP(registration: { [key: string | symbol]: MCPOptions }): Promise<void> {
