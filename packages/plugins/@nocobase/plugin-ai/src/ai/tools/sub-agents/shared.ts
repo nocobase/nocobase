@@ -40,11 +40,11 @@ function localizeBuiltInInfo(ctx: Context, employee: Model) {
 export function serializeEmployeeSummary(ctx: Context, employee: Model) {
   localizeBuiltInInfo(ctx, employee);
   return {
-    username: employee.get('username'),
-    nickname: employee.get('nickname'),
-    position: employee.get('position'),
-    bio: employee.get('bio'),
-    greeting: employee.get('greeting'),
+    username: employee.get('username') as string,
+    nickname: employee.get('nickname') as string,
+    position: employee.get('position') as string,
+    bio: employee.get('bio') as string,
+    greeting: employee.get('greeting') as string,
     skillSettings: employee.get('skillSettings'),
   };
 }

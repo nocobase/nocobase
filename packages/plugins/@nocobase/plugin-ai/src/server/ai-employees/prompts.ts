@@ -15,6 +15,7 @@ export function getSystemPrompt({
   dataSources,
   knowledgeBase,
   availableSkills,
+  availableAIEmployees,
 }: {
   aiEmployee: { nickname: string; about: string };
   personal?: string;
@@ -23,6 +24,14 @@ export function getSystemPrompt({
   dataSources?: string;
   knowledgeBase?: string;
   availableSkills?: { name: string; description: string; content?: string }[];
+  availableAIEmployees?: {
+    username: string;
+    nickname: string;
+    position: string;
+    bio: string;
+    greeting: string;
+    skillSettings: any;
+  }[];
 }) {
   // Helper function to get database-specific identifier quoting rules
   const getDatabaseQuotingRules = (): string => {
@@ -134,6 +143,29 @@ You have access to the following skills (tools groups). When a user's request ma
 ${availableSkills.map((skill) => `- **${skill.name}**: ${skill.description || 'No description'}`).join('\n')}
 </skills>
 `
+    : ''
+}
+
+${
+  availableAIEmployees?.length
+    ? `<sub_agents>
+  The following ${availableAIEmployees.length} AI employees are currently available as sub agents.
+  Treat this list as the authoritative routing roster for this conversation.
+  Do not call discovery tools just to confirm the same list again.
+  Only use discovery when this section is missing, clearly insufficient for the routing decision, contradictory to the current conversation, or you have strong evidence the roster has changed.
+  If one listed employee is already an obvious fit, dispatch directly.
+  Use profile lookup only when you need deeper instructions before dispatching.
+
+  ${availableAIEmployees.map(
+    (it) =>
+      `- ${it.nickname}
+        - username: ${it.username}
+        - description: ${it.bio}
+        - position: ${it.position}
+        ${it.skillSettings?.skills?.length ? '- skills:' + it.skillSettings?.skills.join(',') : ''}
+        ${it.skillSettings?.tools?.length ? '- tools:' + it.skillSettings?.tools.map((t) => t.name).join(',') : ''}`,
+  )}
+  </sub_agents>`
     : ''
 }
 

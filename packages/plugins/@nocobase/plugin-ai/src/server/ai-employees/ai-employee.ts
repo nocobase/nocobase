@@ -37,6 +37,7 @@ import { convertAIMessage } from './utils';
 import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import { LLMResult } from '@langchain/core/outputs';
 import { Context } from '@nocobase/actions';
+import { listAccessibleAIEmployees, serializeEmployeeSummary } from '../../ai/tools/sub-agents/shared';
 
 export interface ModelRef {
   llmService: string;
@@ -714,6 +715,7 @@ export class AIEmployee {
     }
 
     const availableSkills = await this.getAvailableSkills();
+    const availableAIEmployees = await this.getAvailableAIEmployees();
 
     const systemPrompt = getSystemPrompt({
       aiEmployee: {
@@ -731,6 +733,7 @@ export class AIEmployee {
       },
       knowledgeBase,
       availableSkills,
+      availableAIEmployees,
     });
 
     const { important } = this.ctx.action.params.values || {};
@@ -1471,6 +1474,13 @@ If information is missing, clearly state it in the summary.</Important>`;
       }
     }
     return result;
+  }
+
+  private async getAvailableAIEmployees() {
+    const availableAIEmployees = (await listAccessibleAIEmployees(this.ctx)).map((employee) =>
+      serializeEmployeeSummary(this.ctx, employee),
+    );
+    return availableAIEmployees;
   }
 
   private getMiddleware(options: {
