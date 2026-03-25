@@ -13,8 +13,8 @@
 - У вас уже есть базовая рабочая среда NocoBase. По поводу установки основной системы, пожалуйста, обратитесь к более подробной [официальной документации по установке](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - Версия NocoBase **2.0.0-beta.5 и выше**.
 - Вы уже загрузили соответствующие файлы системы тикетов:
-  - **Файл резервной копии**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) — подходит для Способа 1.
-  - **SQL-файл**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) — подходит для Способа 2.
+  - **Файл резервной копии**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) — подходит для Способа 1.
+  - **SQL-файл**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) — подходит для Способа 2.
 
 **Важные примечания**:
 - Данное решение создано на базе базы данных **PostgreSQL 16**, пожалуйста, убедитесь, что в вашей среде используется PostgreSQL 16.

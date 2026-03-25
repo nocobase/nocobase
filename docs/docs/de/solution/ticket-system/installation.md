@@ -13,8 +13,8 @@ Bevor Sie beginnen, stellen Sie bitte sicher:
 - Sie verfügen bereits über eine grundlegende NocoBase-Laufzeitumgebung. Informationen zur Installation des Hauptsystems finden Sie in der detaillierten [offiziellen Installationsdokumentation](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - NocoBase-Version **2.0.0-beta.5 und höher**
 - Sie haben die entsprechenden Dateien des Ticket-Systems heruntergeladen:
-  - **Sicherungsdatei**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - Anwendbar für Methode Eins
-  - **SQL-Datei**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - Anwendbar für Methode Zwei
+  - **Sicherungsdatei**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - Anwendbar für Methode Eins
+  - **SQL-Datei**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - Anwendbar für Methode Zwei
 
 **Wichtige Erläuterungen**:
 - Diese Lösung wurde auf Basis der **PostgreSQL 16**-Datenbank erstellt. Bitte stellen Sie sicher, dass Ihre Umgebung PostgreSQL 16 verwendet.

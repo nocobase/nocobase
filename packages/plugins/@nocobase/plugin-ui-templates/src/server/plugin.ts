@@ -7,13 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import flowModelTemplates from './resources/flowModelTemplates';
 import flowModelTemplateUsages from './resources/flowModelTemplateUsages';
 import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { uid } from '@nocobase/utils';
+import { flowSchemaContribution } from './flow-schema-contributions';
 export class PluginBlockReferenceServer extends Plugin {
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
+  }
+
   async load() {
     this.app.resourceManager.define(flowModelTemplates);
     this.app.resourceManager.define(flowModelTemplateUsages);
@@ -121,21 +127,62 @@ export class PluginBlockReferenceServer extends Plugin {
       }
     };
 
-    const removeUsagesByInstance = async (
-      instanceUid: string,
-      _options: any,
-      { transaction }: { transaction?: any } = {},
-    ) => {
+    const removeUsagesByInstance = async (instanceUid: string, { transaction }: { transaction?: any } = {}) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
       await usageRepo.destroy({ filter: { modelUid: instanceUid }, transaction });
+    };
+
+    const syncUsagesFromTree = async (
+      tree: any,
+      {
+        transaction,
+        skipNodesWithoutTemplateRefs = false,
+      }: { transaction?: any; skipNodesWithoutTemplateRefs?: boolean } = {},
+    ) => {
+      const nodes = collectFlowModelsFromTree(tree);
+      for (const node of nodes) {
+        const instanceUid = node?.uid;
+        if (!instanceUid) continue;
+        const currentOptions = parseOptions(node);
+        if (skipNodesWithoutTemplateRefs && extractTemplateUids(currentOptions).length === 0) {
+          continue;
+        }
+        await syncUsages(instanceUid, currentOptions, { transaction });
+      }
+    };
+
+    const removeUsagesFromNodes = async (
+      nodes: Array<{ uid?: string }>,
+      { transaction }: { transaction?: any } = {},
+    ) => {
+      for (const node of nodes) {
+        const instanceUid = node?.uid;
+        if (!instanceUid) continue;
+        await removeUsagesByInstance(instanceUid, { transaction });
+      }
+    };
+
+    const syncUsagesForTouchedUids = async (
+      flowRepo: FlowModelRepository,
+      uids: string[],
+      { transaction }: { transaction?: any } = {},
+    ) => {
+      for (const instanceUid of _.uniq(uids.map((item) => String(item || '').trim()).filter(Boolean))) {
+        const record = await flowRepo.findOne({
+          filter: { uid: instanceUid },
+          transaction,
+        });
+        if (!record) continue;
+        const currentOptions = parseOptions(record?.get?.('options') || record?.options);
+        await syncUsages(instanceUid, currentOptions, { transaction });
+      }
     };
 
     // 区块删除时自动清理 usage 记录，避免垃圾数据
     this.db.on('flowModels.afterDestroy', async (instance: any, { transaction }: any = {}) => {
       const instanceUid = instance?.get?.('uid') || instance?.uid;
       if (!instanceUid) return;
-      const options = parseOptions(instance?.get?.('options') || instance?.options);
-      await removeUsagesByInstance(instanceUid, options, { transaction });
+      await removeUsagesByInstance(instanceUid, { transaction });
     });
 
     // 区块保存时维护 usage：
@@ -194,31 +241,92 @@ export class PluginBlockReferenceServer extends Plugin {
         const nodes = (await flowRepo.findNodesById(rootUid, {
           includeAsyncNode: true,
           transaction: ctx.transaction,
-        })) as Array<{ uid?: string; options?: unknown; parent?: string | null }>;
+        })) as Array<{ uid?: string }>;
 
         await next();
 
-        for (const node of nodes) {
-          const instanceUid = node?.uid;
-          if (!instanceUid) continue;
-          const options = parseOptions(node?.options || {});
-          if (node?.parent && !options?.parentId) {
-            options.parentId = node.parent;
-          }
-          await removeUsagesByInstance(instanceUid, options, { transaction: ctx.transaction });
-        }
+        await removeUsagesFromNodes(nodes, { transaction: ctx.transaction });
         return;
       }
 
       if (actionName === 'duplicate') {
         await next();
-        const raw = ctx.body?.data ?? ctx.body;
-        const nodes = collectFlowModelsFromTree(raw);
-        for (const node of nodes) {
-          const instanceUid = node?.uid;
-          if (!instanceUid) continue;
-          const currentOptions = parseOptions(node);
-          await syncUsages(instanceUid, currentOptions, { transaction: ctx.transaction });
+        await syncUsagesFromTree(ctx.body?.data ?? ctx.body, {
+          transaction: ctx.transaction,
+          skipNodesWithoutTemplateRefs: true,
+        });
+        return;
+      }
+
+      if (actionName === 'ensure') {
+        await next();
+        await syncUsagesFromTree(ctx.body?.data ?? ctx.body, {
+          transaction: ctx.transaction,
+        });
+        return;
+      }
+
+      if (actionName === 'mutate') {
+        const values = ctx?.action?.params?.values;
+        const ops = Array.isArray(values?.ops) ? values.ops : [];
+        const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
+
+        await next();
+
+        const data = ctx.body?.data ?? ctx.body;
+        const results = Array.isArray(data?.results) ? data.results : [];
+        if (!results.length) {
+          return;
+        }
+
+        const resultsByOpId = new Map<string, any>();
+        for (const result of results) {
+          const opId = String(result?.opId || '').trim();
+          if (!opId) continue;
+          resultsByOpId.set(opId, result);
+        }
+
+        const destroyedNodesByOpId = ctx?.state?.flowModelsMutateMeta?.destroyedNodesByOpId || {};
+
+        for (const op of ops) {
+          const opId = String(op?.opId || '').trim();
+          if (!opId) continue;
+
+          const result = resultsByOpId.get(opId);
+          if (!result?.ok) continue;
+
+          if (op?.type === 'duplicate') {
+            await syncUsagesFromTree(result?.output, {
+              transaction: ctx.transaction,
+              skipNodesWithoutTemplateRefs: true,
+            });
+            continue;
+          }
+
+          if (op?.type === 'ensure') {
+            await syncUsagesFromTree(result?.output, { transaction: ctx.transaction });
+            continue;
+          }
+
+          if (op?.type === 'upsert') {
+            const modelValues = op?.params?.values;
+            if (!modelValues || typeof modelValues !== 'object') continue;
+
+            if (modelValues?.subModels && typeof modelValues.subModels === 'object') {
+              await syncUsagesFromTree(result?.output, { transaction: ctx.transaction });
+            } else {
+              await syncUsagesForTouchedUids(flowRepo, [String(modelValues?.uid || '')], {
+                transaction: ctx.transaction,
+              });
+            }
+            continue;
+          }
+
+          if (op?.type === 'destroy') {
+            await removeUsagesFromNodes(destroyedNodesByOpId[opId] || [], {
+              transaction: ctx.transaction,
+            });
+          }
         }
         return;
       }

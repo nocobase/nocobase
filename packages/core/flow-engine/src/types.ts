@@ -41,6 +41,261 @@ export type DeepPartial<T> = {
         : T[P];
 };
 
+export type FlowJsonSchema = Record<string, any> & {
+  $schema?: string;
+  $id?: string;
+};
+
+export interface FlowDynamicHintMetadata {
+  slotRules?: {
+    slotKey?: string;
+    type?: 'object' | 'array';
+    allowedUses?: string[];
+  };
+  contextRequirements?: string[];
+  unresolvedReason?: string;
+  recommendedFallback?: any;
+}
+
+export interface FlowDynamicHint {
+  kind:
+    | 'dynamic-ui-schema'
+    | 'dynamic-children'
+    | 'custom-component'
+    | 'x-reactions'
+    | 'unresolved-action'
+    | 'manual-schema-required'
+    | 'unresolved-model';
+  path?: string;
+  message: string;
+  'x-flow'?: FlowDynamicHintMetadata;
+}
+
+export interface FlowSchemaCoverage {
+  status: 'auto' | 'manual' | 'mixed' | 'unresolved';
+  source: 'official' | 'plugin' | 'third-party';
+  strict?: boolean;
+  issues?: string[];
+}
+
+export type FlowModelSchemaExposure = 'public' | 'internal';
+
+export interface FlowSchemaPattern {
+  title: string;
+  description?: string;
+  snippet?: any;
+}
+
+export interface FlowSchemaDocument {
+  use: string;
+  title?: string;
+  jsonSchema: FlowJsonSchema;
+  coverage: FlowSchemaCoverage;
+  dynamicHints: FlowDynamicHint[];
+  examples: any[];
+  minimalExample?: any;
+  commonPatterns: FlowSchemaPattern[];
+  antiPatterns: FlowSchemaPattern[];
+  skeleton: any;
+  hash: string;
+  source: FlowSchemaCoverage['source'];
+}
+
+export type FlowSchemaDetail = 'compact' | 'full';
+
+export interface FlowSchemaPublicDocument {
+  use: string;
+  title?: string;
+  jsonSchema: FlowJsonSchema;
+  dynamicHints: FlowDynamicHint[];
+  minimalExample?: any;
+  commonPatterns: FlowSchemaPattern[];
+  antiPatterns: FlowSchemaPattern[];
+  hash: string;
+  source: FlowSchemaCoverage['source'];
+}
+
+export interface FlowSchemaDocs {
+  description?: string;
+  examples?: any[];
+  minimalExample?: any;
+  commonPatterns?: FlowSchemaPattern[];
+  antiPatterns?: FlowSchemaPattern[];
+  dynamicHints?: FlowDynamicHint[];
+}
+
+export interface FlowSchemaBundleSlotCatalog {
+  type: 'object' | 'array';
+  required?: boolean;
+  minItems?: number;
+  open?: boolean;
+  candidates: FlowSchemaBundleNode[];
+}
+
+export interface FlowSchemaBundleNode {
+  use: string;
+  title?: string;
+  compatibility?: FlowFieldModelCompatibility;
+  subModelCatalog?: Record<string, FlowSchemaBundleSlotCatalog>;
+}
+
+export type FlowSchemaBundleItem = FlowSchemaBundleNode;
+
+export interface FlowSchemaBundleDocument {
+  items: FlowSchemaBundleNode[];
+}
+
+export interface FlowSchemaContextEdge {
+  parentUse: string;
+  slotKey: string;
+  childUse: string;
+}
+
+export interface FlowSubModelContextPathStep {
+  slotKey: string;
+  use?: string | string[];
+}
+
+export interface FlowModelSchemaPatch {
+  stepParamsSchema?: FlowJsonSchema;
+  flowRegistrySchema?: FlowJsonSchema;
+  subModelSlots?: Record<string, FlowSubModelSlotSchema>;
+  flowRegistrySchemaPatch?: FlowJsonSchema;
+  docs?: FlowSchemaDocs;
+  examples?: any[];
+  skeleton?: any;
+  dynamicHints?: FlowDynamicHint[];
+}
+
+export interface FlowDescendantSchemaPatch {
+  path: FlowSubModelContextPathStep[];
+  patch: FlowModelSchemaPatch;
+}
+
+export interface FlowSubModelSlotSchema {
+  type: 'object' | 'array';
+  use?: string;
+  uses?: string[];
+  required?: boolean;
+  minItems?: number;
+  dynamic?: boolean;
+  schema?: FlowJsonSchema;
+  fieldBindingContext?: string;
+  childSchemaPatch?: FlowModelSchemaPatch | Record<string, FlowModelSchemaPatch>;
+  descendantSchemaPatches?: FlowDescendantSchemaPatch[];
+  description?: string;
+}
+
+export interface FlowModelSchemaMeta {
+  stepParamsSchema?: FlowJsonSchema;
+  flowRegistrySchema?: FlowJsonSchema;
+  subModelSlots?: Record<string, FlowSubModelSlotSchema>;
+  flowRegistrySchemaPatch?: FlowJsonSchema;
+  docs?: FlowSchemaDocs;
+  examples?: any[];
+  skeleton?: any;
+  dynamicHints?: FlowDynamicHint[];
+  source?: FlowSchemaCoverage['source'];
+  strict?: boolean;
+  exposure?: FlowModelSchemaExposure;
+  abstract?: boolean;
+  allowDirectUse?: boolean;
+  suggestedUses?: string[];
+}
+
+export interface FlowActionSchemaContribution {
+  name: string;
+  title?: string;
+  paramsSchema?: FlowJsonSchema;
+  docs?: FlowSchemaDocs;
+  source?: FlowSchemaCoverage['source'];
+  strict?: boolean;
+}
+
+export interface FlowModelSchemaContribution {
+  use: string;
+  title?: string;
+  stepParamsSchema?: FlowJsonSchema;
+  flowRegistrySchema?: FlowJsonSchema;
+  subModelSlots?: Record<string, FlowSubModelSlotSchema>;
+  flowRegistrySchemaPatch?: FlowJsonSchema;
+  docs?: FlowSchemaDocs;
+  examples?: any[];
+  skeleton?: any;
+  dynamicHints?: FlowDynamicHint[];
+  source?: FlowSchemaCoverage['source'];
+  strict?: boolean;
+  exposure?: FlowModelSchemaExposure;
+  abstract?: boolean;
+  allowDirectUse?: boolean;
+  suggestedUses?: string[];
+}
+
+export interface FlowSchemaContributionDefaults {
+  source?: FlowSchemaCoverage['source'];
+  strict?: boolean;
+}
+
+export interface FlowSchemaSlotUseExpansion {
+  parentUse: string;
+  slotKey: string;
+  uses: string[];
+}
+
+export interface FlowSchemaInventoryContribution {
+  publicTreeRoots?: string[];
+  slotUseExpansions?: FlowSchemaSlotUseExpansion[];
+}
+
+export interface FlowFieldBindingConditions {
+  association?: boolean;
+  fieldTypes?: string[];
+  targetCollectionTemplateIn?: string[];
+  targetCollectionTemplateNotIn?: string[];
+}
+
+export interface FlowFieldBindingContextContribution {
+  name: string;
+  inherits?: string[];
+}
+
+export interface FlowFieldBindingContribution {
+  context: string;
+  use: string;
+  interfaces: string[];
+  isDefault?: boolean;
+  order?: number;
+  conditions?: FlowFieldBindingConditions;
+  defaultProps?: any;
+}
+
+export interface FlowFieldModelCompatibility {
+  context: string;
+  interfaces: string[];
+  isDefault?: boolean;
+  order?: number;
+  association?: boolean;
+  fieldTypes?: string[];
+  targetCollectionTemplateIn?: string[];
+  targetCollectionTemplateNotIn?: string[];
+  inheritParentFieldBinding?: boolean;
+}
+
+export interface FlowSchemaContribution {
+  models?: FlowModelSchemaContribution[] | Record<string, FlowModelSchemaContribution>;
+  actions?: FlowActionSchemaContribution[] | Record<string, FlowActionSchemaContribution>;
+  fieldBindingContexts?: FlowFieldBindingContextContribution[] | Record<string, FlowFieldBindingContextContribution>;
+  fieldBindings?:
+    | FlowFieldBindingContribution[]
+    | Record<string, FlowFieldBindingContribution | FlowFieldBindingContribution[]>;
+  inventory?: FlowSchemaInventoryContribution;
+  defaults?: FlowSchemaContributionDefaults;
+}
+
+export interface FlowSchemaContributionProvider {
+  getFlowSchemaContributions(): FlowSchemaContribution | undefined | Promise<FlowSchemaContribution | undefined>;
+}
+
 /**
  * Defines a flow with generic model type support.
  */
@@ -155,6 +410,9 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   title?: string;
   handler: (ctx: TCtx, params: any) => Promise<any> | any;
   uiSchema?: Record<string, ISchema> | ((ctx: TCtx) => Record<string, ISchema> | Promise<Record<string, ISchema>>);
+  paramsSchema?: FlowJsonSchema;
+  paramsSchemaPatch?: FlowJsonSchema;
+  schemaDocs?: FlowSchemaDocs;
   defaultParams?: Record<string, any> | ((ctx: TCtx) => Record<string, any> | Promise<Record<string, any>>);
   beforeParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
   afterParamsSave?: (ctx: FlowSettingsContext<TModel>, params: any, previousParams: any) => void | Promise<void>;
@@ -301,6 +559,9 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
+  // JSON Schema object used to fully override the resolved step params schema for this step.
+  paramsSchemaOverride?: FlowJsonSchema;
+  schemaDocs?: FlowSchemaDocs;
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 
@@ -437,6 +698,17 @@ export interface EnsureBatchResult {
 
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
+  /**
+   * Ensure a model exists (create if missing) in a single request.
+   */
+  ensure: (
+    values: Record<string, any>,
+    options?: { includeAsyncNode?: boolean },
+  ) => Promise<Record<string, any> | null>;
+  /**
+   * Optional: run multiple ops in a single transaction (server capability).
+   */
+  mutate?: (values: Record<string, any>, options?: { includeAsyncNode?: boolean }) => Promise<Record<string, any>>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
@@ -562,6 +834,7 @@ export type FlowModelMeta =
      */
     hide?: boolean | ((context: FlowModelContext) => boolean);
     eventList?: { label: string; value: string }[]; // 支持的事件列表
+    schema?: FlowModelSchemaMeta;
   };
 
 /**

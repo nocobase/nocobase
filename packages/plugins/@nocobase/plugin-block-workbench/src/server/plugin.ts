@@ -7,10 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginBlockWorkbenchServer extends Plugin {
   async afterAdd() {}
+
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
+  }
 
   async beforeLoad() {}
 

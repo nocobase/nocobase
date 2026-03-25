@@ -7,11 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginFieldAttachmentUrlServer extends Plugin {
   async afterAdd() {}
+
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
+  }
 
   async beforeLoad() {}
 

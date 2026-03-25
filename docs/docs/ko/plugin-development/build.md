@@ -12,10 +12,10 @@
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // vite는 `src/client` 측 코드를 번들링하는 데 사용됩니다.
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild는 `src/client` 측 코드를 번들링하는 데 사용됩니다.
 
-    // Vite 설정을 수정합니다. 자세한 내용은 다음 링크를 참조하세요: https://vitejs.dev/guide/
+    // Rsbuild 설정을 수정합니다. 자세한 내용은 다음 링크를 참조하세요: https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {

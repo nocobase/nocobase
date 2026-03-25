@@ -840,45 +840,6 @@ export async function buildPluginClient(
       resolve(null);
     });
   });
-  // await viteBuild(userConfig.modifyViteConfig({
-  //   mode: 'production',
-  //   define: {
-  //     'process.env.NODE_ENV': JSON.stringify('production'),
-  //   },
-  //   logLevel: 'warn',
-  //   build: {
-  //     minify: true,
-  //     outDir,
-  //     cssCodeSplit: false,
-  //     emptyOutDir: true,
-  //     sourcemap,
-  //     lib: {
-  //       entry,
-  //       formats: ['umd'],
-  //       name: packageJson.name,
-  //       fileName: () => outputFileName,
-  //     },
-  //     target: ['es2015', 'edge88', 'firefox78', 'chrome87', 'safari14'],
-  //     rollupOptions: {
-  //       cache: true,
-  //       external: [...Object.keys(globals), 'react', 'react/jsx-runtime'],
-  //       output: {
-  //         exports: 'named',
-  //         globals: {
-  //           react: 'React',
-  //           'react/jsx-runtime': 'jsxRuntime',
-  //           ...globals,
-  //         },
-  //       },
-  //     },
-  //   },
-  //   plugins: [
-  //     react(),
-  //     cssInjectedByJsPlugin({ styleId: packageJson.name }),
-  //   ],
-  // }));
-
-  // checkFileSize(outDir, log);
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
