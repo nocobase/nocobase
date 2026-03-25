@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Bubble } from '@ant-design/x';
-import { Spin, Layout } from 'antd';
+import { Spin, Layout, Divider } from 'antd';
 import { useT } from '../../locale';
 import { useToken } from '@nocobase/client';
 import { useChatMessagesStore } from './stores/chat-messages';
@@ -18,15 +18,52 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
 import { Message } from '../types';
 
-const flattenMessages = (messages: Message[] = []): Message[] => {
-  return messages.flatMap((msg) => [
-    msg,
-    ...flattenMessages(
-      msg.content?.subAgentConversations?.flatMap((conversation) =>
-        conversation.messages.filter((subMessage) => subMessage.role !== 'user'),
-      ) ?? [],
-    ),
-  ]);
+type RenderedItem =
+  | {
+      type: 'message';
+      message: Message;
+      isRoot: boolean;
+    }
+  | {
+      type: 'divider';
+      key: string;
+      roleName?: string;
+    };
+
+const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
+  return messages.flatMap((msg) => {
+    const subAgentItems =
+      msg.content?.subAgentConversations?.flatMap((conversation) => {
+        const conversationMessages = flattenMessages(
+          conversation.messages.filter((subMessage) => subMessage.role !== 'user'),
+          false,
+        );
+
+        if (!conversationMessages.length) {
+          return [];
+        }
+
+        return conversation.status === 'completed'
+          ? [
+              ...conversationMessages,
+              {
+                type: 'divider' as const,
+                key: `${conversation.sessionId}-completed`,
+                roleName: conversation.messages.find((subMessage) => subMessage.role !== 'user')?.role,
+              },
+            ]
+          : conversationMessages;
+      }) ?? [];
+
+    return [
+      {
+        type: 'message' as const,
+        message: msg,
+        isRoot,
+      },
+      ...subAgentItems,
+    ];
+  });
 };
 
 export const Messages: React.FC = () => {
@@ -41,6 +78,9 @@ export const Messages: React.FC = () => {
 
   const { messagesService, lastMessageRef } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
+  const firstMessageIndex = renderedMessages.findIndex(
+    (item) => item.type === 'message' && item.isRoot && item.message.content?.type !== 'greeting',
+  );
 
   useEffect(() => {
     updateTools(messages);
@@ -80,12 +120,31 @@ export const Messages: React.FC = () => {
       )}
       {renderedMessages.length ? (
         <div>
-          {renderedMessages.map((msg, index) => {
+          {renderedMessages.map((item, index) => {
+            if (item.type === 'divider') {
+              const nickname = item.roleName ? (roles[item.roleName] as any)?.nickname || item.roleName : undefined;
+              return (
+                <div key={item.key} style={{ padding: '0 16px' }}>
+                  <Divider
+                    dashed
+                    plain
+                    style={{
+                      margin: '12px 0 16px',
+                      color: token.colorTextDescription,
+                    }}
+                  >
+                    {t('{{ nickname }} has completed the work', { nickname })}
+                  </Divider>
+                </div>
+              );
+            }
+
+            const msg = item.message;
             const role = roles[msg.role];
             if (!role) {
               return null;
             }
-            return index === 0 && msg.content?.type !== 'greeting' ? (
+            return index === firstMessageIndex ? (
               <div key={msg.key} ref={lastMessageRef}>
                 <Bubble {...role} loading={msg.loading} content={msg.content} />
               </div>

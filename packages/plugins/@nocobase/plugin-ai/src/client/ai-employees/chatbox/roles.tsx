@@ -60,6 +60,7 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
 };
 
 export const aiEmployeeRole = (aiEmployee: AIEmployee) => ({
+  nickname: aiEmployee.nickname || aiEmployee.username,
   placement: 'start',
   // avatar: aiEmployee.avatar ? (
   //   <Popover content={<ProfileCard aiEmployee={aiEmployee} />} placement="leftTop">

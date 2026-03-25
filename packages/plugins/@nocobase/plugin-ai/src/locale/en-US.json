@@ -90,6 +90,7 @@
   "Direction": "Direction",
   "Disable search": "Disable search",
   "Switching to {{ nickname }}": "Switching to {{ nickname }}",
+  "{{ nickname }} has completed the work": "{{ nickname }} has completed the work",
   "Displays the AI employee’s assigned tasks on the profile when hovering over the button.": "Displays the AI employee’s assigned tasks on the profile when hovering over the button.",
   "Down": "Down",
   "Edit AI employee": "Edit AI employee",
