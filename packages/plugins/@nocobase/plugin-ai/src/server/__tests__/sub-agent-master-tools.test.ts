@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import listAIEmployeesTool from '../../ai/skills/sub-agent-master/tools/list-ai-employees';
-import getAIEmployeeTool from '../../ai/skills/sub-agent-master/tools/get-ai-employee';
-import dispatchSubAgentTaskTool from '../../ai/skills/sub-agent-master/tools/dispatch-sub-agent-task';
+import listAIEmployeesTool from '../../ai/tools/sub-agents/list-ai-employees';
+import getAIEmployeeTool from '../../ai/tools/sub-agents/get-ai-employee';
+import dispatchSubAgentTaskTool from '../../ai/tools/sub-agents/dispatch-sub-agent-task';
 
 function createModel(values: Record<string, any>) {
   return {

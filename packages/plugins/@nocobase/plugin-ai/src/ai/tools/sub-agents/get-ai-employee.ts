@@ -9,7 +9,7 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
-import { getAccessibleAIEmployee, serializeEmployeeDetail } from '../shared';
+import { getAccessibleAIEmployee, serializeEmployeeDetail } from './shared';
 
 export default defineTools({
   scope: 'SPECIFIED',

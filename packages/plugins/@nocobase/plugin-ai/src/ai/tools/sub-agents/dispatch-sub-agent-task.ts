@@ -9,7 +9,7 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
-import { getAccessibleAIEmployee, getAIPlugin, getSkillSettingsFromMain, updateMessageMetadata } from '../shared';
+import { getAccessibleAIEmployee, getAIPlugin, getSkillSettingsFromMain, updateMessageMetadata } from './shared';
 
 export default defineTools({
   scope: 'SPECIFIED',
