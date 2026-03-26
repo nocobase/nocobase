@@ -137,7 +137,7 @@ export class PluginUISchemaStorageServer extends Plugin {
       }),
     });
 
-    this.app.acl.allow('flowModels', ['findOne', 'schema', 'schemas', 'schemaBundle', 'ensure'], 'loggedIn');
+    this.app.acl.allow('flowModels', ['findOne', 'schema', 'schemas', 'schemaBundle'], 'loggedIn');
   }
 
   async load() {

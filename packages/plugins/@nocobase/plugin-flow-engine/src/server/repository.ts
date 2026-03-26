@@ -122,6 +122,10 @@ export function transaction(transactionAbleArgPosition?: number) {
 export class FlowModelRepository extends Repository {
   cache: Cache;
 
+  async emitTransactionRollback(transaction?: Transaction) {
+    await emitFlowModelTransactionRollback(this.database, transaction);
+  }
+
   get flowModelsTableName() {
     return this.tableNameAdapter(this.model.tableName);
   }
