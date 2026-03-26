@@ -15,7 +15,7 @@ import { PluginMultiAppManagerServer } from '../server';
 // Stub initApp to be a no-op (does not register any app, so hasApp returns false)
 AppSupervisor.prototype.initApp = async () => {};
 
-describe('LegacyAdapter _bootStrapApp should skip setAppStatus for non-serving workers', () => {
+describe('LegacyAdapter _bootStrapApp should skip setAppStatus only for transient workers', () => {
   let appSupervisor: AppSupervisor;
   let adapter: LegacyAdapter;
   let originalWorkerMode: string | undefined;
@@ -57,12 +57,13 @@ describe('LegacyAdapter _bootStrapApp should skip setAppStatus for non-serving w
     expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'not_found');
   });
 
-  it('should NOT call setAppStatus when non-serving worker (topic)', async () => {
+  it('should call setAppStatus when non-serving worker (topic)', async () => {
     process.env.WORKER_MODE = 'topic';
 
     await (adapter as any)._bootStrapApp('test-app');
 
-    expect(setAppStatusSpy).not.toHaveBeenCalled();
+    expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'initializing');
+    expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'not_found');
   });
 
   it('should NOT call setAppStatus when WORKER_MODE is "-"', async () => {
@@ -73,11 +74,12 @@ describe('LegacyAdapter _bootStrapApp should skip setAppStatus for non-serving w
     expect(setAppStatusSpy).not.toHaveBeenCalled();
   });
 
-  it('should NOT call setAppStatus when non-serving worker (*)', async () => {
+  it('should call setAppStatus when non-serving worker (*)', async () => {
     process.env.WORKER_MODE = '*';
 
     await (adapter as any)._bootStrapApp('test-app');
 
-    expect(setAppStatusSpy).not.toHaveBeenCalled();
+    expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'initializing');
+    expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'not_found');
   });
 });
