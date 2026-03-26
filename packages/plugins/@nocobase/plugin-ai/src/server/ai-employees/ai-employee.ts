@@ -598,6 +598,8 @@ export class AIEmployee {
             }
 
             this.protocol.with(currentConversation).newMessage();
+          } else if (chunks.action === 'afterSubAgentInvoke') {
+            this.protocol.with(currentConversation).subAgentCompleted();
           }
         }
       }
@@ -1636,6 +1638,10 @@ export class ChatStreamProtocol {
 
       endStream: () => {
         write({ type: 'stream_end' });
+      },
+
+      subAgentCompleted: () => {
+        write({ type: 'sub_agent_completed' });
       },
 
       newMessage: (content?: unknown) => {

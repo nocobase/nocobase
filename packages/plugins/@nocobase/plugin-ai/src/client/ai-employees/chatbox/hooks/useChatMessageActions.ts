@@ -404,6 +404,28 @@ export const useChatMessageActions = () => {
                   }),
               };
 
+              if (data.type === 'sub_agent_completed') {
+                updateLastMessage((last) => {
+                  return {
+                    ...last,
+                    content: {
+                      ...last.content,
+                      subAgentConversations: last.content.subAgentConversations?.map((it) => {
+                        if (it.sessionId !== data.sessionId) {
+                          return it;
+                        }
+
+                        return {
+                          ...it,
+                          status: 'completed',
+                        };
+                      }),
+                    },
+                    loading: false,
+                  };
+                });
+              }
+
               processNewMessage(data, subAgentMessageStore);
               processReasoning(data, subAgentMessageStore);
               processContent(data, subAgentMessageStore);

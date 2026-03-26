@@ -148,6 +148,15 @@ export class SubAgentsDispatcher {
         ],
         writer,
       });
+      writer?.({
+        action: 'afterSubAgentInvoke',
+        body: {},
+        currentConversation: {
+          sessionId: subSessionId,
+          username: employee.username,
+          from: 'sub-agent',
+        },
+      });
 
       return this.extractLastMessageText(result);
     };
