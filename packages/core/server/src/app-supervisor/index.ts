@@ -12,6 +12,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from '../application';
+import { isTransient, serving } from '../worker-mode';
 import { MainOnlyAdapter } from './main-only-adapter';
 import type {
   AppDiscoveryAdapter,
@@ -365,6 +366,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async setAppStatus(appName: string, status: AppStatus, options = {}) {
+    if (isTransient()) {
+      this.logger.debug('App running as worker, status will not be set', { appName, status });
+      return;
+    }
     this.logger.debug('Setting app status', { appName, status });
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
@@ -413,7 +418,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     const app = new Application(options);
 
-    if (hook ?? !Application.isTransient()) {
+    if (hook ?? !isTransient()) {
       app.on('afterStart', async () => {
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
@@ -443,7 +448,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const app = new Application(options);
     this.registerCommandHandler(app);
     app.on('afterStart', async (app: Application) => {
-      if (Application.isTransient()) {
+      if (isTransient()) {
         return;
       }
       await app.syncMessageManager.subscribe(
@@ -477,10 +482,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         },
       );
 
-      if (!Application.serving()) {
-        return;
-      }
-
       await this.registerEnvironment(app);
       if (process.env.APP_MODE === 'supervisor') {
         this.logger.info('Loading app models...');
@@ -488,7 +489,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       }
     });
     app.on('afterDestroy', async (app: Application) => {
-      if (!Application.serving()) {
+      if (isTransient()) {
         return;
       }
       await this.unregisterEnvironment();
@@ -733,7 +734,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    if (Application.isTransient()) {
+    if (isTransient()) {
       return;
     }
 
