@@ -22,7 +22,7 @@ export function isNotBuiltinModule(packageName: string) {
 }
 
 export const isValidPackageName = (str: string) => {
-  const pattern = /^(?:@[a-zA-Z0-9_-]+\/)?[a-zA-Z0-9_-]+$/;
+  const pattern = /^(?:@[a-zA-Z0-9._-]+\/)?[a-zA-Z0-9._-]+$/;
   return pattern.test(str);
 };
 

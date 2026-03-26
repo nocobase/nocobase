@@ -14,11 +14,11 @@ import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { prefix, suffix } = this.props;
+    const { prefix, suffix, style, className } = this.props;
     const format = this.props['format'] || 'HH:mm:ss';
     const result = value && dayjs(value, 'HH:mm:ss').format(format);
     return (
-      <span>
+      <span className={className} style={style}>
         {prefix}
         {result}
         {suffix}

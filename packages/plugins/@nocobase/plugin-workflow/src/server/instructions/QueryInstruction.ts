@@ -38,12 +38,7 @@ export class QueryInstruction extends Instruction {
     const { repository } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
-    const {
-      page = DEFAULT_PAGE,
-      pageSize = DEFAULT_PER_PAGE,
-      sort = [],
-      ...options
-    } = processor.getParsedValue(params, node.id);
+    const { page, pageSize, sort = [], ...options } = processor.getParsedValue(params, node.id);
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {
@@ -55,7 +50,7 @@ export class QueryInstruction extends Instruction {
       : options.appends;
     const result = await (multiple ? repository.find : repository.findOne).call(repository, {
       ...options,
-      ...utils.pageArgsToLimitArgs(page, pageSize),
+      ...utils.pageArgsToLimitArgs(page ?? DEFAULT_PAGE, pageSize ?? DEFAULT_PER_PAGE),
       sort: sort
         .filter((item) => item.field)
         .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),

@@ -70,6 +70,7 @@ export class PubSubManager {
   }
 
   async close() {
+    this.handlerManager.cancelPendingDebounce();
     if (!this.adapter) {
       return;
     }
