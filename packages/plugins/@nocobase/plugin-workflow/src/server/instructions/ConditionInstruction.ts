@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { Evaluator, evaluators } from '@nocobase/evaluators';
 import { Instruction } from '.';
 import type Processor from '../Processor';
@@ -21,6 +22,12 @@ export const BRANCH_INDEX = {
 } as const;
 
 export class ConditionInstruction extends Instruction {
+  configSchema = Joi.object({
+    rejectOnFalse: Joi.boolean().required(),
+    engine: Joi.string().valid(...evaluators.getKeys()),
+    calculation: Joi.object(),
+    expression: Joi.string(),
+  });
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { engine, calculation, expression, rejectOnFalse } = node.config || {};
     const evaluator = evaluators.get(engine);

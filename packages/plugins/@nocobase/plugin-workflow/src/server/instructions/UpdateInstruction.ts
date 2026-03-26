@@ -19,6 +19,11 @@ import { Instruction } from '.';
 export class UpdateInstruction extends Instruction {
   configSchema = Joi.object({
     collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    params: Joi.object({
+      individualHooks: Joi.boolean(),
+      filter: Joi.object(),
+      values: Joi.object(),
+    }),
   });
 
   validateConfig(config: Record<string, any>) {

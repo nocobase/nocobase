@@ -19,6 +19,9 @@ import { validateCollectionField } from '../utils';
 export class DestroyInstruction extends Instruction {
   configSchema = Joi.object({
     collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    params: Joi.object({
+      filter: Joi.object(),
+    }),
   });
 
   validateConfig(config: Record<string, any>) {

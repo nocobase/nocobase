@@ -7,12 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
+
 import { Instruction } from '.';
 import Processor from '../Processor';
 import { FlowNodeModel } from '../types';
 import { JOB_STATUS } from '../constants';
 
 export default class ExecutionResultInstruction extends Instruction {
+  configSchema = Joi.object({
+    value: Joi.any(),
+  });
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { value } = node.config;
     const output = processor.getParsedValue(value, node.id);
