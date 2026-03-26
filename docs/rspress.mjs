@@ -86,5 +86,5 @@ if (argv.lang === 'all') {
   buildAllLanguages().catch(console.error);
 } else {
   // 正常执行 rspress 命令
-  import('@rspress/core/dist/cli.js');
+  import('@rspress/core/dist/cli/index.js');
 }

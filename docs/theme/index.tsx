@@ -1,13 +1,12 @@
-import { NoSSR, useLang } from '@rspress/core/runtime';
-import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { NoSSR, useFrontmatter, useLang, useLocation, useNavigate, usePage, usePages } from '@rspress/core/runtime';
+import type { Feature } from '@rspress/core';
+import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme-original';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useLocation, useNavigate, usePage, usePages } from '@rspress/runtime';
-import type { Feature } from '@rspress/shared';
-import type { JSX } from 'react';
+import type { ComponentProps, JSX, ReactNode } from 'react';
 import { locales } from '../locales';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
@@ -48,14 +47,13 @@ function getCustomMDXComponent() {
 export { getCustomMDXComponent };
 
 export interface HomeLayoutProps {
-  beforeHero?: React.ReactNode;
-  afterHero?: React.ReactNode;
-  beforeHeroActions?: React.ReactNode;
-  afterHeroActions?: React.ReactNode;
-  beforeFeatures?: React.ReactNode;
-  afterFeatures?: React.ReactNode;
+  beforeHero?: ReactNode;
+  afterHero?: ReactNode;
+  beforeHeroActions?: ReactNode;
+  afterHeroActions?: ReactNode;
+  beforeFeatures?: ReactNode;
+  afterFeatures?: ReactNode;
 }
-
 
 interface Language {
   code: string;
@@ -63,7 +61,32 @@ interface Language {
   href: string;
 }
 
+type HomeFeatureItemData = Feature & {
+  showOnHome?: boolean;
+};
+
+type HomeFeatureGroup = {
+  title?: string;
+  details?: string;
+  items?: HomeFeatureItemData[];
+};
+
+type ThemeFrontmatter = {
+  pageName?: string;
+  hero?: unknown;
+  features?: HomeFeatureGroup[];
+};
+
+type ThemePage = {
+  lang?: string;
+  frontmatter?: ThemeFrontmatter & Record<string, unknown>;
+};
+
 const LANGUAGES: Language[] = locales;
+
+function getFeatureGroups(page?: ThemePage | { frontmatter?: ThemeFrontmatter }): HomeFeatureGroup[] {
+  return page?.frontmatter?.features ?? [];
+}
 
 function LanguageDropdown() {
   const lang = useLang();
@@ -168,7 +191,7 @@ function LanguageDropdown() {
   );
 }
 
-export function SwitchAppearance(props: any) {
+export function SwitchAppearance(props: ComponentProps<typeof BaseSwitchAppearance>) {
   return (
     <div className="rp-flex rp-items-center rp-justify-center rp-h-14">
       <LanguageDropdown />
@@ -302,28 +325,32 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 }
 
 export function HomeFeature() {
-  const { frontmatter } = useFrontmatter();
-  const { pages } = usePages();
+  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+  const { pages } = usePages() as { pages: ThemePage[] };
   const lang = useLang();
+  const featureGroups = frontmatter?.features ?? [];
+
   if (frontmatter?.pageName === 'home') {
     return (
       <div>
-        {frontmatter?.features?.map((feature: any, index: number) => {
-          let items = feature?.items || [];
+        {featureGroups.map((feature, index) => {
+          let items = feature.items ?? [];
+
           if (index === 1) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'guide');
+            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'guide');
             if (page) {
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...items];
+              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
+              items = [...allItems.filter((item) => item.showOnHome), ...items];
             }
           } else if (index === 2) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'development');
+            const page = pages.find((currentPage) => currentPage.lang === lang && currentPage.frontmatter?.pageName === 'development');
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...feature?.items];
+              const allItems = getFeatureGroups(page).flatMap((group) => group.items ?? []);
+              items = [...allItems.filter((item) => item.showOnHome), ...(feature.items ?? [])];
             }
           }
+
           return (
             <div key={feature.title || `feature-${index}`}>
               <div className="rp-home-feature-container">
@@ -331,7 +358,7 @@ export function HomeFeature() {
                 <p className="rp-home-feature-desc">{feature.details}</p>
               </div>
               <div className="rp-home-feature">
-                {items?.map((item: any) => {
+                {items.map((item) => {
                   return <HomeFeatureItem key={item.title} feature={item} />;
                 })}
               </div>
@@ -344,7 +371,7 @@ export function HomeFeature() {
 
   return (
     <div>
-      {frontmatter?.features?.map((feature: any, index: number) => {
+      {featureGroups.map((feature, index) => {
         return (
           <div key={feature.title || `feature-${index}`}>
             <div className="rp-home-feature-container">
@@ -352,7 +379,7 @@ export function HomeFeature() {
               <p className="rp-home-feature-desc">{feature.details}</p>
             </div>
             <div className="rp-home-feature">
-              {feature?.items?.map((item: any) => {
+              {(feature.items ?? []).map((item) => {
                 return <HomeFeatureItem key={item.title} feature={item} />;
               })}
             </div>
@@ -363,5 +390,4 @@ export function HomeFeature() {
   );
 }
 
-export * from '@rspress/core/theme';
-
+export * from '@rspress/core/theme-original';
