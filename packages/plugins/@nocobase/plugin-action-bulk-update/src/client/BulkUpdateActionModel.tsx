@@ -80,6 +80,7 @@ export class BulkUpdateActionModel extends ActionModel<{
   };
 }> {
   static scene = ActionSceneEnum.collection;
+  static capabilityActionName = 'updateMany';
   assignFormUid?: string;
   defaultProps: ButtonProps = {
     title: tExpr('Bulk update'),

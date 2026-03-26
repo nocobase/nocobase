@@ -1,3 +1,9 @@
+---
+title: "ctx.render()"
+description: "ctx.render() 将 React 元素、HTML 字符串或 DOM 渲染到 ctx.element，自动继承 ConfigProvider、主题，适用于 JSBlock、JSField 等。"
+keywords: "ctx.render,React,JSX,ctx.element,ConfigProvider,JSBlock,JSField,RunJS,NocoBase"
+---
+
 # ctx.render()
 
 将 React 元素、HTML 字符串或 DOM 节点渲染到指定容器中。不传 `container` 时默认渲染到 `ctx.element`，并自动继承应用的 ConfigProvider、主题等上下文。

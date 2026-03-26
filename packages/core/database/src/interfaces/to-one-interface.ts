@@ -23,7 +23,7 @@ export class ToOneInterface extends BaseInterface {
 
     const targetInstance = await targetCollection.repository.findOne({
       filter: {
-        [filterKey]: str,
+        [filterKey]: str.toString(),
       },
       transaction,
     });

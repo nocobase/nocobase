@@ -1,3 +1,9 @@
+---
+title: "变量和密钥"
+description: "运维管理变量和密钥：集中配置环境变量与密钥，支持敏感数据存储、配置重用、环境隔离，与 .env 区别、工作流 SMTP 配置、数据库连接配置。"
+keywords: "变量和密钥,环境变量,敏感数据,配置重用,环境隔离,运维管理,NocoBase"
+---
+
 # 变量和密钥
 
 <PluginInfo name="environment-variables"></PluginInfo>

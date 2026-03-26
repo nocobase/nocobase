@@ -149,6 +149,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
       },
     },
+    ...getConfigurableProperties('category', 'description', 'simplePaginate'),
     filterTargetKey: {
       title: `{{ t("Record unique key")}}`,
       type: 'single',
@@ -160,6 +161,5 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
-    ...getConfigurableProperties('category', 'description'),
   };
 }

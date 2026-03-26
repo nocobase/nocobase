@@ -250,6 +250,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Haga clic en el icono \"Editor de UI\" en la esquina superior derecha para entrar en el modo de Editor de UI.",
   "Clicked row record": "Clicked row record",
   "Close": "Cerrar",
+  "Close popup and redirect to": "Cerrar popup y redirigir a",
   "Collapse": "Colapsar",
   "Collapse all": "Contraer todo",
   "Collapse button": "Collapse",
@@ -401,6 +402,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Día/Mes/Año",
   "Default": "Por defecto",
+  "Default expanded": "Contraer por defecto",
+
   "Default collapse": "Contraer por defecto",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

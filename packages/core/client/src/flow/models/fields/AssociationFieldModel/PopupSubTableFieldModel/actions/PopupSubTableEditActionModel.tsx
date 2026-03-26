@@ -45,7 +45,11 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
-      const model: any = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      const model: any = await ctx.engine.loadOrCreateModel(options, {
+        delegateToParent: false,
+        delegate: ctx,
+        skipSave: !ctx.flowSettingsEnabled,
+      });
       model.context.defineProperty('associationModel', {
         value: fieldModel.context.associationModel,
       });

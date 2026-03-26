@@ -1,3 +1,9 @@
+---
+title: "ctx.form"
+description: "ctx.form 当前区块内 Ant Design Form 实例，用于读写表单字段、校验与提交，等价于 ctx.blockModel?.form。"
+keywords: "ctx.form,Ant Design Form,表单,校验,提交,表单字段,RunJS,NocoBase"
+---
+
 # ctx.form
 
 当前区块内的 Ant Design Form 实例，用于读写表单字段、触发校验与提交。等价于 `ctx.blockModel?.form`，在表单区块（Form、EditForm、子表单等）下可直接使用。

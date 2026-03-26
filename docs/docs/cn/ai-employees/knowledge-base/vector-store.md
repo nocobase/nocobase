@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "向量存储"
+description: "向量存储是 Embedding model 与向量数据库的绑定，用于文档向量化与检索。配置 Vector store、LLM service、Embedding model。"
+keywords: "向量存储,Embedding model,向量数据库,NocoBase"
+---
+
 # 向量存储
 
 ## 介绍

@@ -146,6 +146,8 @@ export interface ICollectionManager {
 
   getFieldInterface(name: string): new (options: any) => IFieldInterface | undefined;
 
+  isNumericField(field?: IField): boolean;
+
   registerCollectionTemplates(templates: Record<string, any>): void;
 
   registerModels(models: Record<string, any>): void;

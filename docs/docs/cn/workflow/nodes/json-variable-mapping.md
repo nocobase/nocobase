@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+title: "工作流节点 - JSON 变量映射"
+description: "JSON 变量映射节点：将 JSON 结构映射为变量，供后续节点使用。"
+keywords: "工作流,JSON 变量映射,JSON 映射,变量提取,NocoBase"
 ---
 
 # JSON 变量映射

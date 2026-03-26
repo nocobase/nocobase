@@ -229,7 +229,10 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       return this.renderRawValue;
     }
     const fieldInterface = new InterfaceClass(field?.options);
-    return (value) => fieldInterface.toString(value, ctx);
+    return (value) => {
+      const renderedValue = fieldInterface.toString(value, ctx);
+      return this.normalizeRenderedValue(renderedValue, field);
+    };
   }
 
   protected formatValue(rowData: IModel, dataIndex: Array<string>, ctx?) {
@@ -248,6 +251,30 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       return render(deepValue);
     }
     return render(value);
+  }
+
+  protected normalizeRenderedValue(value: any, field?: IField) {
+    if (!this.options.collectionManager.isNumericField(field)) {
+      return value;
+    }
+
+    if (value == null || value === '') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '');
+      const parsed = Number(normalized);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return value;
   }
 
   public generateOutputPath(

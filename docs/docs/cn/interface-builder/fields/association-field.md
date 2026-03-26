@@ -1,3 +1,9 @@
+---
+title: "关系字段组件"
+description: "关系字段组件：BelongsTo、HasMany、BelongsToMany 等关联字段的通用配置与用法。"
+keywords: "关系字段,Association,BelongsTo,HasMany,BelongsToMany,界面搭建,NocoBase"
+---
+
 # 关系字段组件
 
 ## 介绍

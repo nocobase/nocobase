@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "与 AI 员工协作"
+description: "与 AI 员工协作：右下角主入口、区块 Action 入口、对话操作、会话内切换员工与模型（AI Employee Switcher、Model Switcher）。"
+keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
+---
+
 # 与 AI 员工协作
 
 创建并启用 AI 员工后，可在页面中与其进行协作。

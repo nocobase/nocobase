@@ -1,3 +1,9 @@
+---
+title: "点"
+description: "点几何字段，存储坐标点（PostgreSQL point 类型）。"
+keywords: "点,point,几何字段,坐标,PostgreSQL,NocoBase"
+---
+
 # 点
 
 ## 介绍

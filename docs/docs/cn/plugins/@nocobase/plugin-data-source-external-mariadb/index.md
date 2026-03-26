@@ -1,6 +1,8 @@
 ---
 displayName: "数据源：外部 MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
+title: "数据源：外部 MariaDB"
+keywords: "数据源：外部 MariaDB,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

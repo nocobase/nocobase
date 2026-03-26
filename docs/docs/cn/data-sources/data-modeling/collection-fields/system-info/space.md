@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
+title: "空间"
+description: "空间系统字段，用于多租户数据隔离。"
+keywords: "空间字段,space,多空间,系统字段,NocoBase"
 ---
-
 # 空间
 
 ## 介绍

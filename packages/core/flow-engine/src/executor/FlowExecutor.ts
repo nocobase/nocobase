@@ -519,6 +519,12 @@ export class FlowExecutor {
         result,
         ...(abortedByExitAll ? { aborted: true } : {}),
       });
+      if (result && typeof result === 'object') {
+        Object.defineProperty(result, '__abortedByExitAll', {
+          value: abortedByExitAll,
+          configurable: true,
+        });
+      }
       return result;
     } catch (error) {
       // 进入错误钩子并记录

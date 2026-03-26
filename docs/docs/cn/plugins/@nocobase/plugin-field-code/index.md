@@ -1,6 +1,8 @@
 ---
 displayName: "数据表字段：代码"
 packageName: '@nocobase/plugin-field-code'
+title: "数据表字段：代码"
+keywords: "数据表字段：代码,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

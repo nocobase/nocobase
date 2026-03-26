@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ReferenceBlockModel } from '../ReferenceBlockModel';
 
@@ -30,6 +30,57 @@ class MockFormBlockModel extends FlowModel {
   }
 }
 
+class PassiveBlockModel extends FlowModel {}
+
+class ThrowingCollectionBlockModel extends FlowModel {
+  onInit(options: any) {
+    super.onInit(options);
+    this.context.defineProperty('collection', {
+      cache: false,
+      get: () => {
+        throw new Error('target collection getter failed');
+      },
+    });
+  }
+}
+
+class MockInteractiveBlockModel extends FlowModel {
+  onInit(options: any) {
+    super.onInit(options);
+    this.context.defineProperty('collection', {
+      value: { filterTargetKey: 'id' },
+    });
+  }
+
+  get collection() {
+    return this.context.collection;
+  }
+
+  highlightRow(record: any) {
+    this.setProps('highlightedRowKey', record?.[this.collection?.filterTargetKey]);
+  }
+
+  clearHighlight() {
+    this.setProps('highlightedRowKey', undefined);
+  }
+}
+
+MockInteractiveBlockModel.registerEvents({
+  rowClick: {
+    title: 'Row click',
+    name: 'rowClick',
+    handler: vi.fn(async (ctx) => {
+      const model = ctx.model as MockInteractiveBlockModel;
+      const rowKey = ctx.inputArgs.record?.[model.collection?.filterTargetKey];
+      if (model.props.highlightedRowKey !== rowKey) {
+        model.highlightRow(ctx.inputArgs.record);
+      } else {
+        model.clearHighlight();
+      }
+    }),
+  },
+});
+
 class DetailsBlockModel extends FlowModel {}
 class EditFormModel extends FlowModel {}
 
@@ -43,12 +94,14 @@ describe('ReferenceBlockModel', () => {
   let scopedEngine: FlowEngine;
   let store: Record<string, any>;
   let lastSavedSnapshot: Record<string, any>;
+  let hostCollection: { name: string };
 
   beforeEach(() => {
     vi.spyOn(ReferenceBlockModel.prototype as any, 'rerender').mockResolvedValue(undefined);
     engine = new FlowEngine();
     scopedEngine = new FlowEngine();
     lastSavedSnapshot = {};
+    hostCollection = { name: 'host-collection' };
     store = {
       'grid-uid': {
         uid: 'grid-uid',
@@ -64,6 +117,13 @@ describe('ReferenceBlockModel', () => {
         subKey: 'items',
         subType: 'array',
         props: { title: 'Test Form Block' },
+      },
+      'interactive-target-uid': {
+        uid: 'interactive-target-uid',
+        use: 'InteractiveBlockModel',
+        parentId: 'grid-uid',
+        subKey: 'items',
+        subType: 'array',
       },
     };
 
@@ -132,6 +192,9 @@ describe('ReferenceBlockModel', () => {
     engine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      PassiveBlockModel,
+      ThrowingCollectionBlockModel,
+      InteractiveBlockModel: MockInteractiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -139,6 +202,9 @@ describe('ReferenceBlockModel', () => {
     scopedEngine.registerModels({
       GridModel: MockGridModel,
       FormBlockModel: MockFormBlockModel,
+      PassiveBlockModel,
+      ThrowingCollectionBlockModel,
+      InteractiveBlockModel: MockInteractiveBlockModel,
       DetailsBlockModel,
       EditFormModel,
       ReferenceBlockModel,
@@ -151,6 +217,9 @@ describe('ReferenceBlockModel', () => {
       parentId: 'page-uid',
       subKey: 'items',
       subType: 'array',
+    });
+    gridModel.context.defineProperty('collection', {
+      value: hostCollection,
     });
 
     // 创建目标区块模型（表单区块）
@@ -277,6 +346,83 @@ describe('ReferenceBlockModel', () => {
         await referenceBlockModel.dispatchEvent('beforeRender');
 
         expect(referenceBlockModel.context.collection.name).toBe('mock-collection');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should fallback to host collection when target does not define collection context',
+      async () => {
+        store['target-without-collection-context'] = {
+          uid: 'target-without-collection-context',
+          use: 'PassiveBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid-no-own-context',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-without-collection-context',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel;
+        expect(target).toBeTruthy();
+        expect(() => target.context.collection).not.toThrow();
+        expect(target.context.collection).toBe(hostCollection);
+        expect(referenceBlockModel.context.collection).toBe(hostCollection);
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should fallback to host collection when target own collection getter throws',
+      async () => {
+        store['target-with-throwing-collection-context'] = {
+          uid: 'target-with-throwing-collection-context',
+          use: 'ThrowingCollectionBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        };
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid-throwing-context',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'target-with-throwing-collection-context',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        expect(() => referenceBlockModel.context.collection).not.toThrow();
+        expect(referenceBlockModel.context.collection).toBe(hostCollection);
       },
       TEST_TIMEOUT,
     );
@@ -716,6 +862,142 @@ describe('ReferenceBlockModel', () => {
 
   describe('Props forwarding', () => {
     it(
+      'reapplies relation appends after template fallback recreates target resource',
+      async () => {
+        class SwitchableDetailsBlockModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            this.context.defineProperty('association', {
+              get: () => this.getStepParams('mockSettings', 'association'),
+              cache: false,
+            });
+            this.context.defineProperty('blockModel', {
+              value: this,
+            });
+            this.context.defineProperty('resource', {
+              get: () => {
+                const init = this.getStepParams('resourceSettings', 'init') || {};
+                const associationType = this.context.association?.type;
+                const useSingle =
+                  associationType === 'hasOne' ||
+                  associationType === 'belongsTo' ||
+                  Object.keys(init).includes('filterByTk');
+                const resource = this.context.createResource(useSingle ? SingleRecordResource : MultiRecordResource);
+                resource.setDataSourceKey(init.dataSourceKey);
+                resource.setResourceName(init.associationName || init.collectionName);
+                if (Object.keys(init).includes('sourceId')) {
+                  resource.setSourceId(init.sourceId);
+                }
+                if (Object.keys(init).includes('filterByTk')) {
+                  resource.setFilterByTk(init.filterByTk);
+                }
+                if (resource instanceof MultiRecordResource) {
+                  resource.setPageSize(1);
+                }
+                return resource;
+              },
+            });
+          }
+
+          addAppends(fieldPath?: string) {
+            if (!fieldPath) {
+              return;
+            }
+            this.context.resource.addAppends(fieldPath);
+          }
+        }
+
+        class MockRelationFieldModel extends FlowModel {
+          onInit(options: any) {
+            super.onInit(options);
+            const init = this.getStepParams('fieldSettings', 'init') || {};
+            this.context.blockModel?.addAppends?.(init.fieldPath);
+            this.context.blockModel?.addAppends?.(init.associationPathName);
+          }
+        }
+
+        engine.registerModels({
+          DetailsBlockModel: SwitchableDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+        scopedEngine.registerModels({
+          DetailsBlockModel: SwitchableDetailsBlockModel,
+          RelationFieldModel: MockRelationFieldModel,
+        });
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          stepParams: {
+            referenceSettings: {
+              useTemplate: {
+                templateUid: 'tpl-1',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+        referenceBlockModel.context.defineProperty('view', {
+          value: {
+            inputArgs: {
+              dataSourceKey: 'main',
+              collectionName: 'B',
+              filterByTk: 1,
+            },
+          },
+        });
+
+        const target = scopedEngine.createModel<FlowModel>({
+          uid: 'target-with-relation-uid',
+          use: 'DetailsBlockModel',
+          stepParams: {
+            resourceSettings: {
+              init: {
+                dataSourceKey: 'main',
+                collectionName: 'A',
+                filterByTk: 1,
+              },
+            },
+          },
+          subModels: {
+            grid: {
+              uid: 'target-with-relation-grid',
+              use: 'GridModel',
+              subKey: 'grid',
+              subType: 'object',
+              subModels: {
+                items: [
+                  {
+                    uid: 'target-with-relation-field',
+                    use: 'RelationFieldModel',
+                    subKey: 'items',
+                    subType: 'array',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          fieldPath: 'profile.nickname',
+                          associationPathName: 'profile',
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        });
+
+        expect(target.context.resource).toBeInstanceOf(SingleRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+
+        (referenceBlockModel as any)._applyTemplateFallbackPatchState(target);
+
+        expect(target.context.resource).toBeInstanceOf(MultiRecordResource);
+        expect(target.context.resource.getAppends()).toEqual(expect.arrayContaining(['profile', 'profile.nickname']));
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
       'should forward props mutations to target model after beforeRender',
       async () => {
         referenceBlockModel = engine.createModel({
@@ -777,6 +1059,105 @@ describe('ReferenceBlockModel', () => {
         referenceBlockModel.setProps({ summary: 'y' as any });
         expect((target!.props as any).summary).toBe('y');
         expect((referenceBlockModel.getProps() as any).summary).toBe('y');
+      },
+      TEST_TIMEOUT,
+    );
+  });
+
+  describe('Event forwarding', () => {
+    it(
+      'should expose target events on reference block',
+      async () => {
+        const interactiveTarget = engine.createModel({
+          uid: 'interactive-target-uid',
+          use: 'InteractiveBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        });
+
+        gridModel.addSubModel('items', interactiveTarget);
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'interactive-target-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        expect(referenceBlockModel.getEvents().has('beforeRender')).toBe(true);
+        expect(referenceBlockModel.getEvents().has('rowClick')).toBe(true);
+        expect(referenceBlockModel.getEvent('rowClick')?.name).toBe('rowClick');
+      },
+      TEST_TIMEOUT,
+    );
+
+    it(
+      'should forward target rowClick dispatch to reference flows',
+      async () => {
+        const interactiveTarget = engine.createModel({
+          uid: 'interactive-target-uid',
+          use: 'InteractiveBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+        });
+
+        gridModel.addSubModel('items', interactiveTarget);
+
+        referenceBlockModel = engine.createModel({
+          uid: 'reference-block-uid',
+          use: 'ReferenceBlockModel',
+          parentId: 'grid-uid',
+          subKey: 'items',
+          subType: 'array',
+          stepParams: {
+            referenceSettings: {
+              target: {
+                targetUid: 'interactive-target-uid',
+                mode: 'reference',
+              },
+            },
+          },
+        }) as ReferenceBlockModel;
+
+        gridModel.addSubModel('items', referenceBlockModel);
+
+        await referenceBlockModel.dispatchEvent('beforeRender');
+
+        const flowSpy = vi.fn(async () => undefined);
+        referenceBlockModel.registerFlow({
+          key: 'row-click-flow',
+          on: {
+            eventName: 'rowClick',
+          },
+          steps: {
+            test: {
+              handler: flowSpy,
+            },
+          },
+        });
+
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
+
+        await target!.dispatchEvent('rowClick', { record: { id: 1 } });
+
+        expect((target!.props as any).highlightedRowKey).toBe(1);
+        expect(flowSpy).toHaveBeenCalledTimes(1);
       },
       TEST_TIMEOUT,
     );

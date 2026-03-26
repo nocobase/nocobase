@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-ip-restriction'
+title: "IP 限制"
+description: "IP 限制：IP 白名单/黑名单、CIDR 网段、访问拒绝日志，限制未授权访问、恶意 IP 防护，企业版功能。"
+keywords: "IP 限制,IP 白名单,IP 黑名单,CIDR,访问拒绝日志,企业版,NocoBase"
 ---
 
 # IP 限制

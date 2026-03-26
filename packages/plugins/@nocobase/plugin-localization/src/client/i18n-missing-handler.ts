@@ -113,6 +113,9 @@ export class MissingKeyHandler {
     if (this.pendingMissingKeys.size === 0) {
       return;
     }
+    if (!this.context.flowSettingsEnabled) {
+      return;
+    }
 
     try {
       const keysToSubmit = Array.from(this.pendingMissingKeys.values()).map(({ key, ns }) => ({ text: key, ns }));
@@ -120,6 +123,8 @@ export class MissingKeyHandler {
       await this.context.api.request({
         method: 'POST',
         url: '/localizationTexts:missing',
+        skipNotify: true,
+        skipAuth: true,
         data: {
           keys: keysToSubmit,
           locale: this.currentLocale,

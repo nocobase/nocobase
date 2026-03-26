@@ -35,6 +35,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
   static scene = BlockSceneEnum.oam;
+  private hadSingleRecordData = false;
+  private hasMultiRefreshDispatched = false;
 
   _defaultCustomModelClasses = {
     RecordActionGroupModel: 'RecordActionGroupModel',
@@ -63,6 +65,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
   onInit(options: any): void {
     super.onInit(options);
+    this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+    this.hasMultiRefreshDispatched = false;
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
@@ -73,15 +77,41 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       ),
       meta: recordMeta,
     });
+
+    this.resource.on('refresh', () => {
+      if (this.isMultiRecordResource()) {
+        this.hasMultiRefreshDispatched = true;
+        void dispatchEventDeep(this, 'paginationChange');
+        return;
+      }
+
+      const hadDataBefore = this.hadSingleRecordData;
+      this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+
+      // 初次从“无数据”加载到“有数据”时不触发分页联动刷新，避免初始化阶段额外调度。
+      if (!hadDataBefore) {
+        return;
+      }
+
+      void dispatchEventDeep(this, 'paginationChange');
+    });
   }
 
   isMultiRecordResource() {
     return this.resource instanceof MultiRecordResource;
   }
 
+  hasDispatchedMultiRefresh() {
+    return this.hasMultiRefreshDispatched;
+  }
+
   getCurrentRecord() {
     const data = this.resource.getData();
     return Array.isArray(data) ? data[0] : data;
+  }
+
+  hasAvailableData() {
+    return this.resource.hasData();
   }
 
   handlePageChange = async (page: number) => {
@@ -90,7 +120,6 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
-      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
@@ -99,6 +128,18 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   }
 
   renderPagination() {
+    if (!this.resource.loading && !this.hasAvailableData()) {
+      return (
+        <div
+          style={{
+            textAlign: 'center',
+            color: this.context?.themeToken?.colorTextDescription,
+          }}
+        >
+          {this.translate('No available data currently')}
+        </div>
+      );
+    }
     const resource = this.resource as MultiRecordResource;
     if (!this.isMultiRecordResource() || !resource.getPage() || this.resource.getMeta('count') <= 1) {
       return null;
@@ -141,6 +182,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.context.flowSettingsEnabled;
+    const disableRuntimeActions = !isConfigMode && !this.hasAvailableData();
     const { heightMode, height } = this.decoratorProps;
     return (
       <DetailsBlockContent
@@ -152,29 +194,31 @@ export class DetailsBlockModel extends CollectionBlockModel<{
         layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}
         actions={
           <DndProvider>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                return (
-                  <Droppable model={action} key={action.uid}>
-                    <FlowModelRenderer
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
-                  </Droppable>
-                );
-              })}
-              {this.renderConfigureActions()}
-            </Space>
+            <div style={disableRuntimeActions ? { pointerEvents: 'none', opacity: 0.45 } : undefined}>
+              <Space wrap>
+                {this.mapSubModels('actions', (action) => {
+                  if (action.hidden && !isConfigMode) {
+                    return;
+                  }
+                  return (
+                    <Droppable model={action} key={action.uid}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
+                })}
+                {this.renderConfigureActions()}
+              </Space>
+            </div>
           </DndProvider>
         }
       />
@@ -308,6 +352,37 @@ DetailsBlockModel.registerFlow({
         actionName: 'detailsFieldLinkageRules',
         flowKey: 'detailsSettings',
         stepKey: 'linkageRules',
+      },
+    },
+  },
+});
+
+DetailsBlockModel.registerFlow({
+  key: 'initialPaginationChangeRefresh',
+  sort: 10001,
+  steps: {
+    refreshPaginationRelatedStates: {
+      async handler(ctx) {
+        if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
+          return;
+        }
+        if (ctx.model.hasDispatchedMultiRefresh()) {
+          return;
+        }
+
+        const resource: any = ctx.model.resource;
+        if (!resource) {
+          return;
+        }
+        const loadingMode = resource.dataLoadingMode ?? resource.loadingMode;
+        const isManualLoadingMode = loadingMode === 'manual';
+        const hasActiveFilters = typeof resource.hasActiveFilters === 'function' ? resource.hasActiveFilters() : false;
+        // 仅当 manual 且无活动筛选时，refresh 流程可能不会触发，才兜底分发一次。
+        if (!isManualLoadingMode || hasActiveFilters) {
+          return;
+        }
+
+        await dispatchEventDeep(ctx.model, 'paginationChange');
       },
     },
   },

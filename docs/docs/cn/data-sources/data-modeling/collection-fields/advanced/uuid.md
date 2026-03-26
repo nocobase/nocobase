@@ -1,3 +1,9 @@
+---
+title: "UUID"
+description: "UUID 字段，存储全局唯一标识符。"
+keywords: "UUID,唯一标识符,uuid,唯一 ID,NocoBase"
+---
+
 # UUID
 
 ## 介绍

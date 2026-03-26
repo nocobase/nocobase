@@ -1,3 +1,9 @@
+---
+title: "RunJS 在线编写运行 JavaScript"
+description: "RunJS 在界面搭建中在线编写并运行 JavaScript，支持 JS 区块、JS 字段、JS 操作等自定义逻辑扩展。"
+keywords: "RunJS,在线编写 JS,JavaScript,JS 区块,JS 字段,JS 操作,界面搭建,NocoBase"
+---
+
 # 在线编写 & 运行 JS
 
 在 NocoBase 中，**RunJS** 提供了一种轻量级的扩展方式，适合 **快速实验、临时逻辑处理** 的场景，无需创建插件或修改源码，即可通过 JavaScript 实现界面或交互的个性化定制。

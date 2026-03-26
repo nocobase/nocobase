@@ -244,6 +244,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Klicken Sie auf das \"UI-Editor\"-Symbol in der oberen rechten Ecke, um den UI-Editor-Modus zu betreten",
   "Clicked row record": "Clicked row record",
   "Close": "Schließen",
+  "Close popup and redirect to": "Popup schließen und weiterleiten zu",
   "Collapse": "Einklappen",
   "Collapse all": "Alle einklappen",
   "Collapse button": "Collapse",
@@ -395,6 +396,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Tag/Monat/Jahr",
   "Default": "Standard",
+  "Default expanded": "Standardmäßig eingeklappt",
+
   "Default collapse": "Standardmäßig eingeklappt",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

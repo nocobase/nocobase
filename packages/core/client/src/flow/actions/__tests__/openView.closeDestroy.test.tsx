@@ -72,4 +72,14 @@ describe('openView action - close/destroy logic', () => {
     expect(callArgs.inputArgs).not.toHaveProperty('triggerByRouter');
     expect(callArgs.inputArgs).toHaveProperty('otherArg', 'value');
   });
+
+  it('wraps scalar filterByTk for single-key array collections', async () => {
+    const ctx = createMockCtx();
+    ctx.collection = { filterTargetKey: ['id'] };
+
+    await openView.handler(ctx, { filterByTk: 1 });
+
+    const callArgs = (ctx.viewer.open as any).mock.calls[0][0];
+    expect(callArgs.inputArgs.filterByTk).toEqual({ id: 1 });
+  });
 });

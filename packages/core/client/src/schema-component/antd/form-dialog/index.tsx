@@ -104,16 +104,18 @@ export function FormDialog(title: any, id: any, renderer?: any, theme?: any): IF
             const { token } = useToken();
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const container: HTMLElement = useMemo(() => {
-              return document.querySelector('#nocobase-app-container');
+              return document.body;
             }, []);
+            const inputZIndex = Number(modal?.zIndex);
+            const defaultZIndex = token.zIndexPopupBase + 1000;
+            const normalizedZIndex =
+              Number.isFinite(inputZIndex) && inputZIndex > 0 ? Math.max(defaultZIndex, inputZIndex) : defaultZIndex;
 
             return (
               <Modal
-                // fix https://nocobase.height.app/T-2797
-                // fix https://nocobase.height.app/T-2838
-                zIndex={token.zIndexPopupBase + 1000}
-                getContainer={container}
                 {...modal}
+                zIndex={normalizedZIndex}
+                getContainer={modal?.getContainer ?? container}
                 open={open}
                 confirmLoading={form.submitting}
                 onCancel={(e) => {

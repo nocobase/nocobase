@@ -28,7 +28,7 @@ import { useFlowContext } from './FlowContext';
 import { lang, NAMESPACE } from './locale';
 import { RadioWithTooltip } from './components';
 import { uid } from '@nocobase/utils/client';
-import { Button, Dropdown, Menu } from 'antd';
+import { Button, Dropdown, Menu, Tooltip } from 'antd';
 import { SnippetsOutlined, PlusOutlined } from '@ant-design/icons';
 import { MenuItemGroupType } from 'antd/es/menu/interface';
 import { useNodeDragContext } from './NodeDragContext';
@@ -337,21 +337,29 @@ function NodeMenu() {
   const groups = useMemo(() => {
     return groupOptions
       .map((group): MenuItemGroupType => {
-        const groupInstructions = instructionList.filter(
-          (item) =>
-            item.group === group.key && (item.isAvailable ? item.isAvailable({ engine, workflow, ...anchor }) : true),
-        );
+        const groupInstructions = instructionList.filter((item) => item.group === group.key);
 
         return {
           ...group,
           type: 'group',
-          children: groupInstructions.map((item) => ({
-            role: 'button',
-            'aria-label': item.type,
-            key: item.type,
-            label: compile(item.title),
-            icon: item.icon,
-          })),
+          children: groupInstructions.map((item) => {
+            const disabled = item.isAvailable ? !item.isAvailable({ engine, workflow, ...anchor }) : false;
+            const title = compile(item.title);
+            return {
+              role: 'button',
+              'aria-label': item.type,
+              key: item.type,
+              label: disabled ? (
+                <Tooltip title={lang('This type of node can not be used in current type of workflow or execute mode.')}>
+                  {title}
+                </Tooltip>
+              ) : (
+                title
+              ),
+              icon: item.icon,
+              disabled,
+            };
+          }),
         };
       })
       .filter((group) => group.children.length);
@@ -363,7 +371,7 @@ function NodeMenu() {
       await onCreate({ type, ...anchor });
       onMenuCancel();
     },
-    [anchor, onCreate],
+    [anchor, onCreate, onMenuCancel],
   );
 
   return (

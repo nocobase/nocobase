@@ -1,3 +1,9 @@
+---
+title: "Docker 安装升级指南"
+description: "Docker 安装的 NocoBase 升级：更新 image 版本号、docker compose up、阿里云镜像，版本号只升不降。"
+keywords: "Docker 升级,镜像版本,docker compose up,阿里云镜像,nocobase/nocobase,NocoBase"
+---
+
 # Docker 安装的升级
 
 :::warning 升级前的准备

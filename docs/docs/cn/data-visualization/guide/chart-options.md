@@ -1,3 +1,9 @@
+---
+title: "图表选项"
+description: "图表展示配置：Basic 图形化模式与 Custom JS 模式、xField/yField/seriesField 字段映射、折线图柱状图饼图等类型选择。"
+keywords: "图表选项,Basic 模式,Custom 模式,ECharts,字段映射,xField,yField,NocoBase"
+---
+
 # 图表选项
 
 配置图表的展示方式，支持两种模式：Basic（图形化）与 Custom（JS 自定义）。Basic 适合快速映射与常用属性；Custom 适合复杂场景与高级定制。

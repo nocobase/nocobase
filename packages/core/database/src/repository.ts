@@ -51,6 +51,7 @@ import { updateAssociations, updateModelByValues } from './update-associations';
 import { UpdateGuard } from './update-guard';
 import { processIncludes } from './utils';
 import { valuesToFilter } from './utils/filter-utils';
+import { AssociationNotFoundError } from './errors/association-not-found-error';
 
 const debug = require('debug')('noco-database');
 
@@ -945,6 +946,11 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const params = parser.toSequelizeParams({ parseSort: _.isBoolean(options?.parseSort) ? options.parseSort : true });
+
+    if (parser.associationNotFoundWarnings.length > 0) {
+      this.database.logger.warn(parser.associationNotFoundWarnings.join('; '));
+    }
+
     debug('sequelize query params %o', params);
 
     if (options.where && params.where) {

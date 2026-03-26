@@ -1,3 +1,9 @@
+---
+title: "RunJS SQLResource"
+description: "RunJS SQL 资源：执行 SQL 模板或原始 SQL，setFilterByTk、setSQL、runById、runBySQL，支持分页，适用于报表、统计、图表数据源。"
+keywords: "SQLResource,SQL 资源,runById,runBySQL,报表,统计,RunJS,NocoBase"
+---
+
 # SQLResource
 
 基于**已保存的 SQL 配置**或**动态 SQL** 执行查询的 Resource，数据来源为 `flowSql:run` / `flowSql:runById` 等接口。适用于报表、统计、自定义 SQL 列表等场景。与 [MultiRecordResource](./multi-record-resource.md) 不同，SQLResource 不依赖数据表，直接执行 SQL 查询，支持分页、参数绑定、模板变量（`{{ctx.xxx}}`）及结果类型控制。

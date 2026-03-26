@@ -244,6 +244,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Нажмите на значок \"Редактор пользовательского интерфейса\" в правом верхнем углу, чтобы войти в режим редактора пользовательского интерфейса",
   "Clicked row record": "Clicked row record",
   "Close": "Закрыть",
+  "Close popup and redirect to": "Закрыть попап и перенаправить на",
   "Collapse": "Свернуть",
   "Collapse all": "Свернуть все",
   "Collapse button": "Collapse",
@@ -395,6 +396,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "День/Месяц/Год",
   "Default": "По умолчанию",
+  "Default expanded": "Сворачивание по умолчанию",
+
   "Default collapse": "Сворачивание по умолчанию",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

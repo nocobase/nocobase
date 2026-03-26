@@ -1,3 +1,9 @@
+---
+title: "NocoBase 安全指南"
+description: "NocoBase 安全指南：用户认证、JWT Token 策略、APP_KEY、访问控制、数据加密、IP 限制、密码策略、审计日志、LocalStorage/SessionStorage 存储。"
+keywords: "NocoBase 安全,用户认证,Token 策略,访问控制,数据加密,IP 限制,密码策略,审计日志,NocoBase"
+---
+
 # NocoBase 安全指南
 
 NocoBase 从功能设计到系统实现都注重数据和应用的安全性。平台内置了用户认证、访问控制、数据加密等多项安全功能，同时允许根据实际需求灵活配置安全策略。无论是保护用户数据、管理访问权限，还是隔离开发和生产环境，NocoBase 都提供了实用的工具和方案。本指南旨在为安全地使用 NocoBase 提供指导，帮助用户保护数据、应用和环境的安全，确保用户安全的前提下高效使用系统功能。

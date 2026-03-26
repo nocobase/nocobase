@@ -1,3 +1,9 @@
+---
+title: "StepDefinition 步骤定义"
+description: "StepDefinition 定义流中的单个步骤，每个步骤可以是动作、事件处理或其他操作，是 Flow 的基本执行单元。"
+keywords: "StepDefinition,步骤定义,Flow 步骤,Flow 执行单元,FlowEngine,NocoBase"
+---
+
 # StepDefinition
 
 StepDefinition 定义了流中的单个步骤，每个步骤可以是一个动作、事件处理或其他操作。步骤是流的基本执行单元。

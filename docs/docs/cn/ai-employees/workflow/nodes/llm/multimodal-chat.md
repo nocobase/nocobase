@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "工作流 LLM 节点 - 多模态对话"
+description: "工作流 LLM 多模态对话节点：向模型发送图片，支持 URL 或 base64 格式，选择附件字段或文件表记录。"
+keywords: "工作流,LLM 节点,多模态,图片输入,NocoBase"
+---
+
 # 多模态对话
 
 <PluginInfo name="ai-ee" licenseBundled="true"></PluginInfo>
