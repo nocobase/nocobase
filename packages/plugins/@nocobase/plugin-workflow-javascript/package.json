@@ -25,6 +25,7 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
+    "joi": "^17.13.3",
     "jshint": "^2.13.6",
     "node-gyp": "^10.2.0"
   },

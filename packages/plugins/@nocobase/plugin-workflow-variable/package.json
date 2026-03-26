@@ -18,6 +18,9 @@
     ],
     "editionLevel": 0
   },
+  "devDependencies": {
+    "joi": "^17.13.3"
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/plugin-workflow": ">=0.18.0-alpha.2",
