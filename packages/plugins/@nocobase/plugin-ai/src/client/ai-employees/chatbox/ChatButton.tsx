@@ -17,7 +17,7 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepository';
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
-import { isHide } from '../built-in/utils';
+import { isHide, isLeader } from '../built-in/utils';
 import { useChatConversationsStore } from './stores/chat-conversations';
 import { useLocation } from 'react-router-dom';
 
@@ -42,24 +42,6 @@ export const ChatButton: React.FC = observer(() => {
 
   const { switchAIEmployee } = useChatBoxActions();
 
-  const setWebSearch = useChatConversationsStore.use.setWebSearch();
-
-  const items = aiEmployees
-    ?.filter((employee) => !isHide(employee))
-    .map((employee) => ({
-      key: employee.username,
-      label: (
-        <AIEmployeeListItem
-          aiEmployee={employee}
-          onClick={() => {
-            setWebSearch(true);
-            setOpen(true);
-            switchAIEmployee(employee);
-          }}
-        />
-      ),
-    }));
-
   if (open || !aiEmployees?.length || isV1Page || !pathname.startsWith('/admin')) {
     return null;
   }
@@ -68,55 +50,50 @@ export const ChatButton: React.FC = observer(() => {
 
   return (
     !isMobileLayout && (
-      <Dropdown
-        menu={{ items }}
-        placement="topRight"
-        trigger={['hover']}
-        align={{ offset: [-16, -6] }}
-        open={dropdownOpen}
-        onOpenChange={(nextOpen) => setDropdownOpen(nextOpen)}
-      >
-        <div
-          onClick={() => {
-            setDropdownOpen(false);
-            setOpen(true);
-          }}
-          className={css`
-            z-index: 1050;
-            position: fixed;
-            bottom: 42px;
-            inset-inline-end: -8px;
-            padding: 9px 22px 9px 10px;
-            border-radius: 31px 0 0 31px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
+      <div
+        onClick={() => {
+          setDropdownOpen(false);
+          setOpen(true);
+          const leaderEmployee = aiEmployees.find(isLeader);
+          if (leaderEmployee) {
+            switchAIEmployee(leaderEmployee);
+          }
+        }}
+        className={css`
+          z-index: 1050;
+          position: fixed;
+          bottom: 42px;
+          inset-inline-end: -8px;
+          padding: 9px 22px 9px 10px;
+          border-radius: 31px 0 0 31px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
 
-            opacity: 0.7;
-            background: ${token.colorBgElevated};
-            box-shadow: ${buttonShadow};
-            transform: translateX(0);
-            will-change: transform;
-            transition:
-              transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.2s ease;
-            &:hover {
-              opacity: 1;
-              transform: translateX(-8px);
-            }
+          opacity: 0.7;
+          background: ${token.colorBgElevated};
+          box-shadow: ${buttonShadow};
+          transform: translateX(0);
+          will-change: transform;
+          transition:
+            transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+            opacity 0.2s ease;
+          &:hover {
+            opacity: 1;
+            transform: translateX(-8px);
+          }
 
-            ${dropdownOpen
-              ? `
+          ${dropdownOpen
+            ? `
               opacity: 1;
               transform: translateX(-8px);
             `
-              : ''}
-          `}
-        >
-          <Avatar src={icon} size={42} shape="square" />
-        </div>
-      </Dropdown>
+            : ''}
+        `}
+      >
+        <Avatar src={icon} size={42} shape="square" />
+      </div>
     )
   );
 });

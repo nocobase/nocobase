@@ -23,6 +23,10 @@ export const isDataModelingAssistant = (aiEmployee: AIEmployee) => {
   return isBuiltIn(aiEmployee) && aiEmployee.username === 'orin';
 };
 
+export const isLeader = (aiEmployee: AIEmployee) => {
+  return isBuiltIn(aiEmployee) && aiEmployee.username === 'atlas';
+};
+
 export const isHide = (aiEmployee: AIEmployee) => {
   return isBuiltIn(aiEmployee) && BUILDER_AI_USERNAMES.includes(aiEmployee.username);
 };
