@@ -37,7 +37,7 @@ import {
   useAllAccessDesktopRoutes,
   useMobileLayout,
 } from '../../../admin-shell';
-import { useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../../';
+import { useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../..';
 import { PinnedPluginList } from '../../../plugin-manager';
 import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
 import { useApplications } from './useApplications';
@@ -354,7 +354,7 @@ const renderMenuNodeWithModel = (
   return dom;
 };
 
-export const AdminLayoutShell = (props) => {
+export const AdminLayoutComponent = (props) => {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
