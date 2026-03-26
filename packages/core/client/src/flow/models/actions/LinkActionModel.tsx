@@ -13,44 +13,9 @@ import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
 import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { joinUrlSearch } from './joinUrlSearch';
 import { handleLinkNavigation, shouldDestroyViewAfterLinkNavigation } from './LinkActionUtils';
-
-export function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
-  if (!params?.length) return url;
-
-  const filtered = params.filter((p) => p.name && p.value !== undefined && p.value !== null && p.value !== '');
-  if (!filtered.length) return url;
-
-  try {
-    // 检测是否为绝对 URL
-    const isAbsolute = /^https?:\/\//i.test(url);
-
-    // 确定 base，用于 URL 构造器解析相对路径
-    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
-
-    // 使用 URL 构造器自动处理 query、hash 等
-    const u = new URL(url, isAbsolute ? undefined : base);
-
-    for (const { name, value } of filtered) {
-      u.searchParams.set(name, String(value));
-    }
-
-    // 如果是相对路径（没有协议、域名），去掉 origin
-    if (!isAbsolute) {
-      // 组合 pathname + search + hash
-      return `${u.pathname}${u.search}${u.hash}`;
-    }
-
-    return u.toString();
-  } catch {
-    // fallback: 纯字符串拼接方式
-    const queryString = filtered.map((p) => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`).join('&');
-
-    const [path, hash = ''] = url.split('#');
-    const separator = path.includes('?') ? '&' : '?';
-    return `${path}${separator}${queryString}${hash ? `#${hash}` : ''}`;
-  }
-}
+export { joinUrlSearch } from './joinUrlSearch';
 
 export class LinkActionModel extends ActionModel {
   static scene = ActionSceneEnum.all;

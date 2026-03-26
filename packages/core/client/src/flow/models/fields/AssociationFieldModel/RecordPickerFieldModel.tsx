@@ -117,7 +117,11 @@ function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, {
+        delegateToParent: false,
+        delegate: ctx,
+        skipSave: !ctx.flowSettingsEnabled,
+      });
       injectRecordPickerPopupContext(model, ctx, fieldModel);
       return model;
     },
@@ -132,7 +136,15 @@ function RemoteModelRenderer({ options, fieldModel }) {
     if (fieldModel) {
       fieldModel.selectBlockModel = data;
     }
-  }, [data]);
+    return () => {
+      if (data?.uid) {
+        ctx?.engine?.removeModelWithSubModels?.(data.uid);
+      }
+      if (fieldModel?.selectBlockModel === data) {
+        fieldModel.selectBlockModel = undefined;
+      }
+    };
+  }, [ctx?.engine, data, fieldModel]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }

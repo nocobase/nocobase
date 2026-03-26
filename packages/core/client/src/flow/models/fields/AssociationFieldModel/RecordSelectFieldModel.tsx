@@ -106,7 +106,11 @@ function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
-      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, {
+        delegateToParent: false,
+        delegate: ctx,
+        skipSave: !ctx.flowSettingsEnabled,
+      });
       return model;
     },
     {

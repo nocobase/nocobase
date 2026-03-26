@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-verification'
+title: "验证管理"
+description: "NocoBase 验证管理中心：短信验证码、TOTP 认证器，支持短信登录、2FA、风险操作二次验证，可扩展验证类型与场景。"
+keywords: "验证管理,短信验证码,TOTP,2FA,身份验证,二次验证,NocoBase"
 ---
 
 # 验证

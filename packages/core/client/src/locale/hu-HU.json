@@ -244,6 +244,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode",
   "Clicked row record": "Clicked row record",
   "Close": "Bezárás",
+  "Close popup and redirect to": "Popup bezárása és átirányítás ide",
   "Collapse": "Összecsukás",
   "Collapse all": "Összes összecsukása",
   "Collapse button": "Collapse",
@@ -395,6 +396,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Nap/Hónap/Év",
   "Default": "Alapértelmezett",
+  "Default expanded": "Alapértelmezett összecsukás",
+
   "Default collapse": "Alapértelmezett összecsukás",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

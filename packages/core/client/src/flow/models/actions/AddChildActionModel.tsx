@@ -12,6 +12,8 @@ import type { ButtonProps } from 'antd/es/button';
 import { RecordActionGroupModel, PopupActionModel } from '../base';
 
 export class AddChildActionModel extends PopupActionModel {
+  static capabilityActionName = null;
+
   defaultProps: ButtonProps = {
     type: 'link',
     title: tExpr('Add child'),
@@ -37,13 +39,12 @@ AddChildActionModel.registerFlow({
     addChildInit: {
       async handler(ctx, params) {
         ctx.model.onClick = (e) => {
-          ctx.resource.setSourceId(ctx.record.id);
-
           ctx.model.dispatchEvent(
             'click',
             {
               event: e,
               ...ctx.inputArgs,
+              sourceId: ctx.record.id,
               filterByTk: null,
             },
             {

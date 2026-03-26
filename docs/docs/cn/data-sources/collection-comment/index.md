@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-comments"
+title: "评论表"
+description: "评论表存储用户评论与反馈，支持富文本、关联任意数据表、多级评论、用户追踪，为数据记录添加讨论能力。"
+keywords: "评论表,评论功能,富文本评论,多级评论,Collection Comment,NocoBase"
 ---
-
 # 评论表
 
 ## 介绍

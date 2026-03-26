@@ -24,7 +24,16 @@ export class SyncMessageManager {
       if (!plugin.name) {
         return;
       }
-      await this.subscribe(plugin.name, plugin.handleSyncMessage.bind(plugin));
+      // NOTE: should not subscribe when handleSyncMessage is not implemented
+      if (typeof plugin.handleSyncMessage === 'function') {
+        await this.subscribe(plugin.name, async (...args) => {
+          // Guard against debounced callbacks firing after app stopped or db closed
+          if (app.stopped || app.db.closed()) {
+            return;
+          }
+          return plugin.handleSyncMessage(...args);
+        });
+      }
     });
   }
 

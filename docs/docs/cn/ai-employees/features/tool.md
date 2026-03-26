@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工使用技能"
+description: "技能（Tools）定义 AI 员工能力：General skills、Employee-specific skills、Custom skills，技能权限 Ask/Allow 配置。"
+keywords: "AI 员工技能,Tools,Ask,Allow,技能权限,NocoBase"
+---
+
 # 使用技能
 
 技能（Tools）定义了 AI 员工“能做什么”。

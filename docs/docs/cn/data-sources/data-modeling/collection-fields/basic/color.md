@@ -1,3 +1,9 @@
+---
+title: "颜色"
+description: "颜色字段，存储颜色值，支持颜色选择器。"
+keywords: "颜色,color,颜色选择器,颜色字段,NocoBase"
+---
+
 # Color
 
 ## 介绍

@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-manager"
+title: "数据源管理"
+description: "数据源管理插件：管理主数据库与外部 MySQL/MariaDB/PostgreSQL/MSSQL/Oracle、同步自建表、接入 REST API 数据源，提供统一管理界面。"
+keywords: "数据源管理,主数据库,外部数据库,数据表同步,REST API 数据源,NocoBase"
 ---
-
 # 数据源管理
 
 ## 介绍

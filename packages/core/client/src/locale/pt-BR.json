@@ -261,6 +261,7 @@
   "Click the \"UI Editor\" icon in the upper right corner to enter the UI Editor mode": "Cliquez sur l'icône \"Éditeur d'interface utilisateur\" dans le coin supérieur droit pour entrer en mode Éditeur d'interface utilisateur",
   "Clicked row record": "Clicked row record",
   "Close": "Fechar",
+  "Close popup and redirect to": "Fechar popup e redirecionar para",
   "Collapse": "Recolher",
   "Collapse all": "Colapsar tudo",
   "Collapse button": "Collapse",
@@ -416,6 +417,8 @@
   "Day before yesterday": "Day before yesterday",
   "Day/Month/Year": "Dia/Mês/Ano",
   "Default": "Padrão",
+  "Default expanded": "Default collapse",
+
   "Default collapse": "Default collapse",
   "Default collapsed": "Default collapsed",
   "Default expand all": "Default expand all",

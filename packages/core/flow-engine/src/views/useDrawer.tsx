@@ -19,6 +19,7 @@ import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } f
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
+import { runViewBeforeClose } from './runViewBeforeClose';
 
 export function useDrawer() {
   const holderRef = React.useRef(null);
@@ -118,12 +119,18 @@ export function useDrawer() {
       ctx.addDelegate(flowContext.engine.context);
     }
 
+    // 幂等保护：防止 FlowPage 路由清理时二次调用 destroy
+    let destroyed = false;
+
     // 构造 currentDrawer 实例
     const currentDrawer = {
       type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
+      beforeClose: undefined,
       destroy: (result?: any) => {
+        if (destroyed) return;
+        destroyed = true;
         config.onClose?.();
         drawerRef.current?.destroy();
         closeFunc?.();
@@ -136,18 +143,24 @@ export function useDrawer() {
         scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => drawerRef.current?.update(newConfig),
-      close: (result?: any, force?: boolean) => {
+      close: async (result?: any, force?: boolean) => {
         if (config.preventClose && !force) {
-          return;
+          return false;
+        }
+
+        const shouldClose = await runViewBeforeClose(currentDrawer, { result, force });
+        if (!shouldClose) {
+          return false;
         }
 
         if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
           // 交由路由系统来销毁当前视图
           config.inputArgs.navigation.back();
-          return;
+          return true;
         }
 
         currentDrawer.destroy(result);
+        return true;
       },
       Footer: FooterComponent,
       Header: HeaderComponent,
@@ -168,6 +181,15 @@ export function useDrawer() {
     ctx.defineProperty('view', {
       get: () => currentDrawer,
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
+    });
+    // 注册视图销毁回调，供外部（如 afterSuccess）通过引擎栈遍历来关闭多层弹窗。
+    // 对路由触发的弹窗：先 navigation.back() 清理 URL（replace 方式），再 destroy() 立即移除元素；
+    // 对非路由弹窗：直接 destroy()。destroy() 已做幂等保护，FlowPage 后续清理不会重复执行。
+    scopedEngine.setDestroyView(() => {
+      if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
+        config.inputArgs.navigation.back();
+      }
+      currentDrawer.destroy();
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentDrawer);

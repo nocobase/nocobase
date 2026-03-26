@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "存储引擎概述"
+description: "存储引擎将文件保存至本地或云存储，支持本地、Amazon S3、阿里云 OSS、腾讯云 COS、S3 Pro，配置路径、访问 URL、大小限制、MIME 类型等。"
+keywords: "存储引擎,Storage,本地存储,S3,OSS,COS,文件大小限制,MIME 类型,NocoBase"
+---
+
 # 概述
 
 ## 介绍

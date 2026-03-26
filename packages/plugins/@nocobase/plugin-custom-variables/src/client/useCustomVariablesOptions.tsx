@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { useAPIClient, useFlag, useToken, useVariableScopeInfo } from '@nocobase/client';
 import React, { useRef } from 'react';
 import { useCallback, useEffect, useState } from 'react';
@@ -155,6 +164,8 @@ export const useCustomVariablesOptions = () => {
       .request({
         url: 'customVariables:list',
         method: 'GET',
+        skipNotify: true,
+        skipAuth: true,
         params: {
           filter: {
             declaredAt: scopeId,

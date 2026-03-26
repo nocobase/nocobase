@@ -1,3 +1,9 @@
+---
+title: "整数"
+description: "整数字段，存储整型数值。"
+keywords: "整数类型,integer,数字字段,数值,NocoBase"
+---
+
 # 整数
 
 ## 介绍

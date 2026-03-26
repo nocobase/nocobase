@@ -19,6 +19,7 @@ import { VIEW_ACTIVATED_EVENT, bumpViewActivatedVersion, resolveOpenerEngine } f
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
+import { runViewBeforeClose } from './runViewBeforeClose';
 
 let uuid = 0;
 
@@ -122,6 +123,7 @@ export function usePage() {
       type: 'embed' as const,
       inputArgs: viewInputArgs,
       preventClose: !!config.preventClose,
+      beforeClose: undefined,
       destroy: (result?: any) => {
         config.onClose?.();
         resolvePromise?.(result);
@@ -145,18 +147,24 @@ export function usePage() {
         scopedEngine.unlinkFromStack();
       },
       update: (newConfig) => pageRef.current?.update(newConfig),
-      close: (result?: any, force?: boolean) => {
+      close: async (result?: any, force?: boolean) => {
         if (preventClose && !force) {
-          return;
+          return false;
+        }
+
+        const shouldClose = await runViewBeforeClose(currentPage, { result, force });
+        if (!shouldClose) {
+          return false;
         }
 
         if (config.triggerByRouter && config.inputArgs?.navigation?.back) {
           // 交由路由系统来销毁当前视图
           config.inputArgs.navigation.back();
-          return;
+          return true;
         }
 
         currentPage.destroy(result);
+        return true;
       },
       Header: HeaderComponent,
       Footer: FooterComponent,
@@ -178,6 +186,7 @@ export function usePage() {
       // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
       resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
+    // embed 视图不注册 destroyView，afterSuccess 关闭弹窗时自然跳过
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentPage);
 

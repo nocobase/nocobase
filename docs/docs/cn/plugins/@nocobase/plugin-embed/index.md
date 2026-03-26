@@ -1,6 +1,8 @@
 ---
 displayName: "嵌入 NocoBase"
 packageName: '@nocobase/plugin-embed'
+title: "嵌入 NocoBase"
+keywords: "嵌入 NocoBase,插件,NocoBase"
 supportedVersions:
   - 1.x
 description: |

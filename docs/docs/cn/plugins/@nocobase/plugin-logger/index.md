@@ -1,6 +1,8 @@
 ---
 displayName: "日志"
 packageName: '@nocobase/plugin-logger'
+title: "日志"
+keywords: "日志,插件,NocoBase"
 description: |
   服务端日志，主要包括接口请求日志和系统运行日志，并支持打包和下载日志文件。
 isFree: true

@@ -62,6 +62,10 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     '_nextEngine',
     // getModel 需要在本地执行以确保全局查找时正确遍历整个引擎栈
     'getModel',
+    // 视图销毁回调需要在本地存储，每个视图引擎有自己的销毁逻辑
+    '_destroyView',
+    'setDestroyView',
+    'destroyView',
   ]);
 
   const handler: ProxyHandler<FlowEngine> = {

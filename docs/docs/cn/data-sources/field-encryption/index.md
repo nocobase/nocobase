@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-field-encryption"
+title: "字段加密"
+description: "对私密业务数据（手机号、邮箱、卡号等）进行加密存储，以密文形式保存至数据库，保护敏感信息。"
+keywords: "字段加密,Encryption,敏感数据,密文存储,NocoBase"
 ---
-
 # 加密
 
 ## 介绍

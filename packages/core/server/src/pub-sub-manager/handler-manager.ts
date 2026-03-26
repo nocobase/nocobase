@@ -107,7 +107,19 @@ export class HandlerManager {
     return headler;
   }
 
+  cancelPendingDebounce() {
+    if (this.uniqueMessageHandlers) {
+      for (const handler of this.uniqueMessageHandlers.values()) {
+        if (typeof handler?.cancel === 'function') {
+          handler.cancel();
+        }
+      }
+      this.uniqueMessageHandlers.clear();
+    }
+  }
+
   reset() {
+    this.cancelPendingDebounce();
     this.handlers = new Map();
     this.uniqueMessageHandlers = new Map();
   }

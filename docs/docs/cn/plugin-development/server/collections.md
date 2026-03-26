@@ -1,3 +1,9 @@
+---
+title: "Collections 数据表定义"
+description: "NocoBase 插件定义 Collection：defineCollection、extendCollection、fields、src/server/collections 目录约定。"
+keywords: "Collections,defineCollection,extendCollection,数据表,Collection 定义,NocoBase"
+---
+
 # Collections 数据表
 
 在 NocoBase 插件开发中，**Collection（数据表）** 是最核心的概念之一。你可以通过定义或扩展 Collection，在插件中新增或修改数据表结构。与通过数据源管理界面创建的数据表不同，**代码定义的 Collection 通常是系统级的元数据表**，不会出现在数据源管理的列表中。

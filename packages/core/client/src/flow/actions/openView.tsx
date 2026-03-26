@@ -7,11 +7,89 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr, FlowModelContext, FlowModel } from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowModelContext, FlowModel, FlowExitAllException } from '@nocobase/flow-engine';
 import React from 'react';
 import { FlowPage } from '../FlowPage';
 import { RootPageModel } from '../models';
 import _ from 'lodash';
+
+type DirtyAwareFlowModel = FlowModel & {
+  getUserModifiedFields?: () => Set<string> | undefined;
+};
+
+type BeforeCloseDirtyState = {
+  hasDirtyForms: boolean;
+  formModelUids: string[];
+};
+
+function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
+  if (!model) {
+    return [];
+  }
+
+  const visited = new Set<string>();
+  const dirtyModelUids: string[] = [];
+
+  const walk = (current?: DirtyAwareFlowModel | null) => {
+    if (!current?.uid || visited.has(current.uid)) {
+      return;
+    }
+
+    visited.add(current.uid);
+
+    const userModifiedFields = current.getUserModifiedFields?.();
+    if (userModifiedFields?.size) {
+      dirtyModelUids.push(current.uid);
+    }
+
+    Object.values(current.subModels || {}).forEach((subModelValue) => {
+      _.castArray(subModelValue).forEach((subModel) => {
+        if (subModel && typeof subModel === 'object') {
+          walk(subModel as DirtyAwareFlowModel);
+        }
+      });
+    });
+  };
+
+  walk(model as DirtyAwareFlowModel);
+  return dirtyModelUids;
+}
+
+function createBeforeCloseDirtyState(model?: FlowModel | null): BeforeCloseDirtyState {
+  const formModelUids = collectDirtyFormModelUids(model);
+  return {
+    hasDirtyForms: formModelUids.length > 0,
+    formModelUids,
+  };
+}
+
+function createViewBeforeCloseHandler(pageModel: FlowModel) {
+  return async ({ result, force }: { result?: any; force?: boolean }) => {
+    if (force) {
+      return true;
+    }
+
+    const dirty = createBeforeCloseDirtyState(pageModel);
+
+    let prevented = false;
+    const dispatchResults = await pageModel.dispatchEvent('close', {
+      result,
+      force: false,
+      dirty,
+      controller: {
+        prevent() {
+          prevented = true;
+        },
+      },
+    });
+
+    const exited =
+      (dispatchResults as any)?.__abortedByExitAll === true ||
+      (Array.isArray(dispatchResults) ? dispatchResults.some((item) => item instanceof FlowExitAllException) : false);
+
+    return !prevented && !exited;
+  };
+}
 
 /**
  * 弹窗打开动作（openView）配置
@@ -137,7 +215,15 @@ export const openView = defineAction({
       if (hasInput) return inputArgs[key];
       return actionDefaults?.[key];
     };
-    const mergedFilterByTk = pickWithDefault('filterByTk');
+    const mergedFilterByTk = (() => {
+      const value = pickWithDefault('filterByTk');
+      return Array.isArray(ctx.collection?.filterTargetKey) &&
+        ctx.collection.filterTargetKey.length === 1 &&
+        value != null &&
+        typeof value !== 'object'
+        ? { [ctx.collection.filterTargetKey[0]]: value }
+        : value;
+    })();
     const mergedSourceId = pickWithDefault('sourceId');
 
     const runtimeDataSourceKey =
@@ -241,13 +327,16 @@ export const openView = defineAction({
     // and use it as the parent for the child page content.
     let parentIdForChild = ctx.model.uid;
     if (params.subModelKey) {
-      const container = await ctx.engine.loadOrCreateModel({
-        async: true,
-        parentId: ctx.model.uid,
-        subKey: params.subModelKey,
-        subType: 'object',
-        use: 'FlowModel',
-      });
+      const container = await ctx.engine.loadOrCreateModel(
+        {
+          async: true,
+          parentId: ctx.model.uid,
+          subKey: params.subModelKey,
+          subType: 'object',
+          use: 'FlowModel',
+        },
+        { skipSave: !ctx.flowSettingsEnabled },
+      );
       if (container?.uid) {
         parentIdForChild = container.uid;
       }
@@ -301,6 +390,11 @@ export const openView = defineAction({
               pageModelUid = uid;
               const pageModel = (model as FlowModel) || (ctx.engine.getModel(pageModelUid) as FlowModel | undefined);
               pageModelRef = pageModel || null;
+              if (!pageModel) {
+                return;
+              }
+
+              currentView.beforeClose = createViewBeforeCloseHandler(pageModel);
               const defineProperties =
                 inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? {};
               const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? {};

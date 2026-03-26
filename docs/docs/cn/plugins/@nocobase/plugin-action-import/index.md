@@ -1,6 +1,8 @@
 ---
 displayName: "操作：导入记录"
 packageName: '@nocobase/plugin-action-import'
+title: "操作：导入记录"
+keywords: "操作：导入记录,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

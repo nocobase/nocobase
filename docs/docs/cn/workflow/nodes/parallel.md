@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-parallel'
+title: "工作流节点 - 并行分支"
+description: "并行分支节点：将流程分为多分支同时执行，可配置不同分支模式。"
+keywords: "工作流,并行分支,Parallel,并发执行,分支模式,NocoBase"
 ---
 
 # 并行分支

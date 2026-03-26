@@ -321,45 +321,30 @@ export class PluginManager {
     await tsxRerunning();
   }
 
-  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
+  async addOrThrow(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
     if (!isUpgrade && this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
-      this.app.log.warn(`plugin [${name}] added`);
-      return;
+      throw new Error(`plugin [${name}] already added`);
     }
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
-    try {
-      if (typeof plugin === 'string' && options.name && !options.packageName) {
-        const packageName = await PluginManager.getPackageName(options.name);
-        if (packageName) {
-          options['packageName'] = packageName;
-        }
+    if (typeof plugin === 'string' && options.name && !options.packageName) {
+      const packageName = await PluginManager.getPackageName(options.name);
+      if (packageName) {
+        options['packageName'] = packageName;
       }
-
-      if (options.packageName) {
-        const packageJson = await PluginManager.getPackageJson(options.packageName);
-        options['packageJson'] = packageJson;
-        options['version'] = packageJson.version;
-      }
-    } catch (error) {
-      this.app.log.error(error);
-      console.error(error);
-      // empty
     }
-    this.app.log.trace(`adding plugin [${options.name}]`, {
-      method: 'add',
-      submodule: 'plugin-manager',
-      name: options.name,
-      options,
-    });
-    let P: any;
-    try {
-      P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
-    } catch (error) {
-      this.app.log.warn('plugin not found', error);
-      return;
+    if (options.packageName) {
+      const packageJson = await PluginManager.getPackageJson(options.packageName);
+      options['packageJson'] = packageJson;
+      options['version'] = packageJson.version;
+    }
+
+    const P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
+
+    if (!P) {
+      throw new Error(`plugin [${options?.name || 'unknown'}] load error`);
     }
 
     const instance: Plugin = new P(createAppProxy(this.app), options);
@@ -372,12 +357,14 @@ export class PluginManager {
       this.pluginAliases.set(options.packageName, instance);
     }
     await instance.afterAdd();
-    this.app.log.trace(`added plugin [${options.name}]`, {
-      method: 'add',
-      submodule: 'plugin-manager',
-      name: instance.name,
-      options: instance.options,
-    });
+  }
+
+  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
+    try {
+      await this.addOrThrow(plugin, options, insert, isUpgrade);
+    } catch (error) {
+      this.app.log.error(error);
+    }
   }
 
   /**
@@ -573,7 +560,7 @@ export class PluginManager {
           added[pluginName] = true;
           continue;
         }
-        await this.add(pluginName);
+        await this.addOrThrow(pluginName);
       }
       for (const name of pluginNames) {
         const { name: pluginName } = await PluginManager.parseName(name);

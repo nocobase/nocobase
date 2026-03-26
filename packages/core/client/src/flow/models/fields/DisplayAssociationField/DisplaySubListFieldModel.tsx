@@ -10,17 +10,18 @@
 import { css } from '@emotion/css';
 import { tExpr, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
-import React, { useRef } from 'react';
-import { castArray } from 'lodash';
+import React from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
+import { buildDisplaySubListForkKey, normalizeFieldIndexChain } from './displaySubListUtils';
 
 const ArrayNester = ({ name, value = [] }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;
-  const resultIndex = castArray(rowIndex).filter(Boolean);
+  // 不能用 filter(Boolean)，否则会把索引 0 丢掉，导致嵌套第一个子项上下文错误
+  const resultIndex = normalizeFieldIndexChain(rowIndex);
   const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.context.flowSettingsEnabled;
@@ -39,9 +40,16 @@ const ArrayNester = ({ name, value = [] }: any) => {
         `}
       >
         {resultValue.map((item: any, index: number) => {
-          const key = `row_${index}_${blockPage}`;
+          const key = buildDisplaySubListForkKey({
+            parentFieldIndex: resultIndex,
+            index,
+            blockPage,
+          });
           const fork = gridModel.createFork({}, `${key}`);
-          fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          // 仅在 fork 首次创建时为其分配独立 ref，避免每次渲染重建导致拖拽快照不稳定
+          if (fork.gridContainerRef === gridModel.gridContainerRef) {
+            fork.gridContainerRef = React.createRef<HTMLDivElement>();
+          }
           const parentItem = model?.context?.item;
           fork.context.defineProperty('fieldIndex', {
             get: () => [...resultIndex, `${collectionName}:${index}`],

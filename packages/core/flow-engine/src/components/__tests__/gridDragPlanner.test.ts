@@ -15,6 +15,7 @@ import {
   getSlotKey,
   resolveDropIntent,
   Point,
+  buildLayoutSnapshot,
 } from '../dnd/gridDragPlanner';
 
 const rect = { top: 0, left: 0, width: 100, height: 100 };
@@ -27,6 +28,93 @@ const createLayout = (
   rows,
   sizes,
   rowOrder,
+});
+
+const createDomRect = ({ top, left, width, height }: { top: number; left: number; width: number; height: number }) => {
+  return {
+    top,
+    left,
+    width,
+    height,
+    right: left + width,
+    bottom: top + height,
+    x: left,
+    y: top,
+    toJSON: () => ({}),
+  } as DOMRect;
+};
+
+const mockRect = (
+  element: Element,
+  rect: {
+    top: number;
+    left: number;
+    width: number;
+    height: number;
+  },
+) => {
+  Object.defineProperty(element, 'getBoundingClientRect', {
+    configurable: true,
+    value: () => createDomRect(rect),
+  });
+};
+
+describe('buildLayoutSnapshot', () => {
+  it('should ignore nested grid columns/items even when rowId is duplicated', () => {
+    const container = document.createElement('div');
+    const row = document.createElement('div');
+    row.setAttribute('data-grid-row-id', 'row-1');
+    container.appendChild(row);
+
+    const column = document.createElement('div');
+    column.setAttribute('data-grid-column-row-id', 'row-1');
+    column.setAttribute('data-grid-column-index', '0');
+    row.appendChild(column);
+
+    const item = document.createElement('div');
+    item.setAttribute('data-grid-item-row-id', 'row-1');
+    item.setAttribute('data-grid-column-index', '0');
+    item.setAttribute('data-grid-item-index', '0');
+    column.appendChild(item);
+
+    // 在外层 item 内构建一个嵌套 grid，并复用相同 rowId/columnIndex
+    const nestedRow = document.createElement('div');
+    nestedRow.setAttribute('data-grid-row-id', 'row-1');
+    item.appendChild(nestedRow);
+
+    const nestedColumn = document.createElement('div');
+    nestedColumn.setAttribute('data-grid-column-row-id', 'row-1');
+    nestedColumn.setAttribute('data-grid-column-index', '0');
+    nestedRow.appendChild(nestedColumn);
+
+    const nestedItem = document.createElement('div');
+    nestedItem.setAttribute('data-grid-item-row-id', 'row-1');
+    nestedItem.setAttribute('data-grid-column-index', '0');
+    nestedItem.setAttribute('data-grid-item-index', '0');
+    nestedColumn.appendChild(nestedItem);
+
+    mockRect(container, { top: 0, left: 0, width: 600, height: 600 });
+    mockRect(row, { top: 10, left: 10, width: 320, height: 120 });
+    mockRect(column, { top: 10, left: 10, width: 320, height: 120 });
+    mockRect(item, { top: 20, left: 20, width: 300, height: 80 });
+
+    // 嵌套 grid 给一个明显偏离的位置，用于判断是否被错误命中
+    mockRect(nestedRow, { top: 360, left: 360, width: 200, height: 120 });
+    mockRect(nestedColumn, { top: 360, left: 360, width: 200, height: 120 });
+    mockRect(nestedItem, { top: 370, left: 370, width: 180, height: 90 });
+
+    const snapshot = buildLayoutSnapshot({ container });
+    const columnEdgeSlots = snapshot.slots.filter((slot) => slot.type === 'column-edge');
+    const columnSlots = snapshot.slots.filter((slot) => slot.type === 'column');
+
+    // 外层单行单列单项应只有 6 个 slot：上/下 row-gap + 左/右 column-edge + before/after column
+    expect(snapshot.slots).toHaveLength(6);
+    expect(columnEdgeSlots).toHaveLength(2);
+    expect(columnSlots).toHaveLength(2);
+
+    // 不应混入嵌套 grid（其 top >= 360）
+    expect(snapshot.slots.every((slot) => slot.rect.top < 300)).toBe(true);
+  });
 });
 
 describe('getSlotKey', () => {

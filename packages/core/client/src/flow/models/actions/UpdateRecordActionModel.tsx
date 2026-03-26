@@ -7,15 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  tExpr,
-  FlowModelRenderer,
-  useFlowEngine,
-  useFlowSettingsContext,
-  SingleRecordResource,
-  MultiRecordResource,
-  resolveRunJSObjectValues,
-} from '@nocobase/flow-engine';
+import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { AxiosRequestConfig } from 'axios';
@@ -23,6 +15,7 @@ import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
 import { CollectionActionModel } from '../base/CollectionActionModel';
 import { RecordActionModel } from '../base/RecordActionModel';
 import { AssignFormModel } from '../blocks/assign-form/AssignFormModel';
+import { applyUpdateRecordAction } from './UpdateRecordActionUtils';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
@@ -39,11 +32,14 @@ function AssignFieldsEditor() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const loaded = (await engine.loadOrCreateModel({
-        parentId: action.uid,
-        subKey: 'assignForm',
-        use: 'AssignFormModel',
-      })) as AssignFormModel;
+      const loaded = (await engine.loadOrCreateModel(
+        {
+          parentId: action.uid,
+          subKey: 'assignForm',
+          use: 'AssignFormModel',
+        },
+        { skipSave: !model.context.flowSettingsEnabled },
+      )) as AssignFormModel;
       if (cancelled) return;
       setFormModel(loaded);
       action.assignFormUid = (loaded as any)?.uid || action.assignFormUid;
@@ -198,36 +194,7 @@ UpdateRecordActionModel.registerFlow({
         return { assignedValues: step?.assignedValues || {} };
       },
       async handler(ctx, params) {
-        // 统一接入二次确认：如果启用则弹窗；未配置时默认不启用
-        const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
-        const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
-        await ctx.runAction('confirm', confirmParams);
-
-        let assignedValues: Record<string, any> = {};
-        try {
-          assignedValues = await resolveRunJSObjectValues(ctx, params?.assignedValues);
-        } catch (error) {
-          console.error('[UpdateRecordAction] RunJS execution failed', error);
-          ctx.message.error(ctx.t('RunJS execution failed'));
-          return;
-        }
-
-        if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
-          ctx.message.warning(ctx.t('No assigned fields configured'));
-          return;
-        }
-        const collection = ctx.collection?.name;
-        const filterByTk = ctx.collection?.getFilterByTK?.(ctx.record);
-        if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) {
-          ctx.message.error(ctx.t('Record is required to perform this action'));
-          return;
-        }
-        if (ctx.resource instanceof SingleRecordResource) {
-          await ctx.resource.save(assignedValues, params.requestConfig);
-        } else if (ctx.resource instanceof MultiRecordResource) {
-          await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
-        }
-        ctx.message.success(ctx.t('Saved successfully'));
+        await applyUpdateRecordAction(ctx, params, { settingsFlowKey: SETTINGS_FLOW_KEY });
       },
     },
   },

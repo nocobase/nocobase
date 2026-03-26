@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-collection-fdw"
+title: "连接外部数据表（FDW）"
+description: "基于 Foreign Data Wrapper 连接远程数据表，MySQL federated 引擎、PostgreSQL postgres_fdw，将远程表映射为本地表使用。"
+keywords: "FDW,Foreign Data Wrapper,federated,postgres_fdw,外部表,远程表,NocoBase"
 ---
-
 # 连接外部数据表（FDW）
 
 ## 介绍

@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 文本格式化"
+description: "模板打印文本格式化器：lowerCase、upperCase、trim、replace 等文本转换与处理。"
+keywords: "模板打印,文本格式化,lowerCase,upperCase,NocoBase"
+---
+
 ### 文本格式化
 
 针对文本数据提供多种格式化器，下文依次介绍各格式化器的语法、示例和结果。

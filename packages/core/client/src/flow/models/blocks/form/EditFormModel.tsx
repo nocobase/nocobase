@@ -28,6 +28,7 @@ import { dispatchEventDeep } from '../../../utils';
 
 export class EditFormModel extends FormBlockModel {
   static scene = BlockSceneEnum.oam;
+  static blockCapabilityActionName = 'update';
 
   private actionFlowSettings = { showBackground: false, showBorder: false, toolbarPosition: 'above' as const };
   private actionExtraToolbarItems = [

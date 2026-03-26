@@ -16,3 +16,29 @@ export const getSource = (data: Record<string, any>, fields?: string[], type?: s
   }, data);
   return type === 'o2m' || type === 'm2m' ? res : [res];
 };
+
+export const runIdleTask = (callback: () => void) => {
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => {
+      callback();
+    });
+    return;
+  }
+  window.setTimeout(callback, 1);
+};
+
+export const normalizeErrorMessage = (error: unknown, fallbackMessage: string) => {
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    const { message } = error as { message?: unknown };
+    if (typeof message === 'string' && message) {
+      return message;
+    }
+  }
+  return fallbackMessage;
+};

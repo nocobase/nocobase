@@ -128,6 +128,64 @@ describe('RootPageModel', () => {
       expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-uid', 'over-uid', { persist: false });
     });
 
+    it('should save new tab before moving when route id is missing', async () => {
+      const mockActiveModel = {
+        uid: 'active-uid',
+        props: { route: { schemaUid: 'active-schema-uid' } },
+        save: vi.fn(async () => {
+          mockActiveModel.props.route.id = 'active-route-id';
+        }),
+      };
+      const mockOverModel = {
+        uid: 'over-uid',
+        props: { route: { id: 'over-route-id' } },
+        save: vi.fn(),
+      };
+
+      const mockDragEndEvent = {
+        active: { id: 'active-model-id' },
+        over: { id: 'over-model-id' },
+      };
+
+      mockFlowEngine.getModel.mockReturnValueOnce(mockActiveModel).mockReturnValueOnce(mockOverModel);
+
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
+
+      expect(mockActiveModel.save).toHaveBeenCalledTimes(1);
+      expect(mockOverModel.save).not.toHaveBeenCalled();
+      expect(mockApi.request).toHaveBeenCalledWith({
+        url: 'desktopRoutes:move',
+        method: 'post',
+        params: {
+          sourceId: 'active-route-id',
+          targetId: 'over-route-id',
+          sortField: 'sort',
+        },
+      });
+      expect(mockFlowEngine.moveModel).toHaveBeenCalledWith('active-uid', 'over-uid', { persist: false });
+    });
+
+    it('should skip self-drop to avoid duplicate saves for the same new tab', async () => {
+      const mockModel = {
+        uid: 'same-uid',
+        props: { route: { schemaUid: 'same-schema-uid' } },
+        save: vi.fn(),
+      };
+
+      const mockDragEndEvent = {
+        active: { id: 'same-model-id' },
+        over: { id: 'same-model-id' },
+      };
+
+      mockFlowEngine.getModel.mockReturnValue(mockModel);
+
+      await rootPageModel.handleDragEnd(mockDragEndEvent as any);
+
+      expect(mockModel.save).not.toHaveBeenCalled();
+      expect(mockApi.request).not.toHaveBeenCalled();
+      expect(mockFlowEngine.moveModel).not.toHaveBeenCalled();
+    });
+
     it('should handle case when activeModel is not found', async () => {
       const mockDragEndEvent = {
         active: { id: 'active-model-id' },

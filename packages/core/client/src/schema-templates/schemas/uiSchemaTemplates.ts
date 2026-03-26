@@ -9,8 +9,10 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
+import { string as stringOperators } from '../../collection-manager/interfaces/properties/operators';
 import { useBlockRequestContext } from '../../block-provider';
 import { useBulkDestroyActionProps, useDestroyActionProps, useUpdateActionProps } from '../../block-provider/hooks';
+import { useFilterFieldProps } from '../../schema-component';
 import { uiSchemaTemplatesCollection } from '../collections/uiSchemaTemplates';
 import { useSchemaTemplateManager } from '../SchemaTemplateManagerProvider';
 import { CollectionTitle } from './CollectionTitle';
@@ -53,6 +55,36 @@ const useDestroyTemplateProps = () => {
   };
 };
 
+const filterOptions = [
+  {
+    name: 'name',
+    title: '{{ t("Title") }}',
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+    operators: stringOperators,
+  },
+  {
+    name: 'collectionName',
+    title: '{{ t("Collection display name") }}',
+    schema: {
+      type: 'string',
+      'x-component': 'Input',
+    },
+    operators: stringOperators,
+  },
+];
+
+const useUiSchemaTemplatesFilterActionProps = () => {
+  const { service } = useBlockRequestContext();
+  return useFilterFieldProps({
+    options: filterOptions,
+    params: service?.state?.params?.[0] || service?.params,
+    service,
+  });
+};
+
 export const uiSchemaTemplatesSchema: ISchema = {
   type: 'object',
   properties: {
@@ -83,6 +115,30 @@ export const uiSchemaTemplatesSchema: ISchema = {
             },
           },
           properties: {
+            filter: {
+              type: 'void',
+              title: '{{ t("Filter") }}',
+              default: {
+                $and: [{ name: { $includes: '' } }],
+              },
+              'x-action': 'filter',
+              'x-component': 'Filter.Action',
+              'x-use-component-props': useUiSchemaTemplatesFilterActionProps,
+              'x-component-props': {
+                icon: 'FilterOutlined',
+              },
+              'x-align': 'left',
+            },
+            refresh: {
+              type: 'void',
+              title: '{{ t("Refresh") }}',
+              'x-component': 'Action',
+              'x-use-component-props': 'useRefreshActionProps',
+              'x-component-props': {
+                icon: 'ReloadOutlined',
+              },
+              'x-align': 'right',
+            },
             destroy: {
               title: '{{ t("Delete") }}',
               'x-action': 'destroy',

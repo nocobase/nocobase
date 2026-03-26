@@ -20,6 +20,7 @@ import App7 from '../demos/demo7';
 import App8 from '../demos/demo8';
 import App9 from '../demos/demo9';
 import dayjs from 'dayjs';
+import { resolveFilterPickerFormat } from '../DatePicker';
 
 dayjs.tz.setDefault('UTC');
 
@@ -94,6 +95,54 @@ describe('DatePicker', () => {
   });
 });
 
+describe('resolveFilterPickerFormat', () => {
+  it('应优先使用筛选字段配置的日期格式', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        dateFormat: 'MM/DD/YY',
+        showTime: false,
+      }),
+    ).toBe('MM/DD/YY');
+  });
+
+  it('应避免在日期时间格式中重复拼接时间部分', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        format: 'MM/DD/YY HH:mm:ss',
+        showTime: true,
+        timeFormat: 'HH:mm:ss',
+      }),
+    ).toBe('MM/DD/YY HH:mm:ss');
+  });
+
+  it('应在 12 小时制日期时间格式中避免重复拼接时间部分', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'date',
+        picker: 'date',
+        format: 'MM/DD/YY hh:mm:ss a',
+        showTime: true,
+        timeFormat: 'hh:mm:ss a',
+      }),
+    ).toBe('MM/DD/YY hh:mm:ss a');
+  });
+
+  it('切换 picker 时应回退到对应 picker 的默认格式', () => {
+    expect(
+      resolveFilterPickerFormat({
+        targetPicker: 'month',
+        picker: 'date',
+        dateFormat: 'MM/DD/YY',
+        showTime: false,
+      }),
+    ).toBe('YYYY-MM');
+  });
+});
+
 describe('RangePicker', () => {
   it('GMT', async () => {
     const { container, getByPlaceholderText } = render(<App4 />);
@@ -105,8 +154,10 @@ describe('RangePicker', () => {
     const endInput = getByPlaceholderText('End date');
 
     await userEvent.click(picker);
-    await userEvent.click(document.querySelector('[title="2023-05-01"]') as HTMLElement);
-    await userEvent.click(document.querySelector('[title="2023-05-02"]') as HTMLElement);
+    const startDate = await screen.findByTitle('2023-05-01');
+    await userEvent.click(startDate);
+    const endDate = await screen.findByTitle('2023-05-02');
+    await userEvent.click(endDate);
 
     await waitFor(
       () => {

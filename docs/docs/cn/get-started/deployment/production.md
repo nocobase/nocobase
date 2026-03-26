@@ -1,3 +1,9 @@
+---
+title: "NocoBase 生产环境部署"
+description: "NocoBase 生产部署流程：推荐 Docker 或 create-nocobase-app，静态资源代理（Nginx/Caddy/CDN）、docker compose/pm2 运维命令。"
+keywords: "生产环境部署,生产部署,Docker 部署,静态资源代理,Nginx,Caddy,运维命令,NocoBase"
+---
+
 # 生产环境部署
 
 在生产环境中部署 NocoBase 时，由于不同系统和环境的构建方式存在差异，安装依赖可能较为繁琐。为获得完整功能体验，我们推荐使用 **Docker** 进行部署。如果系统环境无法使用 Docker，也可以使用 **create-nocobase-app** 进行部署。

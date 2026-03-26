@@ -1,3 +1,9 @@
+---
+title: "插件支持语言列表"
+description: "NocoBase 插件国际化支持的语言代码列表，用于 locales 配置。"
+keywords: "语言列表,locales,国际化,i18n,多语言,NocoBase"
+---
+
 # 语言列表
 
 NocoBase 提供了多语言支持（i18n），以下为当前内置的语言列表。

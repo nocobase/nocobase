@@ -1,7 +1,9 @@
 {
   "private": true,
   "name": "@nocobase-example/plugin-field-simple",
-  "version": "2.0.11",
+  "displayName": "Plugin example: Field simple",
+  "description": "This plugin demonstrates how to use the field simple feature to create a simple field.",
+  "version": "2.0.27",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

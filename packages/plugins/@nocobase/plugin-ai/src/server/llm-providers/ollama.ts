@@ -81,7 +81,7 @@ export class OllamaEmbeddingProvider extends EmbeddingProvider {
 
   createEmbedding(): EmbeddingsInterface {
     return new OllamaEmbeddings({
-      baseUrl: this.baseUrl,
+      baseUrl: this.baseURL,
       model: this.model,
     });
   }

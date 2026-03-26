@@ -1,6 +1,8 @@
 ---
 displayName: "审计日志（废弃）"
 packageName: '@nocobase/plugin-audit-logs'
+title: "审计日志（废弃）"
+keywords: "审计日志（废弃）,插件,NocoBase"
 description: |
   该插件已废弃，请勿使用，未来将有新的审计日志插件。
 isFree: true

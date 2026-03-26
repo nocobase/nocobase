@@ -239,6 +239,19 @@ function smartParse(str) {
   }
 }
 
+function normalizeIndexedObjectToArray(value: any) {
+  if (!value || Array.isArray(value) || typeof value !== 'object') {
+    return value;
+  }
+
+  const keys = Object.keys(value);
+  if (!keys.length || !keys.every((key) => /^\d+$/.test(key))) {
+    return value;
+  }
+
+  return keys.sort((a, b) => Number(a) - Number(b)).map((key) => value[key]);
+}
+
 export function parseQuery(input: string): any {
   // 自带 query 处理的不太给力，需要用 qs 转一下
   const query = qs.parse(input, {
@@ -257,6 +270,10 @@ export function parseQuery(input: string): any {
 
   if (typeof query.filterByTk === 'string') {
     query.filterByTk = smartParse(query.filterByTk);
+  }
+
+  if (query.filterByTk) {
+    query.filterByTk = normalizeIndexedObjectToArray(query.filterByTk);
   }
 
   return query;
