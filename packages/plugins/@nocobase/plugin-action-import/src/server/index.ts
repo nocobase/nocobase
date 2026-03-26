@@ -7,20 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { Plugin } from '@nocobase/server';
 import { downloadXlsxTemplate, importXlsx } from './actions';
 import { importMiddleware } from './middleware';
 import { ImportError, ImportValidationError } from './errors';
-import { flowSchemaContribution } from './flow-schema-contributions';
 
 export { ImportError, ImportValidationError } from './errors';
 
 export class PluginActionImportServer extends Plugin {
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
-
   beforeLoad() {
     this.app.on('afterInstall', async () => {
       if (!this.app.db.getRepository('roles')) {

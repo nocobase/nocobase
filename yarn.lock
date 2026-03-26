@@ -1661,9 +1661,9 @@
     tslib "^2.6.2"
 
 "@azure/identity@^4.2.1":
-  version "4.13.0"
-  resolved "https://registry.npmmirror.com/@azure/identity/-/identity-4.13.0.tgz#b2be63646964ab59e0dc0eadca8e4f562fc31f96"
-  integrity sha512-uWC0fssc+hs1TGGVkkghiaFkkS7NkTxfnCH+Hdg+yTehTpMcehpok4PgUKKdyCH+9ldu6FhiHRv84Ntqj1vVcw==
+  version "4.13.1"
+  resolved "https://registry.npmmirror.com/@azure/identity/-/identity-4.13.1.tgz#bdc091658baa59a47ee9fbab487a4bb018729bc3"
+  integrity sha512-5C/2WD5Vb1lHnZS16dNQRPMjN6oV/Upba+C9nBIs15PmOi6A3ZGs4Lr2u60zw4S04gi+u3cEXiqTVP7M4Pz3kw==
   dependencies:
     "@azure/abort-controller" "^2.0.0"
     "@azure/core-auth" "^1.9.0"
@@ -1672,8 +1672,8 @@
     "@azure/core-tracing" "^1.0.0"
     "@azure/core-util" "^1.11.0"
     "@azure/logger" "^1.0.0"
-    "@azure/msal-browser" "^4.2.0"
-    "@azure/msal-node" "^3.5.0"
+    "@azure/msal-browser" "^5.5.0"
+    "@azure/msal-node" "^5.1.0"
     open "^10.1.0"
     tslib "^2.2.0"
 
@@ -1717,24 +1717,24 @@
     "@typespec/ts-http-runtime" "^0.3.0"
     tslib "^2.6.2"
 
-"@azure/msal-browser@^4.2.0":
-  version "4.29.1"
-  resolved "https://registry.npmmirror.com/@azure/msal-browser/-/msal-browser-4.29.1.tgz#01dc1d2f6ed325e32c03d3939c171f4f4d20a56d"
-  integrity sha512-1Vrt27du1cl4QHkzLc6L4aeXqliPIDIs5l/1I4hWWMXkXccY/EznJT1+pBdoVze0azTAI8sCyq5B4cBVYG1t9w==
+"@azure/msal-browser@^5.5.0":
+  version "5.6.1"
+  resolved "https://registry.npmmirror.com/@azure/msal-browser/-/msal-browser-5.6.1.tgz#9cd6c9aace346145aeff1fe87218088376b0230f"
+  integrity sha512-Ylmp8yngH7YRLV5mA1aF4CNS6WsJTPbVXaA0Tb1x1Gv/J3BM3hE4Q7nDaf7dRfU00FcxDBBudTjqlpH74ZSsgw==
   dependencies:
-    "@azure/msal-common" "15.16.1"
+    "@azure/msal-common" "16.4.0"
 
-"@azure/msal-common@15.16.1":
-  version "15.16.1"
-  resolved "https://registry.npmmirror.com/@azure/msal-common/-/msal-common-15.16.1.tgz#5df3697ec0d53d08278f2536d53bd52214e52c39"
-  integrity sha512-qxUG9TCl+TVSSX58onVDHDWrvT5CE0+NeeUAbkQqaESpSm79u5IePLnPWMMjCUnUR2zJd4+Bt9vioVRzLmJb2g==
+"@azure/msal-common@16.4.0":
+  version "16.4.0"
+  resolved "https://registry.npmmirror.com/@azure/msal-common/-/msal-common-16.4.0.tgz#f28c5e008d023f0a1bb8580de1d89aceb5852fac"
+  integrity sha512-twXt09PYtj1PffNNIAzQlrBd0DS91cdA6i1gAfzJ6BnPM4xNk5k9q/5xna7jLIjU3Jnp0slKYtucshGM8OGNAw==
 
-"@azure/msal-node@^3.5.0":
-  version "3.8.9"
-  resolved "https://registry.npmmirror.com/@azure/msal-node/-/msal-node-3.8.9.tgz#de54628ac708e30aa4d51b9b99b33ad139f725ac"
-  integrity sha512-jZ0pw/BbdEUWGhomCaAiVDfXRI/9K56m5hTNqB/CzcbZEYhXm5qpK1cDngN1iXfwSfmUMorOUQ2FC0dyuQ9uRg==
+"@azure/msal-node@^5.1.0":
+  version "5.1.1"
+  resolved "https://registry.npmmirror.com/@azure/msal-node/-/msal-node-5.1.1.tgz#92c5915e952b49f0906983a8a1d81bd57682a802"
+  integrity sha512-71grXU6+5hl+3CL3joOxlj/AW6rmhthuTlG0fRqsTrhPArQBpZuUFzCIlKOGdcafLUa/i1hBdV78ZxJdlvRA+g==
   dependencies:
-    "@azure/msal-common" "15.16.1"
+    "@azure/msal-common" "16.4.0"
     jsonwebtoken "^9.0.0"
     uuid "^8.3.0"
 
@@ -5654,7 +5654,7 @@
 
 "@langchain/mcp-adapters@^1.1.3":
   version "1.1.3"
-  resolved "https://registry.npmmirror.com/@langchain/mcp-adapters/-/mcp-adapters-1.1.3.tgz#3710411564328a7e77b7d7bc66244de6080ccceb"
+  resolved "https://registry.npmjs.org/@langchain/mcp-adapters/-/mcp-adapters-1.1.3.tgz#3710411564328a7e77b7d7bc66244de6080ccceb"
   integrity sha512-OPHIQNkTUJjnRj1pr+cp2nguMBZeF3Q1pVT1hCbgU7BrHgV7lov99wbU8po8Cm4zZzmeRtVO/T9X1SrDD1ogtQ==
   dependencies:
     "@modelcontextprotocol/sdk" "^1.26.0"
@@ -12317,6 +12317,11 @@ big-integer@^1.6.17, big-integer@^1.6.44, big-integer@^1.6.48:
   resolved "https://registry.npmmirror.com/big-integer/-/big-integer-1.6.52.tgz#60a887f3047614a8e1bffe5d7173490a97dc8c85"
   integrity sha512-QxD8cf2eVqJOOz63z6JIN9BzvVs/dlySa5HGSBH5xtR8dPteIRQnBxxKqkNTiT6jbDTF6jAfrd4oMcND9RGbQg==
 
+big.js@7.0.1:
+  version "7.0.1"
+  resolved "https://registry.npmmirror.com/big.js/-/big.js-7.0.1.tgz#c537c649ec6ea11d1306723d13c096ba199aadc4"
+  integrity sha512-iFgV784tD8kq4ccF1xtNMZnXeZzVuXWWM+ERFzKQjv+A5G9HC8CY3DuV45vgzFFcW+u2tIvmF95+AzWgs6BjCg==
+
 big.js@^5.2.2:
   version "5.2.2"
   resolved "https://registry.npmmirror.com/big.js/-/big.js-5.2.2.tgz#65f0af382f578bcdc742bd9c281e9cb2d7768328"
@@ -17627,7 +17632,7 @@ extend@^3.0.0, extend@^3.0.2, extend@~3.0.2:
 
 extended-eventsource@^1.7.0:
   version "1.7.0"
-  resolved "https://registry.npmmirror.com/extended-eventsource/-/extended-eventsource-1.7.0.tgz#8dd50a96aeca1571f407fc2d4bc08c234b140f19"
+  resolved "https://registry.npmjs.org/extended-eventsource/-/extended-eventsource-1.7.0.tgz#8dd50a96aeca1571f407fc2d4bc08c234b140f19"
   integrity sha512-s8rtvZuYcKBpzytHb5g95cHbZ1J99WeMnV18oKc5wKoxkHzlzpPc/bNAm7Da2Db0BDw0CAu1z3LpH+7UsyzIpw==
 
 external-editor@^3.0.3:
@@ -19054,7 +19059,7 @@ graphlib@^2.1.8:
 
 gray-matter@^4.0.3:
   version "4.0.3"
-  resolved "https://registry.npmmirror.com/gray-matter/-/gray-matter-4.0.3.tgz#e893c064825de73ea1f5f7d88c7a9f7274288798"
+  resolved "https://registry.npmjs.org/gray-matter/-/gray-matter-4.0.3.tgz#e893c064825de73ea1f5f7d88c7a9f7274288798"
   integrity sha512-5v6yZd4JK3eMI3FqqCouswVqwugaA9r4dNZB1wwcmrD02QkV5H0y7XBQW8QwQqEaZY1pM9aqORSORhJRdNK44Q==
   dependencies:
     js-yaml "^3.13.1"
@@ -30161,7 +30166,7 @@ sdk-base@^2.0.1:
 
 section-matter@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmmirror.com/section-matter/-/section-matter-1.0.0.tgz#e9041953506780ec01d59f292a19c7b850b84167"
+  resolved "https://registry.npmjs.org/section-matter/-/section-matter-1.0.0.tgz#e9041953506780ec01d59f292a19c7b850b84167"
   integrity sha512-vfD3pmTzGpufjScBh50YHKzEu2lxBWhVEHsNGoEXmCmn2hKGfeNLYMzCJpe8cD7gqX7TJluOVpBkAequ6dgMmA==
   dependencies:
     extend-shallow "^2.0.1"
@@ -31543,7 +31548,7 @@ strip-ansi@^7.0.1:
 
 strip-bom-string@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmmirror.com/strip-bom-string/-/strip-bom-string-1.0.0.tgz#e5211e9224369fbb81d633a2f00044dc8cedad92"
+  resolved "https://registry.npmjs.org/strip-bom-string/-/strip-bom-string-1.0.0.tgz#e5211e9224369fbb81d633a2f00044dc8cedad92"
   integrity sha512-uCC2VHvQRYu+lMh4My/sFNmF2klFymLX1wHJeXnbEJERpV/ZsVuonzerjfrGpIGF7LBVa1O7i9kjiWvJiFck8g==
 
 strip-bom@^3.0.0:

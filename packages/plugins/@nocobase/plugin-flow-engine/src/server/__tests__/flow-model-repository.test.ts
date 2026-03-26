@@ -196,7 +196,6 @@ describe('ui_schema repository', () => {
     const model1 = {
       uid: 'uid1',
       use: 'TestModel',
-      async: true,
       subModels: {
         sub1: {
           async: true, // 模拟异步加载
@@ -218,15 +217,11 @@ describe('ui_schema repository', () => {
     expect(model2).toBeDefined();
     expect(model2.uid).toBe('uid1');
     expect(model2.use).toBe('TestModel');
-    expect(model2.async).toBe(true);
     expect(model2.subModels).toBeDefined();
     expect(model2.subModels.sub1).toBeDefined();
-    expect(model2.subModels.sub1.async).toBe(true);
     expect(model2.subModels.sub1.use).toBe('TestSubModel');
     expect(model2.subModels.sub2).toBeDefined();
     expect(model2.subModels.sub2.length).toBe(2);
-    expect(model2.subModels.sub2[0].async).toBe(true);
-    expect(model2.subModels.sub2[1].async).toBe(false);
     expect(model2.subModels.sub2[0].use).toBe('TestSubModel2');
     expect(model2.subModels.sub2[1].use).toBe('TestSubModel3');
     expect(model2.subModels.sub2[0].uid).toBeDefined();
@@ -413,31 +408,5 @@ describe('ui_schema repository', () => {
     expect(model2.subModels.sub2[1].use).toBe('TestSubModel2');
     expect(model2.subModels.sub2[0].uid).toBe('sub2-2');
     expect(model2.subModels.sub2[1].uid).toBe('sub2-1');
-  });
-
-  it('should no-op when moving model to itself', async () => {
-    await repository.insertModel({
-      uid: 'uid1',
-      use: 'TestModel',
-      subModels: {
-        sub2: [
-          {
-            uid: 'sub2-1',
-            use: 'TestSubModel2',
-          },
-          {
-            uid: 'sub2-2',
-            use: 'TestSubModel3',
-          },
-        ],
-      },
-    });
-
-    const moved = await repository.move({ sourceId: 'sub2-1', targetId: 'sub2-1', position: 'after' });
-    expect(moved?.uid).toBe('sub2-1');
-
-    const model = await repository.findModelById('uid1');
-    expect(model.subModels.sub2[0].uid).toBe('sub2-1');
-    expect(model.subModels.sub2[1].uid).toBe('sub2-2');
   });
 });

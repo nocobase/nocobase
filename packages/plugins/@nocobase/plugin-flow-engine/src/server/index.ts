@@ -9,4 +9,3 @@
 
 export { default } from './plugin';
 export { FlowModelRepository } from './repository';
-export { FlowSchemaService } from './flow-schema-service';
