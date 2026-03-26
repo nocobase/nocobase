@@ -431,6 +431,6 @@ const QueryBuilderInner: React.FC<{
   );
 });
 
-export const QueryBuilder = React.forwardRef<QueryBuilderRef, Record<string, never>>((_props, ref) => {
+export const QueryBuilder = React.forwardRef<QueryBuilderRef>((_props, ref) => {
   return <QueryBuilderInner forwardedRef={ref} />;
 });

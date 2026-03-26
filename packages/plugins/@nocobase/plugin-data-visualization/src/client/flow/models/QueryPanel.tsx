@@ -13,7 +13,7 @@ import { SQLEditor } from './SQLEditor';
 import { Radio, Button, Space } from 'antd';
 import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined, RightSquareOutlined } from '@ant-design/icons';
-import { QueryBuilder } from './QueryBuilder';
+import { QueryBuilder, QueryBuilderRef } from './QueryBuilder';
 import { ResultPanel } from './ResultPanel';
 import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
@@ -47,7 +47,7 @@ export const QueryPanel: React.FC = observer(() => {
   const form = useForm();
   const ctx = useFlowSettingsContext<any>();
   const mode = form?.values?.query?.mode || 'builder';
-  const qbRef = React.useRef(null);
+  const qbRef = React.useRef<QueryBuilderRef>(null);
 
   const [showResult, setShowResult] = useState(false);
   const [running, setRunning] = useState(false);
