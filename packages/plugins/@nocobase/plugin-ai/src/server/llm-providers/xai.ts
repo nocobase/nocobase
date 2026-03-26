@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ChatOpenAI } from '@langchain/openai';
+import { ChatXAI } from '@langchain/xai';
 import { LLMProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 
 export class XAIProvider extends LLMProvider {
-  declare chatModel: ChatOpenAI;
+  declare chatModel: ChatXAI;
 
   get baseURL() {
     return 'https://api.x.ai/v1';
@@ -46,7 +46,7 @@ export class XAIProvider extends LLMProvider {
       responseFormatOptions['json_schema'] = schema;
     }
 
-    return new ChatOpenAI({
+    return new ChatXAI({
       apiKey,
       ...filteredModelOptions,
       modelKwargs: {
