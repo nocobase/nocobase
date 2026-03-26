@@ -89,13 +89,7 @@ describe('FlowEngine', () => {
     class MockFlowModelRepository implements IFlowModelRepository {
       // 使用可配置返回值，便于不同用例控制 findOne 行为
       findOneResult: any = null;
-      ensureResult: any = null;
-      ensureCalls = 0;
       save = vi.fn(async (model: FlowModel) => ({ success: true, uid: model.uid }));
-      async ensure() {
-        this.ensureCalls += 1;
-        return this.ensureResult ? JSON.parse(JSON.stringify(this.ensureResult)) : null;
-      }
       async findOne() {
         // 返回深拷贝，避免被测试过程修改
         return this.findOneResult ? JSON.parse(JSON.stringify(this.findOneResult)) : null;
@@ -193,48 +187,6 @@ describe('FlowEngine', () => {
       const mounted = (parent.subModels as any)['info'];
       expect(Array.isArray(mounted)).toBe(false);
       expect(mounted?.uid).toBe('c3');
-    });
-
-    it('should call repository.ensure with repository context preserved', async () => {
-      const parent = engine.createModel({ uid: 'p4', use: 'FlowModel' });
-
-      repo.ensureResult = {
-        uid: 'c4',
-        use: 'FlowModel',
-        parentId: parent.uid,
-        subKey: 'page',
-        subType: 'object',
-      };
-
-      const child = await engine.loadOrCreateModel({
-        parentId: parent.uid,
-        subKey: 'page',
-        subType: 'object',
-        use: 'FlowModel',
-        async: true,
-      });
-
-      expect(child).toBeTruthy();
-      expect(repo.ensureCalls).toBe(1);
-      expect((parent.subModels as any).page).toBe(child);
-      expect(repo.save).not.toHaveBeenCalled();
-    });
-
-    it('should not persist through ensure when skipSave is true', async () => {
-      repo.findOneResult = null;
-
-      const model = await engine.loadOrCreateModel(
-        {
-          uid: 'c5',
-          use: 'FlowModel',
-        },
-        { skipSave: true },
-      );
-
-      expect(model).toBeTruthy();
-      expect(model?.uid).toBe('c5');
-      expect(repo.ensureCalls).toBe(0);
-      expect(repo.save).not.toHaveBeenCalled();
     });
   });
 });

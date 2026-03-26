@@ -51,6 +51,7 @@ export type SanitizeAssociationValuesOptions = {
   collection?: Collection;
   db?: any;
   database?: any;
+  state?: Record<string, any>;
   timezone?: string;
   userProvider?: UserProvider;
 };
@@ -84,6 +85,7 @@ export async function sanitizeAssociationValues(options: SanitizeAssociationValu
     timezone: options.timezone,
     userProvider: options.userProvider,
     state: {
+      ...(options.state || {}),
       currentRole: options.currentRole,
       currentRoles: options.roles,
       currentUser: options.currentUser,
@@ -144,6 +146,7 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     roles,
     currentRole: ctx.state.currentRole,
     currentUser: ctx.state.currentUser,
+    state: _.clone(ctx.state),
     aclParams: ctx.permission?.can?.params,
     timezone,
     userProvider: createUserProvider({
