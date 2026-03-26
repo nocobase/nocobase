@@ -9,7 +9,7 @@
 
 import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import PQueue from 'p-queue';
-import Application, { AppSupervisor, isTransient } from '@nocobase/server';
+import Application, { AppSupervisor } from '@nocobase/server';
 import type { AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from '@nocobase/server';
 
 export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
@@ -73,24 +73,17 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   private async _bootStrapApp(appName: string, options = {}) {
-    const transient = isTransient();
-    if (!transient) {
-      await this.setAppStatus(appName, 'initializing');
-    }
+    await this.setAppStatus(appName, 'initializing');
     await this.supervisor.initApp({ appName, options });
 
     if (!this.hasApp(appName)) {
-      if (!transient) {
-        await this.setAppStatus(appName, 'not_found');
-      }
+      await this.setAppStatus(appName, 'not_found');
       return;
     }
 
-    if (isServing) {
-      const appStatus = await this.getAppStatus(appName);
-      if (!appStatus || appStatus === 'initializing') {
-        await this.setAppStatus(appName, 'initialized');
-      }
+    const appStatus = await this.getAppStatus(appName);
+    if (!appStatus || appStatus === 'initializing') {
+      await this.setAppStatus(appName, 'initialized');
     }
   }
 
