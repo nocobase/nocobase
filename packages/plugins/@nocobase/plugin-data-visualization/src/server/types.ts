@@ -38,6 +38,7 @@ export type QueryParams = Partial<{
   dimensions: DimensionProps[];
   orders: OrderProps[];
   filter: any;
+  contextParams: Record<string, any>;
   limit: number;
   offset: number;
   sql: {

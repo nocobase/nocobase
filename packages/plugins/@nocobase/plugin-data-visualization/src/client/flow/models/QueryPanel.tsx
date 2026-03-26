@@ -101,16 +101,6 @@ export const QueryPanel: React.FC = observer(() => {
     }
   }, [mode, form]);
 
-  // 图形化模式
-  const handleBuilderChange = async (next: any) => {
-    const query = form?.values?.query || {};
-    form?.setValuesIn?.('query', {
-      ...next,
-      mode: query.mode,
-      sql: query.sql,
-    });
-  };
-
   // SQL 模式
   // const handleSqlChange = async (sql: string) => {
   //   form?.setValuesIn?.('query.sql', sql);
@@ -190,7 +180,7 @@ export const QueryPanel: React.FC = observer(() => {
             <ResultPanel />
           </div>
         ) : mode === 'builder' ? (
-          <QueryBuilder ref={qbRef} initialValues={form?.values?.query} onChange={handleBuilderChange} />
+          <QueryBuilder ref={qbRef} />
         ) : (
           <Field name="sql" component={[SQLEditor]} />
         )}

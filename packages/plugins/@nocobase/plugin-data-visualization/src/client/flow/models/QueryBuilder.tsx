@@ -8,328 +8,429 @@
  */
 
 import React from 'react';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
+import { createCollectionContextMeta, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { Space, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { useDataSourceManager, useCompile } from '@nocobase/client';
+import { FilterGroup, VariableFilterItem, useCompile, useDataSourceManager } from '@nocobase/client';
+import { useForm as useFormilyForm } from '@formily/react';
 import {
   getFieldOptions,
   getCollectionOptions,
   getFormatterOptionsByField,
   buildOrderFieldOptions,
+  validateQuery,
 } from './QueryBuilder.service';
-import { appendColon, debugLog } from '../utils';
-import AntdFilterSelector from '../components/AntdFilterSelector';
+import { appendColon } from '../utils';
 
 export type QueryBuilderRef = {
   validate: () => Promise<any>;
 };
 
-export const QueryBuilder = React.forwardRef<
-  QueryBuilderRef,
-  {
-    initialValues?: any;
-    onChange?: (v: any) => void;
-  }
->(({ initialValues, onChange }, ref) => {
+type QueryValue = {
+  collectionPath?: string[];
+  measures?: any[];
+  dimensions?: any[];
+  filter?: { logic: '$and' | '$or'; items: any[] };
+  orders?: any[];
+  limit?: number;
+  offset?: number;
+};
+
+const EMPTY_FILTER = {
+  logic: '$and' as const,
+  items: [],
+};
+
+const QueryFilter: React.FC<{
+  value?: QueryValue['filter'];
+  onChange?: (value: QueryValue['filter']) => void;
+  collectionPath?: string[];
+}> = observer(({ value, onChange, collectionPath }) => {
+  const ctx = useFlowSettingsContext<any>();
+  const model = ctx.model;
+
+  React.useEffect(() => {
+    const [dataSourceKey, collectionName] = collectionPath || [];
+    if (dataSourceKey && collectionName && model) {
+      const collection = model?.context?.dataSourceManager?.getCollection(dataSourceKey, collectionName);
+      if (collection) {
+        model.context.defineProperty('collection', {
+          get: () => collection,
+          meta: createCollectionContextMeta(() => collection, ctx.t('Current collection')),
+        });
+      }
+    }
+  }, [collectionPath, ctx, model]);
+
+  return (
+    <FilterGroup
+      value={value || { logic: '$and', items: [] }}
+      onChange={onChange}
+      FilterItem={(props) => <VariableFilterItem {...props} model={model} rightAsVariable />}
+    />
+  );
+});
+
+function ensureQueryShape(query?: QueryValue): Required<QueryValue> {
+  return {
+    collectionPath: query?.collectionPath || [],
+    measures: query?.measures || [],
+    dimensions: query?.dimensions || [],
+    filter: query?.filter || EMPTY_FILTER,
+    orders: query?.orders || [],
+    limit: query?.limit as any,
+    offset: query?.offset as any,
+  };
+}
+
+const QueryBuilderInner: React.FC<{
+  forwardedRef: React.ForwardedRef<QueryBuilderRef>;
+}> = observer(({ forwardedRef }) => {
   const t = useT();
-  const [form] = Form.useForm();
+  const stepForm = useFormilyForm();
   const ctx = useFlowSettingsContext<any>();
   const lang = ctx?.i18n?.language;
-
-  React.useImperativeHandle(ref, () => ({
-    validate: () => form.validateFields(),
-  }));
-
-  // 从内表单读取 collectionPath，驱动字段树
-  const collectionPath = Form.useWatch('collectionPath', form);
-
-  // 构建集合选项（改为 service 纯函数）
   const dm = useDataSourceManager();
   const compile = useCompile();
+
+  const query = ensureQueryShape(stepForm.values?.query);
+  const collectionPath = query.collectionPath;
+  const measuresValue = query.measures;
+  const dimensionsValue = query.dimensions;
+
+  React.useImperativeHandle(
+    forwardedRef,
+    () => ({
+      validate: async () => {
+        const candidate = { ...(stepForm.values?.query || {}), mode: 'builder' };
+        const { success, message } = validateQuery(candidate);
+        if (!success) {
+          throw new Error(message);
+        }
+      },
+    }),
+    [stepForm],
+  );
+
   const collectionOptions = React.useMemo(() => getCollectionOptions(dm, compile), [dm, compile]);
   const fieldOptions = React.useMemo(() => getFieldOptions(dm, compile, collectionPath), [dm, compile, collectionPath]);
-
-  const measuresValue = Form.useWatch('measures', form);
-  const dimensionsValue = Form.useWatch('dimensions', form);
-
   const orderFieldOptions = React.useMemo(
     () => buildOrderFieldOptions(fieldOptions, dimensionsValue, measuresValue),
     [dimensionsValue, measuresValue, fieldOptions],
   );
 
-  // 切换集合后，清理依赖旧集合的字段配置
-  const onCollectionChange = (val: any) => {
-    form.setFieldsValue({
-      collectionPath: val,
-      measures: [],
-      dimensions: [],
-      orders: [],
-      filter: undefined,
-    });
-    onChange?.(form.getFieldsValue(true));
-  };
+  const setQueryValue = React.useCallback(
+    (key: keyof QueryValue, value: any) => {
+      stepForm.setValuesIn?.(`query.${key}`, value);
+    },
+    [stepForm],
+  );
 
-  const handleValuesChange = (_: any, allValues: any) => {
-    debugLog('---handleValuesChange', allValues);
-    onChange?.(allValues);
-  };
+  const moveItem = React.useCallback(
+    (key: 'measures' | 'dimensions' | 'orders', index: number, dir: -1 | 1) => {
+      const arr = [...(ensureQueryShape(stepForm.values?.query)[key] || [])];
+      const target = index + dir;
+      if (target < 0 || target >= arr.length) return;
+      const [item] = arr.splice(index, 1);
+      arr.splice(target, 0, item);
+      setQueryValue(key, arr);
+    },
+    [setQueryValue, stepForm],
+  );
 
-  // 工具：数组上移/下移
-  const moveItem = (name: string, index: number, dir: -1 | 1) => {
-    const arr = form.getFieldValue(name) || [];
-    const target = index + dir;
-    if (target < 0 || target >= arr.length) return;
-    const next = arr.slice();
-    const [item] = next.splice(index, 1);
-    next.splice(target, 0, item);
-    form.setFieldsValue({ [name]: next });
-    onChange?.({ ...(form.getFieldsValue(true) || {}), [name]: next });
-  };
+  const updateListItem = React.useCallback(
+    (key: 'measures' | 'dimensions' | 'orders', index: number, patch: Record<string, any>) => {
+      const arr = [...(ensureQueryShape(stepForm.values?.query)[key] || [])];
+      arr[index] = { ...(arr[index] || {}), ...patch };
+      setQueryValue(key, arr);
+    },
+    [setQueryValue, stepForm],
+  );
+
+  const removeListItem = React.useCallback(
+    (key: 'measures' | 'dimensions' | 'orders', index: number) => {
+      const arr = [...(ensureQueryShape(stepForm.values?.query)[key] || [])];
+      arr.splice(index, 1);
+      setQueryValue(key, arr);
+    },
+    [setQueryValue, stepForm],
+  );
+
+  const addListItem = React.useCallback(
+    (key: 'measures' | 'dimensions' | 'orders', initial: Record<string, any> = {}) => {
+      const arr = [...(ensureQueryShape(stepForm.values?.query)[key] || [])];
+      arr.push(initial);
+      setQueryValue(key, arr);
+    },
+    [setQueryValue, stepForm],
+  );
+
+  const handleCollectionChange = React.useCallback(
+    (val: any) => {
+      stepForm.setValuesIn?.('query', {
+        ...(stepForm.values?.query || {}),
+        collectionPath: val,
+        measures: [],
+        dimensions: [],
+        orders: [],
+        filter: { logic: '$and', items: [] },
+      });
+    },
+    [stepForm],
+  );
 
   return (
     <div style={{ paddingTop: 8 }}>
-      <Form form={form} layout="vertical" initialValues={initialValues} onValuesChange={handleValuesChange}>
-        {/* 设置：数据源/集合 */}
-        <Form.Item
-          name="collectionPath"
-          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Collection'), lang)}</span>}
-          rules={[{ required: true }]}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Collection'), lang)}</div>
+        <Cascader
+          showSearch
+          placeholder={t('Collection')}
+          options={collectionOptions}
+          value={collectionPath}
+          onChange={handleCollectionChange}
+          style={{ width: 222 }}
+        />
+      </div>
+
+      <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Measures'), lang)}</div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ overflow: 'auto' }}>
+          {measuresValue.map((item, idx) => (
+            <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={`measure-${idx}`}>
+              <Cascader
+                style={{ minWidth: 114 }}
+                placeholder={t('Select Field')}
+                fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                options={fieldOptions}
+                value={item?.field}
+                onChange={(value) => updateListItem('measures', idx, { field: value })}
+              />
+              <Select
+                style={{ minWidth: 75 }}
+                placeholder={t('Aggregation')}
+                options={[
+                  { label: t('Sum'), value: 'sum' },
+                  { label: t('Count'), value: 'count' },
+                  { label: t('Avg'), value: 'avg' },
+                  { label: t('Max'), value: 'max' },
+                  { label: t('Min'), value: 'min' },
+                ]}
+                value={item?.aggregation}
+                onChange={(value) => updateListItem('measures', idx, { aggregation: value })}
+              />
+              <Input
+                style={{ minWidth: 75 }}
+                placeholder={t('Alias')}
+                value={item?.alias}
+                onChange={(e) => updateListItem('measures', idx, { alias: e.target.value })}
+              />
+              <Checkbox
+                style={{ minWidth: 60 }}
+                checked={!!item?.distinct}
+                onChange={(e) => updateListItem('measures', idx, { distinct: e.target.checked })}
+              >
+                {t('Distinct')}
+              </Checkbox>
+              <Button
+                size="small"
+                type="text"
+                onClick={() => removeListItem('measures', idx)}
+                icon={<DeleteOutlined />}
+              />
+              {measuresValue.length > 1 && (
+                <>
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={idx === 0}
+                    onClick={() => moveItem('measures', idx, -1)}
+                    icon={<ArrowUpOutlined />}
+                  />
+                  <Button
+                    size="small"
+                    type="text"
+                    disabled={idx === measuresValue.length - 1}
+                    onClick={() => moveItem('measures', idx, 1)}
+                    icon={<ArrowDownOutlined />}
+                  />
+                </>
+              )}
+            </Space>
+          ))}
+        </div>
+        <Button
+          type="link"
+          icon={<PlusOutlined />}
+          onClick={() => addListItem('measures')}
+          style={{ marginTop: -8, padding: 0 }}
         >
-          <Cascader
-            showSearch
-            placeholder={t('Collection')}
-            options={collectionOptions}
-            onChange={onCollectionChange}
-            style={{ width: 222 }}
-          />
-        </Form.Item>
+          {t('Add field')}
+        </Button>
+      </div>
 
-        {/* Measures */}
-        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Measures'), lang)}</div>
-        <div style={{ marginBottom: 16 }}>
-          <Form.List name="measures">
-            {(fields, { add, remove }) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {fields.map((field, idx) => (
-                    <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
-                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
-                        <Cascader
-                          style={{ minWidth: 114 }}
-                          placeholder={t('Select Field')}
-                          fieldNames={{ label: 'title', value: 'name', children: 'children' }}
-                          options={fieldOptions}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
-                        <Select
-                          style={{ minWidth: 75 }}
-                          placeholder={t('Aggregation')}
-                          options={[
-                            { label: t('Sum'), value: 'sum' },
-                            { label: t('Count'), value: 'count' },
-                            { label: t('Avg'), value: 'avg' },
-                            { label: t('Max'), value: 'max' },
-                            { label: t('Min'), value: 'min' },
-                          ]}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                        <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
-                      </Form.Item>
-                      <Form.Item name={[field.name, 'distinct']} valuePropName="checked" style={{ marginBottom: 0 }}>
-                        <Checkbox style={{ minWidth: 60 }}>{t('Distinct')}</Checkbox>
-                      </Form.Item>
-                      <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
-                      {fields.length > 1 && (
-                        <>
-                          <Button
-                            size="small"
-                            type="text"
-                            disabled={idx === 0}
-                            onClick={() => moveItem('measures', idx, -1)}
-                            icon={<ArrowUpOutlined />}
-                          />
-                          <Button
-                            size="small"
-                            type="text"
-                            disabled={idx === fields.length - 1}
-                            onClick={() => moveItem('measures', idx, 1)}
-                            icon={<ArrowDownOutlined />}
-                          />
-                        </>
-                      )}
-                    </Space>
-                  ))}
-                </div>
+      <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Dimensions'), lang)}</div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ overflow: 'auto' }}>
+          {dimensionsValue.map((item, idx) => {
+            const fmtOptions = getFormatterOptionsByField(dm, collectionPath, item?.field);
+            return (
+              <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={`dimension-${idx}`}>
+                <Cascader
+                  style={{ minWidth: 114 }}
+                  placeholder={t('Select Field')}
+                  fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                  options={fieldOptions}
+                  value={item?.field}
+                  onChange={(value) => updateListItem('dimensions', idx, { field: value })}
+                />
+                {fmtOptions?.length ? (
+                  <Select
+                    placeholder={t('Format')}
+                    popupMatchSelectWidth={false}
+                    options={fmtOptions.map((o: any) => ({ label: o.label, value: o.value }))}
+                    value={item?.format}
+                    onChange={(value) => updateListItem('dimensions', idx, { format: value })}
+                  />
+                ) : null}
+                <Input
+                  style={{ minWidth: 75 }}
+                  placeholder={t('Alias')}
+                  value={item?.alias}
+                  onChange={(e) => updateListItem('dimensions', idx, { alias: e.target.value })}
+                />
                 <Button
-                  type="link"
-                  icon={<PlusOutlined />}
-                  onClick={() => add({})}
-                  style={{ marginTop: -8, padding: 0 }}
-                >
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </Form.List>
-        </div>
-
-        {/* Dimensions 标题 */}
-        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Dimensions'), lang)}</div>
-        <div style={{ marginBottom: 16 }}>
-          <Form.List name="dimensions">
-            {(fields, { add, remove }) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {fields.map((field, idx) => {
-                    const fieldName = field.name;
-                    const dimField = form.getFieldValue(['dimensions', fieldName, 'field']);
-                    const fmtOptions = getFormatterOptionsByField(dm, collectionPath, dimField);
-                    return (
-                      <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
-                        <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
-                          <Cascader
-                            style={{ minWidth: 114 }}
-                            placeholder={t('Select Field')}
-                            fieldNames={{ label: 'title', value: 'name', children: 'children' }}
-                            options={fieldOptions}
-                          />
-                        </Form.Item>
-                        {/* 仅当 fmtOptions 有值时展示 Format 选择项 */}
-                        {fmtOptions?.length ? (
-                          <Form.Item name={[field.name, 'format']} style={{ marginBottom: 0 }}>
-                            <Select
-                              placeholder={t('Format')}
-                              popupMatchSelectWidth={false}
-                              options={fmtOptions.map((o: any) => ({ label: o.label, value: o.value }))}
-                            />
-                          </Form.Item>
-                        ) : null}
-                        <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                          <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
-                        </Form.Item>
-                        <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={idx === 0}
-                          onClick={() => moveItem('dimensions', idx, -1)}
-                          icon={<ArrowUpOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={idx === fields.length - 1}
-                          onClick={() => moveItem('dimensions', idx, 1)}
-                          icon={<ArrowDownOutlined />}
-                        />
-                      </Space>
-                    );
-                  })}
-                </div>
+                  size="small"
+                  type="text"
+                  onClick={() => removeListItem('dimensions', idx)}
+                  icon={<DeleteOutlined />}
+                />
                 <Button
-                  type="link"
-                  icon={<PlusOutlined />}
-                  onClick={() => add({})}
-                  style={{ marginTop: -8, padding: 0 }}
-                >
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </Form.List>
-        </div>
-
-        {/* Filter 标题 */}
-        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Filter'), lang)}</div>
-        <div style={{ marginBottom: 16 }}>
-          <Form.Item name="filter" style={{ overflow: 'auto' }}>
-            <AntdFilterSelector model={ctx.model} collectionPath={collectionPath} />
-          </Form.Item>
-        </div>
-
-        {/* Sort */}
-        <div style={{ fontWeight: 500, marginBottom: 4 }}>{appendColon(t('Sort'), lang)}</div>
-        <div style={{ marginBottom: 16 }}>
-          <Form.List name="orders">
-            {(fields, { add, remove }) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {fields.map((field, idx) => (
-                    <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }} key={field.key}>
-                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
-                        <Cascader
-                          placeholder={t('Select Field')}
-                          fieldNames={{ label: 'title', value: 'name', children: 'children' }}
-                          options={orderFieldOptions}
-                          style={{ minWidth: 114 }}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[field.name, 'order']} style={{ marginBottom: 0 }}>
-                        <Select
-                          defaultValue="ASC"
-                          style={{ minWidth: 100 }}
-                          options={[
-                            { label: 'ASC', value: 'ASC' },
-                            { label: 'DESC', value: 'DESC' },
-                          ]}
-                        />
-                      </Form.Item>
-                      <Form.Item name={[field.name, 'nulls']} style={{ marginBottom: 0 }}>
-                        <Select
-                          defaultValue="default"
-                          style={{ minWidth: 110 }}
-                          options={[
-                            { label: t('Default'), value: 'default' },
-                            { label: t('NULLS first'), value: 'first' },
-                            { label: t('NULLS last'), value: 'last' },
-                          ]}
-                        />
-                      </Form.Item>
-                      <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
-                      <Button
-                        size="small"
-                        type="text"
-                        disabled={idx === 0}
-                        onClick={() => moveItem('orders', idx, -1)}
-                        icon={<ArrowUpOutlined />}
-                      />
-                      <Button
-                        size="small"
-                        type="text"
-                        disabled={idx === fields.length - 1}
-                        onClick={() => moveItem('orders', idx, 1)}
-                        icon={<ArrowDownOutlined />}
-                      />
-                    </Space>
-                  ))}
-                </div>
+                  size="small"
+                  type="text"
+                  disabled={idx === 0}
+                  onClick={() => moveItem('dimensions', idx, -1)}
+                  icon={<ArrowUpOutlined />}
+                />
                 <Button
-                  type="link"
-                  icon={<PlusOutlined />}
-                  onClick={() => add({})}
-                  style={{ marginTop: -8, padding: 0 }}
-                >
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </Form.List>
+                  size="small"
+                  type="text"
+                  disabled={idx === dimensionsValue.length - 1}
+                  onClick={() => moveItem('dimensions', idx, 1)}
+                  icon={<ArrowDownOutlined />}
+                />
+              </Space>
+            );
+          })}
         </div>
+        <Button
+          type="link"
+          icon={<PlusOutlined />}
+          onClick={() => addListItem('dimensions')}
+          style={{ marginTop: -8, padding: 0 }}
+        >
+          {t('Add field')}
+        </Button>
+      </div>
 
-        {/* Limit */}
-        <Form.Item name="limit" label={<span style={{ fontWeight: 500 }}>{appendColon(t('Limit'), lang)}</span>}>
-          <InputNumber min={0} style={{ width: 120 }} />
-        </Form.Item>
+      <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Filter'), lang)}</div>
+      <div style={{ marginBottom: 16, overflow: 'auto' }}>
+        <QueryFilter
+          value={query.filter}
+          onChange={(value) => setQueryValue('filter', value)}
+          collectionPath={collectionPath}
+        />
+      </div>
 
-        {/* Offset */}
-        <Form.Item name="offset" label={<span style={{ fontWeight: 500 }}>{appendColon(t('Offset'), lang)}</span>}>
-          <InputNumber min={0} style={{ width: 120 }} />
-        </Form.Item>
-      </Form>
+      <div style={{ fontWeight: 500, marginBottom: 4 }}>{appendColon(t('Sort'), lang)}</div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ overflow: 'auto' }}>
+          {query.orders.map((item, idx) => (
+            <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }} key={`order-${idx}`}>
+              <Cascader
+                placeholder={t('Select Field')}
+                fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                options={orderFieldOptions}
+                style={{ minWidth: 114 }}
+                value={item?.field}
+                onChange={(value) => updateListItem('orders', idx, { field: value })}
+              />
+              <Select
+                style={{ minWidth: 100 }}
+                options={[
+                  { label: 'ASC', value: 'ASC' },
+                  { label: 'DESC', value: 'DESC' },
+                ]}
+                value={item?.order || 'ASC'}
+                onChange={(value) => updateListItem('orders', idx, { order: value })}
+              />
+              <Select
+                style={{ minWidth: 110 }}
+                options={[
+                  { label: t('Default'), value: 'default' },
+                  { label: t('NULLS first'), value: 'first' },
+                  { label: t('NULLS last'), value: 'last' },
+                ]}
+                value={item?.nulls || 'default'}
+                onChange={(value) => updateListItem('orders', idx, { nulls: value })}
+              />
+              <Button
+                size="small"
+                type="text"
+                onClick={() => removeListItem('orders', idx)}
+                icon={<DeleteOutlined />}
+              />
+              <Button
+                size="small"
+                type="text"
+                disabled={idx === 0}
+                onClick={() => moveItem('orders', idx, -1)}
+                icon={<ArrowUpOutlined />}
+              />
+              <Button
+                size="small"
+                type="text"
+                disabled={idx === query.orders.length - 1}
+                onClick={() => moveItem('orders', idx, 1)}
+                icon={<ArrowDownOutlined />}
+              />
+            </Space>
+          ))}
+        </div>
+        <Button
+          type="link"
+          icon={<PlusOutlined />}
+          onClick={() => addListItem('orders')}
+          style={{ marginTop: -8, padding: 0 }}
+        >
+          {t('Add field')}
+        </Button>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Limit'), lang)}</div>
+        <InputNumber
+          min={0}
+          style={{ width: 120 }}
+          value={query.limit}
+          onChange={(value) => setQueryValue('limit', value)}
+        />
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Offset'), lang)}</div>
+        <InputNumber
+          min={0}
+          style={{ width: 120 }}
+          value={query.offset}
+          onChange={(value) => setQueryValue('offset', value)}
+        />
+      </div>
     </div>
   );
+});
+
+export const QueryBuilder = React.forwardRef<QueryBuilderRef, Record<string, never>>((_props, ref) => {
+  return <QueryBuilderInner forwardedRef={ref} />;
 });

@@ -8,7 +8,12 @@
  */
 
 import { ChildPageModel, DataBlockModel, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
-import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
+import {
+  collectContextParamsForTemplate,
+  createCollectionContextMeta,
+  SQLResource,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button } from 'antd';
@@ -96,6 +101,20 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.getStepParams('chartSettings', 'configure');
   }
 
+  async buildQueryRequest(query: any) {
+    if (!query || query?.mode === 'sql') {
+      return query;
+    }
+    const contextParams = await collectContextParamsForTemplate(this.context, query);
+    if (!contextParams) {
+      return query;
+    }
+    return {
+      ...query,
+      contextParams,
+    };
+  }
+
   async onInit(options) {
     super.onInit(options);
     this.context.defineProperty('chartRef', {
@@ -128,7 +147,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       const initParams = this.getResourceSettingsInitParams();
       const initQuery = initParams?.query;
       if (initQuery) {
-        this.applyQuery(initQuery);
+        this.applyQuery(await this.buildQueryRequest(initQuery));
         await this.resource.refresh();
       }
     } catch (e) {
@@ -286,8 +305,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.setStepParams('chartSettings', 'configure', values);
 
     if (needQueryData) {
-      this.applyQuery(values.query);
       const isSQL = values?.query?.mode === 'sql';
+      this.applyQuery(await this.buildQueryRequest(values.query));
       // 预览场景：SQL 模式开启 debug（调用 run）
       if (isSQL) {
         (this.resource as SQLResource).setDebug(true);
@@ -432,7 +451,7 @@ ChartBlockModel.registerFlow({
       useRawParams: true, // 不默认解析配置里的变量
       async handler(ctx, params) {
         debugLog('---setting flow handler', params);
-        let { query } = params;
+        const { query } = params;
         const { chart } = params;
         if (!query || !chart) {
           return;
@@ -440,11 +459,7 @@ ChartBlockModel.registerFlow({
 
         try {
           // 数据部分
-          if (query.mode !== 'sql') {
-            // builder 模式下变量解析；sql 模式下交给 sqlResource 处理解析
-            query = await ctx.resolveJsonTemplate(query);
-          }
-          ctx.model.applyQuery(query);
+          ctx.model.applyQuery(await ctx.model.buildQueryRequest(query));
 
           // 图表部分
           await ctx.model.applyChartOptions({
