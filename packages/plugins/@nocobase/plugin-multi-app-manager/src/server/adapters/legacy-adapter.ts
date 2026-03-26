@@ -58,7 +58,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   async setAppStatus(appName: string, status: AppStatus, options = {}) {
-    if (!isTransient()) {
+    if (isTransient()) {
       return;
     }
     if (this.appStatus[appName] === status) {
