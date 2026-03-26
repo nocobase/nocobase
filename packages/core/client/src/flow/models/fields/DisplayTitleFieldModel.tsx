@@ -27,9 +27,10 @@ export class DisplayTitleFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, fieldNames, overflowMode, width } = this.props;
+    const { value, fieldNames, overflowMode, width, style, className } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
     const typographyProps = {
+      className,
       ellipsis:
         overflowMode === 'ellipsis'
           ? {
@@ -47,6 +48,7 @@ export class DisplayTitleFieldModel extends FieldModel {
             }
           : false, // 处理省略显示
       style: {
+        ...(style || {}),
         whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
         width: width || 'auto',
       },

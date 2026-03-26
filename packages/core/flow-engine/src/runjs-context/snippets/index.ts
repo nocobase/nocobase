@@ -49,6 +49,7 @@ const snippets: Record<string, RunJSSnippetLoader | undefined> = {
   'scene/detail/status-tag': () => import('./scene/detail/status-tag.snippet'),
   'scene/detail/relative-time': () => import('./scene/detail/relative-time.snippet'),
   'scene/detail/percentage-bar': () => import('./scene/detail/percentage-bar.snippet'),
+  'scene/detail/set-field-style': () => import('./scene/detail/set-field-style.snippet'),
   // scene/form
   'scene/form/render-basic': () => import('./scene/form/render-basic.snippet'),
   'scene/form/set-field-value': () => import('./scene/form/set-field-value.snippet'),
@@ -67,6 +68,7 @@ const snippets: Record<string, RunJSSnippetLoader | undefined> = {
   'scene/table/iterate-selected-rows': () => import('./scene/table/iterate-selected-rows.snippet'),
   'scene/table/destroy-selected': () => import('./scene/table/destroy-selected.snippet'),
   'scene/table/export-selected-json': () => import('./scene/table/export-selected-json.snippet'),
+  'scene/table/set-cell-style': () => import('./scene/table/set-cell-style.snippet'),
 };
 
 export default snippets;
@@ -125,10 +127,19 @@ function normalizeScenes(def: any, key: string): string[] {
   return [];
 }
 
+function normalizeSceneGroup(scene: string): string {
+  const mapping: Record<string, string> = {
+    detailFieldEvent: 'detail',
+    tableFieldEvent: 'table',
+    formFieldEvent: 'form',
+  };
+  return mapping[scene] || scene;
+}
+
 function computeGroups(def: any, key: string): string[] {
   const scenes = normalizeScenes(def, key);
   if (scenes.length) {
-    return scenes.map((scene) => `scene/${scene}`);
+    return Array.from(new Set(scenes.map((scene) => `scene/${normalizeSceneGroup(scene)}`)));
   }
   const parts = key.split('/');
   if (!parts.length) return [];
