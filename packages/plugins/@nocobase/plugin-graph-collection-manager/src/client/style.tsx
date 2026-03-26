@@ -268,19 +268,6 @@ const useStyles = createStyles(({ token, css }) => {
         height: calc(100vh) !important;
         width: calc(100vw) !important;
       }
-      /* Firefox-specific fixes for SVG foreignObject rendering */
-      @supports (-moz-appearance: none) {
-        .x6-graph {
-          foreignObject {
-            display: block;
-          }
-          .x6-node {
-            foreignObject {
-              overflow: visible;
-            }
-          }
-        }
-      }
     `,
   };
 });

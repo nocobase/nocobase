@@ -446,21 +446,8 @@ export const GraphDrawPage = React.memo(() => {
 
   const dataSource = useDataSource();
   const initGraphCollections = () => {
-    const container = document.getElementById('container');
-    if (!container) return;
-
-    // Ensure container has explicit dimensions for Firefox compatibility
-    const parentElement = container.parentElement;
-    if (parentElement) {
-      const rect = parentElement.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        container.style.width = `${rect.width}px`;
-        container.style.height = `${rect.height}px`;
-      }
-    }
-
     targetGraph = new Graph({
-      container: container,
+      container: document.getElementById('container')!,
       moveThreshold: 0,
       virtual: false,
       async: true,
@@ -768,22 +755,13 @@ export const GraphDrawPage = React.memo(() => {
     m2mEdge && lightUp(m2mEdge);
   };
   // 全量渲染
-  const renderInitGraphCollection = async (rawData, isSaveLayput = true) => {
+  const renderInitGraphCollection = (rawData, isSaveLayput = true) => {
     targetGraph.clearCells();
     const { nodesData, edgesData, inheritEdges } = formatData(rawData);
     targetGraph.data = { nodes: nodesData, edges: edgesData };
     targetGraph.fromJSON({ nodes: nodesData });
     targetGraph.addEdges(edgesData);
     targetGraph.addEdges(inheritEdges);
-    
-    // Add a small delay for Firefox to properly render foreignObject content
-    // Firefox has timing issues with SVG foreignObject rendering that can cause
-    // nodes to appear blank if layout is calculated too quickly
-    const isFirefox = typeof navigator !== 'undefined' && navigator.userAgent.toLowerCase().includes('firefox');
-    if (isFirefox) {
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-    
     layout(saveGraphPositionAction, isSaveLayput);
   };
 
