@@ -66,7 +66,7 @@ describe('AppSupervisor bootMainApp behavior in worker mode', () => {
     expect(unregisterEnvironmentSpy).not.toHaveBeenCalled();
   });
 
-  it('should subscribe but skip environment registration when non-serving worker (e.g., topic)', async () => {
+  it('should subscribe and register environment when non-serving worker (e.g., topic)', async () => {
     process.env.WORKER_MODE = 'topic';
 
     const mainApp = supervisor.bootMainApp({});
@@ -75,10 +75,10 @@ describe('AppSupervisor bootMainApp behavior in worker mode', () => {
     await mainApp.emitAsync('afterStart', mainApp);
 
     expect(subscribeSpy).toHaveBeenCalledWith('app_supervisor:sync', expect.any(Function));
-    expect(registerEnvironmentSpy).not.toHaveBeenCalled();
+    expect(registerEnvironmentSpy).toHaveBeenCalled();
 
     await mainApp.emitAsync('afterDestroy', mainApp);
-    expect(unregisterEnvironmentSpy).not.toHaveBeenCalled();
+    expect(unregisterEnvironmentSpy).toHaveBeenCalled();
   });
 
   it('should subscribe and register environment when serving (e.g., dispatcher)', async () => {
