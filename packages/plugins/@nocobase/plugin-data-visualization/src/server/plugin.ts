@@ -8,19 +8,13 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
 import PluginAIServer from '@nocobase/plugin-ai';
-import { flowSchemaContribution } from './flow-schema-contributions';
 // import { buildChartBlock } from './ai/tools/build-chart-block';
 
 export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
-
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
 
   afterAdd() {}
 

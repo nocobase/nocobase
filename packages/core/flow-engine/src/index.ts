@@ -57,6 +57,5 @@ export {
 } from './views/viewEvents';
 
 export * from './FlowDefinition';
-export * from './FlowSchemaRegistry';
 export { createViewScopedEngine } from './ViewScopedFlowEngine';
 export { createBlockScopedEngine } from './BlockScopedFlowEngine';
