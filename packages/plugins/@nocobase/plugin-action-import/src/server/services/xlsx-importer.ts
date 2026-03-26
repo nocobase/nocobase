@@ -251,11 +251,13 @@ export class XlsxImporter extends EventEmitter {
 
   private getColumnsByPermission(ctx: Context): ImportColumn[] {
     const columns = this.options.columns;
-    return columns.filter((x) =>
-      _.isEmpty(ctx?.permission?.can?.params)
-        ? true
-        : _.includes(ctx?.permission?.can?.params?.fields || [], x.dataIndex[0]),
-    );
+    const fields = ctx?.permission?.can?.params?.fields;
+
+    if (!Array.isArray(fields)) {
+      return columns;
+    }
+
+    return columns.filter((x) => _.includes(fields, x.dataIndex[0]));
   }
 
   protected validateColumns(ctx?: Context) {
