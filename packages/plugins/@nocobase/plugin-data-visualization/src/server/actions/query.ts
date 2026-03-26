@@ -22,6 +22,38 @@ const getDB = (ctx: Context, dataSource: string) => {
   return ds?.collectionManager.db;
 };
 
+const getChartQueryPermission = async (ctx: Context, collection: string, acl: any) => {
+  const actionCtx: any = {
+    app: ctx.app,
+    db: ctx.db,
+    database: ctx.database ?? ctx.db,
+    getCurrentRepository: ctx.getCurrentRepository,
+    request: ctx.request,
+    req: ctx.req,
+    action: {
+      actionName: 'list',
+      name: 'list',
+      params: {},
+      resourceName: collection,
+      mergeParams() {},
+    },
+    state: {
+      ...ctx.state,
+      currentRole: ctx.state.currentRole,
+      currentRoles: ctx.state.currentRoles,
+      currentUser: ctx.state.currentUser?.toJSON ? ctx.state.currentUser.toJSON() : ctx.state.currentUser,
+    },
+    permission: {},
+    throw(...args) {
+      ctx.throw(...args);
+    },
+  };
+
+  await acl.getActionParams(actionCtx);
+
+  return actionCtx.permission;
+};
+
 export const postProcess = async (ctx: Context, next: Next) => {
   const { data, fieldMap } = ctx.action.params.values as {
     data: any[];
@@ -210,15 +242,13 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
 
 export const checkPermission = async (ctx: Context, next: Next) => {
   const { collection, dataSource } = ctx.action.params.values as QueryParams;
-  const roleNames = ctx.state.currentRoles || ['anonymous'];
   const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const can = acl.can({ roles: roleNames, resource: collection, action: 'list' });
-  if (!can && !roleNames.includes('root')) {
-    ctx.throw(403, 'No permissions');
-  }
-  if (can?.params?.filter) {
+  const permission = await getChartQueryPermission(ctx, collection, acl);
+  const filterParams = permission?.parsedParams?.filter;
+
+  if (filterParams) {
     try {
-      checkFilterParams(ctx.database.getCollection(collection), can.params?.filter);
+      checkFilterParams(ctx.database.getCollection(collection), filterParams);
     } catch (e) {
       if (e instanceof NoPermissionError) {
         ctx.throw(403, 'No permissions');
@@ -227,7 +257,7 @@ export const checkPermission = async (ctx: Context, next: Next) => {
     const filter = ctx.action.params.values.filter || {};
     ctx.action.params.values = {
       ...ctx.action.params.values,
-      filter: assign(filter, can?.params.filter, {
+      filter: assign(filter, filterParams, {
         filter: 'andMerge',
       }),
     };

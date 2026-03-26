@@ -203,4 +203,49 @@ describe('query acl scope', () => {
     expect(data.length).toBe(1);
     expect(data[0].id).toBe(100);
   });
+
+  it('should apply fixed params for root role on chart query', async () => {
+    app.acl.addGeneralFixedParams((resource, action) => {
+      if (resource !== 'orders' || action !== 'list') {
+        return {};
+      }
+
+      return {
+        filter: {
+          price: {
+            $gt: 50,
+          },
+        },
+      };
+    });
+
+    const context: any = {
+      app,
+      db,
+      database: db,
+      state: { currentRoles: ['root'] },
+      get: (key: string) => ({ 'x-timezone': '' })[key],
+      action: {
+        params: {
+          values: {
+            collection: 'orders',
+            measures: [{ field: ['price'], alias: 'price' }],
+            dimensions: [{ field: ['id'], alias: 'id' }],
+          },
+        },
+      },
+      throw: () => {},
+    };
+
+    await checkPermission(context, async () => {});
+    const merged = context.action.params.values.filter as any;
+    expect(merged.price.$gt).toBe(50);
+
+    const queryParser = createQueryParser(db);
+    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    const data = context.body as any[];
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBe(1);
+    expect(data[0].price).toBe(60);
+  });
 });
