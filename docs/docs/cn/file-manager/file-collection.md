@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "文件表"
+description: "文件表专用于存储文件元信息，内置文件名、大小、类型、存储路径等字段，支持创建自定义文件表、关系字段与区块展示。"
+keywords: "文件表,文件集合,file collection,文件元信息,关系字段,区块,NocoBase"
+---
+
 # 文件表
 
 ## 介绍

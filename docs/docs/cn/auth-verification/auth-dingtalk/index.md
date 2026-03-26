@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-dingtalk'
+title: "认证：钉钉"
+description: "NocoBase 钉钉登录：支持钉钉账号登录，配置 Client ID、Client Secret、回调 URL，开通个人手机号与通讯录权限。"
+keywords: "钉钉,DingTalk,钉钉登录,OAuth,Client ID,回调 URL,NocoBase"
 ---
 
 # 认证：钉钉

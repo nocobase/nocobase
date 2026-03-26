@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "内置 AI 员工"
+description: "NocoBase 预置 AI 员工：Cole、Ellis、Dex、Viz、Lexi、Vera、Dara、Orin、Nathan 的角色定位与使用场景，含 Viz 洞察分析、Dex 数据整理、Orin 数据建模、Nathan 前端开发。"
+keywords: "内置 AI 员工,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
+---
+
 # 内置 AI 员工
 
 NocoBase 预置了多个针对特定场景的 AI 员工。

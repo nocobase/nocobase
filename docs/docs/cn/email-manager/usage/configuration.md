@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件区块配置"
+description: "邮件表格区块：添加区块、字段配置、数据范围（全部/当前用户）、基于邮箱地址或后缀筛选。"
+keywords: "邮件区块,邮件表格,数据范围,邮箱筛选,NocoBase"
 ---
-
 # 区块配置
 
 ## 邮件消息区块

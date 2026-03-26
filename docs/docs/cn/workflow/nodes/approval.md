@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
+title: "工作流节点 - 审批"
+description: "审批节点：审批流程专用，配置通过/拒绝/退回操作，仅可在审批流程中使用。"
+keywords: "工作流,审批节点,Approval,通过拒绝退回,审批流程,NocoBase"
 ---
 
 # 审批

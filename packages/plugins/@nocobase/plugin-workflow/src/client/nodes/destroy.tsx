@@ -24,6 +24,9 @@ export default class extends Instruction {
   group = 'collection';
   description = `{{t("Delete records of a collection. Could use variables in workflow context as filter. All records match the filter will be deleted.", { ns: "${NAMESPACE}" })}}`;
   icon = (<DeleteOutlined style={{}} />);
+  presetFieldset = {
+    collection,
+  };
   fieldset = {
     collection: {
       ...collection,

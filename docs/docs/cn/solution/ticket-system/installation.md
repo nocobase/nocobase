@@ -1,3 +1,9 @@
+---
+title: "工单方案如何安装"
+description: "工单方案安装部署：备份管理器还原（专业/企业版）或 SQL 文件导入（社区版），需 PostgreSQL 16，NocoBase 2.0.0-beta.5 及以上。"
+keywords: "工单安装,备份还原,备份管理器,SQL 导入,PostgreSQL,NocoBase"
+---
+
 # 如何安装
 
 > 当前版本采用**备份还原**的形式进行部署。在后续版本中，我们可能会更换为**增量迁移**的形式，以便于将解决方案集成到您已有的系统中。
@@ -9,8 +15,8 @@
 - 您已经有了一个基础的 NocoBase 运行环境。关于主系统的安装，请参考更详细的[官方安装文档](https://docs-cn.nocobase.com/welcome/getting-started/installation)。
 - NocoBase 版本 **2.0.0-beta.5 及以上**
 - 您已经下载了工单系统的相应文件：
-  - **备份文件**：[nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - 适用于方法一
-  - **SQL文件**：[nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - 适用于方法二
+  - **备份文件**：[nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - 适用于方法一
+  - **SQL文件**：[nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - 适用于方法二
 
 **重要说明**：
 - 本方案基于 **PostgreSQL 16** 数据库制作，请确保您的环境使用 PostgreSQL 16。

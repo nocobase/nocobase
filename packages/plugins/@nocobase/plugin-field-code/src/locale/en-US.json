@@ -1,7 +1,15 @@
 {
+  "Auto": "Auto",
   "Code": "Code",
+  "Code editor": "Code editor",
+  "Choose language": "Choose language",
+  "Content settings": "Content settings",
   "Content height": "Content height",
+  "Custom height": "Custom height",
+  "Custom indent unit": "Custom indent unit",
+  "e.g. 300px or 50%": "e.g. 300px or 50%",
   "Could use CSS values (e.g., \"300px\" or \"50%\"). Use \"auto\" for automatic height adjustment based on content.": "Could use CSS values (e.g., \"300px\" or \"50%\"). Use \"auto\" for automatic height adjustment based on content.",
+  "Indent unit": "Indent unit",
   "Programming code editor with syntax highlighting.": "Programming code editor with syntax highlighting.",
   "Programming language": "Programming language"
 }

@@ -1,6 +1,8 @@
 ---
 displayName: "操作：导出记录 Pro"
 packageName: '@nocobase/plugin-action-export-pro'
+title: "操作：导出记录 Pro"
+keywords: "操作：导出记录 Pro,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

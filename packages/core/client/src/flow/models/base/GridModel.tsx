@@ -57,6 +57,7 @@ interface DragState {
   sourceUid: string;
   snapshot: GridLayoutData;
   slots: LayoutSlot[];
+  containerEl: HTMLDivElement | null;
   containerRect: Rect;
   pointerOrigin?: { x: number; y: number };
   activeSlotKey: string | null;
@@ -379,11 +380,24 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return null;
   }
 
+  private getDragContainer() {
+    if (!this.dragState) {
+      return this.gridContainerRef.current;
+    }
+
+    const current = this.gridContainerRef.current;
+    if (current && this.dragState.containerEl !== current) {
+      this.dragState.containerEl = current;
+    }
+
+    return this.dragState.containerEl || current;
+  }
+
   private updateLayoutSnapshot() {
     if (!this.dragState) {
       return;
     }
-    const snapshot = buildLayoutSnapshot({ container: this.gridContainerRef.current });
+    const snapshot = buildLayoutSnapshot({ container: this.getDragContainer() });
     this.dragState.slots = snapshot.slots;
     this.dragState.containerRect = snapshot.containerRect;
   }
@@ -497,7 +511,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
       rowOrder: _.cloneDeep(preview.rowOrder),
     };
 
-    const container = this.gridContainerRef.current;
+    const container = this.getDragContainer();
     const scrollTop = container?.scrollTop ?? 0;
     const scrollLeft = container?.scrollLeft ?? 0;
 
@@ -527,6 +541,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         rowOrder,
       },
       slots: [],
+      containerEl: this.gridContainerRef.current,
       containerRect: { top: 0, left: 0, width: 0, height: 0 },
       pointerOrigin: getClientPoint((event as any).activatorEvent) ?? undefined,
       activeSlotKey: null,

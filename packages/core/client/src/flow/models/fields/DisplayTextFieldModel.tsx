@@ -12,12 +12,25 @@ import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTextFieldModel extends ClickableFieldModel {
+  t(value: string | undefined | null) {
+    // 如果 value 是 {{ 开头 }} 结尾，则认为是 i18n 表达式，需要翻译
+    if (value?.startsWith('{{') && value?.endsWith('}}')) {
+      return this.translate(value);
+    }
+    return value;
+  }
   public renderComponent(value, wrap) {
-    const { prefix, suffix, overflowMode } = this.props;
+    const { prefix, suffix, overflowMode, style, className } = this.props;
     return (
-      <span style={{ whiteSpace: overflowMode === 'wrap' || wrap ? 'pre-line' : 'nowrap' }}>
+      <span
+        className={className}
+        style={{
+          ...(style || {}),
+          whiteSpace: overflowMode === 'wrap' || wrap ? 'pre-line' : 'nowrap',
+        }}
+      >
         {prefix}
-        {this.translate(value)}
+        {this.t(value)}
         {suffix}
       </span>
     );

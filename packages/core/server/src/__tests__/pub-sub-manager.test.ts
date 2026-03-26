@@ -55,6 +55,36 @@ describe('connect', () => {
     expect(mockListener).toHaveBeenCalledWith('message1');
   });
 
+  test('closed before db close on app stop', async () => {
+    const mockListener = vi.fn();
+    await app.start();
+    await pubSubManager.subscribe('test1', mockListener);
+    // Verify message works before stop
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toBeCalledTimes(1);
+    mockListener.mockClear();
+    // Track the order of close and db.close
+    const order: string[] = [];
+    const origClose = pubSubManager.close.bind(pubSubManager);
+    vi.spyOn(pubSubManager, 'close').mockImplementation(async () => {
+      order.push('pubsub.close');
+      return origClose();
+    });
+    const origDbClose = app.db.close.bind(app.db);
+    vi.spyOn(app.db, 'close').mockImplementation(async () => {
+      order.push('db.close');
+      return origDbClose();
+    });
+    await app.stop();
+    // pubSub should be closed before db (may appear more than once due to disposeServices)
+    const pubsubFirst = order.indexOf('pubsub.close');
+    const dbFirst = order.indexOf('db.close');
+    expect(pubsubFirst).toBeLessThan(dbFirst);
+    // After stop, publish should not reach subscriber
+    await pubSubManager.publish('test1', 'message2');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
   test('subscribe after connect', async () => {
     await app.start();
     const mockListener = vi.fn();

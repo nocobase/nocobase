@@ -268,12 +268,12 @@ export abstract class EmbeddingProvider {
     return apiKey;
   }
 
-  protected get baseUrl() {
-    const baseUrl = this.serviceOptions?.baseUrl ?? this.getDefaultUrl();
-    if (!baseUrl) {
-      throw new Error('baseUrl is required');
+  protected get baseURL() {
+    const baseURL = this.serviceOptions?.baseURL ?? this.getDefaultUrl();
+    if (!baseURL) {
+      throw new Error('baseURL is required');
     }
-    return baseUrl;
+    return baseURL;
   }
 
   protected get model() {

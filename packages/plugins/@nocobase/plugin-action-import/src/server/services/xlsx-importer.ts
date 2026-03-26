@@ -9,7 +9,12 @@
 
 import * as XLSX from 'xlsx';
 import lodash from 'lodash';
-import { ICollection, ICollectionManager, IRelationField } from '@nocobase/data-source-manager';
+import {
+  ICollection,
+  ICollectionManager,
+  IRelationField,
+  SequelizeCollectionManager,
+} from '@nocobase/data-source-manager';
 import {
   Collection as DBCollection,
   Database,
@@ -41,7 +46,15 @@ export type ImporterOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
   columns: Array<ImportColumn>;
-  workbook: any;
+  /** Parsed SheetJS workbook. Used for the synchronous (small-file) import path. */
+  workbook?: any;
+  /**
+   * Absolute path to the XLSX file on disk. When set, the importer uses ExcelJS
+   * streaming reader so the file is never fully loaded into memory — rows are
+   * yielded one by one and processed in chunks. This is the preferred path for
+   * large async imports.
+   */
+  filePath?: string;
   chunkSize?: number;
   explain?: string;
   repository?: any;
@@ -102,14 +115,47 @@ export class XlsxImporter extends EventEmitter {
   }
 
   async run(options: RunOptions = {}) {
-    let transaction = options.transaction;
+    // If the caller already provides a transaction, keep using it as a single global transaction
+    // to respect external atomicity requirements (e.g. tests, integrations).
+    // Otherwise, each chunk will manage its own transaction to avoid holding a single large
+    // transaction open for the entire import (which causes high DB memory usage with 100k+ rows).
+    const hasExternalTransaction = !!options.transaction;
 
-    // @ts-ignore
-    if (!transaction && this.options.collectionManager.db) {
-      // @ts-ignore
-      transaction = options.transaction = await this.options.collectionManager.db.sequelize.transaction();
+    const { db } = this.options.collectionManager as SequelizeCollectionManager;
+
+    if (hasExternalTransaction) {
+      // Legacy path: single global transaction provided by caller.
+      try {
+        const data = await this.loggerService.measureExecutedTime(
+          async () => this.validate(options.context),
+          'Validation completed in {time}ms',
+        );
+
+        const imported = await this.loggerService.measureExecutedTime(
+          async () => this.performImport(data, options),
+          'Data import completed in {time}ms',
+        );
+
+        this.logger?.info(`Import completed successfully, imported ${imported} records`);
+
+        if (db) {
+          await this.loggerService.measureExecutedTime(
+            async () => this.resetSeq(options),
+            'Sequence reset completed in {time}ms',
+          );
+        }
+
+        return imported;
+      } catch (error) {
+        this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
+          originalError: error.stack || error.toString(),
+        });
+        throw error;
+      }
     }
 
+    // Per-chunk transaction path: each chunk commits independently, avoiding a single
+    // long-lived transaction that accumulates all rows in DB memory.
     try {
       const data = await this.loggerService.measureExecutedTime(
         async () => this.validate(options.context),
@@ -123,19 +169,15 @@ export class XlsxImporter extends EventEmitter {
 
       this.logger?.info(`Import completed successfully, imported ${imported} records`);
 
-      // @ts-ignore
-      if (this.options.collectionManager.db) {
+      if (db) {
         await this.loggerService.measureExecutedTime(
-          async () => this.resetSeq(options),
+          async () => this.resetSeq({}),
           'Sequence reset completed in {time}ms',
         );
       }
 
-      transaction && (await transaction.commit());
-
       return imported;
     } catch (error) {
-      transaction && (await transaction.rollback());
       this.logger?.error(`Import failed: ${this.renderErrorMessage(error)}`, {
         originalError: error.stack || error.toString(),
       });
@@ -146,8 +188,7 @@ export class XlsxImporter extends EventEmitter {
   async resetSeq(options?: RunOptions) {
     const { transaction } = options;
 
-    // @ts-ignore
-    const db: Database = this.options.collectionManager.db;
+    const { db } = this.options.collectionManager as SequelizeCollectionManager;
     const collection: DBCollection = this.options.collection as DBCollection;
 
     // @ts-ignore
@@ -217,7 +258,7 @@ export class XlsxImporter extends EventEmitter {
     );
   }
 
-  private validateColumns(ctx?: Context) {
+  protected validateColumns(ctx?: Context) {
     const columns = this.getColumnsByPermission(ctx as Context);
     if (columns.length === 0) {
       throw new ImportValidationError('Columns configuration is empty');
@@ -292,7 +333,10 @@ export class XlsxImporter extends EventEmitter {
       handingRowIndex += 1;
     }
 
-    for (const chunkRows of chunks) {
+    // Use shift() to release each chunk reference after processing,
+    // allowing GC to reclaim memory progressively during large imports.
+    let chunkRows: string[][];
+    while ((chunkRows = chunks.shift()) !== undefined) {
       await this.handleChuckRows(chunkRows, options, { handingRowIndex, context: options?.context });
       imported += chunkRows.length;
       this.emit('progress', {
@@ -373,17 +417,16 @@ export class XlsxImporter extends EventEmitter {
     },
   ) {
     let { handingRowIndex = 1 } = options;
-    const { transaction } = runOptions;
+
+    // If no external transaction is provided, create a per-chunk transaction so that
+    // each chunk commits independently and doesn't accumulate in a single large transaction.
+    // @ts-ignore
+    const db = this.options.collectionManager.db;
+    const externalTransaction = runOptions?.transaction;
+    const transaction = externalTransaction || (db ? await db.sequelize.transaction() : null);
+
+    const chunkRunOptions = { ...runOptions, transaction };
     const columns = this.getColumnsByPermission(options?.context);
-    const rows = [];
-    for (const row of chunkRows) {
-      const rowValues = {};
-      await this.handleRowValuesWithColumns(row, rowValues, runOptions, columns);
-      rows.push({
-        ...(this.options.rowDefaultValues || {}),
-        ...rowValues,
-      });
-    }
 
     const translate = (message: string) => {
       if (options.context?.t) {
@@ -393,7 +436,20 @@ export class XlsxImporter extends EventEmitter {
       }
     };
 
+    // Row processing and insert are both inside the try-catch so that any error
+    // (including errors thrown by toValue() during row parsing, before performInsert)
+    // always triggers a rollback of the per-chunk transaction.
+    const rows = [];
     try {
+      for (const row of chunkRows) {
+        const rowValues = {};
+        await this.handleRowValuesWithColumns(row, rowValues, chunkRunOptions, columns);
+        rows.push({
+          ...(this.options.rowDefaultValues || {}),
+          ...rowValues,
+        });
+      }
+
       await this.loggerService.measureExecutedTime(
         async () =>
           this.performInsert({
@@ -405,7 +461,22 @@ export class XlsxImporter extends EventEmitter {
       );
       await new Promise((resolve) => setTimeout(resolve, 5));
       handingRowIndex += chunkRows.length;
+      if (!externalTransaction) {
+        await transaction?.commit();
+      }
     } catch (error) {
+      if (!externalTransaction) {
+        await transaction?.rollback();
+      }
+
+      // Validation errors thrown during row parsing (e.g. field not found, toValue failure)
+      // are re-thrown as-is. They are not wrapped in ImportError because ImportError
+      // semantically represents a DB-level insert/update failure, and wrapping would
+      // change the error structure that callers (and tests) depend on.
+      if (error.name === 'ImportValidationError') {
+        throw error;
+      }
+
       if (error.name === 'SequelizeUniqueConstraintError') {
         throw new Error(`${translate('Unique constraint error, fields:')} ${JSON.stringify(error.fields)}`);
       }
@@ -489,6 +560,11 @@ export class XlsxImporter extends EventEmitter {
           'debug',
         );
       }
+
+      // Release the instance reference after all events have been processed so the
+      // heavy Sequelize Model object (dataValues, _previousDataValues, etc.) can be
+      // garbage collected before the next chunk starts.
+      instances[i] = null;
     }
     return instances;
   }
@@ -539,7 +615,7 @@ export class XlsxImporter extends EventEmitter {
     return str;
   }
 
-  private getExpectedHeaders(ctx?: Context): string[] {
+  protected getExpectedHeaders(ctx?: Context): string[] {
     const columns = this.getColumnsByPermission(ctx);
     return columns.map((col) => col.title || col.defaultTitle);
   }
@@ -549,6 +625,10 @@ export class XlsxImporter extends EventEmitter {
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
 
     let data = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: null, blankrows: false }) as string[][];
+
+    // Release the workbook reference immediately after converting to plain data array,
+    // so the large parsed XLSX object can be garbage collected during import.
+    this.options.workbook = null;
 
     // Find and validate header row
     const expectedHeaders = this.getExpectedHeaders(ctx);

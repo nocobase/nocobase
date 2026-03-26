@@ -1,3 +1,9 @@
+---
+title: "IField"
+description: "NocoBase IField 接口：字段需实现的接口，定义字段属性与方法。"
+keywords: "IField,接口,字段,Field,NocoBase"
+---
+
 # IField
 
 `IField` 定义了字段需要实现的接口。

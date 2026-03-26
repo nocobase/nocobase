@@ -1,3 +1,9 @@
+---
+title: "ctx.modal"
+description: "ctx.modal 弹窗控制 API，用于打开确认框、信息提示、自定义弹窗。"
+keywords: "ctx.modal,弹窗,确认框,confirm,信息提示,RunJS,NocoBase"
+---
+
 # ctx.modal
 
 基于 Ant Design Modal 的快捷 API，用于在 RunJS 中主动打开模态框（信息提示、确认弹窗等）。由 `ctx.viewer` / 视图系统实现。

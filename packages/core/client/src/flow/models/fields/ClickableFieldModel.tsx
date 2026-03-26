@@ -149,6 +149,7 @@ export class ClickableFieldModel extends FieldModel {
     };
 
     const commonStyle = {
+      ...(restProps.style || {}),
       cursor: clickToOpen ? 'pointer' : 'default',
       alignItems: 'center',
       gap: 4,
@@ -158,7 +159,7 @@ export class ClickableFieldModel extends FieldModel {
     if (isTag) {
       return (
         value && (
-          <Tag {...restProps} style={commonStyle} onClick={handleClick}>
+          <Tag {...restProps} style={commonStyle} onClick={handleClick} className={restProps.className}>
             {display}
           </Tag>
         )
@@ -166,7 +167,7 @@ export class ClickableFieldModel extends FieldModel {
     }
     if (clickToOpen) {
       return (
-        <a {...restProps} style={commonStyle} onClick={handleClick}>
+        <a {...restProps} style={commonStyle} onClick={handleClick} className={restProps.className}>
           {display}
         </a>
       );

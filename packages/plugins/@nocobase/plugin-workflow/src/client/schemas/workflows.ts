@@ -10,7 +10,7 @@
 import React from 'react';
 import { ISchema } from '@formily/react';
 
-import { css, useCollectionRecordData } from '@nocobase/client';
+import { useCollectionRecordData } from '@nocobase/client';
 
 import { NAMESPACE } from '../locale';
 import { executionSchema } from './executions';
@@ -64,6 +64,10 @@ const workflowFieldset = {
       ],
     },
   },
+  triggerPreset: {
+    type: 'void',
+    'x-component': 'TriggerPresetFieldset',
+  },
   enabled: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
@@ -81,7 +85,9 @@ const workflowFieldset = {
   },
   options: {
     type: 'object',
-    'x-component': 'fieldset',
+    'x-decorator': 'FormItem',
+    // title: `{{ t("Options", { ns: "${NAMESPACE}" }) }}`,
+    'x-component': 'Fieldset',
     properties: {
       deleteExecutionOnStatus: {
         type: 'array',
@@ -157,10 +163,10 @@ export const workflowSchema: ISchema = {
                   },
                   'x-action': 'filter',
                   'x-component': 'Filter.Action',
-                  'x-use-component-props': 'useWorkflowFilterActionProps',
+                  'x-use-component-props': 'useResourceFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
-                    nonfilterable: ['description', 'categories'],
+                    nonfilterable: ['id', 'description', 'categories'],
                   },
                   'x-align': 'left',
                 },
@@ -222,6 +228,7 @@ export const workflowSchema: ISchema = {
                       properties: {
                         title: workflowFieldset.title,
                         type: workflowFieldset.type,
+                        triggerPreset: workflowFieldset.triggerPreset,
                         sync: workflowFieldset.sync,
                         categories: workflowFieldset.categories,
                         description: workflowFieldset.description,
@@ -396,6 +403,10 @@ export const workflowSchema: ISchema = {
                               title: '{{ t("Edit") }}',
                               properties: {
                                 title: workflowFieldset.title,
+                                type: {
+                                  ...workflowFieldset.type,
+                                  'x-disabled': true,
+                                },
                                 sync: workflowFieldset.sync,
                                 categories: workflowFieldset.categories,
                                 description: workflowFieldset.description,

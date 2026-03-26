@@ -25,12 +25,13 @@ import {
   useCollectionParentRecordData,
   useDesignable,
   useFormBlockContext,
-  useLazy,
+  lazy,
   usePopupUtils,
   useProps,
   withDynamicSchemaProps,
   withSkeletonComponent,
   useAPIClient,
+  useLazy,
 } from '@nocobase/client';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -100,6 +101,7 @@ const useEvents = (
   date: Date,
   view: (typeof Weeks)[number] | any = 'month',
 ) => {
+  // 这里的 useLazy 暂时不迁移，因为是在 hooks 里的同步依赖
   const parseExpression = useLazy<typeof import('cron-parser').parseExpression>(
     () => import('cron-parser'),
     'parseExpression',
@@ -258,18 +260,8 @@ export const Calendar: any = withDynamicSchemaProps(
       const { openPopup } = usePopupUtils({
         setVisible,
       });
-      const reactBigCalendar = useLazy(
-        () => import('react-big-calendar'),
-        (module) => ({
-          BigCalendar: module.Calendar,
-          dayjsLocalizer: module.dayjsLocalizer,
-        }),
-      );
+      const { Calendar: BigCalendar } = lazy(() => import('react-big-calendar'), 'Calendar');
 
-      const eq = useLazy<typeof import('react-big-calendar/lib/utils/dates').eq>(
-        () => import('react-big-calendar/lib/utils/dates'),
-        'eq',
-      );
       // 新版 UISchema（1.0 之后）中已经废弃了 useProps，这里之所以继续保留是为了兼容旧版的 UISchema
       const { dataSource, fieldNames, showLunar, getFontColor, getBackgroundColor, enableQuickCreateEvent } =
         useProps(props);
@@ -471,7 +463,6 @@ export const Calendar: any = withDynamicSchemaProps(
           form: ctx.form,
         };
       };
-      const BigCalendar = reactBigCalendar?.BigCalendar;
       return wrapSSR(
         <div className={`${hashId} ${containerClassName}`} style={{ height: height || 700 }}>
           <PopupContextProvider visible={visible} setVisible={setVisible}>
@@ -535,6 +526,8 @@ export const Calendar: any = withDynamicSchemaProps(
               culture={locale}
               localizer={localizer}
               tooltipAccessor={(val) => {
+                // @ts-expect-error 这里没有改之前的运行时代码，只是从 useLazy 改成了动态 import 导入。
+                // 之前使用 useLazy 引入的 Calendar 的类型是 any，所以没报错。这里有实际类型了，但是类型有点问题，先不处理
                 return val.rawTitle ? val.rawTitle : '';
               }}
             />

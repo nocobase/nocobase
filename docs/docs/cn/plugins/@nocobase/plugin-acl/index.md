@@ -1,6 +1,8 @@
 ---
 displayName: "权限控制"
 packageName: '@nocobase/plugin-acl'
+title: "权限控制"
+keywords: "权限控制,角色,ACL,资源,操作,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

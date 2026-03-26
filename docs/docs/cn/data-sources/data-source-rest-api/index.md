@@ -1,3 +1,9 @@
+---
+title: "REST API 数据源"
+description: "接入 REST API 来源数据，将 RESTful 资源映射为 Collection，配置 List/Get/Create/Update/Destroy 接口映射，支持 CRUD 操作。"
+keywords: "REST API 数据源,外部 API,接口映射,Collection 映射,NocoBase"
+---
+
 # REST API 数据源
 
 <PluginInfo commercial="true" name="data-source-rest-api"></PluginInfo>

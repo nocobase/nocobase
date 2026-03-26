@@ -13,8 +13,8 @@ Before you begin, please ensure:
 - You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
 - NocoBase version **v2.1.0-beta.2 or above**
 - You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+  - **Backup file**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) — for Method 1
+  - **SQL file**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) — for Method 2
 
 **Important notes**:
 - This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
@@ -97,9 +97,9 @@ Create a brand new, empty database for the data you're about to import.
 
   ```bash
   # Copy the sql file into the container
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
   # Enter the container and execute the import
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
   ```
 
 * **Option B: Via a remote database client (Navicat, etc.)**

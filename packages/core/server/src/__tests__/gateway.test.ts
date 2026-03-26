@@ -51,6 +51,18 @@ describe('gateway', () => {
         }),
       ).toEqual('test');
     });
+
+    it('should resolve app name from /api/__app path and rewrite request url', async () => {
+      const req = {
+        url: '/api/__app/demo/idpOAuth:authorize?foo=bar',
+        headers: {},
+      };
+
+      expect(await gateway.getRequestHandleAppName(req as any)).toBe('demo');
+      expect(req.url).toBe('/api/idpOAuth:authorize?foo=bar');
+      expect((req as any).originalUrl).toBe('/api/__app/demo/idpOAuth:authorize?foo=bar');
+    });
+
     it('should add same middleware into app selector once', async () => {
       const fn = async (ctx, next) => {
         ctx.resolvedAppName = 'test';

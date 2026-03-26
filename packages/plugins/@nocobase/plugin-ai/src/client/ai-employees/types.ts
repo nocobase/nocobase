@@ -27,7 +27,8 @@ export type AIEmployee = {
     prompt?: string;
   };
   skillSettings?: {
-    skills?: { name: string }[];
+    tools?: { name: string; autoCall?: boolean }[];
+    skills?: string[];
   };
   builtIn?: boolean;
   webSearch?: boolean;
@@ -35,6 +36,7 @@ export type AIEmployee = {
 };
 
 export type SkillSettings = {
+  tools?: string[];
   skills?: string[];
 };
 
@@ -135,9 +137,7 @@ export type Task = {
   title?: string;
   message: TaskMessage;
   autoSend?: boolean;
-  skillSettings?: {
-    skills?: string[];
-  };
+  skillSettings?: SkillSettings;
   webSearch?: boolean;
   model?: {
     llmService: string;

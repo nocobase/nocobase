@@ -27,6 +27,7 @@ cache/diskstore-*
 **/.dumi/tmp-production
 packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
+packages/core/app/client-v2/src/.plugins
 tsconfig.paths.json
 /playwright
 .swc
@@ -42,3 +43,4 @@ python/
 git-repos.json
 CLAUDE.md
 AGENTS.md
+openspec/

@@ -18,6 +18,7 @@ import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
 import aiTools from './resource/aiTools';
+import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
@@ -38,11 +39,13 @@ import { ollamaProviderOptions } from './llm-providers/ollama';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
+import aiMcpClients from './resource/aiMcpClients';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -74,6 +77,24 @@ export class PluginAIServer extends Plugin {
       },
     });
     this.snowflake = new Snowflake(pluginRecord?.createdAt.getTime());
+    this.app.cronJobManager.addJob({
+      cronTime: '0 0 2 * * *',
+      onTick: async () => {
+        try {
+          const checkpointSaver = new SequelizeCollectionSaver(() => this.app.mainDataSource);
+          const checkpointCleaner = new CheckpointCleaner(() => this.app.mainDataSource, checkpointSaver);
+          const expiredAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+          await checkpointCleaner.cleanOutdated(expiredAt);
+        } catch (e) {
+          this.app.log.error('langChain checkpoint clean job fail', e);
+        }
+      },
+    });
+    this.app.on('afterStart', async () => {
+      await this.ai.skillsManager.init();
+      await this.ai.employeeManager.init();
+      await this.ai.mcpManager.init();
+    });
   }
 
   async load() {
@@ -84,10 +105,6 @@ export class PluginAIServer extends Plugin {
     this.setPermissions();
     this.registerWorkflow();
     this.registerWorkContextResolveStrategy();
-  }
-
-  async setupBuiltIn() {
-    await this.builtInManager.createOrUpdateAIEmployee();
   }
 
   registerLLMProviders() {
@@ -108,14 +125,19 @@ export class PluginAIServer extends Plugin {
     toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
+
+    // Register MCP tools dynamically
+    toolsManager.registerDynamicTools(this.ai.mcpManager.getMCPToolsProvider());
   }
 
   defineResources() {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
     this.app.resourceManager.define(aiTools);
+    this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
     this.app.resourceManager.define(aiContextDatasources);
+    this.app.resourceManager.define(aiMcpClients);
 
     this.app.resourceManager.use(
       async (ctx, next) => {
@@ -141,8 +163,12 @@ export class PluginAIServer extends Plugin {
       actions: ['ai:*', 'llmServices:*'],
     });
     this.app.acl.registerSnippet({
+      name: `pm.${this.name}.mcp-settings`,
+      actions: ['aiMcpClients:*'],
+    });
+    this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-employees`,
-      actions: ['aiEmployees:*', 'aiTools:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
+      actions: ['aiEmployees:*', 'aiTools:*', 'aiSkills:*', 'roles.aiEmployees:*', 'aiContextDatasources:*'],
     });
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.ai-settings`,
@@ -160,6 +186,7 @@ export class PluginAIServer extends Plugin {
     this.app.acl.allow('aiEmployees', 'updateUserPrompt', 'loggedIn');
 
     this.app.acl.allow('aiTools', 'list', 'loggedIn');
+    this.app.acl.allow('aiSkills', 'list', 'loggedIn');
 
     const workflowSnippet = this.app.acl.snippetManager.snippets.get('pm.workflow.workflows');
     if (workflowSnippet) {
@@ -216,7 +243,6 @@ export class PluginAIServer extends Plugin {
     });
     this.workContextHandler.registerStrategy('code-editor', {
       resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
-      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
     });
   }
 
@@ -236,12 +262,9 @@ export class PluginAIServer extends Plugin {
       return;
     }
     await this.db.getRepository('aiSettings').create({});
-    await this.setupBuiltIn();
   }
 
-  async upgrade() {
-    await this.setupBuiltIn();
-  }
+  async upgrade() {}
 
   async afterEnable() {}
 

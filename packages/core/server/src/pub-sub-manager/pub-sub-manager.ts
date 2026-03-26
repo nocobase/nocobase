@@ -23,7 +23,7 @@ export const createPubSubManager = (app: Application, options: PubSubManagerOpti
   app.on('afterStart', async () => {
     await pubSubManager.connect();
   });
-  app.on('afterStop', async () => {
+  app.on('beforeStop', async () => {
     await pubSubManager.close();
   });
   return pubSubManager;
@@ -70,6 +70,7 @@ export class PubSubManager {
   }
 
   async close() {
+    this.handlerManager.cancelPendingDebounce();
     if (!this.adapter) {
       return;
     }

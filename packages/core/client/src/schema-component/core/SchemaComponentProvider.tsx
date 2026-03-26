@@ -83,7 +83,23 @@ export const SchemaComponentProvider: React.FC<ISchemaComponentProvider> = (prop
 
   // 初始化时同步 flowSettings 状态
   useEffect(() => {
-    designableValue ? app.flowEngine?.flowSettings?.enable() : app.flowEngine?.flowSettings?.disable();
+    let cancelled = false;
+
+    const syncFlowSettings = async () => {
+      if (!designableValue) {
+        await app.flowEngine?.flowSettings?.disable();
+        return;
+      }
+
+      if (!cancelled) {
+        await app.flowEngine?.flowSettings?.enable();
+      }
+    };
+
+    syncFlowSettings();
+    return () => {
+      cancelled = true;
+    };
   }, [app, designableValue]);
 
   const reset = useCallback(() => {

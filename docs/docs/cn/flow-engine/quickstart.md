@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 快速开始"
+description: "FlowEngine 快速开始：构建可编排的按钮组件，从 define、registerFlow 到 createModel 完整示例，5 步上手 FlowModel。"
+keywords: "FlowEngine 快速开始,FlowModel,define,registerFlow,createModel,可编排组件,按钮组件,NocoBase"
+---
+
 # 快速开始：构建可编排的按钮组件
 
 在 React 中，我们通常这样渲染一个按钮组件：
@@ -40,7 +46,7 @@ class MyModel extends FlowModel {
 #### 2. 创建 model 实例
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   props: {
@@ -136,7 +142,7 @@ MyModel.registerFlow(buttonSettings);
 #### 2. 使用 `stepParams` 替代静态 `props`
 
 ```diff
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
 - props: {
@@ -244,7 +250,7 @@ MyModel.registerFlow(myEventFlow);
 在创建模型时，可以通过 `stepParams` 配置事件流的默认参数：
 
 ```ts
-const model = this.flowEngine.createModel({
+const model = await this.flowEngine.createModelAsync({
   uid: 'my-model',
   use: 'MyModel',
   stepParams: {

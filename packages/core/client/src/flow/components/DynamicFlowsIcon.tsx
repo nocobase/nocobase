@@ -27,6 +27,7 @@ import {
   observer,
   GLOBAL_EMBED_CONTAINER_ID,
   EMBED_REPLACING_DATA_KEY,
+  shouldHideEventInSettings,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -193,6 +194,7 @@ const EventConfigSection = observer(
     const ctx = useFlowContext<FlowEngineContext>();
     const t = model.translate.bind(model);
     const refresh = useUpdate();
+    const [eventOptions, setEventOptions] = React.useState<Array<{ label: string; value: string }>>([]);
 
     const eventName = getFlowOnEventName(flow.on);
     const onObj = isFlowOnObject(flow.on) ? flow.on : undefined;
@@ -211,6 +213,33 @@ const EventConfigSection = observer(
     const phaseValue: FlowEventPhase = onObj?.phase ? (String(onObj.phase) as FlowEventPhase) : 'beforeAllFlows';
     const flowKeyValue = onObj?.flowKey ? String(onObj.flowKey) : undefined;
     const stepKeyValue = onObj?.stepKey ? String(onObj.stepKey) : undefined;
+    const registeredEvents = React.useMemo(() => [...model.getEvents().values()], [model]);
+
+    React.useEffect(() => {
+      let canceled = false;
+
+      const updateEventOptions = async () => {
+        const nextOptions: Array<{ label: string; value: string }> = [];
+
+        for (const event of registeredEvents) {
+          const hidden = await shouldHideEventInSettings(model, flow, event);
+          if (hidden) continue;
+          nextOptions.push({
+            label: model.translate(event.title),
+            value: event.name,
+          });
+        }
+
+        if (canceled) return;
+        setEventOptions((prev) => (_.isEqual(prev, nextOptions) ? prev : nextOptions));
+      };
+
+      void updateEventOptions();
+
+      return () => {
+        canceled = true;
+      };
+    }, [flow, model, registeredEvents]);
 
     const staticFlows = React.useMemo(() => {
       if (!eventName) return [];
@@ -301,7 +330,7 @@ const EventConfigSection = observer(
               onChange={(value) => {
                 setEventName(value);
               }}
-              options={[...model.getEvents().values()].map((event) => ({ label: t(event.title), value: event.name }))}
+              options={eventOptions}
             />
           </div>
 

@@ -1,6 +1,8 @@
 ---
 displayName: "文件管理器"
 packageName: '@nocobase/plugin-file-manager'
+title: "文件管理器"
+keywords: "文件管理器,插件,NocoBase"
 description: |
   提供文件存储服务，并提供了文件表模板和附件字段。
 isFree: true

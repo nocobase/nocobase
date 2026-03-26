@@ -1,3 +1,9 @@
+---
+title: "单点登录 SSO 集成"
+description: "NocoBase SSO 集成：SAML、OIDC、CAS、LDAP、企业微信、钉钉认证，配置身份提供商、用户映射、角色分配、安全建议。"
+keywords: "SSO,单点登录,SAML,OIDC,CAS,LDAP,企业微信,钉钉,统一认证,NocoBase"
+---
+
 # 单点登录 (SSO) 集成
 
 NocoBase 提供了完整的单点登录 (Single Sign-On, SSO) 解决方案,支持多种主流认证协议,可以与企业现有的身份认证系统无缝集成。

@@ -83,6 +83,10 @@ export class PluginLocalizationServer extends Plugin {
       name: `pm.${this.name}.localization`,
       actions: ['localization:*', 'localizationTexts:*', 'localizationTranslations:*'],
     });
+    this.app.acl.registerSnippet({
+      name: 'ui.localization',
+      actions: ['localizationTexts:missing'],
+    });
 
     this.app.localeManager.registerResourceStorer('plugin-localization', {
       getResources: (lang: string) => this.resources.getResources(lang),

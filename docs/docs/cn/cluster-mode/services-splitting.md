@@ -1,3 +1,9 @@
+---
+title: "服务拆分 v1.9.0+"
+description: "集群模式下将工作流、异步任务等耗时服务拆分到独立节点，通过 WORKER_MODE 配置请求节点与任务节点，支持水平扩展与资源隔离。"
+keywords: "服务拆分,WORKER_MODE,异步工作流,async-task,水平扩展,请求节点,任务节点,集群部署,NocoBase"
+---
+
 # 服务拆分 <Badge>v1.9.0+</Badge>
 
 ## 介绍

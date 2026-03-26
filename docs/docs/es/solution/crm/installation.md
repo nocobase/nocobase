@@ -13,8 +13,8 @@ Antes de comenzar, asegúrese de que:
 - Ya tiene un entorno de ejecución básico de NocoBase. Para la instalación del sistema principal, consulte la [documentación oficial de instalación](https://docs-cn.nocobase.com/welcome/getting-started/installation) más detallada.
 - Versión de NocoBase **v2.1.0-beta.2 o superior**
 - Ya ha descargado los archivos correspondientes del sistema CRM:
-  - **Archivo de copia de seguridad**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - Aplicable al Método uno
-  - **Archivo SQL**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - Aplicable al Método dos
+  - **Archivo de copia de seguridad**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - Aplicable al Método uno
+  - **Archivo SQL**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - Aplicable al Método dos
 
 **Nota importante**:
 - Esta solución se basa en la base de datos **PostgreSQL 16**, asegúrese de que su entorno utilice PostgreSQL 16.
@@ -98,13 +98,13 @@ Prepare una base de datos completamente nueva y vacía para los datos que va a i
 Obtenga el archivo de base de datos descargado (normalmente en formato `.sql`) e importe su contenido en la base de datos que preparó en el paso anterior. Hay varias formas de ejecutarlo, dependiendo de su entorno:
 
 * **Opción A: A través de la línea de comandos del servidor (ejemplo con Docker)**
-  Si utiliza Docker para instalar NocoBase y la base de datos, puede subir el archivo `.sql` al servidor y luego usar el comando `docker exec` para realizar la importación. Suponiendo que su contenedor de PostgreSQL se llama `my-nocobase-db` y el nombre del archivo es `nocobase_crm_v2_sql_260223.sql`:
+  Si utiliza Docker para instalar NocoBase y la base de datos, puede subir el archivo `.sql` al servidor y luego usar el comando `docker exec` para realizar la importación. Suponiendo que su contenedor de PostgreSQL se llama `my-nocobase-db` y el nombre del archivo es `nocobase_crm_v2_sql_260327.sql`:
 
   ```bash
   # Copiar el archivo sql al interior del contenedor
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
   # Entrar al contenedor y ejecutar la instrucción de importación
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
   ```
 * **Opción B: A través de un cliente de base de datos remoto (Navicat, etc.)**
   Si su base de datos tiene el puerto expuesto, puede usar cualquier cliente gráfico de base de datos (como Navicat, DBeaver, pgAdmin, etc.) para conectarse a la base de datos y luego:

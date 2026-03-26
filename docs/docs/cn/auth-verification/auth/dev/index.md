@@ -1,3 +1,9 @@
+---
+title: "扩展认证类型"
+description: "NocoBase 扩展用户认证类型开发指南：不依赖第三方回调与依赖第三方回调的认证流程、Auth/BaseAuth 类、AuthModel、registerType 客户端注册。"
+keywords: "扩展认证类型,Auth,BaseAuth,AuthModel,自定义认证,registerType,NocoBase"
+---
+
 # 扩展认证类型
 
 ## 概述

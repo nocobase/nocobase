@@ -7,16 +7,29 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE, utils } from '@nocobase/actions';
 import { parseCollectionName } from '@nocobase/data-source-manager';
 
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
 import type { FlowNodeModel } from '../types';
-import { toJSON } from '../utils';
+import { toJSON, validateCollectionField } from '../utils';
 import { Instruction } from '.';
 
 export class QueryInstruction extends Instruction {
+  configSchema = Joi.object({
+    collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
+
   async run(node: FlowNodeModel, input, processor: Processor) {
     const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
 
@@ -25,12 +38,7 @@ export class QueryInstruction extends Instruction {
     const { repository } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
-    const {
-      page = DEFAULT_PAGE,
-      pageSize = DEFAULT_PER_PAGE,
-      sort = [],
-      ...options
-    } = processor.getParsedValue(params, node.id);
+    const { page, pageSize, sort = [], ...options } = processor.getParsedValue(params, node.id);
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {
@@ -42,7 +50,7 @@ export class QueryInstruction extends Instruction {
       : options.appends;
     const result = await (multiple ? repository.find : repository.findOne).call(repository, {
       ...options,
-      ...utils.pageArgsToLimitArgs(page, pageSize),
+      ...utils.pageArgsToLimitArgs(page ?? DEFAULT_PAGE, pageSize ?? DEFAULT_PER_PAGE),
       sort: sort
         .filter((item) => item.field)
         .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),

@@ -374,6 +374,11 @@
             "type": "custom-link",
             "label": "Encryption",
             "link": "/data-sources/field-encryption/"
+          },
+          {
+            "type": "custom-link",
+            "label": "China Region",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/china-region"
           }
         ]
       },

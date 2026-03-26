@@ -94,7 +94,10 @@ export function SchemaSettingsConnectDataBlocks(props) {
         title={title}
         value={target?.field || ''}
         options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+          ...getSupportFieldsByAssociation(
+            getAllCollectionsInheritChain(collection.name, collection.dataSource),
+            block,
+          ).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${getTargetKey(field)}`,
