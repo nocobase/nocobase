@@ -7,15 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { flowSchemaContribution } from './flow-schema-contributions';
 
 export class PluginActionBulkUpdateServer extends Plugin {
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
-
   afterAdd() {}
 
   beforeLoad() {}

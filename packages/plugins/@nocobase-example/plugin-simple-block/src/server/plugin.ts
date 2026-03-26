@@ -8,13 +8,17 @@
  */
 
 import { Plugin } from '@nocobase/server';
+import Big from 'big.js';
 
 export class PluginSimpleBlockServer extends Plugin {
   async afterAdd() {}
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    const x = new Big(123.4567);
+    console.log('Big.js example:', x.times(2).toString());
+  }
 
   async install() {}
 

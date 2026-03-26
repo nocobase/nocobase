@@ -220,17 +220,21 @@ export class TableColumnModel extends DisplayItemModel {
       ) : (
         titleContent
       ),
-      onCell: (record, recordIndex) => ({
-        record,
-        recordIndex: record?.__index || recordIndex,
-        width: this.props.width - 16,
-        editable: this.props.editable,
-        dataIndex: this.props.dataIndex,
-        title: this.props.title,
-        overflowMode: this.props.overflowMode,
-        model: this,
-        // handleSave,
-      }),
+      onCell: (record, recordIndex) => {
+        const cellProps = this.props.onCell ? this.props.onCell(record, recordIndex) : {};
+        return {
+          ...cellProps,
+          record,
+          recordIndex: record?.__index || recordIndex,
+          width: this.props.width - 16,
+          editable: this.props.editable,
+          dataIndex: this.props.dataIndex,
+          title: this.props.title,
+          overflowMode: this.props.overflowMode,
+          model: this,
+          // handleSave,
+        };
+      },
       render: (value, record, index) => {
         return (
           <FlowModelProvider model={this}>

@@ -112,6 +112,27 @@ describe('RunJS Snippets', () => {
       expect(multiScene?.scenes).toEqual(expect.arrayContaining(['detail', 'table']));
       expect(multiScene?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/table']));
     });
+
+    it('should expose new style snippets for matching contexts', async () => {
+      const tableSnippets = await listSnippetsForContext('JSColumnRunJSContext', 'v1', 'zh-CN');
+      const fieldSnippets = await listSnippetsForContext('FormJSFieldItemRunJSContext', 'v1', 'zh-CN');
+      const detailEventSnippets = await listSnippetsForContext('DetailsItemModel', 'v1', 'zh-CN');
+      const tableEventSnippets = await listSnippetsForContext('TableColumnModel', 'v1', 'zh-CN');
+
+      const tableStyle = tableSnippets.find((s) => s.ref === 'scene/table/set-cell-style');
+      expect(tableStyle?.name).toBe('表格字段样式设置');
+      expect(tableStyle?.body).toContain('ctx.model.props.onCell');
+      expect(tableStyle?.scenes).toEqual(['tableFieldEvent']);
+
+      const fieldStyle = fieldSnippets.find((s) => s.ref === 'scene/detail/set-field-style');
+      expect(fieldStyle?.name).toBe('表单、详情字段样式设置');
+      expect(fieldStyle?.body).toContain('ctx.model.subModels.field.props.style');
+      expect(fieldStyle?.scenes).toEqual(expect.arrayContaining(['detailFieldEvent', 'formFieldEvent']));
+      expect(fieldStyle?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/form']));
+
+      expect(detailEventSnippets.some((s) => s.ref === 'scene/detail/set-field-style')).toBe(true);
+      expect(tableEventSnippets.some((s) => s.ref === 'scene/table/set-cell-style')).toBe(true);
+    });
   });
 
   describe('New snippets', () => {

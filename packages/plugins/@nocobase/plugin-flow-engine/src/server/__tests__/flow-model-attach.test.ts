@@ -7,28 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MockServer, createMockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
-import { createFlowEngineTestApp, destroyTestApp } from './test-utils';
 
 describe('flow-model attach', () => {
-  let app: any;
+  let app: MockServer;
   let repository: FlowModelRepository;
 
-  const insertModel = (model: Record<string, any>) => repository.insertModel(model as any);
-
   afterEach(async () => {
-    await destroyTestApp(app);
-    app = null;
+    await app.destroy();
   });
 
   beforeEach(async () => {
-    ({ app } = await createFlowEngineTestApp());
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['flow-engine'],
+    });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
   });
 
   it('should attach existing subtree and keep async nodes', async () => {
-    await insertModel({ uid: 'parent', use: 'ParentModel' });
-    await insertModel({
+    await repository.insertModel({ uid: 'parent', use: 'ParentModel' } as any);
+    await repository.insertModel({
       uid: 'childA',
       use: 'ChildModel',
       subModels: {
@@ -44,7 +44,7 @@ describe('flow-model attach', () => {
           },
         },
       },
-    });
+    } as any);
 
     const attached = await repository.attach('childA', {
       parentId: 'parent',
@@ -72,9 +72,9 @@ describe('flow-model attach', () => {
   });
 
   it('should support ordering (before/after) when attaching into array subKey', async () => {
-    await insertModel({ uid: 'parent', use: 'ParentModel' });
-    await insertModel({ uid: 'childB', use: 'ChildModel' });
-    await insertModel({ uid: 'childA', use: 'ChildModel' });
+    await repository.insertModel({ uid: 'parent', use: 'ParentModel' } as any);
+    await repository.insertModel({ uid: 'childB', use: 'ChildModel' } as any);
+    await repository.insertModel({ uid: 'childA', use: 'ChildModel' } as any);
 
     await repository.attach('childB', { parentId: 'parent', subKey: 'items', subType: 'array', position: 'last' });
     await repository.attach('childA', {
@@ -92,7 +92,7 @@ describe('flow-model attach', () => {
   });
 
   it('should reject cycle', async () => {
-    await insertModel({
+    await repository.insertModel({
       uid: 'root',
       use: 'RootModel',
       subModels: {
@@ -103,7 +103,7 @@ describe('flow-model attach', () => {
           },
         ],
       },
-    });
+    } as any);
 
     await expect(
       repository.attach('root', { parentId: 'desc', subKey: 'items', subType: 'array', position: 'last' }),
@@ -111,9 +111,9 @@ describe('flow-model attach', () => {
   });
 
   it('should reject object subKey conflict', async () => {
-    await insertModel({ uid: 'parent', use: 'ParentModel' });
-    await insertModel({ uid: 'child1', use: 'ChildModel' });
-    await insertModel({ uid: 'child2', use: 'ChildModel' });
+    await repository.insertModel({ uid: 'parent', use: 'ParentModel' } as any);
+    await repository.insertModel({ uid: 'child1', use: 'ChildModel' } as any);
+    await repository.insertModel({ uid: 'child2', use: 'ChildModel' } as any);
 
     await repository.attach('child1', { parentId: 'parent', subKey: 'grid', subType: 'object', position: 'last' });
 

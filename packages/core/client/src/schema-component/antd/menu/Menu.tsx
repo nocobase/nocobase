@@ -329,39 +329,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
     [api, collectionName, isDesktopRoutes, routeRepository],
   );
 
-  const createV2 = useCallback(
-    async (
-      values: {
-        schemaUid: string;
-        parentId?: string | number | null;
-        title: string;
-        icon?: string;
-      },
-      refreshAfterCreate = true,
-    ) => {
-      // @ts-ignore
-      const res = await api.resource.createV2({
-        values,
-      });
-      refreshAfterCreate && refreshRoutes();
-      return res;
-    },
-    [refreshRoutes, api.resource],
-  );
-
-  const destroyV2 = useCallback(
-    async (schemaUid: string, refreshAfterDestroy = true) => {
-      // @ts-ignore
-      const res = await api.resource.destroyV2({
-        values: { schemaUid },
-      });
-      refreshAfterDestroy && refreshRoutes();
-      return res;
-    },
-    [refreshRoutes, api.resource],
-  );
-
-  return { createRoute, createV2, updateRoute, deleteRoute, destroyV2, moveRoute, refreshRoutes };
+  return { createRoute, updateRoute, deleteRoute, moveRoute };
 };
 
 const HeaderMenu = React.memo<{
