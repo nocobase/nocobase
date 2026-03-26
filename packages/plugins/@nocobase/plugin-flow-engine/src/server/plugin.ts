@@ -8,7 +8,7 @@
  */
 
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import { flowSchemaContribution } from './flow-schema-contributions';

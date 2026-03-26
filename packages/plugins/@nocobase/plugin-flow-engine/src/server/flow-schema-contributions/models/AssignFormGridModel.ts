@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowModelSchemaContribution } from '@nocobase/flow-schema-registry';
 import { createGridLayoutDocs, createGridLayoutStepParamsSchema, genericModelNodeSchema } from '../shared';
 
 export const assignFormGridModelInternalSchemaContribution: FlowModelSchemaContribution = {

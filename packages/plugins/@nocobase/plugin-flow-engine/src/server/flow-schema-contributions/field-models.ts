@@ -11,7 +11,7 @@ import type {
   FlowFieldBindingContextContribution,
   FlowFieldBindingContribution,
   FlowModelSchemaContribution,
-} from '@nocobase/flow-engine';
+} from '@nocobase/flow-schema-registry';
 import {
   createFieldModelSchemaContribution,
   createFieldModelStepParamsSchema,

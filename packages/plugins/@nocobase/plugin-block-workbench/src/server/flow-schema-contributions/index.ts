@@ -7,7 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowJsonSchema, FlowModelSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-engine';
+import type {
+  FlowJsonSchema,
+  FlowModelSchemaContribution,
+  FlowSchemaContribution,
+} from '@nocobase/flow-schema-registry';
 
 const actionButtonGeneralStepParamsSchema: FlowJsonSchema = {
   type: 'object',

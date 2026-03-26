@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowModelSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 
 function createFieldContribution(use: string, title: string): FlowModelSchemaContribution {
   return {

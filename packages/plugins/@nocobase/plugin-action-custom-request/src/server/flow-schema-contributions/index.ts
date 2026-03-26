@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowActionSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowActionSchemaContribution, FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 
 const requestNameValueSchema = {
   type: 'object',

@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { type FlowSchemaContribution, FlowModel } from '@nocobase/flow-engine';
+import { FlowModel } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import { PluginActionBulkUpdateServer } from '../../../../plugin-action-bulk-update/src/server/plugin';
 import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';

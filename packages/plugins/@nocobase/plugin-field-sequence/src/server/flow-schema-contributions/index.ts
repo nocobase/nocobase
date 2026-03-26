@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 
 export const flowSchemaContribution: FlowSchemaContribution = {
   fieldBindings: [

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import path from 'path';
 import { getHtml } from './actions';

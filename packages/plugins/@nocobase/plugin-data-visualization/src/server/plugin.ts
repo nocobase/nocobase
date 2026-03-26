@@ -8,7 +8,7 @@
  */
 
 import { Cache } from '@nocobase/cache';
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { query } from './actions/query';
 import PluginAIServer from '@nocobase/plugin-ai';

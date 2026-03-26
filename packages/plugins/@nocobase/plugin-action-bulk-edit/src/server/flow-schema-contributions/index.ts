@@ -12,7 +12,7 @@ import type {
   FlowJsonSchema,
   FlowModelSchemaContribution,
   FlowSchemaContribution,
-} from '@nocobase/flow-engine';
+} from '@nocobase/flow-schema-registry';
 
 const genericModelNodeSchema: FlowJsonSchema = {
   type: 'object',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowModelSchemaContribution } from '@nocobase/flow-schema-registry';
 import { pageTabSettingsStepParamsSchema } from '../shared';
 
 export const pageTabModelInternalSchemaContribution: FlowModelSchemaContribution = {

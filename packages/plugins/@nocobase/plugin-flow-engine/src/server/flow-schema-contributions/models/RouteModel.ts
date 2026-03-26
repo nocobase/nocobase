@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowModelSchemaContribution } from '@nocobase/flow-schema-registry';
 
 export const routeModelSchemaContribution: FlowModelSchemaContribution = {
   use: 'RouteModel',

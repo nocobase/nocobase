@@ -91,6 +91,7 @@ const external = [
   '@nocobase/utils',
   '@nocobase/license-kit',
   '@nocobase/flow-engine',
+  '@nocobase/flow-schema-registry',
   '@nocobase/client-v2',
   '@nocobase/shared',
   // @nocobase/auth

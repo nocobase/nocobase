@@ -15,7 +15,7 @@ import type {
   FlowSchemaContribution,
   FlowSchemaContributionProvider,
   FlowSchemaInventoryContribution,
-} from '@nocobase/flow-engine';
+} from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import { FlowSchemaService } from '../flow-schema-service';

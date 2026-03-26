@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowActionSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowActionSchemaContribution } from '@nocobase/flow-schema-registry';
 import { dataScopeParamsSchema } from '../shared';
 
 export const dataScopeSchemaContribution: FlowActionSchemaContribution = {

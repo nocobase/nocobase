@@ -12,7 +12,7 @@ import { basename } from 'path';
 import match from 'mime-match';
 
 import { Collection, Model, Transactionable } from '@nocobase/database';
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Readable } from 'stream';

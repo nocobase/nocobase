@@ -16,7 +16,7 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-engine';
+import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import { flowSchemaContribution } from './flow-schema-contributions';
 

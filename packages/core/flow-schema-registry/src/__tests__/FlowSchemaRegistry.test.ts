@@ -9,7 +9,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { FlowSchemaRegistry } from '../FlowSchemaRegistry';
-import { FlowModel } from '../models';
+import { FlowModel } from '@nocobase/flow-engine';
 
 const expectGridLayoutSchemaDocument = (document: any) => {
   expect(document?.jsonSchema?.properties?.stepParams).toMatchObject({
