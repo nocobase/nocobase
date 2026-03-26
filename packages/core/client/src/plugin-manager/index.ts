@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './context';
 export * from './PinnedPluginListProvider';
 
 import { Plugin } from '../application/Plugin';

@@ -26,6 +26,7 @@ import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsMan
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, WebSocketClientOptions } from './WebSocketClient';
 import { AppComponent, BlankComponent, defaultAppComponents } from './components';
+import { HeaderActionsManager } from './HeaderActionsManager';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
 import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
@@ -137,6 +138,7 @@ export class Application {
   public schemaInitializerManager: SchemaInitializerManager;
   public schemaSettingsManager: SchemaSettingsManager;
   public dataSourceManager: DataSourceManager;
+  public headerActionsManager: HeaderActionsManager;
   public name: string;
   public favicon: string;
   public globalVars: Record<string, any> = {};
@@ -217,6 +219,7 @@ export class Application {
     this.apiClient.app = this;
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager(options.router, this);
+    this.headerActionsManager = new HeaderActionsManager(this.eventBus);
     this.schemaSettingsManager = new SchemaSettingsManager(options.schemaSettings, this);
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);

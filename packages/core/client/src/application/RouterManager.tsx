@@ -42,6 +42,10 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
   routes?: Record<string, RouteType>;
 };
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
+export type ComponentLoaderResult =
+  | { default?: ComponentTypeAndString; Component?: ComponentTypeAndString }
+  | ComponentTypeAndString;
+export type ComponentLoader = () => Promise<ComponentLoaderResult>;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
   skipAuthCheck?: boolean;
