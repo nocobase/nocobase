@@ -506,6 +506,14 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
+   * Check if the application is running in transient mode, which means it is not serving any worker.
+   * @experimental
+   */
+  public static isTransient() {
+    return process.env.WORKER_MODE === '-';
+  }
+
+  /**
    * @deprecated use static method {@link Application.serving} instead.
    */
   public serving(key?: string): boolean {

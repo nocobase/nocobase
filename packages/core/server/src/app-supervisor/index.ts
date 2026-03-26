@@ -413,7 +413,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     const app = new Application(options);
 
-    if (hook ?? app.serving()) {
+    if (hook ?? !Application.isTransient()) {
       app.on('afterStart', async () => {
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
@@ -443,8 +443,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     const app = new Application(options);
     this.registerCommandHandler(app);
     app.on('afterStart', async (app: Application) => {
-      const { WORKER_MODE = '' } = process.env;
-      if (WORKER_MODE === '-') {
+      if (Application.isTransient()) {
         return;
       }
       await app.syncMessageManager.subscribe(
@@ -734,7 +733,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    if (!app.serving()) {
+    if (Application.isTransient()) {
       return;
     }
 

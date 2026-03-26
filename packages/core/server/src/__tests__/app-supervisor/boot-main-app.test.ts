@@ -51,7 +51,7 @@ describe('AppSupervisor bootMainApp behavior in worker mode', () => {
     vi.restoreAllMocks();
   });
 
-  it('should skip everything when WORKER_MODE is "-"', async () => {
+  it('should skip everything when transient (WORKER_MODE is "-")', async () => {
     process.env.WORKER_MODE = '-';
 
     const mainApp = supervisor.bootMainApp({});

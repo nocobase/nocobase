@@ -53,7 +53,7 @@ describe('AppSupervisor sync messages in worker mode', () => {
     return app;
   }
 
-  it('should publish sync messages on sub-app lifecycle events when serving', async () => {
+  it('should publish sync messages on sub-app lifecycle events when not transient', async () => {
     delete process.env.WORKER_MODE;
 
     const app = registerTestApp('test-serving-app');
@@ -79,7 +79,7 @@ describe('AppSupervisor sync messages in worker mode', () => {
     });
   });
 
-  it('should NOT publish sync messages on sub-app lifecycle events when WORKER_MODE is "-"', async () => {
+  it('should NOT publish sync messages on sub-app lifecycle events when transient (WORKER_MODE is "-")', async () => {
     process.env.WORKER_MODE = '-';
 
     const app = registerTestApp('test-worker-app');
@@ -91,7 +91,7 @@ describe('AppSupervisor sync messages in worker mode', () => {
     expect(sendSyncMessageSpy).not.toHaveBeenCalled();
   });
 
-  it('should NOT clearAppStatus on destroy when WORKER_MODE is "-"', async () => {
+  it('should NOT clearAppStatus on destroy when transient (WORKER_MODE is "-")', async () => {
     process.env.WORKER_MODE = '-';
 
     const clearAppStatusSpy = vi.spyOn(supervisor, 'clearAppStatus').mockResolvedValue(undefined);
@@ -104,7 +104,33 @@ describe('AppSupervisor sync messages in worker mode', () => {
     clearAppStatusSpy.mockRestore();
   });
 
-  it('should clearAppStatus on destroy when serving', async () => {
+  it('should publish sync messages on sub-app lifecycle events when task worker (WORKER_MODE is topic)', async () => {
+    process.env.WORKER_MODE = 'topic';
+
+    const app = registerTestApp('test-task-worker-app');
+
+    await app.emitAsync('afterStart');
+    expect(sendSyncMessageSpy).toHaveBeenCalledWith(undefined, {
+      type: 'app:started',
+      appName: 'test-task-worker-app',
+    });
+
+    sendSyncMessageSpy.mockClear();
+    await app.emitAsync('afterStop');
+    expect(sendSyncMessageSpy).toHaveBeenCalledWith(undefined, {
+      type: 'app:stopped',
+      appName: 'test-task-worker-app',
+    });
+
+    sendSyncMessageSpy.mockClear();
+    await app.emitAsync('afterDestroy');
+    expect(sendSyncMessageSpy).toHaveBeenCalledWith(undefined, {
+      type: 'app:removed',
+      appName: 'test-task-worker-app',
+    });
+  });
+
+  it('should clearAppStatus on destroy when not transient', async () => {
     delete process.env.WORKER_MODE;
 
     const clearAppStatusSpy = vi.spyOn(supervisor, 'clearAppStatus').mockResolvedValue(undefined);
