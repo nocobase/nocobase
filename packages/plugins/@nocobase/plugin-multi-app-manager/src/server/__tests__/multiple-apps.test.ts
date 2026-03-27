@@ -76,7 +76,7 @@ describe('multiple apps', () => {
     expect(fn).toBeCalled();
   });
 
-  it.only('should create application', async () => {
+  it('should create application', async () => {
     const name = `td_${uid()}`;
 
     await db.getRepository('applications').create({
@@ -349,7 +349,7 @@ describe('multiple apps', () => {
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
   });
 
-  it.only('should start automatically with quick start', async () => {
+  it('should start automatically with quick start', async () => {
     const subAppName = `t_${uid()}`;
 
     const subApp = await app.db.getRepository('applications').create({
