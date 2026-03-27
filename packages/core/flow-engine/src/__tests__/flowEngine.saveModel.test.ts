@@ -40,6 +40,10 @@ class MockFlowModelRepository implements IFlowModelRepository {
     return null;
   }
 
+  async ensure(options: any): Promise<any> {
+    return await this.findOne(options);
+  }
+
   async destroy(uid: string): Promise<boolean> {
     return true;
   }

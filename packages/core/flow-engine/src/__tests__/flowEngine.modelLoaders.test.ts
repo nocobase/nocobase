@@ -16,8 +16,12 @@ class MockFlowModelRepository implements IFlowModelRepository {
   findOneResult: any = null;
   save = vi.fn(async (model: FlowModel) => ({ success: true, uid: model.uid }));
 
-  async findOne() {
+  async findOne(_query?: any) {
     return this.findOneResult ? JSON.parse(JSON.stringify(this.findOneResult)) : null;
+  }
+
+  async ensure(options: any) {
+    return await this.findOne(options);
   }
 
   async destroy() {

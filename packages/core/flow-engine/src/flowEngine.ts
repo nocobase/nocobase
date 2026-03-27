@@ -1336,7 +1336,13 @@ export class FlowEngine {
       return hydrated;
     }
 
-    const data = await this._modelRepository.findOne(options);
+    const shouldUseEnsure = !extra?.skipSave && !uid && !!parentId && !!subKey && options?.subType === 'object';
+    const data = shouldUseEnsure
+      ? (await this._modelRepository.ensure(options, {
+          includeAsyncNode: !!(options?.includeAsyncNode || options?.async),
+        })) ?? (await this._modelRepository.findOne(options))
+      : await this._modelRepository.findOne(options);
+
     let model: T | null = null;
     if (data?.uid) {
       model = await this.createModelAsync<T>(data as any, extra);

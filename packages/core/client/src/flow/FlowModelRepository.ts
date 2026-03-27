@@ -38,6 +38,10 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
     return null;
   }
 
+  async ensure(values: Record<string, any>) {
+    return await this.findOne(values);
+  }
+
   async loadByParentId(parentId: string) {
     for (const model of this.models.values()) {
       if (model.parentId == parentId) {
@@ -154,7 +158,8 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const uid = query?.uid ?? '';
     const parentId = query?.parentId ?? '';
     const subKey = query?.subKey ?? '';
-    return `uid:${uid}|parentId:${parentId}|subKey:${subKey}`;
+    const includeAsyncNode = query?.includeAsyncNode ? 1 : 0;
+    return `uid:${uid}|parentId:${parentId}|subKey:${subKey}|includeAsyncNode:${includeAsyncNode}`;
   }
 
   async findOne(query) {
@@ -168,7 +173,7 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const promise = this.app.apiClient
       .request({
         url: 'flowModels:findOne',
-        params: _.pick(query, ['uid', 'parentId', 'subKey']),
+        params: _.pick(query, ['uid', 'parentId', 'subKey', 'includeAsyncNode']),
       })
       .then((response) => response.data?.data)
       .finally(() => {
@@ -180,6 +185,26 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     return data ? _.cloneDeep(data) : data;
   }
 
+  async ensure(values: Record<string, any>, options?: { includeAsyncNode?: boolean }) {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:ensure',
+      params: { includeAsyncNode: !!options?.includeAsyncNode },
+      data: values,
+    });
+    return response.data?.data;
+  }
+
+  async mutate(values: Record<string, any>, options?: { includeAsyncNode?: boolean }) {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:mutate',
+      params: { includeAsyncNode: !!options?.includeAsyncNode },
+      data: values,
+    });
+    return response.data?.data;
+  }
+
   async save(model: FlowModel, options?: { onlyStepParams?: boolean }) {
     const data = model.serialize();
     if (options?.onlyStepParams) {
@@ -188,6 +213,7 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     const response = await this.app.apiClient.request({
       method: 'POST',
       url: 'flowModels:save',
+      params: { return: 'model' },
       data,
     });
     return response.data?.data;
