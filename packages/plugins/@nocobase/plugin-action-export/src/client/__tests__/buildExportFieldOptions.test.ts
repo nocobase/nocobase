@@ -65,7 +65,7 @@ describe('buildExportFieldOptions', () => {
     ]);
   });
 
-  it('allows to-many relations to expand to a to-one relation but not another to-many relation', () => {
+  it('allows to-many relations to expand to a to-one relation but hides another to-many relation', () => {
     const fieldsByTarget = {
       comments: [
         createField({ name: 'content' }),
@@ -116,20 +116,12 @@ describe('buildExportFieldOptions', () => {
               },
             ],
           },
-          {
-            name: 'tags',
-            title: 'tags',
-            schema: {
-              title: 'tags',
-            },
-            disabled: true,
-          },
         ],
       },
     ]);
   });
 
-  it('allows two relation levels after a to-one relation and stops at plain fields', () => {
+  it('allows two relation levels after a to-one relation and hides deeper relation fields', () => {
     const fieldsByTarget = {
       users: [
         createField({ name: 'nickname' }),
@@ -185,14 +177,6 @@ describe('buildExportFieldOptions', () => {
                 },
                 disabled: false,
               },
-              {
-                name: 'manager',
-                title: 'manager',
-                schema: {
-                  title: 'manager',
-                },
-                disabled: true,
-              },
             ],
           },
           {
@@ -211,14 +195,6 @@ describe('buildExportFieldOptions', () => {
                 },
                 disabled: false,
               },
-              {
-                name: 'category',
-                title: 'category',
-                schema: {
-                  title: 'category',
-                },
-                disabled: true,
-              },
             ],
           },
         ],
@@ -226,7 +202,7 @@ describe('buildExportFieldOptions', () => {
     ]);
   });
 
-  it('does not allow a second to-many relation in the path', () => {
+  it('does not allow a second to-many relation in the path and hides it', () => {
     const fieldsByTarget = {
       comments: [
         createField({ name: 'content' }),
@@ -256,14 +232,6 @@ describe('buildExportFieldOptions', () => {
               title: 'content',
             },
             disabled: false,
-          },
-          {
-            name: 'tags',
-            title: 'tags',
-            schema: {
-              title: 'tags',
-            },
-            disabled: true,
           },
         ],
       },
