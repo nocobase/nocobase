@@ -15,9 +15,12 @@
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
+
 import { Plugin } from '@nocobase/server';
+
 export class PluginCommentServer extends Plugin {
   async afterAdd() {}
+
   async beforeLoad() {}
 
   async load() {}

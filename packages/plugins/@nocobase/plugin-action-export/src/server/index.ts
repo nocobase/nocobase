@@ -6,9 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { Plugin } from '@nocobase/server';
 import { exportXlsx } from './actions';
 import { LoggerOptions, Logger } from '@nocobase/logger';
+
 export class PluginActionExportServer extends Plugin {
   logger: Logger;
   beforeLoad() {

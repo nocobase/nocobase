@@ -15,6 +15,7 @@ import PluginAIServer from '@nocobase/plugin-ai';
 
 export class PluginDataVisualizationServer extends Plugin {
   cache: Cache;
+
   afterAdd() {}
 
   beforeLoad() {

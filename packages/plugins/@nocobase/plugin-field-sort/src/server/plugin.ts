@@ -6,13 +6,16 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { Plugin } from '@nocobase/server';
 import { DataSource, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 import { SortField } from './sort-field';
 import { move } from './action';
+
 export class PluginFieldSortServer extends Plugin {
   async afterAdd() {}
+
   async beforeLoad() {
     const { lockManager } = this.app;
     class SortFieldClass extends SortField {}

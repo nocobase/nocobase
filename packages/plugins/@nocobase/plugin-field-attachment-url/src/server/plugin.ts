@@ -6,10 +6,13 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { Plugin } from '@nocobase/server';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
+
 export class PluginFieldAttachmentUrlServer extends Plugin {
   async afterAdd() {}
+
   async beforeLoad() {}
 
   async load() {

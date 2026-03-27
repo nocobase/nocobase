@@ -6,11 +6,14 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { resolve } from 'path';
 import { FormulaField } from './formula-field';
+
 export class PluginFieldFormulaServer extends Plugin {
   afterAdd() {}
+
   beforeLoad() {
     this.db.registerFieldTypes({
       formula: FormulaField,

@@ -6,13 +6,16 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
+
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { getConfiguration, setConfiguration } from './actions';
 import { CircleField, LineStringField, PointField, PolygonField } from './fields';
 import { CircleInterface, LineStringInterface, PointInterface, PolygonInterface } from './interfaces';
 import { CircleValueParser, LineStringValueParser, PointValueParser, PolygonValueParser } from './value-parsers';
+
 export class PluginMapServer extends Plugin {
   afterAdd() {}
+
   beforeLoad() {
     const fields = {
       point: PointField,

@@ -10,15 +10,18 @@
 import { randomInt } from 'crypto';
 import path from 'path';
 import { promisify } from 'util';
+
 import { Plugin } from '@nocobase/server';
 import { Registry } from '@nocobase/utils';
 import { Pattern, SequenceField } from './fields/sequence-field';
 import _ from 'lodash';
 import { Field, Model } from '@nocobase/database';
+
 const asyncRandomInt = promisify(randomInt);
 
 export default class PluginFieldSequenceServer extends Plugin {
   patternTypes = new Registry<Pattern>();
+
   async load() {
     const { app, db, options } = this;
 
