@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "Changelog"
+  },
+  {
+    "type": "file",
     "name": "v1",
     "label": "Legacy CRM (v1)"
   },

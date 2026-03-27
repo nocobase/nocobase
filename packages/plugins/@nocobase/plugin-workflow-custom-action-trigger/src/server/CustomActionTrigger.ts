@@ -50,8 +50,9 @@ export default class CustomActionTrigger extends Trigger {
     collection: Joi.when('type', {
       is: Joi.valid(CONTEXT_TYPE.SINGLE_RECORD, CONTEXT_TYPE.MULTIPLE_RECORDS),
       then: Joi.string().required().messages({ 'any.required': 'Collection is required for record-based context' }),
-      otherwise: Joi.string(),
+      otherwise: Joi.string().allow(null, ''),
     }),
+    appends: Joi.array().items(Joi.string()).optional(),
   });
 
   validateConfig(config: Record<string, any>) {

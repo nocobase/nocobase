@@ -13,11 +13,15 @@ import { FieldModel } from '../base';
 
 export class DisplayPasswordFieldModel extends FieldModel {
   public render() {
-    const { value } = this.props;
+    const { value, style, className } = this.props;
     if (!value) {
-      return <div></div>;
+      return <div className={className} style={style}></div>;
     }
-    return <div>********</div>;
+    return (
+      <div className={className} style={style}>
+        ********
+      </div>
+    );
   }
 }
 
