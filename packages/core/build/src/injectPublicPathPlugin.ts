@@ -9,23 +9,44 @@
 
 function createPluginClientPublicPathDataUri(packageName: string, clientDistDir: string) {
   const code = `
-var publicPath = window['__nocobase_public_path__'] || '';
-if (!publicPath && window.location && window.location.pathname) {
-  var marker = '/v2/';
-  var pathname = window.location.pathname || '/';
-  var index = pathname.indexOf(marker);
-  publicPath = index >= 0 ? pathname.slice(0, index + 1) : '/';
-}
-if (publicPath) {
-  publicPath = publicPath.replace(/\\/v2\\/?$/, '/');
+var publicPath = '';
+var currentScript = typeof document !== 'undefined' ? document.currentScript : null;
+if (currentScript && currentScript.src) {
+  publicPath = currentScript.src
+    .replace(/^blob:/, '')
+    .replace(/#.*$/, '')
+    .replace(/\\?.*$/, '')
+    .replace(/\\/[^\\/]+$/, '/');
 }
 if (!publicPath) {
-  publicPath = '/';
+  var runtimeAssetBase = window['__webpack_public_path__'] || '';
+  if (runtimeAssetBase) {
+    if (runtimeAssetBase.charAt(runtimeAssetBase.length - 1) !== '/') {
+      runtimeAssetBase += '/';
+    }
+    publicPath = runtimeAssetBase + 'static/plugins/${packageName}/dist/${clientDistDir}/';
+  }
 }
-if (publicPath.charAt(publicPath.length - 1) !== '/') {
-  publicPath += '/';
+if (!publicPath) {
+  publicPath = window['__nocobase_public_path__'] || '';
+  if (!publicPath && window.location && window.location.pathname) {
+    var marker = '/v2/';
+    var pathname = window.location.pathname || '/';
+    var index = pathname.indexOf(marker);
+    publicPath = index >= 0 ? pathname.slice(0, index + 1) : '/';
+  }
+  if (publicPath) {
+    publicPath = publicPath.replace(/\\/v2\\/?$/, '/');
+  }
+  if (!publicPath) {
+    publicPath = '/';
+  }
+  if (publicPath.charAt(publicPath.length - 1) !== '/') {
+    publicPath += '/';
+  }
+  publicPath += 'static/plugins/${packageName}/dist/${clientDistDir}/';
 }
-__webpack_public_path__ = publicPath + 'static/plugins/${packageName}/dist/${clientDistDir}/';
+__webpack_public_path__ = publicPath;
 `;
 
   return `data:text/javascript,${encodeURIComponent(code)}`;
