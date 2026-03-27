@@ -12,9 +12,12 @@ import React, { useEffect, useRef } from 'react';
 import { AdminDynamicPage, MobileLayoutProvider } from '../../../admin-shell';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
+import {
+  ADMIN_LAYOUT_MODEL_UID,
+  AdminLayoutMenuItemModel,
+  shouldRenderIconInTitle,
+} from '../../../flow/admin-shell/admin-layout';
 import { AdminLayoutModel } from './AdminLayoutModel';
-import { AdminLayoutMenuItemModel } from './AdminLayoutMenuModels';
-import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { userCenterSettings } from './userCenterSettings';
 
 export * from './useDeleteRouteSchema';
@@ -33,7 +36,7 @@ export {
   AdminShellProvider as AdminProvider,
   CurrentRouteProvider,
 } from '../../../admin-shell';
-export { shouldRenderIconInTitle } from './AdminLayoutMenuModels';
+export { shouldRenderIconInTitle } from '../../../flow/admin-shell/admin-layout';
 
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();

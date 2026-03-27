@@ -19,7 +19,8 @@ import { I18nextProvider } from 'react-i18next';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import { APIClient, APIClientProvider } from '../api-client';
 import { CSSVariableProvider } from '../css-variable';
-import { AntdAppProvider, GlobalThemeProvider } from '../global-theme';
+import AntdAppProvider from '../global-theme/AntdAppProvider';
+import { GlobalThemeProvider } from '../flow/theme';
 import { i18n } from '../i18n';
 import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
@@ -55,6 +56,7 @@ import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import type { Plugin } from './Plugin';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
+import { SystemSettingsSource } from '../flow/system-settings';
 import type { RequireJS } from './utils/requirejs';
 import { RouteRepository } from './RouteRepository';
 import { AIManager } from '../ai';
@@ -144,6 +146,7 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public systemSettings: SystemSettingsSource;
   public flowEngine: FlowEngine;
   public model: ApplicationModel;
   public context: FlowEngineContext & {
@@ -217,6 +220,7 @@ export class Application {
             appName: this.options.name || getSubAppName(options.publicPath),
           });
     this.apiClient.app = this;
+    this.systemSettings = new SystemSettingsSource(this.apiClient);
     this.i18n = options.i18n || i18n;
     this.router = new RouterManager(options.router, this);
     this.headerActionsManager = new HeaderActionsManager(this.eventBus);
@@ -360,6 +364,9 @@ export class Application {
     this.use(FlowEngineGlobalsContextProvider);
     const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
     this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
+    this.flowEngine.context.defineProperty('systemSettings', {
+      value: this.systemSettings,
+    });
   }
 
   private addReactRouterComponents() {

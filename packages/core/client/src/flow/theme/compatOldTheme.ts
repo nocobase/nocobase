@@ -7,4 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { addCustomAlgorithmToTheme, customAlgorithm } from '../flow/theme';
+import defaultTheme from './defaultTheme';
+import { ThemeConfig } from './type';
+
+function compatOldTheme(theme: ThemeConfig) {
+  if (!theme.token?.colorSettings) {
+    theme.token = { ...theme.token, ...defaultTheme.token };
+  }
+
+  return theme;
+}
+
+export default compatOldTheme;

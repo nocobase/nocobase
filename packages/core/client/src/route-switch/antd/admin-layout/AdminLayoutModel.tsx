@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { reaction } from '@formily/reactive';
+import { define, observable, reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
 import { AdminShellProvider } from '../../../admin-shell';
 import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
-import { AdminLayoutComponent } from './AdminLayoutComponent';
+import { AdminLayoutComponent } from '../../../flow/admin-shell/admin-layout';
 import React from 'react';
 import {
   AdminLayoutMenuItemModel,
   type AdminLayoutMenuRouteOptions,
   getAdminLayoutMenuInitializerButton,
   reconcileAdminLayoutMenuItems,
-} from './AdminLayoutMenuModels';
+} from '../../../flow/admin-shell/admin-layout';
 
 type AdminLayoutStructure = {
   subModels: {
@@ -40,11 +40,19 @@ type AdminLayoutStructure = {
  * ```
  */
 export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
+  isMobileLayout = false;
   private routeCoordinator?: AdminLayoutRouteCoordinator;
   private routeDisposer?: () => void;
   private activePageUid = '';
   private layoutContentElement: HTMLElement | null = null;
   private readonly routePageMetaMap = new Map<string, RoutePageMeta>();
+
+  constructor(options: any) {
+    super(options);
+    define(this, {
+      isMobileLayout: observable.ref,
+    });
+  }
 
   private getCurrentRouteByPageUid(pageUid: string) {
     return this.flowEngine.context.routeRepository?.getRouteBySchemaUid?.(pageUid) || {};
@@ -122,6 +130,10 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
     this.getCoordinator().setLayoutContentElement(element);
   }
 
+  setIsMobileLayout(isMobileLayout: boolean) {
+    this.isMobileLayout = !!isMobileLayout;
+  }
+
   protected onMount(): void {
     super.onMount();
     if (!this.routeDisposer) {
@@ -133,6 +145,11 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
       this.flowEngine.context.defineProperty('layoutContentElement', {
         get: () => this.layoutContentElement,
         // 布局容器 ref 会在挂载和卸载时变化，这里必须实时读取。
+        cache: false,
+      });
+      this.flowEngine.context.defineProperty('isMobileLayout', {
+        get: () => this.isMobileLayout,
+        observable: true,
         cache: false,
       });
       this.routeDisposer = reaction(

@@ -7,9 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useApp } from '../../../application';
-
-export const useApplications = () => {
-  const app = useApp();
-  return { Component: app.apps.Component };
-};
+export * from './SystemSettingsSource';
+export * from './useSystemSettings';

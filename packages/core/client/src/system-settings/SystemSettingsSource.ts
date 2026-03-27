@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { addCustomAlgorithmToTheme, customAlgorithm } from '../flow/theme';
+export { SystemSettingsSource } from '../flow/system-settings';

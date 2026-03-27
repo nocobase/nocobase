@@ -278,7 +278,7 @@ describe('AdminLayoutModel menu items', () => {
     expect(route.children[0].routes?.[0]._model).toBe(
       adminLayoutModel.subModels.menuItems?.[0].subModels.menuItems?.[0],
     );
-    expect(route.children[1].path).toBe('/');
+    expect(route.children[1].path).toBe('/admin/__admin_layout__/link/2');
     expect(route.children[1]._depth).toBe(0);
     expect(route.children[1]._route).toMatchObject({ id: 2, type: NocoBaseDesktopRouteType.link });
     expect(route.children[1]._model).toBe(adminLayoutModel.subModels.menuItems?.[1]);
@@ -313,8 +313,10 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     expect(desktopRoute.children[0].key).toBe('x-designer-button');
+    expect(desktopRoute.children[0].path).toBe('/admin/__admin_layout__/designer/admin-layout-model');
     expect(React.isValidElement(desktopRoute.children[0].name)).toBe(true);
     expect(desktopRoute.children[1].routes?.[1].key).toBe('x-designer-button');
+    expect(desktopRoute.children[1].routes?.[1].path).toBe('/admin/__admin_layout__/designer/1');
 
     const mobileRoute = adminLayoutModel.toProLayoutRoute({
       designable: true,
@@ -323,7 +325,11 @@ describe('AdminLayoutModel menu items', () => {
     });
 
     expect(mobileRoute.children[mobileRoute.children.length - 1].key).toBe('x-designer-button');
+    expect(mobileRoute.children[mobileRoute.children.length - 1].path).toBe(
+      '/admin/__admin_layout__/designer/admin-layout-model',
+    );
     expect(mobileRoute.children[0].routes?.[1].key).toBe('x-designer-button');
+    expect(mobileRoute.children[0].routes?.[1].path).toBe('/admin/__admin_layout__/designer/1');
     expect(desktopRoute.children[0]._launcherModel).toBe(adminLayoutModel);
     expect(desktopRoute.children[1].routes?.[1]._launcherModel).toBe(adminLayoutModel.subModels.menuItems?.[0]);
   });

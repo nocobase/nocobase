@@ -24,4 +24,5 @@ export { ICON_POPUP_Z_INDEX, StablePopover } from './Popover';
 export { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
 export { useFullscreenOverlay } from './useFullscreenOverlay';
 export type { CollectionFieldOptions, DataSourceManager } from './data';
+export { NocoBaseDesktopRouteType } from './routeTypes';
 export type { AdminLayoutModel, NocoBaseDesktopRoute } from './routeTypes';

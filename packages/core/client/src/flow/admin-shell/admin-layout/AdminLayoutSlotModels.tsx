@@ -9,13 +9,11 @@
 
 import { HighlightOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Result } from 'antd';
+import { observer, useFlowEngine } from '@nocobase/flow-engine';
+import { Result, theme as antdTheme } from 'antd';
 import React, { FC, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useLocation } from 'react-router-dom';
-import { useDesignable } from '../../../schema-component/hooks';
-import { useToken } from '../../../style';
-import { useAllAccessDesktopRoutes } from '../../../admin-shell';
 
 type AdminLayoutContentProps = {
   onContentElementChange?: (element: HTMLDivElement | null) => void;
@@ -63,12 +61,13 @@ function isDvhSupported() {
   return testEl.style.height === '1dvh';
 }
 
-const ShowTipWhenNoPages = () => {
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable } = useDesignable();
-  const { token } = useToken();
+const ShowTipWhenNoPages = observer(() => {
+  const flowEngine = useFlowEngine();
+  const { token } = antdTheme.useToken();
   const { t } = useTranslation();
   const location = useLocation();
+  const allAccessRoutes = flowEngine.context.routeRepository?.listAccessible?.() || [];
+  const designable = !!flowEngine.context.flowSettingsEnabled;
 
   if (allAccessRoutes.length === 0 && !designable && ['/admin', '/admin/'].includes(location.pathname)) {
     return (
@@ -81,7 +80,7 @@ const ShowTipWhenNoPages = () => {
   }
 
   return null;
-};
+});
 
 /**
  * AdminLayout 内部使用的内容区容器。

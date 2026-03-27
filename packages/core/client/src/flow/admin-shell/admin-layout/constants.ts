@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { addCustomAlgorithmToTheme, customAlgorithm } from '../flow/theme';
+export const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';

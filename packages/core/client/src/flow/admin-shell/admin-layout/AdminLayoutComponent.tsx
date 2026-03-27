@@ -12,14 +12,13 @@ import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import type { DragEndEvent } from '@dnd-kit/core';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { DndProvider, useFlowEngine } from '@nocobase/flow-engine';
+import { DndProvider, observer, useFlowEngine } from '@nocobase/flow-engine';
 import { theme as antdTheme, ConfigProvider, Grid, Popover } from 'antd';
 import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { FC, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
-import { AdminLayoutModel } from './AdminLayoutModel';
 import {
   AdminLayoutMenuModelRenderer,
   type AdminLayoutMenuNode,
@@ -30,18 +29,23 @@ import {
 } from './AdminLayoutMenuModels';
 import { AdminLayoutContent } from './AdminLayoutSlotModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
-
-import {
-  NocoBaseDesktopRouteType,
-  type NocoBaseDesktopRoute,
-  useAllAccessDesktopRoutes,
-  useMobileLayout,
-} from '../../../admin-shell';
-import { useDesignable, useGlobalTheme, useSystemSettings, useToken } from '../../..';
-import { PinnedPluginList } from '../../../plugin-manager';
-import { ResetThemeTokenAndKeepAlgorithm } from './menuItemSettings';
+import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
+import { PinnedPluginListLite } from './PinnedPluginListLite';
 import { useApplications } from './useApplications';
-import { useMenuTranslation } from '../../../schema-component/antd/menu/locale';
+import { useGlobalTheme, type CustomToken } from '../../theme';
+import { useSystemSettings } from '../../system-settings';
+import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
+
+type AdminLayoutHostModel = {
+  isMobileLayout: boolean;
+  setIsMobileLayout: (isMobileLayout: boolean) => void;
+  syncMenuRoutes: (routes: NocoBaseDesktopRoute[]) => void;
+  toProLayoutRoute: (options: { designable: boolean; isMobile: boolean; t: (title: any) => any }) => {
+    path: string;
+    children: AdminLayoutMenuNode[];
+  };
+  setLayoutContentElement: (element: HTMLDivElement | null) => void;
+};
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -76,11 +80,12 @@ const className3 = css`
   white-space: nowrap;
 `;
 
-const NocoBaseLogo = () => {
+const NocoBaseLogo = observer(() => {
+  const { token } = antdTheme.useToken();
+  const customToken = token as CustomToken;
   const result = useSystemSettings();
-  const { token } = useToken();
   const { t } = useTranslation('lm-collections');
-  const fontSizeStyle = useMemo(() => ({ fontSize: token.fontSizeHeading3 }), [token.fontSizeHeading3]);
+  const fontSizeStyle = useMemo(() => ({ fontSize: customToken.fontSizeHeading3 }), [customToken.fontSizeHeading3]);
 
   const hasLogo = result?.data?.data?.logo?.url;
   const logo = hasLogo ? (
@@ -94,7 +99,7 @@ const NocoBaseLogo = () => {
   return (
     <div className={hasLogo ? className1WithFixedWidth : className1WithAutoWidth}>{result?.loading ? null : logo}</div>
   );
-};
+});
 
 const resetStyle = css`
   .ant-layout-sider-children {
@@ -129,7 +134,8 @@ const popoverStyle = css`
 `;
 
 const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
-  const { token } = useToken();
+  const { token } = antdTheme.useToken();
+  const customToken = token as CustomToken;
   const [container, setContainer] = useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -152,7 +158,7 @@ const CollapsedButton: FC<{ collapsed: boolean }> = (props) => {
                 // Fix the issue where the collapse/expand button is covered by subpages
                 .ant-pro-sider-collapsed-button {
                   top: 64px;
-                  left: ${props.collapsed ? 52 : (token.siderWidth || 200) - 12}px;
+                  left: ${props.collapsed ? 52 : (customToken.siderWidth || 200) - 12}px;
                   z-index: 200;
                   transition: left 0.2s;
                 }
@@ -211,7 +217,7 @@ const actionsRender = (props: HeaderViewProps): React.ReactNode[] => {
     return [<MobileActions key="mobile-actions" />];
   }
 
-  return [<PinnedPluginList key="pinned-plugin-list" />];
+  return [<PinnedPluginListLite key="pinned-plugin-list" />];
 };
 
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
@@ -224,19 +230,21 @@ const appContainerStyle: React.CSSProperties = {
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
 const GlobalStyle = () => {
-  const { token } = useToken();
+  const { token } = antdTheme.useToken();
+  const customToken = token as CustomToken;
   const El: FC<any> = useMemo(() => {
-    if (token.globalStyle) {
-      return createGlobalStyle`${token.globalStyle}`;
+    if (customToken.globalStyle) {
+      return createGlobalStyle`${customToken.globalStyle}`;
     }
     return () => null;
-  }, [token.globalStyle]);
+  }, [customToken.globalStyle]);
 
   return <El />;
 };
 
 const MobileActions: FC = () => {
-  const { token } = useToken();
+  const { token } = antdTheme.useToken();
+  const customToken = token as CustomToken;
   const [open, setOpen] = useState(false);
 
   const handleContentClick = useCallback(() => {
@@ -246,8 +254,8 @@ const MobileActions: FC = () => {
   return (
     <Popover
       rootClassName={popoverStyle}
-      content={<PinnedPluginList onClick={handleContentClick} />}
-      color={token.colorBgHeader}
+      content={<PinnedPluginListLite onClick={handleContentClick} />}
+      color={customToken.colorBgHeader}
       trigger="click"
       open={open}
       onOpenChange={setOpen}
@@ -255,7 +263,7 @@ const MobileActions: FC = () => {
       <div style={{ padding: '0 16px', display: 'flex', alignItems: 'center', height: '100%', marginRight: -16 }}>
         <EllipsisOutlined
           style={{
-            color: token.colorTextHeaderMenu,
+            color: customToken.colorTextHeaderMenu,
             fontSize: 20,
           }}
         />
@@ -270,11 +278,12 @@ const MobileActions: FC = () => {
  * @returns
  */
 function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
-  const { setIsMobileLayout } = useMobileLayout();
+  const flowEngine = useFlowEngine();
+  const adminLayoutModel = flowEngine.getModel<AdminLayoutHostModel>(ADMIN_LAYOUT_MODEL_UID);
 
   useEffect(() => {
-    setIsMobileLayout(props.isMobile);
-  }, [props.isMobile, setIsMobileLayout]);
+    adminLayoutModel?.setIsMobileLayout(props.isMobile);
+  }, [adminLayoutModel, props.isMobile]);
 
   return props.children;
 }
@@ -332,7 +341,7 @@ const renderMenuNodeWithModel = (
 ) => {
   const isDesignerButton =
     item?.key === 'x-designer-button' ||
-    (item != null && item.disabled && item.path === '/' && !item?._route?.id && !item?._route?.schemaUid);
+    (item != null && item.disabled && !!item._launcherModel && !item?._route?.id && !item?._route?.schemaUid);
 
   if (isDesignerButton) {
     return <DesignerButtonMenuItem item={item} fallbackParentRoute={fallbackParentRoute} />;
@@ -354,17 +363,17 @@ const renderMenuNodeWithModel = (
   return dom;
 };
 
-export const AdminLayoutComponent = (props) => {
+export const AdminLayoutComponent = observer((props) => {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
-  const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const { designable: _designable } = useDesignable();
+  const adminLayoutModel = flowEngine.getModel<AdminLayoutHostModel>(ADMIN_LAYOUT_MODEL_UID);
+  const allAccessRoutes = useMemo(() => flowEngine.context.routeRepository?.listAccessible?.() || [], [flowEngine]);
   const screens = Grid.useBreakpoint();
   const isMobileViewport =
     screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
   const location = useLocation();
-  const { token } = useToken();
-  const { isMobileLayout } = useMobileLayout();
+  const { token } = antdTheme.useToken();
+  const customToken = token as CustomToken;
+  const isMobileLayout = !!adminLayoutModel?.isMobileLayout;
   const isMobileSider = isMobileLayout || isMobileViewport;
   const [collapsed, setCollapsed] = useState(isMobileSider);
   const [route, setRoute] = useState<{ path: string; children: AdminLayoutMenuNode[] }>({
@@ -372,8 +381,12 @@ export const AdminLayoutComponent = (props) => {
     children: [],
   });
   const doNotChangeCollapsedRef = useRef(false);
-  const { t } = useMenuTranslation();
-  const designable = isMobileSider ? false : _designable;
+  const t = useCallback(
+    (value: any) =>
+      typeof flowEngine.context.t === 'function' ? flowEngine.context.t(value, { ns: 'lm-desktop-routes' }) : value,
+    [flowEngine],
+  );
+  const designable = !isMobileSider && !!flowEngine.context.flowSettingsEnabled;
   const { styles } = useHeaderStyle();
   const { Component: AppsComponent } = useApplications();
   const flowSettingsSyncRef = useRef(0);
@@ -450,40 +463,29 @@ export const AdminLayoutComponent = (props) => {
     };
   }, [designable, flowEngine, isMobileSider]);
 
-  // 将 isMobileLayout 注册到 flowEngine.context，供 flow 模型中使用
-  useEffect(() => {
-    flowEngine.context.defineProperty('isMobileLayout', {
-      get: () => isMobileLayout,
-      info: {
-        description: 'Whether current layout is mobile layout.',
-        detail: 'boolean',
-      },
-    });
-  }, [isMobileLayout, flowEngine]);
-
   const layoutToken = useMemo(() => {
     return {
       header: {
         colorBgHeader: token.colorBgHeader,
-        colorTextMenu: token.colorTextHeaderMenu,
-        colorTextMenuSelected: token.colorTextHeaderMenuActive,
-        colorTextMenuActive: token.colorTextHeaderMenuHover,
-        colorBgMenuItemHover: token.colorBgHeaderMenuHover,
-        colorBgMenuItemSelected: token.colorBgHeaderMenuActive,
+        colorTextMenu: customToken.colorTextHeaderMenu,
+        colorTextMenuSelected: customToken.colorTextHeaderMenuActive,
+        colorTextMenuActive: customToken.colorTextHeaderMenuHover,
+        colorBgMenuItemHover: customToken.colorBgHeaderMenuHover,
+        colorBgMenuItemSelected: customToken.colorBgHeaderMenuActive,
         heightLayoutHeader: 46,
-        colorHeaderTitle: token.colorTextHeaderMenu,
+        colorHeaderTitle: customToken.colorTextHeaderMenu,
       },
       sider: {
-        colorMenuBackground: token.colorBgSider,
-        colorTextMenu: token.colorTextSiderMenu,
-        colorTextMenuSelected: token.colorTextSiderMenuActive,
-        colorBgMenuItemSelected: token.colorBgSiderMenuActive,
-        colorBgMenuItemActive: token.colorBgSiderMenuActive,
-        colorBgMenuItemHover: token.colorBgSiderMenuHover,
+        colorMenuBackground: customToken.colorBgSider,
+        colorTextMenu: customToken.colorTextSiderMenu,
+        colorTextMenuSelected: customToken.colorTextSiderMenuActive,
+        colorBgMenuItemSelected: customToken.colorBgSiderMenuActive,
+        colorBgMenuItemActive: customToken.colorBgSiderMenuActive,
+        colorBgMenuItemHover: customToken.colorBgSiderMenuHover,
       },
       bgLayout: token.colorBgLayout,
     };
-  }, [token]);
+  }, [customToken, token.colorBgHeader, token.colorBgLayout]);
   const { theme, isDarkTheme } = useGlobalTheme();
   const mobileTheme = useMemo(() => {
     return {
@@ -550,7 +552,7 @@ export const AdminLayoutComponent = (props) => {
             <ProLayout
               {...props}
               contentStyle={contentStyle}
-              siderWidth={token.siderWidth || 200}
+              siderWidth={customToken.siderWidth || 200}
               className={resetStyle}
               location={location}
               route={route}
@@ -599,4 +601,4 @@ export const AdminLayoutComponent = (props) => {
       <div id="nocobase-embed-container" style={embedContainerStyle}></div>
     </div>
   );
-};
+});

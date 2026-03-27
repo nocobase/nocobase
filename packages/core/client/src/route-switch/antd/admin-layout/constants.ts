@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const ADMIN_LAYOUT_MODEL_UID = 'admin-layout-model';
+export * from '../../../flow/admin-shell/admin-layout';
