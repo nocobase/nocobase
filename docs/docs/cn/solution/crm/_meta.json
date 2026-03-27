@@ -16,6 +16,11 @@
   },
   {
     "type": "file",
+    "name": "changelog",
+    "label": "更新记录"
+  },
+  {
+    "type": "file",
     "name": "v1",
     "label": "旧版 CRM（v1）"
   },

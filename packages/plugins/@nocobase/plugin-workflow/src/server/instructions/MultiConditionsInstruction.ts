@@ -7,7 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Evaluator, evaluators } from '@nocobase/evaluators';
+import Joi from 'joi';
+
+import { evaluators } from '@nocobase/evaluators';
 import { Instruction } from '.';
 import type Processor from '../Processor';
 import { JOB_STATUS } from '../constants';
@@ -34,6 +36,18 @@ type BranchOutcomeMeta = {
 };
 
 export class MultiConditionsInstruction extends Instruction {
+  configSchema = Joi.object({
+    conditions: Joi.array().items(
+      Joi.object({
+        uid: Joi.string(),
+        title: Joi.string(),
+        engine: Joi.string(),
+        calculation: Joi.any(),
+        expression: Joi.string(),
+      }),
+    ),
+    continueOnNoMatch: Joi.boolean(),
+  });
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { conditions = [], continueOnNoMatch = false } = (node.config || {}) as MultiConditionsConfig;
     const meta: BranchOutcomeMeta = { conditions: [] };

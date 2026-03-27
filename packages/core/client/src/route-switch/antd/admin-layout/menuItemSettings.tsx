@@ -32,7 +32,6 @@ import {
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
-import { getFlowPageMenuSchema } from '../../../modules/menu/FlowPageMenuItem';
 import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -114,7 +113,7 @@ const findNextSibling = (routes: NocoBaseDesktopRoute[], currentRoute: NocoBaseD
 export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
-  const { deleteRoute } = useNocoBaseRoutes();
+  const { deleteRoute, destroyV2 } = useNocoBaseRoutes();
   const { deleteRouteSchema } = useDeleteRouteSchema();
   const currentRoute = useCurrentRoute();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
@@ -132,7 +131,11 @@ export const RemoveRoute: FC = () => {
           onOk: async () => {
             // 删除对应菜单的路由
             if (currentRoute?.id != null) {
-              await Promise.all([deleteRoute(currentRoute.id), deleteRouteSchema(currentRoute.schemaUid)]);
+              if (currentRoute?.type === NocoBaseDesktopRouteType.flowPage) {
+                await destroyV2(currentRoute.schemaUid);
+              } else {
+                await Promise.all([deleteRoute(currentRoute.id), deleteRouteSchema(currentRoute.schemaUid)]);
+              }
             }
 
             if (
@@ -171,7 +174,7 @@ const InsertMenuItems = (props) => {
   const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
-  const { createRoute, moveRoute } = useNocoBaseRoutes();
+  const { createRoute, createV2, moveRoute } = useNocoBaseRoutes();
   const insertPageSchema = useInsertPageSchema();
 
   if (!isSubMenu && insertPosition === 'beforeEnd') {
@@ -317,44 +320,25 @@ const InsertMenuItems = (props) => {
           } as ISchema
         }
         onSubmit={async ({ title, icon }) => {
-          const menuSchemaUid = uid();
           const pageSchemaUid = uid();
-          const tabSchemaUid = uid();
-          const tabSchemaName = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
-          // 1. 先创建一个路由
-          const { data } = await createRoute({
-            type: NocoBaseDesktopRouteType.flowPage,
+          const { data } = await createV2({
+            schemaUid: pageSchemaUid,
             title,
             icon,
-            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
             parentId: parentId || undefined,
-            schemaUid: pageSchemaUid,
-            menuSchemaUid,
-            enableTabs: false,
-            children: [
-              {
-                type: NocoBaseDesktopRouteType.tabs,
-                schemaUid: tabSchemaUid,
-                tabSchemaName,
-                hidden: true,
-              },
-            ],
           });
 
           if (insertPositionToMethod[insertPosition]) {
             // 2. 然后再把路由移动到对应的位置
             await moveRoute({
-              sourceId: data?.data?.id,
+              sourceId: data?.data?.page?.id,
               targetId: currentRoute?.id,
               sortField: 'sort',
               method: insertPositionToMethod[insertPosition],
             });
           }
-
-          // 3. 插入一个对应的 Schema
-          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid }));
         }}
       />
       <SchemaSettingsModalItem

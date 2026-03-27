@@ -9,6 +9,10 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     return null;
   }
 
+  async ensure(values) {
+    return await this.findOne(values);
+  }
+
   async save(model: FlowModel) {
     console.log('Saving model:', model);
     // implement saving a model
@@ -18,6 +22,14 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   async destroy(uid: string) {
     // implement deleting a model by id
     return true;
+  }
+
+  async move(sourceId: string, targetId: string, position: 'before' | 'after') {
+    return;
+  }
+
+  async duplicate(uid: string) {
+    return null;
   }
 }
 

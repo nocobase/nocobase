@@ -3,7 +3,7 @@
   "displayName": "Plugin example: ACL allow",
   "description": "This plugin demonstrates how to use the ACL allow feature to allow users to access specific resources.",
   "private": true,
-  "version": "2.1.0-alpha.12",
+  "version": "2.1.0-alpha.13",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",

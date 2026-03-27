@@ -110,4 +110,69 @@ describe('xlsx importer', () => {
     expect(test.f4).toBeFalsy();
     expect(test.f5).toBe('f5');
   });
+
+  it('should not treat acl fixed params as field restrictions', async () => {
+    const Test = app.db.collection({
+      name: 'test_with_filter_only_acl',
+      fields: [
+        {
+          type: 'string',
+          name: 'title',
+        },
+        {
+          type: 'string',
+          name: 'content',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    const columns = [
+      {
+        dataIndex: ['title'],
+        defaultTitle: 'title',
+      },
+      {
+        dataIndex: ['content'],
+        defaultTitle: 'content',
+      },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: Test,
+      columns,
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(worksheet, [['hello', 'world']], { origin: 'A2' });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: Test,
+      columns,
+      workbook: template,
+    });
+
+    await importer.run({
+      context: {
+        permission: {
+          can: {
+            params: {
+              filter: {
+                spaceName: 'space-a',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const record = await Test.repository.findOne();
+    expect(record.title).toBe('hello');
+    expect(record.content).toBe('world');
+  });
 });

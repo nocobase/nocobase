@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-javascript",
-  "version": "2.1.0-alpha.12",
+  "version": "2.1.0-alpha.13",
   "displayName": "Workflow: JavaScript",
   "displayName.zh-CN": "工作流：JavaScript 节点",
   "description": "Execute a piece of JavaScript in an isolated Node.js environment.",
@@ -25,6 +25,7 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/view": "^6.37.2",
     "codemirror": "^6.0.2",
+    "joi": "^17.13.3",
     "jshint": "^2.13.6",
     "node-gyp": "^10.2.0"
   },

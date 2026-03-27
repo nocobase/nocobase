@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { DisplayItemModel } from '@nocobase/flow-engine';
 import { ColorPicker } from 'antd';
 import React from 'react';
@@ -15,7 +15,7 @@ import { FieldModel } from '../base';
 
 export class DisplayColorFieldModel extends FieldModel {
   public render() {
-    const { value } = this.props;
+    const { value, style, className } = this.props;
     if (!value) {
       return null;
     }
@@ -23,12 +23,16 @@ export class DisplayColorFieldModel extends FieldModel {
       <div
         role="button"
         aria-label="color-picker-read-pretty"
-        className={css`
-          display: inline-flex;
-          .ant-color-picker-trigger-disabled {
-            cursor: default;
-          }
-        `}
+        style={style}
+        className={cx(
+          className,
+          css`
+            display: inline-flex;
+            .ant-color-picker-trigger-disabled {
+              cursor: default;
+            }
+          `,
+        )}
       >
         <ColorPicker disabled value={value} size="small" />
       </div>

@@ -11,6 +11,42 @@ import { describe, it, expect, vi } from 'vitest';
 import { FlowModelRepository } from '../FlowModelRepository';
 
 describe('FlowModelRepository', () => {
+  it('save should keep the default server return contract', async () => {
+    const request = vi.fn(async () => ({
+      data: {
+        data: {
+          uid: 'u1',
+          use: 'RouteModel',
+        },
+      },
+    }));
+
+    const repo = new FlowModelRepository({ apiClient: { request } } as any);
+    const model = {
+      serialize: () => ({
+        uid: 'u1',
+        use: 'RouteModel',
+        subModels: {
+          page: { uid: 'u2', use: 'ChildPageModel' },
+        },
+      }),
+    } as any;
+
+    await expect(repo.save(model)).resolves.toEqual({ uid: 'u1', use: 'RouteModel' });
+    expect(request).toHaveBeenCalledWith({
+      method: 'POST',
+      url: 'flowModels:save',
+      params: { return: 'model' },
+      data: {
+        uid: 'u1',
+        use: 'RouteModel',
+        subModels: {
+          page: { uid: 'u2', use: 'ChildPageModel' },
+        },
+      },
+    });
+  });
+
   it('dedupes concurrent findOne requests with same key', async () => {
     const request = vi.fn(async () => {
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -14,13 +14,18 @@ import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayDateTimeFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
+    const { className, style } = this.props;
     const finalFormat = this.props.format;
     let formattedValue = '';
     if (value) {
       const day = dayjs(value);
       formattedValue = day.isValid() ? day.format(finalFormat) : '';
     }
-    return <div>{formattedValue}</div>;
+    return (
+      <div className={className} style={style}>
+        {formattedValue}
+      </div>
+    );
   }
 }
 

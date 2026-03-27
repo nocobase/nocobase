@@ -13,8 +13,8 @@
 - У вас уже есть базовая среда выполнения NocoBase. Информацию об установке основной системы см. в более подробной [официальной документации по установке](https://docs-cn.nocobase.com/welcome/getting-started/installation).
 - Версия NocoBase **v2.1.0-beta.2 и выше**
 - Вы уже скачали соответствующие файлы системы CRM:
-  - **Файл резервной копии**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - подходит для Способа 1
-  - **SQL-файл**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - подходит для Способа 2
+  - **Файл резервной копии**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - подходит для Способа 1
+  - **SQL-файл**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - подходит для Способа 2
 
 **Важное примечание**:
 - Данное решение создано на базе базы данных **PostgreSQL 16**, пожалуйста, убедитесь, что ваша среда использует PostgreSQL 16.
@@ -98,13 +98,13 @@ docker pull nocobase/nocobase:beta-full
 Получите скачанный файл базы данных (обычно в формате `.sql`) и импортируйте его содержимое в базу данных, подготовленную на предыдущем шаге. Существует несколько способов выполнения, в зависимости от вашей среды:
 
 * **Вариант А: Через командную строку сервера (на примере Docker)**
-  Если вы используете Docker для установки NocoBase и базы данных, вы можете загрузить файл `.sql` на сервер, а затем использовать команду `docker exec` для выполнения импорта. Предположим, что имя вашего контейнера PostgreSQL — `my-nocobase-db`, а имя файла — `nocobase_crm_v2_sql_260223.sql`:
+  Если вы используете Docker для установки NocoBase и базы данных, вы можете загрузить файл `.sql` на сервер, а затем использовать команду `docker exec` для выполнения импорта. Предположим, что имя вашего контейнера PostgreSQL — `my-nocobase-db`, а имя файла — `nocobase_crm_v2_sql_260327.sql`:
 
   ```bash
   # Скопируйте sql-файл внутрь контейнера
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
   # Войдите в контейнер и выполните команду импорта
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
   ```
 * **Вариант Б: Через удаленный клиент базы данных (Navicat и др.)**
   Если порт вашей базы данных открыт, вы можете использовать любой графический клиент базы данных (например, Navicat, DBeaver, pgAdmin и т. д.) для подключения к базе данных, а затем:

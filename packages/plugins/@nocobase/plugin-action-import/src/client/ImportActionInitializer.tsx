@@ -36,7 +36,7 @@ const findSchema = (schema: Schema, key: string, action: string) => {
 };
 
 export const initImportSettings = (fields) => {
-  const importColumns = fields?.filter((f) => !f.children).map((f) => ({ dataIndex: [f.name] }));
+  const importColumns = fields?.filter((f) => !f.children && !f.disabled).map((f) => ({ dataIndex: [f.name] }));
   return { importColumns, explain: '' };
 };
 
