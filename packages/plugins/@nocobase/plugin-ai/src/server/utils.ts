@@ -134,7 +134,7 @@ export const buildTool = (toolsEntry: ToolsEntry) => {
     (input, config) => {
       const { context, toolCall } = config;
       const writer = (config['writer'] as (chunk: any) => void) ?? noWriter;
-      return invoke(context.ctx, input, { toolCallId: toolCall.id, writer });
+      return invoke(context.ctx, input, { toolCallId: toolCall.id, writer, decisions: context.decisions });
     },
     {
       name,

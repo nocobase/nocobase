@@ -71,7 +71,7 @@ export const SubAgentDispatchCard: React.FC<
               ellipsis
               style={{ color: token.colorText, fontSize: token.fontSizeSM + 1, minWidth: 0 }}
             >
-              {t('Switching to {{ nickname }}', { nickname: employee.nickname })}
+              {`@${employee.nickname}`}
             </Typography.Text>
             {employee.position ? (
               <Typography.Text
@@ -119,11 +119,6 @@ export const SubAgentDispatchCard: React.FC<
           >
             {question}
           </Typography.Text>
-          {employee.username ? (
-            <Typography.Text type="secondary" style={{ display: 'block', marginTop: 6, fontSize: token.fontSizeSM }}>
-              @{employee.username}
-            </Typography.Text>
-          ) : null}
         </div>
       ) : null}
     </div>

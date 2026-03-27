@@ -11,7 +11,7 @@ import { Context } from '@nocobase/actions';
 import { Model } from '@nocobase/database';
 import { AIEmployee, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
-import type { SubAgentConversationMetadata } from '../../types';
+import type { SubAgentConversationMetadata, UserDecision } from '../../types';
 import { getAccessibleAIEmployee, getSkillSettingsFromMain } from '../../../ai/tools/sub-agents/shared';
 
 export type SubAgentTask = {
@@ -21,6 +21,10 @@ export type SubAgentTask = {
   question: string;
   skillSettings?: Record<string, any>;
   writer?: (chunk: any) => void;
+  decisions?: {
+    interruptId?: string;
+    decisions: UserDecision[];
+  };
 };
 
 export class SubAgentsDispatcher {
@@ -115,7 +119,7 @@ export class SubAgentsDispatcher {
     sessionId: string;
     running: Promise<string>;
   }> {
-    const { ctx, employee, model, question, skillSettings, writer } = task;
+    const { ctx, employee, model, question, skillSettings, writer, decisions } = task;
     const userId = ctx.auth?.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
@@ -150,18 +154,30 @@ export class SubAgentsDispatcher {
       from: 'sub-agent',
     });
 
+    let context;
+    const { messages } = ctx.action?.params?.values ?? {};
+    if (messages && decisions?.decisions?.some((it) => it.type === 'reject')) {
+      context = {
+        appendMessage: await aiEmployee.getFormatMessages(messages),
+      };
+    }
+
     const running = async () => {
       const result = await aiEmployee.invoke({
-        userMessages: [
-          {
-            role: 'user',
-            content: {
-              type: 'text',
-              content: question,
-            },
-          },
-        ],
+        userDecisions: decisions,
+        userMessages: decisions
+          ? undefined
+          : [
+              {
+                role: 'user',
+                content: {
+                  type: 'text',
+                  content: question,
+                },
+              },
+            ],
         writer,
+        context,
       });
       writer?.({
         action: 'afterSubAgentInvoke',
@@ -217,7 +233,7 @@ export class SubAgentsDispatcher {
     }
     const userDecision = {
       type: 'reject' as const,
-      message: `The user ignored the tools usage and send messages:\n ${JSON.stringify(messages)}`,
+      message: `The user ignored the tools usage and send new messages`,
     };
     const [updated] = await ctx.db.getRepository('aiToolMessages').model.update(
       { userDecision, invokeStatus: 'waiting' },
@@ -235,16 +251,14 @@ export class SubAgentsDispatcher {
         return;
       }
 
-      const model = employee.get('modelSettings') ?? ctx.action?.params?.values?.model;
       const aiEmployee = new AIEmployee({
         ctx,
         employee,
         sessionId,
-        systemMessage: conversation.options?.systemMessage,
-        skillSettings: conversation.options?.skillSettings,
-        model,
       });
       return await aiEmployee.getUserDecisions(lastMessage.get('messageId'));
+    } else {
+      return null;
     }
   }
 }

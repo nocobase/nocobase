@@ -22,7 +22,7 @@ export default defineTools({
       question: z.string().describe('The question or task that should be executed by the target AI employee.'),
     }),
   },
-  async invoke(ctx, { username, question }, { toolCallId, writer }) {
+  async invoke(ctx, { username, question }, { toolCallId, writer, decisions }) {
     const plugin = getAIPlugin(ctx);
     const employee = await getAccessibleAIEmployee(ctx, username);
     if (!employee) {
@@ -38,6 +38,7 @@ export default defineTools({
       question,
       skillSettings,
       writer,
+      decisions,
     });
 
     await updateMessageMetadata(ctx, toolCallId, sessionId, 'pending');

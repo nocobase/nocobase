@@ -24,6 +24,7 @@ import {
   convertHumanMessage as _convertHumanMessage,
   convertToolMessage as _convertToolMessage,
 } from '../utils';
+import { request } from '@nocobase/plugin-license';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
@@ -83,6 +84,7 @@ export const conversationMiddleware = (
     name: 'ConversationMiddleware',
     contextSchema: z.object({
       ctx: z.any(),
+      appendMessage: z.any(),
     }),
     stateSchema: z.object({
       messageId: z.coerce.string().optional(),
@@ -167,6 +169,7 @@ export const conversationMiddleware = (
             lastMessageIndex: state.messages.length,
           },
         };
+
         const lastMessage = state.messages.at(-1);
         if (lastMessage?.type !== 'ai') {
           return newState;
@@ -214,6 +217,17 @@ export const conversationMiddleware = (
       } catch (e) {
         runtime.context?.ctx?.logger?.error(e);
       }
+    },
+    wrapModelCall: async (request, handler) => {
+      const { appendMessage } = request.runtime.context ?? {};
+      if (Array.isArray(appendMessage)) {
+        await aiEmployee.aiChatConversation.withTransaction(async (conversation) => {
+          await conversation.addMessages(convertToolMessage(request.messages.at(-1) as ToolMessage));
+          await conversation.addMessages(appendMessage.map((x) => x as HumanMessage).map(convertHumanMessage));
+        });
+        request.messages.push(...appendMessage);
+      }
+      return handler(request);
     },
   });
 };

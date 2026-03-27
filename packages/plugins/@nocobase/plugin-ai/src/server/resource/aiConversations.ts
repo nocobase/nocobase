@@ -310,12 +310,14 @@ export default {
         if (!editingMessageId) {
           if (await plugin.subAgentsDispatcher.isInterrupted(ctx)) {
             const userDecisions = await plugin.subAgentsDispatcher.reject(ctx);
-            if (shouldStream) {
-              await aiEmployee.stream({ userDecisions });
-            } else {
-              ctx.body = await aiEmployee.invoke({ userDecisions });
+            if (userDecisions) {
+              if (shouldStream) {
+                await aiEmployee.stream({ userDecisions });
+              } else {
+                ctx.body = await aiEmployee.invoke({ userDecisions });
+              }
+              return;
             }
-            return;
           } else {
             const toolMessages = await aiEmployee.cancelToolCall();
             if (toolMessages?.length) {

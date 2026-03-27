@@ -37,7 +37,21 @@ export type ToolsOptions = {
   invoke: (ctx: Context, args: any, runtime: ToolsRuntime) => Promise<any>;
 };
 
-export type ToolsRuntime = { toolCallId: string; writer: (chunk: any) => void };
+export type ToolsRuntime = {
+  toolCallId: string;
+  writer: (chunk: any) => void;
+  decisions?: {
+    interruptId?: string;
+    decisions: {
+      type: 'approve' | 'edit' | 'reject';
+      message?: string;
+      editedAction?: {
+        name: string;
+        args: any;
+      };
+    }[];
+  };
+};
 
 export type ToolsEntry = ToolsOptions;
 

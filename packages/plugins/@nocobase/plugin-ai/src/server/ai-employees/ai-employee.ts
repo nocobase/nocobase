@@ -101,6 +101,15 @@ export class AIEmployee {
     this.protocol = ChatStreamProtocol.fromContext(ctx);
   }
 
+  async getFormatMessages(userMessages: AIMessageInput[]) {
+    const { provider } = await this.getLLMService();
+    const { messages } = await this.aiChatConversation.getChatContext({
+      userMessages,
+      formatMessages: (messages) => this.formatMessages({ messages, provider }),
+    });
+    return messages;
+  }
+
   // === Chat flow ===
   private buildState(messages: AIMessage[]) {
     return {
@@ -232,6 +241,7 @@ export class AIEmployee {
     userMessages = [],
     userDecisions,
     writer,
+    context,
   }: {
     messageId?: string;
     userMessages?: AIMessageInput[];
@@ -240,6 +250,7 @@ export class AIEmployee {
       decisions: UserDecision[];
     };
     writer?: (chunk: any) => void;
+    context?: any;
   }) {
     try {
       const { provider, chatContext, config, state } = await this.buildChatContext({
@@ -249,7 +260,7 @@ export class AIEmployee {
       });
 
       const invokeConfig = {
-        context: { ctx: this.ctx },
+        context: { ctx: this.ctx, decisions: chatContext.decisions, ...context },
         recursionLimit: 100,
         writer,
         ...config,
@@ -397,7 +408,7 @@ export class AIEmployee {
           signal,
           streamMode: ['updates', 'messages', 'custom'],
           configurable: this.from === 'main-agent' ? { thread_id: threadId } : undefined,
-          context: { ctx: this.ctx },
+          context: { ctx: this.ctx, decisions: chatContext.decisions },
           recursionLimit: 100,
           ...config,
         },
