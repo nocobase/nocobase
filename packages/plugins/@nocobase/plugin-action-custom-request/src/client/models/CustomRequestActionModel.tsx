@@ -50,13 +50,6 @@ CustomRequestActionModel.registerFlow({
     },
     sendRequest: {
       use: CUSTOM_REQUEST_ACTION_NAME,
-      defaultParams(ctx) {
-        const params = ctx.model.getStepParams?.('customRequestSettings', 'requestConfig') || {};
-        return {
-          ...params,
-          key: params?.key,
-        };
-      },
     },
   },
 });

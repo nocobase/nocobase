@@ -27,23 +27,6 @@ const buildSanitizedParams = (key: string, params: CustomRequestStepParams): Cus
   };
 };
 
-const saveCurrentStepRequestParams = (ctx: any, params: CustomRequestStepParams) => {
-  const flowKey = ctx?.flowKey;
-  const stepKey = ctx?.currentStep?.key;
-
-  if (flowKey && stepKey && typeof ctx?.model?.setStepParams === 'function') {
-    ctx.model.setStepParams(flowKey, stepKey, params);
-    return;
-  }
-
-  if (flowKey && stepKey && ctx?.model?.stepParams) {
-    ctx.model.stepParams[flowKey] = {
-      ...(ctx.model.stepParams[flowKey] || {}),
-      [stepKey]: params,
-    };
-  }
-};
-
 export const CUSTOM_REQUEST_ACTION_NAME = 'customRequest';
 
 export const customRequestFlowAction = defineAction({
@@ -54,16 +37,13 @@ export const customRequestFlowAction = defineAction({
   paramsRequired: true,
   uiSchema: customRequestUiSchema,
   defaultParams(ctx: any) {
-    const key = ctx?.model?.getStepParams?.(ctx?.flowKey, ctx?.currentStep?.key)?.key || makeRequestKey();
     return {
-      key,
+      key: makeRequestKey(),
       ...DEFAULT_CUSTOM_REQUEST_SETTINGS,
     };
   },
   async beforeParamsSave(ctx: any, params: CustomRequestStepParams) {
-    const key =
-      params?.key || ctx?.model?.getStepParams?.(ctx?.flowKey, ctx?.currentStep?.key)?.key || makeRequestKey();
-
+    const key = params?.key || makeRequestKey();
     await saveCustomRequestConfig(ctx, key, params);
 
     const sanitizedParams = buildSanitizedParams(key, params);
@@ -73,7 +53,12 @@ export const customRequestFlowAction = defineAction({
     });
     Object.assign(params as Record<string, any>, sanitizedParams);
 
-    saveCurrentStepRequestParams(ctx, sanitizedParams);
+    if (ctx.model.stepParams?.customRequestClickSettings) {
+      ctx.model.stepParams.customRequestClickSettings = {
+        ...(ctx.model.stepParams.customRequestSettings || {}),
+        sendRequest: sanitizedParams,
+      };
+    }
   },
   handler: async (ctx, params: CustomRequestStepParams) => {
     const savedParams = ctx.model.getStepParams?.('customRequestSettings', 'requestConfig') || {};
