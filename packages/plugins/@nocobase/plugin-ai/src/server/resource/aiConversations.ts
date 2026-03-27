@@ -221,6 +221,7 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const {
         sessionId,
         aiEmployee: employeeName,
@@ -307,18 +308,28 @@ export default {
         });
 
         if (!editingMessageId) {
-          const toolMessages = await aiEmployee.cancelToolCall();
-          if (toolMessages?.length) {
-            for (let i = toolMessages.length - 1; i >= 0; i--) {
-              const toolMessage = toolMessages[i];
-              messages.unshift({
-                role: toolMessage.role,
-                content: toolMessage.content,
-                toolCalls: toolMessage.toolCalls,
-                attachments: toolMessage.attachments,
-                workContext: toolMessage.workContext,
-                metadata: toolMessage.metadata,
-              });
+          if (await plugin.subAgentsDispatcher.isInterrupted(ctx)) {
+            const userDecisions = await plugin.subAgentsDispatcher.reject(ctx);
+            if (shouldStream) {
+              await aiEmployee.stream({ userDecisions });
+            } else {
+              ctx.body = await aiEmployee.invoke({ userDecisions });
+            }
+            return;
+          } else {
+            const toolMessages = await aiEmployee.cancelToolCall();
+            if (toolMessages?.length) {
+              for (let i = toolMessages.length - 1; i >= 0; i--) {
+                const toolMessage = toolMessages[i];
+                messages.unshift({
+                  role: toolMessage.role,
+                  content: toolMessage.content,
+                  toolCalls: toolMessage.toolCalls,
+                  attachments: toolMessage.attachments,
+                  workContext: toolMessage.workContext,
+                  metadata: toolMessage.metadata,
+                });
+              }
             }
           }
         }
@@ -336,9 +347,9 @@ export default {
           ctx.status = 500;
           ctx.body = { error: err.message || 'Tool call error' };
         }
+      } finally {
+        await next();
       }
-
-      await next();
     },
 
     async abort(ctx: Context, next: Next) {

@@ -12,6 +12,7 @@ import { Model } from '@nocobase/database';
 import { AIEmployee, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
 import type { SubAgentConversationMetadata } from '../../types';
+import { getAccessibleAIEmployee, getSkillSettingsFromMain } from '../../../ai/tools/sub-agents/shared';
 
 export type SubAgentTask = {
   ctx: Context;
@@ -96,6 +97,20 @@ export class SubAgentsDispatcher {
     return subAgentConversations.at(-1)?.sessionId ?? null;
   }
 
+  private async resolveLastMessage(ctx: Context): Promise<Model | null> {
+    const subSessionId = await this.resolveSubAgentSessionId(ctx);
+    if (!subSessionId) {
+      return null;
+    }
+
+    return ctx.db.getRepository('aiMessages').findOne({
+      filter: {
+        sessionId: subSessionId,
+      },
+      sort: ['-messageId'],
+    });
+  }
+
   async run(task: SubAgentTask): Promise<{
     sessionId: string;
     running: Promise<string>;
@@ -165,5 +180,71 @@ export class SubAgentsDispatcher {
       sessionId: subSessionId,
       running: running(),
     };
+  }
+
+  async isInterrupted(ctx: Context) {
+    const sessionId = ctx.action?.params?.values?.sessionId;
+    if (!sessionId) {
+      return false;
+    }
+
+    const aiToolMessage = await ctx.db.getRepository('aiToolMessages').findOne({
+      filter: {
+        sessionId,
+        toolName: 'dispatch-sub-agent-task',
+        invokeStatus: 'pending',
+      },
+      sort: ['-id'],
+    });
+
+    return aiToolMessage ? true : false;
+  }
+
+  async reject(ctx: Context) {
+    const { sessionId, messages } = ctx.action?.params?.values ?? {};
+    const conversation = await ctx.db.getRepository('aiConversations').findOne({
+      filter: {
+        sessionId,
+        userId: ctx.auth?.user.id,
+      },
+    });
+    if (!conversation) {
+      return;
+    }
+    const lastMessage = await this.resolveLastMessage(ctx);
+    if (!sessionId || !lastMessage) {
+      return;
+    }
+    const userDecision = {
+      type: 'reject' as const,
+      message: `The user ignored the tools usage and send messages:\n ${JSON.stringify(messages)}`,
+    };
+    const [updated] = await ctx.db.getRepository('aiToolMessages').model.update(
+      { userDecision, invokeStatus: 'waiting' },
+      {
+        where: {
+          sessionId: lastMessage.get('sessionId'),
+          messageId: lastMessage.get('messageId'),
+          invokeStatus: 'interrupted',
+        },
+      },
+    );
+    if (updated > 0) {
+      const employee = await getAccessibleAIEmployee(ctx, conversation.aiEmployeeUsername);
+      if (!employee) {
+        return;
+      }
+
+      const model = employee.get('modelSettings') ?? ctx.action?.params?.values?.model;
+      const aiEmployee = new AIEmployee({
+        ctx,
+        employee,
+        sessionId,
+        systemMessage: conversation.options?.systemMessage,
+        skillSettings: conversation.options?.skillSettings,
+        model,
+      });
+      return await aiEmployee.getUserDecisions(lastMessage.get('messageId'));
+    }
   }
 }
