@@ -21,6 +21,7 @@
     "@fontsource/nunito": "^5.2.7",
     "@fortawesome/fontawesome-free": "^7.1.0",
     "@iconscout/unicons": "^4.2.0",
+    "@rsbuild/plugin-node-polyfill": "^1.4.4",
     "@rsbuild/plugin-sass": "^1.5.1",
     "@rspress/plugin-algolia": "2.0.7",
     "@rspress/plugin-llms": "2.0.7",
@@ -33,5 +34,15 @@
     "prettier": "^3.6.2",
     "typescript-eslint": "^8.43.0",
     "yargs": "^18.0.0"
+  },
+  "resolutions": {
+    "@ant-design/icons": "^5.6.1",
+    "@formily/antd-v5": "1.2.3",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "^18.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "antd": "5.24.2",
+    "dayjs": "1.11.13"
   }
 }

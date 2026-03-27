@@ -13,6 +13,7 @@
 html:root {
   --rp-radius: 0px;
   --rp-c-text-2: #3c3c3ca8;
+  --adm-color-primary: initial !important;
 }
 
 html:not(.rp-dark) {
@@ -312,4 +313,13 @@ h6,
 }
 
 @media (min-width: 1280px) {
+  .rp-nav {
+    --rp-nav-padding-x: 1.5rem !important;
+  }
+}
+
+@media (max-width: 868px) {
+  .rp-nav-menu {
+    display: none !important;
+  }
 }

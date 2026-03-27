@@ -5,6 +5,7 @@ import { pluginSchema } from './plugins/pluginSchema';
 import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -160,9 +161,10 @@ export default defineConfig({
     cleanUrls: true,
   },
   builderConfig: {
-    plugins: [pluginSass()],
+    plugins: [pluginSass(), pluginNodePolyfill()],
     resolve: {
       alias: {
+        '@docs': path.join(__dirname, `docs`),
         '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
         '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
         '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
