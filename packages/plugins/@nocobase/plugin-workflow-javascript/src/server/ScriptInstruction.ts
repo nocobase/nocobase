@@ -19,11 +19,21 @@ import { CacheTransport } from './cache-logger';
 type ScriptConfig = { content?: string; timeout?: number; continue?: boolean; arguments?: { [key: string]: any }[] };
 
 export default class ScriptInstruction extends Instruction {
+  /**
+   * Returns the worker script path based on WORKFLOW_SCRIPT_ENGINE env var.
+   * - Default (unset or 'isolated-vm'): uses isolated-vm for maximum security (no require, no Node.js APIs)
+   * - 'node': uses Node.js built-in vm module (supports require via WORKFLOW_SCRIPT_MODULES whitelist)
+   */
+  static get workerScript() {
+    const engine = process.env.WORKFLOW_SCRIPT_ENGINE;
+    return path.join(__dirname, engine === 'node' ? 'Vm.js' : 'IsolatedVm.js');
+  }
+
   static async run(source, args, options: { logger: Logger; timeout?: number }) {
     const { logger, timeout } = options;
     let result;
 
-    const worker = new Worker(path.join(__dirname, 'Vm.js'), {
+    const worker = new Worker(this.workerScript, {
       workerData: { source, args, options: timeout ? { timeout } : {} },
     });
 

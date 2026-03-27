@@ -30,6 +30,8 @@ describe('workflow > instructions > script', () => {
 
   beforeEach(async () => {
     originalEnv = process.env.WORKFLOW_SCRIPT_MODULES;
+    // Use node vm engine for instruction tests that need require
+    process.env.WORKFLOW_SCRIPT_ENGINE = 'node';
     const mathjsPath = Path.resolve(process.cwd(), 'node_modules', 'mathjs');
     const testModulePath = '.' + Path.sep + 'node_modules' + Path.sep + 'mathjs';
     process.env.WORKFLOW_SCRIPT_MODULES = `path,crypto,lodash,dayjs,http,axios,node:timers,node:process,fs,@nocobase/utils,${mathjsPath},${testModulePath}`;
@@ -62,6 +64,7 @@ describe('workflow > instructions > script', () => {
 
   afterEach(async () => {
     process.env.WORKFLOW_SCRIPT_MODULES = originalEnv;
+    delete process.env.WORKFLOW_SCRIPT_ENGINE;
     return app.destroy();
   });
 
