@@ -53,8 +53,8 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
   await prefetchRecordsForResolve(
     ctx,
     items.map((item) => ({
-      template: item.template,
-      contextParams: (item.contextParams || {}) as Record<string, unknown>,
+      template: item?.template ?? {},
+      contextParams: (item?.contextParams || {}) as Record<string, unknown>,
     })),
   );
 
@@ -62,10 +62,10 @@ export async function resolveVariablesBatch(ctx: ResourcerContext, items: Resolv
   for (const item of items) {
     const data = await resolveVariablesTemplateWithPrefetchedRecords(
       ctx,
-      item.template,
-      (item.contextParams || {}) as Record<string, unknown>,
+      item?.template ?? {},
+      (item?.contextParams || {}) as Record<string, unknown>,
     );
-    results.push({ id: item.id, data });
+    results.push({ id: item?.id, data });
   }
   return results;
 }
