@@ -24,7 +24,7 @@ const snippet: SnippetModule = {
 ctx.model.props.onCell = (record, rowIndex) => {
   return {
     style: {
-      fontWeight: 900,
+      background: 'red',
     },
   };
 };

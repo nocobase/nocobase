@@ -125,8 +125,8 @@ describe('RunJS Snippets', () => {
       expect(tableStyle?.scenes).toEqual(['tableFieldEvent']);
 
       const fieldStyle = fieldSnippets.find((s) => s.ref === 'scene/detail/set-field-style');
-      expect(fieldStyle?.name).toBe('表单、详情字段样式设置');
-      expect(fieldStyle?.body).toContain('ctx.model.subModels.field.props.style');
+      expect(fieldStyle?.name).toBe('设置表单项/详情项样式');
+      expect(fieldStyle?.body).toContain('ctx.model.props.style');
       expect(fieldStyle?.scenes).toEqual(expect.arrayContaining(['detailFieldEvent', 'formFieldEvent']));
       expect(fieldStyle?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/form']));
 
