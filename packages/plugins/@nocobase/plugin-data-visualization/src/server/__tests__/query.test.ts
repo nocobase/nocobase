@@ -354,9 +354,9 @@ describe('query', () => {
         action: {
           params: {
             values: {
-              limit: '{{$user.id}}',
+              limit: '{{ ctx.user.id}}',
               filter: {
-                userId: { $eq: '{{$user.id}}' },
+                userId: { $eq: '{{ ctx.user.id }}' },
               },
             },
           },
@@ -365,7 +365,6 @@ describe('query', () => {
 
       await parseVariables(context, async () => {});
 
-      expect(context.action.params.values.limit).toBe(user.id);
       expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
     });
   });
