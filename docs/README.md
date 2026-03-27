@@ -14,3 +14,11 @@ yarn docs build --lang=all
 ```bash
 yarn docs build --lang=en --check-dead-links
 ```
+
+## eject `rspress components`
+
+Customize the theme by ejecting the components. After ejecting, you can find the components in `./src/components` and modify them as you like.
+
+```bash
+yarn eject <ComponentName>
+```

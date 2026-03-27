@@ -1,6 +1,13 @@
-import { NavMenuItemWithChildren } from "@rspress/core/dist/theme/components/Nav/NavMenu.js";
-import { addLeadingSlash, normalizeHrefInRuntime, removeBase, useLocation, usePage, useSite, useVersion } from "@rspress/core/runtime";
-import { locales } from "../locales";
+import {
+  addLeadingSlash,
+  normalizeHrefInRuntime,
+  removeBase,
+  useLocation,
+  usePage,
+  useSite,
+  useVersion,
+} from '@rspress/core/runtime';
+import { locales } from '../../locales';
 
 function replaceLang(
   rawUrl: string,
@@ -67,7 +74,6 @@ export function useLangsMenu() {
   const cleanUrls = site.route?.cleanUrls || false;
   const hasMultiLanguage = localeLanguages.length > 1;
   const { lang: currentLang, pageType } = page;
-  console.log(hasMultiLanguage, localeLanguages, currentLang, pageType);
 
   const translationMenuData = hasMultiLanguage
     ? {
@@ -99,13 +105,67 @@ export function useLangsMenu() {
   return translationMenuData;
 }
 
-export function NavLangs() {
-  const { items, activeValue } = useLangsMenu();
+function replaceVersion(
+  rawUrl: string,
+  version: {
+    current: string;
+    target: string;
+    default: string;
+  },
+  cleanUrls: boolean,
+  isPageNotFound: boolean,
+) {
+  let url = removeBase(rawUrl);
+  // rspress.rs/builder + switch to en -> rspress.rs/builder/en/index.html
+  if (!url || isPageNotFound) {
+    url = normalizeHrefInRuntime('/');
+  }
+  let versionPart = '';
 
-  return items.length > 1 ? (
-    <NavMenuItemWithChildren
-      menuItem={{ text: activeValue, items }}
-      activeMatcher={item => item.text === activeValue}
-    />
-  ) : null;
+  const parts = url.split('/').filter(Boolean);
+
+  if (version.target !== version.default) {
+    versionPart = version.target;
+    if (version.current !== version.default) {
+      parts.shift();
+    }
+  } else {
+    parts.shift();
+  }
+
+  let restPart = parts.join('/') || '';
+
+  if (versionPart && !restPart) {
+    restPart = cleanUrls ? 'index' : 'index.html';
+  }
+
+  return addLeadingSlash([versionPart, restPart].filter(Boolean).join('/'));
+}
+
+export function useVersionsMenu() {
+  const { page } = usePage();
+  const { site } = useSite();
+  const currentVersion = useVersion();
+  const { pathname } = useLocation();
+  const cleanUrls = site.route?.cleanUrls || false;
+  const defaultVersion = site.multiVersion.default || '';
+  const versions = site.multiVersion.versions || [];
+  const versionsMenuData = {
+    items: versions.map(version => ({
+      text: version,
+      link: replaceVersion(
+        pathname,
+        {
+          current: currentVersion,
+          target: version,
+          default: defaultVersion,
+        },
+        cleanUrls,
+        page.pageType === '404',
+      ),
+    })),
+    text: currentVersion,
+    activeValue: currentVersion,
+  };
+  return versionsMenuData;
 }

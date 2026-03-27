@@ -1,6 +1,6 @@
 import { NoSSR, useFrontmatter, useLang, useNavigate, usePage, usePages } from '@rspress/core/runtime';
 import type { Feature } from '@rspress/core';
-import { Badge, SwitchAppearance as BaseSwitchAppearance, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme-original';
+import { Badge, DocContent, DocLayout as OriginalDocLayout, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme-original';
 import {
   LlmsContainer,
   LlmsCopyButton,
@@ -13,7 +13,7 @@ import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
 import { transformHref, useLangPrefix } from './utils';
-import { NavLangs } from './components/NavLang';
+import { HomeHero } from './components/HomeHero';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -69,6 +69,8 @@ type ThemeFrontmatter = {
   pageName?: string;
   hero?: unknown;
   features?: HomeFeatureGroup[];
+  displayName?: string;
+  packageName?: string;
 };
 
 type ThemePage = {
@@ -80,12 +82,11 @@ function getFeatureGroups(page?: ThemePage | { frontmatter?: ThemeFrontmatter })
   return page?.frontmatter?.features ?? [];
 }
 
-export function SwitchAppearance(props: ComponentProps<typeof BaseSwitchAppearance>) {
-  return (
-    <div className="rp-flex rp-items-center rp-justify-center rp-h-14">
-      <NavLangs />
-      <BaseSwitchAppearance {...props} />
-    </div>
+function isPluginDetailPage(frontmatter?: ThemeFrontmatter, routePath?: string): boolean {
+  return Boolean(
+    frontmatter?.displayName &&
+    frontmatter?.packageName &&
+    routePath?.includes('/plugins/@nocobase/'),
   );
 }
 
@@ -152,23 +153,64 @@ const getGridClass = (feature: Feature): string => {
 };
 
 export const Layout = () => {
-  // const lang = useLang();
+  const {
+    page: { routePath },
+  } = usePage();
+  const { frontmatter } = useFrontmatter() as {
+    frontmatter?: {
+      displayName?: string;
+      packageName?: string;
+    };
+  };
+  const isPluginDetailPage = Boolean(
+    frontmatter?.displayName &&
+    frontmatter?.packageName &&
+    routePath?.startsWith('/plugins/@'),
+  );
+
   return (
-    <BasicLayout
-    // beforeNav={
-    //   <NoSSR>
-    //     <div className="rp-banner">
-    //       {
-    //         lang === 'en'
-    //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
-    //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
-    //       }
-    //     </div>
-    //   </NoSSR>
-    // }
-    />
+    <div className={isPluginDetailPage ? 'plugin-detail-page' : undefined}>
+      <BasicLayout
+      // beforeNav={
+      //   <NoSSR>
+      //     <div className="rp-banner">
+      //       {
+      //         lang === 'en'
+      //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
+      //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
+      //       }
+      //     </div>
+      //   </NoSSR>
+      // }
+      />
+    </div>
   );
 };
+
+export function DocLayout(props: ComponentProps<typeof OriginalDocLayout>) {
+  const { page } = usePage();
+  const { frontmatter } = useFrontmatter() as { frontmatter?: ThemeFrontmatter };
+
+  if (!isPluginDetailPage(frontmatter, page.routePath)) {
+    return <OriginalDocLayout {...props} />;
+  }
+
+  const { beforeDoc, afterDoc, components } = props;
+
+  return (
+    <>
+      {beforeDoc}
+      <div className="rp-plugin-detail-layout">
+        <main className="rp-plugin-detail-layout__main rp-doc-layout__doc-container">
+          <div className="rp-doc rspress-doc">
+            <DocContent components={components} />
+          </div>
+        </main>
+      </div>
+      {afterDoc}
+    </>
+  );
+}
 
 function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
   const { title, details, link: rawLink } = feature;
@@ -278,5 +320,7 @@ export function HomeFeature() {
     </div>
   );
 }
+
+export { Nav } from './components/Nav';
 
 export * from '@rspress/core/theme-original';

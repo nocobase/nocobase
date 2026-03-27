@@ -9,7 +9,8 @@
     "dev": "node rspress.mjs dev",
     "format": "prettier --write .",
     "lint": "eslint .",
-    "preview": "node rspress.mjs preview"
+    "preview": "node rspress.mjs preview",
+    "eject": "rspress eject"
   },
   "dependencies": {
     "@rspress/core": "2.0.7"

@@ -10,7 +10,13 @@
 /* Import Unicons for icons (matching website style) - local version */
 @import '@iconscout/unicons/css/line.css';
 
+html:root {
+  --rp-radius: 0px;
+  --rp-c-text-2: #3c3c3ca8;
+}
+
 html:not(.rp-dark) {
+  --rp-nav-height: 72px;
   --rp-code-font-size: 14px;
   --rp-code-block-color: #2e3440;
   --rp-code-title-bg: #e9f0f7;
@@ -18,11 +24,10 @@ html:not(.rp-dark) {
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
   --rp-home-feature-bg: var(--rp-c-bg-soft);
-  --rp-home-hero-title-bg: #2f55d4;
-  --rp-home-hero-title-color: #2e3440;
 }
 
 html.rp-dark {
+  --rp-nav-height: 72px;
   --rp-code-font-size: 14px;
   --rp-code-block-color: #e5e7eb;
   --rp-code-title-bg: #2d2d2d;
@@ -30,8 +35,6 @@ html.rp-dark {
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
   --rp-home-feature-bg: var(--rp-c-bg-soft);
-  --rp-home-hero-title-bg: #2f55d4;
-  --rp-home-hero-title-color: #e5e7eb;
 }
 
 .rp-banner {
@@ -142,7 +145,7 @@ html {
 }
 
 .rp-nav {
-  --rp-nav-padding-x: 20px;
+  --rp-nav-padding-x: 1.5rem;
 }
 
 .rp-nav__right {
@@ -166,14 +169,13 @@ html {
   height: auto !important;
 }
 
-body:has(.rp-home-hero) .rp-nav {
-  height: 72px;
+.rp-nav {
   border-bottom: 0 !important;
   background: var(--rp-c-bg) !important;
   backdrop-filter: none !important;
 }
 
-body:has(.rp-home-hero) .rp-nav-menu a[target="_blank"]::after {
+.rp-nav-menu a[target="_blank"]::after {
   content: none !important;
 }
 
@@ -261,166 +263,6 @@ h6,
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: 0.5px;
-}
-
-/* Hero section typography - Landrick style */
-.rp-home-hero__title,
-.rp-home-hero__title-brand {
-  font-family: "Nunito", sans-serif !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.5px !important;
-}
-
-/* Hero title - main heading (matching website display-4 style) */
-.rp-home-hero__title {
-  font-size: 2.5rem !important;
-  /* 40px */
-  line-height: 1.2 !important;
-  font-weight: 700 !important;
-
-  @media (min-width: 640px) {
-    font-size: 3rem !important;
-    /* 48px */
-  }
-
-  @media (min-width: 768px) {
-    font-size: 3.5rem !important;
-    /* 56px - matches Bootstrap display-4 */
-  }
-}
-
-.rp-home-hero {
-  margin: 7rem auto 0 !important;
-  padding: 1rem 40px 4rem !important;
-
-  @media (max-width: 1000px) {
-    margin-top: 4rem !important;
-  }
-
-  @media (max-width: 600px) {
-    padding: 0 10px 2rem !important;
-  }
-}
-
-.rp-home-hero__container {
-  gap: 24px !important;
-}
-
-.rp-home-hero__content {
-  align-items: center;
-}
-
-.rp-home-hero__title-brand {
-  background: none !important;
-  -webkit-text-fill-color: currentColor !important;
-  color: var(--rp-home-hero-title-color) !important;
-  width: auto !important;
-}
-
-.rp-home-hero__subtitle {
-  font-family: "Nunito", sans-serif !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.3px !important;
-  font-size: 16px !important;
-  line-height: 1.6 !important;
-  color: var(--rp-c-text-2) !important;
-  margin: 0 !important;
-
-  @media (min-width: 640px) {
-    font-size: 18px !important;
-  }
-
-  @media (min-width: 768px) {
-    font-size: 20px !important;
-  }
-}
-
-.rp-home-hero__tagline {
-  font-family: "Nunito", sans-serif !important;
-  font-weight: 400 !important;
-  letter-spacing: 0.3px !important;
-  font-size: 16px !important;
-  line-height: 1.6 !important;
-
-  @media (min-width: 640px) {
-    font-size: 17px !important;
-  }
-}
-
-/* Hero button styling - modern, clean look matching Landrick design */
-/* Prefer stable rp-* button classes instead of legacy hashed selectors */
-.rp-button.rp-button--brand.rp-button--big {
-  /* Remove gradient and apply solid deep blue color */
-  background: #2f55d4 !important;
-  background-image: none !important;
-  border: 1px solid #2f55d4 !important;
-  border-radius: 6px !important;
-  color: #ffffff !important;
-  padding: 8px 20px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  letter-spacing: 0.5px !important;
-  outline: none !important;
-  box-shadow: rgba(47, 85, 212, 0.1) 0px 2.97875px 4.96458px 0px !important;
-  transition: all 0.3s !important;
-
-  &:hover {
-    background: #2443b8 !important;
-    background-image: none !important;
-    background-color: #2443b8 !important;
-    border-color: #2443b8 !important;
-    box-shadow: rgba(47, 85, 212, 0.2) 0px 4px 12px 0px !important;
-    transform: translateY(-1px) !important;
-    opacity: 1 !important;
-  }
-
-  &:active {
-    transform: translateY(0) !important;
-    box-shadow: rgba(47, 85, 212, 0.15) 0px 1px 3px 0px !important;
-  }
-}
-
-/* Alt button styling - Blue outline (matching website btn-outline-primary) */
-.rp-button.rp-button--alt.rp-button--big {
-  /* Blue outline style */
-  background: transparent !important;
-  background-color: transparent !important;
-  background-image: none !important;
-  border: 1px solid #2f55d4 !important;
-  color: #2f55d4 !important;
-  border-radius: 6px !important;
-  padding: 8px 20px !important;
-  font-weight: 600 !important;
-  font-size: 16px !important;
-  letter-spacing: 0.5px !important;
-  outline: 0 !important;
-  box-shadow: none !important;
-  transition: all 0.3s !important;
-
-  /* Add > after the text */
-  &::after {
-    content: ' >';
-    margin-left: 4px;
-  }
-
-  &:hover {
-    background: #2f55d4 !important;
-    background-color: #2f55d4 !important;
-    background-image: none !important;
-    border-color: #2f55d4 !important;
-    color: #ffffff !important;
-    box-shadow: 0 2px 6px rgba(47, 85, 212, 0.3) !important;
-    transform: translateY(-1px) !important;
-  }
-
-  &:active {
-    transform: translateY(0) !important;
-    box-shadow: 0 1px 2px rgba(47, 85, 212, 0.2) !important;
-  }
-}
-
-.rp-home-hero__action {
-  min-width: 142px;
 }
 
 .rp-home-feature-container {
@@ -553,6 +395,13 @@ h6,
       box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
       transform: translateY(-2px);
       border: 1px solid var(--rp-c-divider);
+      color: inherit;
+    }
+
+    &:hover .rp-home-feature__title,
+    &:hover .rp-home-feature__title a,
+    &:hover .rp-home-feature__detail {
+      color: inherit !important;
     }
   }
 
@@ -581,6 +430,47 @@ h6,
   }
 }
 
-.rp-home-feature-container:first-of-type {
-  padding-top: 12rem;
+.rp-plugin-detail-layout {
+  width: 100%;
+}
+
+.rp-plugin-detail-layout__main {
+  width: 100%;
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.plugin-detail-page .rp-doc-layout__container {
+  justify-content: center;
+}
+
+.plugin-detail-page .rp-doc-layout__sidebar,
+.plugin-detail-page .rp-doc-layout__sidebar-placeholder,
+.plugin-detail-page .rp-doc-layout__outline,
+.plugin-detail-page .rp-doc-layout__outline-placeholder,
+.plugin-detail-page .rp-doc-footer {
+  display: none !important;
+}
+
+.plugin-detail-page .rp-doc-layout__doc {
+  max-width: min(100%, var(--rp-content-max-width));
+  flex: 0 1 var(--rp-content-max-width);
+}
+
+@media (min-width: 1280px) {
+  html:root {
+    --rp-content-padding-x: 64px
+  }
+}
+
+@media (min-width: 1280px) {
+  .rp-nav {
+    --rp-nav-padding-x: 1.5rem !important;
+  }
+}
+
+@media (max-width: 868px) {
+  .rp-nav-menu {
+    display: none !important;
+  }
 }

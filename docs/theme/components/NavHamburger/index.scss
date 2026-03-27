@@ -1,0 +1,35 @@
+.rp-nav-hamburger {
+  display: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+  background-color: transparent;
+
+  &__md {
+    @media (max-width: 1280px) and (min-width: 769px) {
+      display: block;
+    }
+    &__hover-group {
+      width: 250px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+  }
+
+  &__sm {
+    @media (max-width: 768px) {
+      display: block;
+    }
+  }
+  &:hover {
+    background-color: var(--rp-c-bg-mute);
+  }
+  &--active {
+    background-color: var(--rp-c-bg-mute);
+  }
+}
