@@ -466,6 +466,11 @@
             "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

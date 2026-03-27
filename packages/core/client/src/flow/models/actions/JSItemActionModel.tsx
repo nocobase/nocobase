@@ -16,9 +16,9 @@ import { PopupSubTableFormActionGroupModel } from '../fields/AssociationFieldMod
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 const defaultJSActionItemCode = `
-function JsItem() {
-  const { Button } = ctx.antd;
+const { Button } = ctx.antd;
 
+function JsItem() {
   return (
     <Button
       onClick={() => ctx.message.success('Click from JS item')}
