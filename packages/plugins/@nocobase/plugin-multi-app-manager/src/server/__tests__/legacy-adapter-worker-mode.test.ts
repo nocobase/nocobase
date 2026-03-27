@@ -66,12 +66,13 @@ describe('LegacyAdapter _bootStrapApp should skip setAppStatus only for transien
     expect(setAppStatusSpy).toHaveBeenCalledWith('test-app', 'not_found');
   });
 
-  it('should NOT call setAppStatus when WORKER_MODE is "-"', async () => {
+  it('should NOT persist app status when transient (WORKER_MODE is "-")', async () => {
     process.env.WORKER_MODE = '-';
 
     await (adapter as any)._bootStrapApp('test-app');
 
-    expect(setAppStatusSpy).not.toHaveBeenCalled();
+    const status = await adapter.getAppStatus('test-app');
+    expect(status).toBeNull();
   });
 
   it('should call setAppStatus when non-serving worker (*)', async () => {
