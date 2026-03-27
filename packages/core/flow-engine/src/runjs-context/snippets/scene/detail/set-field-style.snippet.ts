@@ -11,18 +11,18 @@ import type { SnippetModule } from '../../types';
 const snippet: SnippetModule = {
   contexts: ['*'],
   scenes: ['detailFieldEvent', 'formFieldEvent'],
-  prefix: 'sn-field-style',
-  label: 'Set field style',
-  description: 'Customize form and detail field styles',
+  prefix: 'sn-item-style',
+  label: 'Set form item/details item style',
+  description: 'Customize form item and details item container styles',
   locales: {
     'zh-CN': {
-      label: '表单、详情字段样式设置',
-      description: '自定义表单字段和详情字段的样式',
+      label: '设置表单项/详情项样式',
+      description: '自定义表单项和详情项容器样式',
     },
   },
   content: `
-ctx.model.subModels.field.props.style = {
-  fontWeight: 900,
+ctx.model.props.style = {
+  background: 'red',
 };
 `,
 };

@@ -12,6 +12,10 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
     return JSON.parse(data);
   }
 
+  async ensure(values) {
+    return await this.findOne(values);
+  }
+
   // 将模型数据保存到本地存储
   async save(model: FlowModel) {
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(model.serialize()));
@@ -23,6 +27,14 @@ class FlowModelRepository implements IFlowModelRepository<FlowModel> {
   async destroy(uid: string) {
     localStorage.removeItem(`flow-model:${uid}`);
     return true;
+  }
+
+  async move(sourceId: string, targetId: string, position: 'before' | 'after') {
+    return;
+  }
+
+  async duplicate(uid: string) {
+    return null;
   }
 }
 
