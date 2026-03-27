@@ -173,7 +173,7 @@ export default defineConfig(({ command }) => {
         image: '[name]-[contenthash:8][ext][query]',
         media: '[name]-[contenthash:8][ext][query]',
       },
-      assetPrefix: appPublicPath,
+      assetPrefix: isBuild ? 'auto' : appPublicPath,
       cleanDistPath: true,
       sourceMap: {
         js: isBuild ? false : 'eval-cheap-module-source-map',
