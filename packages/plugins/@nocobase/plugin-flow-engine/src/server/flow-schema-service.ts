@@ -25,7 +25,7 @@ import {
   type FlowSchemaPublicDocument,
   type ModelConstructor,
   type FlowSubModelSlotSchema,
-} from '@nocobase/flow-schema-registry';
+} from './flow-schema-registry';
 
 export interface FlowSchemaValidationIssue {
   level: 'error' | 'warning';

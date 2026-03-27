@@ -9,7 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { flowSchemaContribution } from '../flow-schema-contributions';
+import { flowSchemaContribution } from '../../../../plugin-flow-engine/src/server/flow-schema-contributions/models/ActionCustomRequestModel';
 import { flowSchemaContribution as coreFlowSchemaContribution } from '../../../../plugin-flow-engine/src/server/flow-schema-contributions';
 import { FlowSchemaService } from '../../../../plugin-flow-engine/src/server/flow-schema-service';
 

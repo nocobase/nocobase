@@ -6,20 +6,14 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import _ from 'lodash';
 import flowModelTemplates from './resources/flowModelTemplates';
 import flowModelTemplateUsages from './resources/flowModelTemplateUsages';
 import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
 import { uid } from '@nocobase/utils';
-import { flowSchemaContribution } from './flow-schema-contributions';
-export class PluginBlockReferenceServer extends Plugin {
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
 
+export class PluginBlockReferenceServer extends Plugin {
   async load() {
     this.app.resourceManager.define(flowModelTemplates);
     this.app.resourceManager.define(flowModelTemplateUsages);

@@ -8,7 +8,7 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
+import type { FlowSchemaContribution } from '../flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import { PluginActionBulkUpdateServer } from '../../../../plugin-action-bulk-update/src/server/plugin';
 import { PluginBlockReferenceServer } from '../../../../plugin-ui-templates/src/server/plugin';
@@ -320,7 +320,23 @@ describe('flow schema contribution provider', () => {
 
   const createOfficialProviderApp = () =>
     createFlowEngineTestApp({
-      plugins: ['flow-engine', PluginActionBulkUpdateServer, PluginBlockReferenceServer],
+      plugins: [
+        'flow-engine',
+        [
+          PluginActionBulkUpdateServer,
+          {
+            name: 'action-bulk-update',
+            packageName: '@nocobase/plugin-action-bulk-update',
+          },
+        ],
+        [
+          PluginBlockReferenceServer,
+          {
+            name: 'ui-templates',
+            packageName: '@nocobase/plugin-ui-templates',
+          },
+        ],
+      ],
     });
 
   beforeEach(async () => {
@@ -559,6 +575,48 @@ describe('flow schema contribution provider', () => {
       });
       expect(reference.status).toBe(200);
       expect(reference.body?.data?.use).toBe('ReferenceBlockModel');
+      expect(reference.body?.data?.source).toBe('plugin');
+    } finally {
+      await destroyTestApp(officialApp);
+    }
+  });
+
+  it('should skip disabled official plugin contributions', async () => {
+    await destroyTestApp(app);
+    app = null;
+    flowEnginePlugin = null;
+
+    const { app: officialApp, agent: officialAgent } = await createFlowEngineTestApp({
+      plugins: [
+        'flow-engine',
+        [
+          PluginActionBulkUpdateServer,
+          {
+            name: 'action-bulk-update',
+            packageName: '@nocobase/plugin-action-bulk-update',
+            enabled: false,
+          },
+        ],
+        [
+          PluginBlockReferenceServer,
+          {
+            name: 'ui-templates',
+            packageName: '@nocobase/plugin-ui-templates',
+          },
+        ],
+      ],
+    });
+
+    try {
+      const bulkUpdate = await officialAgent.get('/flowModels:schema').query({
+        use: 'BulkUpdateActionModel',
+      });
+      expect(bulkUpdate.status).toBe(404);
+
+      const reference = await officialAgent.get('/flowModels:schema').query({
+        use: 'ReferenceBlockModel',
+      });
+      expect(reference.status).toBe(200);
     } finally {
       await destroyTestApp(officialApp);
     }

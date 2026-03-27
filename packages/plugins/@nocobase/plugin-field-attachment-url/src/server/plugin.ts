@@ -6,19 +6,10 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import PluginFileManagerServer from '@nocobase/plugin-file-manager';
-import { flowSchemaContribution } from './flow-schema-contributions';
-
 export class PluginFieldAttachmentUrlServer extends Plugin {
   async afterAdd() {}
-
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
-
   async beforeLoad() {}
 
   async load() {

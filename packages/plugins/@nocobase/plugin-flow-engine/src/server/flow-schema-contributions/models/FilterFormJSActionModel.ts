@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowModelSchemaContribution } from '@nocobase/flow-schema-registry';
+import type { FlowModelSchemaContribution } from '../../flow-schema-registry';
 import { linkageRuleValueSchema } from '../shared';
 
 export const filterFormJsActionModelInternalSchemaContribution: FlowModelSchemaContribution = {

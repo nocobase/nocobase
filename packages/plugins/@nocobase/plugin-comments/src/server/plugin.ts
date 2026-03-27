@@ -15,18 +15,9 @@
  * This program is offered under a commercial license.
  * For more information, see <https://www.nocobase.com/agreement>
  */
-
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { Plugin } from '@nocobase/server';
-import { flowSchemaContribution } from './flow-schema-contributions';
-
 export class PluginCommentServer extends Plugin {
   async afterAdd() {}
-
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
-
   async beforeLoad() {}
 
   async load() {}

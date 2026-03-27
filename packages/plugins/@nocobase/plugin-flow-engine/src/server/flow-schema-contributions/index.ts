@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
+import type { FlowSchemaContribution } from '../flow-schema-registry';
 import {
   coreFieldBindingContextContributions,
   coreFieldBindingContributions,

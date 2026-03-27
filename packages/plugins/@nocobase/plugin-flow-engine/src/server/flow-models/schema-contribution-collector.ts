@@ -15,9 +15,10 @@ import type {
   FlowSchemaContribution,
   FlowSchemaContributionProvider,
   FlowSchemaInventoryContribution,
-} from '@nocobase/flow-schema-registry';
+} from '../flow-schema-registry';
 import { Plugin } from '@nocobase/server';
 import _ from 'lodash';
+import { officialFlowSchemaContributions } from '../flow-schema-contributions/models';
 import { FlowSchemaService } from '../flow-schema-service';
 
 type FlowSchemaPluginProvider = Plugin & Partial<FlowSchemaContributionProvider>;
@@ -35,7 +36,7 @@ export type RegisterFlowSchemasOptions = {
 };
 
 function inferFlowSchemaContributionSource(plugin: Plugin) {
-  const packageName = String(plugin?.options?.packageName || '').trim();
+  const packageName = resolvePluginPackageName(plugin);
   if (plugin?.name === 'flow-engine' || packageName === '@nocobase/plugin-flow-engine') {
     return 'official' as const;
   }
@@ -43,6 +44,16 @@ function inferFlowSchemaContributionSource(plugin: Plugin) {
     return 'plugin' as const;
   }
   return 'third-party' as const;
+}
+
+function resolvePluginPackageName(plugin: Plugin) {
+  const packageName = String(plugin?.options?.packageName || '').trim();
+  if (packageName) {
+    return packageName;
+  }
+
+  const pluginName = String(plugin?.name || plugin?.options?.name || '').trim();
+  return pluginName.startsWith('@nocobase/') ? pluginName : '';
 }
 
 function normalizeActionContributions(
@@ -178,6 +189,10 @@ function normalizeInventoryContribution(
 }
 
 export class FlowSchemaContributionCollector {
+  private readonly officialContributionMap = new Map(
+    officialFlowSchemaContributions.map((item) => [item.packageName, item.contribution] as const),
+  );
+
   constructor(
     private readonly app: any,
     private readonly flowSchemaService: FlowSchemaService,
@@ -186,6 +201,16 @@ export class FlowSchemaContributionCollector {
   async collectPluginFlowSchemaContributions() {
     for (const plugin of this.app.pm.getPlugins().values()) {
       if (!plugin?.enabled) {
+        continue;
+      }
+
+      const packageName = resolvePluginPackageName(plugin);
+      const officialContribution = packageName ? this.officialContributionMap.get(packageName) : undefined;
+      if (officialContribution) {
+        this.registerContribution(officialContribution, {
+          source: officialContribution.defaults?.source ?? inferFlowSchemaContributionSource(plugin),
+          strict: officialContribution.defaults?.strict,
+        });
         continue;
       }
 

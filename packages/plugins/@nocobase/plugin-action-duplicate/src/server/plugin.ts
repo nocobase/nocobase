@@ -6,16 +6,8 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import type { FlowSchemaContribution } from '@nocobase/flow-schema-registry';
 import { InstallOptions, Plugin } from '@nocobase/server';
-import { flowSchemaContribution } from './flow-schema-contributions';
-
 export class PluginActionDuplicateServer extends Plugin {
-  getFlowSchemaContributions(): FlowSchemaContribution {
-    return flowSchemaContribution;
-  }
-
   afterAdd() {}
 
   beforeLoad() {}

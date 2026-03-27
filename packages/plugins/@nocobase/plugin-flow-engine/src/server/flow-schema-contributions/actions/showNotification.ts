@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowActionSchemaContribution } from '@nocobase/flow-schema-registry';
+import type { FlowActionSchemaContribution } from '../../flow-schema-registry';
 
 const showNotificationValueSchema = {
   type: 'object',

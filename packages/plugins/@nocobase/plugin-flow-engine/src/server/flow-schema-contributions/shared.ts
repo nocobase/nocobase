@@ -12,7 +12,7 @@ import type {
   FlowJsonSchema,
   FlowModelSchemaContribution,
   FlowSubModelSlotSchema,
-} from '@nocobase/flow-schema-registry';
+} from '../flow-schema-registry';
 
 const genericFilterSchemaId = 'urn:nocobase:schema:plugin-flow-engine:generic-filter';
 

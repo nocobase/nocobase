@@ -21,7 +21,6 @@
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",
     "@nocobase/flow-engine": "2.x",
-    "@nocobase/flow-schema-registry": "2.x",
     "@nocobase/plugin-localization": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
