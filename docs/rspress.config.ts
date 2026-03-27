@@ -4,7 +4,7 @@ import { pluginLlms } from '@rspress/plugin-llms';
 import { pluginSchema } from './plugins/pluginSchema';
 import { pluginOgDescription } from './plugins/pluginOgDescription';
 import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
-// import { pluginPreview } from '@rspress/plugin-preview';
+import { pluginPreview } from '@rspress/plugin-preview';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
 
@@ -176,20 +176,20 @@ export default defineConfig({
     },
   },
   plugins: [
-    // pluginPreview({
-    //   iframeOptions: {
-    //     builderConfig: {
-    //       resolve: {
-    //         alias: {
-    //           '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-    //           '@nocobase/shared': path.join(__dirname, '../shared/src'),
-    //           '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-    //           '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
-    //         },
-    //       },
-    //     },
-    //   },
-    // }),
+    pluginPreview({
+      iframeOptions: {
+        builderConfig: {
+          resolve: {
+            alias: {
+              '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
+              '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
+              '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
+              '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
+            },
+          },
+        },
+      },
+    }),
     pluginLlms(),
     pluginSchema(),
     pluginOgDescription(),
