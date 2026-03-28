@@ -14,6 +14,24 @@ import type { ChartTypeKey } from './ChartOptionsBuilder.service';
 import { sleep, appendColon } from '../utils';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
+const renderLabel = (label: string, lang?: string) => {
+  return (
+    <div
+      style={{
+        width: '100%',
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        fontWeight: 500,
+      }}
+    >
+      <span>{appendColon(label, lang)}</span>
+    </div>
+  );
+};
+
 type FormItemSpec =
   | {
       kind: 'select';
@@ -37,9 +55,10 @@ type FormItemSpec =
 
 export const ChartOptionsBuilder: React.FC<{
   columns?: string[];
+  fieldOptions?: { label: string; value: string }[];
   initialValues: any;
   onChange: (next: any) => void;
-}> = ({ columns, initialValues, onChange }) => {
+}> = ({ columns, fieldOptions: fieldOptionsProp, initialValues, onChange }) => {
   const t = useT();
   const [form] = Form.useForm();
   const ctx = useFlowSettingsContext<any>();
@@ -89,7 +108,7 @@ export const ChartOptionsBuilder: React.FC<{
   };
 
   const type = Form.useWatch('type', form) ?? 'line';
-  const fieldOptions = useMemo(() => buildFieldOptions(columns || []), [columns]);
+  const fieldOptions = useMemo(() => fieldOptionsProp || buildFieldOptions(columns || []), [columns, fieldOptionsProp]);
 
   return (
     <div style={{ padding: 1 }}>
@@ -101,11 +120,7 @@ export const ChartOptionsBuilder: React.FC<{
         onValuesChange={handleValuesChange}
       >
         {/* 图表类型 */}
-        <Form.Item
-          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Chart type'), lang)}</span>}
-          name="type"
-          required
-        >
+        <Form.Item label={renderLabel(t('Chart type'), lang)} name="type" required>
           <Select
             style={{ width: 180 }}
             options={[
@@ -128,25 +143,13 @@ export const ChartOptionsBuilder: React.FC<{
         {/* <Form.Item label={t('Height')} name="height">
           <InputNumber min={100} style={{ width: 180 }} />
         </Form.Item> */}
-        <Form.Item
-          name="legend"
-          valuePropName="checked"
-          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Legend'), lang)}</span>}
-        >
+        <Form.Item name="legend" valuePropName="checked" label={renderLabel(t('Legend'), lang)}>
           <Switch />
         </Form.Item>
-        <Form.Item
-          name="tooltip"
-          valuePropName="checked"
-          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Tooltip'), lang)}</span>}
-        >
+        <Form.Item name="tooltip" valuePropName="checked" label={renderLabel(t('Tooltip'), lang)}>
           <Switch />
         </Form.Item>
-        <Form.Item
-          name="label"
-          valuePropName="checked"
-          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Label'), lang)}</span>}
-        >
+        <Form.Item name="label" valuePropName="checked" label={renderLabel(t('Label'), lang)}>
           <Switch />
         </Form.Item>
       </Form>
@@ -163,7 +166,7 @@ function renderItem(
     return (
       <Form.Item
         key={spec.name}
-        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey || spec.label || ''), lang)}</span>}
+        label={renderLabel(t(spec.labelKey || spec.label || ''), lang)}
         name={spec.name}
         required={spec.required}
       >
@@ -178,23 +181,14 @@ function renderItem(
   }
   if (spec.kind === 'switch') {
     return (
-      <Form.Item
-        key={spec.name}
-        name={spec.name}
-        valuePropName="checked"
-        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
-      >
+      <Form.Item key={spec.name} name={spec.name} valuePropName="checked" label={renderLabel(t(spec.labelKey), lang)}>
         <Switch />
       </Form.Item>
     );
   }
   if (spec.kind === 'number') {
     return (
-      <Form.Item
-        key={spec.name}
-        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
-        name={spec.name}
-      >
+      <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)} name={spec.name}>
         <InputNumber min={spec.min} max={spec.max} style={{ width: 180 }} />
       </Form.Item>
     );
@@ -203,7 +197,7 @@ function renderItem(
     const min = spec.min ?? 0;
     const max = spec.max ?? 100;
     return (
-      <Form.Item key={spec.name} label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}>
+      <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Form.Item name={spec.name} style={{ margin: 0, paddingLeft: 6 }}>
             <Slider min={min} max={max} step={1} style={{ width: 180 }} />
@@ -217,11 +211,7 @@ function renderItem(
   }
   if (spec.kind === 'enum') {
     return (
-      <Form.Item
-        key={spec.name}
-        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
-        name={spec.name}
-      >
+      <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)} name={spec.name}>
         <Select
           style={{ width: 180 }}
           options={(spec.options || []).map((o) => ({ label: t(o.labelKey || o.label || ''), value: o.value }))}
@@ -231,11 +221,7 @@ function renderItem(
   }
   if (spec.kind === 'segmented') {
     return (
-      <Form.Item
-        key={spec.name}
-        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
-        name={spec.name}
-      >
+      <Form.Item key={spec.name} label={renderLabel(t(spec.labelKey), lang)} name={spec.name}>
         <Segmented
           options={(spec.options || []).map((o) => ({ label: t(o.labelKey || o.label || ''), value: o.value }))}
         />
