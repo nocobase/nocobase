@@ -76,6 +76,10 @@ const QueryFilter: FC<{
 }> = observer(({ value, onChange, collectionPath }) => {
   const ctx = useFlowSettingsContext<any>();
   const model = ctx.model;
+  const renderFilterItem = useCallback(
+    (props: any) => <VariableFilterItem {...props} model={model} rightAsVariable />,
+    [model],
+  );
 
   useEffect(() => {
     const [dataSourceKey, collectionName] = collectionPath || [];
@@ -90,13 +94,7 @@ const QueryFilter: FC<{
     }
   }, [collectionPath, ctx, model]);
 
-  return (
-    <FilterGroup
-      value={value || createEmptyFilter()}
-      onChange={onChange}
-      FilterItem={(props) => <VariableFilterItem {...props} model={model} rightAsVariable />}
-    />
-  );
+  return <FilterGroup value={value || createEmptyFilter()} onChange={onChange} FilterItem={renderFilterItem} />;
 });
 
 function ensureQueryShape(query?: QueryValue): Required<QueryValue> {
