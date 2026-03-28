@@ -183,7 +183,7 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
 };
 
 export const parseVariables = async (ctx: Context, next: Next) => {
-  const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams & { mode?: string };
+  const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
   if (mode !== 'sql') {
     const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {});
     ctx.action.params.values = {

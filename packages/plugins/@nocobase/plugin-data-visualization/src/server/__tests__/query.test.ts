@@ -354,7 +354,6 @@ describe('query', () => {
         action: {
           params: {
             values: {
-              limit: '{{ ctx.user.id}}',
               filter: {
                 userId: { $eq: '{{ ctx.user.id }}' },
               },

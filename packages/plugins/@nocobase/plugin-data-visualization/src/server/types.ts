@@ -32,13 +32,14 @@ export type OrderProps = {
 
 export type QueryParams = Partial<{
   uid: string;
+  mode: 'builder' | 'sql';
   dataSource: string;
   collection: string;
   measures: MeasureProps[];
   dimensions: DimensionProps[];
   orders: OrderProps[];
   filter: any;
-  contextParams: Record<string, any>;
+  contextParams: Record<string, unknown>;
   limit: number;
   offset: number;
   sql: {

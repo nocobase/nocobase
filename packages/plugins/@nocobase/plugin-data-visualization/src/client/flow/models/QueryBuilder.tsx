@@ -241,6 +241,7 @@ const QueryBuilderInner: FC<{
                     </Form.Item>
                     <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
                       <Select
+                        allowClear
                         style={{ minWidth: 75 }}
                         placeholder={t('Aggregation')}
                         options={[
