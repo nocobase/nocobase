@@ -14,7 +14,7 @@ Klicken Sie in der Workflow-Konfigurationsoberfläche auf das Plus-Symbol ("+") 
 
 ## Knotenkonfiguration
 
-![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3d8cd1881b2d9c33874.png)
+![计算节点_节点配置](https://static-docs.nocobase.com/6a155de3f6a883d8cd1881b2d9c33874.png)
 
 ### Berechnungs-Engine
 

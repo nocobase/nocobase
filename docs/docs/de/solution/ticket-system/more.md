@@ -1,3 +1,7 @@
-# More Content
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/solution/ticket-system/more).
+:::
 
-Content coming soon...
+# Weitere Inhalte
+
+Inhalte folgen in Kürze...

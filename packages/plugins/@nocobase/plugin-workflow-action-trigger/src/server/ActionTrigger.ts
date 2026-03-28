@@ -14,12 +14,15 @@ import Application, { DefaultContext } from '@nocobase/server';
 import { Context as ActionContext, Next } from '@nocobase/actions';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
+import Joi from 'joi';
+
 import WorkflowPlugin, {
   EXECUTION_STATUS,
   EventOptions,
   Trigger,
   WorkflowModel,
   toJSON,
+  validateCollectionField,
 } from '@nocobase/plugin-workflow';
 import { joinCollectionName, parseCollectionName } from '@nocobase/data-source-manager';
 
@@ -36,6 +39,18 @@ class RequestOnActionTriggerError extends Error {
 
 export default class extends Trigger {
   static TYPE = 'action';
+
+  configSchema = Joi.object({
+    collection: Joi.string().required(),
+  });
+
+  validateConfig(config: Record<string, any>) {
+    const errors = super.validateConfig(config);
+    if (errors) {
+      return errors;
+    }
+    return validateCollectionField(config.collection, this.workflow.app.dataSourceManager);
+  }
 
   constructor(workflow: WorkflowPlugin) {
     super(workflow);

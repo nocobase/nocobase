@@ -1,3 +1,7 @@
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/solution/crm/installation)을 참조하세요.
+:::
+
 # Installation Guide
 
 > The current version is deployed via **backup restoration**. In future versions, we may switch to **incremental migration** to make it easier to integrate the solution into your existing system.
@@ -9,8 +13,8 @@ Before you begin, please ensure:
 - You have a basic NocoBase running environment. See the [official installation guide](https://docs-cn.nocobase.com/welcome/getting-started/installation) for details.
 - NocoBase version **v2.1.0-beta.2 or above**
 - You have downloaded the CRM system files:
-  - **Backup file**: [nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) — for Method 1
-  - **SQL file**: [nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) — for Method 2
+  - **Backup file**: [nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) — for Method 1
+  - **SQL file**: [nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) — for Method 2
 
 **Important notes**:
 - This solution is built on **PostgreSQL 16**. Ensure your environment uses PostgreSQL 16.
@@ -26,7 +30,7 @@ This method uses NocoBase's built-in "[Backup Manager](https://docs-cn.nocobase.
 
 * **Advantages**:
   1. **Easy to operate**: Fully UI-based, restores all configuration including plugins.
-  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in tables.
+  2. **Complete restoration**: **Restores all system files**, including print template files and files uploaded to file fields in collections.
 * **Limitations**:
   1. **Pro/Enterprise only**: "Backup Manager" is an enterprise plugin, available only to Pro/Enterprise users.
   2. **Strict environment requirements**: Your database environment (version, case sensitivity settings, etc.) must be highly compatible with the environment used to create the backup.
@@ -79,7 +83,7 @@ This method restores data by directly operating the database, bypassing the Back
   3. **Fault-tolerant**: If the solution includes commercial plugins you don't have, related features won't be enabled but won't prevent the app from starting.
 * **Limitations**:
   1. **Requires basic database knowledge**: You need to know how to execute a `.sql` file against a database.
-  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields.
+  2. **System files are lost**: **All system files will be missing**, including print templates and files uploaded to file fields in collections.
 
 ### Steps
 
@@ -93,9 +97,9 @@ Create a brand new, empty database for the data you're about to import.
 
   ```bash
   # Copy the sql file into the container
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
   # Enter the container and execute the import
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
   ```
 
 * **Option B: Via a remote database client (Navicat, etc.)**

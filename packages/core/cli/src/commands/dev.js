@@ -8,7 +8,17 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { generatePlugins, run, postCheck, nodeCheck, promptForTs, isPortReachable, checkDBDialect } = require('../util');
+const {
+  generatePlugins,
+  run,
+  runWithPrefix,
+  postCheck,
+  nodeCheck,
+  promptForTs,
+  isPortReachable,
+  buildWSURL,
+  checkDBDialect,
+} = require('../util');
 const { getPortPromise } = require('portfinder');
 const chokidar = require('chokidar');
 const { uid } = require('@formily/shared');
@@ -42,74 +52,13 @@ module.exports = (cli) => {
     .option('-c, --client')
     .option('-s, --server')
     .option('--db-sync')
+    .option('--rsbuild')
+    .option('--client-v2-only')
     .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
       checkDBDialect();
       await buildBundleStatusHtml();
-      let subprocess;
-      const runDevClient = () => {
-        console.log('starting client', 1 * clientPort);
-        subprocess = run('umi', ['dev'], {
-          env: {
-            ...process.env,
-            stdio: 'inherit',
-            shell: true,
-            PORT: clientPort,
-            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
-            WEBSOCKET_URL:
-              process.env.WEBSOCKET_URL ||
-              (serverPort ? `ws://localhost:${serverPort}${process.env.WS_PATH}` : undefined),
-            PROXY_TARGET_URL:
-              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
-          },
-        });
-      };
-      const watcher = chokidar.watch('./storage/plugins/**/*', {
-        cwd: process.cwd(),
-        ignored: /(^|[\/\\])\../, // 忽略隐藏文件
-        persistent: true,
-        depth: 1, // 只监听第一层目录
-      });
-
-      await fs.promises.mkdir(path.dirname(process.env.WATCH_FILE), { recursive: true });
-      let isReady = false;
-
-      const restartClient = _.debounce(async () => {
-        if (!isReady) return;
-        generatePlugins();
-        if (subprocess) {
-          console.log('client restarting...');
-          subprocess.cancel();
-          let i = 0;
-          while (true) {
-            ++i;
-            const result = await isPortReachable(clientPort);
-            if (!result) {
-              break;
-            }
-            await sleep(500);
-            if (i > 10) {
-              break;
-            }
-          }
-          runDevClient();
-          await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
-        }
-      }, 500);
-
-      watcher
-        .on('ready', () => {
-          isReady = true;
-        })
-        .on('addDir', async (pathname) => {
-          if (!isReady) return;
-          restartClient();
-        })
-        .on('unlinkDir', async (pathname) => {
-          if (!isReady) return;
-          restartClient();
-        });
 
       promptForTs();
       const { SERVER_TSCONFIG_PATH } = process.env;
@@ -127,30 +76,167 @@ module.exports = (cli) => {
         return;
       }
 
-      const { port, client, server, inspect } = opts;
+      const { port, client, server, inspect, clientV2Only, rsbuild } = opts;
 
       if (port) {
         process.env.APP_PORT = opts.port;
       }
 
-      const { APP_PORT } = process.env;
+      const APP_PORT = Number(process.env.APP_PORT);
 
       let clientPort = APP_PORT;
       let serverPort;
+      let clientV2Port = APP_PORT;
 
       nodeCheck();
-
       await postCheck(opts);
 
-      if (server) {
+      const shouldRunClientV2 = clientV2Only || client || !server;
+      const shouldRunClient = !clientV2Only && (client || !server);
+      const shouldRunServer = !clientV2Only && (server || !client);
+      const shouldRunClientWithRsbuild = shouldRunClient && !!rsbuild;
+
+      if (shouldRunServer && server) {
         serverPort = APP_PORT;
-      } else if (!server && !client) {
+      } else if (shouldRunServer) {
         serverPort = await getPortPromise({
           port: 1 * clientPort + 1,
         });
       }
 
-      if (server || !client) {
+      if (shouldRunClientV2 && !clientV2Only) {
+        clientV2Port = await getPortPromise({
+          port: 1 * clientPort + 2,
+        });
+      }
+
+      let subprocessClient;
+      let subprocessClientV2;
+
+      const runDevClientV2 = () => {
+        console.log('starting client-v2', 1 * clientV2Port);
+        subprocessClientV2 = runWithPrefix(
+          'rsbuild',
+          ['dev', '--config', `${APP_PACKAGE_ROOT}/client-v2/rsbuild.config.ts`],
+          {
+            prefix: 'client-v2',
+            color: 'magenta',
+            env: {
+              ...process.env,
+              APP_V2_PORT: `${clientV2Port}`,
+              NODE_ENV: 'development',
+              RSPACK_HMR_CLIENT_PORT: `${clientV2Only ? clientV2Port : clientPort}`,
+              API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+              API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+              API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+              API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+              WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
+              WS_PATH: process.env.WS_PATH,
+              ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+              ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
+              PROXY_TARGET_URL:
+                process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+            },
+          },
+        );
+      };
+
+      if (clientV2Only) {
+        runDevClientV2();
+        return;
+      }
+
+      const runDevClient = () => {
+        console.log('starting client', 1 * clientPort);
+        const command = shouldRunClientWithRsbuild ? 'rsbuild' : 'umi';
+        const args = shouldRunClientWithRsbuild
+          ? ['dev', '--config', `${APP_PACKAGE_ROOT}/client/rsbuild.config.ts`]
+          : ['dev'];
+        subprocessClient = runWithPrefix(command, args, {
+          prefix: 'client',
+          color: 'cyan',
+          env: {
+            ...process.env,
+            stdio: 'inherit',
+            shell: true,
+            PORT: clientPort,
+            APP_PORT: `${clientPort}`,
+            APP_ROOT: `${APP_PACKAGE_ROOT}/client`,
+            APP_V2_PORT: `${clientV2Port}`,
+            NODE_ENV: 'development',
+            RSPACK_HMR_CLIENT_PORT: `${clientPort}`,
+            API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH,
+            API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX,
+            API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE,
+            API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
+            WEBSOCKET_URL: process.env.WEBSOCKET_URL || buildWSURL(process.env.API_BASE_URL, serverPort),
+            PROXY_TARGET_URL:
+              process.env.PROXY_TARGET_URL || (serverPort ? `http://127.0.0.1:${serverPort}` : undefined),
+          },
+        });
+      };
+
+      const restartSubprocess = async (subprocessRef, port, start) => {
+        if (!subprocessRef) {
+          start();
+          return;
+        }
+        subprocessRef.cancel();
+        let i = 0;
+        while (true) {
+          ++i;
+          const result = await isPortReachable(port);
+          if (!result) {
+            break;
+          }
+          await sleep(500);
+          if (i > 10) {
+            break;
+          }
+        }
+        start();
+      };
+
+      if (shouldRunClient) {
+        const storagePluginPath = path.resolve(process.cwd(), 'storage/plugins');
+        const watcher = chokidar.watch(`${storagePluginPath}/**/*`, {
+          cwd: process.cwd(),
+          ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+          persistent: true,
+          depth: 1, // 只监听第一层目录
+        });
+
+        await fs.promises.mkdir(path.dirname(process.env.WATCH_FILE), { recursive: true });
+        let isReady = false;
+
+        const restartClient = _.debounce(async () => {
+          if (!isReady) return;
+          generatePlugins();
+          if (shouldRunClient) {
+            await restartSubprocess(subprocessClient, clientPort, runDevClient);
+          }
+          if (shouldRunClientV2) {
+            await restartSubprocess(subprocessClientV2, clientV2Port, runDevClientV2);
+          }
+          await fs.promises.writeFile(process.env.WATCH_FILE, `export const watchId = '${uid()}';`, 'utf-8');
+        }, 500);
+
+        watcher
+          .on('ready', () => {
+            console.log('watching plugin folder changes...');
+            isReady = true;
+          })
+          .on('addDir', async () => {
+            if (!isReady) return;
+            restartClient();
+          })
+          .on('unlinkDir', async () => {
+            if (!isReady) return;
+            restartClient();
+          });
+      }
+
+      if (shouldRunServer) {
         console.log('starting server', serverPort);
 
         const filteredArgs = process.argv.filter(
@@ -193,8 +279,12 @@ module.exports = (cli) => {
         runDevServer();
       }
 
-      if (client || !server) {
+      if (shouldRunClient) {
         runDevClient();
+      }
+
+      if (shouldRunClientV2) {
+        runDevClientV2();
       }
     });
 };

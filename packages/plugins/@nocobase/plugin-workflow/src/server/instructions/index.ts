@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { Transactionable } from '@nocobase/database';
 
 import type Plugin from '../Plugin';
@@ -32,13 +33,34 @@ export type InstructionInterface = {
     node: FlowNodeModel,
     options: Transactionable & { origin?: FlowNodeModel },
   ) => object | Promise<object>;
+  validateConfig?: (config: Record<string, any>) => Record<string, string> | null;
   test?: (config: Record<string, any>) => IJob | Promise<IJob>;
 };
 
 // what should a instruction do?
 // - base on input and context, do any calculations or system call (io), and produce a result or pending.
 export abstract class Instruction implements InstructionInterface {
+  configSchema?: Joi.ObjectSchema;
+
   constructor(public workflow: Plugin) {}
+
+  validateConfig(config: Record<string, any>): Record<string, string> | null {
+    if (!this.configSchema) {
+      return null;
+    }
+    const { error } = this.configSchema.validate(config, { abortEarly: false, allowUnknown: true });
+    if (!error) {
+      return null;
+    }
+    const errors: Record<string, string> = {};
+    for (const detail of error.details) {
+      const key = detail.path.join('.');
+      if (!errors[key]) {
+        errors[key] = detail.message;
+      }
+    }
+    return errors;
+  }
 
   abstract run(node: FlowNodeModel, input: any, processor: Processor): InstructionResult;
 }

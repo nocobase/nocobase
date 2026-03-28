@@ -1,12 +1,16 @@
 ---
-displayName: "Block: Map"
+displayName: "Bloc : Carte"
 packageName: '@nocobase/plugin-map'
 description: |
-  Map block, support Gaode map and Google map, you can also extend more map types.
+  Bloc de carte, prend en charge les cartes Gaode et Google Maps, vous pouvez également étendre d'autres types de cartes.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Map
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/plugins/@nocobase/plugin-map/index).
+:::
+
+# Bloc : Carte

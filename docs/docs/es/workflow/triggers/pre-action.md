@@ -28,7 +28,7 @@ Al crear un flujo de trabajo, seleccione el tipo "Evento Antes de la Acción":
 
 En el disparador de un flujo de trabajo de intercepción, lo primero que debe configurar es la colección correspondiente a la operación:
 
-![Configuración del Evento de Intercepción_Colección](https://static-docs.nocobase.com/8f7122caca8159d334cf776b838d53d6.png)
+![Configuración del Evento de Intercepción_Colección](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 Luego, seleccione el modo de intercepción. Puede optar por interceptar solo el botón de acción vinculado a este flujo de trabajo, o por interceptar todas las operaciones seleccionadas para esta colección (sin importar de qué formulario provengan y sin necesidad de vincular el flujo de trabajo correspondiente):
 
@@ -91,7 +91,7 @@ Con esto, la configuración del flujo de trabajo correspondiente está completa.
 
 Si el nodo "Finalizar flujo de trabajo" está configurado para salir con un estado de "Éxito", la solicitud de la operación seguirá siendo interceptada cuando se ejecute este nodo, pero el mensaje de respuesta devuelto se mostrará con un estado de "Éxito" (en lugar de "Error"):
 
-![Mensaje de Respuesta de Estado de Éxito](https://static-docs.nocobase.com/9559bbf65067144759451294b18c790e.png)
+![Mensaje de Respuesta de Estado de Éxito](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 ## Ejemplo
 
@@ -99,7 +99,7 @@ Combinando las instrucciones básicas anteriores, tomemos como ejemplo un escena
 
 Los demás pasos son los mismos que en las instrucciones. Sin embargo, dado que un pedido involucra varios productos, además de agregar una relación de muchos a muchos "Pedido" <-- M:1 -- "Detalle de Pedido" -- 1:M --> "Producto" en el modelado de datos, también necesita agregar un nodo de "Bucle" en el flujo de trabajo "Evento Antes de la Acción" para verificar iterativamente si el inventario de cada producto es suficiente:
 
-![Ejemplo_Flujo de Trabajo de Verificación en Bucle](https://static-docs.nocobase.com/8307de47d629595ab6cf00f8aa898e3.png)
+![Ejemplo_Flujo de Trabajo de Verificación en Bucle](https://static-docs.nocobase.com/8307de47d5629595ab6cf00f8aa898e3.png)
 
 El objeto para el bucle se selecciona como el array "Detalle de Pedido" de los datos del pedido enviado:
 

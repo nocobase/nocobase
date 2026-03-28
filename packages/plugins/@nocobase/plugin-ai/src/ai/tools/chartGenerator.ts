@@ -9,12 +9,14 @@
 
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
+// @ts-ignore
+import pkg from '../../../package.json';
 
 export default defineTools({
-  scope: 'SPECIFIED',
+  scope: 'GENERAL',
   introduction: {
-    title: '{{t("Chart generator")}}',
-    about: '{{t("Generates ECharts options (JSON) based on user input or data context.")}}',
+    title: `{{t("Chart generator", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Generates ECharts options (JSON) based on user input or data context.", { ns: "${pkg.name}" })}}`,
   },
   definition: {
     name: 'chartGenerator',

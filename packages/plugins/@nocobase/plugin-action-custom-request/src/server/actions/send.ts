@@ -13,7 +13,29 @@ import { parse } from '@nocobase/utils';
 import { appendArrayColumn } from '@nocobase/evaluators';
 import Application from '@nocobase/server';
 import axios from 'axios';
+import set from 'lodash/set';
 import CustomRequestPlugin from '../plugin';
+
+const UnsafePathSegments = new Set(['__proto__', 'prototype', 'constructor']);
+
+const hasUnsafePathSegment = (path: string) => {
+  return path
+    .split(/[.[\]]+/)
+    .filter(Boolean)
+    .some((segment) => UnsafePathSegments.has(segment));
+};
+
+const applyVarsToVariables = (variables: Record<string, any>, vars: unknown) => {
+  if (!vars || typeof vars !== 'object' || Array.isArray(vars)) {
+    return;
+  }
+  for (const [key, value] of Object.entries(vars as Record<string, any>)) {
+    if (!key || typeof key !== 'string' || hasUnsafePathSegment(key)) {
+      continue;
+    }
+    set(variables, key, value);
+  }
+};
 
 function toJSON(value) {
   if (typeof value === 'string') {
@@ -51,7 +73,7 @@ const omitNullAndUndefined = (obj: any) => {
   }, {});
 };
 
-const CurrentUserVariableRegExp = /{{\s*(currentUser[^}]+)\s*}}/g;
+const CurrentUserVariableRegExp = /{{\s*(?:ctx\.)?(currentUser[^}]+)\s*}}/g;
 
 const getCurrentUserAppends = (str: string, user) => {
   const matched = str.matchAll(CurrentUserVariableRegExp);
@@ -85,19 +107,34 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     },
     $nForm,
     $nSelectedRecord,
+    vars,
+    options: runtimeOptions,
   } = values;
 
   // root role has all permissions
   if (ctx.state.currentRole !== 'root') {
-    const crRepo = ctx.db.getRepository('uiButtonSchemasRoles');
-    const hasRoles = await crRepo.find({
+    const schemaRoleRepo = ctx.db.getRepository('uiButtonSchemasRoles');
+    const customRequestRoleRepo = ctx.db.getRepository('customRequestsRoles');
+
+    const schemaRoles = await schemaRoleRepo.find({
       filter: {
         uid: filterByTk,
       },
     });
-    if (hasRoles.length) {
-      if (!hasRoles.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
-        return ctx.throw(403, 'custom request no permission');
+
+    const customRequestRoles = await customRequestRoleRepo.find({
+      filter: {
+        customRequestKey: filterByTk,
+      },
+    });
+
+    const roleRows = [...schemaRoles, ...customRequestRoles];
+    if (roleRows.length) {
+      if (!roleRows.some((item) => ctx.state.currentRoles.includes(item.roleName))) {
+        return ctx.throw(
+          403,
+          ctx.t('You do not have permission to access this custom request', { ns: 'action-custom-request' }),
+        );
       }
     }
   }
@@ -114,15 +151,12 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
 
   ctx.withoutDataWrapping = true;
 
-  const {
-    dataSourceKey,
-    collectionName,
-    url,
-    headers = [],
-    params = [],
-    data = {},
-    ...options
-  } = requestConfig.options || {};
+  const mergedOptions = {
+    ...(requestConfig.options || {}),
+    ...omitNullAndUndefined(runtimeOptions || {}),
+  };
+
+  const { dataSourceKey, collectionName, url, headers = [], params = [], data = {}, ...options } = mergedOptions;
   if (!url) {
     return ctx.throw(400, ctx.t('Please configure the request settings first', { ns: 'action-custom-request' }));
   }
@@ -168,6 +202,7 @@ export async function send(this: CustomRequestPlugin, ctx: Context, next: Next) 
     $env: ctx.app.environment.getVariables(),
     $nSelectedRecord,
   };
+  applyVarsToVariables(variables, vars);
 
   const axiosRequestConfig = {
     baseURL: ctx.origin,

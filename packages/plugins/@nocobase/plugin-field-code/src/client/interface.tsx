@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldInterface, defaultProps } from '@nocobase/client';
+import { CollectionFieldInterface, interfacesProperties } from '@nocobase/client';
 import { NAMESPACE } from '../common/constants';
 import { LANGUAGES_LIST } from './languages';
+
+const { defaultProps, operators } = interfacesProperties;
 
 export class CodeFieldInterface extends CollectionFieldInterface {
   name = 'code';
@@ -46,6 +48,10 @@ export class CodeFieldInterface extends CollectionFieldInterface {
       })),
       default: 'javascript',
     },
+  };
+  availableTypes = ['text', 'string'];
+  filterable = {
+    operators: operators.bigField,
   };
   titleUsable = false;
 }

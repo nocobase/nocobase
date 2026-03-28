@@ -1,127 +1,131 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/ai-employees/configuration/admin-configuration).
 :::
 
 # Employé IA · Guide de configuration pour les administrateurs
 
-> Ce document vous aide à comprendre rapidement comment configurer et gérer les employés IA, en vous guidant étape par étape à travers l'ensemble du processus, des services de modèle à l'affectation des tâches.
+> Cette documentation vous aide à comprendre rapidement comment configurer et gérer les employés IA, en vous guidant étape par étape à travers l'ensemble du processus, du service de modèle à la mise en service des tâches.
+
 
 ## I. Avant de commencer
 
-### 1. Prérequis système
+### 1. Exigences du système
 
-Avant toute configuration, assurez-vous que votre environnement remplit les conditions suivantes :
+Avant la configuration, veuillez vous assurer que votre environnement remplit les conditions suivantes :
 
-* NocoBase 2.0 ou une version ultérieure est installé(e)
-* Le **plugin employé IA** est activé
-* Au moins un **service de modèle de langage étendu** (LLM) disponible (par exemple, OpenAI, Claude, DeepSeek, GLM, etc.)
+* **NocoBase 2.0 ou version ultérieure** installée
+* **Plugin Employé IA** activé
+* Au moins un **service de modèle de langage étendu (LLM)** disponible (ex: OpenAI, Claude, DeepSeek, GLM, etc.)
 
-### 2. Comprendre la conception en deux couches des employés IA
 
-Les employés IA sont structurés en deux couches : la **« Définition du rôle »** et la **« Personnalisation des tâches »**.
+### 2. Comprendre la conception à deux niveaux des employés IA
 
-| Couche                     | Description                                    | Caractéristiques                  | Fonction                    |
-| -------------------------- | ---------------------------------------------- | --------------------------------- | --------------------------- |
-| **Définition du rôle**     | La personnalité de base et les compétences essentielles de l'employé | Stable et immuable, comme un « CV » | Assure la cohérence du rôle |
-| **Personnalisation des tâches** | Configuration pour différents scénarios métier | Flexible et ajustable             | S'adapte aux tâches spécifiques |
+Les employés IA sont divisés en deux niveaux : **"Définition du rôle"** et **"Personnalisation des tâches"**.
 
-**Pour faire simple :**
+| Niveau | Description | Caractéristiques | Rôle |
+| -------- | ------------ | ---------- | ------- |
+| **Définition du rôle** | Personnalité de base et capacités clés de l'employé | Stable et immuable, comme un "CV" | Assure la cohérence du rôle |
+| **Personnalisation des tâches** | Configuration pour différents scénarios métier | Ajustement flexible | S'adapte aux tâches spécifiques |
 
-> La « Définition du rôle » détermine qui est cet employé,
-> la « Personnalisation des tâches » détermine ce qu'il fait à un instant T.
+**Compréhension simple :**
+
+> La "Définition du rôle" détermine qui est cet employé,
+> la "Personnalisation des tâches" détermine ce qu'il doit faire actuellement.
 
 Les avantages de cette conception sont :
 
-* Le rôle reste constant, mais peut s'adapter à différents scénarios.
-* La mise à jour ou le remplacement des tâches n'affecte pas l'employé lui-même.
-* Le contexte et les tâches sont indépendants, ce qui facilite la maintenance.
+* Le rôle reste inchangé, mais peut assumer différents scénarios
+* La mise à jour ou le remplacement des tâches n'affecte pas l'employé lui-même
+* Le contexte et les tâches sont indépendants, facilitant la maintenance
 
-## II. Processus de configuration (en 5 étapes)
+
+## II. Processus de configuration (5 étapes)
 
 ### Étape 1 : Configurer le service de modèle
 
-Le service de modèle est le cerveau de l'employé IA ; il doit être configuré en premier.
+Le service de modèle équivaut au cerveau de l'employé IA et doit être configuré en premier.
 
-> 💡 Pour des instructions de configuration détaillées, veuillez consulter : [Configurer le service LLM](/ai-employees/quick-start/llm-service)
+> 💡 Pour des instructions de configuration détaillées, veuillez consulter : [Configurer le service LLM](/ai-employees/features/llm-service)
 
 **Chemin :**
-`Paramètres système → Employé IA → Service de modèle`
+`Paramètres système → Employé IA → LLM service`
 
-![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
+![Entrer dans la page de configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
 
-Cliquez sur **Ajouter** et renseignez les informations suivantes :
+Cliquez sur **Ajouter**, et remplissez les informations suivantes :
 
-| Élément         | Description                                        | Remarques                                 |
-| --------------- | -------------------------------------------------- | ----------------------------------------- |
-| Type d'interface | Par exemple, OpenAI, Claude, etc.                  | Compatible avec les services utilisant la même spécification |
-| Clé API         | La clé fournie par le fournisseur de services      | Gardez-la confidentielle et changez-la régulièrement |
-| Adresse du service | Point d'accès API (Endpoint)                       | À modifier en cas d'utilisation d'un proxy |
-| Nom du modèle   | Nom spécifique du modèle (par exemple, gpt-4, claude-opus) | Influence les capacités et le coût        |
+| Élément | Description | Remarques |
+| ------ | -------------------------- | --------- |
+| Provider | Ex: OpenAI, Claude, Gemini, Kimi, etc. | Compatible avec les services aux spécifications identiques |
+| Clé API | Clé fournie par le fournisseur de services | Gardez-la confidentielle et changez-la régulièrement |
+| Base URL | API Endpoint (optionnel) | À modifier lors de l'utilisation d'un proxy |
+| Enabled Models | Modèles recommandés / Sélectionner / Saisie manuelle | Détermine la gamme de modèles commutables dans la session |
 
-![Create a large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
+![Créer un service de grand modèle](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
 
-Après la configuration, veuillez **tester la connexion**.
-En cas d'échec, vérifiez votre réseau, votre clé API ou le nom du modèle.
+Après la configuration, veuillez utiliser `Test flight` pour **tester la connexion**.
+En cas d'échec, vérifiez le réseau, la clé ou le nom du modèle.
 
-![Test connection](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+![Tester la connexion](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+
 
 ### Étape 2 : Créer un employé IA
 
-> 💡 Pour des instructions détaillées, veuillez consulter : [Créer un employé IA](/ai-employees/quick-start/ai-employees)
+> 💡 Pour des instructions détaillées, veuillez consulter : [Créer un employé IA](/ai-employees/features/new-ai-employees)
 
-**Chemin :** `Gestion des employés IA → Créer un employé`
+Chemin : `Gestion des employés IA → Créer un employé`
 
-Renseignez les informations de base :
+Remplissez les informations de base :
 
-| Champ                | Obligatoire | Exemple                    |
-| -------------------- | ----------- | -------------------------- |
-| Nom                  | ✓           | viz, dex, cole             |
-| Surnom               | ✓           | Viz, Dex, Cole             |
-| Statut d'activation  | ✓           | Activé                     |
-| Description          | -           | « Expert en analyse de données » |
-| Prompt principal     | ✓           | Voir le guide d'ingénierie des prompts |
-| Message de bienvenue | -           | « Bonjour, je suis Viz… »  |
+| Champ | Requis | Exemple |
+| ----- | -- | -------------- |
+| Nom | ✓ | viz, dex, cole |
+| Surnom | ✓ | Viz, Dex, Cole |
+| État d'activation | ✓ | Activé |
+| Introduction | - | "Expert en analyse de données" |
+| Prompt principal | ✓ | Voir le guide d'ingénierie des prompts |
+| Message de bienvenue | - | "Bonjour, je suis Viz…" |
 
-![Basic information configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
+![Configuration des informations de base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
 
-Ensuite, liez le **service de modèle** que vous venez de configurer.
-
-![Bind large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+La phase de création de l'employé complète principalement la configuration du rôle et des compétences. Le modèle réellement utilisé peut être choisi dans la session via le `Model Switcher`.
 
 **Suggestions pour la rédaction des prompts :**
 
-* Décrivez clairement le rôle, le ton et les responsabilités de l'employé.
-* Utilisez des mots comme « doit » et « ne doit jamais » pour souligner les règles.
-* Incluez des exemples autant que possible pour éviter les descriptions abstraites.
-* Maintenez la longueur entre 500 et 1000 caractères.
+* Énoncez clairement le rôle, le ton et les responsabilités de l'employé
+* Utilisez des mots comme "doit" ou "jamais" pour souligner les règles
+* Essayez d'inclure des exemples pour éviter les descriptions abstraites
+* Limitez-vous à 500–1000 caractères
 
 > Plus le prompt est clair, plus la performance de l'IA est stable.
 > Vous pouvez vous référer au [Guide d'ingénierie des prompts](./prompt-engineering-guide.md).
 
+
 ### Étape 3 : Configurer les compétences
 
-Les compétences déterminent ce qu'un employé « peut faire ».
+Les compétences déterminent ce que l'employé "peut faire".
 
-> 💡 Pour des instructions détaillées, veuillez consulter : [Compétences](/ai-employees/advanced/skill)
+> 💡 Pour des instructions détaillées, veuillez consulter : [Compétences](/ai-employees/features/tool)
 
-| Type          | Champ de compétences        | Exemple                          | Niveau de risque      |
-| ------------- | --------------------------- | -------------------------------- | --------------------- |
-| Frontend      | Interaction avec la page    | Lire les données de bloc, remplir des formulaires | Faible                |
-| Modèle de données | Requête et analyse de données | Statistiques agrégées            | Moyen                 |
-| Flux de travail | Exécuter des processus métier | Outils personnalisés             | Dépend du flux de travail |
-| Autre         | Extensions externes         | Recherche web, opérations sur fichiers | Variable              |
+| Type | Portée des capacités | Exemple | Niveau de risque |
+| ---- | ------- | --------- | ------ |
+| Frontend | Interaction avec la page | Lire les données du bloc, remplir un formulaire | Faible |
+| Modèle de données | Requête et analyse de données | Statistiques agrégées | Moyen |
+| Flux de travail | Exécuter des processus métier | Outils personnalisés | Dépend du flux de travail |
+| Autre | Extensions externes | Recherche en ligne, opérations sur fichiers | Selon le cas |
 
 **Suggestions de configuration :**
 
-* 3 à 5 compétences par employé est le nombre le plus approprié.
-* Il n'est pas recommandé de sélectionner toutes les compétences, cela peut entraîner de la confusion.
-* Désactivez l'utilisation automatique (Auto usage) avant les opérations importantes.
+* 3 à 5 compétences par employé est idéal
+* Il n'est pas recommandé de tout sélectionner pour éviter la confusion
+* Pour les opérations importantes, il est conseillé d'utiliser la permission `Ask` plutôt que `Allow`
 
-![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+![Configurer les compétences](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+
 
 ### Étape 4 : Configurer la base de connaissances (facultatif)
 
-Si votre employé IA doit mémoriser ou référencer une grande quantité de matériel, comme des manuels de produits, des FAQ, etc., vous pouvez configurer une base de connaissances.
+Si votre employé IA a besoin de mémoriser ou de se référer à une grande quantité de documents, comme des manuels de produits ou des FAQ, vous pouvez configurer une base de connaissances.
 
 > 💡 Pour des instructions détaillées, veuillez consulter :
 > - [Présentation de la base de connaissances IA](/ai-employees/knowledge-base/index)
@@ -129,201 +133,212 @@ Si votre employé IA doit mémoriser ou référencer une grande quantité de mat
 > - [Configuration de la base de connaissances](/ai-employees/knowledge-base/knowledge-base)
 > - [RAG (Génération augmentée par récupération)](/ai-employees/knowledge-base/rag)
 
-Ceci nécessite l'installation du plugin de base de données vectorielle.
+Cela nécessite l'installation supplémentaire du plugin de base de données vectorielle.
 
-![Configure knowledge base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
+![Configurer la base de connaissances](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
 
-**Scénarios applicables :**
+**Scénarios d'application :**
 
-* Permettre à l'IA de comprendre les connaissances de l'entreprise.
-* Prendre en charge les questions-réponses et la récupération de documents.
-* Former des assistants spécifiques à un domaine.
+* Faire comprendre à l'IA les connaissances de l'entreprise
+* Soutenir les questions-réponses sur documents et la recherche
+* Former des assistants spécialisés dans un domaine
 
-### Étape 5 : Vérifier le résultat
 
-Une fois l'opération terminée, vous verrez l'avatar du nouvel employé dans le coin inférieur droit de la page.
+### Étape 5 : Vérifier l'effet
 
-![Verify configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
+Une fois terminé, vous verrez l'avatar du nouvel employé dans le coin inférieur droit de la page.
+
+![Vérifier la configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
 
 Veuillez vérifier chaque point :
 
-* ✅ L'icône s'affiche-t-elle correctement ?
-* ✅ Peut-il mener une conversation de base ?
-* ✅ Les compétences peuvent-elles être appelées correctement ?
+* ✅ L'icône s'affiche-t-elle normalement
+* ✅ Peut-il mener une conversation de base
+* ✅ Les compétences peuvent-elles être appelées correctement
 
-Si toutes les vérifications sont positives, la configuration est réussie 🎉
+Si tout est validé, la configuration est réussie 🎉
+
 
 ## III. Configuration des tâches : Mettre l'IA au travail
 
-Jusqu'à présent, nous avons « créé un employé ». L'étape suivante consiste à le « mettre au travail ».
+L'étape précédente était la "création de l'employé",
+il s'agit maintenant de les "faire travailler".
 
 Les tâches IA définissent le comportement de l'employé sur une page ou un bloc spécifique.
 
-> 💡 Pour des instructions détaillées, veuillez consulter : [Tâches](/ai-employees/advanced/task)
+> 💡 Pour des instructions détaillées, veuillez consulter : [Tâches](/ai-employees/features/task)
+
 
 ### 1. Tâches au niveau de la page
 
-Applicable à l'ensemble de la page, par exemple pour « Analyser les données de cette page ».
+S'applique à l'ensemble de la page, par exemple "Analyser les données de cette page".
 
-**Point d'entrée de la configuration :**
+**Entrée de configuration :**
 `Paramètres de la page → Employé IA → Ajouter une tâche`
 
-| Champ         | Description                           | Exemple                      |
-| ------------- | ------------------------------------- | ---------------------------- |
-| Titre         | Nom de la tâche                       | Analyse de la conversion par étape |
-| Contexte      | Le contexte de la page actuelle       | Page de liste des leads      |
-| Message par défaut | Début de conversation prédéfini       | « Veuillez analyser les tendances de ce mois » |
-| Bloc par défaut | Associer automatiquement à une collection | tableau des leads            |
-| Compétences   | Outils disponibles                    | Interroger les données, générer des graphiques |
+| Champ | Description | Exemple |
+| ---- | -------- | --------- |
+| Titre | Nom de la tâche | Analyse de conversion par étape |
+| Contexte | Contexte de la page actuelle | Page de liste des Leads |
+| Message par défaut | Conversation prédéfinie | "Veuillez analyser les tendances de ce mois" |
+| Bloc par défaut | Associer auto. une collection | Table leads |
+| Compétences | Outils disponibles | Requête de données, génération de graphiques |
 
-![Page-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
+![Configuration de tâche au niveau de la page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
 
-**Prise en charge de plusieurs tâches :**
-Un même employé IA peut être configuré avec plusieurs tâches, présentées sous forme d'options à l'utilisateur :
+**Support multi-tâches :**
+Un même employé IA peut être configuré avec plusieurs tâches, proposées sous forme d'options à l'utilisateur :
 
-![Multi-task support](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+![Support multi-tâches](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
 
 Suggestions :
 
-* Une tâche doit se concentrer sur un seul objectif.
-* Le nom doit être clair et facile à comprendre.
-* Maintenez le nombre de tâches entre 5 et 7.
+* Une tâche doit se concentrer sur un seul objectif
+* Le nom doit être clair et compréhensible
+* Contrôler le nombre de tâches entre 5 et 7
+
 
 ### 2. Tâches au niveau du bloc
 
-Convient pour opérer sur un bloc spécifique, comme « Traduire le formulaire actuel ».
+Convient pour opérer sur un bloc spécifique, comme "Traduire le formulaire actuel".
 
 **Méthode de configuration :**
 
-1. Ouvrez la configuration des actions du bloc.
-2. Ajoutez « Employé IA ».
+1. Ouvrir la configuration des actions du bloc
+2. Ajouter "Employé IA"
 
-![Add AI Employee button](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
+![Bouton ajouter employé IA](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
-3. Liez l'employé cible.
+3. Lier l'employé cible
 
-![Select AI Employee](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
+![Sélectionner employé IA](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
-![Block-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
+![Configuration de tâche au niveau du bloc](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
 
-| Comparaison | Niveau page    | Niveau bloc             |
-| ----------- | -------------- | ----------------------- |
-| Portée des données | Page entière   | Bloc actuel             |
-| Granularité | Analyse globale | Traitement détaillé     |
-| Utilisation typique | Analyse des tendances | Traduction de formulaire, extraction de champs |
+| Point de comparaison | Niveau page | Niveau bloc |
+| ---- | ---- | --------- |
+| Portée des données | Page entière | Bloc actuel |
+| Granularité | Analyse globale | Traitement détaillé |
+| Usage typique | Analyse de tendances | Traduction de formulaire, extraction de champs |
 
-## IV. Bonnes pratiques
+
+## IV. Meilleures pratiques
 
 ### 1. Suggestions de configuration
 
-| Élément               | Suggestion                         | Raison                         |
-| --------------------- | ---------------------------------- | ------------------------------ |
-| Nombre de compétences | 3 à 5                              | Haute précision, réponse rapide |
-| Utilisation automatique | Activer avec prudence              | Évite les opérations accidentelles |
-| Longueur du prompt    | 500 à 1000 caractères              | Équilibre vitesse et qualité   |
-| Objectif de la tâche  | Unique et clair                    | Évite de désorienter l'IA      |
-| Flux de travail       | Utiliser après avoir encapsulé des tâches complexes | Taux de réussite plus élevé    |
+| Élément | Suggestion | Raison |
+| ---------- | ----------- | -------- |
+| Nombre de compétences | 3–5 | Haute précision, réponse rapide |
+| Mode de permission (Ask / Allow) | Ask pour modifier les données | Prévenir les erreurs de manipulation |
+| Longueur du prompt | 500–1000 caractères | Équilibre entre vitesse et qualité |
+| Objectif de la tâche | Unique et clair | Éviter la confusion de l'IA |
+| Flux de travail | Utiliser après encapsulation | Taux de réussite plus élevé |
+
 
 ### 2. Suggestions pratiques
 
-**Commencez petit, optimisez progressivement :**
+**Du plus petit au plus grand, optimiser progressivement :**
 
-1. Créez d'abord des employés de base (par exemple, Viz, Dex).
-2. Activez 1 à 2 compétences clés pour les tests.
-3. Confirmez que les tâches peuvent être exécutées normalement.
-4. Ensuite, étendez progressivement avec plus de compétences et de tâches.
+1. Créer d'abord des employés de base (ex: Viz, Dex)
+2. Activer 1–2 compétences clés pour tester
+3. Confirmer que les tâches s'exécutent normalement
+4. Étendre progressivement vers plus de compétences et de tâches
 
 **Processus d'optimisation continue :**
 
-1. Faites fonctionner la version initiale.
-2. Recueillez les retours des utilisateurs.
-3. Optimisez les prompts et les configurations de tâches.
-4. Testez et itérez.
+1. Faire fonctionner la version initiale
+2. Collecter les retours d'utilisation
+3. Optimiser les prompts et la configuration des tâches
+4. Tester et améliorer en boucle
 
-## V. Questions fréquentes
+
+## V. Foire aux questions
 
 ### 1. Phase de configuration
 
 **Q : Que faire si l'enregistrement échoue ?**
 R : Vérifiez si tous les champs obligatoires sont remplis, en particulier le service de modèle et le prompt.
 
-**Q : Quel modèle dois-je choisir ?**
+**Q : Quel modèle choisir ?**
 
-* Lié au code → Claude, GPT-4
-* Lié à l'analyse → Claude, DeepSeek
+* Type code → Claude, GPT-4
+* Type analyse → Claude, DeepSeek
 * Sensible au coût → Qwen, GLM
 * Texte long → Gemini, Claude
+
 
 ### 2. Phase d'utilisation
 
 **Q : La réponse de l'IA est trop lente ?**
 
-* Réduisez le nombre de compétences.
-* Optimisez le prompt.
-* Vérifiez la latence du service de modèle.
-* Envisagez de changer de modèle.
+* Réduire le nombre de compétences
+* Optimiser le prompt
+* Vérifier la latence du service de modèle
+* Envisager de changer de modèle
 
 **Q : L'exécution de la tâche est imprécise ?**
 
-* Le prompt n'est pas assez clair.
-* Trop de compétences entraînent de la confusion.
-* Décomposez la tâche en plus petites parties, ajoutez des exemples.
+* Prompt pas assez explicite
+* Trop de compétences causant de la confusion
+* Diviser en petites tâches, ajouter des exemples
 
-**Q : Quand l'utilisation automatique (Auto usage) doit-elle être activée ?**
+**Q : Quand choisir Ask / Allow ?**
 
-* Elle peut être activée pour les tâches de type requête.
-* Il est recommandé de la désactiver pour les tâches de modification de données.
+* Les tâches de requête peuvent utiliser `Allow`
+* Les tâches de modification de données suggèrent `Ask`
 
-**Q : Comment faire en sorte que l'IA traite un formulaire spécifique ?**
+**Q : Comment faire traiter un formulaire spécifique par l'IA ?**
 
-R : Pour les configurations au niveau de la page, vous devez sélectionner manuellement le bloc.
+R : S'il s'agit d'une configuration au niveau de la page, vous devez sélectionner manuellement le bloc.
 
-![Manually select block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
+![Sélection manuelle du bloc](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
 
-Pour les configurations de tâches au niveau du bloc, le contexte de données est automatiquement lié.
+S'il s'agit d'une configuration de tâche au niveau du bloc, le contexte des données est automatiquement lié.
 
-## VI. Pour aller plus loin
 
-Pour rendre vos employés IA encore plus performants, vous pouvez consulter les documents suivants :
+## VI. Lectures complémentaires
 
-**Configuration :**
+Pour rendre vos employés IA plus puissants, vous pouvez continuer la lecture des documents suivants :
 
-* [Guide d'ingénierie des prompts](./prompt-engineering-guide.md) - Techniques et bonnes pratiques pour la rédaction de prompts de haute qualité
-* [Configurer le service LLM](/ai-employees/quick-start/llm-service) - Instructions détaillées pour la configuration des services de modèle de langage étendu
-* [Créer un employé IA](/ai-employees/quick-start/ai-employees) - Création et configuration de base des employés IA
-* [Collaborer avec un employé IA](/ai-employees/quick-start/collaborate) - Comment avoir des conversations efficaces avec les employés IA
+**Liés à la configuration :**
+
+* [Guide d'ingénierie des prompts](./prompt-engineering-guide.md) - Techniques et meilleures pratiques pour rédiger des prompts de haute qualité
+* [Configurer le service LLM](/ai-employees/features/llm-service) - Instructions détaillées sur les services de grands modèles
+* [Créer un employé IA](/ai-employees/features/new-ai-employees) - Création et configuration de base des employés IA
+* [Collaborer avec les employés IA](/ai-employees/features/collaborate) - Comment dialoguer efficacement avec les employés IA
 
 **Fonctionnalités avancées :**
 
-* [Compétences](/ai-employees/advanced/skill) - Comprendre en profondeur la configuration et l'utilisation des différentes compétences
-* [Tâches](/ai-employees/advanced/task) - Techniques avancées pour la configuration des tâches
-* [Sélectionner un bloc](/ai-employees/advanced/pick-block) - Comment spécifier des blocs de données pour les employés IA
-* [Source de données](/ai-employees/advanced/datasource) - Configuration et gestion des sources de données
-* [Recherche web](/ai-employees/advanced/web-search) - Configuration de la capacité de recherche web pour les employés IA
+* [Compétences](/ai-employees/features/tool) - Comprendre en profondeur la configuration et l'usage des compétences
+* [Tâches](/ai-employees/features/task) - Techniques avancées de configuration des tâches
+* [Sélectionner un bloc](/ai-employees/features/pick-block) - Comment spécifier des blocs de données pour l'employé IA
+* Source de données - Veuillez vous référer à la documentation du plugin de source de données correspondant
+* [Recherche en ligne](/ai-employees/features/web-search) - Configurer la capacité de recherche web de l'employé IA
 
 **Base de connaissances et RAG :**
 
-* [Présentation de la base de connaissances IA](/ai-employees/knowledge-base/index) - Introduction à la fonctionnalité de base de connaissances
+* [Présentation de la base de connaissances IA](/ai-employees/knowledge-base/index) - Introduction aux fonctionnalités de base de connaissances
 * [Base de données vectorielle](/ai-employees/knowledge-base/vector-database) - Configuration de la base de données vectorielle
 * [Base de connaissances](/ai-employees/knowledge-base/knowledge-base) - Comment créer et gérer une base de connaissances
 * [RAG (Génération augmentée par récupération)](/ai-employees/knowledge-base/rag) - Application de la technologie RAG
 
-**Intégration du flux de travail :**
+**Intégration des flux de travail :**
 
-* [Nœud LLM - Chat](/ai-employees/workflow/nodes/llm/chat) - Utilisation du chat textuel dans les flux de travail
-* [Nœud LLM - Chat multimodal](/ai-employees/workflow/nodes/llm/multimodal-chat) - Gestion des entrées multimodales comme les images et les fichiers
+* [Nœud LLM - Dialogue textuel](/ai-employees/workflow/nodes/llm/chat) - Utiliser le dialogue textuel dans un flux de travail
+* [Nœud LLM - Dialogue multimodal](/ai-employees/workflow/nodes/llm/multimodal-chat) - Traiter des entrées multimodales comme des images ou des fichiers
 * [Nœud LLM - Sortie structurée](/ai-employees/workflow/nodes/llm/structured-output) - Obtenir des réponses IA structurées
+
 
 ## Conclusion
 
-Le plus important lors de la configuration des employés IA est : **faites-le fonctionner d'abord, puis optimisez**.
-Faites d'abord en sorte que votre premier employé soit opérationnel, puis étendez et ajustez progressivement.
+Le plus important lors de la configuration des employés IA est : **faire fonctionner d'abord, optimiser ensuite**.
+Laissez d'abord le premier employé prendre son poste avec succès, puis étendez et ajustez progressivement.
 
-Vous pouvez dépanner dans l'ordre suivant :
+L'ordre de dépannage peut suivre cette séquence :
 
-1. Le service de modèle est-il connecté ?
-2. Y a-t-il trop de compétences ?
-3. Le prompt est-il clair ?
-4. L'objectif de la tâche est-il bien défini ?
+1. Le service de modèle est-il connecté
+2. Le nombre de compétences est-il excessif
+3. Le prompt est-il explicite
+4. L'objectif de la tâche est-il clair
 
 En procédant étape par étape, vous pourrez bâtir une équipe IA véritablement efficace.

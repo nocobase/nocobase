@@ -39,6 +39,27 @@ describe('workflow > actions > workflows', () => {
 
   afterEach(() => app.destroy());
 
+  describe('create', () => {
+    it('type should be required', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('type should be valid', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          enabled: true,
+          type: 'invalid',
+        },
+      });
+      expect(status).toBe(400);
+    });
+  });
+
   describe('update', () => {
     it('update unexecuted workflow should be ok', async () => {
       const workflow = await WorkflowModel.create({

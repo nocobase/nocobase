@@ -44,6 +44,8 @@ import {
   FlowEngine,
   FlowEngineContext,
   FlowEngineGlobalsContextProvider,
+  FlowModel,
+  FlowModelRenderer,
   FlowEngineProvider,
 } from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
@@ -141,6 +143,7 @@ export class Application {
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   public flowEngine: FlowEngine;
+  public model: ApplicationModel;
   public context: FlowEngineContext & {
     pluginSettingsRouter: PluginSettingsManager;
     pluginManager: PluginManager;
@@ -219,6 +222,11 @@ export class Application {
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
     this.flowEngine = new FlowEngine();
+    this.flowEngine.registerModels({ ApplicationModel });
+    this.model = this.flowEngine.createModel<ApplicationModel>({
+      uid: '__app_model__',
+      use: 'ApplicationModel',
+    });
     this.context = this.flowEngine.context as any;
     this.context.defineProperty('pluginManager', {
       get: () => this.pluginManager,
@@ -571,9 +579,18 @@ export class Application {
   }
 
   getRootComponent() {
-    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => (
-      <AppComponent app={this}>{children}</AppComponent>
-    );
+    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
+      // 第一阶段仅切换根渲染宿主，保持 AppComponent 现有语义不变。
+      React.useLayoutEffect(() => {
+        this.model.setProps({ children });
+      }, [children]);
+
+      return (
+        <FlowEngineProvider engine={this.flowEngine}>
+          <FlowModelRenderer model={this.model} fallback={this.renderComponent('AppSpin', { app: this })} />
+        </FlowEngineProvider>
+      );
+    };
     return Root;
   }
 
@@ -671,5 +688,12 @@ export class Application {
 
   setAppsComponent({ Component }: { Component: ComponentType }) {
     this.apps.Component = Component;
+  }
+}
+
+class ApplicationModel extends FlowModel {
+  render() {
+    const app = this.context.app as Application;
+    return <AppComponent app={app}>{this.props.children}</AppComponent>;
   }
 }

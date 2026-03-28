@@ -1,21 +1,21 @@
 [
   {
     "type": "custom-link",
-    "label": "Visão Geral",
+    "label": "Visão geral",
     "link": "/interface-builder"
   },
   {
     "type": "custom-link",
-    "label": "Blocos",
+    "label": "Bloco",
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/interface-builder/blocks"
       },
       {
         "type": "custom-link",
-        "label": "Blocos de Dados",
+        "label": "Bloco de dados",
         "collapsed": true,
         "items": [
           {
@@ -40,7 +40,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Cartões em Grade",
+            "label": "Cartão em grade",
             "link": "/interface-builder/blocks/data-blocks/grid-card"
           },
           {
@@ -52,7 +52,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Bloco de Filtro",
+        "label": "Bloco de filtro",
         "collapsed": true,
         "items": [
           {
@@ -64,23 +64,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Outros Blocos",
+        "label": "Outros blocos",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Painel de controle",
+            "label": "Painel de operação",
             "link": "/interface-builder/blocks/other-blocks/action-panel"
           },
           {
             "type": "custom-link",
             "label": "Iframe",
             "link": "/interface-builder/blocks/other-blocks/iframe"
-          },
-          {
-            "type": "custom-link",
-            "label": "Bloco de citação",
-            "link": "/interface-builder/blocks/other-blocks/block-reference"
           },
           {
             "type": "custom-link",
@@ -96,7 +91,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Configurações do bloco",
+        "label": "Itens de configuração do bloco",
         "collapsed": true,
         "items": [
           {
@@ -106,33 +101,53 @@
           },
           {
             "type": "custom-link",
+            "label": "Método de carregamento de dados",
+            "link": "/interface-builder/blocks/block-settings/data-loading-method"
+          },
+          {
+            "type": "custom-link",
             "label": "Layout",
             "link": "/interface-builder/blocks/block-settings/block-layout"
           },
           {
             "type": "custom-link",
-            "label": "Regras de interação de blocos",
+            "label": "Regras de vinculação de blocos",
             "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Regras de interação de campos",
+            "label": "Regras de Vinculação de Campos",
             "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
           },
           {
             "type": "custom-link",
-            "label": "Regras de ordenação",
+            "label": "Regras de Ordenação",
             "link": "/interface-builder/blocks/block-settings/sorting-rule"
           },
           {
             "type": "custom-link",
-            "label": "Excluir bloco",
+            "label": "Ordenação por Arrastar e Soltar",
+            "link": "/interface-builder/blocks/block-settings/drag-sort"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exclusão de bloco",
             "link": "/interface-builder/blocks/block-settings/block-delete"
           },
           {
             "type": "custom-link",
             "label": "Título do bloco",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Altura do bloco",
+            "link": "/interface-builder/blocks/block-settings/block-height"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rascunho do formulário",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }
@@ -144,39 +159,39 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/interface-builder/fields"
       },
       {
         "type": "custom-link",
-        "label": "Configurações gerais",
+        "label": "Itens de configuração geral",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Campos da tabela",
+            "label": "Campo da tabela",
             "link": "/interface-builder/fields/generic/table-column"
           },
           {
             "type": "custom-link",
-            "label": "Campos de detalhe",
+            "label": "Campos de detalhes",
             "link": "/interface-builder/fields/generic/detail-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Campos do formulário de filtro",
+            "label": "Campos de filtro do formulário",
             "link": "/interface-builder/fields/generic/filter-form-item"
           },
           {
             "type": "custom-link",
-            "label": "Campos do formulário",
+            "label": "Campo do formulário",
             "link": "/interface-builder/fields/generic/form-item"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Configurações específicas",
+        "label": "Itens de configuração específicos",
         "collapsed": true,
         "items": [
           {
@@ -186,7 +201,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Gerenciador de Arquivos",
+            "label": "Gerenciador de arquivos",
             "link": "/interface-builder/fields/specific/file-manager"
           },
           {
@@ -211,12 +226,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Subtabela",
+            "label": "Subtabela (Edição em Linha)",
             "link": "/interface-builder/fields/specific/sub-table"
           },
           {
             "type": "custom-link",
-            "label": "Subdetalhe",
+            "label": "Subtabela (Edição em Pop-up)",
+            "link": "/interface-builder/fields/specific/sub-table-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Subdetalhes",
             "link": "/interface-builder/fields/specific/sub-detail"
           },
           {
@@ -243,7 +263,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Configurações do campo",
+        "label": "Itens de Configuração do Campo",
         "collapsed": true,
         "items": [
           {
@@ -253,17 +273,17 @@
           },
           {
             "type": "custom-link",
-            "label": "Rótulo do campo",
+            "label": "Rótulo do Campo",
             "link": "/interface-builder/fields/field-settings/edit-title"
           },
           {
             "type": "custom-link",
-            "label": "Exibir rótulo",
+            "label": "Rótulo de exibição",
             "link": "/interface-builder/fields/field-settings/show-label"
           },
           {
             "type": "custom-link",
-            "label": "Dica do campo",
+            "label": "Informação de Dica do Campo",
             "link": "/interface-builder/fields/field-settings/edit-tooltip"
           },
           {
@@ -273,12 +293,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Componente do campo",
+            "label": "Componente do Campo",
             "link": "/interface-builder/fields/field-settings/field-component"
           },
           {
             "type": "custom-link",
-            "label": "Formatação de número",
+            "label": "Formatação de valor numérico",
             "link": "/interface-builder/fields/field-settings/number-format"
           },
           {
@@ -305,60 +325,60 @@
       },
       {
         "type": "custom-link",
-        "label": "Componente de campo relacional",
+        "label": "Componente de campo de relacionamento",
         "link": "/interface-builder/fields/association-field"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "Ação",
+    "label": "Operação",
     "items": [
       {
         "type": "custom-link",
-        "label": "Visão Geral",
+        "label": "Visão geral",
         "link": "/interface-builder/actions"
       },
       {
         "type": "custom-link",
-        "label": "Configurações da ação",
+        "label": "Itens de configuração de operação",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Botão de editar",
+            "label": "Botão de edição",
             "link": "/interface-builder/actions/action-settings/edit-button"
           },
           {
             "type": "custom-link",
-            "label": "Confirmação dupla",
+            "label": "Confirmação secundária",
             "link": "/interface-builder/actions/action-settings/double-check"
           },
           {
             "type": "custom-link",
-            "label": "Atribuição de campo",
+            "label": "Atribuição de Valor ao Campo",
             "link": "/interface-builder/actions/action-settings/assign-values"
           },
           {
             "type": "custom-link",
-            "label": "Vincular workflow",
+            "label": "Vincular fluxo de trabalho",
             "link": "/interface-builder/actions/action-settings/bind-workflow"
           },
           {
             "type": "custom-link",
-            "label": "Popup de edição",
+            "label": "Janela pop-up de edição",
             "link": "/interface-builder/actions/action-settings/edit-popup"
           },
           {
             "type": "custom-link",
-            "label": "Regras de interação de ações",
+            "label": "Regras de vinculação de operação",
             "link": "/interface-builder/actions/action-settings/linkage-rule"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "Tipo de ação",
+        "label": "Tipo de operação",
         "collapsed": true,
         "items": [
           {
@@ -383,6 +403,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Copiar",
+            "link": "/interface-builder/actions/types/duplicate"
+          },
+          {
+            "type": "custom-link",
             "label": "Importar",
             "link": "/interface-builder/actions/types/import"
           },
@@ -403,7 +428,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Exportar anexo",
+            "label": "Exportar Anexos",
             "link": "/interface-builder/actions/types/export-attachments"
           },
           {
@@ -418,7 +443,7 @@
           },
           {
             "type": "custom-link",
-            "label": "Abrir popup",
+            "label": "Abrir Pop-up",
             "link": "/interface-builder/actions/types/pop-up"
           },
           {
@@ -428,12 +453,12 @@
           },
           {
             "type": "custom-link",
-            "label": "Enviar dados",
+            "label": "Enviar Dados",
             "link": "/interface-builder/actions/types/submit"
           },
           {
             "type": "custom-link",
-            "label": "Acionar workflow",
+            "label": "Acionar fluxo de trabalho",
             "link": "/interface-builder/actions/types/trigger-workflow"
           },
           {
@@ -443,8 +468,13 @@
           },
           {
             "type": "custom-link",
-            "label": "Atualização em lote",
+            "label": "Atualização em Lote",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Edição em Lote",
+            "link": "/interface-builder/actions/types/bulk-edit"
           },
           {
             "type": "custom-link",
@@ -460,7 +490,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Permissões de ação",
+        "label": "Permissões de operação",
         "link": "/interface-builder/actions/permission"
       }
     ]
@@ -471,7 +501,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Regras de interação",
+        "label": "Regras de vinculação",
         "link": "/interface-builder/linkage-rule"
       },
       {
@@ -481,13 +511,18 @@
       },
       {
         "type": "custom-link",
-        "label": "Variáveis",
+        "label": "Variável",
         "link": "/interface-builder/variables"
       },
       {
         "type": "custom-link",
         "label": "RunJS",
         "link": "/interface-builder/runjs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modelo de UI",
+        "link": "/interface-builder/ui-templates"
       }
     ]
   }

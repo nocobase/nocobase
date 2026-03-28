@@ -1,43 +1,43 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/blocks/filter-blocks/form).
 :::
 
 # Filterformular
 
 ## Einführung
 
-Das Filterformular ermöglicht es Benutzern, Daten durch das Ausfüllen von Formularfeldern zu filtern. Es kann verwendet werden, um Tabellen-Blöcke, Diagramm-Blöcke, Listen-Blöcke und mehr zu filtern.
+Das Filterformular ermöglicht es Benutzern, Daten durch das Ausfüllen von Formularfeldern zu filtern. Es kann zum Filtern von Tabellen-Blöcken, Diagramm-Blöcken, Listen-Blöcken usw. verwendet werden.
 
 ## Wie man es verwendet
 
-Lassen Sie uns mit einem einfachen Beispiel beginnen, um schnell zu verstehen, wie Sie das Filterformular verwenden. Nehmen wir an, wir haben einen Tabellen-Block mit Benutzerinformationen und möchten die Daten mithilfe eines Filterformulars filtern, wie hier gezeigt:
+Lassen Sie uns zunächst anhand eines einfachen Beispiels schnell verstehen, wie das Filterformular verwendet wird. Angenommen, wir haben einen Tabellen-Block mit Benutzerinformationen und möchten die Daten über ein Filterformular filtern. Wie folgt:
 
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
 Die Konfigurationsschritte sind wie folgt:
 
-1. Aktivieren Sie den Bearbeitungsmodus und fügen Sie der Seite einen "Filterformular"-Block und einen "Tabellen"-Block hinzu.
+1. Aktivieren Sie den Konfigurationsmodus, fügen Sie der Seite einen „Filterformular“-Block und einen „Tabellen-Block“ hinzu.
 ![20251031163525_rec_](https://static-docs.nocobase.com/20251031163525_rec_.gif)
-2. Fügen Sie das Feld "Spitzname" sowohl dem Tabellen-Block als auch dem Filterformular-Block hinzu.
+2. Fügen Sie das Feld „Spitzname“ im Tabellen-Block und im Filterformular-Block hinzu.
 ![20251031163932_rec_](https://static-docs.nocobase.com/20251031163932_rec_.gif)
-3. Jetzt können Sie es verwenden.
+3. Jetzt kann es verwendet werden.
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
-## Erweiterte Verwendung
+## Fortgeschrittene Nutzung
 
-Der Filterformular-Block unterstützt erweiterte Konfigurationen. Hier sind einige gängige Anwendungsfälle.
+Der Filterformular-Block unterstützt weitere fortgeschrittene Konfigurationen. Hier sind einige gängige Verwendungszwecke.
 
 ### Mehrere Blöcke verbinden
 
-Ein einzelnes Formularfeld kann Daten in mehreren Blöcken gleichzeitig filtern. So geht's:
+Ein einzelnes Formularfeld kann gleichzeitig Daten aus mehreren Blöcken filtern. Die konkreten Schritte sind wie folgt:
 
-1. Klicken Sie auf die Konfigurationsoption "Felder verbinden" für das Feld.
+1. Klicken Sie auf die Konfigurationsoption „Connect fields“ des Feldes.
 ![20251031170300](https://static-docs.nocobase.com/20251031170300.png)
-2. Fügen Sie die Ziel-Blöcke hinzu, die Sie verbinden möchten. In diesem Beispiel wählen wir den Listen-Block auf der Seite aus.
+2. Fügen Sie den gewünschten Ziel-Block hinzu; hier wählen wir den Listen-Block auf der Seite aus.
 ![20251031170718](https://static-docs.nocobase.com/20251031170718.png)
-3. Wählen Sie ein oder mehrere Felder aus dem Listen-Block aus, die verbunden werden sollen. Hier wählen wir das Feld "Spitzname".
+3. Wählen Sie ein oder mehrere Felder im Listen-Block zur Verknüpfung aus. Hier wählen wir das Feld „Spitzname“.
 ![20251031171039](https://static-docs.nocobase.com/20251031171039.png)
-4. Klicken Sie auf die Schaltfläche "Speichern", um die Konfiguration abzuschließen. Das Ergebnis sieht wie folgt aus:
+4. Klicken Sie auf die Schaltfläche Speichern, um die Konfiguration abzuschließen. Der Effekt ist wie folgt dargestellt:
 ![20251031171209_rec_](https://static-docs.nocobase.com/20251031171209_rec_.gif)
 
 ### Diagramm-Blöcke verbinden
@@ -46,35 +46,58 @@ Referenz: [Seitenfilter und Verknüpfung](../../../data-visualization/guide/filt
 
 ### Benutzerdefinierte Felder
 
-Neben der Auswahl von Feldern aus Sammlungen können Sie auch Formularfelder mithilfe von "Benutzerdefinierten Feldern" erstellen. Sie können beispielsweise ein Dropdown-Auswahlfeld mit benutzerdefinierten Optionen erstellen. So geht's:
+Zusätzlich zur Auswahl von Feldern aus der Sammlung können Sie Formularfelder auch über „Benutzerdefinierte Felder“ erstellen. Beispielsweise können Sie ein Dropdown-Auswahlfeld erstellen und die Optionen anpassen. Die konkreten Schritte sind wie folgt:
 
-1. Klicken Sie auf die Option "Benutzerdefinierte Felder", um das Konfigurationsfenster zu öffnen.
+1. Klicken Sie auf die Option „Benutzerdefinierte Felder“, woraufhin sich die Konfigurationsoberfläche öffnet.
 ![20251031173833](https://static-docs.nocobase.com/20251031173833.png)
-2. Geben Sie den Feldtitel ein, wählen Sie "Select" als Feldmodell und konfigurieren Sie die Optionen.
+2. Füllen Sie den Feldtitel aus, wählen Sie unter „Feldtyp“ die Option „Auswahl“ und konfigurieren Sie die Optionen.
 ![20251031174857_rec_](https://static-docs.nocobase.com/20251031174857_rec_.gif)
-3. Neu hinzugefügte benutzerdefinierte Felder müssen manuell mit Feldern in Ziel-Blöcken verbunden werden. So geht's:
+3. Neu hinzugefügte benutzerdefinierte Felder müssen manuell mit den Feldern des Ziel-Blocks verknüpft werden. Die Methode ist wie folgt:
 ![20251031181957_rec_](https://static-docs.nocobase.com/20251031181957_rec_.gif)
-4. Die Konfiguration ist abgeschlossen. Das Ergebnis sieht wie folgt aus:
+4. Konfiguration abgeschlossen, der Effekt ist wie folgt dargestellt:
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
-Derzeit unterstützte Feldmodelle:
+Derzeit unterstützte Feldtypen sind:
 
-- Input: Einzeilige Texteingabe
-- Number: Numerische Eingabe
-- Date: Datumsauswahl
-- Select: Dropdown (kann für Einzel- oder Mehrfachauswahl konfiguriert werden)
-- Radio group: Optionsfelder
-- Checkbox group: Kontrollkästchen
+- Textfeld
+- Zahl
+- Datum
+- Auswahl
+- Optionsfeld
+- Kontrollkästchen
+- Verknüpfung
 
-### Ein- und Ausklappen
+#### Verknüpfung (Benutzerdefiniertes Beziehungsfeld)
 
-Fügen Sie eine Schaltfläche zum Ein- und Ausklappen hinzu, um den Inhalt des Filterformulars zu minimieren und zu erweitern und so Seitenplatz zu sparen.
+„Verknüpfung“ eignet sich für Szenarien wie „Filtern nach Datensätzen der verknüpften Tabelle“. Zum Beispiel in einer Bestellliste nach „Kunde“ filtern oder in einer Aufgabenliste nach „Verantwortlicher“ filtern.
+
+Beschreibung der Konfigurationselemente:
+
+- **Ziel-Sammlung**: Gibt an, aus welcher Sammlung die wählbaren Datensätze geladen werden sollen.
+- **Titelfeld**: Wird als Anzeigetext für Dropdown-Optionen und ausgewählte Tags verwendet (z. B. Name, Titel).
+- **Wertfeld**: Der Wert, der beim tatsächlichen Filtern übermittelt wird, normalerweise das Primärschlüsselfeld (z. B. `id`).
+- **Mehrfachauswahl erlauben**: Wenn aktiviert, können mehrere Datensätze gleichzeitig ausgewählt werden.
+- **Operator**: Definiert, wie die Filterbedingungen abgeglichen werden (siehe unten „Operator“).
+
+Empfohlene Konfiguration:
+
+1. Wählen Sie für das `Titelfeld` ein gut lesbares Feld (z. B. „Name“), um zu vermeiden, dass reine IDs die Benutzerfreundlichkeit beeinträchtigen.
+2. Wählen Sie für das `Wertfeld` vorzugsweise das Primärschlüsselfeld, um eine stabile und eindeutige Filterung zu gewährleisten.
+3. Deaktivieren Sie bei Einzelauswahl-Szenarien normalerweise „Mehrfachauswahl erlauben“; aktivieren Sie bei Mehrfachauswahl-Szenarien „Mehrfachauswahl erlauben“ und verwenden Sie einen geeigneten `Operator`.
+
+#### Operator
+
+Der `Operator` wird verwendet, um die Übereinstimmungsbeziehung zwischen dem „Wert des Filterformularfelds“ und dem „Wert des Zielblockfelds“ zu definieren.
+
+### Einklappen
+
+Fügen Sie eine Einklappen-Schaltfläche hinzu, um den Inhalt des Filterformulars ein- und auszuklappen und so Platz auf der Seite zu sparen.
 
 ![20251031182743](https://static-docs.nocobase.com/20251031182743.png)
 
-Unterstützte Konfigurationen:
+Unterstützt die folgenden Konfigurationen:
 
 ![20251031182849](https://static-docs.nocobase.com/20251031182849.png)
 
-- **Zeilen im eingeklappten Zustand**: Legt fest, wie viele Zeilen von Formularfeldern im eingeklappten Zustand angezeigt werden.
+- **Anzahl der im eingeklappten Zustand angezeigten Zeilen**: Legt die Anzahl der Formularfeldzeilen fest, die im eingeklappten Zustand angezeigt werden.
 - **Standardmäßig eingeklappt**: Wenn aktiviert, wird das Filterformular standardmäßig im eingeklappten Zustand angezeigt.

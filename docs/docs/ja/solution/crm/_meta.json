@@ -2,26 +2,26 @@
   {
     "type": "file",
     "name": "index",
-    "label": "Solution Overview"
+    "label": "ソリューションの概要"
   },
   {
     "type": "file",
     "name": "design",
-    "label": "System Design"
+    "label": "詳細設計"
   },
   {
     "type": "file",
     "name": "installation",
-    "label": "Installation"
+    "label": "インストール"
   },
   {
     "type": "file",
     "name": "v1",
-    "label": "Legacy CRM (v1)"
+    "label": "旧版 CRM (v1)"
   },
   {
     "type": "file",
     "name": "more",
-    "label": "More Content"
+    "label": "その他"
   }
 ]

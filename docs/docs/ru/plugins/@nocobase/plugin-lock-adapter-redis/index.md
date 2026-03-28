@@ -1,15 +1,19 @@
 ---
-displayName: "Redis lock adapter"
+displayName: "Адаптер распределенной блокировки Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Distributed lock implemention based on Redis.
+  Реализация распределенной блокировки на основе Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
 
-# Redis lock adapter
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-lock-adapter-redis/index).
+:::
+
+# Адаптер распределенной блокировки Redis

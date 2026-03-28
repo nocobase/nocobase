@@ -4,7 +4,7 @@ pageName: development
 
 features:
   - title: Core Architecture
-    details: Master NocoBase's underlying extension mechanism and operating principles, including the plugin system, FlowEngine, and database core module, to build a solid development foundation.
+    details: Master NocoBase's underlying extension mechanism and operating principles, including the plugin system, FlowEngine, and database core modules, to build a solid development foundation.
     items:
       - title: Plugin Development
         details: Learn how to create, publish, and maintain custom plugins.
@@ -15,7 +15,7 @@ features:
         link: /flow-engine
         showOnHome: true
       - title: Frontend RunJS
-        details: JavaScript execution environment for JS block, JS field, JS action, and similar scenarios.
+        details: JavaScript execution environment for JS blocks, JS fields, and JS actions, and similar scenarios.
         link: /runjs
         showOnHome: true
   - title: Interface & Interaction
@@ -56,11 +56,5 @@ features:
       - title: File Preview Extension
         details: Extend file preview capabilities to support online preview and rendering of more file formats.
         link: /file-manager/development
-  - title: Plugin Samples
-    details: Practical examples and tutorials demonstrating common plugin development scenarios and best practices.
-    items:
-      - title: SchemaInitializer Examples
-        details: Learn how to add blocks, fields, and actions to the interface using SchemaInitializer.
-        link: /plugin-samples/schema-initializer
-        showOnHome: true
+
 ---

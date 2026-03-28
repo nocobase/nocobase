@@ -104,6 +104,7 @@ export class PluginManager {
     this._repository.setPluginManager(this);
     this.app.resourcer.define(resourceOptions);
     this.app.acl.allow('pm', 'listEnabled', 'public');
+    this.app.acl.allow('pm', 'listEnabledV2', 'public');
     this.app.acl.registerSnippet({
       name: 'pm',
       actions: ['pm:*'],

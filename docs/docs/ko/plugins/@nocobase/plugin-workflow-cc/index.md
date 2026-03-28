@@ -1,12 +1,16 @@
 ---
-displayName: "Workflow: CC"
+displayName: "Workflow: 참조"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |
-  Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.
+  Workflow에서 참조(CC) 기능을 제공하여 Approval 또는 기타 정보를 특정 사용자에게 참조로 보냅니다.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: CC
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/plugins/@nocobase/plugin-workflow-cc/index)을 참조하세요.
+:::
+
+# Workflow: 참조

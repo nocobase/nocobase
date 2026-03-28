@@ -20,7 +20,7 @@ ER 관계
 
 필드 설정
 
-![alt text](https://static-docs.nocobase.com/7659e128936bbd7c9ff51bcff1d646dd.png)
+![alt text](https://static-docs.nocobase.com/7665a87e094b4fb50c9426a108f87105.png)
 
 ## 일대일 (소속됨)
 
@@ -32,7 +32,7 @@ ER 관계
 
 필드 설정
 
-![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a34982da43c187c.png)
+![alt text](https://static-docs.nocobase.com/4f09eeb3c7717d61a349842da43c187c.png)
 
 ## 파라미터 설명
 

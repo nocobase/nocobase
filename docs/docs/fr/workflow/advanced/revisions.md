@@ -12,7 +12,7 @@ Sur la page de configuration du flux de travail, vous pouvez consulter les versi
 
 Dans le menu « Plus d'actions » (« ... ») situé à sa droite, vous pouvez choisir de copier la version actuellement affichée vers une nouvelle version :
 
-![Copier le flux de travail vers une nouvelle version](https://static-docs.nocobase.com/2805798e6caca2af00483390a744256.png)
+![Copier le flux de travail vers une nouvelle version](https://static-docs.nocobase.com/2805798e6caca2af004893390a744256.png)
 
 Après avoir copié vers une nouvelle version, cliquez sur le bouton bascule « Activer »/« Désactiver » pour passer la version correspondante à l'état activé. La nouvelle version du flux de travail prendra alors effet.
 

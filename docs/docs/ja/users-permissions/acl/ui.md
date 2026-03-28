@@ -20,7 +20,7 @@ pkg: '@nocobase/plugin-acl'
 
 `注文` コレクションの個別権限設定は以下の通りです。
 
-![](https://static-docs.nocobase.com/a88c1cad47001c1610bf402a4a2c1.png)
+![](https://static-docs.nocobase.com/a88caba1cad47001c1610bf402a4a2c1.png)
 
 UI上では、`注文` コレクションのすべてのブロックが表示されなくなります。
 
@@ -36,7 +36,7 @@ UI上では、`注文` コレクションのすべてのブロックが表示さ
 
 UI上では、`注文` コレクションのブロック内には、権限が設定されているフィールドのみが表示されます。システムフィールド（`Id`、`CreatedAt`、`Last updated at`）は、特に設定しなくても表示権限を持っています。
 
-![](https://static-docs.nocobase.com/40cc9e79dcc.png)
+![](https://static-docs.nocobase.com/40cc49b517efe701147fd2e799e79dcc.png)
 
 - **編集**: フィールドが編集・保存（更新）できるかどうかを制御します。
 
@@ -183,4 +183,4 @@ UI上では、このリレーションフィールドは表示されます。し
 
 図のように、`顧客` コレクションの個別のフィールドに表示権限を設定できます。
 
-![](https://static-docs.nocobase.com/35af9426c20911ecf81bac8fc.gif)
+![](https://static-docs.nocobase.com/35af9426c20911323b17f67f81bac8fc.gif)

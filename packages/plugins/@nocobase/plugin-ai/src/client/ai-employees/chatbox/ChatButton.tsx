@@ -19,9 +19,11 @@ import { useAIConfigRepository } from '../../repositories/hooks/useAIConfigRepos
 import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-engine';
 import { isHide } from '../built-in/utils';
 import { useChatConversationsStore } from './stores/chat-conversations';
+import { useLocation } from 'react-router-dom';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
+  const { pathname } = useLocation();
   const { isMobileLayout } = useMobileLayout();
   const isV1Page = ctx?.pageInfo?.version === 'v1';
   const { token } = useToken();
@@ -58,7 +60,7 @@ export const ChatButton: React.FC = observer(() => {
       ),
     }));
 
-  if (open || !aiEmployees?.length || isV1Page) {
+  if (open || !aiEmployees?.length || isV1Page || !pathname.startsWith('/admin')) {
     return null;
   }
 

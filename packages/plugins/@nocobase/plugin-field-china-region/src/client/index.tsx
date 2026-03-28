@@ -10,6 +10,7 @@
 import { Plugin } from '@nocobase/client';
 import { useChinaRegionDataSource, useChinaRegionLoadData } from './ChinaRegionProvider';
 import { ChinaRegionFieldInterface } from './chinaRegion';
+import { ChinaRegionFieldModel, DisplayChinaRegionFieldModel } from './models';
 
 export class PluginFieldChinaRegionClient extends Plugin {
   async load() {
@@ -18,6 +19,10 @@ export class PluginFieldChinaRegionClient extends Plugin {
       useChinaRegionLoadData,
     });
     this.app.dataSourceManager.addFieldInterfaces([ChinaRegionFieldInterface]);
+    this.flowEngine.registerModels({
+      ChinaRegionFieldModel,
+      DisplayChinaRegionFieldModel,
+    });
   }
 }
 

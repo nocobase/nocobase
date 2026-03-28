@@ -1,5 +1,5 @@
 ---
-displayName: "API documentation"
+displayName: "API Documentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |
   An OpenAPI documentation generator for NocoBase HTTP API.
@@ -9,4 +9,4 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# API documentation
+# API Documentation

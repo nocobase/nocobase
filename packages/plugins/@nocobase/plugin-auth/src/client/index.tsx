@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Plugin, lazy, useLazy } from '@nocobase/client';
+import { Plugin, lazy } from '@nocobase/client';
 import { Registry } from '@nocobase/utils/client';
 import { ComponentType } from 'react';
 import { presetAuthType } from '../preset';
 import type { Authenticator as AuthenticatorType } from './authenticator';
+import { useRedirect, useSignIn } from './basic';
 import { authCheckMiddleware } from './interceptors';
 import { NAMESPACE } from './locale';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -119,15 +120,6 @@ export class PluginAuthClient extends Plugin {
 
 export { AuthenticatorsContext, useAuthenticator } from './authenticator';
 export type { Authenticator } from './authenticator';
-// export { useSignIn } from './basic';
-const useSignIn = function (name: string) {
-  const useSignIn = useLazy<typeof import('./basic').useSignIn>(() => import('./basic'), 'useSignIn');
-  return useSignIn(name);
-};
-const useRedirect = function (next = '/admin') {
-  const useRedirect = useLazy<typeof import('./basic').useRedirect>(() => import('./basic'), 'useRedirect');
-  return useRedirect(next);
-};
 
 export { useSignIn, useRedirect };
 

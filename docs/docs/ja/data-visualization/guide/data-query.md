@@ -49,7 +49,7 @@
 - 「クエリ実行」をクリックして実行します。結果が返されたら、「結果表示」で `Table / JSON` を切り替えて、列と値を確認します。
 - チャートフィールドをマッピングする前に、ここで列名と型を確認してください。これにより、後でチャートが空になったりエラーが発生したりするのを防げます。
 
-![20251026174338](https://static-docs.nocobase.com/clipboard-image-174338.png)
+![20251026174338](https://static-docs.nocobase.com/20251026174338.png)
 
 ### 後続のフィールドマッピング
 
@@ -70,7 +70,7 @@ ORDER BY mon ASC
 LIMIT 100;
 ```
 
-![20251026175952](https://static-docs.nocobase.com/clipboard-image-175952.png)
+![20251026175952](https://static-docs.nocobase.com/20251026175952.png)
 
 ### クエリ実行と結果表示
 

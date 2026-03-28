@@ -7,12 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
+import {
+  ActionScene,
+  defineAction,
+  isRunJSValue,
+  normalizeRunJSValue,
+  runjsWithSafeGlobals,
+  tExpr,
+  type RunJSValue,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import React from 'react';
 import { Table, Button, Dropdown, Modal, Form, Input, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
+import { RunJSValueEditor } from '../components/RunJSValueEditor';
 
 export const customVariable = defineAction({
   name: 'customVariable',
@@ -30,6 +40,26 @@ export const customVariable = defineAction({
     const { variables = [] } = params;
 
     variables.forEach((variable) => {
+      if (variable.type === 'runjs') {
+        const getFunction = async () => {
+          const { code, version } = normalizeRunJSValue(variable.runjs);
+          return runjsWithSafeGlobals(ctx, code, { version });
+        };
+        const metaFunction = () => ({
+          title: variable.title,
+          type: 'any',
+        });
+
+        metaFunction.title = variable.title;
+
+        ctx.model.context.defineProperty(variable.key, {
+          get: getFunction,
+          cache: false,
+          meta: metaFunction,
+        });
+        return;
+      }
+
       const getFunction = () => {
         const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
         return modelInstance?.form?.getFieldsValue(true);
@@ -67,7 +97,7 @@ export const customVariable = defineAction({
   },
 });
 
-type FlowVariableType = 'formValue';
+type FlowVariableType = 'formValue' | 'runjs';
 
 interface FormValueVariable {
   key: string;
@@ -76,7 +106,14 @@ interface FormValueVariable {
   formUid: string;
 }
 
-type FlowVariable = FormValueVariable;
+interface RunJSVariable {
+  key: string;
+  title: string;
+  type: 'runjs';
+  runjs: RunJSValue;
+}
+
+type FlowVariable = FormValueVariable | RunJSVariable;
 
 interface VariableEditorProps {
   value?: FlowVariable[];
@@ -88,13 +125,16 @@ interface VariableFormValues {
   key: string;
   title: string;
   formUid: string;
+  runjs: RunJSValue;
 }
 
 const VARIABLE_TYPE_LABELS: Record<FlowVariableType, string> = {
   formValue: tExpr('Form variable'),
+  runjs: tExpr('JS variable'),
 };
 
 const generateVariableKey = () => `var_${uid().slice(0, 4)}`;
+const createDefaultRunJSValue = (): RunJSValue => ({ code: '', version: 'v2' });
 
 function VariableEditor(props: VariableEditorProps) {
   const { value = [], onChange, disabled } = props;
@@ -107,7 +147,7 @@ function VariableEditor(props: VariableEditorProps) {
 
   const resetForm = React.useCallback(() => {
     form.resetFields();
-    form.setFieldsValue({ key: generateVariableKey(), title: '', formUid: '' });
+    form.setFieldsValue({ key: generateVariableKey(), title: '', formUid: '', runjs: createDefaultRunJSValue() });
   }, [form]);
 
   const openModal = React.useCallback(
@@ -126,6 +166,7 @@ function VariableEditor(props: VariableEditorProps) {
           key: target.key,
           title: target.title,
           formUid: target.type === 'formValue' ? target.formUid : '',
+          runjs: target.type === 'runjs' ? normalizeRunJSValue(target.runjs) : createDefaultRunJSValue(),
         });
       }
 
@@ -142,12 +183,20 @@ function VariableEditor(props: VariableEditorProps) {
 
   const handleSubmit = React.useCallback(async () => {
     const formValues = await form.validateFields();
-    const nextVariable: FlowVariable = {
-      key: formValues.key,
-      title: formValues.title,
-      type: currentType,
-      formUid: formValues.formUid,
-    };
+    const nextVariable: FlowVariable =
+      currentType === 'runjs'
+        ? {
+            key: formValues.key,
+            title: formValues.title,
+            type: 'runjs',
+            runjs: normalizeRunJSValue(formValues.runjs),
+          }
+        : {
+            key: formValues.key,
+            title: formValues.title,
+            type: 'formValue',
+            formUid: formValues.formUid,
+          };
 
     const nextVariables = [...value];
 
@@ -262,6 +311,10 @@ function VariableEditor(props: VariableEditorProps) {
           key: 'formValue',
           label: t(VARIABLE_TYPE_LABELS.formValue),
         },
+        {
+          key: 'runjs',
+          label: t(VARIABLE_TYPE_LABELS.runjs),
+        },
       ],
       onClick: ({ key }: { key: string }) => handleAdd(key as FlowVariableType),
     }),
@@ -320,6 +373,23 @@ function VariableEditor(props: VariableEditorProps) {
               rules={[{ required: true, message: t('Please enter form uid') }]}
             >
               <Input placeholder={t('Please enter form uid')} />
+            </Form.Item>
+          ) : null}
+          {currentType === 'runjs' ? (
+            <Form.Item
+              label={t('JavaScript')}
+              name="runjs"
+              rules={[
+                {
+                  validator: async (_, value) => {
+                    if (!isRunJSValue(value) || !normalizeRunJSValue(value).code.trim()) {
+                      throw new Error(t('Please enter JavaScript code'));
+                    }
+                  },
+                },
+              ]}
+            >
+              <RunJSValueEditor t={t} scene="eventFlow" height="240px" containerStyle={{ width: '100%' }} />
             </Form.Item>
           ) : null}
         </Form>

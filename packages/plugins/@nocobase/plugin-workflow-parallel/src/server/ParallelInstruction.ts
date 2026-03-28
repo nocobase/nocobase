@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import Joi from 'joi';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel } from '@nocobase/plugin-workflow';
 
 export const PARALLEL_MODE = {
@@ -75,6 +76,10 @@ const Modes = {
 };
 
 export default class extends Instruction {
+  configSchema = Joi.object({
+    mode: Joi.string().valid(...Object.keys(Modes)),
+  });
+
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const branches = processor.getBranches(node);
 

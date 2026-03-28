@@ -45,6 +45,11 @@
       },
       {
         "type": "custom-link",
+        "label": "MCP Integration",
+        "link": "/ai-employees/features/mcp"
+      },
+      {
+        "type": "custom-link",
         "label": "Shortcut Tasks",
         "link": "/ai-employees/features/task"
       },
@@ -128,6 +133,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase MCP",
+    "link": "/ai-employees/mcp"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase Skills",
+    "link": "/ai-employees/skills"
   },
   {
     "type": "custom-link",

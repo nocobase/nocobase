@@ -38,7 +38,7 @@ Se os campos do novo registro incluírem campos de relacionamento e você quiser
 
 Por exemplo, quando um registro na **coleção** "Artigos" é criado ou atualizado, um registro de "Versões de Artigo" precisa ser criado automaticamente para registrar o histórico de alterações do artigo. Você pode usar o nó "Adicionar Dados" para conseguir isso:
 
-![Create Record Node_Example_Workflow Configuration](https://static-docs.nocobase.com/dfd4820d49c145fa33183fc09c9161f.png)
+![Create Record Node_Example_Workflow Configuration](https://static-docs.nocobase.com/dfd4820d49c145fa331883fc09c9161f.png)
 
 ![Create Record Node_Example_Node Configuration](https://static-docs.nocobase.com/1a0992e66170be12a068da6503298868.png)
 

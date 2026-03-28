@@ -23,6 +23,7 @@ import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJsxCompletion } from '../jsxCompletion';
 import { createJavaScriptLinter } from '../linter';
+import { resolveTooltipParent } from './tooltipParent';
 
 export const EditorCore: React.FC<{
   value?: string;
@@ -104,12 +105,9 @@ export const EditorCore: React.FC<{
       }),
       ...(placeholder ? [cmPlaceholder(placeholder)] : []),
       ...(enableLinter ? [lintGutter(), createJavaScriptLinter({ knownCtxMemberRoots })] : []),
-      // Force CM tooltips to render under the app container that doesn't clip (closer to Edit event flows behavior)
+      // Prefer the current popup container so completion tooltips stay above Modal/Drawer masks.
       tooltips({
-        parent:
-          (document.getElementById('nocobase-embed-container') as HTMLElement) ||
-          (editorRef.current?.closest('#nocobase-embed-container') as HTMLElement) ||
-          document.body,
+        parent: resolveTooltipParent(editorRef.current),
       }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !readonly) {
@@ -122,7 +120,7 @@ export const EditorCore: React.FC<{
         }
       }),
       EditorView.theme({
-        '&': {
+        '&.cm-editor': {
           height: typeof height === 'string' ? height || '100%' : `${height}px`,
         },
         ...gutterTheme,
@@ -171,6 +169,9 @@ export const EditorCore: React.FC<{
           backgroundImage: `url("data:image/svg+xml;charset=utf8,<svg xmlns='http://www.w3.org/2000/svg' width='6' height='3'><path d='m0 3 l2 -2 l1 0 l2 2 l1 0' stroke='%231890ff' fill='none' stroke-width='.7'/></svg>")`,
           backgroundRepeat: 'repeat-x',
           backgroundPosition: 'left bottom',
+        },
+        '.cm-tooltip': {
+          zIndex: 1,
         },
       }),
     ];

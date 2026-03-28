@@ -1,14 +1,18 @@
 ---
-displayName: "Block: Tree"
+displayName: "Block: Baum"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
   - 1.x
 description: |
-  Provides tree structure filter block
+  Stellt einen Filter-Block in Baumstruktur bereit
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Block: Tree
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/plugins/@nocobase/plugin-block-tree/index).
+:::
+
+# Block: Baum

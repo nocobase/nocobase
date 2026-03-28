@@ -30,7 +30,7 @@ Se o plugin for ativado por uma sub-aplicação, a chave será salva por padrão
 
 Utiliza Criptografia de Envelope
 
-![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Processo de criação da chave
 1. Na primeira vez que um campo criptografado é criado, o sistema gera automaticamente uma `chave de aplicação` de 32 bits e a armazena no diretório de armazenamento padrão, codificada em Base64.

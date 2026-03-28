@@ -2,15 +2,19 @@
 pkg: '@nocobase/plugin-app-supervisor'
 ---
 
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/multi-app/multi-app/remote).
+:::
+
 # Mode multi-environnement
 
 ## Introduction
 
-Le mode multi-application en mémoire partagée présente des avantages de déploiement et d'exploitation. Mais quand le nombre d'applications et la complexité augmentent, une instance unique peut atteindre ses limites. Dans ce cas, adoptez un déploiement hybride multi-environnement.
+Le mode multi-application en mémoire partagée présente des avantages de déploiement et d'exploitation. Cependant, avec l'augmentation du nombre d'applications et de la complexité métier, une instance unique peut être confrontée à des problèmes de concurrence de ressources et de baisse de stabilité. Pour ces scénarios, les utilisateurs peuvent adopter une solution de déploiement hybride multi-environnement afin de répondre à des besoins métier plus complexes.
 
-Le système déploie une **application d'entrée** comme centre de gestion/ordonnancement, et plusieurs instances NocoBase comme environnements d'exécution indépendants. Les environnements sont isolés tout en collaborant.
+Le système déploie une **application d'entrée** comme centre de gestion/ordonnancement, et plusieurs instances NocoBase comme environnements d'exécution indépendants. Les environnements sont isolés les uns des autres tout en collaborant, ce qui permet de disperser efficacement la pression sur une instance unique et d'améliorer considérablement la stabilité, l'extensibilité et la capacité d'isolation des pannes du système.
 
-Au niveau infrastructure, les environnements peuvent être déployés en processus distincts, conteneurs Docker, ou plusieurs Deployments Kubernetes.
+Au niveau du déploiement, les différents environnements peuvent s'exécuter dans des processus indépendants, être déployés en tant que conteneurs Docker distincts ou sous forme de plusieurs Deployments Kubernetes, s'adaptant ainsi de manière flexible à des infrastructures de différentes tailles et architectures.
 
 ## Déploiement
 
@@ -21,7 +25,7 @@ Dans ce mode :
 - Les configurations applications/environnements sont mises en cache via Redis
 - Les commandes et synchronisations d'état entre Supervisor et Workers passent par Redis
 
-La création d'environnements n'est pas encore fournie. Les Workers doivent être déployés et configurés manuellement.
+La création d'environnements n'est pas encore fournie. chaque application Worker doit être déployée manuellement et configurée avec les informations d'environnement correspondantes avant de pouvoir être reconnue par l'application d'entrée.
 
 ### Dépendances d'architecture
 
@@ -84,7 +88,7 @@ ENVIRONMENT_PROXY_URL=
 
 ### Exemple Docker Compose
 
-Exemple de déploiement avec un Supervisor et deux Workers.
+L'exemple suivant présente une solution de déploiement hybride multi-environnement utilisant des conteneurs Docker comme unités d'exécution, déployant simultanément une application d'entrée et deux applications Worker via Docker Compose.
 
 ```yaml
 networks:
@@ -194,25 +198,25 @@ Les opérations de base sont identiques au mode mémoire partagée, voir [mode m
 
 ### Liste des environnements
 
-Après déploiement, dans **App supervisor** > onglet **Environment**, vous voyez les environnements Worker enregistrés (identifiant, version, URL, statut). Les Workers envoient un heartbeat toutes les 2 minutes.
+Après déploiement, accédez à la page **Gestionnaire d'applications (App Supervisor)** de l'application d'entrée, vous pouvez consulter la liste des environnements de travail enregistrés dans l'onglet **Environnements**, vous voyez les environnements Worker enregistrés (identifiant, version, URL, statut). Les Workers envoient un heartbeat toutes les 2 minutes.
 
 ![](https://static-docs.nocobase.com/202512291830371.png)
 
 ### Création d'application
 
-À la création, vous pouvez sélectionner un ou plusieurs environnements. Un seul suffit généralement. Choisissez-en plusieurs seulement en cas de [services splitting](/cluster-mode/services-splitting).
+À la création, vous pouvez sélectionner un ou plusieurs environnements. Un seul suffit généralement. Choisissez plusieurs environnements uniquement si une [division des services](/cluster-mode/services-splitting) a été effectuée sur les applications Worker, nécessitant le déploiement de la même application sur plusieurs environnements d'exécution pour réaliser la répartition de charge ou l'isolation des capacités.
 
 ![](https://static-docs.nocobase.com/202512291835086.png)
 
 ### Liste des applications
 
-La liste affiche l'environnement d'exécution et l'état de chaque application. Si une application est déployée sur plusieurs environnements, plusieurs états sont affichés.
+La liste affiche l'environnement d'exécution et l'état de chaque application. Si une application est déployée dans plusieurs environnements, plusieurs états d'exécution seront affichés. Dans des conditions normales, la même application dans plusieurs environnements maintiendra un état unifié et devra être démarrée ou arrêtée de manière centralisée.
 
 ![](https://static-docs.nocobase.com/202512291842216.png)
 
 ### Démarrage d'application
 
-Le démarrage peut écrire des données d'initialisation en base. Pour éviter les conditions de course, les démarrages multi-environnements sont mis en file d'attente.
+Étant donné que le démarrage d'une application peut entraîner l'écriture de données d'initialisation dans la base de données, afin d'éviter les conditions de concurrence dans un contexte multi-environnement, le démarrage des applications déployées dans plusieurs environnements s'effectue en file d'attente. Pour éviter les conditions de course, les démarrages multi-environnements sont mis en file d'attente.
 
 ![](https://static-docs.nocobase.com/202512291841727.png)
 
@@ -226,4 +230,4 @@ Si une application est déployée sur plusieurs environnements, il faut choisir 
 
 ![](https://static-docs.nocobase.com/202601082155146.png)
 
-Par défaut, le proxy utilise `ENVIRONMENT_URL` (doit être joignable depuis le réseau de l'application d'entrée). Pour une URL différente, utilisez `ENVIRONMENT_PROXY_URL`.
+Par défaut, l'adresse d'accès du proxy utilise l'adresse d'accès de l'application Worker, correspondant à la variable d'environnement `ENVIRONMENT_URL`. Assurez-vous que cette adresse est accessible dans l'environnement réseau où se trouve l'application d'entrée. Si vous devez utiliser une adresse d'accès proxy différente, vous pouvez la surcharger via la variable d'environnement `ENVIRONMENT_PROXY_URL`.

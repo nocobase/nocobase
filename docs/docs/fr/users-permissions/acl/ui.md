@@ -20,7 +20,7 @@ Configuration des permissions globales :
 
 Configuration des permissions individuelles pour la collection « Commandes » :
 
-![](https://static-docs.nocobase.com/a88caba1cad47001c1601bf402a4a2c1.png)
+![](https://static-docs.nocobase.com/a88caba1cad47001c1610bf402a4a2c1.png)
 
 Dans l'interface utilisateur, tous les blocs de la collection « Commandes » ne sont pas affichés.
 

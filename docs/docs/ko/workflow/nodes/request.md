@@ -26,7 +26,7 @@ Postman과 같은 요청 전송 도구에 익숙하시다면 HTTP 요청 노드 
 
 ## 노드 설정
 
-![HTTP请求节点_节点配置](https://static-docs.nocobase.com/2fcb29af63f6869c80f8fbd362a54e644.png)
+![HTTP请求节点_节点配置](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 ### 요청 메서드
 

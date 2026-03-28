@@ -22,7 +22,7 @@ pkg: '@nocobase/plugin-workflow-parallel'
 
 워크플로우에 병렬 브랜치 노드를 추가하면 기본적으로 두 개의 하위 브랜치가 추가됩니다. "브랜치 추가" 버튼을 클릭하여 원하는 만큼 브랜치를 더 추가할 수 있습니다. 각 브랜치에는 원하는 수의 노드를 추가할 수 있으며, 필요 없는 브랜치는 브랜치 시작 부분의 삭제 버튼을 클릭하여 제거할 수 있습니다.
 
-![병렬 브랜치 관리](https://static-docs.nocobase.com/36084b8b7970c8a1771eb3ee9bc2a757.png)
+![병렬 브랜치 관리](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
 
 ## 노드 설정
 

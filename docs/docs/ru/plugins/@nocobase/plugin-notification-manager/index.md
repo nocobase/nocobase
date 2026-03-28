@@ -1,12 +1,16 @@
 ---
-displayName: "Notification manager"
+displayName: "Менеджер уведомлений"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
-  Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.
+  Предоставляет унифицированный сервис управления, охватывающий конфигурацию каналов, ведение журналов и другие функции, поддерживая настройку различных каналов уведомлений, включая внутренние сообщения и электронную почту.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Notification manager
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-notification-manager/index).
+:::
+
+# Менеджер уведомлений

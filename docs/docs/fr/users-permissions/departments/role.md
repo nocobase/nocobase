@@ -19,7 +19,7 @@ La première consiste à sélectionner un rôle dans le champ des rôles du form
 
 La seconde consiste à ajouter des départements au rôle correspondant dans la gestion des rôles.
 
-![](https://static-docs.nocobase.com/f2a2bec937cf2f179ce868a92b98416d.png)
+![](https://static-docs.nocobase.com/f2a7bec937cf2f179ce868a92b98416d.png)
 
 Les départements qui possèdent déjà ce rôle ne sont pas sélectionnables.
 

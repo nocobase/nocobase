@@ -32,6 +32,147 @@ describe('resolveExpectedRootUse', () => {
   });
 });
 
+async function createCopyImporterScenario(options?: {
+  useMutate?: boolean;
+  templateGridStepParams?: Record<string, any>;
+  duplicatedGridStepParams?: Record<string, any>;
+  duplicatedGridSubModels?: Record<string, any>;
+  mappedFormItemUse?: string;
+}) {
+  const engine = new FlowEngine();
+
+  class FormBlockModel extends FlowModel {
+    async rerender() {}
+
+    getModelClassName(className: string) {
+      if (className === 'FormItemModel' && options?.mappedFormItemUse) {
+        return options.mappedFormItemUse;
+      }
+      return className;
+    }
+  }
+  class GridModel extends FlowModel {
+    async afterAddAsSubModel() {}
+  }
+  class BulkEditFormItemModel extends FlowModel {}
+
+  const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
+  const rootLayout = {
+    formModelSettings: {
+      layout: {
+        columns: 2,
+      },
+    },
+  };
+  const templateGridStepParams = clone(options?.templateGridStepParams || {});
+  const duplicatedGridStepParams = clone(options?.duplicatedGridStepParams ?? templateGridStepParams);
+  const duplicatedGridSubModels = clone(options?.duplicatedGridSubModels || {});
+
+  const templateStore: Record<string, any> = {
+    'tpl-root': {
+      uid: 'tpl-root',
+      use: 'FormBlockModel',
+      stepParams: rootLayout,
+      subModels: {
+        grid: {
+          uid: 'tpl-grid',
+          use: 'GridModel',
+          parentId: 'tpl-root',
+          subKey: 'grid',
+          subType: 'object',
+          stepParams: templateGridStepParams,
+        },
+      },
+    },
+  };
+
+  let duplicatedUid = '';
+  const repo: Record<string, any> = {
+    findOne: vi.fn(async (query: any) => {
+      const data = templateStore[query?.uid];
+      return data ? clone(data) : null;
+    }),
+    save: vi.fn(async (model: any) => ({ uid: model?.uid, use: model?.use })),
+    destroy: vi.fn(async () => true),
+    move: vi.fn(async () => {}),
+    duplicate: vi.fn(async () => null),
+  };
+
+  if (options?.useMutate !== false) {
+    repo.mutate = vi.fn(async (payload: any) => {
+      duplicatedUid = String(payload?.ops?.[0]?.params?.targetUid || '').trim();
+      return {
+        models: {
+          [duplicatedUid]: {
+            uid: duplicatedUid,
+            use: 'GridModel',
+            stepParams: clone(duplicatedGridStepParams),
+            subModels: clone(duplicatedGridSubModels),
+          },
+        },
+      };
+    });
+  } else {
+    repo.duplicate = vi.fn(async () => {
+      duplicatedUid = 'dup-grid-copy';
+      return {
+        uid: duplicatedUid,
+        use: 'GridModel',
+        stepParams: clone(duplicatedGridStepParams),
+        subModels: clone(duplicatedGridSubModels),
+      };
+    });
+  }
+
+  engine.setModelRepository(repo as any);
+  const models: Record<string, typeof FlowModel> = {
+    FormBlockModel,
+    GridModel,
+    SubModelTemplateImporterModel,
+  };
+  if (options?.mappedFormItemUse === 'BulkEditFormItemModel') {
+    models.BulkEditFormItemModel = BulkEditFormItemModel;
+  }
+  engine.registerModels(models);
+
+  const form = engine.createModel<FormBlockModel>({ uid: 'host-form', use: 'FormBlockModel' });
+  const existingGrid = engine.createModel<GridModel>({
+    uid: 'host-grid',
+    use: 'GridModel',
+    parentId: form.uid,
+    subKey: 'grid',
+    subType: 'object',
+  });
+  form.setSubModel('grid', existingGrid);
+
+  const importer = engine.createModel<SubModelTemplateImporterModel>({
+    uid: 'importer-copy-1',
+    use: 'SubModelTemplateImporterModel',
+    parentId: existingGrid.uid,
+    subKey: 'items',
+    subType: 'array',
+    stepParams: {
+      subModelTemplateImportSettings: {
+        selectTemplate: {
+          templateUid: 'tpl-1',
+          targetUid: 'tpl-root',
+          mode: 'copy',
+        },
+      },
+    },
+  });
+  existingGrid.addSubModel('items', importer);
+
+  return {
+    engine,
+    repo,
+    form,
+    existingGrid,
+    importer,
+    getDuplicatedUid: () => duplicatedUid,
+  };
+}
+
 describe('SubModelTemplateImporterModel', () => {
   it('stores derived targetUid into stepParams in beforeParamsSave', async () => {
     const engine = new FlowEngine();
@@ -525,5 +666,148 @@ describe('SubModelTemplateImporterModel', () => {
     expect(saveCalls).toHaveLength(2);
     expect(saveCalls[1]).toMatchObject({ uid: 'host-grid', use: 'ReferenceFormGridModel' });
     expect((form.subModels as any)?.grid?.use).toBe('ReferenceFormGridModel');
+  });
+
+  it('copy mutate should patch duplicated grid, replace current grid, and remove old local tree', async () => {
+    const scenario = await createCopyImporterScenario({
+      useMutate: true,
+      templateGridStepParams: {},
+    });
+    const removeSpy = vi.spyOn(scenario.engine, 'removeModelWithSubModels');
+
+    await scenario.importer.afterAddAsSubModel();
+
+    const duplicatedUid = scenario.getDuplicatedUid();
+    expect(scenario.repo.mutate).toHaveBeenCalledTimes(1);
+    const mutatePayload = scenario.repo.mutate.mock.calls[0][0];
+    const patchOp = mutatePayload?.ops?.find((op: any) => op?.opId === 'patch');
+    expect(patchOp?.params?.values).toMatchObject({
+      uid: duplicatedUid,
+      use: 'GridModel',
+      stepParams: {
+        formModelSettings: {
+          layout: {
+            columns: 2,
+          },
+        },
+      },
+    });
+    expect(removeSpy).toHaveBeenCalledWith('host-grid');
+    expect(scenario.engine.getModel('host-grid')).toBeUndefined();
+    expect((scenario.form.subModels as any)?.grid?.uid).toBe(duplicatedUid);
+    expect((scenario.form.subModels as any)?.grid?.getStepParams('formModelSettings', 'layout')).toEqual({
+      columns: 2,
+    });
+    const persistedSaveCall = scenario.repo.save.mock.calls.find(
+      ([model, saveOptions]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
+        model?.uid === duplicatedUid && !saveOptions?.onlyStepParams,
+    );
+    expect(persistedSaveCall).toBeUndefined();
+  });
+
+  it('copy mutate should skip patch op when duplicated grid already has delegated step params', async () => {
+    const scenario = await createCopyImporterScenario({
+      useMutate: true,
+      templateGridStepParams: {
+        formModelSettings: {
+          layout: {
+            columns: 4,
+          },
+        },
+      },
+    });
+
+    await scenario.importer.afterAddAsSubModel();
+
+    const mutatePayload = scenario.repo.mutate.mock.calls[0][0];
+    const patchOp = mutatePayload?.ops?.find((op: any) => op?.opId === 'patch');
+    expect(patchOp).toBeUndefined();
+    expect((scenario.form.subModels as any)?.grid?.uid).toBe(scenario.getDuplicatedUid());
+    expect((scenario.form.subModels as any)?.grid?.getStepParams('formModelSettings', 'layout')).toEqual({
+      columns: 4,
+    });
+    const persistedSaveCall = scenario.repo.save.mock.calls.find(
+      ([model, saveOptions]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
+        model?.uid === scenario.getDuplicatedUid() && !saveOptions?.onlyStepParams,
+    );
+    expect(persistedSaveCall).toBeUndefined();
+  });
+
+  it('copy mutate should persist normalized mapped form items when block remaps FormItemModel', async () => {
+    const scenario = await createCopyImporterScenario({
+      useMutate: true,
+      mappedFormItemUse: 'BulkEditFormItemModel',
+      duplicatedGridSubModels: {
+        items: [
+          {
+            uid: 'dup-item-1',
+            use: 'FormItemModel',
+          },
+        ],
+      },
+    });
+
+    await scenario.importer.afterAddAsSubModel();
+
+    const duplicatedUid = scenario.getDuplicatedUid();
+    const persistedSaveCall = scenario.repo.save.mock.calls.find(
+      ([model, saveOptions]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
+        model?.uid === duplicatedUid && !saveOptions?.onlyStepParams,
+    );
+    expect(persistedSaveCall).toBeTruthy();
+
+    const [savedModel] = persistedSaveCall as [FlowModel];
+    expect(savedModel.serialize().subModels?.items?.[0]?.use).toBe('BulkEditFormItemModel');
+    expect((scenario.form.subModels as any)?.grid?.subModels?.items?.[0]?.use).toBe('BulkEditFormItemModel');
+  });
+
+  it('copy legacy fallback should move duplicated grid, destroy old grid, and persist patched step params only when needed', async () => {
+    const scenario = await createCopyImporterScenario({
+      useMutate: false,
+      templateGridStepParams: {},
+    });
+    const destroySpy = vi.spyOn(scenario.engine, 'destroyModel');
+
+    await scenario.importer.afterAddAsSubModel();
+
+    const duplicatedUid = scenario.getDuplicatedUid();
+    expect(scenario.repo.move).toHaveBeenCalledWith(duplicatedUid, 'host-grid', 'after');
+    expect(destroySpy).toHaveBeenCalledWith('host-grid');
+    expect((scenario.form.subModels as any)?.grid?.uid).toBe(duplicatedUid);
+    expect((scenario.form.subModels as any)?.grid?.getStepParams('formModelSettings', 'layout')).toEqual({
+      columns: 2,
+    });
+    const patchedSaveCall = scenario.repo.save.mock.calls.find(
+      ([model, saveOptions]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
+        model?.uid === duplicatedUid && saveOptions?.onlyStepParams,
+    );
+    expect(patchedSaveCall).toBeTruthy();
+  });
+
+  it('copy legacy fallback should skip saveStepParams when duplicated grid already has delegated step params', async () => {
+    const scenario = await createCopyImporterScenario({
+      useMutate: false,
+      templateGridStepParams: {
+        formModelSettings: {
+          layout: {
+            columns: 6,
+          },
+        },
+      },
+    });
+
+    await scenario.importer.afterAddAsSubModel();
+
+    const duplicatedUid = scenario.getDuplicatedUid();
+    expect(scenario.repo.move).toHaveBeenCalledWith(duplicatedUid, 'host-grid', 'after');
+    expect((scenario.form.subModels as any)?.grid?.uid).toBe(duplicatedUid);
+    expect((scenario.form.subModels as any)?.grid?.getStepParams('formModelSettings', 'layout')).toEqual({
+      columns: 6,
+    });
+    const patchedSaveCall = scenario.repo.save.mock.calls.find(
+      ([model, saveOptions]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
+        model?.uid === duplicatedUid && saveOptions?.onlyStepParams,
+    );
+    expect(patchedSaveCall).toBeUndefined();
   });
 });

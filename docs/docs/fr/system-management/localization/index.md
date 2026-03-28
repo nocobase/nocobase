@@ -1,58 +1,71 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
+:::tip{title="Avis de traduction IA"}
+Ce document a été traduit par IA. Pour des informations précises, veuillez consulter la [version anglaise](/system-management/localization/index).
 :::
 
 # Gestion de la localisation
 
 ## Introduction
 
-Le plugin de gestion de la localisation vous permet de gérer et de mettre en œuvre les ressources de localisation de NocoBase. Vous pouvez traduire les menus du système, les collections de données, les champs et tous les plugins pour les adapter à la langue et à la culture de régions spécifiques.
+Le plugin de gestion de la localisation est utilisé pour gérer et implémenter les ressources de localisation de NocoBase. Il permet de traduire les menus du système, les collections, les champs ainsi que tous les plugins, afin de s'adapter à la langue et à la culture de régions spécifiques.
 
 ## Installation
 
-Ce plugin est intégré et ne nécessite aucune installation supplémentaire.
+Ce plugin est un plugin intégré, aucune installation supplémentaire n'est requise.
 
 ## Instructions d'utilisation
 
-### Activation du plugin
+### Activer le plugin
 
 ![](https://static-docs.nocobase.com/d16f6ecd6bfb8d1e8acff38f23ad37f8.png)
 
-### Accès à la page de gestion de la localisation
+### Accéder à la page de gestion de la localisation
 
 <img src="https://static-docs.nocobase.com/202404202134187.png"/>
 
-### Synchronisation des entrées de traduction
+### Synchroniser les entrées de traduction
 
 <img src="https://static-docs.nocobase.com/202404202134850.png"/>
 
-Actuellement, vous pouvez synchroniser les contenus suivants :
+Actuellement, la synchronisation des contenus suivants est prise en charge :
 
-- Les packs de langue locaux pour le système et les plugins
-- Les titres de collection, les titres de champ et les étiquettes d'options de champ
-- Les titres de menu
+- Packs de langues locaux du système et des plugins
+- Titres des collections, titres des champs et étiquettes d'options de champs
+- Titres des menus
 
-Une fois la synchronisation terminée, le système affichera toutes les entrées traduisibles pour la langue actuelle.
+Une fois la synchronisation terminée, le système listera toutes les entrées traduisibles pour la langue actuelle.
 
 <img src="https://static-docs.nocobase.com/202404202136567.png"/>
 
 :::info{title=Conseil}
-Il est possible que différents modules contiennent les mêmes entrées de texte original. Vous devrez les traduire séparément.
+Différents modules peuvent comporter les mêmes entrées de texte original, vous devez les traduire séparément.
 :::
 
-### Modification du contenu de la traduction
+### Création automatique d'entrées
+
+Lors de l'édition d'une page, les textes personnalisés dans chaque bloc créeront automatiquement les entrées correspondantes et généreront simultanément le contenu de la traduction pour la langue actuelle.
+
+![](https://static-docs.nocobase.com/Localization-02-12-2026_08_39_AM.png)
+
+![](https://static-docs.nocobase.com/Localization-NocoBase-02-12-2026_08_39_AM.png)
+
+:::info{title=Conseil}
+Lors de la définition de textes dans le code, vous devez spécifier manuellement le ns (namespace), par exemple : `${ctx.i18n.t('My custom js block', { ns: 'lm-flow-engine' })}`
+:::
+
+
+### Modifier le contenu de la traduction
 
 <img src="https://static-docs.nocobase.com/202404202142836.png"/>
 
-### Publication des traductions
+### Publier la traduction
 
 Une fois la traduction terminée, vous devez cliquer sur le bouton "Publier" pour que les modifications prennent effet.
 
 <img src="https://static-docs.nocobase.com/202404202143135.png"/>
 
-### Traduire d'autres langues
+### Traduire dans d'autres langues
 
-Activez d'autres langues dans les "Paramètres système", par exemple, le chinois simplifié.
+Activez d'autres langues dans les "Paramètres système", par exemple le chinois simplifié.
 
 ![](https://static-docs.nocobase.com/618830967aaeb643c892fce355d59a73.png)
 

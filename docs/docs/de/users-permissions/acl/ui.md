@@ -32,7 +32,7 @@ Der vollständige Konfigurationsprozess ist wie folgt:
 
 **Anzeigen**: Legt fest, ob bestimmte Felder auf Feldebene sichtbar sind. So können Sie steuern, welche Felder für bestimmte Rollen innerhalb der `Sammlung` „Bestellungen“ sichtbar sind.
 
-![](https://static-docs.nocobase.com/30dea84d95039e6f7b180955a6cf.png)
+![](https://static-docs.nocobase.com/30dea84d984d95039e6f7b180955a6cf.png)
 
 In der Benutzeroberfläche werden im Block der `Sammlung` „Bestellungen“ nur Felder mit konfigurierten Berechtigungen angezeigt. Systemfelder (Id, Erstellt am, Zuletzt aktualisiert am) behalten die Anzeigeberechtigung auch ohne spezifische Konfiguration bei.
 

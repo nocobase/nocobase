@@ -388,8 +388,66 @@ export interface CreateModelOptions {
   delegateToParent?: boolean;
   [key: string]: any; // 允许额外的自定义选项
 }
+
+/**
+ * FlowModel loader result.
+ * Supports returning the model constructor directly, a default export, or a module object containing the named export.
+ */
+export type FlowModelLoaderResult =
+  | ModelConstructor
+  | {
+      default?: ModelConstructor;
+      [key: string]: unknown;
+    }
+  | Record<string, unknown>;
+
+/**
+ * FlowModel loader function.
+ */
+export type FlowModelLoader = () => Promise<FlowModelLoaderResult>;
+
+/**
+ * FlowModel loader entry.
+ * Future contribution-style fields are intentionally kept as commented placeholders in phase A
+ * and are not consumed by current runtime logic.
+ */
+export interface FlowModelLoaderEntry {
+  loader: FlowModelLoader;
+  // extends?: string;
+  // meta?: Partial<FlowModelMeta>;
+  // scenes?: string[];
+}
+
+/**
+ * FlowModel loader entry map.
+ */
+export type FlowModelLoaderMap = Record<string, FlowModelLoaderEntry>;
+
+/**
+ * Batch ensure result.
+ */
+export interface EnsureBatchResult {
+  requested: string[];
+  loaded: string[];
+  failed: Array<{
+    name: string;
+    error?: unknown;
+  }>;
+}
+
 export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   findOne(query: Record<string, any>): Promise<Record<string, any> | null>;
+  /**
+   * Ensure a model exists (create if missing) in a single request.
+   */
+  ensure: (
+    values: Record<string, any>,
+    options?: { includeAsyncNode?: boolean },
+  ) => Promise<Record<string, any> | null>;
+  /**
+   * Optional: run multiple ops in a single transaction (server capability).
+   */
+  mutate?: (values: Record<string, any>, options?: { includeAsyncNode?: boolean }) => Promise<Record<string, any>>;
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;

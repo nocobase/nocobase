@@ -553,8 +553,8 @@ function extractUsedCtxLibKeys(code: string): string[] {
 }
 
 function injectEnsureLibsPreamble(code: string): string {
-  if (!CTX_LIBS_MARKER_RE.test(code)) return code;
   if (ENSURE_LIBS_MARKER_RE.test(code)) return code;
+  if (!CTX_LIBS_MARKER_RE.test(code)) return code;
   const keys = extractUsedCtxLibKeys(code);
   if (!keys.length) return code;
   return `/* __runjs_ensure_libs */\nawait ctx.__ensureLibs(${JSON.stringify(keys)});\n${code}`;

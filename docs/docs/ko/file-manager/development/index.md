@@ -1,5 +1,5 @@
-:::tip
-이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/file-manager/development/index)을 참조하세요.
 :::
 
 # 확장 개발
@@ -174,4 +174,3 @@ import { filePreviewTypes } from '@nocobase/plugin-file-manager/client';
 * `file`: 현재 파일 객체(문자열 URL 또는 `url`/`preview`를 포함한 객체)
 * `index`: 목록에서의 파일 인덱스
 * `list`: 파일 목록
-

@@ -1,164 +1,176 @@
 ---
 pkg: '@nocobase/plugin-workflow-approval'
 ---
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
 
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/workflow/nodes/approval).
+:::
 
 # Aprobación
 
 ## Introducción
 
-En un flujo de trabajo de aprobación, necesitará usar un nodo de 'Aprobación' dedicado para configurar la lógica operativa para que los aprobadores procesen (aprueben, rechacen o devuelvan) las solicitudes de aprobación iniciadas. El nodo de 'Aprobación' solo se puede usar en procesos de aprobación.
+En un flujo de trabajo de aprobación, se requiere el uso de un nodo de "Aprobación" dedicado para configurar la lógica operativa (aprobar, rechazar o devolver) que los aprobadores utilizarán para procesar la aprobación iniciada. El nodo de "Aprobación" solo puede utilizarse dentro de procesos de aprobación.
 
 :::info{title=Sugerencia}
-Diferencia con el nodo 'Manual' regular: El nodo 'Manual' regular está diseñado para escenarios más generales, como la entrada manual de datos o decisiones manuales sobre si continuar el proceso en varios tipos de flujos de trabajo. El 'nodo de Aprobación' es un nodo de procesamiento especializado, exclusivo para procesos de aprobación, que maneja solo los datos de la aprobación iniciada y no se puede usar en otros flujos de trabajo.
+Diferencia con el nodo de "Procesamiento manual" ordinario: El nodo de "Procesamiento manual" está destinado a escenarios más generales, como la entrada manual de datos o procesos de decisión manual sobre si continuar el flujo en diversos tipos de flujos de trabajo. El "nodo de Aprobación" es un nodo de procesamiento especializado exclusivamente para procesos de aprobación, que solo maneja los datos de la aprobación iniciada y no puede utilizarse en otros flujos de trabajo.
 :::
 
-## Crear Nodo
+## Crear nodo
 
-Haga clic en el botón de más ('+') en el flujo, añada un nodo de 'Aprobación' y luego seleccione uno de los modos de aprobación para crear el nodo de aprobación:
+Haga clic en el botón más ("+") en el proceso, añada un nodo de "Aprobación" y seleccione uno de los modos de aprobación para crear el nodo:
 
-![Crear Nodo de Aprobación](https://static-docs.nocobase.com/20251107000938.png)
+![Crear nodo de aprobación](https://static-docs.nocobase.com/20251107000938.png)
 
-## Configuración del Nodo
+## Configuración del nodo
 
-### Modo de Aprobación
+### Modo de aprobación
 
 Existen dos modos de aprobación:
 
-1.  **Modo directo**: Se utiliza normalmente para procesos más sencillos. Si el nodo de aprobación se aprueba o no, solo determina si el proceso finaliza. Si no se aprueba, el proceso finaliza directamente.
+1.  Modo directo: Generalmente se utiliza para procesos sencillos. El hecho de que el nodo de aprobación se apruebe o no solo determina si el proceso finaliza; en caso de no ser aprobado, se sale directamente del proceso.
 
-    ![Modo directo](https://static-docs.nocobase.com/20251107001043.png)
+    ![Modo de aprobación_Modo directo](https://static-docs.nocobase.com/20251107001043.png)
 
-2.  **Modo de bifurcación**: Se utiliza normalmente para lógicas de datos más complejas. Después de que el nodo de aprobación produce cualquier resultado, se pueden seguir ejecutando otros nodos dentro de su rama de resultados.
+2.  Modo de bifurcación: Generalmente se utiliza para lógicas de datos más complejas. Después de que el nodo de aprobación genere cualquier resultado, se pueden seguir ejecutando otros nodos dentro de su rama de resultados.
 
-    ![Modo de bifurcación](https://static-docs.nocobase.com/20251107001234.png)
+    ![Modo de aprobación_Modo de bifurcación](https://static-docs.nocobase.com/20251107001234.png)
 
-    Una vez que este nodo es 'Aprobado', además de ejecutar la rama de aprobación, el flujo de trabajo posterior también continuará. Después de una acción de 'Rechazo', el flujo de trabajo posterior también puede continuar por defecto, o puede configurar el nodo para finalizar el proceso después de ejecutar la rama.
+    Una vez que este nodo es "Aprobado", además de ejecutar la rama de aprobación, también continuará con el proceso posterior. Tras una acción de "Rechazo", por defecto también se puede continuar con el proceso posterior, o se puede configurar en el nodo para finalizar el proceso después de ejecutar la rama.
 
 :::info{title=Sugerencia}
-El modo de aprobación no se puede modificar después de crear el nodo.
+El modo de aprobación no puede modificarse una vez creado el nodo.
 :::
 
 ### Aprobador
 
-El aprobador es el conjunto de usuarios responsables de la acción de aprobación de este nodo. Puede ser uno o varios usuarios. La fuente puede ser un valor estático seleccionado de la lista de usuarios o un valor dinámico especificado por una variable:
+El aprobador es el conjunto de usuarios responsables del comportamiento de aprobación de este nodo. Puede ser uno o varios usuarios. La fuente de selección puede ser un valor estático de la lista de usuarios o un valor dinámico especificado por una variable:
 
-![Configuración del Aprobador](https://static-docs.nocobase.com/20251107001433.png)
+![Nodo de aprobación_Aprobador](https://static-docs.nocobase.com/20251107001433.png)
 
-Al seleccionar una variable, solo puede elegir la clave primaria o la clave foránea de los datos de usuario del contexto y los resultados del nodo. Si la variable seleccionada es un array durante la ejecución (una relación de uno a muchos), cada usuario en el array se fusionará en el conjunto completo de aprobadores.
+Al seleccionar una variable, solo puede elegir la clave primaria o foránea de los datos de usuario en el contexto o en los resultados del nodo. Si la variable seleccionada es un array durante la ejecución (relación de muchos a muchos), cada usuario del array se fusionará en el conjunto total de aprobadores.
 
-Además de seleccionar directamente usuarios o variables, también puede filtrar dinámicamente usuarios que cumplan las condiciones, basándose en criterios de consulta de la colección de usuarios, para que actúen como aprobadores:
+Además de seleccionar directamente usuarios o variables, también puede filtrar dinámicamente a los usuarios que cumplan con ciertos criterios basándose en las condiciones de consulta de la tabla de usuarios para que actúen como aprobadores:
 
-![Filtrar aprobadores dinámicamente](https://static-docs.nocobase.com/20251107001703.png)
+![20251107001703](https://static-docs.nocobase.com/20251107001703.png)
 
-### Modo de Acuerdo
+### Modo de acuerdo
 
-Si solo hay un aprobador en el momento de la ejecución final (incluyendo el caso después de la deduplicación de múltiples variables), entonces, independientemente del modo de acuerdo seleccionado, solo ese usuario realizará la acción de aprobación y el resultado será determinado únicamente por ese usuario.
+Si al momento de la ejecución final solo hay un aprobador (incluyendo casos tras eliminar duplicados de múltiples variables), independientemente del modo de acuerdo seleccionado, solo ese usuario realizará la operación de aprobación y el resultado será determinado únicamente por él.
 
-Cuando hay varios usuarios en el conjunto de aprobadores, seleccionar diferentes modos de acuerdo representa diferentes métodos de procesamiento:
+Cuando hay varios usuarios en el conjunto de aprobadores, la elección de diferentes modos de acuerdo representa distintas formas de procesamiento:
 
-1.  **Cualquiera**: Basta con que una persona apruebe para que el nodo se considere aprobado. El nodo solo se rechaza si todos lo rechazan.
-2.  **Cofirma**: Todos deben aprobar para que el nodo se considere aprobado. Si una sola persona lo rechaza, el nodo se considera rechazado.
-3.  **Votación**: El número de personas que aprueban debe superar una proporción establecida para que el nodo se considere aprobado; de lo contrario, el nodo se considera rechazado.
+1. Cualquiera: Basta con que una persona apruebe para que el nodo se considere aprobado; solo si todos rechazan, el nodo se considera rechazado.
+2. Cofirma: Se requiere que todos aprueben para que el nodo se considere aprobado; basta con que una persona rechace para que el nodo se considere rechazado.
+3. Votación: Se requiere que el número de personas que aprueben supere una proporción establecida para que el nodo se considere aprobado; de lo contrario, se considera rechazado.
 
-Para la acción de devolución, en cualquier modo, si algún usuario en el conjunto de aprobadores lo procesa como una devolución, el nodo saldrá directamente del proceso.
+Para la operación de devolución, en cualquier modo, si algún usuario del conjunto de aprobadores procesa la solicitud como devolución, el nodo saldrá directamente del proceso.
 
-### Orden de Procesamiento
+### Orden de procesamiento
 
-De manera similar, cuando hay varios usuarios en el conjunto de aprobadores, seleccionar diferentes órdenes de procesamiento representa diferentes métodos de procesamiento:
+Del mismo modo, cuando hay varios usuarios en el conjunto de aprobadores, la elección de diferentes órdenes de procesamiento representa distintas formas de actuar:
 
-1.  **Paralelo**: Todos los aprobadores pueden procesar en cualquier orden; el orden de procesamiento no importa.
-2.  **Secuencial**: Los aprobadores procesan secuencialmente según el orden en el conjunto de aprobadores. El siguiente aprobador solo puede procesar después de que el anterior haya enviado su respuesta.
+1. Paralelo: Todos los aprobadores pueden procesar en cualquier orden; la secuencia no importa.
+2. Secuencial: Los aprobadores procesan uno tras otro según el orden en el conjunto de aprobadores; el siguiente solo puede procesar después de que el anterior haya enviado su decisión.
 
-Independientemente de si está configurado para procesamiento 'Secuencial', el resultado producido según el orden de procesamiento real también seguirá las reglas del 'Modo de Acuerdo' mencionado anteriormente. El nodo completa su ejecución una vez que se cumplen las condiciones correspondientes.
+Independientemente de si se establece como procesamiento "Secuencial", los resultados generados según el orden real de procesamiento también siguen las reglas del "Modo de acuerdo" mencionadas anteriormente. El nodo completa su ejecución una vez que se alcanzan las condiciones correspondientes.
 
-### Salir del flujo de trabajo después de que finalice la rama de rechazo
+### Salir del flujo de trabajo tras finalizar la rama de rechazo
 
-Cuando el 'Modo de Aprobación' se establece en 'Modo de bifurcación', puede elegir salir del flujo de trabajo después de que finalice la rama de rechazo. Después de marcar esta opción, se mostrará una '✗' al final de la rama de rechazo, indicando que los nodos posteriores no continuarán después de que finalice esta rama:
+Cuando el "Modo de aprobación" se establece en "Modo de bifurcación", puede optar por salir del flujo de trabajo tras finalizar la rama de rechazo. Al marcar esta opción, aparecerá una "✗" al final de la rama de rechazo, indicando que no se continuará con los nodos posteriores tras finalizar dicha rama:
 
-![Salir después de rechazar](https://static-docs.nocobase.com/20251107001839.png)
+![Nodo de aprobación_Salir tras rechazo](https://static-docs.nocobase.com/20251107001839.png)
 
-### Configuración de la Interfaz del Aprobador
+### Configuración de la interfaz del aprobador
 
-La configuración de la interfaz del aprobador se utiliza para proporcionar una interfaz de operación para el aprobador cuando el flujo de trabajo de aprobación llega a este nodo. Haga clic en el botón de configuración para abrir la ventana emergente:
+La configuración de la interfaz del aprobador se utiliza para proporcionar al aprobador una interfaz de operación cuando el flujo de trabajo de aprobación llega a este nodo. Haga clic en el botón de configuración para abrir la ventana emergente:
 
-![Ventana emergente de configuración de la interfaz del aprobador](https://static-docs.nocobase.com/20251107001958.png)
+![Nodo de aprobación_Configuración de interfaz_Ventana](https://static-docs.nocobase.com/20251107001958.png)
 
-En la ventana emergente de configuración, puede añadir bloques como el contenido de envío original, información de aprobación, un formulario de procesamiento y texto de aviso personalizado:
+En la ventana de configuración, puede añadir bloques como el contenido de envío original, información de aprobación, formulario de procesamiento y texto de aviso personalizado:
 
-![Añadir bloques a la interfaz del aprobador](https://static-docs.nocobase.com/20251107002604.png)
+![Nodo de aprobación_Configuración de interfaz_Añadir bloques](https://static-docs.nocobase.com/20251107002604.png)
 
-#### Contenido de Envío Original
+#### Contenido de envío original
 
-El bloque de detalles del contenido de aprobación es el bloque de datos enviado por el iniciador. Similar a un bloque de datos regular, puede añadir libremente componentes de campo de la colección y organizarlos libremente para organizar el contenido que el aprobador necesita ver:
+El bloque de detalles del contenido de aprobación es el bloque de datos enviado por el iniciador. Al igual que un bloque de datos ordinario, puede añadir libremente componentes de campo de la colección y organizarlos para estructurar el contenido que el aprobador necesita revisar:
 
-![Configuración del bloque de detalles](https://static-docs.nocobase.com/20251107002925.png)
+![Nodo de aprobación_Configuración de interfaz_Bloque de detalles](https://static-docs.nocobase.com/20251107002925.png)
 
-#### Formulario de Procesamiento
+#### Formulario de procesamiento
 
-En el bloque del formulario de acción, puede añadir botones de acción compatibles con este nodo, incluyendo 'Aprobar', 'Rechazar', 'Devolver', 'Reasignar' y 'Añadir firmante':
+En el bloque del formulario de operación, puede añadir los botones de acción compatibles con este nodo, incluyendo "Aprobar", "Rechazar", "Devolver", "Reasignar" y "Añadir firmante":
 
-![Bloque de formulario de acción](https://static-docs.nocobase.com/20251107003015.png)
+![Nodo de aprobación_Configuración de interfaz_Bloque de formulario de operación](https://static-docs.nocobase.com/20251107003015.png)
 
-Además, también se pueden añadir campos modificables por el aprobador al formulario de acción. Estos campos se mostrarán en el formulario de acción cuando el aprobador esté procesando la aprobación. El aprobador puede modificar los valores de estos campos y, al enviarlos, se actualizarán simultáneamente tanto los datos para la aprobación como la instantánea de los datos correspondientes en el proceso de aprobación.
+Además, en el formulario de operación se pueden añadir campos que el aprobador puede modificar. Estos campos se mostrarán en el formulario cuando el aprobador procese la solicitud; el aprobador puede modificar sus valores y, al enviar, se actualizarán tanto los datos utilizados para la aprobación como la instantánea de los datos correspondientes en el flujo de aprobación.
 
-![Modificar campos de contenido de aprobación](https://static-docs.nocobase.com/20251107003206.png)
+![Nodo de aprobación_Configuración de interfaz_Formulario de operación_Modificar campos](https://static-docs.nocobase.com/20251107003206.png)
 
-#### 'Aprobar' y 'Rechazar'
+#### "Aprobar" y "Rechazar"
 
-Entre los botones de acción de aprobación, 'Aprobar' y 'Rechazar' son acciones decisivas. Después de la presentación, el procesamiento del aprobador para este nodo se completa. Los campos adicionales que deben completarse al enviar, como 'Comentario', se pueden añadir en la ventana emergente de 'Configuración de procesamiento' del botón de acción.
+Entre los botones de operación de aprobación, "Aprobar" y "Rechazar" son acciones decisivas. Una vez enviados, se completa el procesamiento del aprobador en este nodo. Los campos adicionales que deben completarse al enviar, como "Comentario", pueden añadirse en la ventana de "Configuración de procesamiento" del botón de operación.
 
-![Configuración de procesamiento](https://static-docs.nocobase.com/20251107003314.png)
+![Nodo de aprobación_Configuración de interfaz_Formulario de operación_Configuración de procesamiento](https://static-docs.nocobase.com/20251107003314.png)
 
-#### 'Devolver'
+#### "Devolver"
 
-'Devolver' también es una operación decisiva. Además de poder configurar comentarios, también puede configurar los nodos a los que se puede devolver:
+"Devolver" también es una operación decisiva. Además de configurar comentarios, puede configurar los nodos a los que se puede devolver la solicitud:
 
-![Nodos a los que se puede devolver](https://static-docs.nocobase.com/20251107003555.png)
+![20251107003555](https://static-docs.nocobase.com/20251107003555.png)
 
-#### 'Reasignar' y 'Añadir Firmante'
+#### "Reasignar" y "Añadir firmante"
 
-'Reasignar' y 'Añadir firmante' son acciones no decisivas utilizadas para ajustar dinámicamente los aprobadores en el proceso de aprobación. 'Reasignar' es entregar la tarea de aprobación del usuario actual a otro usuario para que la procese. 'Añadir firmante' es añadir un aprobador antes o después del aprobador actual, y el nuevo aprobador continuará el proceso de aprobación junto con los demás.
+"Reasignar" y "Añadir firmante" son operaciones no decisivas utilizadas para ajustar dinámicamente a los aprobadores en el flujo de aprobación. "Reasignar" consiste en entregar la tarea de aprobación del usuario actual a otro usuario para que la procese; "Añadir firmante" consiste en añadir un aprobador antes o después del aprobador actual para que continúen la aprobación conjuntamente.
 
-Después de habilitar los botones de acción 'Reasignar' o 'Añadir firmante', deberá seleccionar el 'Alcance de asignación de personal' en el menú de configuración del botón para establecer el rango de usuarios que pueden ser asignados como nuevos aprobadores:
+Tras habilitar los botones de "Reasignar" o "Añadir firmante", debe seleccionar el "Alcance de asignación de personal" en el menú de configuración del botón para establecer el rango de nuevos aprobadores que pueden ser asignados:
 
-![Alcance de asignación](https://static-docs.nocobase.com/20241226232321.png)
+![Nodo de aprobación_Configuración de interfaz_Formulario de operación_Alcance de asignación](https://static-docs.nocobase.com/20241226232321.png)
 
-Al igual que la configuración original del aprobador del nodo, el alcance de asignación de personal también puede ser aprobadores seleccionados directamente o basarse en condiciones de consulta de la colección de usuarios. Finalmente se fusionará en un conjunto y no incluirá a los usuarios que ya estén en el conjunto de aprobadores.
+Al igual que la configuración original de aprobadores del nodo, el alcance de asignación puede consistir en aprobadores seleccionados directamente o basarse en condiciones de consulta de la tabla de usuarios; finalmente se fusionará en un conjunto que no incluirá a los usuarios que ya se encuentren en el conjunto de aprobadores.
 
 :::warning{title=Importante}
-Si se habilita o deshabilita un botón de acción, o se modifica el alcance de asignación de personal, debe guardar la configuración del nodo después de cerrar la ventana emergente de configuración de la interfaz de acción. De lo contrario, los cambios en el botón de acción no surtirán efecto.
+Si activa o desactiva algún botón de operación, o si modifica el alcance de asignación de personal, debe guardar la configuración del nodo después de cerrar la ventana de configuración de la interfaz de operación; de lo contrario, los cambios en los botones no surtirán efecto.
 :::
 
-## Resultado del Nodo
+### Tarjeta de "Mis aprobaciones" <Badge>2.0+</Badge>
 
-Una vez completada la aprobación, el estado y los datos relevantes se registrarán en el resultado del nodo y podrán ser utilizados como variables por los nodos posteriores.
+Puede utilizarse para configurar la tarjeta de tarea en la lista de "Mis aprobaciones" del Centro de tareas.
 
-![Resultado del nodo](https://static-docs.nocobase.com/20250614095052.png)
+![20260214141554](https://static-docs.nocobase.com/20260214141554.png)
 
-### Estado de Aprobación del Nodo
+En la tarjeta puede configurar libremente los campos de negocio que desee mostrar (excepto campos de relación) o información relacionada con la aprobación.
 
-Representa el estado de procesamiento del nodo de aprobación actual. El resultado es un valor enumerado.
+Una vez que la aprobación entra en este nodo, podrá ver la tarjeta de tarea personalizada en la lista del Centro de tareas:
 
-### Datos Después de la Aprobación
+![20260214141722](https://static-docs.nocobase.com/20260214141722.png)
 
-Si el aprobador modifica el contenido de la aprobación en el formulario de acción, los datos modificados se registrarán en el resultado del nodo para su uso por nodos posteriores. Para usar campos de relación, debe configurar la precarga para los campos de relación en el disparador.
+## Resultado del nodo
 
-### Registros de Aprobación
+Una vez completada la aprobación, el estado y los datos relacionados se registrarán en el resultado del nodo, pudiendo ser utilizados como variables por los nodos posteriores.
+
+![20250614095052](https://static-docs.nocobase.com/20250614095052.png)
+
+### Estado de aprobación del nodo
+
+Representa el estado de procesamiento del nodo de aprobación actual; el resultado es un valor enumerado.
+
+### Datos después de la aprobación
+
+Si el aprobador modificó el contenido de la aprobación en el formulario de operación, los datos modificados se registrarán en el resultado del nodo para su uso en nodos posteriores. Si necesita utilizar campos de relación, debe configurar la precarga de dichos campos en el disparador.
+
+### Registros de aprobación
 
 > v1.8.0+
 
-El registro de procesamiento de aprobación es un array que contiene los registros de procesamiento de todos los aprobadores en este nodo. Cada registro de procesamiento incluye los siguientes campos:
+El registro de procesamiento de aprobación es un array que contiene los registros de procesamiento de todos los aprobadores en este nodo. Cada fila de registro contiene los siguientes campos:
 
 | Campo | Tipo | Descripción |
 | --- | --- | --- |
 | id | number | Identificador único del registro de procesamiento |
-| userId | number | ID de usuario que procesó este registro |
-| status | number | Estado de procesamiento |
-| comment | string | Comentario en el momento del procesamiento |
-| updatedAt | string | Hora de actualización del registro de procesamiento |
+| userId | number | ID del usuario que procesó el registro |
+| status | number | Estado del procesamiento |
+| comment | string | Comentario realizado al procesar |
+| updatedAt | string | Fecha y hora de actualización del registro |
 
-Puede usar estos campos como variables en nodos posteriores según sea necesario.
+Puede utilizar estos campos como variables en los nodos posteriores según sea necesario.

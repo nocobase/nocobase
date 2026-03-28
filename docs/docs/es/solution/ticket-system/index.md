@@ -1,177 +1,181 @@
-# Ticketing Solution Overview
+:::tip{title="Aviso de traducción IA"}
+Este documento ha sido traducido por IA. Para información precisa, consulte la [versión en inglés](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Introducción a la solución de tickets
 
-## 1. Background (Why)
+> **Nota**: Esta es una versión preliminar. Las funciones aún se están perfeccionando y estamos trabajando continuamente en mejoras. ¡Sus comentarios son bienvenidos!
 
-### Industry/Role/Management Problems Solved
+## 1. Contexto (Por qué)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Problemas de industria / rol / gestión que resuelve
 
-**Typical Business Scenarios:**
+Las empresas enfrentan diversos tipos de solicitudes de servicio en sus operaciones diarias: reparaciones de equipos, soporte de TI, quejas de clientes, consultas, etc. Estas solicitudes provienen de fuentes dispersas (sistemas CRM, ingenieros de campo, correos electrónicos, formularios públicos, etc.), tienen diferentes flujos de trabajo de procesamiento y carecen de mecanismos unificados de seguimiento y gestión.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Ejemplos de escenarios de negocio típicos:**
 
-### Target User Profile
+- **Reparación de equipos**: El equipo de posventa gestiona las solicitudes de reparación de equipos y necesita registrar información específica del dispositivo, como números de serie, códigos de falla y piezas de repuesto.
+- **Soporte de TI**: El departamento de TI gestiona las solicitudes de los empleados internos para el restablecimiento de contraseñas, instalaciones de software y problemas de red.
+- **Quejas de clientes**: El equipo de atención al cliente gestiona quejas de múltiples canales; algunos clientes con un alto nivel de urgencia o frustración requieren una gestión prioritaria.
+- **Autoservicio del cliente**: Los clientes finales desean enviar solicitudes de servicio de manera conveniente y realizar un seguimiento del progreso del procesamiento.
 
-| Dimension | Description |
+### Perfil del usuario objetivo
+
+| Dimensión | Descripción |
 |-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+| Tamaño de la empresa | De PYMES a grandes empresas con necesidades sustanciales de servicio al cliente |
+| Estructura de roles | Equipos de atención al cliente, soporte de TI, equipos de posventa, personal de gestión de operaciones |
+| Madurez digital | Inicial a intermedia, que buscan actualizar la gestión basada en Excel/correo electrónico a una gestión sistemática |
 
-### Pain Points of Current Mainstream Solutions
+### Puntos críticos de las soluciones actuales
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+- **Alto costo / Personalización lenta**: Los sistemas de tickets SaaS son costosos y los ciclos de desarrollo a medida son largos.
+- **Fragmentación del sistema, silos de datos**: Los datos de negocio están dispersos en diferentes sistemas, lo que dificulta el análisis y la toma de decisiones unificadas.
+- **Cambios rápidos en el negocio, dificultad para evolucionar**: Cuando los requisitos del negocio cambian, los sistemas son difíciles de ajustar rápidamente.
+- **Respuesta de servicio lenta**: Las solicitudes que fluyen entre diferentes sistemas no se pueden asignar con prontitud.
+- **Proceso opaco**: Los clientes no pueden rastrear el progreso del ticket; las consultas frecuentes aumentan la presión sobre el servicio al cliente.
+- **Calidad difícil de garantizar**: La falta de monitoreo de SLA (Acuerdos de Nivel de Servicio) impide que los tiempos de espera y los comentarios negativos generen alertas a tiempo.
 
 ---
 
-## 2. Product Benchmarking (Benchmark)
+## 2. Referencia y comparativa (Benchmark)
 
-### Mainstream Products in the Market
+### Productos principales en el mercado
 
 - **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
+- **Sistemas a medida / Sistemas internos**
 
-### Benchmarking Dimensions
+### Dimensiones de comparativa
 
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
+- Cobertura de funciones
+- Flexibilidad
+- Escalabilidad
+- Enfoque de uso de IA
 
-### NocoBase Solution Differentiators
+### Diferenciadores de la solución NocoBase
 
-**Platform-level Advantages:**
+**Ventajas a nivel de plataforma:**
 
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
+- **Prioridad a la configuración**: Desde las tablas de datos subyacentes hasta los tipos de negocio, SLA y enrutamiento por habilidades, todo se gestiona mediante configuración.
+- **Desarrollo rápido sin código (Low-code)**: Más rápido que el desarrollo a medida y más flexible que las soluciones SaaS.
 
-**What Traditional Systems Cannot Do or Cost Too Much:**
+**Lo que los sistemas tradicionales no pueden hacer o tiene un costo muy alto:**
 
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
-
----
-
-## 3. Design Principles
-
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+- **Integración nativa de IA**: Aprovechando los plugins de IA de NocoBase para la clasificación inteligente, asistencia en formularios y recomendaciones de conocimiento.
+- **Todos los diseños pueden ser replicados por los usuarios**: Los usuarios pueden ampliar la solución basándose en plantillas.
+- **Arquitectura de datos en forma de T**: Tabla principal + tablas de extensión de negocio; agregar nuevos tipos de negocio solo requiere añadir tablas de extensión.
 
 ---
 
-## 4. Solution Overview
+## 3. Principios de diseño (Principles)
 
-### Summary Introduction
+- **Bajo costo cognitivo**
+- **El negocio antes que la tecnología**
+- **Evolutivo, no una entrega única**
+- **Configuración primero, código como respaldo**
+- **Colaboración humano-IA, no sustitución del humano por la IA**
+- **Todos los diseños deben ser replicables por los usuarios**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Descripción general de la solución (Solution Overview)
 
-### Ticket Processing Flow
+### Introducción resumida
+
+Una plataforma de tickets universal construida sobre la plataforma low-code NocoBase, que logra:
+
+- **Entrada unificada**: Integración de múltiples fuentes y procesamiento estandarizado.
+- **Distribución inteligente**: Clasificación asistida por IA y asignación con equilibrio de carga.
+- **Negocio polimórfico**: Tabla principal central + tablas de extensión de negocio, con extensión flexible.
+- **Retroalimentación de ciclo cerrado**: Monitoreo de SLA, calificaciones de clientes y seguimiento de comentarios negativos.
+
+### Flujo de procesamiento de tickets
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Entrada multifuente → Preprocesamiento/Análisis IA → Asignación inteligente → Ejecución manual → Ciclo de retroalimentación
+        ↓                       ↓                          ↓                    ↓                    ↓
+ Verificación duplicados   Reconocimiento intención   Coincidencia habilidades  Flujo de estado     Calificación satisfacción
+                           Análisis de sentimiento    Equilibrio de carga       Monitoreo SLA       Seguimiento comentarios neg.
+                           Respuesta automática       Gestión de colas          Comunicación/Coment. Archivado de datos
 ```
 
-### Core Module List
+### Lista de módulos principales
 
-| Module | Description |
+| Módulo | Descripción |
 |--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Entrada de tickets | Formularios públicos, portal del cliente, creación por agente, API/Webhook, análisis de correo electrónico |
+| Gestión de tickets | CRUD de tickets, flujo de estados, asignación/transferencia, comunicación por comentarios, registros de operación |
+| Extensión de negocio | Tablas de extensión para reparación de equipos, soporte de TI, quejas de clientes y otros negocios |
+| Gestión de SLA | Configuración de SLA, alertas por tiempo agotado, escalamiento por tiempo agotado |
+| Gestión de clientes | Tabla principal de clientes, gestión de contactos, portal del cliente |
+| Sistema de calificación | Puntuación multidimensional, etiquetas rápidas, NPS, alertas de comentarios negativos |
+| Asistencia de IA | Clasificación de intención, análisis de sentimiento, recomendación de conocimiento, asistencia en respuestas, pulido de tono |
 
-### Core Interface Display
+### Visualización de la interfaz principal
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. Empleado de IA (AI Employee)
 
-### AI Employee Types and Scenarios
+### Tipos de empleado de IA y escenarios
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Asistente de servicio al cliente**, **Asistente de ventas**, **Analista de datos**, **Auditor**
+- Asisten a los humanos, no los reemplazan.
 
-### AI Employee Value Quantification
+### Cuantificación del valor del empleado de IA
 
-In this solution, AI employees can:
+En esta solución, los empleados de IA pueden:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Dimensión de valor | Efectos específicos |
+|--------------------|---------------------|
+| Mejorar la eficiencia | La clasificación automática reduce el tiempo de triaje manual en más del 50%; las recomendaciones de conocimiento aceleran la resolución de problemas |
+| Reducir costos | Respuestas automáticas a preguntas simples, reduciendo la carga de trabajo del servicio al cliente manual |
+| Empoderar a los empleados | Las alertas de sentimiento ayudan al servicio al cliente a prepararse con antelación; el pulido de respuestas mejora la calidad de la comunicación |
+| Mejorar la satisfacción | Respuesta más rápida, asignación más precisa y respuestas más profesionales |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Puntos destacados (Highlights)
 
-### How to Install and Use
+### 1. Arquitectura de datos en forma de T
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Todos los tickets comparten la tabla principal con una lógica de flujo unificada.
+- Las tablas de extensión de negocio contienen campos específicos de cada tipo, permitiendo una extensión flexible.
+- Agregar nuevos tipos de negocio solo requiere añadir tablas de extensión, sin afectar el flujo principal.
+
+### 2. Ciclo de vida completo del ticket
+
+- Nuevo → Asignado → En proceso → Pendiente → Resuelto → Cerrado.
+- Soporta escenarios complejos como transferencia, devolución y reapertura.
+- El cronometraje de SLA es preciso, incluyendo las pausas en estado pendiente.
+
+### 3. Integración unificada multicanal
+
+- Formularios públicos, portal del cliente, API, correo electrónico y creación por agente.
+- La verificación de idempotencia evita la creación de duplicados.
+
+### 4. Integración nativa de IA
+
+- No se trata de "añadir un botón de IA", sino de integrarla en cada paso.
+- Reconocimiento de intención, análisis de sentimiento, recomendación de conocimiento y pulido de respuestas.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Instalación y despliegue
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+### Cómo instalar y usar
+
+Utilice la gestión de migraciones para migrar e integrar diversas aplicaciones parciales en otras aplicaciones.
+
+---
+
+## 8. Hoja de ruta (Roadmap - Actualización continua)
+
+- **Incrustación en sistemas**: Soporte para incrustar el módulo de tickets en diferentes sistemas de negocio como ERP, CRM, etc.
+- **Interconexión de tickets**: Integración de tickets de sistemas ascendentes/descendentes y devoluciones de estado para la colaboración de tickets entre sistemas.
+- **Automatización por IA**: Empleados de IA integrados en los flujos de trabajo, permitiendo la ejecución automática en segundo plano para un procesamiento desatendido.
+- **Soporte multi-inquilino (Multi-tenancy)**: Escalado horizontal mediante arquitectura de múltiples espacios/aplicaciones, permitiendo la distribución a diferentes equipos de servicio para una operación independiente.
+- **Base de conocimientos RAG**: Vectorización automática de todos los datos (tickets, clientes, productos, etc.) para búsqueda inteligente y recomendaciones de conocimiento.
+- **Soporte multi-idioma**: La interfaz y el contenido admiten el cambio entre varios idiomas para satisfacer las necesidades de colaboración de equipos multinacionales o regionales.

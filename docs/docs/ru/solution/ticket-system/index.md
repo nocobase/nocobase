@@ -1,177 +1,181 @@
-# Ticketing Solution Overview
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/solution/ticket-system/index).
+:::
 
-> **Note**: This is an early preview version. Features are still being improved and we are continuously working on enhancements. Feedback is welcome!
+# Обзор решения для работы с тикетами
 
-## 1. Background (Why)
+> **Примечание**: Это ранняя предварительная версия. Функциональность еще дорабатывается, мы постоянно работаем над улучшениями. Будем рады вашим отзывам!
 
-### Industry/Role/Management Problems Solved
+## 1. Контекст (Why)
 
-Enterprises face various types of service requests in daily operations: equipment repairs, IT support, customer complaints, consultations, etc. These requests come from scattered sources (CRM systems, field engineers, emails, public forms, etc.), have different processing workflows, and lack unified tracking and management mechanisms.
+### Какие отраслевые, ролевые и управленческие задачи решаются
 
-**Typical Business Scenarios:**
+В процессе повседневной деятельности предприятия сталкиваются с различными типами сервисных запросов: ремонт оборудования, IT-поддержка, жалобы клиентов, консультации и предложения. Источники этих запросов разрознены (CRM-системы, инженеры на объектах, электронная почта, публичные формы и т. д.), процессы обработки различаются, и отсутствует единый механизм отслеживания и управления.
 
-- **Equipment Repair**: After-sales team handles equipment repair requests, needs to record device-specific information like serial numbers, fault codes, spare parts
-- **IT Support**: IT department handles internal employee requests for password resets, software installations, network issues
-- **Customer Complaints**: Customer service team handles multi-channel complaints, some emotionally charged customers need priority handling
-- **Customer Self-Service**: End customers want to conveniently submit service requests and track processing progress
+**Примеры типичных бизнес-сценариев:**
 
-### Target User Profile
+- **Ремонт оборудования**: Группа послепродажного обслуживания обрабатывает заявки на ремонт, где необходимо фиксировать специфическую информацию: серийные номера устройств, коды неисправностей, запасные части и т. д.
+- **IT-поддержка**: IT-отдел обрабатывает запросы внутренних сотрудников на сброс паролей, установку программного обеспечения, устранение сетевых неполадок.
+- **Жалобы клиентов**: Команда обслуживания клиентов обрабатывает жалобы из разных каналов; запросы от эмоционально настроенных клиентов требуют приоритетной обработки.
+- **Самообслуживание клиентов**: Конечные клиенты хотят иметь возможность удобно подавать запросы на обслуживание и отслеживать статус их выполнения.
 
-| Dimension | Description |
-|-----------|-------------|
-| Company Size | SMBs to mid-large enterprises with substantial customer service needs |
-| Role Structure | Customer service teams, IT support, after-sales teams, operations management |
-| Digital Maturity | Beginner to intermediate, seeking to upgrade from Excel/email management to systematic management |
+### Портрет целевого пользователя
 
-### Pain Points of Current Mainstream Solutions
+| Параметр | Описание |
+|------|------|
+| Размер предприятия | От малого и среднего бизнеса до крупных предприятий со значительным объемом запросов на обслуживание |
+| Ролевая структура | Команды обслуживания клиентов, IT-поддержка, отделы послепродажного обслуживания, операционные менеджеры |
+| Цифровая зрелость | От начального до среднего уровня; стремление перейти от управления через Excel/почту к систематизированному управлению |
 
-- **High Cost / Slow Customization**: SaaS ticketing systems are expensive, custom development cycles are long
-- **System Fragmentation, Data Silos**: Business data scattered across different systems, difficult to unify analysis and decision-making
-- **Fast Business Changes, Hard to Evolve**: When business requirements change, systems are difficult to adjust quickly
-- **Slow Service Response**: Requests flowing between different systems cannot be dispatched promptly
-- **Opaque Process**: Customers cannot track ticket progress, frequent inquiries increase customer service pressure
-- **Quality Difficult to Guarantee**: Lack of SLA monitoring, timeouts and negative feedback cannot be alerted in time
+### Проблемы существующих мейнстрим-решений
 
----
-
-## 2. Product Benchmarking (Benchmark)
-
-### Mainstream Products in the Market
-
-- **SaaS**: Salesforce, Zendesk, Odoo, etc.
-- **Custom Systems / Internal Systems**
-
-### Benchmarking Dimensions
-
-- Feature Coverage
-- Flexibility
-- Extensibility
-- AI Usage Approach
-
-### NocoBase Solution Differentiators
-
-**Platform-level Advantages:**
-
-- **Configuration-First**: From underlying data tables to business types, SLA, skill routing - all managed through configuration
-- **Low-Code Rapid Development**: Faster than custom development, more flexible than SaaS
-
-**What Traditional Systems Cannot Do or Cost Too Much:**
-
-- **AI-Native Integration**: Leveraging NocoBase's AI plugins for intelligent classification, form assistance, knowledge recommendations
-- **All Designs Can Be Replicated by Users**: Users can extend based on templates
-- **T-Shaped Data Architecture**: Main table + business extension tables, adding new business types only requires adding extension tables
+- **Высокая стоимость / медленная кастомизация**: SaaS-системы для работы с тикетами стоят дорого, а циклы заказной разработки слишком длительны.
+- **Разрозненность систем, «острова данных»**: Бизнес-данные распределены по разным системам, что затрудняет единый анализ и принятие решений.
+- **Быстрые изменения бизнеса, сложность развития систем**: При изменении бизнес-требований системы трудно быстро адаптировать.
+- **Медленная реакция службы поддержки**: Запросы, перемещающиеся между разными системами, не могут быть назначены оперативно.
+- **Непрозрачность процесса**: Клиенты не могут отслеживать прогресс по тикету, а частые уточняющие вопросы увеличивают нагрузку на службу поддержки.
+- **Сложность контроля качества**: Отсутствие мониторинга SLA; невозможность своевременного оповещения о просрочках и негативных отзывах.
 
 ---
 
-## 3. Design Principles
+## 2. Сравнение с аналогами (Benchmark)
 
-- **Low Cognitive Cost**
-- **Business Before Technology**
-- **Evolvable, Not One-Time Completion**
-- **Configuration First, Code as Fallback**
-- **Human-AI Collaboration, Not AI Replacing Humans**
-- **All Designs Should Be Replicable by Users**
+### Основные продукты на рынке
+
+- **SaaS**: Salesforce, Zendesk, Odoo и др.
+- **Заказные системы / Внутренние системы**
+
+### Критерии сравнения
+
+- Охват функций
+- Гибкость
+- Расширяемость
+- Способ использования ИИ
+
+### Отличительные особенности решения NocoBase
+
+**Преимущества на уровне платформы:**
+
+- **Приоритет конфигурации**: Все — от базовых таблиц данных до типов бизнеса, SLA и маршрутизации по навыкам — управляется через настройки.
+- **Быстрая разработка на low-code**: Быстрее, чем собственная разработка, и гибче, чем готовые SaaS-решения.
+
+**То, что традиционные системы не могут сделать или что стоит слишком дорого:**
+
+- **Нативная интеграция ИИ**: Использование ИИ-плагинов NocoBase для интеллектуальной классификации, помощи в заполнении форм и рекомендаций из базы знаний.
+- **Возможность копирования любого дизайна пользователем**: Пользователи могут самостоятельно расширять систему на основе шаблонов.
+- **T-образная архитектура данных**: Основная таблица + дополнительные бизнес-таблицы; для добавления нового типа бизнеса достаточно добавить вспомогательную таблицу.
 
 ---
 
-## 4. Solution Overview
+## 3. Принципы проектирования (Principles)
 
-### Summary Introduction
+- **Низкая когнитивная нагрузка**
+- **Бизнес важнее технологий**
+- **Эволюционность, а не разовое внедрение**
+- **Сначала конфигурация, код — в крайнем случае**
+- **Сотрудничество человека и ИИ, а не замена человека искусственным интеллектом**
+- **Все проектные решения должны быть воспроизводимы пользователями**
 
-A universal ticketing platform built on NocoBase low-code platform, achieving:
+---
 
-- **Unified Entry**: Multi-source integration, standardized processing
-- **Intelligent Distribution**: AI-assisted classification, load-balanced assignment
-- **Polymorphic Business**: Core main table + business extension tables, flexible extension
-- **Closed-Loop Feedback**: SLA monitoring, customer ratings, negative feedback follow-up
+## 4. Обзор решения (Solution Overview)
 
-### Ticket Processing Flow
+### Краткое описание
+
+Универсальный центр обработки тикетов, построенный на базе low-code платформы NocoBase, обеспечивает:
+
+- **Единую точку входа**: Интеграция множества источников, стандартизированная обработка.
+- **Интеллектуальное распределение**: Классификация с помощью ИИ, распределение нагрузки.
+- **Полиморфный бизнес**: Ядро из основной таблицы + гибкие дополнительные бизнес-таблицы.
+- **Замкнутый цикл обратной связи**: Мониторинг SLA, оценки клиентов, работа с негативными отзывами.
+
+### Процесс обработки тикета
 
 ```
-Multi-Source Input → Pre-processing/AI Analysis → Intelligent Assignment → Manual Execution → Feedback Loop
-      ↓                      ↓                          ↓                    ↓                ↓
- Dedup Check           Intent Recognition          Skill Matching      Status Flow      Satisfaction Rating
-                       Sentiment Analysis          Load Balancing      SLA Monitoring   Negative Feedback Follow-up
-                       Auto Reply                  Queue Management    Comment Communication  Data Archiving
+Многоканальный вход → Предварительная обработка/ИИ-анализ → Умное распределение → Ручное исполнение → Цикл обратной связи
+        ↓                        ↓                            ↓                    ↓                    ↓
+ Проверка дублей          Распознавание намерений      Матчинг по навыкам    Поток статусов       Оценка удовлетворенности
+                          Анализ тональности           Балансировка нагрузки Мониторинг SLA       Работа с негативом
+                          Автоответ                    Управление очередями  Коммуникация/комменты Архивация данных
 ```
 
-### Core Module List
+### Список основных модулей
 
-| Module | Description |
-|--------|-------------|
-| Ticket Intake | Public forms, customer portal, agent-created, API/Webhook, email parsing |
-| Ticket Management | Ticket CRUD, status flow, assignment/transfer, comment communication, operation logs |
-| Business Extension | Equipment repair, IT support, customer complaints and other business extension tables |
-| SLA Management | SLA configuration, timeout alerts, timeout escalation |
-| Customer Management | Customer main table, contact management, customer portal |
-| Rating System | Multi-dimensional scoring, quick tags, NPS, negative feedback alerts |
-| AI Assistance | Intent classification, sentiment analysis, knowledge recommendation, reply assistance, tone polishing |
+| Модуль | Описание |
+|------|----------|
+| Прием тикетов | Публичные формы, портал клиента, создание агентом, API/Webhook, парсинг почты |
+| Управление тикетами | CRUD тикетов, жизненный цикл статусов, назначение/передача, комментарии, логи операций |
+| Бизнес-расширения | Дополнительные таблицы для ремонта оборудования, IT-поддержки, жалоб и т. д. |
+| Управление SLA | Настройка SLA, предупреждения о просрочке, эскалация |
+| Управление клиентами | Основная таблица клиентов, управление контактами, портал клиента |
+| Система оценок | Многомерный скоринг, быстрые теги, NPS, оповещения о плохих оценках |
+| ИИ-помощник | Классификация намерений, анализ эмоций, рекомендации знаний, помощь в ответах, улучшение тона текста |
 
-### Core Interface Display
+### Интерфейс системы
 
 ![ticketing-imgs-2026-01-01-00-46-12](https://static-docs.nocobase.com/ticketing-imgs-2026-01-01-00-46-12.jpg)
 
 ---
 
-## 5. AI Employees
+## 5. ИИ-сотрудники (AI Employee)
 
-### AI Employee Types and Scenarios
+### Типы ИИ-сотрудников и сценарии
 
-- **Customer Service Assistant**, **Sales Assistant**, **Data Analyst**, **Auditor**
-- Assisting humans, not replacing them
+- **Ассистент службы поддержки**, **Ассистент отдела продаж**, **Аналитик данных**, **Аудитор**
+- Помогают людям, а не заменяют их.
 
-### AI Employee Value Quantification
+### Количественная оценка ценности ИИ-сотрудников
 
-In this solution, AI employees can:
+В данном решении ИИ-сотрудники могут:
 
-| Value Dimension | Specific Effects |
-|-----------------|------------------|
-| Improve Efficiency | Automatic classification reduces manual sorting time by 50%+; knowledge recommendations accelerate problem resolution |
-| Reduce Costs | Simple questions auto-replied, reducing manual customer service workload |
-| Empower Human Employees | Emotion alerts help customer service prepare in advance; reply polishing improves communication quality |
-| Improve Customer Satisfaction | Faster response, more accurate assignment, more professional replies |
-
----
-
-## 6. Highlights
-
-### 1. T-Shaped Data Architecture
-
-- All tickets share the main table with unified flow logic
-- Business extension tables carry type-specific fields, flexible extension
-- Adding new business types only requires adding extension tables, without affecting the main flow
-
-### 2. Complete Ticket Lifecycle
-
-- New → Assigned → Processing → Pending → Resolved → Closed
-- Supports complex scenarios like transfer, return, reopen
-- SLA timing accurate to pending pause
-
-### 3. Multi-Channel Unified Integration
-
-- Public forms, customer portal, API, email, agent-created
-- Idempotency check prevents duplicate creation
-
-### 4. AI-Native Integration
-
-- Not "adding an AI button", but integrated into every step
-- Intent recognition, sentiment analysis, knowledge recommendation, reply polishing
+| Измерение ценности | Конкретный эффект |
+|----------|----------|
+| Повышение эффективности | Автоматическая классификация сокращает время ручной сортировки на 50%+; рекомендации знаний ускоряют решение проблем |
+| Снижение затрат | Автоответы на простые вопросы снижают нагрузку на операторов |
+| Расширение возможностей сотрудников | Предупреждения об эмоциях помогают подготовиться; улучшение текста ответов повышает качество коммуникации |
+| Повышение удовлетворенности клиентов | Более быстрая реакция, точное распределение, профессиональные ответы |
 
 ---
 
-## 7. Installation & Deployment
+## 6. Ключевые особенности (Highlights)
 
-### How to Install and Use
+### 1. T-образная архитектура данных
 
-Use migration management to migrate and integrate various partial applications into other applications.
+- Все тикеты используют общую основную таблицу с единой логикой переходов.
+- Дополнительные бизнес-таблицы содержат специфические поля, обеспечивая гибкое расширение.
+- Добавление нового типа бизнеса требует только создания новой таблицы и не затрагивает основной процесс.
+
+### 2. Полный жизненный цикл тикета
+
+- Создание → Назначение → Обработка → Ожидание → Решено → Закрыто.
+- Поддержка сложных сценариев: передача другому сотруднику, возврат, повторное открытие.
+- Учет SLA с точностью до приостановки в режиме ожидания.
+
+### 3. Унифицированный многоканальный доступ
+
+- Публичные формы, портал клиента, API, электронная почта, ручной ввод агентом.
+- Проверка идемпотентности для предотвращения дублирования заявок.
+
+### 4. Нативная интеграция ИИ
+
+- Это не просто «кнопка ИИ», а интеграция в каждый этап процесса.
+- Распознавание намерений, анализ тональности, рекомендации знаний, редактирование ответов.
 
 ---
 
-## 8. Roadmap (Continuously Updated)
+## 7. Установка и развертывание
 
-- **System Embedding**: Support embedding the ticketing module into various business systems like ERP, CRM, etc.
-- **Ticket Interconnection**: Upstream/downstream system ticket integration and status callbacks for cross-system ticket collaboration
-- **AI Automation**: AI employees embedded in workflows, supporting background auto-execution for unattended processing
-- **Multi-Tenancy**: Horizontal scaling via multi-space/multi-app architecture, enabling distribution to different service teams for independent operation
-- **Knowledge Base RAG**: Automatic vectorization of all data (tickets, customers, products, etc.) for intelligent retrieval and knowledge recommendations
-- **Multi-Language Support**: Interface and content support for multiple languages, enabling cross-border/cross-regional team collaboration
+### Как установить и использовать
+
+Используйте управление миграциями для переноса и интеграции различных частей приложения в другие приложения.
+
+---
+
+## 8. План развития (Roadmap)
+
+- **Встраивание в системы**: Поддержка встраивания модуля тикетов в различные бизнес-системы, такие как ERP, CRM и др.
+- **Взаимодействие тикетов**: Интеграция тикетов вышестоящих/нижестоящих систем и обратные вызовы статусов для кросс-системного взаимодействия.
+- **Автоматизация через ИИ**: Встраивание ИИ-сотрудников в рабочий процесс для автоматического фонового выполнения задач без участия человека.
+- **Поддержка мультиарендности (Multi-tenancy)**: Горизонтальное масштабирование через архитектуру нескольких пространств/приложений для независимой работы разных команд поддержки.
+- **База знаний RAG**: Автоматическая векторизация всех данных (тикеты, клиенты, продукты и т. д.) для интеллектуального поиска и рекомендаций.
+- **Многоязычность**: Поддержка нескольких языков для интерфейса и контента, что обеспечит совместную работу международных и региональных команд.

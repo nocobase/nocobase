@@ -45,6 +45,11 @@
       },
       {
         "type": "custom-link",
+        "label": "MCP 接入",
+        "link": "/ai-employees/features/mcp"
+      },
+      {
+        "type": "custom-link",
         "label": "快捷任务",
         "link": "/ai-employees/features/task"
       },
@@ -70,7 +75,6 @@
     "label": "文件管理",
     "link": "/ai-employees/file-manager"
   },
-
   {
     "type": "custom-link",
     "label": "AI 知识库",
@@ -128,6 +132,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase MCP",
+    "link": "/ai-employees/mcp"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase Skills",
+    "link": "/ai-employees/skills"
   },
   {
     "type": "custom-link",

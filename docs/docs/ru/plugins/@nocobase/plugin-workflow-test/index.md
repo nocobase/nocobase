@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: test kit"
+displayName: "Workflow: Тестовый набор"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
@@ -9,4 +9,8 @@ defaultEnabled: false
 editionLevel: 0
 ---
 
-# Workflow: test kit
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-workflow-test/index).
+:::
+
+# Workflow: Тестовый набор

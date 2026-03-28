@@ -14,9 +14,9 @@ features:
         details: NocoBase 2.0의 프런트엔드 노코드/로우코드 개발 엔진입니다.
         link: /flow-engine
         showOnHome: true
-      - title: 데이터베이스
-        details: NocoBase 코어의 데이터베이스 모듈로, 플러그인에 통합된 데이터 접근, 모델링 및 작업 API를 제공합니다. 이는 플러그인 간 데이터 상호작용의 핵심 기반입니다.
-        link: /database
+      - title: 프런트엔드 RunJS
+        details: JS 블록, JS 필드, JS 액션 등의 시나리오를 위한 JavaScript 실행 환경입니다.
+        link: /runjs
         showOnHome: true
   - title: 인터페이스 및 상호작용
     details: 프런트엔드 인터페이스를 확장하고 사용자 지정하며, 비즈니스 요구사항에 맞는 컴포넌트, 필드 및 작업 로직을 구축하여 시스템의 시각화 및 상호작용 경험을 향상시키는 방법을 배웁니다.
@@ -57,3 +57,8 @@ features:
         details: 파일 미리보기 기능을 확장하여 더 많은 파일 형식의 온라인 미리보기 및 렌더링을 지원합니다.
         link: /file-manager/development
 ---
+
+:::tip{title="AI 번역 알림"}
+이 문서는 AI에 의해 번역되었습니다. 정확한 정보는 [영어 버전](/development/index)을 참조하세요.
+:::
+

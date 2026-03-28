@@ -1,15 +1,19 @@
 ---
-displayName: "Action: Duplicate record"
+displayName: "Действие: Дублировать запись"
 packageName: '@nocobase/plugin-action-duplicate'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Duplicate a record, you can either duplicate it into a form and edit it before saving it, or you can duplicate it directly to generate a new record.
+  Дублирует запись: её можно скопировать в форму для редактирования перед отправкой или сразу создать новую запись.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Action: Duplicate record
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-action-duplicate/index).
+:::
+
+# Действие: Дублировать запись

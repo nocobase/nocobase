@@ -25,27 +25,27 @@
       },
       {
         "type": "custom-link",
-        "label": "테이블 이벤트",
+        "label": "컬렉션 이벤트",
         "link": "/workflow/triggers/collection"
       },
       {
         "type": "custom-link",
-        "label": "예약된 작업",
+        "label": "예약 작업",
         "link": "/workflow/triggers/schedule"
       },
       {
         "type": "custom-link",
-        "label": "액션 전 이벤트",
+        "label": "작업 전 이벤트",
         "link": "/workflow/triggers/pre-action"
       },
       {
         "type": "custom-link",
-        "label": "액션 후 이벤트",
+        "label": "작업 후 이벤트",
         "link": "/workflow/triggers/post-action"
       },
       {
         "type": "custom-link",
-        "label": "사용자 정의 액션 이벤트",
+        "label": "사용자 정의 작업 이벤트",
         "link": "/workflow/triggers/custom-action"
       },
       {
@@ -117,7 +117,7 @@
           },
           {
             "type": "custom-link",
-            "label": "플로우 출력",
+            "label": "프로세스 출력",
             "link": "/workflow/nodes/output"
           },
           {
@@ -164,7 +164,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "데이터 생성",
+            "label": "데이터 추가",
             "link": "/workflow/nodes/create"
           },
           {
@@ -212,7 +212,7 @@
       },
       {
         "type": "custom-link",
-        "label": "유형 확장",
+        "label": "확장 유형",
         "items": [
           {
             "type": "custom-link",
@@ -256,7 +256,7 @@
   {
     "type": "custom-link",
     "label": "실행 기록",
-    "link": "/workflow/advanced/execution"
+    "link": "/workflow/advanced/executions"
   },
   {
     "type": "custom-link",

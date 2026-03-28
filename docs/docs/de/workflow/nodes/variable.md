@@ -17,7 +17,7 @@ Sie können in einem Workflow Variablen deklarieren oder bereits deklarierten Va
 
 Im Konfigurationsbereich des Workflows klicken Sie auf das Plus-Symbol („+“) im Workflow, um einen „Variablen“-Knoten hinzuzufügen:
 
-![Variablen-Knoten hinzufügen](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Variablen-Knoten hinzufügen](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Knoten konfigurieren
 

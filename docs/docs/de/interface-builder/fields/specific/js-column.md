@@ -1,43 +1,43 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/interface-builder/fields/specific/js-column).
 :::
 
 # JS-Spalte
 
 ## Einführung
 
-Die JS-Spalte wird in Tabellen für „benutzerdefinierte Spalten“ verwendet und rendert den Inhalt jeder Tabellenzelle mithilfe von JavaScript. Sie ist nicht an ein bestimmtes Feld gebunden und eignet sich daher ideal für abgeleitete Spalten, feldübergreifende kombinierte Anzeigen, Status-Badges, Schaltflächenaktionen und die Aggregation entfernter Daten.
+Die JS-Spalte wird für „Benutzerdefinierte Spalten“ in Tabellen verwendet und rendert den Inhalt der Zellen jeder Zeile über JavaScript. Sie ist nicht an ein bestimmtes Feld gebunden und eignet sich für Szenarien wie abgeleitete Spalten, Feldübergreifende Kombinationsanzeigen, Status-Badges, Schaltflächenoperationen, Remote-Datenzusammenfassungen usw.
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
 ## Laufzeit-Kontext-API
 
-Beim Rendern jeder Zelle stellt die JS-Spalte die folgenden Kontext-APIs bereit:
+Beim Rendern jeder Zelle der JS-Spalte können die folgenden Kontext-Fähigkeiten verwendet werden:
 
-- `ctx.element`: Der DOM-Container der aktuellen Zelle (ElementProxy), der `innerHTML`, `querySelector`, `addEventListener` usw. unterstützt.
-- `ctx.record`: Das Datensatzobjekt der aktuellen Zeile (schreibgeschützt).
-- `ctx.recordIndex`: Der Zeilenindex innerhalb der aktuellen Seite (beginnt bei 0, kann durch Paginierung beeinflusst werden).
-- `ctx.collection`: Die Metadaten der an die Tabelle gebundenen Sammlung (schreibgeschützt).
-- `ctx.requireAsync(url)`: Lädt eine AMD/UMD-Bibliothek asynchron über eine URL.
-- `ctx.importAsync(url)`: Importiert ein ESM-Modul dynamisch über eine URL.
-- `ctx.openView(options)`: Öffnet eine konfigurierte Ansicht (Modal/Drawer/Seite).
-- `ctx.i18n.t()` / `ctx.t()`: Für die Internationalisierung.
-- `ctx.onRefReady(ctx.ref, cb)`: Rendert, nachdem der Container bereit ist.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Integrierte Bibliotheken wie React, ReactDOM, Ant Design, Ant Design Icons und dayjs für JSX-Rendering und Datums-/Uhrzeit-Dienstprogramme. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` bleiben aus Kompatibilitätsgründen erhalten.)
+- `ctx.element`: Der DOM-Container der aktuellen Zelle (ElementProxy), unterstützt `innerHTML`, `querySelector`, `addEventListener` usw.;
+- `ctx.record`: Das Datensatzobjekt der aktuellen Zeile (schreibgeschützt);
+- `ctx.recordIndex`: Der Zeilenindex innerhalb der aktuellen Seite (beginnt bei 0, kann durch Paginierung beeinflusst werden);
+- `ctx.collection`: Die Metainformationen der an die Tabelle gebundenen Sammlung (schreibgeschützt);
+- `ctx.requireAsync(url)`: Lädt eine AMD/UMD-Bibliothek asynchron über eine URL;
+- `ctx.importAsync(url)`: Importiert ein ESM-Modul dynamisch über eine URL;
+- `ctx.openView(options)`: Öffnet eine konfigurierte Ansicht (Modal/Drawer/Seite);
+- `ctx.i18n.t()` / `ctx.t()`: Internationalisierung;
+- `ctx.onRefReady(ctx.ref, cb)`: Rendert erst, nachdem der Container bereit ist;
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs` / `ctx.libs.lodash` / `ctx.libs.math` / `ctx.libs.formula`: Integrierte Bibliotheken wie React / ReactDOM / Ant Design / Ant Design Icons / dayjs / lodash / math.js / formula.js für JSX-Rendering, Zeitverarbeitung, Datenoperationen und mathematische Berechnungen. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` bleiben aus Kompatibilitätsgründen erhalten.)
 - `ctx.render(vnode)`: Rendert ein React-Element/HTML/DOM in den Standardcontainer `ctx.element` (die aktuelle Zelle). Mehrere Render-Vorgänge verwenden das Root-Element wieder und überschreiben den vorhandenen Inhalt des Containers.
 
 ## Editor und Snippets
 
-Der Skript-Editor für die JS-Spalte unterstützt Syntax-Hervorhebung, Fehlerhinweise und integrierte Code-Snippets.
+Der Skript-Editor der JS-Spalte unterstützt Syntax-Hervorhebung, Fehlerhinweise und integrierte Code-Snippets (Snippets).
 
 - `Snippets`: Öffnet die Liste der integrierten Code-Snippets, die Sie durchsuchen und mit einem Klick an der aktuellen Cursorposition einfügen können.
 - `Run`: Führt den aktuellen Code direkt aus. Das Ausführungsprotokoll wird im `Logs`-Panel unten ausgegeben und unterstützt `console.log/info/warn/error` sowie die Fehlerhervorhebung.
 
 ![jscolumn-toolbars-20251029](https://static-docs.nocobase.com/jscolumn-toolbars-20251029.png)
 
-Sie können auch einen KI-Mitarbeiter verwenden, um Code zu generieren:
+Kann mit KI-Mitarbeitern kombiniert werden, um Code zu generieren:
 
-- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/built-in/ai-coding)
+- [KI-Mitarbeiter · Nathan: Frontend-Ingenieur](/ai-employees/features/built-in-employee)
 
 ## Häufige Anwendungsfälle
 
@@ -73,7 +73,7 @@ ctx.render(
       collectionName: ctx.collection?.name,
       filterByTk: tk,
     });
-  }}>Anzeigen</a>
+  }}>Ansehen</a>
 );
 ```
 
@@ -92,7 +92,7 @@ ctx.render(<span>{dayjs().format('YYYY-MM-DD')}</span>);
 
 ## Hinweise
 
-- Es wird empfohlen, für das Laden externer Bibliotheken ein vertrauenswürdiges CDN zu verwenden und für Fehlerszenarien eine Fallback-Lösung bereitzustellen (z. B. `if (!lib) return;`).
-- Es wird empfohlen, `class`- oder `[name=...]`-Selektoren anstelle fester `id`s zu verwenden, um doppelte `id`s in mehreren Blöcken oder Modals zu vermeiden.
+- Es wird empfohlen, für das Laden externer Bibliotheken ein vertrauenswürdiges CDN zu verwenden und für Fehlerszenarien eine Absicherung bereitzustellen (z. B. `if (!lib) return;`).
+- Es wird empfohlen, bevorzugt `class`- oder `[name=...]`-Selektoren anstelle fester `id`s zu verwenden, um doppelte `id`s in mehreren Blöcken oder Modals zu vermeiden.
 - Ereignisbereinigung: Tabellenzeilen können sich dynamisch mit Paginierung oder Aktualisierung ändern, wodurch Zellen mehrmals gerendert werden. Sie sollten Ereignis-Listener vor dem Binden bereinigen oder deduplizieren, um wiederholte Auslöser zu vermeiden.
-- Leistungstipp: Vermeiden Sie es, große Bibliotheken in jeder Zelle wiederholt zu laden. Cachen Sie die Bibliothek stattdessen auf einer höheren Ebene (z. B. über eine globale oder tabellenweite Variable) und verwenden Sie sie wieder.
+- Leistungsempfehlung: Vermeiden Sie es, große Bibliotheken in jeder Zelle wiederholt zu laden. Die Bibliothek sollte auf einer höheren Ebene (z. B. über eine globale oder tabellenweite Variable) zwischengespeichert und dann wiederverwendet werden.

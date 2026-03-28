@@ -1,12 +1,16 @@
 ---
-displayName: "Error handler"
+displayName: "Обработчик ошибок"
 packageName: '@nocobase/plugin-error-handler'
 description: |
-  Handling application errors and exceptions.
+  Обработка ошибок и исключений в приложении.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Error handler
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-error-handler/index).
+:::
+
+# Обработчик ошибок

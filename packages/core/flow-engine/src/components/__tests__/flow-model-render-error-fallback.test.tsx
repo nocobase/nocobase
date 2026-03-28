@@ -114,7 +114,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ BrokenModel });
     const model = engine.createModel({ use: 'BrokenModel', uid: 'broken-top-2' }) as BrokenModel;
     // satisfy FlowsFloatContextMenu styles
@@ -154,7 +154,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ParentModel, BrokenChild });
     const parent = engine.createModel({ use: 'ParentModel', uid: 'parent-3' }) as ParentModel;
     const child = engine.createModel({ use: 'BrokenChild', uid: 'child-3' }) as BrokenChild;
@@ -200,7 +200,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
     }
 
     const engine = new FlowEngine();
-    engine.flowSettings.forceEnable();
+    await engine.flowSettings.forceEnable();
     engine.registerModels({ ParentModel, RenderFnChild });
     const parent = engine.createModel({ use: 'ParentModel', uid: 'parent-4' }) as ParentModel;
     const child = engine.createModel({ use: 'RenderFnChild', uid: 'cell-4' }) as RenderFnChild;

@@ -16,7 +16,7 @@ Você pode declarar variáveis em um fluxo ou atribuir valores a variáveis já 
 
 Na interface de configuração do **fluxo de trabalho**, clique no botão de adição ("+") no fluxo para adicionar um nó de "Variável":
 
-![Adicionar Nó de Variável](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Adicionar Nó de Variável](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 ## Configurar Nó
 
@@ -33,7 +33,7 @@ Quando o nó que você está criando é o primeiro nó de variável no fluxo, vo
 
 Ao escolher atribuir um valor a uma variável já declarada, você também precisará selecionar a variável de destino, que é o nó onde a variável foi declarada:
 
-![Selecionar a variável para atribuir um valor](https://static-docs.nocobase.com/1ce88b71526ef3ee.png)
+![Selecionar a variável para atribuir um valor](https://static-docs.nocobase.com/1ce8911548d7347e693d8cc8ac1953eb.png)
 
 ### Valor
 

@@ -1,5 +1,5 @@
 ---
-displayName: "Multi-app share collection"
+displayName: "Общие коллекции Multi-app"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
   
@@ -10,6 +10,10 @@ deprecated: true
 editionLevel: 0
 ---
 
-# Multi-app share collection
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-multi-app-share-collection/index).
+:::
 
-> Note: This plugin is deprecated.
+# Общие коллекции Multi-app
+
+> Примечание: этот плагин устарел (deprecated).

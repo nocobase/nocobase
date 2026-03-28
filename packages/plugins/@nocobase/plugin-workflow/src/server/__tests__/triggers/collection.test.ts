@@ -1286,4 +1286,102 @@ describe('workflow > triggers > collection', () => {
       }
     });
   });
+
+  describe('validation', () => {
+    it('create workflow without type should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create workflow with unregistered type should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'not-exist',
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow without config.mode should return 200', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('create collection trigger workflow with invalid mode should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+            mode: 0,
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow with non-existent collection should return 400', async () => {
+      const { status } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'not_exist',
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('create collection trigger workflow with valid config should succeed', async () => {
+      const { status, body } = await agent.resource('workflows').create({
+        values: {
+          title: 'test',
+          type: 'collection',
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(status).toBe(200);
+      expect(body.data.type).toBe('collection');
+      expect(body.data.config.collection).toBe('posts');
+    });
+
+    it('update unexecuted workflow config with invalid collection should return 400', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const { status } = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 1,
+            collection: 'not_exist',
+          },
+        },
+      });
+      expect(status).toBe(400);
+    });
+  });
 });

@@ -9,7 +9,7 @@
 
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { App, Switch, Tooltip } from 'antd';
-import { onFieldChange } from '@formily/core';
+import { onFieldChange, onFieldValueChange } from '@formily/core';
 import { useField, useForm, useFormEffects } from '@formily/react';
 
 import {
@@ -35,7 +35,7 @@ import { RadioWithTooltip } from './components';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTranslation } from 'react-i18next';
 import { TriggerOptionRender } from './components/TriggerOptionRender';
-import { lang } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { CategoryTabs } from './WorkflowCategoryTabs';
 import { EnumerationField } from './components/EmunerationField';
 import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
@@ -124,6 +124,46 @@ function useRevisionAction() {
   };
 }
 
+function TriggerPresetFieldset() {
+  const workflowPlugin = usePlugin(WorkflowPlugin);
+  const [triggerType, setTriggerType] = useState<string | null>(null);
+
+  const form = useForm();
+
+  useFormEffects(() => {
+    onFieldValueChange('type', (field) => {
+      setTriggerType(field.value ?? null);
+      form.clearFormGraph('config.*');
+    });
+  });
+
+  const trigger = triggerType ? workflowPlugin.triggers.get(triggerType) : null;
+
+  if (!trigger?.presetFieldset) {
+    return null;
+  }
+
+  return (
+    <SchemaComponent
+      key={triggerType}
+      components={trigger.components}
+      scope={trigger.scope}
+      schema={{
+        type: 'void',
+        properties: {
+          config: {
+            type: 'object',
+            'x-decorator': 'FormItem',
+            title: `{{t("Trigger configuration", { ns: "${NAMESPACE}" })}}`,
+            'x-component': 'Fieldset',
+            properties: trigger.presetFieldset,
+          },
+        },
+      }}
+    />
+  );
+}
+
 function WorkflowEnabledSwitch() {
   const { message } = App.useApp();
   const { t } = useTranslation();
@@ -193,6 +233,7 @@ export function WorkflowPane() {
           CategoryTabs,
           EnumerationField,
           WorkflowEnabledSwitch,
+          TriggerPresetFieldset,
         }}
         scope={{
           useTriggersOptions,

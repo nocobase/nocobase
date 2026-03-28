@@ -8,6 +8,6 @@ Open the `AI employees` management page and toggle `Enabled` directly in the lis
 
 ![ai-employee-list-enable-switch.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employee-list-enable-switch.png)
 
-## After Enabling
+## Usage After Enabling
 
-After enabling, the employee appears in available entry points (such as floating entry or scenario-specific entry).
+After enabling, the employee appears in available entry points (such as bottom-right shortcut entry or scenario-specific entry).

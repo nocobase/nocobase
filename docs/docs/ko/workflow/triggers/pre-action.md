@@ -22,7 +22,7 @@ pkg: '@nocobase/plugin-workflow-request-interceptor'
 
 워크플로우를 생성할 때, 유형을 "작업 전 이벤트"로 선택합니다:
 
-![작업 전 이벤트 생성](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9846fc4b6.png)
+![작업 전 이벤트 생성](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9864fc4b6.png)
 
 ### 컬렉션 선택
 

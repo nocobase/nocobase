@@ -1,35 +1,73 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
+
+:::tip{title="KI-Übersetzungshinweis"}
+Dieses Dokument wurde von KI übersetzt. Für genaue Informationen lesen Sie bitte die [englische Version](/ai-employees/index).
 :::
 
+# Übersicht
 
-# KI-Mitarbeiter · Erste Schritte
+![clipboard-image-1771905619](https://static-docs.nocobase.com/clipboard-image-1771905619.png)
 
-In NocoBase sind KI-Mitarbeiter keine Chatbots oder isolierte Agenten. Sie sind vielmehr intelligente Kollegen, die nahtlos in Ihr Geschäftssystem integriert sind, Geschäftskontexte verstehen und Aufgaben direkt ausführen können.
+AI-Mitarbeiter (`AI Employees`) sind intelligente Agenten-Fähigkeiten, die tief in die NocoBase-Geschäftssysteme integriert sind.
 
-Sie erscheinen überall dort, wo Sie sie benötigen – neben Tabellen und Formularen –, damit Sie sie mühelos aufrufen können.
+Es handelt sich nicht um Roboter, die „nur chatten“ können, sondern um „digitale Kollegen“, die den Kontext direkt in der Geschäftsoberfläche verstehen und Aktionen ausführen können:
 
-![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
+- **Geschäftskontext verstehen**: Wahrnehmung der aktuellen Seite, Blöcke, Datenstrukturen und ausgewählten Inhalte.
+- **Aktionen direkt ausführen**: Fähigkeiten aufrufen, um Abfragen, Analysen, Ausfüllen, Konfigurationen, Generierungen und andere Aufgaben zu erledigen.
+- **Rollenbasierte Zusammenarbeit**: Konfiguration verschiedener Mitarbeiter nach Positionen und Wechsel der Modelle in der Konversation zur Zusammenarbeit.
 
-Sie können sie auch aus der Mitarbeiterliste unten rechts auf der Seite aufrufen.
+## 5-Minuten-Einstiegspfad
 
-![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
+Sehen Sie sich zuerst den [Schnellstart](/ai-employees/quick-start) an und schließen Sie die minimale Konfiguration in der folgenden Reihenfolge ab:
 
-Sie rufen Daten automatisch als Kontext ab – zum Beispiel ruft **Viz** neben einem Tabellenblock automatisch die Daten aus der Tabelle ab und verwendet die passenden Tools, um diese Daten zu verarbeiten. Das bedeutet, Sie müssen diese Daten nicht mehr in einen Chatbot kopieren.
+1. Konfigurieren Sie mindestens einen [LLM-Dienst](/ai-employees/features/llm-service).
+2. Aktivieren Sie mindestens einen [AI-Mitarbeiter](/ai-employees/features/enable-ai-employee).
+3. Öffnen Sie eine Konversation und beginnen Sie die [Zusammenarbeit mit AI-Mitarbeitern](/ai-employees/features/collaborate).
+4. Aktivieren Sie bei Bedarf die [Websuche](/ai-employees/features/web-search) und [Schnellaufgaben](/ai-employees/features/task).
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.13.35-2025-11-02-12-13-46.mp4" type="video/mp4"></video>
+## Funktionskarte
 
-Sie können auch Seitenstrukturen automatisch als Kontext verstehen – zum Beispiel ruft **Dex** neben einem Formularblock automatisch die Feldstruktur des Formulars ab und verwendet die richtigen Tools, um auf der Seite zu agieren. Das bedeutet, Sie müssen Daten nicht mehr von einem Chatbot zurückkopieren.
+### A. Basiskonfiguration (Administrator)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.16.07-2025-11-02-12-16-21.mp4" type="video/mp4"></video>
+- [LLM-Dienst konfigurieren](/ai-employees/features/llm-service): Provider anbinden, verfügbare Modelle konfigurieren und verwalten.
+- [AI-Mitarbeiter aktivieren](/ai-employees/features/enable-ai-employee): Integrierte Mitarbeiter aktivieren/deaktivieren, Verfügbarkeitsbereich steuern.
+- [Neuen AI-Mitarbeiter erstellen](/ai-employees/features/new-ai-employees): Rollen, Rolleneinstellungen, Begrüßungen und Fähigkeitsgrenzen definieren.
+- [Fähigkeiten nutzen](/ai-employees/features/tool): Berechtigungen für Fähigkeiten konfigurieren (`Ask` / `Allow`), Ausführungsrisiken kontrollieren.
 
-Sie können auch Elemente direkt auf der Seite auswählen und an einen KI-Mitarbeiter senden, wodurch dieser die entsprechenden Daten und die Struktur automatisch extrahieren kann.
+### B. Tägliche Zusammenarbeit (Geschäftsanwender)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.17.25-2025-11-02-12-17-44.mp4" type="video/mp4"></video>
+- [Zusammenarbeit mit AI-Mitarbeitern](/ai-employees/features/collaborate): Mitarbeiter und Modelle innerhalb der Konversation wechseln, kontinuierliche Zusammenarbeit.
+- [Kontext hinzufügen - Blöcke](/ai-employees/features/pick-block): Seitenblöcke als Kontext an die KI senden.
+- [Schnellaufgaben](/ai-employees/features/task): Häufige Aufgaben auf Seiten/Blöcken voreinstellen und mit einem Klick ausführen.
+- [Websuche](/ai-employees/features/web-search): Bei Bedarf an aktuellen Informationen die suchgestützte Beantwortung aktivieren.
 
-Sie können für jeden KI-Mitarbeiter am aktuellen Ort Aufgaben voreinstellen, sodass Benutzer diese mit einem einzigen Klick auslösen können – ohne auch nur ein Wort eingeben zu müssen.
+### C. Fortgeschrittene Fähigkeiten (Erweiterungen)
 
-<video controls class="rounded shadow"><source src="https://static-docs.nocobase.com/z-2025-11-02-12.19.33-2025-11-02-12-19-49.mp4" type="video/mp4"></video>
+- [Integrierte AI-Mitarbeiter](/ai-employees/features/built-in-employee): Positionierung und Anwendungsszenarien vordefinierter Mitarbeiter verstehen.
+- [Berechtigungskontrolle](/ai-employees/permission): Zugriff auf Mitarbeiter, Fähigkeiten und Daten gemäß dem Organisationsberechtigungsmodell steuern.
+- [AI-Wissensdatenbank](/ai-employees/knowledge-base/index): Unternehmenswissen einbinden, Stabilität und Rückverfolgbarkeit der Antworten verbessern.
+- [Workflow-LLM-Knoten](/ai-employees/workflow/nodes/llm/chat): KI-Fähigkeiten in automatisierte Abläufe orchestrieren.
+
+## Kernkonzepte (Empfehlung zur Vereinheitlichung)
+
+Die folgenden Begriffe stimmen mit dem Glossar überein; es wird empfohlen, sie innerhalb des Teams einheitlich zu verwenden:
+
+- **AI-Mitarbeiter (AI Employee)**: Ein ausführbarer Agent, der aus Rolleneinstellungen (Role setting) und Fähigkeiten (Tool / Skill) besteht.
+- **LLM-Dienst (LLM Service)**: Einheit für Modellzugriff und Fähigkeitskonfiguration zur Verwaltung von Providern und Modelllisten.
+- **Anbieter (Provider)**: Der Modelllieferant hinter einem LLM-Dienst.
+- **Aktivierte Modelle (Enabled Models)**: Die Menge der Modelle, die der aktuelle LLM-Dienst in der Konversation zur Auswahl zulässt.
+- **Mitarbeiter-Umschalter (AI Employee Switcher)**: Wechsel des aktuell zusammenarbeitenden Mitarbeiters innerhalb der Konversation.
+- **Modell-Umschalter (Model Switcher)**: Modellwechsel innerhalb der Konversation mit Speicherung der Präferenzen pro Mitarbeiter.
+- **Fähigkeit (Tool / Skill)**: Eine von der KI aufrufbare Ausführungseinheit.
+- **Fähigkeitsberechtigung (Permission: Ask / Allow)**: Ob vor dem Aufruf einer Fähigkeit eine menschliche Bestätigung erforderlich ist.
+- **Kontext (Context)**: Informationen zur Geschäftsumgebung wie Seiten, Blöcke, Datenstrukturen usw.
+- **Konversation (Chat)**: Ein kontinuierlicher Interaktionsprozess zwischen Benutzer und AI-Mitarbeiter.
+- **Websuche (Web Search)**: Die Fähigkeit, Antworten durch externe Suche mit Echtzeitinformationen zu ergänzen.
+- **Wissensdatenbank (Knowledge Base / RAG)**: Einbindung von Unternehmenswissen durch Retrieval-Augmented Generation.
+- **Vektorspeicher (Vector Store)**: Vektorisierter Speicher, der semantische Suchfunktionen für die Wissensdatenbank bereitstellt.
+
+## Installationsanweisungen
+
+AI-Mitarbeiter sind ein integriertes NocoBase-Plugin (`@nocobase/plugin-ai`), das sofort einsatzbereit ist und keine separate Installation erfordert.

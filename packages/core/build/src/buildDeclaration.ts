@@ -34,7 +34,13 @@ const diagnosticHost: ts.FormatDiagnosticsHost = {
   getNewLine: () => ts.sys.newLine,
 };
 
+let cachedBaseCompilerOptions: ts.CompilerOptions | null = null;
+
 function loadCompilerOptions(): ts.CompilerOptions {
+  if (cachedBaseCompilerOptions) {
+    return { ...cachedBaseCompilerOptions };
+  }
+
   const configPath = path.join(ROOT_PATH, 'tsconfig.json');
   const configFile = ts.readConfigFile(configPath, ts.sys.readFile);
   if (configFile.error) {
@@ -51,7 +57,9 @@ function loadCompilerOptions(): ts.CompilerOptions {
     ...parsedConfig.options,
   };
   delete options.paths;
-  return options;
+
+  cachedBaseCompilerOptions = Object.freeze({ ...options });
+  return { ...cachedBaseCompilerOptions };
 }
 
 export const buildDeclaration = async (cwd: string, targetDir: string) => {

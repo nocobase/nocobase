@@ -1,15 +1,19 @@
 ---
-displayName: "Data visualization: ECharts"
+displayName: "Визуализация данных: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Utilize ECharts for data visualization, supporting for funnel, radar and more chart types and offering user-friendly configurations.
+  Используйте ECharts для визуализации данных: поддержка воронкообразных, радарных и других типов диаграмм, а также удобные настройки визуализации.
 isFree: true
 builtIn: true
 defaultEnabled: false
 editionLevel: 0
 ---
 
-# Data visualization: ECharts
+:::tip{title="Уведомление об ИИ-переводе"}
+Этот документ был переведён с помощью ИИ. Для получения точной информации обратитесь к [английской версии](/plugins/@nocobase/plugin-data-visualization-echarts/index).
+:::
+
+# Визуализация данных: ECharts

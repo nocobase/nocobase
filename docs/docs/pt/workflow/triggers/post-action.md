@@ -178,7 +178,7 @@ Se o evento estiver configurado no modo global, você não precisa usar o parâm
 
 Conforme mostrado na figura abaixo:
 
-![Ordem de Execução da Ação](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Ordem de Execução da Ação](https://static-docs.nocobase.com/20251219234806.png)
 
 ### Diferença em relação ao Evento de Coleção
 

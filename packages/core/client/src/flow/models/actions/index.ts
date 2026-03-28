@@ -14,6 +14,7 @@ export * from './EditActionModel';
 export * from './FilterActionModel';
 export * from './JSActionModel';
 export * from './JSCollectionActionModel';
+export * from './JSItemActionModel';
 export * from './JSRecordActionModel';
 export * from './PopupCollectionActionModel';
 export * from './RefreshActionModel';

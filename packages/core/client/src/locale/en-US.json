@@ -670,6 +670,7 @@
   "Form values": "Form values",
   "Form values change": "Form values change",
   "Form variable": "Form variable",
+  "JS variable": "JS variable",
   "Format": "Format",
   "Formula": "Formula",
   "Formula description": "Compute a value in each record based on other fields in the same record.",
