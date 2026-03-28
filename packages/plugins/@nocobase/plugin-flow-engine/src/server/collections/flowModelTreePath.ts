@@ -12,7 +12,7 @@ import { CollectionOptions } from '@nocobase/database';
 export default {
   dumpRules: 'required',
   migrationRules: ['overwrite', 'schema-only', 'skip', 'upsert', 'insert-ignore'],
-  recordUniqueKey: ['ancestor'],
+  recordUniqueKey: ['ancestor', 'descendant'],
   defaultMigrationRule: {
     overwriteFirst: 'overwrite',
     upsertFirst: 'upsert',
