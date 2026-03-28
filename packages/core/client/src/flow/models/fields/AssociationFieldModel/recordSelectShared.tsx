@@ -208,7 +208,7 @@ export function resolveOptions(
 ) {
   if (options?.length) {
     return options.map((v) => {
-      return omit(v, 'disabled', 'options');
+      return omit(v, 'disabled', 'options', 'style');
     });
   }
 
