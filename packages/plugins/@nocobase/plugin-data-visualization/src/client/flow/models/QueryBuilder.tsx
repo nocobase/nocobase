@@ -46,10 +46,10 @@ type QueryValue = {
   offset?: number;
 };
 
-const EMPTY_FILTER = {
+const createEmptyFilter = () => ({
   logic: '$and' as const,
   items: [],
-};
+});
 
 const renderLabel = (label: string, lang?: string) => {
   return (
@@ -92,7 +92,7 @@ const QueryFilter: FC<{
 
   return (
     <FilterGroup
-      value={value || { logic: '$and', items: [] }}
+      value={value || createEmptyFilter()}
       onChange={onChange}
       FilterItem={(props) => <VariableFilterItem {...props} model={model} rightAsVariable />}
     />
@@ -104,7 +104,7 @@ function ensureQueryShape(query?: QueryValue): Required<QueryValue> {
     collectionPath: query?.collectionPath || [],
     measures: query?.measures || [],
     dimensions: query?.dimensions || [],
-    filter: query?.filter || EMPTY_FILTER,
+    filter: query?.filter || createEmptyFilter(),
     orders: query?.orders || [],
     limit: query?.limit as any,
     offset: query?.offset as any,
@@ -194,7 +194,7 @@ const QueryBuilderInner: FC<{
         measures: [],
         dimensions: [],
         orders: [],
-        filter: { logic: '$and', items: [] },
+        filter: createEmptyFilter(),
       };
       form.setFieldsValue(nextQuery);
       stepForm.setValuesIn?.('query', nextQuery);

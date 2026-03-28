@@ -335,7 +335,7 @@ describe('query', () => {
       expect(userId).toBe(user.id);
     });
 
-    it('should reuse flow-engine variable resolver for non-filter values', async () => {
+    it('should reuse flow-engine variable resolver for filter values', async () => {
       const user = await db.getRepository('users').findOne();
       const context = {
         ...ctx,
