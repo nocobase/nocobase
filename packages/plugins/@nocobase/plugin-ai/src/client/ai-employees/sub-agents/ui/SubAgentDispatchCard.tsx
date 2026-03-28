@@ -8,8 +8,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Avatar, Button, Flex, Spin, Typography } from 'antd';
-import { DownOutlined, LoadingOutlined, RightOutlined, RobotOutlined } from '@ant-design/icons';
+import { Avatar, Flex, Spin, Typography } from 'antd';
+import { LoadingOutlined, RightOutlined, RobotOutlined, UpOutlined } from '@ant-design/icons';
 import { ToolsUIProperties, useToken } from '@nocobase/client';
 import { observer } from '@nocobase/flow-engine';
 import { useT } from '../../../locale';
@@ -40,17 +40,37 @@ export const SubAgentDispatchCard: React.FC<
   const username = typeof toolCall.args?.username === 'string' ? toolCall.args.username : '';
   const question = typeof toolCall.args?.question === 'string' ? toolCall.args.question : '';
   const employee = resolveSubAgentDisplayInfo(aiConfigRepository.aiEmployees, username);
-  const showLoading = generating || toolCall.invokeStatus === 'pending' || toolCall.invokeStatus === 'waiting';
+  const showLoading = generating;
   const avatarSrc = employee.avatar ? avatars(employee.avatar) : undefined;
   const canExpand = !!question;
+  const toggleExpanded = () => {
+    if (!canExpand) {
+      return;
+    }
+    setExpanded((value) => !value);
+  };
 
   return (
     <div
+      onClick={toggleExpanded}
+      onKeyDown={(event) => {
+        if (!canExpand) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          toggleExpanded();
+        }
+      }}
+      role={canExpand ? 'button' : undefined}
+      tabIndex={canExpand ? 0 : undefined}
+      aria-expanded={canExpand ? expanded : undefined}
       style={{
         margin: '8px 0',
         padding: '6px 10px',
         borderRadius: token.borderRadiusLG,
         background: token.colorFillTertiary,
+        cursor: canExpand ? 'pointer' : 'default',
       }}
     >
       <Flex align="center" justify="space-between" gap={8}>
@@ -87,17 +107,16 @@ export const SubAgentDispatchCard: React.FC<
         <Flex align="center" gap={4}>
           {showLoading ? <Spin indicator={<LoadingOutlined spin />} size="small" /> : null}
           {canExpand ? (
-            <Button
-              type="text"
-              size="small"
-              icon={expanded ? <DownOutlined /> : <RightOutlined />}
-              onClick={() => setExpanded((value) => !value)}
+            <span
               style={{
-                width: token.controlHeightSM,
-                height: token.controlHeightSM,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 color: token.colorTextTertiary,
               }}
-            />
+            >
+              {expanded ? <UpOutlined /> : <RightOutlined />}
+            </span>
           ) : null}
         </Flex>
       </Flex>
