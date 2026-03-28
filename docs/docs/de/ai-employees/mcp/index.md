@@ -86,6 +86,57 @@ claude
 /mcp
 ```
 
+### OpenCode
+
+#### Authentifizierung mit API Key
+
+Aktiviere zuerst das Plugin API Keys und erstelle einen API Key. Konfiguriere `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### Authentifizierung mit OAuth
+
+Aktiviere zuerst das Plugin IdP: OAuth. Konfiguriere `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+Anmeldung
+
+```bash
+opencode mcp auth nocobase
+```
+
+Debug
+
+```bash
+opencode mcp debug nocobase
+```
+
 ## Zusammen mit Skills verwenden
 
 Es wird empfohlen, NocoBase MCP zusammen mit NocoBase Skills zu verwenden. Siehe [NocoBase Skills](../skills/index.md).

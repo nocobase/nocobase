@@ -25,6 +25,7 @@ import { SnippetsDrawer } from './panels/SnippetsDrawer';
 import { useCodeRunner } from './hooks/useCodeRunner';
 import { useFullscreenOverlay } from '../../../hooks/useFullscreenOverlay';
 import { createRunJSCompletionSource } from './runjsCompletionSource';
+import { inferRunJSScenesFromContext, mergeRunJSScenes } from './resolveScenes';
 interface CodeEditorProps {
   value?: string;
   onChange?: (value: string) => void;
@@ -71,13 +72,20 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
   const resolvedScene = useMemo(() => {
-    if (scene && (Array.isArray(scene) ? scene.length : true)) return scene;
-    if (!hostCtx) return undefined;
+    let autoScenes: string[] | undefined;
+    if (hostCtx) {
+      try {
+        const nextAutoScenes = getRunJSScenesForContext(hostCtx, { version: version as any });
+        autoScenes = nextAutoScenes.length ? nextAutoScenes : undefined;
+      } catch (_) {
+        autoScenes = undefined;
+      }
+    }
+    const inferredScenes = inferRunJSScenesFromContext(hostCtx, scene);
     try {
-      const autoScenes = getRunJSScenesForContext(hostCtx, { version: version as any });
-      return autoScenes.length ? autoScenes : undefined;
+      return mergeRunJSScenes(scene, mergeRunJSScenes(autoScenes, inferredScenes));
     } catch (_) {
-      return undefined;
+      return mergeRunJSScenes(scene);
     }
   }, [scene, hostCtx, version]);
   const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(

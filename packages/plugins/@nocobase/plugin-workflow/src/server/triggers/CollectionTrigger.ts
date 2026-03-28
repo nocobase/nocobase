@@ -57,7 +57,12 @@ function getFieldRawName(collection: ICollection, name: string) {
 export default class CollectionTrigger extends Trigger {
   configSchema = Joi.object({
     collection: Joi.string().required(),
-    mode: Joi.number().valid(...Object.values(MODE_BITMAP)),
+    mode: Joi.number().valid(
+      MODE_BITMAP.CREATE,
+      MODE_BITMAP.UPDATE,
+      MODE_BITMAP.DESTROY,
+      MODE_BITMAP.CREATE | MODE_BITMAP.UPDATE,
+    ),
     changed: Joi.when('mode', {
       is: (mode) => (mode & MODE_BITMAP.UPDATE) === MODE_BITMAP.UPDATE,
       then: Joi.array().items(Joi.string()).optional(),

@@ -20,9 +20,15 @@ export class DisplayTextFieldModel extends ClickableFieldModel {
     return value;
   }
   public renderComponent(value, wrap) {
-    const { prefix, suffix, overflowMode } = this.props;
+    const { prefix, suffix, overflowMode, style, className } = this.props;
     return (
-      <span style={{ whiteSpace: overflowMode === 'wrap' || wrap ? 'pre-line' : 'nowrap' }}>
+      <span
+        className={className}
+        style={{
+          ...(style || {}),
+          whiteSpace: overflowMode === 'wrap' || wrap ? 'pre-line' : 'nowrap',
+        }}
+      >
         {prefix}
         {this.t(value)}
         {suffix}

@@ -15,8 +15,8 @@ keywords: "CRM 安装,备份还原,备份管理器,SQL 导入,PostgreSQL,NocoBas
 - 您已经有了一个基础的 NocoBase 运行环境。关于主系统的安装，请参考更详细的[官方安装文档](https://docs-cn.nocobase.com/welcome/getting-started/installation)。
 - NocoBase 版本 **v2.1.0-beta.2 及以上**
 - 您已经下载了 CRM 系统的相应文件：
-  - **备份文件**：[nocobase_crm_v2_backup_260223.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260223.nbdata) - 适用于方法一
-  - **SQL文件**：[nocobase_crm_v2_sql_260223.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260223.zip) - 适用于方法二
+  - **备份文件**：[nocobase_crm_v2_backup_260327.nbdata](https://static-docs.nocobase.com/nocobase_crm_v2_backup_260327.nbdata) - 适用于方法一
+  - **SQL文件**：[nocobase_crm_v2_sql_260327.zip](https://static-docs.nocobase.com/nocobase_crm_v2_sql_260327.zip) - 适用于方法二
 
 **重要说明**：
 - 本方案基于 **PostgreSQL 16** 数据库制作，请确保您的环境使用 PostgreSQL 16。
@@ -100,13 +100,13 @@ docker pull nocobase/nocobase:beta-full
 获取下载的数据库文件（通常是 `.sql` 格式），并将其内容导入到您上一步准备好的数据库中。执行方式有多种，取决于您的环境：
 
 * **选项 A：通过服务器命令行（以 Docker 为例）**
-  如果您使用 Docker 安装 NocoBase 和数据库，可以将 `.sql` 文件上传到服务器，然后使用 `docker exec` 命令来执行导入。假设您的 PostgreSQL 容器名为 `my-nocobase-db`，文件名为 `nocobase_crm_v2_sql_260223.sql`：
+  如果您使用 Docker 安装 NocoBase 和数据库，可以将 `.sql` 文件上传到服务器，然后使用 `docker exec` 命令来执行导入。假设您的 PostgreSQL 容器名为 `my-nocobase-db`，文件名为 `nocobase_crm_v2_sql_260327.sql`：
 
   ```bash
   # 将 sql 文件复制到容器内
-  docker cp nocobase_crm_v2_sql_260223.sql my-nocobase-db:/tmp/
+  docker cp nocobase_crm_v2_sql_260327.sql my-nocobase-db:/tmp/
   # 进入容器执行导入指令
-  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260223.sql
+  docker exec -it my-nocobase-db psql -U nocobase -d nocobase -f /tmp/nocobase_crm_v2_sql_260327.sql
   ```
 * **选项 B：通过远程数据库客户端（Navicat 等）**
   如果您的数据库暴露了端口，可以使用任何图形化数据库客户端（如 Navicat, DBeaver, pgAdmin 等）连接到数据库，然后：

@@ -86,6 +86,57 @@ claude
 /mcp
 ```
 
+### OpenCode
+
+#### API Key 인증 사용
+
+먼저 API Keys 플러그인을 활성화하고 API Key를 생성하세요. `opencode.json`을 설정하세요.
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### OAuth 인증 사용
+
+먼저 IdP: OAuth 플러그인을 활성화하세요. `opencode.json`을 설정하세요.
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+로그인 인증
+
+```bash
+opencode mcp auth nocobase
+```
+
+디버그
+
+```bash
+opencode mcp debug nocobase
+```
+
 ## Skills와 함께 사용하기
 
 NocoBase MCP는 NocoBase Skills와 함께 사용하는 것을 권장합니다. 자세한 내용은 [NocoBase Skills](../skills/index.md)를 참고하세요.
