@@ -94,8 +94,9 @@ server {
     }
 
     # RFC 8414 root-mounted discovery compatibility for path-based issuers/resources.
-    location ~ ^/\.well-known/oauth-authorization-server(?:/.*)?$ {
-        proxy_pass http://127.0.0.1:{{apiPort}}/api/.well-known/oauth-authorization-server;
+    location ~ ^/\.well-known/oauth-authorization-server/(.+)$ {
+        rewrite ^/\.well-known/oauth-authorization-server/(.+)$ /$1/.well-known/oauth-authorization-server break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -112,8 +113,9 @@ server {
         send_timeout 600;
     }
 
-    location ~ ^/\.well-known/openid-configuration(?:/.*)?$ {
-        proxy_pass http://127.0.0.1:{{apiPort}}/api/.well-known/openid-configuration;
+    location ~ ^/\.well-known/openid-configuration/(.+)$ {
+        rewrite ^/\.well-known/openid-configuration/(.+)$ /$1/.well-known/openid-configuration break;
+        proxy_pass http://127.0.0.1:{{apiPort}};
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
