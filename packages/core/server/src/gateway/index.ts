@@ -65,7 +65,7 @@ interface RunOptions {
 }
 
 export interface AppSelectorMiddlewareContext {
-  req: IncomingMessage;
+  req: IncomingMessage | IncomingRequest;
   resolvedAppName: string | null;
 }
 
@@ -554,7 +554,7 @@ export class Gateway extends EventEmitter {
     return this.selectorMiddlewares;
   }
 
-  async getRequestHandleAppName(req: IncomingMessage) {
+  async getRequestHandleAppName(req: IncomingMessage | IncomingRequest) {
     const appSelectorMiddlewares = this.selectorMiddlewares.sort();
 
     const ctx: AppSelectorMiddlewareContext = {
