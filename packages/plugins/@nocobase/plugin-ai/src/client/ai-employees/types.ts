@@ -98,6 +98,7 @@ export type Message = Omit<BubbleProps, 'content'> & {
       status?: 'pending' | 'completed';
       messages: Message[];
     }[];
+    from?: 'main-agent' | 'sub-agent';
   };
 };
 export type Action = {

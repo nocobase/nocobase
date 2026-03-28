@@ -185,6 +185,7 @@ export const useChatMessageActions = () => {
           ...last,
           content: {
             ...last.content,
+            from: data.from,
             content: (last.content as any).content + data.body,
           },
           loading: false,
@@ -210,6 +211,7 @@ export const useChatMessageActions = () => {
             ...last,
             content: {
               ...last.content,
+              from: data.from,
               tool_calls: toolCalls,
             },
             loading: false,
@@ -225,6 +227,7 @@ export const useChatMessageActions = () => {
             ...last,
             content: {
               ...last.content,
+              from: data.from,
               tool_calls: data.body.toolCalls,
             },
             loading: false,
@@ -284,7 +287,7 @@ export const useChatMessageActions = () => {
         store.addMessage({
           key: uid(),
           role: aiEmployee.username,
-          content: { type: 'text', content: '' },
+          content: { from: data.from, type: 'text', content: '' },
           loading: true,
         });
       }

@@ -229,6 +229,7 @@ export class AIConversationsManager {
     for (const row of subAgentConversationMessages as ParsedMessageRow[]) {
       const sessionMessages = subAgentConversationMessageMap.get(row.sessionId) ?? [];
       sessionMessages.push(parseMessageRow(row));
+      sessionMessages.forEach((it) => (it.content.from = 'sub-agent'));
       subAgentConversationMessageMap.set(row.sessionId, sessionMessages);
     }
 
@@ -244,6 +245,7 @@ export class AIConversationsManager {
             messages: subAgentConversationMessageMap.get(item.sessionId) ?? [],
           }));
         }
+        parsedRow.content.from = 'main-agent';
         return parsedRow;
       }),
       ...(paginate && {
