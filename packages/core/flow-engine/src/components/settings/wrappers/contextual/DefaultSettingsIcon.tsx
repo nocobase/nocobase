@@ -193,6 +193,20 @@ interface DefaultSettingsIconProps {
   [key: string]: any; // Allow additional props
 }
 
+const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
+const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+
+const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
+  if (!triggerNode) {
+    return null;
+  }
+
+  return (
+    (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
+    (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
+  );
+};
+
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   model,
   showDeleteButton = true,
@@ -218,7 +232,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, [onDropdownVisibleChange]);
   const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
     (triggerNode) => {
-      return getPopupContainer?.(triggerNode) || triggerNode?.parentElement || document.body;
+      // 优先挂到工具栏自身容器，避免 modal / drawer 中鼠标从图标移动到菜单时先离开工具栏树。
+      return (
+        getToolbarPopupContainer(triggerNode) ||
+        getPopupContainer?.(triggerNode) ||
+        triggerNode?.parentElement ||
+        document.body
+      );
     },
     [getPopupContainer],
   );
