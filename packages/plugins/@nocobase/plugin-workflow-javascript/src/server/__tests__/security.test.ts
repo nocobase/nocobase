@@ -17,13 +17,21 @@ import ScriptInstruction from '../ScriptInstruction';
 describe('workflow-javascript > security > isolated-vm (default engine)', () => {
   let transport: CacheTransport;
   let logger;
+  let originalModules;
 
   beforeEach(() => {
-    delete process.env.WORKFLOW_SCRIPT_ENGINE;
+    originalModules = process.env.WORKFLOW_SCRIPT_MODULES;
+    delete process.env.WORKFLOW_SCRIPT_MODULES;
     transport = new CacheTransport();
     logger = winston.createLogger({
       transports: [transport],
     });
+  });
+
+  afterEach(() => {
+    if (originalModules !== undefined) {
+      process.env.WORKFLOW_SCRIPT_MODULES = originalModules;
+    }
   });
 
   it('should not have require available', async () => {
@@ -128,12 +136,15 @@ describe('workflow-javascript > security > isolated-vm (default engine)', () => 
   });
 });
 
-describe('workflow-javascript > security > node vm engine', () => {
+describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODULES set)', () => {
   let transport: CacheTransport;
   let logger;
+  let originalModules;
 
   beforeEach(() => {
-    process.env.WORKFLOW_SCRIPT_ENGINE = 'node';
+    originalModules = process.env.WORKFLOW_SCRIPT_MODULES;
+    // Setting WORKFLOW_SCRIPT_MODULES triggers the node vm engine
+    process.env.WORKFLOW_SCRIPT_MODULES = 'path,crypto';
     transport = new CacheTransport();
     logger = winston.createLogger({
       transports: [transport],
@@ -141,7 +152,11 @@ describe('workflow-javascript > security > node vm engine', () => {
   });
 
   afterEach(() => {
-    delete process.env.WORKFLOW_SCRIPT_ENGINE;
+    if (originalModules !== undefined) {
+      process.env.WORKFLOW_SCRIPT_MODULES = originalModules;
+    } else {
+      delete process.env.WORKFLOW_SCRIPT_MODULES;
+    }
   });
 
   it('should mask constructors exposed to workflow scripts', async () => {
