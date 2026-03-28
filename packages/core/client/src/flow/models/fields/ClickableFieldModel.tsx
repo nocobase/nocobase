@@ -277,7 +277,7 @@ ClickableFieldModel.registerFlow({
           .filter((field) => field?.interface === 'color')
           .map((field) => ({
             value: field.name,
-            label: field?.uiSchema?.title || field.name,
+            label: field.title || field.name,
           }));
         return {
           type: 'select',
