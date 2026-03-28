@@ -34,10 +34,8 @@ const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[
   return messages.flatMap((msg) => {
     const subAgentItems =
       msg.content?.subAgentConversations?.flatMap((conversation) => {
-        const conversationMessages = flattenMessages(
-          conversation.messages.filter((subMessage) => subMessage.role !== 'user'),
-          false,
-        );
+        const [first, ...rest] = conversation.messages;
+        const conversationMessages = flattenMessages(first.role === 'user' ? rest : conversation.messages, false);
 
         if (!conversationMessages.length) {
           return [];

@@ -186,7 +186,6 @@ export const conversationMiddleware = (
         if (values) {
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
-            state.messageId = result.messageId;
             newState.messageId = result.messageId;
             if (toolCalls?.length) {
               const toolsMap = await aiEmployee.getToolsMap();
@@ -201,7 +200,7 @@ export const conversationMiddleware = (
 
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
-            body: { id: aiMessage.id, messageId: state.messageId },
+            body: { id: aiMessage.id, messageId: newState.messageId },
             currentConversation,
           });
         }
