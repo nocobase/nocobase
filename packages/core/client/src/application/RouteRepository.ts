@@ -82,6 +82,15 @@ export class RouteRepository {
   }
 
   /**
+   * 取消订阅路由缓存变化。
+   *
+   * @param subscriber 之前注册的回调函数
+   */
+  unsubscribe(subscriber: RouteSubscriber) {
+    this.subscribers.delete(subscriber);
+  }
+
+  /**
    * 创建一个桌面路由节点。
    *
    * @param values 路由数据

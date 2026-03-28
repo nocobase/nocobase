@@ -11,6 +11,7 @@ import { useFlowEngineContext } from '@nocobase/flow-engine';
 import React, { createContext, FC, memo, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findRouteBySchemaUid } from './route-utils';
+import { RouteRepository } from '../application/RouteRepository';
 
 const emptyArray: NocoBaseDesktopRoute[] = [];
 
@@ -42,7 +43,7 @@ export const useAllAccessDesktopRoutes = () => {
 
 export const RoutesRequestProvider: FC = ({ children }) => {
   const ctx = useFlowEngineContext();
-  const routeRepository = ctx.routeRepository;
+  const routeRepository = ctx.routeRepository as RouteRepository;
   const allAccessRoutes = useSyncExternalStore(
     (onStoreChange) => routeRepository.subscribe(onStoreChange),
     () => routeRepository.listAccessible(),

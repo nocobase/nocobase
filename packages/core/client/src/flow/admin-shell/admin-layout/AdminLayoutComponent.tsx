@@ -366,7 +366,9 @@ const renderMenuNodeWithModel = (
 export const AdminLayoutComponent = observer((props) => {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<AdminLayoutHostModel>(ADMIN_LAYOUT_MODEL_UID);
-  const allAccessRoutes = useMemo(() => flowEngine.context.routeRepository?.listAccessible?.() || [], [flowEngine]);
+  const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
+    () => flowEngine.context.routeRepository?.listAccessible?.() || [],
+  );
   const screens = Grid.useBreakpoint();
   const isMobileViewport =
     screens.md === false || (screens.md === undefined && typeof window !== 'undefined' && window.innerWidth < 768);
@@ -416,6 +418,18 @@ export const AdminLayoutComponent = observer((props) => {
     },
     [flowEngine],
   );
+
+  useEffect(() => {
+    const subscriber = () => {
+      const updatedRoutes = flowEngine.context.routeRepository?.listAccessible() || [];
+      setAllAccessRoutes(updatedRoutes);
+    };
+
+    flowEngine.context.routeRepository?.subscribe(subscriber);
+    return () => {
+      flowEngine.context.routeRepository?.unsubscribe(subscriber);
+    };
+  }, [flowEngine]);
 
   useLayoutEffect(() => {
     adminLayoutModel?.syncMenuRoutes(allAccessRoutes);
