@@ -8,6 +8,7 @@
  */
 
 import { IncomingMessage } from 'http';
+import { IncomingRequest } from '.';
 
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
@@ -57,11 +58,10 @@ function splitCommaSeparatedValues(value: string, limit: number) {
   return value.split(',', limit).map((v) => v.trim());
 }
 
-export function getHost(req: IncomingMessage) {
+export function getHost(req: IncomingMessage | IncomingRequest) {
   let host = req.headers['x-forwarded-host'];
   if (!host) {
-    if (req.httpVersionMajor >= 2) host = req.headers[':authority'];
-    if (!host) host = req.headers['host'];
+    host = req.headers[':authority'] || req.headers['host'];
   }
   if (!host) return '';
   host = splitCommaSeparatedValues(host as string, 1)[0];
@@ -77,7 +77,7 @@ export function getHost(req: IncomingMessage) {
   return host;
 }
 
-export function getHostname(req: IncomingMessage) {
+export function getHostname(req: IncomingMessage | IncomingRequest) {
   const host = getHost(req);
   if (!host) return '';
   return host.split(':', 1)[0];
