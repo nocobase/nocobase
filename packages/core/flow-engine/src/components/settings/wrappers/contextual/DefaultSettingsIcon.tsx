@@ -8,6 +8,7 @@
  */
 
 import { ExclamationCircleOutlined, MenuOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
@@ -195,6 +196,15 @@ interface DefaultSettingsIconProps {
 
 const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
 const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
+  width: max-content;
+  min-width: max-content;
+
+  .ant-dropdown-menu {
+    width: max-content;
+    min-width: max-content;
+  }
+`;
 
 const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
   if (!triggerNode) {
@@ -874,6 +884,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   return (
     <Dropdown
       getPopupContainer={resolvePopupContainer}
+      overlayClassName={TOOLBAR_DROPDOWN_OVERLAY_CLASS}
+      overlayStyle={{ width: 'max-content', minWidth: 'max-content' }}
       onOpenChange={handleOpenChange}
       open={visible}
       menu={{
