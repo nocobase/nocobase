@@ -287,6 +287,7 @@ export const useChatMessageActions = () => {
         store.addMessage({
           key: uid(),
           role: aiEmployee.username,
+          createdAt: new Date().toISOString(),
           content: { from: data.from, type: 'text', content: '' },
           loading: true,
         });
@@ -395,6 +396,7 @@ export const useChatMessageActions = () => {
                               updater({
                                 key: uid(),
                                 role: data.username,
+                                createdAt: new Date().toISOString(),
                                 content: { type: 'text', content: '' },
                                 loading: true,
                               }),

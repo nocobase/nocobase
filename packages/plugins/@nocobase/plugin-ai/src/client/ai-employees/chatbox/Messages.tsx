@@ -7,62 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bubble } from '@ant-design/x';
-import { Spin, Layout, Divider } from 'antd';
+import { Spin, Layout, Divider, Button } from 'antd';
+import { RightOutlined, DownOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { useToken } from '@nocobase/client';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
-import { Message } from '../types';
-
-type RenderedItem =
-  | {
-      type: 'message';
-      message: Message;
-      isRoot: boolean;
-    }
-  | {
-      type: 'divider';
-      key: string;
-      roleName?: string;
-    };
-
-const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
-  return messages.flatMap((msg) => {
-    const subAgentItems =
-      msg.content?.subAgentConversations?.flatMap((conversation) => {
-        const [first, ...rest] = conversation.messages;
-        const conversationMessages = flattenMessages(first.role === 'user' ? rest : conversation.messages, false);
-
-        if (!conversationMessages.length) {
-          return [];
-        }
-
-        return conversation.status === 'completed'
-          ? [
-              ...conversationMessages,
-              {
-                type: 'divider' as const,
-                key: `${conversation.sessionId}-completed`,
-                roleName: conversation.messages.find((subMessage) => subMessage.role !== 'user')?.role,
-              },
-            ]
-          : conversationMessages;
-      }) ?? [];
-
-    return [
-      {
-        type: 'message' as const,
-        message: msg,
-        isRoot,
-      },
-      ...subAgentItems,
-    ];
-  });
-};
+import { flattenMessages, formatConversationDuration, RenderedItem } from './utils';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -76,6 +31,7 @@ export const Messages: React.FC = () => {
 
   const { messagesService, lastMessageRef } = useChatMessageActions();
   const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
+  const [collapsedConversationKeys, setCollapsedConversationKeys] = useState<Record<string, boolean>>({});
   const firstMessageIndex = renderedMessages.findIndex(
     (item) => item.type === 'message' && item.isRoot && item.message.content?.type !== 'greeting',
   );
@@ -84,7 +40,33 @@ export const Messages: React.FC = () => {
     updateTools(messages);
   }, [messages, updateTools]);
 
-  const containerRef = useRef(null);
+  useEffect(() => {
+    setCollapsedConversationKeys((prev) => {
+      const next = { ...prev };
+      let changed = false;
+
+      const collectCompletedConversations = (items: RenderedItem[]) => {
+        items.forEach((item) => {
+          if (item.type !== 'conversation-group') {
+            return;
+          }
+
+          if (item.status === 'completed' && !(item.key in next)) {
+            next[item.key] = true;
+            changed = true;
+          }
+
+          collectCompletedConversations(item.items);
+        });
+      };
+
+      collectCompletedConversations(renderedMessages);
+
+      return changed ? next : prev;
+    });
+  }, [renderedMessages]);
+
+  const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -98,6 +80,96 @@ export const Messages: React.FC = () => {
 
     return () => resizeObserver.disconnect();
   }, [messages]);
+
+  const renderConversationToggleDivider = (
+    item: Extract<RenderedItem, { type: 'conversation-group' }>,
+    collapsed: boolean,
+  ) => {
+    const durationText = formatConversationDuration(item.durationMs);
+
+    return (
+      <div key={`${item.key}-divider-top`} style={{ padding: '0 16px' }}>
+        <Divider
+          dashed
+          plain
+          style={{
+            margin: '12px 0 16px',
+            color: token.colorTextDescription,
+          }}
+        >
+          <Button
+            type="link"
+            size="small"
+            onClick={() =>
+              setCollapsedConversationKeys((prev) => ({
+                ...prev,
+                [item.key]: !collapsed,
+              }))
+            }
+            style={{
+              paddingInline: 0,
+              color: token.colorTextDescription,
+            }}
+            icon={collapsed ? <RightOutlined /> : <DownOutlined />}
+            iconPosition="end"
+          >
+            {`Done in ${durationText}`}
+          </Button>
+        </Divider>
+      </div>
+    );
+  };
+
+  const renderConversationCompletedDivider = (item: Extract<RenderedItem, { type: 'conversation-group' }>) => {
+    const nickname = item.roleName ? (roles[item.roleName] as any)?.nickname || item.roleName : undefined;
+
+    return (
+      <div key={`${item.key}-divider-bottom`} style={{ padding: '0 16px' }}>
+        <Divider
+          dashed
+          plain
+          style={{
+            margin: '12px 0 16px',
+            color: token.colorTextDescription,
+          }}
+        >
+          {t('{{ nickname }} has completed the work', { nickname })}
+        </Divider>
+      </div>
+    );
+  };
+
+  const renderItem = (item: RenderedItem, indexPath: string) => {
+    if (item.type === 'conversation-group') {
+      const collapsed = item.status === 'completed' ? collapsedConversationKeys[item.key] !== false : false;
+
+      if (collapsed) {
+        return renderConversationToggleDivider(item, true);
+      }
+
+      return (
+        <React.Fragment key={item.key}>
+          {item.status === 'completed' ? renderConversationToggleDivider(item, false) : null}
+          {item.items.map((child, childIndex) => renderItem(child, `${indexPath}-${childIndex}`))}
+          {item.status === 'completed' ? renderConversationCompletedDivider(item) : null}
+        </React.Fragment>
+      );
+    }
+
+    const msg = item.message;
+    const role = roles[msg.role];
+    if (!role) {
+      return null;
+    }
+
+    return indexPath === String(firstMessageIndex) ? (
+      <div key={msg.key} ref={lastMessageRef}>
+        <Bubble {...role} loading={msg.loading} content={msg.content} />
+      </div>
+    ) : (
+      <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
+    );
+  };
 
   return (
     <Layout.Content
@@ -117,40 +189,7 @@ export const Messages: React.FC = () => {
         />
       )}
       {renderedMessages.length ? (
-        <div>
-          {renderedMessages.map((item, index) => {
-            if (item.type === 'divider') {
-              const nickname = item.roleName ? (roles[item.roleName] as any)?.nickname || item.roleName : undefined;
-              return (
-                <div key={item.key} style={{ padding: '0 16px' }}>
-                  <Divider
-                    dashed
-                    plain
-                    style={{
-                      margin: '12px 0 16px',
-                      color: token.colorTextDescription,
-                    }}
-                  >
-                    {t('{{ nickname }} has completed the work', { nickname })}
-                  </Divider>
-                </div>
-              );
-            }
-
-            const msg = item.message;
-            const role = roles[msg.role];
-            if (!role) {
-              return null;
-            }
-            return index === firstMessageIndex ? (
-              <div key={msg.key} ref={lastMessageRef}>
-                <Bubble {...role} loading={msg.loading} content={msg.content} />
-              </div>
-            ) : (
-              <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
-            );
-          })}
-        </div>
+        <div>{renderedMessages.map((item, index) => renderItem(item, String(index)))}</div>
       ) : (
         <div
           style={{

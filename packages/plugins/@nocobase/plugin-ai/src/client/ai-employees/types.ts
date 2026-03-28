@@ -69,6 +69,7 @@ export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
+  createdAt?: string | Date;
   content: {
     content: any;
     ref?: React.MutableRefObject<any>;

@@ -11,6 +11,7 @@ export type AIMessage = {
   messageId: string;
   sessionId: string;
   role: string;
+  createdAt?: string | Date;
   content: AIMessageContent;
   toolCalls?: AIToolCall[];
   attachments?: unknown[];

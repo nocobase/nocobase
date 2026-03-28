@@ -38,7 +38,7 @@ export function stripToolCallTags(content: string): string | null {
 }
 
 export function parseResponseMessage(row: Model) {
-  const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext } = row;
+  const { content: rawContent, messageId, metadata, role, toolCalls, attachments, workContext, createdAt } = row;
   const content = {
     ...(rawContent ?? {}),
     content: stripToolCallTags(rawContent?.content),
@@ -52,6 +52,7 @@ export function parseResponseMessage(row: Model) {
   }
   return {
     key: messageId,
+    createdAt,
     content,
     role,
   };
