@@ -229,6 +229,7 @@ export const useParentRoute = () => {
  */
 export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
   const api = useAPIClient();
+  const resource = api.resource(collectionName);
   const { routeRepository } = useFlowEngineContext();
   const { refresh: refreshRoutes } = useAllAccessDesktopRoutes();
   const isDesktopRoutes = collectionName === 'desktopRoutes';
@@ -239,10 +240,10 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
         ? await routeRepository.createRoute(values, {
             refreshAfterMutation: refreshAfterCreate,
           })
-        : await api.resource(collectionName).create({ values });
+        : await resource.create({ values });
       return res;
     },
-    [api, collectionName, isDesktopRoutes, routeRepository],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const updateRoute = useCallback(
@@ -251,7 +252,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
         ? await routeRepository.updateRoute(filterByTk, values, {
             refreshAfterMutation: refreshAfterUpdate,
           })
-        : await api.resource(collectionName).update(
+        : await resource.update(
             Array.isArray(filterByTk)
               ? {
                   filter: {
@@ -268,7 +269,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
           );
       return res;
     },
-    [api, collectionName, isDesktopRoutes, routeRepository],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const deleteRoute = useCallback(
@@ -277,12 +278,12 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
         ? await routeRepository.deleteRoute(filterByTk, {
             refreshAfterMutation: refreshAfterDelete,
           })
-        : await api.resource(collectionName).destroy({
+        : await resource.destroy({
             filterByTk,
           });
       return res;
     },
-    [api, collectionName, isDesktopRoutes, routeRepository],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const moveRoute = useCallback(
@@ -316,7 +317,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
             method,
             refreshAfterMove,
           })
-        : await api.resource(collectionName).move({
+        : await resource.move({
             sourceId,
             targetId,
             targetScope,
@@ -326,7 +327,7 @@ export const useNocoBaseRoutes = (collectionName = 'desktopRoutes') => {
           });
       return res;
     },
-    [api, collectionName, isDesktopRoutes, routeRepository],
+    [resource, isDesktopRoutes, routeRepository],
   );
 
   const createV2 = useCallback(

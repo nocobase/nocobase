@@ -82,7 +82,7 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
         add_header Cache-Control 'no-cache, no-store';
@@ -102,7 +102,7 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
         add_header Cache-Control 'no-cache, no-store';
@@ -121,7 +121,7 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
         add_header Cache-Control 'no-cache, no-store';
@@ -158,7 +158,7 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $upstream_x_forwarded_proto;
-        proxy_set_header Host $host;
+        proxy_set_header Host $http_host;
         proxy_set_header Referer $http_referer;
         proxy_set_header User-Agent $http_user_agent;
         add_header Cache-Control 'no-cache, no-store';
@@ -174,6 +174,6 @@ server {
       proxy_http_version 1.1;
       proxy_set_header Upgrade $http_upgrade;
       proxy_set_header Connection "Upgrade";
-      proxy_set_header Host $host;
+      proxy_set_header Host $http_host;
     }
 }
