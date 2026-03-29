@@ -151,6 +151,8 @@ const setupDrawerPopup = () => {
 };
 
 const getHost = (element: HTMLElement) => element.closest('[data-has-float-menu="true"]') as HTMLDivElement;
+const queryOverlay = (container: HTMLElement, uid: string) =>
+  container.querySelector(`[data-model-uid="${uid}"]`) as HTMLDivElement | null;
 
 const createModel = (engine: FlowEngine, uid: string) => {
   const model = new FlowModel({ uid, flowEngine: engine });
@@ -245,7 +247,7 @@ describe('FlowsFloatContextMenu', () => {
     fireEvent.mouseLeave(icons);
 
     await waitFor(() => {
-      expect(overlay.className).not.toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'portal-model')).toBeNull();
     });
   });
 
@@ -307,8 +309,7 @@ describe('FlowsFloatContextMenu', () => {
     fireEvent.mouseLeave(icons);
 
     await waitFor(() => {
-      expect(overlay.className).not.toContain('nb-toolbar-visible');
-      expect(dropdown.getAttribute('data-open')).toBe('false');
+      expect(queryOverlay(appContainer, 'renderer-model')).toBeNull();
     });
   });
 
@@ -454,15 +455,92 @@ describe('FlowsFloatContextMenu', () => {
     });
 
     await waitFor(() => {
-      expect(childOverlay.className).toContain('nb-toolbar-visible');
-      expect(parentOverlay.className).not.toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'child-model')?.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-model')).toBeNull();
     });
 
     fireEvent.mouseLeave(childHost, { relatedTarget: document.createElement('div') });
 
     await waitFor(() => {
-      expect(childOverlay.className).toContain('nb-toolbar-visible');
-      expect(parentOverlay.className).not.toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'child-model')?.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-model')).toBeNull();
+    });
+  });
+
+  it('restores parent toolbar after leaving a child toolbar back into the parent block', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    const parentModel = createModel(engine, 'parent-restore-model');
+    const childModel = createModel(engine, 'child-restore-model');
+    const appContainer = createAppContainer();
+    mockRect(appContainer, { top: 0, left: 0, width: 1280, height: 900 });
+
+    const { getByTestId } = renderWithProviders(
+      engine,
+      <FlowsFloatContextMenu model={parentModel}>
+        <div data-testid="parent-content">
+          <div data-testid="parent-gap">gap</div>
+          <FlowsFloatContextMenu model={childModel}>
+            <div data-testid="child-content">child</div>
+          </FlowsFloatContextMenu>
+        </div>
+      </FlowsFloatContextMenu>,
+      { container: appContainer },
+    );
+
+    const parentHost = getHost(getByTestId('parent-content'));
+    const childHost = getHost(getByTestId('child-content'));
+    const parentGap = getByTestId('parent-gap');
+    mockRect(parentHost, { top: 10, left: 10, width: 320, height: 160 });
+    mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
+
+    fireEvent.mouseEnter(parentHost);
+
+    const parentOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, 'parent-restore-model');
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(parentOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
+
+    fireEvent.mouseEnter(childHost);
+    fireEvent.mouseMove(childHost);
+
+    const childOverlay = await waitFor(() => {
+      const nextOverlay = queryOverlay(appContainer, 'child-restore-model');
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(childOverlay).getByLabelText('flows-settings')).toBeTruthy();
+      expect(queryOverlay(appContainer, 'parent-restore-model')).toBeNull();
+    });
+
+    const childIcons = childOverlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
+
+    fireEvent.mouseLeave(parentHost, { relatedTarget: childIcons });
+    fireEvent.mouseLeave(childHost, { relatedTarget: childIcons });
+    fireEvent.mouseEnter(childIcons, { relatedTarget: childHost });
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'child-restore-model')?.className).toContain('nb-toolbar-visible');
+      expect(queryOverlay(appContainer, 'parent-restore-model')).toBeNull();
+    });
+
+    fireEvent.mouseLeave(childIcons, { relatedTarget: parentGap });
+    fireEvent.mouseEnter(parentHost, { relatedTarget: childIcons });
+    fireEvent.mouseEnter(parentGap, { relatedTarget: childIcons });
+    fireEvent.mouseMove(parentGap);
+
+    await waitFor(() => {
+      expect(queryOverlay(appContainer, 'child-restore-model')).toBeNull();
+      const parentOverlayAfterRestore = queryOverlay(appContainer, 'parent-restore-model');
+      expect(parentOverlayAfterRestore).toBeTruthy();
+      expect(parentOverlayAfterRestore?.className).toContain('nb-toolbar-visible');
     });
   });
 });

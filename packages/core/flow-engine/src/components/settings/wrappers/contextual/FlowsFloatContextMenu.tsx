@@ -332,6 +332,32 @@ const isNodeWithin = (target: EventTarget | null, container: HTMLElement | null)
   return target instanceof Node && !!container?.contains(target);
 };
 
+const getToolbarModelUidFromTarget = (target: EventTarget | null): string | null => {
+  if (!(target instanceof Element)) {
+    return null;
+  }
+
+  return target.closest('.nb-toolbar-container[data-model-uid]')?.getAttribute('data-model-uid') || null;
+};
+
+const isNodeWithinDescendantFloatToolbar = (
+  target: EventTarget | null,
+  container: HTMLElement | null,
+  currentModelUid: string,
+): boolean => {
+  const targetModelUid = getToolbarModelUidFromTarget(target);
+  if (!container || !targetModelUid || targetModelUid === currentModelUid) {
+    return false;
+  }
+
+  return Array.from(
+    container.querySelectorAll<HTMLElement>('[data-has-float-menu="true"][data-float-menu-model-uid]'),
+  ).some(
+    (hostElement) =>
+      hostElement !== container && hostElement.getAttribute('data-float-menu-model-uid') === targetModelUid,
+  );
+};
+
 const defaultPortalRect: ToolbarPortalRect = {
   top: 0,
   left: 0,
@@ -787,6 +813,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const [isToolbarHovered, setIsToolbarHovered] = useState(false);
     const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
     const [isToolbarPinned, setIsToolbarPinned] = useState(false);
+    const [isHidePending, setIsHidePending] = useState(false);
     const [activeChildToolbarIds, setActiveChildToolbarIds] = useState<string[]>([]);
     const [portalRect, setPortalRect] = useState<ToolbarPortalRect>(defaultPortalRect);
     const [portalRenderSnapshot, setPortalRenderSnapshot] = useState<ToolbarPortalRenderSnapshot | null>(null);
@@ -804,13 +831,14 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       (isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned);
     const shouldRenderToolbar = isToolbarVisible || isToolbarPinned || isDraggingToolbar;
     const isToolbarInteractionActive =
-      isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned || hideToolbarTimerRef.current !== null;
+      isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned || isHidePending;
 
     const clearHideToolbarTimer = useCallback(() => {
       if (hideToolbarTimerRef.current !== null) {
         window.clearTimeout(hideToolbarTimerRef.current);
         hideToolbarTimerRef.current = null;
       }
+      setIsHidePending(false);
     }, []);
 
     const updatePortalRect = useCallback(() => {
@@ -871,8 +899,10 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
     const scheduleHideToolbar = useCallback(() => {
       clearHideToolbarTimer();
+      setIsHidePending(true);
       hideToolbarTimerRef.current = window.setTimeout(() => {
         hideToolbarTimerRef.current = null;
+        setIsHidePending(false);
         if (isDraggingToolbar || isToolbarPinned) {
           return;
         }
@@ -1069,11 +1099,21 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       };
     }, []);
 
-    const handleChildHover = useCallback((e: React.MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const childWithMenu = target.closest('[data-has-float-menu]');
-      setHideMenu(!!childWithMenu && childWithMenu !== containerRef.current);
-    }, []);
+    const handleChildHover = useCallback(
+      (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const childWithMenu = target.closest('[data-has-float-menu]');
+        const isCurrentHostTarget = !childWithMenu || childWithMenu === containerRef.current;
+
+        if (isCurrentHostTarget) {
+          clearHideToolbarTimer();
+          setIsHostHovered(true);
+        }
+
+        setHideMenu(!!childWithMenu && childWithMenu !== containerRef.current);
+      },
+      [clearHideToolbarTimer],
+    );
 
     const handleHostMouseEnter = useCallback(() => {
       clearHideToolbarTimer();
@@ -1094,9 +1134,15 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           setIsToolbarHovered(true);
           return;
         }
+        if (isNodeWithinDescendantFloatToolbar(e.relatedTarget, containerRef.current, model.uid)) {
+          clearHideToolbarTimer();
+          setHideMenu(false);
+          setIsHostHovered(true);
+          return;
+        }
         scheduleHideToolbar();
       },
-      [clearHideToolbarTimer, isToolbarPinned, scheduleHideToolbar],
+      [clearHideToolbarTimer, isToolbarPinned, model.uid, scheduleHideToolbar],
     );
 
     const handleToolbarMouseEnter = useCallback(() => {
@@ -1201,6 +1247,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         className={`${hostContainerStyles} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
+        data-float-menu-model-uid={model.uid}
         onMouseMove={handleChildHover}
         onMouseEnter={handleHostMouseEnter}
         onMouseLeave={handleHostMouseLeave}
