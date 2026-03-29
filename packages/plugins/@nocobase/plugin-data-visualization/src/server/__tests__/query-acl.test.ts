@@ -10,8 +10,7 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import compose from 'koa-compose';
 import { Database } from '@nocobase/database';
-import { checkPermission, parseFieldAndAssociations, queryData, postProcess, parseVariables } from '../actions/query';
-import { createQueryParser } from '../query-parser';
+import { checkPermission, queryData, parseVariables } from '../actions/query';
 
 describe('query acl scope', () => {
   let app: MockServer;
@@ -73,8 +72,7 @@ describe('query acl scope', () => {
     expect(merged.price.$gt).toBe(50);
     expect(merged.price.$lt).toBeUndefined();
 
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    await compose([queryData])(context, async () => {});
     const data = context.body as any[];
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(1);
@@ -104,14 +102,12 @@ describe('query acl scope', () => {
       throw: () => {},
     };
 
-    const queryParser = createQueryParser(db);
-
     await checkPermission(context, async () => {});
     const merged = context.action.params.values.filter as any;
     expect(merged.price.$gt).toBe(50);
     expect(merged.price.$lt).toBe(100);
 
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    await compose([queryData])(context, async () => {});
     const data = context.body as any[];
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(1);
@@ -149,8 +145,7 @@ describe('query acl scope', () => {
     const merged = context.action.params.values.filter as any;
     expect(merged.id).toBe(user.id);
 
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    await compose([queryData])(context, async () => {});
     const data = context.body as any[];
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(1);
@@ -196,8 +191,7 @@ describe('query acl scope', () => {
     const mergedOwn = context.action.params.values.filter as any;
     expect(mergedOwn.createdById).toBe(user.id);
 
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    await compose([queryData])(context, async () => {});
     const data = context.body as any[];
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(1);
@@ -241,8 +235,7 @@ describe('query acl scope', () => {
     const merged = context.action.params.values.filter as any;
     expect(merged.price.$gt).toBe(50);
 
-    const queryParser = createQueryParser(db);
-    await compose([parseFieldAndAssociations, queryParser.parse(), queryData, postProcess])(context, async () => {});
+    await compose([queryData])(context, async () => {});
     const data = context.body as any[];
     expect(Array.isArray(data)).toBe(true);
     expect(data.length).toBe(1);

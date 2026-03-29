@@ -8,12 +8,10 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
 import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
-import { createQueryParser } from '../query-parser';
 import { assign } from '@nocobase/utils';
 import { checkFilterParams, NoPermissionError } from '@nocobase/acl';
 
@@ -54,162 +52,14 @@ const getChartQueryPermission = async (ctx: Context, collection: string, acl: an
   return actionCtx.permission;
 };
 
-export const postProcess = async (ctx: Context, next: Next) => {
-  const { data, fieldMap } = ctx.action.params.values as {
-    data: any[];
-    fieldMap: { [source: string]: { type?: string } };
-  };
-  ctx.body = data.map((record) => {
-    Object.entries(record).forEach(([key, value]) => {
-      if (!value) {
-        return;
-      }
-      const { type } = fieldMap[key] || {};
-      switch (type) {
-        case 'bigInt':
-        case 'integer':
-        case 'float':
-        case 'double':
-        case 'decimal':
-          record[key] = Number(value);
-          break;
-      }
-    });
-    return record;
-  });
-  await next();
-};
-
 export const queryData = async (ctx: Context, next: Next) => {
-  const { dataSource, collection, queryParams, fieldMap } = ctx.action.params.values;
+  const { dataSource, collection, ...queryOptions } = ctx.action.params.values;
   const db = getDB(ctx, dataSource) || ctx.db;
-  const model = db.getModel(collection);
-  const data = await model.findAll(queryParams);
-  ctx.action.params.values = {
-    data,
-    fieldMap,
-  };
-  await next();
-  // if (!sql) {
-  //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
-  // }
-
-  // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
-  // const [data] = await ctx.db.sequelize.query(statement);
-  // return data;
-};
-
-export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
-  const {
-    dataSource,
-    collection: collectionName,
-    measures,
-    dimensions,
-    orders,
-    filter,
-  } = ctx.action.params.values as QueryParams;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const collection = db.getCollection(collectionName);
-  const fields = collection.fields;
-  const associations = collection.model.associations;
-  const models: {
-    [target: string]: {
-      type: string;
-    };
-  } = {};
-  const parseField = (selected: { field: string | string[]; alias?: string }) => {
-    let target: string;
-    let name: string;
-    if (!Array.isArray(selected.field)) {
-      name = selected.field;
-    } else if (selected.field.length === 1) {
-      name = selected.field[0];
-    } else if (selected.field.length > 1) {
-      [target, name] = selected.field;
-    }
-    const rawAttributes = collection.model.getAttributes();
-    let field = rawAttributes[name]?.field || name;
-    let fieldType = fields.get(name)?.type;
-    let fieldOptions = fields.get(name)?.options;
-    if (target) {
-      const targetField = fields.get(target) as Field;
-      const targetCollection = db.getCollection(targetField.target);
-      const targetFields = targetCollection.fields;
-      fieldType = targetFields.get(name)?.type;
-      fieldOptions = targetFields.get(name)?.options;
-      field = `${target}.${field}`;
-      name = `${target}.${name}`;
-      const targetType = fields.get(target)?.type;
-      if (!models[target]) {
-        models[target] = { type: targetType };
-      }
-    } else {
-      field = `${collectionName}.${field}`;
-    }
-    return {
-      ...selected,
-      field,
-      name,
-      type: fieldType,
-      options: fieldOptions,
-      alias: selected.alias || name,
-    };
-  };
-
-  const parsedMeasures = measures?.map(parseField) || [];
-  const parsedDimensions = dimensions?.map(parseField) || [];
-  const parsedOrders = orders?.map(parseField) || [];
-  const include = Object.entries(models).map(([target, { type }]) => {
-    let options = {
-      association: target,
-      attributes: [],
-    };
-    if (type === 'belongsToMany') {
-      options['through'] = { attributes: [] };
-    }
-    if (type === 'belongsToArray') {
-      const association = associations[target] as BelongsToArrayAssociation;
-      if (association) {
-        options = {
-          ...options,
-          ...association.generateInclude(),
-        };
-      }
-    }
-    return options;
+  const repository = db.getRepository(collection);
+  ctx.body = await repository.query({
+    ...queryOptions,
+    timezone: ctx.get?.('x-timezone'),
   });
-
-  const filterParser = new FilterParser(filter, {
-    collection,
-  });
-  const { where, include: filterInclude } = filterParser.toSequelizeParams();
-  if (filterInclude) {
-    // Remove attributes from through table
-    const stack = [...filterInclude];
-    while (stack.length) {
-      const item = stack.pop();
-
-      const parentCollection = db.getCollection(item.parentCollection || collectionName);
-      const field = parentCollection.fields.get(item.association);
-      if (field?.type === 'belongsToMany') {
-        item.through = { attributes: [] };
-      }
-      if (field?.target && item.include?.length) {
-        for (const child of item.include) {
-          child.parentCollection = field.target;
-          stack.push(child);
-        }
-      }
-    }
-  }
-  ctx.action.params.values = {
-    ...ctx.action.params.values,
-    where,
-    measures: parsedMeasures,
-    dimensions: parsedDimensions,
-    orders: parsedOrders,
-    include: [...include, ...(filterInclude || [])],
-  };
   await next();
 };
 
@@ -266,19 +116,8 @@ export const checkPermission = async (ctx: Context, next: Next) => {
 };
 
 export const query = async (ctx: Context, next: Next) => {
-  const { dataSource } = ctx.action.params.values as QueryParams;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const queryParser = createQueryParser(db);
   try {
-    await compose([
-      checkPermission,
-      cacheMiddleware,
-      parseVariables,
-      parseFieldAndAssociations,
-      queryParser.parse(),
-      queryData,
-      postProcess,
-    ])(ctx, next);
+    await compose([checkPermission, cacheMiddleware, parseVariables, queryData])(ctx, next);
   } catch (err) {
     ctx.throw(500, err);
   }
