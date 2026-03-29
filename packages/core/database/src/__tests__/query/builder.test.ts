@@ -7,12 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
 import { buildQuery } from '../../query/builder';
-import { createQueryTestDatabase, closeQueryTestDatabase } from './shared';
+import { createQueryTestDatabase, closeQueryTestDatabase, QueryTestDatabase } from './shared';
 
 describe('query builder', () => {
-  let db: Database;
+  let db: QueryTestDatabase;
 
   beforeEach(async () => {
     db = await createQueryTestDatabase();

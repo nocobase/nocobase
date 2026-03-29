@@ -18,6 +18,7 @@ import { MySQLQueryFormatter } from './formatters/mysql';
 import { OracleQueryFormatter } from './formatters/oracle';
 import { PostgresQueryFormatter } from './formatters/postgres';
 import { SQLiteQueryFormatter } from './formatters/sqlite';
+import { buildHaving } from './having';
 import { QueryField, QueryOptions } from './types';
 
 type QuerySelection = { field: QueryField; alias?: string };
@@ -201,6 +202,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
 
   const queryOptions: SequelizeFindOptions = {
     where,
+    having: buildHaving(database, formatter, fieldMap, options.having, options.timezone),
     attributes,
     include: [...include, ...(filterInclude || [])],
     group,

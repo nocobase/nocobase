@@ -37,6 +37,7 @@ export interface QueryOptions {
   dimensions?: QueryDimension[];
   orders?: QueryOrder[];
   filter?: any;
+  having?: any;
   limit?: number;
   offset?: number;
   timezone?: string;

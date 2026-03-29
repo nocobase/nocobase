@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
 import { createMockDatabase } from '../../mock-database';
 
 export async function createQueryTestDatabase() {
@@ -72,7 +71,9 @@ export async function createQueryTestDatabase() {
   return db;
 }
 
-export async function closeQueryTestDatabase(db?: Database) {
+export type QueryTestDatabase = Awaited<ReturnType<typeof createQueryTestDatabase>>;
+
+export async function closeQueryTestDatabase(db?: QueryTestDatabase) {
   if (db) {
     await db.close();
   }
