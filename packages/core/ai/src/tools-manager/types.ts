@@ -40,17 +40,6 @@ export type ToolsOptions = {
 export type ToolsRuntime = {
   toolCallId: string;
   writer: (chunk: any) => void;
-  decisions?: {
-    interruptId?: string;
-    decisions: {
-      type: 'approve' | 'edit' | 'reject';
-      message?: string;
-      editedAction?: {
-        name: string;
-        args: any;
-      };
-    }[];
-  };
 };
 
 export type ToolsEntry = ToolsOptions;

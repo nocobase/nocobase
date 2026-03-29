@@ -218,14 +218,22 @@ export const conversationMiddleware = (
       }
     },
     wrapModelCall: async (request, handler) => {
-      const { appendMessage } = request.runtime.context ?? {};
-      if (Array.isArray(appendMessage)) {
+      const runtimeContext = request.runtime.context;
+      const appendMessage = runtimeContext?.appendMessage;
+
+      if (Array.isArray(appendMessage) && appendMessage.length) {
         await aiEmployee.aiChatConversation.withTransaction(async (conversation) => {
           await conversation.addMessages(convertToolMessage(request.messages.at(-1) as ToolMessage));
           await conversation.addMessages(appendMessage.map((x) => x as HumanMessage).map(convertHumanMessage));
         });
+
         request.messages.push(...appendMessage);
+
+        if (runtimeContext) {
+          delete runtimeContext.appendMessage;
+        }
       }
+
       return handler(request);
     },
   });

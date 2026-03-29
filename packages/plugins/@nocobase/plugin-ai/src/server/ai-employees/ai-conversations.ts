@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model } from '@nocobase/database';
+import { Model, Op } from '@nocobase/database';
 import PluginAIServer from '../plugin';
-import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata } from '../types';
+import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
 
 export type AIConversationsOptions = {
@@ -253,6 +253,62 @@ export class AIConversationsManager {
         cursor: newCursor,
       }),
     };
+  }
+
+  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | null> {
+    const allInterruptedToolCall = await this.aiToolMessagesRepo.find({
+      filter: {
+        messageId,
+        interruptActionOrder: { [Op.not]: null },
+      },
+      order: [['interruptActionOrder', 'ASC']],
+    });
+    if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
+      return null;
+    }
+
+    const message = await this.aiMessagesRepo.findOne({
+      filter: {
+        messageId,
+      },
+    });
+    const interruptId = message?.get('metadata')?.interruptId;
+    return {
+      interruptId,
+      decisions: allInterruptedToolCall.map((item) => item.userDecision as UserDecision),
+    };
+  }
+
+  async resolveSubAgentConversation(sessionId: string, toolCallId: string): Promise<SubAgentConversationMetadata> {
+    if (!sessionId || !toolCallId) {
+      return null;
+    }
+    const toolMessage = await this.aiToolMessagesRepo.findOne({
+      filter: {
+        sessionId,
+        toolCallId,
+      },
+    });
+    if (!toolMessage) {
+      return null;
+    }
+    const aiMessage = await this.aiMessagesRepo.findOne({
+      filter: {
+        sessionId,
+        messageId: toolMessage.messageId,
+      },
+    });
+    if (!aiMessage) {
+      return null;
+    }
+    if (!aiMessage.metadata?.subAgentConversations?.length) {
+      return null;
+    }
+    const subAgentConversation = aiMessage.metadata.subAgentConversations.find((it) => it.toolCallId == toolCallId);
+    if (!subAgentConversation) {
+      return null;
+    }
+    return subAgentConversation;
   }
 
   private get aiConversationsRepo() {

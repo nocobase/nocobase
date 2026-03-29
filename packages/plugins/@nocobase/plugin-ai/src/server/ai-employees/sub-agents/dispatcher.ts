@@ -16,15 +16,12 @@ import { getAccessibleAIEmployee } from '../../../ai/tools/sub-agents/shared';
 
 export type SubAgentTask = {
   ctx: Context;
+  sessionId: string;
   employee: Model;
   model: ModelRef;
   question: string;
   skillSettings?: Record<string, any>;
   writer?: (chunk: any) => void;
-  decisions?: {
-    interruptId?: string;
-    decisions: UserDecision[];
-  };
 };
 
 export class SubAgentsDispatcher {
@@ -115,11 +112,9 @@ export class SubAgentsDispatcher {
     });
   }
 
-  async run(task: SubAgentTask): Promise<{
-    sessionId: string;
-    running: Promise<string>;
-  }> {
-    const { ctx, employee, model, question, skillSettings, writer, decisions } = task;
+  async run(task: SubAgentTask): Promise<string> {
+    const { ctx, sessionId, employee, model, question, skillSettings, writer } = task;
+    const plugin = ctx.app.pm.get('ai') as PluginAIServer;
     const userId = ctx.auth?.user?.id;
     if (!userId) {
       throw new Error('User not authenticated');
@@ -129,30 +124,22 @@ export class SubAgentsDispatcher {
       throw new Error('LLM service not configured');
     }
 
-    let subSessionId = await this.resolveSubAgentSessionId(ctx);
-    if (!subSessionId) {
-      const conversation = await this.plugin.aiConversationsManager.create({
-        userId,
-        aiEmployee: {
-          username: employee.get('username'),
-        },
-        title: question.slice(0, 30),
-        from: 'sub-agent',
-        options: {
-          skillSettings,
-        },
-      });
-      subSessionId = conversation.sessionId;
-    }
-
     const aiEmployee = new AIEmployee({
       ctx,
       employee,
-      sessionId: subSessionId,
+      sessionId,
       skillSettings,
       model,
       from: 'sub-agent',
     });
+
+    const lastMessage = await ctx.db.getRepository('aiMessages').findOne({
+      filter: {
+        sessionId,
+      },
+      sort: ['-messageId'],
+    });
+    const decisions = lastMessage ? await plugin.aiConversationsManager.getUserDecisions(lastMessage.messageId) : null;
 
     let context;
     const { messages } = ctx.action?.params?.values ?? {};
@@ -162,40 +149,34 @@ export class SubAgentsDispatcher {
       };
     }
 
-    const running = async () => {
-      const result = await aiEmployee.invoke({
-        userDecisions: decisions,
-        userMessages: decisions
-          ? undefined
-          : [
-              {
-                role: 'user',
-                content: {
-                  type: 'text',
-                  content: question,
-                },
+    const result = await aiEmployee.invoke({
+      userDecisions: decisions,
+      userMessages: decisions
+        ? undefined
+        : [
+            {
+              role: 'user',
+              content: {
+                type: 'text',
+                content: question,
               },
-            ],
-        writer,
-        context,
-      });
-      writer?.({
-        action: 'afterSubAgentInvoke',
-        body: {},
-        currentConversation: {
-          sessionId: subSessionId,
-          username: employee.username,
-          from: 'sub-agent',
-        },
-      });
+            },
+          ],
+      writer,
+      context,
+    });
 
-      return this.extractLastMessageText(result);
-    };
+    writer?.({
+      action: 'afterSubAgentInvoke',
+      body: {},
+      currentConversation: {
+        sessionId,
+        username: employee.username,
+        from: 'sub-agent',
+      },
+    });
 
-    return {
-      sessionId: subSessionId,
-      running: running(),
-    };
+    return this.extractLastMessageText(result);
   }
 
   async isInterrupted(ctx: Context) {
@@ -217,6 +198,7 @@ export class SubAgentsDispatcher {
   }
 
   async reject(ctx: Context) {
+    const plugin = ctx.app.pm.get('ai') as PluginAIServer;
     const { sessionId } = ctx.action?.params?.values ?? {};
     const conversation = await ctx.db.getRepository('aiConversations').findOne({
       filter: {
@@ -246,17 +228,7 @@ export class SubAgentsDispatcher {
       },
     );
     if (updated > 0) {
-      const employee = await getAccessibleAIEmployee(ctx, conversation.aiEmployeeUsername);
-      if (!employee) {
-        return;
-      }
-
-      const aiEmployee = new AIEmployee({
-        ctx,
-        employee,
-        sessionId,
-      });
-      return await aiEmployee.getUserDecisions(lastMessage.get('messageId'));
+      return await plugin.aiConversationsManager.getUserDecisions(lastMessage.get('messageId'));
     } else {
       return null;
     }

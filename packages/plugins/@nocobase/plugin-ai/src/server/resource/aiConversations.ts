@@ -543,6 +543,7 @@ export default {
     async resumeToolCall(ctx: Context, next: Next) {
       setupSSEHeaders(ctx);
 
+      const plugin = ctx.app.pm.get('ai') as PluginAIServer;
       const { sessionId, messageId, model, webSearch } = ctx.action.params.values || {};
       if (!sessionId) {
         sendErrorResponse(ctx, 'sessionId is required');
@@ -600,7 +601,7 @@ export default {
           model,
         });
 
-        const userDecisions = await aiEmployee.getUserDecisions(messageId);
+        const userDecisions = await plugin.aiConversationsManager.getUserDecisions(messageId);
         await aiEmployee.stream({
           userDecisions,
         });

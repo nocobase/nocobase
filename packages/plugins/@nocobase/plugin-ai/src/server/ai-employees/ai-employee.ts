@@ -1039,30 +1039,6 @@ If information is missing, clearly state it in the summary.</Important>`;
     return new Map(list.map((it) => [it.toolCallId, it]));
   }
 
-  async getUserDecisions(messageId: string): Promise<{ interruptId?: string; decisions: UserDecision[] } | null> {
-    const allInterruptedToolCall = await this.aiToolMessagesModel.findAll({
-      where: {
-        messageId,
-        interruptActionOrder: { [Op.not]: null },
-      },
-      order: [['interruptActionOrder', 'ASC']],
-    });
-    if (!allInterruptedToolCall.every((t) => t.invokeStatus === 'waiting')) {
-      return null;
-    }
-
-    const message = await this.aiMessagesModel.findOne({
-      where: {
-        messageId,
-      },
-    });
-    const interruptId = message?.get('metadata')?.interruptId;
-    return {
-      interruptId,
-      decisions: allInterruptedToolCall.map((item) => item.userDecision as UserDecision),
-    };
-  }
-
   async cancelToolCall() {
     let messageId;
     const historyMessages = await this.db.getRepository('aiConversations.messages', this.sessionId).find({

@@ -22,31 +22,52 @@ export default defineTools({
       question: z.string().describe('The question or task that should be executed by the target AI employee.'),
     }),
   },
-  async invoke(ctx, { username, question }, { toolCallId, writer, decisions }) {
+  async invoke(ctx, { username, question }, { toolCallId, writer }) {
+    const sessionId = ctx.action?.params?.values?.sessionId;
+    const userId = ctx.auth?.user?.id;
+    if (!userId) {
+      throw new Error('User not authenticated');
+    }
     const plugin = getAIPlugin(ctx);
     const employee = await getAccessibleAIEmployee(ctx, username);
     if (!employee) {
       throw new Error(`AI employee "${username}" not found`);
     }
 
+    let subSessionId: string;
     const skillSettings = await getSkillSettingsFromMain(ctx);
+    const existedConversation = await plugin.aiConversationsManager.resolveSubAgentConversation(sessionId, toolCallId);
+    if (existedConversation) {
+      subSessionId = existedConversation.sessionId;
+    } else {
+      const newConversation = await plugin.aiConversationsManager.create({
+        userId,
+        aiEmployee: {
+          username: employee.get('username'),
+        },
+        title: question.slice(0, 30),
+        from: 'sub-agent',
+        options: {
+          skillSettings,
+        },
+      });
+      subSessionId = newConversation.sessionId;
+    }
 
-    const { sessionId, running } = await plugin.subAgentsDispatcher.run({
+    await updateMessageMetadata(ctx, toolCallId, subSessionId, 'pending');
+    const answer = await plugin.subAgentsDispatcher.run({
       ctx,
+      sessionId: subSessionId,
       employee,
       model: employee.get('modelSettings') ?? ctx.action?.params?.values?.model,
       question,
       skillSettings,
       writer,
-      decisions,
     });
-
-    await updateMessageMetadata(ctx, toolCallId, sessionId, 'pending');
-    const answer = await running;
-    await updateMessageMetadata(ctx, toolCallId, sessionId, 'completed');
+    await updateMessageMetadata(ctx, toolCallId, subSessionId, 'completed');
 
     return {
-      sessionId,
+      sessionId: subSessionId,
       answer,
     };
   },
