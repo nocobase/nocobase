@@ -88,35 +88,34 @@ export const Messages: React.FC = () => {
     const durationText = formatConversationDuration(item.durationMs);
 
     return (
-      <div key={`${item.key}-divider-top`} style={{ padding: '0 16px' }}>
-        <Divider
-          dashed
-          plain
+      <Divider
+        key={`${item.key}-divider-top`}
+        dashed
+        plain
+        style={{
+          margin: '0 0 8px 0',
+          color: token.colorTextDescription,
+        }}
+      >
+        <Button
+          type="link"
+          size="small"
+          onClick={() =>
+            setCollapsedConversationKeys((prev) => ({
+              ...prev,
+              [item.key]: !collapsed,
+            }))
+          }
           style={{
-            margin: '12px 0 16px',
+            paddingInline: 0,
             color: token.colorTextDescription,
           }}
+          icon={collapsed ? <RightOutlined /> : <DownOutlined />}
+          iconPosition="end"
         >
-          <Button
-            type="link"
-            size="small"
-            onClick={() =>
-              setCollapsedConversationKeys((prev) => ({
-                ...prev,
-                [item.key]: !collapsed,
-              }))
-            }
-            style={{
-              paddingInline: 0,
-              color: token.colorTextDescription,
-            }}
-            icon={collapsed ? <RightOutlined /> : <DownOutlined />}
-            iconPosition="end"
-          >
-            {`Done in ${durationText}`}
-          </Button>
-        </Divider>
-      </div>
+          {`Done in ${durationText}`}
+        </Button>
+      </Divider>
     );
   };
 
@@ -124,18 +123,17 @@ export const Messages: React.FC = () => {
     const nickname = item.roleName ? (roles[item.roleName] as any)?.nickname || item.roleName : undefined;
 
     return (
-      <div key={`${item.key}-divider-bottom`} style={{ padding: '0 16px' }}>
-        <Divider
-          dashed
-          plain
-          style={{
-            margin: '12px 0 16px',
-            color: token.colorTextDescription,
-          }}
-        >
-          {t('{{ nickname }} has completed the work', { nickname })}
-        </Divider>
-      </div>
+      <Divider
+        key={`${item.key}-divider-bottom`}
+        dashed
+        plain
+        style={{
+          margin: '0 0 8px 0',
+          color: token.colorTextDescription,
+        }}
+      >
+        {t('{{ nickname }} has completed the work', { nickname })}
+      </Divider>
     );
   };
 
