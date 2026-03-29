@@ -14,6 +14,7 @@ import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { assign } from '@nocobase/utils';
 import { checkFilterParams, NoPermissionError } from '@nocobase/acl';
+import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
@@ -64,6 +65,15 @@ export const queryData = async (ctx: Context, next: Next) => {
 };
 
 export const parseVariables = async (ctx: Context, next: Next) => {
+  const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
+  if (mode !== 'sql') {
+    const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {});
+    ctx.action.params.values = {
+      ...ctx.action.params.values,
+      ...(resolvedValues as Record<string, any>),
+    };
+  }
+
   const { filter } = ctx.action.params.values;
   ctx.action.params.filter = filter;
   await middlewares.parseVariables(ctx, async () => {

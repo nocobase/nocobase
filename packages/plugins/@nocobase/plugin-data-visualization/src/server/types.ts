@@ -32,6 +32,7 @@ export type OrderProps = {
 
 export type QueryParams = Partial<{
   uid: string;
+  mode: 'builder' | 'sql';
   dataSource: string;
   collection: string;
   measures: MeasureProps[];
@@ -39,6 +40,7 @@ export type QueryParams = Partial<{
   orders: OrderProps[];
   filter: any;
   having: any;
+  contextParams: Record<string, unknown>;
   limit: number;
   offset: number;
   sql: {

@@ -42,7 +42,11 @@ const SQLEditorBase: React.FC<any> = observer((props) => {
   return (
     <div>
       {/* 选择数据源 */}
-      <Form.Item label={t('Data source')} rules={[{ required: true }]} style={{ marginTop: 8 }}>
+      <Form.Item
+        label={<span style={{ fontWeight: 500 }}>{t('Data source')}</span>}
+        rules={[{ required: true }]}
+        style={{ marginTop: 8 }}
+      >
         <Select
           style={{ width: 222 }}
           placeholder={t('Data source')}

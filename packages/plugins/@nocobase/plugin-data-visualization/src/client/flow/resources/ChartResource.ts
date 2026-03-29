@@ -116,6 +116,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       orders: query.orders,
       limit: query.limit,
       offset: query.offset,
+      contextParams: query.contextParams,
     };
     return data;
   }
