@@ -24,7 +24,6 @@ import {
   convertHumanMessage as _convertHumanMessage,
   convertToolMessage as _convertToolMessage,
 } from '../utils';
-import { request } from '@nocobase/plugin-license';
 
 export const conversationMiddleware = (
   aiEmployee: AIEmployee,
