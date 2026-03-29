@@ -12,7 +12,6 @@ import { Model } from '@nocobase/database';
 import { AIEmployee, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
 import type { SubAgentConversationMetadata, UserDecision } from '../../types';
-import { getAccessibleAIEmployee } from '../../../ai/tools/sub-agents/shared';
 
 export type SubAgentTask = {
   ctx: Context;
@@ -114,6 +113,7 @@ export class SubAgentsDispatcher {
 
   async run(task: SubAgentTask): Promise<string> {
     const { ctx, sessionId, employee, model, question, skillSettings, writer } = task;
+    const { webSearch } = ctx.action?.params?.values ?? {};
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
     const userId = ctx.auth?.user?.id;
     if (!userId) {
@@ -129,6 +129,7 @@ export class SubAgentsDispatcher {
       employee,
       sessionId,
       skillSettings,
+      webSearch,
       model,
       from: 'sub-agent',
     });
