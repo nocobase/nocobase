@@ -13,10 +13,13 @@ import { defineConfig } from '@rsbuild/core';
 import { pluginLess } from '@rsbuild/plugin-less';
 import { pluginNodePolyfill } from '@rsbuild/plugin-node-polyfill';
 import { pluginReact } from '@rsbuild/plugin-react';
-import { getRsbuildAlias } from '../../devtools/rsbuildConfig';
+import { pluginSvgr } from '@rsbuild/plugin-svgr';
+import { generateV2Plugins, getRsbuildAlias } from '@nocobase/devtools/rsbuildConfig';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+generateV2Plugins();
 
 function ensurePublicPath(value: string) {
   let normalized = value || '/v2/';
@@ -34,6 +37,46 @@ function toNumber(value: string | undefined, fallback: number) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function createRuntimeHeadScript(v2PublicPath: string, isBuild: boolean) {
+  if (!isBuild) {
+    return [
+      `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+      `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
+        process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+      )};`,
+      `window['__esm_cdn_suffix__'] = window['__esm_cdn_suffix__'] || ${JSON.stringify(
+        process.env.ESM_CDN_SUFFIX || '',
+      )};`,
+    ].join('\n');
+  }
+
+  return [
+    `window['__nocobase_public_path__'] = window['__nocobase_public_path__'] || ${JSON.stringify(v2PublicPath)};`,
+    `window['__nocobase_api_base_url__'] = window['__nocobase_api_base_url__'] || ${JSON.stringify(
+      process.env.API_BASE_URL || process.env.API_BASE_PATH || '',
+    )};`,
+    `window['__nocobase_api_client_storage_prefix__'] = window['__nocobase_api_client_storage_prefix__'] || ${JSON.stringify(
+      process.env.API_CLIENT_STORAGE_PREFIX || '',
+    )};`,
+    `window['__nocobase_api_client_storage_type__'] = window['__nocobase_api_client_storage_type__'] || ${JSON.stringify(
+      process.env.API_CLIENT_STORAGE_TYPE || '',
+    )};`,
+    `window['__nocobase_api_client_share_token__'] = window['__nocobase_api_client_share_token__'] || ${JSON.stringify(
+      process.env.API_CLIENT_SHARE_TOKEN || 'false',
+    )};`,
+    `window['__nocobase_ws_url__'] = window['__nocobase_ws_url__'] || ${JSON.stringify(
+      process.env.WEBSOCKET_URL || '',
+    )};`,
+    `window['__nocobase_ws_path__'] = window['__nocobase_ws_path__'] || ${JSON.stringify(process.env.WS_PATH || '')};`,
+    `window['__esm_cdn_base_url__'] = window['__esm_cdn_base_url__'] || ${JSON.stringify(
+      process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
+    )};`,
+    `window['__esm_cdn_suffix__'] = window['__esm_cdn_suffix__'] || ${JSON.stringify(
+      process.env.ESM_CDN_SUFFIX || '',
+    )};`,
+  ].join('\n');
+}
+
 function createDefineValues(v2PublicPath: string) {
   return {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
@@ -46,20 +89,6 @@ function createDefineValues(v2PublicPath: string) {
     'import.meta.env.WS_PATH': JSON.stringify(process.env.WS_PATH || ''),
     'import.meta.env.ESM_CDN_BASE_URL': JSON.stringify(process.env.ESM_CDN_BASE_URL || 'https://esm.sh'),
     'import.meta.env.ESM_CDN_SUFFIX': JSON.stringify(process.env.ESM_CDN_SUFFIX || ''),
-  };
-}
-
-function createTemplateParameters(v2PublicPath: string) {
-  return {
-    BASE_URL: v2PublicPath,
-    API_BASE_URL: process.env.API_BASE_URL || process.env.API_BASE_PATH || '',
-    API_CLIENT_STORAGE_PREFIX: process.env.API_CLIENT_STORAGE_PREFIX || '',
-    API_CLIENT_STORAGE_TYPE: process.env.API_CLIENT_STORAGE_TYPE || '',
-    API_CLIENT_SHARE_TOKEN: process.env.API_CLIENT_SHARE_TOKEN || 'false',
-    WS_URL: process.env.WEBSOCKET_URL || '',
-    WS_PATH: process.env.WS_PATH || '',
-    ESM_CDN_BASE_URL: process.env.ESM_CDN_BASE_URL || 'https://esm.sh',
-    ESM_CDN_SUFFIX: process.env.ESM_CDN_SUFFIX || '',
   };
 }
 
@@ -76,7 +105,7 @@ export default defineConfig(({ command }) => {
   const workspaceAliases = getRsbuildAlias();
 
   return {
-    plugins: [pluginReact(), pluginLess(), pluginNodePolyfill()],
+    plugins: [pluginReact(), pluginLess(), pluginNodePolyfill(), pluginSvgr()],
     resolve: {
       alias: workspaceAliases,
     },
@@ -90,7 +119,43 @@ export default defineConfig(({ command }) => {
     html: {
       template: path.resolve(__dirname, 'index.html'),
       scriptLoading: isBuild ? 'module' : 'defer',
-      templateParameters: createTemplateParameters(v2PublicPath),
+      tags: [
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'icon',
+            href: `${v2PublicPath}favicon_no_exist.ico`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'link',
+          attrs: {
+            rel: 'stylesheet',
+            href: `${v2PublicPath}global.css`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'script',
+          children: createRuntimeHeadScript(v2PublicPath, isBuild),
+          head: true,
+          append: false,
+        },
+        {
+          tag: 'script',
+          attrs: {
+            src: `${v2PublicPath}browser-checker.js?v=1`,
+          },
+          publicPath: false,
+          head: true,
+          append: false,
+        },
+      ],
     },
     output: {
       target: 'web',
@@ -125,7 +190,9 @@ export default defineConfig(({ command }) => {
       host: '0.0.0.0',
       port: v2Port,
       compress: true,
-      publicDir: false,
+      publicDir: {
+        name: path.resolve(__dirname, 'public'),
+      },
       proxy: {
         [apiBasePath]: {
           target: proxyTargetUrl,
@@ -172,11 +239,6 @@ export default defineConfig(({ command }) => {
           ...config.experiments,
           outputModule: isBuild,
         };
-        config.module.rules.push({
-          test: /\.svg$/i,
-          issuer: /\.[jt]sx?$/,
-          use: ['@svgr/webpack'],
-        });
         config.optimization = {
           ...config.optimization,
           runtimeChunk: 'single',

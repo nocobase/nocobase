@@ -30,6 +30,7 @@ import { type ComponentTypeAndString, RouterManager, type RouterOptions } from '
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { BlankComponent } from './components';
 import { compose, normalizeContainer } from './utils';
+import { defineGlobalDeps } from './utils/globalDeps';
 import type { RequireJS } from './utils/requirejs';
 import { getRequireJs } from './utils/requirejs';
 
@@ -232,6 +233,7 @@ export class Application {
       return;
     }
     window['requirejs'] = this.requirejs = getRequireJs();
+    defineGlobalDeps(this.requirejs);
     window.define = this.requirejs.define;
   }
 

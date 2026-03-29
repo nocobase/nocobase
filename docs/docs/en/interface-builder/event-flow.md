@@ -201,6 +201,34 @@ Display notification alerts in the four corners of the system. Commonly used for
 
 Execute JavaScript code.
 
+### Custom request
+
+#### When to use
+
+When you need to call an external API or third-party service within a flow, you can use **Custom request** to trigger a custom HTTP request. Common scenarios include:
+
+- Calling external system APIs, such as CRM or AI services
+- Fetching remote data for use in later flow steps
+- Pushing data to third-party systems, such as webhooks or message notifications
+- Triggering automated processes in internal or external services
+
+After the request completes, its response data can continue to be used in subsequent steps for data processing, conditional checks, storage, and more.
+
+#### Configuration
+
+![](https://static-docs.nocobase.com/Leads-03-16-2026_05_50_PM%20(1).png)
+
+- HTTP method: The HTTP request method, such as `GET`, `POST`, `PUT`, or `DELETE`.
+- URL: The target address of the request. You can enter a full endpoint URL or build it dynamically with variables.
+- Headers: Request headers used to pass authentication information or API configuration, such as `Authorization` and `Content-Type`.
+- Parameters: URL query parameters, typically used in `GET` requests.
+- Body: The request body, typically used in `POST`, `PUT`, and similar requests. You can provide JSON, form data, and more.
+- Timeout config: The request timeout setting, used to limit the maximum waiting time and avoid blocking the flow for too long.
+- Response type: The data type of the response.
+  - JSON: The API returns JSON data. The result is injected into the flow context and can be accessed in later steps through `ctx.steps`.
+  - Stream: The API returns a data stream. A successful request automatically triggers a file download.
+- Access control: Used to restrict which roles can trigger this request step, helping ensure the security of the API call.
+
 ## Examples
 
 ### Form: call a third-party API and fill fields

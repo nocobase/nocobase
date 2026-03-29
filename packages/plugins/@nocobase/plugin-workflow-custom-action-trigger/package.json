@@ -1,22 +1,24 @@
 {
   "name": "@nocobase/plugin-workflow-custom-action-trigger",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.13",
   "displayName": "Workflow: Custom action event",
   "displayName.zh-CN": "工作流：自定义操作事件",
   "description": "Triggers after click a custom action button.",
   "description.zh-CN": "在点击绑定了自定义事件的按钮后触发。适用于对数据行的自定义操作编排。",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
+  "devDependencies": {
+    "joi": "^17.13.3"
+  },
   "homepage": "https://docs.nocobase.com/handbook/workflow-custom-action-trigger",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-custom-action-trigger",
   "peerDependencies": {
-    "@nocobase/client": "workspace:*",
-    "@nocobase/plugin-error-handler": "workspace:*",
-    "@nocobase/plugin-users": "workspace:*",
-    "@nocobase/plugin-workflow": "workspace:*",
-    "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*",
-    "@nocobase/utils": "workspace:*"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
+    "@nocobase/plugin-users": "2.x",
+    "@nocobase/plugin-workflow": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "keywords": [
     "Workflow"

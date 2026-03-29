@@ -45,6 +45,11 @@
       },
       {
         "type": "custom-link",
+        "label": "MCP Integration",
+        "link": "/ai-employees/features/mcp"
+      },
+      {
+        "type": "custom-link",
         "label": "Shortcut Tasks",
         "link": "/ai-employees/features/task"
       },

@@ -21,6 +21,7 @@ export interface ToolsRegistration {
 
 export type ToolsOptions = {
   scope: Scope;
+  from?: From;
   execution?: 'frontend' | 'backend';
   defaultPermission?: Permission;
   silence?: boolean;
@@ -40,6 +41,7 @@ export type ToolsEntry = ToolsOptions;
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
 export type Permission = 'ASK' | 'ALLOW';
+export type From = 'loader' | 'workflow' | 'mcp';
 
 export type DynamicToolsProvider = (register: ToolsRegistration) => Promise<void>;
 

@@ -272,7 +272,9 @@ export function parseQuery(input: string): any {
     query.filterByTk = smartParse(query.filterByTk);
   }
 
-  query.filterByTk = normalizeIndexedObjectToArray(query.filterByTk);
+  if (query.filterByTk) {
+    query.filterByTk = normalizeIndexedObjectToArray(query.filterByTk);
+  }
 
   return query;
 }

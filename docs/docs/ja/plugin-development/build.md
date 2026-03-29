@@ -12,10 +12,10 @@
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // Vite は `src/client` 側のコードをバンドルするために使用されます。
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild は `src/client` 側のコードをバンドルするために使用されます。
 
-    // Vite の設定を変更します。詳細は以下を参照してください： https://vite.dev/guide/
+    // Rsbuild の設定を変更します。詳細は以下を参照してください： https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {

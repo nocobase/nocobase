@@ -12,10 +12,10 @@
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // vite используется для сборки кода клиентской части (`src/client`)
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild используется для сборки кода клиентской части (`src/client`)
 
-    // Измените конфигурацию Vite. Подробнее см.: https://vitejs.dev/guide/
+    // Измените конфигурацию Rsbuild. Подробнее см.: https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {

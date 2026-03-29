@@ -9,18 +9,20 @@
 
 import { Database } from '@nocobase/database';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { FlowSchemaContribution } from './flow-schema-registry';
 import type { ResourcerContext } from '@nocobase/resourcer';
-import { Plugin } from '@nocobase/server';
 import { parseLiquidContext, transformSQL } from '@nocobase/utils';
+import { flowSchemaContribution } from './flow-schema-contributions';
 import PluginUISchemaStorageServer from './server';
-import { GlobalContext, HttpRequestContext } from './template/contexts';
-import { JSONValue, resolveJsonTemplate } from './template/resolver';
-import { variables } from './variables/registry';
-import { prefetchRecordsForResolve } from './variables/utils';
+import { JSONValue } from './template/resolver';
+import { resolveVariablesBatch, resolveVariablesTemplate } from './variables/resolve';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
-  private globalContext!: GlobalContext;
   async afterAdd() {}
+
+  getFlowSchemaContributions(): FlowSchemaContribution {
+    return flowSchemaContribution;
+  }
 
   async beforeLoad() {
     await super.beforeLoad();
@@ -40,8 +42,6 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     this.app.auditManager.registerAction('flowSql:save');
     this.app.auditManager.registerAction('flowModels:save');
     this.app.auditManager.registerAction('flowModels:duplicate');
-    // Initialize a shared GlobalContext once, using server environment variables
-    this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
     this.app.acl.allow('flowSql', 'getBind', 'loggedIn');
     this.app.acl.allow('variables', 'resolve', 'loggedIn');
@@ -66,23 +66,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
               template: JSONValue;
               contextParams?: Record<string, unknown>;
             }>;
-            await prefetchRecordsForResolve(
-              ctx as ResourcerContext,
-              batchItems.map((it) => ({
-                template: it.template,
-                contextParams: (it.contextParams || {}) as Record<string, unknown>,
-              })),
-            );
-            const results: Array<{ id?: string | number; data: unknown }> = [];
-            for (const item of batchItems) {
-              const template = item?.template ?? {};
-              const contextParams = item?.contextParams || {};
-              const requestCtx = new HttpRequestContext(ctx);
-              requestCtx.delegate(this.globalContext);
-              await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-              const resolved = await resolveJsonTemplate(template, requestCtx);
-              results.push({ id: item?.id, data: resolved });
-            }
+            const results = await resolveVariablesBatch(ctx as ResourcerContext, batchItems);
             ctx.body = { results };
             await next();
             return;
@@ -97,12 +81,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           }
           const template = values.template as JSONValue;
           const contextParams = values?.contextParams || {};
-          await prefetchRecordsForResolve(ctx as ResourcerContext, [{ template, contextParams }]);
-          const requestCtx = new HttpRequestContext(ctx);
-          requestCtx.delegate(this.globalContext);
-          await variables.attachUsedVariables(requestCtx, ctx, template, contextParams);
-          const resolved = await resolveJsonTemplate(template, requestCtx);
-          ctx.body = resolved;
+          ctx.body = await resolveVariablesTemplate(ctx as ResourcerContext, template, contextParams);
           await next();
         },
       },

@@ -37,6 +37,7 @@ vi.mock('antd', async (importOriginal) => {
     (globalThis as any).__lastDropdownMenu = props.menu;
     (globalThis as any).__lastDropdownOnOpenChange = props.onOpenChange;
     (globalThis as any).__lastDropdownOpen = props.open;
+    (globalThis as any).__lastDropdownGetPopupContainer = props.getPopupContainer;
     dropdownMenus.push(props.menu);
     return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
   };
@@ -132,6 +133,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     (globalThis as any).__lastDropdownMenu = undefined;
     (globalThis as any).__lastDropdownOnOpenChange = undefined;
     (globalThis as any).__lastDropdownOpen = undefined;
+    (globalThis as any).__lastDropdownGetPopupContainer = undefined;
   });
 
   afterEach(() => {
@@ -412,6 +414,99 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     await waitFor(() => {
       expect((globalThis as any).__lastDropdownOpen).toBe(false);
     });
+  });
+
+  it('prefers the local toolbar container as popup host inside contextual toolbars', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-toolbar-popup-host', flowEngine: engine });
+    const externalPopupRoot = document.createElement('div');
+    externalPopupRoot.id = 'external-popup-root';
+    document.body.appendChild(externalPopupRoot);
+
+    TestFlowModel.registerFlow({
+      key: 'flowPopupHost',
+      title: 'Flow Popup Host',
+      steps: {
+        general: { title: 'General', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
+      },
+    });
+
+    const { getByTestId, unmount } = render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(
+            'div',
+            { className: 'nb-toolbar-container' },
+            React.createElement(
+              'div',
+              { className: 'nb-toolbar-container-icons' },
+              React.createElement(DefaultSettingsIcon as any, {
+                model,
+                getPopupContainer: () => externalPopupRoot,
+              }),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownGetPopupContainer).toBeTruthy();
+    });
+
+    const popupContainer = (globalThis as any).__lastDropdownGetPopupContainer?.(getByTestId('dropdown'));
+    expect(popupContainer).toBeTruthy();
+    expect(popupContainer?.className).toContain('nb-toolbar-container-icons');
+
+    unmount();
+    externalPopupRoot.remove();
+  });
+
+  it('falls back to the provided popup host outside contextual toolbars', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-external-popup-host', flowEngine: engine });
+    const externalPopupRoot = document.createElement('div');
+    externalPopupRoot.id = 'external-popup-root';
+    document.body.appendChild(externalPopupRoot);
+
+    TestFlowModel.registerFlow({
+      key: 'flowExternalPopupHost',
+      title: 'Flow External Popup Host',
+      steps: {
+        general: { title: 'General', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } },
+      },
+    });
+
+    const { getByTestId, unmount } = render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            getPopupContainer: () => externalPopupRoot,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownGetPopupContainer).toBeTruthy();
+    });
+
+    const popupContainer = (globalThis as any).__lastDropdownGetPopupContainer?.(getByTestId('dropdown'));
+    expect(popupContainer).toBe(externalPopupRoot);
+
+    unmount();
+    externalPopupRoot.remove();
   });
 
   it('copy UID action writes model uid to clipboard', async () => {

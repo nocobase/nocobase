@@ -19,7 +19,8 @@
     "nocobase": "nocobase",
     "pm": "nocobase pm",
     "pm2": "nocobase pm2",
-    "dev": "nocobase dev",
+    "dev:umi": "nocobase dev",
+    "dev": "nocobase dev --rsbuild",
     "dev:client-v2": "nocobase dev --client-v2-only",
     "dev-server": "nocobase dev --server",
     "start": "nocobase start",
@@ -36,7 +37,7 @@
     "tc": "nocobase test:client",
     "benchmark": "nocobase benchmark",
     "perf": "nocobase perf",
-    "docs": "pnpm --filter docs",
+    "docs": "yarn --cwd docs",
     "doc": "nocobase doc",
     "doc:cn": "nocobase doc --lang=zh-CN",
     "postinstall": "nocobase postinstall",
@@ -49,9 +50,26 @@
     "git-multi": "node scripts/git-multi.js",
     "run:example": "tsx -r dotenv/config -r tsconfig-paths/register ./examples/index.ts"
   },
+  "resolutions": {
+    "@ant-design/icons": "^5.6.1",
+    "@formily/antd-v5": "1.2.3",
+    "@rushstack/ts-command-line": "4.23.7",
+    "@rspack/core": "1.7.8",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/parser": "^6.2.0",
+    "react-router-dom": "^6.30.1",
+    "react-router": "^6.30.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "nwsapi": "2.2.7",
+    "antd": "5.24.2",
+    "dayjs": "1.11.13",
+    "eslint": "8.57.1"
+  },
   "config": {
     "ghooks": {
-      "pre-commit": "pnpm lint-staged && node ./scripts/addLicense.js",
+      "pre-commit": "yarn lint-staged && node ./scripts/addLicense.js",
       "commit-msg": "commitlint --edit"
     }
   },
@@ -67,8 +85,6 @@
     "@commitlint/cli": "^16.1.0",
     "@commitlint/config-conventional": "^16.0.0",
     "@commitlint/prompt-cli": "^16.1.0",
-    "@nocobase/build": "workspace:*",
-    "@nocobase/cli": "workspace:*",
     "@types/react": "18.3.18",
     "@types/react-dom": "^18.0.0",
     "ali-oss": "^6.1.0",
@@ -93,39 +109,8 @@
   },
   "volta": {
     "node": "20.16.0",
-    "pnpm": "10.29.1"
+    "yarn": "1.22.19"
   },
-  "packageManager": "pnpm@10.29.1",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@swc/core",
-      "core-js-pure",
-      "core-js",
-      "esbuild",
-      "ghooks",
-      "javascript-obfuscator",
-      "sqlite3",
-      "tar"
-    ],
-    "overrides": {
-      "@ant-design/icons": "^5.6.1",
-      "@formily/antd-v5": "1.2.3",
-      "@rushstack/ts-command-line": "4.23.7",
-      "@rspack/core": "1.7.8",
-      "@types/react": "18.3.18",
-      "@types/react-dom": "^18.0.0",
-      "@typescript-eslint/parser": "^6.2.0",
-      "react-router-dom": "^6.30.1",
-      "react-router": "^6.30.1",
-      "react": "^18.0.0",
-      "react-dom": "^18.0.0",
-      "nwsapi": "2.2.7",
-      "antd": "5.24.2",
-      "dayjs": "1.11.13",
-      "eslint": "8.57.1"
-    }
-  },
-  "dependencies": {
-    "sqlite3": "^6.0.1"
-  }
+  "dependencies": {},
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

@@ -22,6 +22,8 @@ import { Logger, LoggerOptions } from '@nocobase/logger';
 import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
 import initActions from './actions';
+import { NodeValidationError } from './actions/nodes';
+import { WorkflowValidationError } from './actions/workflows';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -307,6 +309,30 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  private registerErrorHandlers() {
+    const PluginErrorHandler = this.app.pm.get('error-handler') as any;
+    if (PluginErrorHandler?.errorHandler) {
+      PluginErrorHandler.errorHandler.register(
+        (err) => err instanceof NodeValidationError || err.name === 'NodeValidationError',
+        (err, ctx) => {
+          ctx.status = err.status;
+          ctx.body = {
+            errors: Object.values(err.errors).map((message) => ({ message })),
+          };
+        },
+      );
+      PluginErrorHandler.errorHandler.register(
+        (err) => err instanceof WorkflowValidationError || err.name === 'WorkflowValidationError',
+        (err, ctx) => {
+          ctx.status = err.status;
+          ctx.body = {
+            errors: Object.values(err.errors).map((message) => ({ message })),
+          };
+        },
+      );
+    }
+  }
+
   async beforeLoad() {
     this.db.registerRepositories({
       WorkflowRepository,
@@ -332,6 +358,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.initTriggers(options.triggers);
     this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
+    this.registerErrorHandlers();
     this.functions.register('instanceId', () => this.app.instanceId);
     this.functions.register('epoch', () => 1605024000);
     this.functions.register('genSnowflakeId', () => this.app.snowflakeIdGenerator.generate());

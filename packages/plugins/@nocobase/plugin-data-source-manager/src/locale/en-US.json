@@ -67,5 +67,11 @@
   "ai.tools.dataQuery.args.appends": "Related collection to be queried",
   "ai.tools.dataQuery.args.sort": "Sort field names. By default, they are in ascending order. A minus sign before the field name indicates descending order",
   "ai.tools.dataQuery.args.offset": "Offset of records to be queried",
-  "ai.tools.dataQuery.args.limit": "Maximum number of records to be queried"
+  "ai.tools.dataQuery.args.limit": "Maximum number of records to be queried",
+  "ai.skills.dataQuery.title": "Data query",
+  "ai.skills.dataQuery.about": "Using tools to query data or counting data from specified datasource",
+  "ai.skills.dataModeling.title": "Data modeling",
+  "ai.skills.dataModeling.about": "helps translate business scenarios into normalized database schemas with table declarations and relationship diagrams.",
+  "ai.skills.dataMetadata.title": "Data metadata",
+  "ai.skills.dataMetadata.about": "helps get collection metadata (data model, like database table definition, RESTful API definition), like collection definition, field metadata"
 }

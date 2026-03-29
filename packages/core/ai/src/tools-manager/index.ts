@@ -54,6 +54,9 @@ export class DefaultToolsManager implements ToolsManager {
     const list = _.isArray(options) ? options : [options];
     for (const item of list) {
       const toolsEntry = { ...item } as ToolsEntry;
+      if (!toolsEntry.from) {
+        toolsEntry.from = 'loader';
+      }
       if (!toolsEntry.execution) {
         toolsEntry.execution = 'backend';
       }

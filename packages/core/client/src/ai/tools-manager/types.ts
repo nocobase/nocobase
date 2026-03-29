@@ -57,6 +57,7 @@ export type FrontendTools = ToolsOptions;
 
 export type BackendTools = {
   scope: Scope;
+  from: From;
   defaultPermission?: Permission;
   silence?: boolean;
   introduction?: {
@@ -93,3 +94,4 @@ export type ToolsFilter = {
 
 export type Scope = 'SPECIFIED' | 'GENERAL' | 'CUSTOM';
 export type Permission = 'ASK' | 'ALLOW';
+export type From = 'loader' | 'workflow' | 'mcp';

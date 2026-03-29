@@ -773,4 +773,55 @@ describe('workflow > instructions > request', () => {
       expect(result.code).toBe('ECONNABORTED');
     });
   });
+
+  describe('validation', () => {
+    let validationWorkflow;
+
+    beforeEach(async () => {
+      validationWorkflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+    });
+
+    it('should accept when url is not provided', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: {} },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should reject when method is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'INVALID' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should reject when contentType is invalid', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', contentType: 'invalid' } },
+      });
+      expect(status).toBe(400);
+    });
+
+    it('should accept with valid config', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost', method: 'POST' } },
+      });
+      expect(status).toBe(200);
+    });
+
+    it('should accept with url only', async () => {
+      const agent = app.agent();
+      const { status } = await agent.resource('workflows.nodes', validationWorkflow.id).create({
+        values: { type: 'request', config: { url: 'http://localhost' } },
+      });
+      expect(status).toBe(200);
+    });
+  });
 });

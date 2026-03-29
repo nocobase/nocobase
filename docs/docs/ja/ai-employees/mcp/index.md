@@ -18,6 +18,22 @@ NocoBase MCP Server プラグインを有効にすると、NocoBase アプリは
 
 このエンドポイントは `streamable HTTP` トランスポートを使用します。
 
+`x-mcp-packages` リクエストヘッダーを使うと、MCP が公開するパッケージ API を制御できます。例:
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+このヘッダーには完全なパッケージ名を指定できます。scope が省略されている場合は、自動的に `@nocobase/` が補われます。デフォルトでは、MCP は次のパッケージ API を読み込みます。
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## 提供される機能
 
 - NocoBase コアおよび各種プラグイン API
@@ -68,6 +84,57 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
 ```bash
 claude
 /mcp
+```
+
+### OpenCode
+
+#### API Key 認証を使用する
+
+まず API Keys プラグインを有効にし、API Key を作成します。`opencode.json` を設定します。
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### OAuth 認証を使用する
+
+まず IdP: OAuth プラグインを有効にします。`opencode.json` を設定します。
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+ログイン認証
+
+```bash
+opencode mcp auth nocobase
+```
+
+デバッグ
+
+```bash
+opencode mcp debug nocobase
 ```
 
 ## Skills と組み合わせて使う

@@ -18,6 +18,17 @@ type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
 
 const SWAGGER_TARGETS = ['swagger.json', 'swagger/index.json', 'swagger'];
+export const DEFAULT_MCP_PACKAGE_PATTERNS = [
+  '@nocobase/plugin-data-source-main',
+  '@nocobase/plugin-data-source-manager',
+  '@nocobase/plugin-workflow*',
+  '@nocobase/plugin-acl',
+  '@nocobase/plugin-users',
+  '@nocobase/plugin-auth',
+  '@nocobase/plugin-client',
+  '@nocobase/plugin-flow-engine',
+  '@nocobase/plugin-ai',
+];
 
 function getSwaggerPrefixes() {
   if (process.env.NODE_ENV === 'production') {
@@ -41,6 +52,33 @@ function loadSwagger(packageName: string): Partial<OpenAPIDocument> {
     }
   }
   return {};
+}
+
+export function normalizePackageName(packageName: string) {
+  const normalized = packageName.trim();
+  if (!normalized) {
+    return '';
+  }
+  if (normalized.startsWith('@')) {
+    return normalized;
+  }
+  return `@nocobase/${normalized}`;
+}
+
+export function normalizePackagePatterns(packageNames: string[] = []) {
+  return [...new Set(packageNames.map(normalizePackageName).filter(Boolean))];
+}
+
+function matchesPackagePattern(packageName: string, pattern: string) {
+  if (pattern.endsWith('*')) {
+    return packageName.startsWith(pattern.slice(0, -1));
+  }
+  return packageName === pattern;
+}
+
+function shouldIncludePackage(packageName: string, patterns?: string[]) {
+  const normalizedPatterns = patterns?.length ? normalizePackagePatterns(patterns) : DEFAULT_MCP_PACKAGE_PATTERNS;
+  return normalizedPatterns.some((pattern) => matchesPackagePattern(packageName, pattern));
 }
 
 function mergeSwagger(target: OpenAPIDocument, source: Partial<OpenAPIDocument>): OpenAPIDocument {
@@ -131,6 +169,26 @@ function joinUrl(baseUrl: string, path: string) {
   return `${normalizedBase}${normalizedPath}`;
 }
 
+function buildQueryValue(value: any) {
+  if (typeof value === 'undefined') {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (Array.isArray(value)) {
+    return value;
+  }
+
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return value;
+}
+
 function buildRequest(
   tool: McpToolDefinitionWithBaseUrl,
   args: Record<string, any> = {},
@@ -156,7 +214,7 @@ function buildRequest(
       continue;
     }
     if (parameter.in === 'query') {
-      query[parameter.name] = value;
+      query[parameter.name] = buildQueryValue(value);
       continue;
     }
     if (parameter.in === 'header') {
@@ -207,8 +265,9 @@ export async function collectMcpToolsFromSwagger(options: {
     resourcer: { options?: { prefix?: string } };
     callback: () => any;
   };
+  packagePatterns?: string[];
 }): Promise<McpTool[]> {
-  const { app } = options;
+  const { app, packagePatterns } = options;
   const plugins = await app.db.getRepository('applicationPlugins').find({
     filter: {
       enabled: true,
@@ -229,11 +288,13 @@ export async function collectMcpToolsFromSwagger(options: {
     ],
   } as OpenAPIDocument;
 
-  swagger = mergeSwagger(swagger, loadSwagger('@nocobase/server'));
+  if (shouldIncludePackage('@nocobase/server', packagePatterns)) {
+    swagger = mergeSwagger(swagger, loadSwagger('@nocobase/server'));
+  }
 
   for (const plugin of plugins) {
     const packageName = plugin.get('packageName');
-    if (!packageName) {
+    if (!packageName || !shouldIncludePackage(packageName, packagePatterns)) {
       continue;
     }
     const pluginSwagger = loadSwagger(packageName);

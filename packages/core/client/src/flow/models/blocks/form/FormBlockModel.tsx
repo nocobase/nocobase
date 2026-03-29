@@ -508,6 +508,16 @@ const getOuterHeight = (element?: HTMLElement | null) => {
   return rect.height + marginTop + marginBottom;
 };
 
+const normalizeCssSize = (value?: string | number | null) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'number') {
+    return `${value}px`;
+  }
+  return /^\d+(\.\d+)?$/.test(value) ? `${value}px` : value;
+};
+
 const useFormGridHeight = ({
   heightMode,
   containerRef,
@@ -578,6 +588,16 @@ export const FormBlockContent = ({
   const actionsRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLDivElement>(null);
   const isFixedHeight = heightMode === 'specifyValue' || heightMode === 'fullHeight';
+  const actionsStyle: React.CSSProperties = {
+    paddingTop: model.context?.themeToken?.padding,
+  };
+  const horizontalLabelWidth =
+    layoutProps?.layout === 'horizontal' ? normalizeCssSize(layoutProps?.labelWidth) : undefined;
+
+  if (horizontalLabelWidth) {
+    actionsStyle.marginInlineStart = horizontalLabelWidth;
+  }
+
   const gridHeight = useFormGridHeight({
     heightMode,
     containerRef,
@@ -616,7 +636,7 @@ export const FormBlockContent = ({
       <div ref={containerRef} style={containerStyle}>
         {grid}
         {actions ? (
-          <div style={{ paddingTop: model.context?.themeToken?.padding }} ref={actionsRef}>
+          <div style={actionsStyle} ref={actionsRef}>
             {actions}
           </div>
         ) : null}

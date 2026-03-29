@@ -294,12 +294,9 @@ export default {
         description: [
           'Create collection-level independent permission config for a role in a data source.',
           'Request body usually includes `name`, `dataSourceKey`, `usingActionsConfig`, and `actions`.',
+          'The server uses the role path parameter plus request-body `name` and `dataSourceKey` to create the record.',
         ].join('\n'),
-        parameters: [
-          { $ref: '#/components/parameters/RoleNamePath' },
-          { $ref: '#/components/parameters/ResourceNameQuery' },
-          { $ref: '#/components/parameters/FilterQuery' },
-        ],
+        parameters: [{ $ref: '#/components/parameters/RoleNamePath' }, { $ref: '#/components/parameters/FilterQuery' }],
         requestBody: {
           required: true,
           content: {
@@ -329,10 +326,9 @@ export default {
         tags: ['roles.dataSourceResources'],
         summary: 'Get one collection-level independent ACL permission for a role',
         description:
-          'Get one collection-level independent permission config. Target it with a `filter` such as `{ name, dataSourceKey }`.',
+          'Get one collection-level independent permission config. Target it with a `filter` such as `{ name, dataSourceKey }`. Do not rely on `filterByTk` for this endpoint.',
         parameters: [
           { $ref: '#/components/parameters/RoleNamePath' },
-          { $ref: '#/components/parameters/ResourcePermissionTkQuery' },
           { $ref: '#/components/parameters/FilterQuery' },
           { $ref: '#/components/parameters/AppendsQuery' },
         ],
@@ -355,12 +351,8 @@ export default {
         tags: ['roles.dataSourceResources'],
         summary: 'Update collection-level independent ACL permissions for a role',
         description:
-          'Update one collection-level independent permission config. You can target the record by `filterByTk` or by a `filter` such as `{ name, dataSourceKey }`.',
-        parameters: [
-          { $ref: '#/components/parameters/RoleNamePath' },
-          { $ref: '#/components/parameters/ResourcePermissionTkQuery' },
-          { $ref: '#/components/parameters/FilterQuery' },
-        ],
+          'Update one collection-level independent permission config. Target it with a `filter` such as `{ name, dataSourceKey }`. Do not rely on `filterByTk` for this endpoint.',
+        parameters: [{ $ref: '#/components/parameters/RoleNamePath' }, { $ref: '#/components/parameters/FilterQuery' }],
         requestBody: {
           required: true,
           content: {

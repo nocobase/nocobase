@@ -232,7 +232,7 @@ export async function readDocEntry(docPath: string): Promise<DocEntryResult> {
 export function createDocsSearchTool(): ToolsOptions {
   const docsModulesDescription = describeDocModules('Docs modules unavailable. Run ai:create-docs-index first.');
   return {
-    scope: 'GENERAL',
+    scope: 'SPECIFIED',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Search documentation")}}',
@@ -301,7 +301,7 @@ Return matching document paths only. ${docsModulesDescription}`,
 
 export function createReadDocEntryTool(): ToolsOptions {
   return {
-    scope: 'GENERAL',
+    scope: 'SPECIFIED',
     defaultPermission: 'ALLOW',
     introduction: {
       title: '{{t("Read documentation file")}}',

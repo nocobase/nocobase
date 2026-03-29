@@ -18,6 +18,22 @@ pkg: '@nocobase/plugin-mcp-server'
 
 该地址使用 `streamable HTTP` 传输协议。
 
+支持通过请求头 `x-mcp-packages` 控制 MCP 暴露哪些包的接口，例如：
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+该请求头支持传完整包名，未带 scope 时会自动补成 `@nocobase/`。默认加载以下包接口：
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## 提供能力
 
 - NocoBase 内核及各类插件接口
@@ -33,7 +49,7 @@ pkg: '@nocobase/plugin-mcp-server'
 
 ```bash
 export NOCOBASE_API_TOKEN=<your_api_key>
-codex mcp add nocobase --url http://<host>:<port>/api/mcp --bearer-token-env-var NOCOBASE_API_TOKEN
+codex mcp add nocobase --url https://<host>:<port>/api/mcp --bearer-token-env-var NOCOBASE_API_TOKEN
 ```
 
 #### 使用 OAuth 认证
@@ -41,7 +57,7 @@ codex mcp add nocobase --url http://<host>:<port>/api/mcp --bearer-token-env-var
 先启用 IdP: OAuth 插件。
 
 ```bash
-codex mcp add nocobase --url http://<host>:<port>/api/mcp
+codex mcp add nocobase --url https://<host>:<port>/api/mcp
 codex mcp login nocobase --scopes mcp,offline_access
 ```
 
@@ -52,7 +68,7 @@ codex mcp login nocobase --scopes mcp,offline_access
 先启用 API Keys 插件，并创建一个 API Key。
 
 ```bash
-claude mcp add --transport http nocobase http://<host>:<port>/api/mcp --header "Authorization: Bearer <your_api_key>"
+claude mcp add --transport http nocobase https://<host>:<port>/api/mcp --header "Authorization: Bearer <your_api_key>"
 ```
 
 #### 使用 OAuth 认证
@@ -60,7 +76,7 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp --header "
 先启用 IdP: OAuth 插件。
 
 ```bash
-claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
+claude mcp add --transport http nocobase https://<host>:<port>/api/mcp
 ```
 
 执行完成后，打开 Claude，选择对应的 MCP 服务进行登录：
@@ -68,6 +84,57 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
 ```bash
 claude
 /mcp
+```
+
+### OpenCode
+
+#### 使用 API Key 认证
+
+先启用 API Keys 插件，并创建一个 API Key。配置 `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### 使用 OAuth 认证
+
+先启用 IdP: OAuth 插件。配置 `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+登录认证
+
+```bash
+opencode mcp auth nocobase
+```
+
+Debug
+
+```bash
+opencode mcp debug nocobase
 ```
 
 ## 配合 Skills 使用

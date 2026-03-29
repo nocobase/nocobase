@@ -13,8 +13,8 @@
 - 이미 기초적인 NocoBase 실행 환경을 갖추고 있어야 합니다. 메인 시스템 설치에 대해서는 상세한 [공식 설치 문서](https://docs-cn.nocobase.com/welcome/getting-started/installation)를 참고하십시오.
 - NocoBase 버전 **2.0.0-beta.5 이상**
 - 워크오더 시스템의 해당 파일을 이미 다운로드했습니다:
-  - **백업 파일**: [nocobase_tts_v2_backup_260302.nbdata](https://static-docs.nocobase.com/nocobase_tts_v2_backup_260302.nbdata) - 방법 1에 적용
-  - **SQL 파일**: [nocobase_tts_v2_sql_260302.zip](https://static-docs.nocobase.com/nocobase_tts_v2_sql_260302.zip) - 방법 2에 적용
+  - **백업 파일**: [nocobase_tickets_v2_backup_260324.nbdata](https://static-docs.nocobase.com/nocobase_tickets_v2_backup_260324.nbdata) - 방법 1에 적용
+  - **SQL 파일**: [nocobase_tickets_v2_sql_260324.zip](https://static-docs.nocobase.com/nocobase_tickets_v2_sql_260324.zip) - 방법 2에 적용
 
 **중요 설명**:
 - 본 솔루션은 **PostgreSQL 16** 데이터베이스를 기반으로 제작되었습니다. 귀하의 환경에서 PostgreSQL 16을 사용 중인지 확인하십시오.

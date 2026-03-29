@@ -15,11 +15,15 @@ import { FieldModel } from '../base';
 
 export class DisplayCheckboxFieldModel extends FieldModel {
   public render() {
-    const { value, showUnchecked } = this.props;
+    const { value, showUnchecked, style, className } = this.props;
     if (value) {
-      return <CheckOutlined style={{ color: '#52c41a' }} />;
+      return <CheckOutlined className={className} style={{ color: '#52c41a', ...(style || {}) }} />;
     }
-    return showUnchecked ? <CloseOutlined style={{ color: '#ff4d4f' }} /> : <Checkbox disabled />;
+    return showUnchecked ? (
+      <CloseOutlined className={className} style={{ color: '#ff4d4f', ...(style || {}) }} />
+    ) : (
+      <Checkbox className={className} style={style} disabled />
+    );
   }
 }
 

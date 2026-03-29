@@ -18,6 +18,22 @@ Nach dem Aktivieren des NocoBase MCP-Server-Plugins stellt deine NocoBase-Anwend
 
 Dieser Endpunkt verwendet das Transportprotokoll `streamable HTTP`.
 
+Über den Request-Header `x-mcp-packages` kannst du steuern, welche Paket-APIs MCP bereitstellt, zum Beispiel:
+
+`x-mcp-packages: @nocobase/server,plugin-workflow*,plugin-users`
+
+Der Header akzeptiert vollständige Paketnamen. Wenn kein Scope angegeben ist, wird automatisch `@nocobase/` ergänzt. Standardmäßig lädt MCP die APIs dieser Pakete:
+
+- `@nocobase/plugin-data-source-main`
+- `@nocobase/plugin-data-source-manager`
+- `@nocobase/plugin-workflow*`
+- `@nocobase/plugin-acl`
+- `@nocobase/plugin-users`
+- `@nocobase/plugin-auth`
+- `@nocobase/plugin-client`
+- `@nocobase/plugin-flow-engine`
+- `@nocobase/plugin-ai`
+
 ## Funktionen
 
 - NocoBase-Kern- und Plugin-APIs
@@ -68,6 +84,57 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
 ```bash
 claude
 /mcp
+```
+
+### OpenCode
+
+#### Authentifizierung mit API Key
+
+Aktiviere zuerst das Plugin API Keys und erstelle einen API Key. Konfiguriere `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### Authentifizierung mit OAuth
+
+Aktiviere zuerst das Plugin IdP: OAuth. Konfiguriere `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+Anmeldung
+
+```bash
+opencode mcp auth nocobase
+```
+
+Debug
+
+```bash
+opencode mcp debug nocobase
 ```
 
 ## Zusammen mit Skills verwenden

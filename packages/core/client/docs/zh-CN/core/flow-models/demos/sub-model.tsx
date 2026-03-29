@@ -28,6 +28,10 @@ class FlowModelRepository
     return this.load(query.uid);
   }
 
+  async ensure(values) {
+    return await this.findOne(values);
+  }
+
   // 从本地存储加载模型数据
   async load({ uid }) {
     const data = localStorage.getItem(`flow-model:${uid}`);
@@ -57,25 +61,30 @@ class FlowModelRepository
     const currentData = _.omit(data, [...Object.keys(model.subModels)]);
     localStorage.setItem(`flow-model:${model.uid}`, JSON.stringify(currentData));
     for (const subModelKey of Object.keys(model.subModels)) {
-      if (!model.subModels[subModelKey]) continue;
-      if (Array.isArray(model.subModels[subModelKey])) {
-        model.subModels[subModelKey].forEach((subModel: FlowModel) => {
-          localStorage.setItem(`flow-model:${subModel.uid}`, JSON.stringify(subModel.serialize()));
+      const subModel = model.subModels[subModelKey] as FlowModel | FlowModel[] | undefined;
+      if (!subModel) continue;
+      if (Array.isArray(subModel)) {
+        subModel.forEach((item: FlowModel) => {
+          localStorage.setItem(`flow-model:${item.uid}`, JSON.stringify(item.serialize()));
         });
-      } else if (model.subModels[subModelKey] instanceof FlowModel) {
-        localStorage.setItem(
-          `flow-model:${model.subModels[subModelKey].uid}`,
-          JSON.stringify(model.subModels[subModelKey].serialize()),
-        );
+      } else if (subModel instanceof FlowModel) {
+        localStorage.setItem(`flow-model:${subModel.uid}`, JSON.stringify(subModel.serialize()));
       }
     }
     return data;
   }
 
-  // 从本地存储中删除模型数据
   async destroy(uid: string) {
     localStorage.removeItem(`flow-model:${uid}`);
     return true;
+  }
+
+  async move(sourceId: string, targetId: string, position: 'before' | 'after') {
+    return;
+  }
+
+  async duplicate(uid: string) {
+    return null;
   }
 }
 

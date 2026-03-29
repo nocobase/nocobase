@@ -75,7 +75,7 @@ export class WSServer extends EventEmitter {
         const handleAppName = await Gateway.getInstance().getRequestHandleAppName({
           url: client.url,
           headers: client.headers,
-        });
+        } as any);
 
         for (const tag of client.tags) {
           if (tag.startsWith('app#')) {

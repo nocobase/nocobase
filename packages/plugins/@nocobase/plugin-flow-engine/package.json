@@ -4,9 +4,8 @@
   "displayName.zh-CN": "前端流引擎",
   "description": "",
   "description.zh-CN": "",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.13",
   "main": "./dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "license": "Apache-2.0",
   "devDependencies": {
     "antd": "5.x",
@@ -15,15 +14,17 @@
     "koa-static": "^5.0.0"
   },
   "dependencies": {
+    "ajv": "^8.17.1",
     "ses": "^1.14.0"
   },
   "peerDependencies": {
-    "@nocobase/client": "workspace:*",
-    "@nocobase/database": "workspace:*",
-    "@nocobase/plugin-localization": "workspace:*",
-    "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*",
-    "@nocobase/utils": "workspace:*"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-localization": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

@@ -1,14 +1,13 @@
 {
   "name": "@nocobase/resourcer",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.13",
   "description": "",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "Apache-2.0",
   "dependencies": {
-    "@nocobase/utils": "workspace:*",
+    "@nocobase/utils": "2.1.0-alpha.13",
     "deepmerge": "^4.2.2",
-    "fast-glob": "^3.3.1",
     "koa-compose": "^4.1.0",
     "lodash": "^4.17.21",
     "path-to-regexp": "^6.3.0",

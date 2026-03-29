@@ -11,6 +11,7 @@ import { once } from 'node:events';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import winston, { Logger } from 'winston';
+import Joi from 'joi';
 
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
@@ -75,6 +76,20 @@ export default class ScriptInstruction extends Instruction {
       result,
     };
   }
+
+  configSchema = Joi.object({
+    content: Joi.string(),
+    timeout: Joi.number(),
+    continue: Joi.boolean(),
+    arguments: Joi.array()
+      .items(
+        Joi.object({
+          name: Joi.string().required(),
+          value: Joi.any(),
+        }),
+      )
+      .optional(),
+  });
 
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const { content = '', continue: cont, timeout } = node.config as ScriptConfig;

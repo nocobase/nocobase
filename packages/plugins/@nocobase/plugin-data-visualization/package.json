@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "2.1.0-alpha.10",
+  "version": "2.1.0-alpha.13",
   "displayName": "Data visualization",
   "displayName.ru-RU": "Визуализация данных",
   "displayName.zh-CN": "数据可视化",
@@ -8,7 +8,6 @@
   "description.ru-RU": "Предоставляет функции визуализации данных: включает блоки графиков и фильтрации графиков, поддерживает линейные, областные, столбчатые и более десятка других типов графиков, а также возможность расширения дополнительными типами.",
   "description.zh-CN": "提供数据可视化功能，包含图表区块和图表筛选区块，支持折线图、面积图、柱状图等十几种图表，你也可以扩展更多图表类型。",
   "main": "dist/server/index.js",
-  "types": "./dist/server/index.d.ts",
   "homepage": "https://docs.nocobase.com/handbook/data-visualization",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-visualization",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-visualization",
@@ -37,15 +36,16 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "workspace:*",
-    "@nocobase/cache": "workspace:*",
-    "@nocobase/client": "workspace:*",
-    "@nocobase/database": "workspace:*",
-    "@nocobase/plugin-ai": "workspace:*",
-    "@nocobase/plugin-data-source-main": "workspace:*",
-    "@nocobase/server": "workspace:*",
-    "@nocobase/test": "workspace:*",
-    "@nocobase/utils": "workspace:*"
+    "@nocobase/actions": "2.x",
+    "@nocobase/cache": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/plugin-ai": "2.x",
+    "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

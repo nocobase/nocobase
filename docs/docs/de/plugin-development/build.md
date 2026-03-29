@@ -12,10 +12,10 @@ Wenn Sie die Build-Konfiguration anpassen möchten, können Sie im Stammverzeich
 import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
-  modifyViteConfig: (config) => {
-    // Vite wird verwendet, um den Code für den `src/client`-Bereich zu bündeln.
+  modifyRsbuildConfig: (config) => {
+    // Rsbuild wird verwendet, um den Code für den `src/client`-Bereich zu bündeln.
 
-    // Passen Sie die Vite-Konfiguration an. Weitere Informationen finden Sie unter: https://vitejs.dev/guide/
+    // Passen Sie die Rsbuild-Konfiguration an. Weitere Informationen finden Sie unter: https://rsbuild.rs/guide/configuration/rsbuild
     return config
   },
   modifyTsupConfig: (config) => {
