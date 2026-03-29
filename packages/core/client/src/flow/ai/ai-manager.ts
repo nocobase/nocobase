@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '../application';
+import type { Application } from '../../application';
 import { DefaultToolsManager, ToolsManager } from './tools-manager';
 
 export class AIManager {

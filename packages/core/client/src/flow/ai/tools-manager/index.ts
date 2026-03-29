@@ -9,7 +9,7 @@
 
 import { Registry } from '@nocobase/utils/client';
 import { BackendTools, FrontendTools, ToolsEntry, ToolsFilter, ToolsManager, ToolsOptions } from './types';
-import { Application } from '../../application';
+import type { Application } from '../../../application';
 
 export class DefaultToolsManager implements ToolsManager {
   constructor(

@@ -8,8 +8,8 @@
  */
 
 import type { ComponentType } from 'react';
-import type { Application } from '../../application';
 import { Registry } from '@nocobase/utils/client';
+import type { Application } from '../../../application';
 
 export interface ToolsManager extends ToolsRegistration {
   listTools(filter?: ToolsFilter): Promise<ToolsEntry[]>;

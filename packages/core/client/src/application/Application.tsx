@@ -59,7 +59,7 @@ import { useAclSnippets } from './hooks/useAclSnippets';
 import { SystemSettingsSource } from '../flow/system-settings';
 import type { RequireJS } from './utils/requirejs';
 import { RouteRepository } from './RouteRepository';
-import { AIManager } from '../ai';
+import { AIManager } from '../flow/ai';
 
 type JsonLogic = {
   addOperation: (name: string, fn?: any) => void;
