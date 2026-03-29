@@ -10,7 +10,6 @@
 import { define, observable, reaction } from '@formily/reactive';
 import { FlowModel } from '@nocobase/flow-engine';
 import { AdminShellProvider } from '../../../admin-shell';
-import { NocoBaseDesktopRoute } from '../../../admin-shell/route-types';
 import { AdminLayoutRouteCoordinator, type RoutePageMeta } from '../../../flow/admin-shell/AdminLayoutRouteCoordinator';
 import { AdminLayoutComponent } from '../../../flow/admin-shell/admin-layout';
 import React from 'react';
@@ -20,6 +19,7 @@ import {
   getAdminLayoutMenuInitializerButton,
   reconcileAdminLayoutMenuItems,
 } from '../../../flow/admin-shell/admin-layout';
+import { NocoBaseDesktopRoute } from 'packages/core/client-v2/src/flow-compat';
 
 type AdminLayoutStructure = {
   subModels: {

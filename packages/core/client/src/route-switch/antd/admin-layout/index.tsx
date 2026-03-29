@@ -12,11 +12,7 @@ import React, { useEffect, useRef } from 'react';
 import { AdminDynamicPage, MobileLayoutProvider } from '../../../admin-shell';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
-import {
-  ADMIN_LAYOUT_MODEL_UID,
-  AdminLayoutMenuItemModel,
-  shouldRenderIconInTitle,
-} from '../../../flow/admin-shell/admin-layout';
+import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel } from '../../../flow/admin-shell/admin-layout';
 import { AdminLayoutModel } from './AdminLayoutModel';
 import { userCenterSettings } from './userCenterSettings';
 
