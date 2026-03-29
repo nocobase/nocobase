@@ -23,31 +23,32 @@ const mockColorTextTertiary = '#8c8c8c';
 vi.mock('antd', async (importOriginal) => {
   const actual = await importOriginal<any>();
   const Dropdown = (props: any) => {
+    const { children, getPopupContainer, onOpenChange, open } = props;
     const ref = React.useRef<HTMLSpanElement>(null);
     const [popupContainer, setPopupContainer] = React.useState('');
 
     React.useEffect(() => {
-      if (!ref.current || typeof props.getPopupContainer !== 'function') {
+      if (!ref.current || typeof getPopupContainer !== 'function') {
         setPopupContainer('');
         return;
       }
 
-      const container = props.getPopupContainer(ref.current);
+      const container = getPopupContainer(ref.current);
       setPopupContainer(container?.id || container?.className || container?.tagName?.toLowerCase() || '');
-    }, [props.getPopupContainer, props.open]);
+    }, [getPopupContainer, open]);
 
     return React.createElement(
       'span',
       {
         ref,
         'data-testid': 'dropdown',
-        'data-open': props.open ? 'true' : 'false',
+        'data-open': open ? 'true' : 'false',
         'data-popup-container': popupContainer,
-        'data-has-popup-container': typeof props.getPopupContainer === 'function' ? 'true' : 'false',
-        onMouseEnter: () => props.onOpenChange?.(true, { source: 'trigger' }),
-        onMouseLeave: () => props.onOpenChange?.(false, { source: 'trigger' }),
+        'data-has-popup-container': typeof getPopupContainer === 'function' ? 'true' : 'false',
+        onMouseEnter: () => onOpenChange?.(true, { source: 'trigger' }),
+        onMouseLeave: () => onOpenChange?.(false, { source: 'trigger' }),
       },
-      props.children,
+      children,
     );
   };
   const App = Object.assign(({ children }: any) => React.createElement(React.Fragment, null, children), {

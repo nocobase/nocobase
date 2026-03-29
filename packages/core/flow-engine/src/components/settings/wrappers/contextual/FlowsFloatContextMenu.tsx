@@ -19,45 +19,55 @@ import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
 import { useFlowContext } from '../../../..';
 import { observer } from '../../../../reactive';
+import {
+  omitToolbarPortalInsetStyle,
+  ToolbarPortalRect,
+  ToolbarPortalRenderSnapshot,
+  useFloatToolbarPortal,
+} from './useFloatToolbarPortal';
+import { useFloatToolbarVisibility } from './useFloatToolbarVisibility';
 
 const TOOLBAR_Z_INDEX = 999;
-const TOOLBAR_HIDE_DELAY = 180;
-const APP_CONTAINER_SELECTOR = '#nocobase-app-container';
-const CHILD_FLOAT_MENU_ACTIVITY_EVENT = 'nb-float-menu-child-activity';
-const DRAWER_CONTENT_WRAPPER_SELECTOR = '.ant-drawer-content-wrapper';
-const DRAWER_CONTENT_SELECTOR = '.ant-drawer-content';
-const DRAWER_ROOT_SELECTOR = '.ant-drawer-root';
-const MODAL_CONTENT_SELECTOR = '.ant-modal-content';
-const MODAL_SELECTOR = '.ant-modal';
-const MODAL_WRAP_SELECTOR = '.ant-modal-wrap';
-const MODAL_ROOT_SELECTOR = '.ant-modal-root';
 
 type ToolbarPosition = 'inside' | 'above' | 'below';
-type ToolbarPortalPositioningMode = 'fixed' | 'absolute';
 
-interface ToolbarPortalHostConfig {
-  mountElement: HTMLElement;
-  positioningElement: HTMLElement;
-  positioningMode: ToolbarPortalPositioningMode;
-}
-
-interface ToolbarPortalRenderSnapshot {
-  mountElement: HTMLElement;
-  positioningMode: ToolbarPortalPositioningMode;
-}
-
-interface ToolbarPortalRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
-interface ToolbarPortalInset {
-  top: number;
-  left: number;
-  right: number;
-  bottom: number;
+interface BaseFloatContextMenuProps {
+  children?: React.ReactNode;
+  enabled?: boolean;
+  showDeleteButton?: boolean;
+  showCopyUidButton?: boolean;
+  containerStyle?: React.CSSProperties;
+  /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用。 */
+  toolbarStyle?: React.CSSProperties;
+  className?: string;
+  /**
+   * @default true
+   */
+  showBorder?: boolean;
+  /**
+   * @default true
+   */
+  showBackground?: boolean;
+  /**
+   * @default false
+   */
+  showTitle?: boolean;
+  /**
+   * @default false
+   */
+  showDragHandle?: boolean;
+  /**
+   * Settings menu levels: 1=current model only (default), 2=include sub-models
+   */
+  settingsMenuLevel?: number;
+  /**
+   * Extra toolbar items to add to this context menu instance
+   */
+  extraToolbarItems?: ToolbarItemConfig[];
+  /**
+   * @default 'inside'
+   */
+  toolbarPosition?: ToolbarPosition;
 }
 
 const hostContainerStyles = css`
@@ -249,26 +259,6 @@ const toolbarContainerStyles = ({
         0 8px 0 rgba(255, 255, 255, 0.9);
     }
   }
-
-  > .resize-handle-bottom {
-    bottom: -4px;
-    left: 50%;
-    width: 20px;
-    height: 6px;
-    cursor: ns-resize;
-    transform: translateX(-50%);
-
-    &::before {
-      top: 50%;
-      left: 6px;
-      width: 2px;
-      height: 2px;
-      transform: translateY(-50%);
-      box-shadow:
-        4px 0 0 rgba(255, 255, 255, 0.9),
-        8px 0 0 rgba(255, 255, 255, 0.9);
-    }
-  }
 `;
 
 // 检测直接子节点里是否有按钮，保留原来的 inline-block 兼容行为。
@@ -328,328 +318,49 @@ const renderToolbarItems = (
     });
 };
 
-const isNodeWithin = (target: EventTarget | null, container: HTMLElement | null): boolean => {
-  return target instanceof Node && !!container?.contains(target);
-};
-
-const getToolbarModelUidFromTarget = (target: EventTarget | null): string | null => {
-  if (!(target instanceof Element)) {
-    return null;
-  }
-
-  return target.closest('.nb-toolbar-container[data-model-uid]')?.getAttribute('data-model-uid') || null;
-};
-
-const isNodeWithinDescendantFloatToolbar = (
-  target: EventTarget | null,
-  container: HTMLElement | null,
-  currentModelUid: string,
-): boolean => {
-  const targetModelUid = getToolbarModelUidFromTarget(target);
-  if (!container || !targetModelUid || targetModelUid === currentModelUid) {
-    return false;
-  }
-
-  return Array.from(
-    container.querySelectorAll<HTMLElement>('[data-has-float-menu="true"][data-float-menu-model-uid]'),
-  ).some(
-    (hostElement) =>
-      hostElement !== container && hostElement.getAttribute('data-float-menu-model-uid') === targetModelUid,
-  );
-};
-
-const defaultPortalRect: ToolbarPortalRect = {
-  top: 0,
-  left: 0,
-  width: 0,
-  height: 0,
-};
-
-const getClosestElement = (hostEl: HTMLElement | null, selector: string) =>
-  hostEl?.closest(selector) as HTMLElement | null;
-
-// 优先解析 popup 自己的挂载根，保证 drawer / modal 内的 overlay 与内容共享坐标系。
-const getPopupPortalHostConfig = (hostEl: HTMLElement | null): ToolbarPortalHostConfig | null => {
-  const drawerWrapper = getClosestElement(hostEl, DRAWER_CONTENT_WRAPPER_SELECTOR);
-  if (drawerWrapper) {
-    return {
-      mountElement: drawerWrapper,
-      positioningElement: drawerWrapper,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const modalContent = getClosestElement(hostEl, MODAL_CONTENT_SELECTOR);
-  if (modalContent) {
-    return {
-      mountElement: modalContent,
-      positioningElement: modalContent,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const modal = getClosestElement(hostEl, MODAL_SELECTOR);
-  if (modal) {
-    return {
-      mountElement: modal,
-      positioningElement: modal,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const modalWrap = getClosestElement(hostEl, MODAL_WRAP_SELECTOR);
-  if (modalWrap) {
-    return {
-      mountElement: modalWrap,
-      positioningElement: modalWrap,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const drawerContent = getClosestElement(hostEl, DRAWER_CONTENT_SELECTOR);
-  if (drawerContent) {
-    const drawerContentWrapper = getClosestElement(drawerContent, DRAWER_CONTENT_WRAPPER_SELECTOR) || drawerContent;
-    return {
-      mountElement: drawerContentWrapper,
-      positioningElement: drawerContentWrapper,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const drawerRoot = getClosestElement(hostEl, DRAWER_ROOT_SELECTOR);
-  if (drawerRoot) {
-    return {
-      mountElement: drawerRoot,
-      positioningElement: drawerRoot,
-      positioningMode: 'absolute',
-    };
-  }
-
-  const modalRoot = getClosestElement(hostEl, MODAL_ROOT_SELECTOR);
-  if (modalRoot) {
-    return {
-      mountElement: modalRoot,
-      positioningElement: modalRoot,
-      positioningMode: 'absolute',
-    };
-  }
-
-  return null;
-};
-
-// portal 容器解析顺序：popup root -> #nocobase-app-container -> document.body。
-const getToolbarPortalHostConfig = (hostEl: HTMLElement | null): ToolbarPortalHostConfig | null => {
-  if (typeof document === 'undefined') {
-    return null;
-  }
-
-  const popupRootConfig = getPopupPortalHostConfig(hostEl);
-  if (popupRootConfig) {
-    return popupRootConfig;
-  }
-
-  const appContainer = document.querySelector(APP_CONTAINER_SELECTOR) as HTMLElement | null;
-  if (appContainer) {
-    return {
-      mountElement: appContainer,
-      positioningElement: appContainer,
-      positioningMode: 'absolute',
-    };
-  }
-
-  return {
-    mountElement: document.body,
-    positioningElement: document.body,
-    positioningMode: 'fixed',
-  };
-};
-
-const parseToolbarInsetValue = (value: React.CSSProperties['top']) => {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const trimmedValue = value.trim();
-    if (/^-?\d+(\.\d+)?(px)?$/.test(trimmedValue)) {
-      return Number.parseFloat(trimmedValue);
-    }
-  }
-
-  return 0;
-};
-
-const resolveToolbarPortalInset = (toolbarStyle?: React.CSSProperties): ToolbarPortalInset => {
-  return {
-    top: parseToolbarInsetValue(toolbarStyle?.top),
-    left: parseToolbarInsetValue(toolbarStyle?.left),
-    right: parseToolbarInsetValue(toolbarStyle?.right),
-    bottom: parseToolbarInsetValue(toolbarStyle?.bottom),
-  };
-};
-
-const omitToolbarPortalInsetStyle = (toolbarStyle?: React.CSSProperties): React.CSSProperties | undefined => {
-  if (!toolbarStyle) {
-    return undefined;
-  }
-
-  const nextStyle = { ...toolbarStyle };
-  delete nextStyle.top;
-  delete nextStyle.left;
-  delete nextStyle.right;
-  delete nextStyle.bottom;
-  return nextStyle;
-};
-
-// 当 portal 容器本身不是实际 offsetParent 时，改用真实定位上下文计算相对坐标。
-const getAbsolutePositioningElement = (
-  toolbarEl: HTMLElement | null,
-  portalHostConfig: ToolbarPortalHostConfig | null,
-) => {
-  if (!portalHostConfig || portalHostConfig.positioningMode !== 'absolute') {
-    return portalHostConfig?.positioningElement || null;
-  }
-
-  const offsetParent = toolbarEl?.offsetParent;
-  if (
-    offsetParent instanceof HTMLElement &&
-    offsetParent !== document.body &&
-    offsetParent !== document.documentElement
-  ) {
-    return offsetParent;
-  }
-
-  return portalHostConfig.positioningElement;
-};
-
-// 将 host 的 viewport rect 转成 portal 容器内的 overlay rect。
-// `toolbarStyle.top/left/right/bottom` 在这里按 inset 语义处理，而不是直接覆盖定位值。
-const calculatePortalRect = (
-  hostEl: HTMLElement | null,
-  portalHostConfig: ToolbarPortalHostConfig | null,
-  toolbarStyle?: React.CSSProperties,
-  toolbarEl?: HTMLElement | null,
-): ToolbarPortalRect => {
-  if (!hostEl) {
-    return defaultPortalRect;
-  }
-
-  const inset = resolveToolbarPortalInset(toolbarStyle);
-  const hostRect = hostEl.getBoundingClientRect();
-
-  let rect: ToolbarPortalRect;
-  if (!portalHostConfig || portalHostConfig.positioningMode === 'fixed') {
-    rect = {
-      top: hostRect.top,
-      left: hostRect.left,
-      width: hostRect.width,
-      height: hostRect.height,
-    };
-  } else {
-    const positioningElement = getAbsolutePositioningElement(toolbarEl || null, portalHostConfig);
-    const portalHostRect =
-      positioningElement?.getBoundingClientRect() || portalHostConfig.positioningElement.getBoundingClientRect();
-    const scrollTop = positioningElement?.scrollTop ?? portalHostConfig.positioningElement.scrollTop;
-    const scrollLeft = positioningElement?.scrollLeft ?? portalHostConfig.positioningElement.scrollLeft;
-
-    rect = {
-      top: hostRect.top - portalHostRect.top + scrollTop,
-      left: hostRect.left - portalHostRect.left + scrollLeft,
-      width: hostRect.width,
-      height: hostRect.height,
-    };
-  }
-
-  return {
-    top: rect.top + inset.top,
-    left: rect.left + inset.left,
-    width: Math.max(0, rect.width - inset.left - inset.right),
-    height: Math.max(0, rect.height - inset.top - inset.bottom),
-  };
-};
-
-/**
- * 悬浮工具栏组件接口
- */
-interface ModelProvidedProps {
-  model: FlowModel<any>;
-  children?: React.ReactNode;
-  enabled?: boolean;
-  showDeleteButton?: boolean;
-  showCopyUidButton?: boolean;
-  containerStyle?: React.CSSProperties;
-  /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用。 */
-  toolbarStyle?: React.CSSProperties;
+const buildToolbarContainerClassName = ({
+  showBackground,
+  showBorder,
+  ctx,
+  portalRenderSnapshot,
+  isToolbarVisible,
+  className,
+}: {
+  showBackground: boolean;
+  showBorder: boolean;
+  ctx: any;
+  portalRenderSnapshot: ToolbarPortalRenderSnapshot | null;
+  isToolbarVisible: boolean;
   className?: string;
-  /**
-   * @default true
-   */
-  showBorder?: boolean;
-  /**
-   * @default true
-   */
-  showBackground?: boolean;
-  /**
-   * @default false
-   */
-  showTitle?: boolean;
-  /**
-   * @default false
-   */
-  showDragHandle?: boolean;
-  /**
-   * Settings menu levels: 1=current model only (default), 2=include sub-models
-   */
-  settingsMenuLevel?: number;
-  /**
-   * Extra toolbar items to add to this context menu instance
-   */
-  extraToolbarItems?: ToolbarItemConfig[];
-  /**
-   * @default 'inside'
-   */
-  toolbarPosition?: ToolbarPosition;
+}) =>
+  [
+    toolbarContainerStyles({ showBackground, showBorder, ctx }),
+    'nb-toolbar-portal',
+    portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
+    isToolbarVisible ? 'nb-toolbar-visible' : '',
+    className?.includes('nb-in-template') ? 'nb-in-template' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+const buildToolbarContainerStyle = (
+  portalRect: ToolbarPortalRect,
+  toolbarStyle?: React.CSSProperties,
+): React.CSSProperties => ({
+  top: `${portalRect.top}px`,
+  left: `${portalRect.left}px`,
+  width: `${portalRect.width}px`,
+  height: `${portalRect.height}px`,
+  ...omitToolbarPortalInsetStyle(toolbarStyle),
+});
+
+interface ModelProvidedProps extends BaseFloatContextMenuProps {
+  model: FlowModel<any>;
 }
 
-interface ModelByIdProps {
+interface ModelByIdProps extends BaseFloatContextMenuProps {
   uid: string;
   modelClassName: string;
-  children?: React.ReactNode;
-  enabled?: boolean;
-  showDeleteButton?: boolean;
-  showCopyUidButton?: boolean;
-  containerStyle?: React.CSSProperties;
-  /** 自定义工具栏样式，`top/left/right/bottom` 会作为 portal overlay 的 inset 使用。 */
-  toolbarStyle?: React.CSSProperties;
-  className?: string;
-  /**
-   * @default true
-   */
-  showBorder?: boolean;
-  /**
-   * @default true
-   */
-  showBackground?: boolean;
-  /**
-   * @default false
-   */
-  showTitle?: boolean;
-  /**
-   * @default false
-   */
-  showDragHandle?: boolean;
-  /**
-   * Settings menu levels: 1=current model only (default), 2=include sub-models
-   */
-  settingsMenuLevel?: number;
-  /**
-   * Extra toolbar items to add to this context menu instance
-   */
-  extraToolbarItems?: ToolbarItemConfig[];
-  /**
-   * @default 'inside'
-   */
-  toolbarPosition?: ToolbarPosition;
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;
@@ -705,7 +416,7 @@ const ResizeHandles: React.FC<{
   onMouseLeave?: React.MouseEventHandler<HTMLDivElement>;
 }> = (props) => {
   const isDraggingRef = useRef<boolean>(false);
-  const dragTypeRef = useRef<'left' | 'right' | 'bottom' | 'corner' | null>(null);
+  const dragTypeRef = useRef<'left' | 'right' | null>(null);
   const dragStartPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const { onDragStart, onDragEnd } = props;
 
@@ -715,7 +426,6 @@ const ResizeHandles: React.FC<{
       if (!isDraggingRef.current || !dragTypeRef.current) return;
 
       const deltaX = e.clientX - dragStartPosRef.current.x;
-      const deltaY = e.clientY - dragStartPosRef.current.y;
 
       switch (dragTypeRef.current) {
         case 'left':
@@ -723,16 +433,6 @@ const ResizeHandles: React.FC<{
           break;
         case 'right':
           props.model.parent.emitter.emit('onResizeRight', { resizeDistance: deltaX, model: props.model });
-          break;
-        case 'bottom':
-          props.model.parent.emitter.emit('onResizeBottom', { resizeDistance: deltaY, model: props.model });
-          break;
-        case 'corner':
-          props.model.parent.emitter.emit('onResizeCorner', {
-            widthDelta: deltaX,
-            heightDelta: deltaY,
-            model: props.model,
-          });
           break;
       }
     },
@@ -752,7 +452,7 @@ const ResizeHandles: React.FC<{
   }, [handleDragMove, onDragEnd, props.model]);
 
   const handleDragStart = useCallback(
-    (e: React.MouseEvent, type: 'left' | 'right' | 'bottom' | 'corner') => {
+    (e: React.MouseEvent, type: 'left' | 'right') => {
       e.preventDefault();
       e.stopPropagation();
 
@@ -807,134 +507,67 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     toolbarStyle,
     toolbarPosition = 'inside',
   }: ModelProvidedProps) => {
-    const [hideMenu, setHideMenu] = useState(false);
     const [hasButton, setHasButton] = useState(false);
-    const [isHostHovered, setIsHostHovered] = useState(false);
-    const [isToolbarHovered, setIsToolbarHovered] = useState(false);
-    const [isDraggingToolbar, setIsDraggingToolbar] = useState(false);
-    const [isToolbarPinned, setIsToolbarPinned] = useState(false);
-    const [isHidePending, setIsHidePending] = useState(false);
-    const [activeChildToolbarIds, setActiveChildToolbarIds] = useState<string[]>([]);
-    const [portalRect, setPortalRect] = useState<ToolbarPortalRect>(defaultPortalRect);
-    const [portalRenderSnapshot, setPortalRenderSnapshot] = useState<ToolbarPortalRenderSnapshot | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const toolbarContainerRef = useRef<HTMLDivElement>(null);
-    const portalHostConfigRef = useRef<ToolbarPortalHostConfig | null>(null);
-    const portalRafIdRef = useRef<number | null>(null);
-    const hideToolbarTimerRef = useRef<number | null>(null);
-    const reportedChildActivityToAncestorsRef = useRef(false);
+    const portalActionsRef = useRef<{
+      updatePortalRect: () => void;
+      schedulePortalRectUpdate: () => void;
+    }>({
+      updatePortalRect: () => {},
+      schedulePortalRectUpdate: () => {},
+    });
+    const modelUid = model?.uid || '';
     const flowEngine = useFlowEngine();
-    const hasActiveChildToolbar = activeChildToolbarIds.length > 0;
-    const isToolbarVisible =
-      !hideMenu &&
-      !hasActiveChildToolbar &&
-      (isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned);
-    const shouldRenderToolbar = isToolbarVisible || isToolbarPinned || isDraggingToolbar;
-    const isToolbarInteractionActive =
-      isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned || isHidePending;
-
-    const clearHideToolbarTimer = useCallback(() => {
-      if (hideToolbarTimerRef.current !== null) {
-        window.clearTimeout(hideToolbarTimerRef.current);
-        hideToolbarTimerRef.current = null;
-      }
-      setIsHidePending(false);
+    const updatePortalRectProxy = useCallback(() => {
+      portalActionsRef.current.updatePortalRect();
     }, []);
-
-    const updatePortalRect = useCallback(() => {
-      const hostElement = containerRef.current;
-      if (!hostElement) {
-        return;
-      }
-
-      const nextPortalHostConfig = getToolbarPortalHostConfig(hostElement);
-      portalHostConfigRef.current = nextPortalHostConfig;
-      setPortalRenderSnapshot((prevSnapshot) => {
-        if (!nextPortalHostConfig) {
-          return prevSnapshot === null ? prevSnapshot : null;
-        }
-
-        if (
-          prevSnapshot?.mountElement === nextPortalHostConfig.mountElement &&
-          prevSnapshot?.positioningMode === nextPortalHostConfig.positioningMode
-        ) {
-          return prevSnapshot;
-        }
-
-        return {
-          mountElement: nextPortalHostConfig.mountElement,
-          positioningMode: nextPortalHostConfig.positioningMode,
-        };
-      });
-
-      const nextRect = calculatePortalRect(
-        hostElement,
-        nextPortalHostConfig,
+    const schedulePortalRectUpdateProxy = useCallback(() => {
+      portalActionsRef.current.schedulePortalRectUpdate();
+    }, []);
+    const {
+      isToolbarVisible,
+      shouldRenderToolbar,
+      handleSettingsMenuOpenChange,
+      handleChildHover,
+      handleHostMouseEnter,
+      handleHostMouseLeave,
+      handleToolbarMouseEnter,
+      handleToolbarMouseLeave,
+      handleResizeDragStart,
+      handleResizeDragEnd,
+    } = useFloatToolbarVisibility({
+      modelUid,
+      containerRef,
+      toolbarContainerRef,
+      updatePortalRect: updatePortalRectProxy,
+      schedulePortalRectUpdate: schedulePortalRectUpdateProxy,
+    });
+    const { portalRect, portalRenderSnapshot, getPopupContainer, updatePortalRect, schedulePortalRectUpdate } =
+      useFloatToolbarPortal({
+        active: shouldRenderToolbar,
+        containerRef,
+        toolbarContainerRef,
         toolbarStyle,
-        toolbarContainerRef.current,
-      );
-      setPortalRect((prevRect) => {
-        if (
-          prevRect.top === nextRect.top &&
-          prevRect.left === nextRect.left &&
-          prevRect.width === nextRect.width &&
-          prevRect.height === nextRect.height
-        ) {
-          return prevRect;
-        }
-        return nextRect;
       });
-    }, [toolbarStyle]);
 
-    const schedulePortalRectUpdate = useCallback(() => {
-      if (portalRafIdRef.current !== null) {
-        return;
-      }
-
-      portalRafIdRef.current = window.requestAnimationFrame(() => {
-        portalRafIdRef.current = null;
-        updatePortalRect();
-      });
-    }, [updatePortalRect]);
-
-    const scheduleHideToolbar = useCallback(() => {
-      clearHideToolbarTimer();
-      setIsHidePending(true);
-      hideToolbarTimerRef.current = window.setTimeout(() => {
-        hideToolbarTimerRef.current = null;
-        setIsHidePending(false);
-        if (isDraggingToolbar || isToolbarPinned) {
-          return;
-        }
-        setIsHostHovered(false);
-        setIsToolbarHovered(false);
-      }, TOOLBAR_HIDE_DELAY);
-    }, [clearHideToolbarTimer, isDraggingToolbar, isToolbarPinned]);
-
-    const getPopupContainer = useCallback((triggerNode?: HTMLElement) => {
-      return (
-        portalHostConfigRef.current?.mountElement ||
-        getToolbarPortalHostConfig(triggerNode || containerRef.current)?.mountElement ||
-        document.body
-      );
-    }, []);
-
-    const handleSettingsMenuOpenChange = useCallback((open: boolean) => {
-      setIsToolbarPinned(open);
-    }, []);
+    portalActionsRef.current.updatePortalRect = updatePortalRect;
+    portalActionsRef.current.schedulePortalRectUpdate = schedulePortalRectUpdate;
 
     const toolbarItems = useMemo(
       () =>
-        renderToolbarItems(
-          model,
-          showDeleteButton,
-          showCopyUidButton,
-          flowEngine,
-          settingsMenuLevel,
-          extraToolbarItems,
-          handleSettingsMenuOpenChange,
-          getPopupContainer,
-        ),
+        model
+          ? renderToolbarItems(
+              model,
+              showDeleteButton,
+              showCopyUidButton,
+              flowEngine,
+              settingsMenuLevel,
+              extraToolbarItems,
+              handleSettingsMenuOpenChange,
+              getPopupContainer,
+            )
+          : [],
       [
         extraToolbarItems,
         flowEngine,
@@ -947,147 +580,20 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       ],
     );
 
-    // 监听可见期间的尺寸与滚动变化，持续同步 portal overlay 的坐标。
     useEffect(() => {
-      if (!shouldRenderToolbar) {
+      const container = containerRef.current;
+      if (!container) {
         return;
       }
 
-      updatePortalRect();
-
-      const handleViewportChange = () => {
-        schedulePortalRectUpdate();
+      const syncHasButton = () => {
+        setHasButton(detectButtonInDOM(container));
       };
 
-      const resizeObserver =
-        typeof ResizeObserver !== 'undefined' && containerRef.current
-          ? new ResizeObserver(() => {
-              schedulePortalRectUpdate();
-            })
-          : null;
+      syncHasButton();
 
-      if (containerRef.current) {
-        resizeObserver?.observe(containerRef.current);
-      }
-      if (
-        portalHostConfigRef.current?.mountElement &&
-        portalHostConfigRef.current.mountElement !== containerRef.current
-      ) {
-        resizeObserver?.observe(portalHostConfigRef.current.mountElement);
-      }
-      if (
-        portalHostConfigRef.current?.positioningElement &&
-        portalHostConfigRef.current.positioningElement !== containerRef.current &&
-        portalHostConfigRef.current.positioningElement !== portalHostConfigRef.current.mountElement
-      ) {
-        resizeObserver?.observe(portalHostConfigRef.current.positioningElement);
-      }
-
-      window.addEventListener('resize', handleViewportChange);
-      window.addEventListener('scroll', handleViewportChange, true);
-
-      return () => {
-        resizeObserver?.disconnect();
-        window.removeEventListener('resize', handleViewportChange);
-        window.removeEventListener('scroll', handleViewportChange, true);
-      };
-    }, [schedulePortalRectUpdate, shouldRenderToolbar, updatePortalRect]);
-
-    // 子级工具栏激活时隐藏父级工具栏，避免多层 overlay 同时压住内容。
-    useEffect(() => {
-      const hostElement = containerRef.current;
-      if (!hostElement) {
-        return;
-      }
-
-      const handleChildToolbarActivity = (event: Event) => {
-        const customEvent = event as CustomEvent<{ active?: boolean; modelUid?: string }>;
-        if (!(customEvent.target instanceof HTMLElement) || customEvent.target === hostElement) {
-          return;
-        }
-
-        const childModelUid = customEvent.detail?.modelUid;
-        if (!childModelUid) {
-          return;
-        }
-
-        setActiveChildToolbarIds((prevIds) => {
-          return customEvent.detail?.active
-            ? prevIds.includes(childModelUid)
-              ? prevIds
-              : [...prevIds, childModelUid]
-            : prevIds.filter((id) => id !== childModelUid);
-        });
-      };
-
-      hostElement.addEventListener(CHILD_FLOAT_MENU_ACTIVITY_EVENT, handleChildToolbarActivity as EventListener);
-      return () => {
-        hostElement.removeEventListener(CHILD_FLOAT_MENU_ACTIVITY_EVENT, handleChildToolbarActivity as EventListener);
-      };
-    }, []);
-
-    // 将当前工具栏的激活状态继续向祖先冒泡。
-    useEffect(() => {
-      const hostElement = containerRef.current;
-      if (!hostElement || reportedChildActivityToAncestorsRef.current === isToolbarInteractionActive) {
-        return;
-      }
-
-      reportedChildActivityToAncestorsRef.current = isToolbarInteractionActive;
-      hostElement.dispatchEvent(
-        new CustomEvent(CHILD_FLOAT_MENU_ACTIVITY_EVENT, {
-          bubbles: true,
-          detail: { active: isToolbarInteractionActive, modelUid: model.uid },
-        }),
-      );
-    }, [isToolbarInteractionActive, model.uid]);
-
-    // 卸载时撤销对子级激活状态的上报，并清理定时器 / raf。
-    useEffect(() => {
-      return () => {
-        if (containerRef.current && reportedChildActivityToAncestorsRef.current) {
-          containerRef.current.dispatchEvent(
-            new CustomEvent(CHILD_FLOAT_MENU_ACTIVITY_EVENT, {
-              bubbles: true,
-              detail: { active: false, modelUid: model.uid },
-            }),
-          );
-          reportedChildActivityToAncestorsRef.current = false;
-        }
-        if (portalRafIdRef.current !== null) {
-          window.cancelAnimationFrame(portalRafIdRef.current);
-        }
-        portalHostConfigRef.current = null;
-        clearHideToolbarTimer();
-      };
-    }, [clearHideToolbarTimer, model.uid]);
-
-    // dropdown 打开期间保持工具栏 pinned，不触发延迟隐藏。
-    useEffect(() => {
-      if (isToolbarPinned) {
-        clearHideToolbarTimer();
-        updatePortalRect();
-      }
-    }, [clearHideToolbarTimer, isToolbarPinned, updatePortalRect]);
-
-    // children 结构变化后，重新检测按钮子节点。
-    useEffect(() => {
-      if (containerRef.current) {
-        setHasButton(detectButtonInDOM(containerRef.current));
-      }
-    }, [children]);
-
-    // DOM 动态变化时同步更新 hasButton。
-    useEffect(() => {
-      if (!containerRef.current) return;
-
-      const observer = new MutationObserver(() => {
-        if (containerRef.current) {
-          setHasButton(detectButtonInDOM(containerRef.current));
-        }
-      });
-
-      observer.observe(containerRef.current, {
+      const observer = new MutationObserver(syncHasButton);
+      observer.observe(container, {
         childList: true,
         subtree: true,
         attributes: true,
@@ -1099,76 +605,6 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       };
     }, []);
 
-    const handleChildHover = useCallback(
-      (e: React.MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const childWithMenu = target.closest('[data-has-float-menu]');
-        const isCurrentHostTarget = !childWithMenu || childWithMenu === containerRef.current;
-
-        if (isCurrentHostTarget) {
-          clearHideToolbarTimer();
-          setIsHostHovered(true);
-        }
-
-        setHideMenu(!!childWithMenu && childWithMenu !== containerRef.current);
-      },
-      [clearHideToolbarTimer],
-    );
-
-    const handleHostMouseEnter = useCallback(() => {
-      clearHideToolbarTimer();
-      setHideMenu(false);
-      updatePortalRect();
-      setIsHostHovered(true);
-    }, [clearHideToolbarTimer, updatePortalRect]);
-
-    const handleHostMouseLeave = useCallback(
-      (e: React.MouseEvent<HTMLDivElement>) => {
-        if (isToolbarPinned) {
-          setIsHostHovered(false);
-          return;
-        }
-        if (isNodeWithin(e.relatedTarget, toolbarContainerRef.current)) {
-          clearHideToolbarTimer();
-          setIsHostHovered(false);
-          setIsToolbarHovered(true);
-          return;
-        }
-        if (isNodeWithinDescendantFloatToolbar(e.relatedTarget, containerRef.current, model.uid)) {
-          clearHideToolbarTimer();
-          setHideMenu(false);
-          setIsHostHovered(true);
-          return;
-        }
-        scheduleHideToolbar();
-      },
-      [clearHideToolbarTimer, isToolbarPinned, model.uid, scheduleHideToolbar],
-    );
-
-    const handleToolbarMouseEnter = useCallback(() => {
-      clearHideToolbarTimer();
-      updatePortalRect();
-      setIsHostHovered(false);
-      setIsToolbarHovered(true);
-    }, [clearHideToolbarTimer, updatePortalRect]);
-
-    const handleToolbarMouseLeave = useCallback(
-      (e: React.MouseEvent<HTMLDivElement>) => {
-        if (isToolbarPinned) {
-          setIsToolbarHovered(false);
-          return;
-        }
-        setIsToolbarHovered(false);
-        if (isNodeWithin(e.relatedTarget, containerRef.current)) {
-          clearHideToolbarTimer();
-          setIsHostHovered(true);
-          return;
-        }
-        scheduleHideToolbar();
-      },
-      [clearHideToolbarTimer, isToolbarPinned, scheduleHideToolbar],
-    );
-
     if (!model) {
       const t = getT(model || ({} as FlowModel));
       return <Alert message={t('Invalid model provided')} type="error" />;
@@ -1178,23 +614,15 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       return <>{children}</>;
     }
 
-    const toolbarContainerClassName = [
-      toolbarContainerStyles({ showBackground, showBorder, ctx: model.context }),
-      'nb-toolbar-portal',
-      portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
-      isToolbarVisible ? 'nb-toolbar-visible' : '',
-      className?.includes('nb-in-template') ? 'nb-in-template' : '',
-    ]
-      .filter(Boolean)
-      .join(' ');
-
-    const toolbarContainerStyle = {
-      top: `${portalRect.top}px`,
-      left: `${portalRect.left}px`,
-      width: `${portalRect.width}px`,
-      height: `${portalRect.height}px`,
-      ...omitToolbarPortalInsetStyle(toolbarStyle),
-    } satisfies React.CSSProperties;
+    const toolbarContainerClassName = buildToolbarContainerClassName({
+      showBackground,
+      showBorder,
+      ctx: model.context,
+      portalRenderSnapshot,
+      isToolbarVisible,
+      className,
+    });
+    const toolbarContainerStyle = buildToolbarContainerStyle(portalRect, toolbarStyle);
 
     const toolbarNode = shouldRenderToolbar ? (
       <div
@@ -1227,15 +655,8 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             model={model}
             onMouseEnter={handleToolbarMouseEnter}
             onMouseLeave={handleToolbarMouseLeave}
-            onDragStart={() => {
-              updatePortalRect();
-              setIsDraggingToolbar(true);
-              schedulePortalRectUpdate();
-            }}
-            onDragEnd={() => {
-              setIsDraggingToolbar(false);
-              schedulePortalRectUpdate();
-            }}
+            onDragStart={handleResizeDragStart}
+            onDragEnd={handleResizeDragEnd}
           />
         )}
       </div>
@@ -1267,24 +688,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
 // 通过 uid + modelClassName 解析 model，再复用主实现。
 const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
-  ({
-    uid,
-    modelClassName,
-    children,
-    enabled = true,
-    showDeleteButton = true,
-    showCopyUidButton = true,
-    containerStyle,
-    className,
-    showTitle = false,
-    settingsMenuLevel,
-    extraToolbarItems,
-    toolbarPosition,
-    showBackground = true,
-    showBorder = true,
-    toolbarStyle,
-    showDragHandle = false,
-  }) => {
+  ({ uid, modelClassName, children, ...restProps }) => {
     const model = useFlowModelById(uid, modelClassName);
     const flowEngine = useFlowEngine();
 
@@ -1293,22 +697,7 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
     }
 
     return (
-      <FlowsFloatContextMenuWithModel
-        model={model}
-        enabled={enabled}
-        showDeleteButton={showDeleteButton}
-        showCopyUidButton={showCopyUidButton}
-        containerStyle={containerStyle}
-        className={className}
-        showTitle={showTitle}
-        showBackground={showBackground}
-        showBorder={showBorder}
-        showDragHandle={showDragHandle}
-        settingsMenuLevel={settingsMenuLevel}
-        extraToolbarItems={extraToolbarItems}
-        toolbarStyle={toolbarStyle}
-        toolbarPosition={toolbarPosition}
-      >
+      <FlowsFloatContextMenuWithModel model={model} {...restProps}>
         {children}
       </FlowsFloatContextMenuWithModel>
     );
