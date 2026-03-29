@@ -214,7 +214,7 @@ export const flattenMessages = (messages: Message[] = [], isRoot = true): Render
     const subAgentItems =
       msg.content?.subAgentConversations?.flatMap((conversation) => {
         const [first, ...rest] = conversation.messages;
-        const conversationMessages = flattenMessages(first.role === 'user' ? rest : conversation.messages, false);
+        const conversationMessages = flattenMessages(first?.role === 'user' ? rest : conversation.messages, false);
 
         if (!conversationMessages.length) {
           return [];

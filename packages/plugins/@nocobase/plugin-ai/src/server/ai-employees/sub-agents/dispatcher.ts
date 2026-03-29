@@ -12,7 +12,7 @@ import { Model } from '@nocobase/database';
 import { AIEmployee, ModelRef } from '../ai-employee';
 import type PluginAIServer from '../../plugin';
 import type { SubAgentConversationMetadata, UserDecision } from '../../types';
-import { getAccessibleAIEmployee, getSkillSettingsFromMain } from '../../../ai/tools/sub-agents/shared';
+import { getAccessibleAIEmployee } from '../../../ai/tools/sub-agents/shared';
 
 export type SubAgentTask = {
   ctx: Context;
@@ -217,7 +217,7 @@ export class SubAgentsDispatcher {
   }
 
   async reject(ctx: Context) {
-    const { sessionId, messages } = ctx.action?.params?.values ?? {};
+    const { sessionId } = ctx.action?.params?.values ?? {};
     const conversation = await ctx.db.getRepository('aiConversations').findOne({
       filter: {
         sessionId,
