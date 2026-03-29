@@ -12,17 +12,17 @@ import { act, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
 import { observer } from '@nocobase/flow-engine';
-import { NocoBaseDesktopRouteType } from '../../../../admin-shell/route-types';
-import { AdminLayoutModel } from '../AdminLayoutModel';
+import { NocoBaseDesktopRouteType } from '@nocobase/client-v2/flow-compat';
 import {
   AdminLayoutMenuItemModel,
+  AdminLayoutModel,
   getAdminLayoutMenuMovePositionOptions,
   normalizeAdminLayoutMenuLegacyVariables,
   openAdminLayoutMenuLink,
   resolveAdminLayoutMenuLink,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
   resolveAdminLayoutMenuDragMoveOptions,
-} from '../AdminLayoutMenuModels';
+} from '..';
 
 const { navigateMock } = vi.hoisted(() => ({
   navigateMock: vi.fn(),

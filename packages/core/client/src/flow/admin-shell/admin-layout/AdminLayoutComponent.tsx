@@ -27,6 +27,7 @@ import {
   MobileMenuControlContext,
   resolveAdminLayoutMenuDragMoveOptionsFromEvent,
 } from './AdminLayoutMenuModels';
+import type { AdminLayoutModel } from './AdminLayoutModel';
 import { AdminLayoutContent } from './AdminLayoutSlotModels';
 import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
@@ -35,17 +36,6 @@ import { useApplications } from './useApplications';
 import { useGlobalTheme, type CustomToken } from '../../theme';
 import { useSystemSettings } from '../../system-settings';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
-
-type AdminLayoutHostModel = {
-  isMobileLayout: boolean;
-  setIsMobileLayout: (isMobileLayout: boolean) => void;
-  syncMenuRoutes: (routes: NocoBaseDesktopRoute[]) => void;
-  toProLayoutRoute: (options: { designable: boolean; isMobile: boolean; t: (title: any) => any }) => {
-    path: string;
-    children: AdminLayoutMenuNode[];
-  };
-  setLayoutContentElement: (element: HTMLDivElement | null) => void;
-};
 
 const className1 = css`
   height: var(--nb-header-height);
@@ -279,7 +269,7 @@ const MobileActions: FC = () => {
  */
 function SetIsMobileLayout(props: { isMobile: boolean; children: any }) {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutHostModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
 
   useEffect(() => {
     adminLayoutModel?.setIsMobileLayout(props.isMobile);
@@ -365,7 +355,7 @@ const renderMenuNodeWithModel = (
 
 export const AdminLayoutComponent = observer((props) => {
   const flowEngine = useFlowEngine();
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutHostModel>(ADMIN_LAYOUT_MODEL_UID);
+  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID);
   const [allAccessRoutes, setAllAccessRoutes] = useState<NocoBaseDesktopRoute[]>(
     () => flowEngine.context.routeRepository?.listAccessible?.() || [],
   );

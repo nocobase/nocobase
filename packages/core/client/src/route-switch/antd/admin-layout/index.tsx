@@ -8,12 +8,12 @@
  */
 
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { AdminDynamicPage, MobileLayoutProvider } from '../../../admin-shell';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
-import { ADMIN_LAYOUT_MODEL_UID, AdminLayoutMenuItemModel } from '../../../flow/admin-shell/admin-layout';
-import { AdminLayoutModel } from './AdminLayoutModel';
+import { AdminLayoutMenuItemModel, getAdminLayoutModel } from '../../../flow/admin-shell/admin-layout';
+import { AdminLayoutModelV1 } from './AdminLayoutModel';
 import { userCenterSettings } from './userCenterSettings';
 
 export * from './useDeleteRouteSchema';
@@ -36,23 +36,15 @@ export { shouldRenderIconInTitle } from '../../../flow/admin-shell/admin-layout'
 
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();
-  const modelRef = useRef<AdminLayoutModel>(null);
+  const model = getAdminLayoutModel<AdminLayoutModelV1>(flowEngine, {
+    create: true,
+    props,
+    use: AdminLayoutModelV1,
+  });
 
-  if (!modelRef.current) {
-    modelRef.current =
-      flowEngine.getModel<AdminLayoutModel>(ADMIN_LAYOUT_MODEL_UID) ||
-      flowEngine.createModel<AdminLayoutModel>({
-        uid: ADMIN_LAYOUT_MODEL_UID,
-        use: AdminLayoutModel,
-        props,
-      });
+  if (!model) {
+    throw new Error('[NocoBase] Failed to create admin-layout-model.');
   }
-
-  const model = modelRef.current;
-
-  useEffect(() => {
-    model.setProps(props);
-  }, [model, props]);
 
   return <FlowModelRenderer model={model} />;
 };
@@ -63,7 +55,7 @@ export class AdminLayoutPlugin extends Plugin {
   }
   async load() {
     this.app.flowEngine.registerModels({
-      AdminLayoutModel,
+      AdminLayoutModel: AdminLayoutModelV1,
       AdminLayoutMenuItemModel,
     });
     this.app.schemaSettingsManager.add(userCenterSettings);

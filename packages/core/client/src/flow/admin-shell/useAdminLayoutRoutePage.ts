@@ -8,8 +8,8 @@
  */
 
 import type { FlowEngine } from '@nocobase/flow-engine';
-import type { AdminLayoutModel } from '@nocobase/client-v2/flow-compat';
 import { useEffect, useRef } from 'react';
+import { getAdminLayoutModel, type AdminLayoutModel } from './admin-layout/AdminLayoutModel';
 
 type UseAdminLayoutRoutePageOptions = {
   flowEngine: FlowEngine;
@@ -29,14 +29,10 @@ type UseAdminLayoutRoutePageOptions = {
  */
 export function useAdminLayoutRoutePage(options: UseAdminLayoutRoutePageOptions) {
   const { flowEngine, pageUid, refreshDesktopRoutes, layoutContentRef } = options;
-  const adminLayoutModel = flowEngine.getModel<AdminLayoutModel>('admin-layout-model');
+  const adminLayoutModel = getAdminLayoutModel<AdminLayoutModel>(flowEngine, { required: true });
   const refreshRef = useRef(refreshDesktopRoutes);
 
   refreshRef.current = refreshDesktopRoutes;
-
-  if (!adminLayoutModel) {
-    throw new Error('[NocoBase] FlowRoute requires admin-layout-model. Please render FlowRoute under AdminLayout.');
-  }
 
   useEffect(() => {
     adminLayoutModel.registerRoutePage(pageUid, {

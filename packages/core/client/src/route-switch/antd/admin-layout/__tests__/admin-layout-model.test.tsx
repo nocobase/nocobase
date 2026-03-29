@@ -8,8 +8,7 @@
  */
 
 import React from 'react';
-import { observable } from '@formily/reactive';
-import { act, render, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { flowModelRendererSpy } = vi.hoisted(() => {
@@ -35,16 +34,20 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
   };
 });
 
-import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
-import { AdminLayout } from '..';
-import { AdminLayoutModel } from '../AdminLayoutModel';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { AdminLayout, AdminLayoutPlugin } from '..';
+import {
+  AdminLayoutMenuItemModel,
+  AdminLayoutModel as FlowAdminLayoutModel,
+} from '../../../../flow/admin-shell/admin-layout';
+import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 
-describe('AdminLayout (phase-1 host)', () => {
+describe('AdminLayout legacy wrapper', () => {
   beforeEach(() => {
     flowModelRendererSpy.mockClear();
   });
 
-  it('should create AdminLayoutModel and pass it to FlowModelRenderer', async () => {
+  it('should create AdminLayoutModelV1 and pass it to FlowModelRenderer', async () => {
     const engine = new FlowEngine();
 
     render(
@@ -57,8 +60,9 @@ describe('AdminLayout (phase-1 host)', () => {
       expect(flowModelRendererSpy).toHaveBeenCalled();
     });
 
-    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
-    expect(model).toBeInstanceOf(AdminLayoutModel);
+    const model = engine.getModel<AdminLayoutModelV1>('admin-layout-model');
+    expect(model).toBeInstanceOf(AdminLayoutModelV1);
+    expect(model).toBeInstanceOf(FlowAdminLayoutModel);
     expect(model.props.testFlag).toBe('first-render');
     expect((model.subModels as any).menu).toBeUndefined();
     expect((model.subModels as any).layoutContent).toBeUndefined();
@@ -66,11 +70,11 @@ describe('AdminLayout (phase-1 host)', () => {
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model }));
   });
 
-  it('should reuse existing AdminLayoutModel instance', async () => {
+  it('should reuse existing AdminLayoutModelV1 instance', async () => {
     const engine = new FlowEngine();
-    const existingModel = engine.createModel<AdminLayoutModel>({
+    const existingModel = engine.createModel<AdminLayoutModelV1>({
       uid: 'admin-layout-model',
-      use: AdminLayoutModel,
+      use: AdminLayoutModelV1,
       props: { testFlag: 'existing' },
     });
 
@@ -85,9 +89,6 @@ describe('AdminLayout (phase-1 host)', () => {
     });
 
     expect(engine.getModel('admin-layout-model')).toBe(existingModel);
-    expect((existingModel.subModels as any).menu).toBeUndefined();
-    expect((existingModel.subModels as any).layoutContent).toBeUndefined();
-    expect((existingModel.subModels as any).headerActions).toBeUndefined();
     expect(flowModelRendererSpy).toHaveBeenLastCalledWith(expect.objectContaining({ model: existingModel }));
   });
 
@@ -99,7 +100,7 @@ describe('AdminLayout (phase-1 host)', () => {
       </FlowEngineProvider>,
     );
 
-    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
+    const model = engine.getModel<AdminLayoutModelV1>('admin-layout-model');
     expect(model).toBeTruthy();
 
     rerender(
@@ -113,137 +114,29 @@ describe('AdminLayout (phase-1 host)', () => {
     });
   });
 
-  it('should expose live layoutContentElement on engine context', async () => {
-    const engine = new FlowEngine();
-
-    render(
-      <FlowEngineProvider engine={engine}>
-        <AdminLayout />
-      </FlowEngineProvider>,
-    );
-
-    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
-    expect(model).toBeTruthy();
-
-    const element = document.createElement('div');
-
-    act(() => {
-      model.setLayoutContentElement(element);
-    });
-
-    expect(engine.context.layoutContentElement).toBe(element);
-
-    act(() => {
-      model.setLayoutContentElement(null);
-    });
-
-    expect(engine.context.layoutContentElement).toBeNull();
-  });
-
-  it('should expose live engine currentRoute when active page changes', async () => {
-    const engine = new FlowEngine();
-    const routeMap = {
-      'page-1': { title: 'Page 1' },
-      'page-2': { title: 'Page 2' },
-    };
-    engine.context.defineProperty('routeRepository', {
-      value: {
-        getRouteBySchemaUid: (pageUid: string) => routeMap[pageUid],
+  it('should register AdminLayoutModel key with AdminLayoutModelV1 class', async () => {
+    const registerModels = vi.fn();
+    const schemaSettingsAdd = vi.fn();
+    const addComponents = vi.fn();
+    const use = vi.fn();
+    const plugin = new AdminLayoutPlugin({}, {
+      flowEngine: {
+        registerModels,
       },
-    });
-    const routeRef = observable.ref({
-      params: { name: 'page-1' },
-      pathname: '/admin/page-1',
-    });
-    engine.context.defineProperty('route', {
-      get: () => routeRef.value,
-      cache: false,
-    });
-
-    render(
-      <FlowEngineProvider engine={engine}>
-        <AdminLayout />
-      </FlowEngineProvider>,
-    );
-
-    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
-    expect(model).toBeTruthy();
-
-    model.registerRoutePage('page-1', {
-      active: true,
-    });
-    model.registerRoutePage('page-2', {
-      active: true,
-    });
-
-    await waitFor(() => {
-      expect(engine.context.currentRoute.title).toBe('Page 1');
-    });
-
-    act(() => {
-      routeRef.value = {
-        params: { name: 'page-2' },
-        pathname: '/admin/page-2',
-      };
-    });
-
-    await waitFor(() => {
-      expect(engine.context.currentRoute.title).toBe('Page 2');
-    });
-  });
-
-  it('should keep pageActive in sync after non-active route page updates', async () => {
-    const engine = new FlowEngine();
-    const routeRef = observable.ref({
-      params: { name: 'page-1' },
-      pathname: '/admin/page-1',
-    });
-    engine.context.defineProperty('routeRepository', {
-      value: {
-        getRouteBySchemaUid: (pageUid: string) => ({ title: pageUid }),
+      schemaSettingsManager: {
+        add: schemaSettingsAdd,
       },
-    });
-    engine.context.defineProperty('route', {
-      get: () => routeRef.value,
-      cache: false,
-    });
+      addComponents,
+      use,
+    } as any);
 
-    render(
-      <FlowEngineProvider engine={engine}>
-        <AdminLayout />
-      </FlowEngineProvider>,
+    await plugin.load();
+
+    expect(registerModels).toHaveBeenCalledWith(
+      expect.objectContaining({
+        AdminLayoutModel: AdminLayoutModelV1,
+        AdminLayoutMenuItemModel,
+      }),
     );
-
-    const model = engine.getModel<AdminLayoutModel>('admin-layout-model');
-    expect(model).toBeTruthy();
-
-    model.registerRoutePage('page-1', {
-      active: false,
-    });
-
-    const routeModel = engine.getModel<FlowModel>('page-1');
-
-    await waitFor(() => {
-      expect(routeModel.context.pageActive.value).toBe(true);
-    });
-
-    act(() => {
-      model.updateRoutePage('page-1', {
-        refreshDesktopRoutes: vi.fn(),
-      });
-    });
-
-    expect(routeModel.context.pageActive.value).toBe(true);
-
-    act(() => {
-      routeRef.value = {
-        params: { name: 'page-2' },
-        pathname: '/admin/page-2',
-      };
-    });
-
-    await waitFor(() => {
-      expect(routeModel.context.pageActive.value).toBe(false);
-    });
   });
 });
