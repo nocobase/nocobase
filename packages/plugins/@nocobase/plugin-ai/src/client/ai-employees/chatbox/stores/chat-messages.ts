@@ -11,6 +11,7 @@ import { create } from 'zustand';
 import { Message, Attachment, ContextItem, SkillSettings, WebSearching } from '../../types';
 import { createSelectors } from './create-selectors';
 import { EditorRef } from '@nocobase/client';
+import { uid } from '@formily/shared';
 
 type ChatMessagesState = {
   messages: Message[];
@@ -54,6 +55,10 @@ export interface ChatMessagesActions {
   setWebSearching: (webSearching: WebSearching) => void;
 
   setFlowContext: (ctx: any) => void;
+
+  addSubAgentMessage: (sessionId: string, msg: Message) => void;
+  updateLastSubAgentMessage: (sessionId: string, username: string, updater: (msg: Message) => Message) => void;
+  updateSubAgentConversationStatus: (sessionId: string, status: 'pending' | 'completed') => void;
 }
 
 const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
@@ -165,6 +170,94 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
 
   setFlowContext(flowContext) {
     set({ flowContext });
+  },
+
+  addSubAgentMessage(sessionId, msg) {
+    get().updateLastMessage((last) => {
+      return {
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((it) => {
+            if (it.sessionId !== sessionId) {
+              return it;
+            }
+
+            return {
+              ...it,
+              messages: [...it.messages, msg],
+            };
+          }) ?? [
+            {
+              sessionId,
+              messages: [msg],
+            },
+          ],
+        },
+        loading: false,
+      };
+    });
+  },
+
+  updateLastSubAgentMessage: (sessionId: string, username: string, updater: (msg: Message) => Message) => {
+    get().updateLastMessage((last) => {
+      return {
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((it) => {
+            if (it.sessionId !== sessionId) {
+              return it;
+            }
+
+            const prev = [...it.messages];
+            const i = prev.length - 1;
+            if (i >= 0) prev[i] = updater(prev[i]);
+
+            return {
+              ...it,
+              messages: prev,
+            };
+          }) ?? [
+            {
+              sessionId,
+              messages: [
+                updater({
+                  key: uid(),
+                  role: username,
+                  createdAt: new Date().toISOString(),
+                  content: { type: 'text', content: '' },
+                  loading: true,
+                }),
+              ],
+            },
+          ],
+        },
+        loading: false,
+      };
+    });
+  },
+
+  updateSubAgentConversationStatus: (sessionId: string, status: 'pending' | 'completed') => {
+    get().updateLastMessage((last) => {
+      return {
+        ...last,
+        content: {
+          ...last.content,
+          subAgentConversations: last.content.subAgentConversations?.map((it) => {
+            if (it.sessionId !== sessionId) {
+              return it;
+            }
+
+            return {
+              ...it,
+              status,
+            };
+          }),
+        },
+        loading: false,
+      };
+    });
   },
 }));
 

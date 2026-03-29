@@ -8,7 +8,7 @@
  */
 
 import { useChatMessagesStore } from '../stores/chat-messages';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAPIClient, useApp, usePlugin, useRequest } from '@nocobase/client';
 import { AIEmployee, Message, ResendOptions, SendOptions } from '../../types';
 import PluginAIClient from '../../..';
@@ -17,7 +17,7 @@ import { useLoadMoreObserver } from './useLoadMoreObserver';
 import { useT } from '../../../locale';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatBoxStore } from '../stores/chat-box';
-import { parseWorkContext } from '../utils';
+import { flattenMessages, parseWorkContext } from '../utils';
 import { aiDebugLogger } from '../../../debug-logger'; // [AI_DEBUG]
 import { useChatToolCallStore } from '../stores/chat-tool-call';
 import { useAIConfigRepository } from '../../../repositories/hooks/useAIConfigRepository';
@@ -44,11 +44,16 @@ export const useChatMessageActions = () => {
   const setAttachments = useChatMessagesStore.use.setAttachments();
   const setContextItems = useChatMessagesStore.use.setContextItems();
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
+  const addSubAgentMessage = useChatMessagesStore.use.addSubAgentMessage();
+  const updateLastSubAgentMessage = useChatMessagesStore.use.updateLastSubAgentMessage();
+  const updateSubAgentConversationStatus = useChatMessagesStore.use.updateSubAgentConversationStatus();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
   const currentWebSearch = useChatConversationsStore.use.webSearch();
 
   const updateToolCallInvokeStatus = useChatToolCallStore.use.updateToolCallInvokeStatus();
+
+  const renderedMessages = useMemo(() => flattenMessages(messages), [messages]);
 
   const ensureModelFromStore = useCallback(
     async (username?: string) => {
@@ -345,90 +350,15 @@ export const useChatMessageActions = () => {
               const subAgentMessageStore = {
                 addMessage: (msg: Message) => {
                   msg.role = data.username;
-                  updateLastMessage((last) => {
-                    return {
-                      ...last,
-                      content: {
-                        ...last.content,
-                        subAgentConversations: last.content.subAgentConversations?.map((it) => {
-                          if (it.sessionId !== data.sessionId) {
-                            return it;
-                          }
-
-                          return {
-                            ...it,
-                            messages: [...it.messages, msg],
-                          };
-                        }) ?? [
-                          {
-                            sessionId: data.sessionId,
-                            messages: [msg],
-                          },
-                        ],
-                      },
-                      loading: false,
-                    };
-                  });
+                  addSubAgentMessage(data.sessionId, msg);
                 },
-                updateLast: (updater: (msg: Message) => Message) =>
-                  updateLastMessage((last) => {
-                    return {
-                      ...last,
-                      content: {
-                        ...last.content,
-                        subAgentConversations: last.content.subAgentConversations?.map((it) => {
-                          if (it.sessionId !== data.sessionId) {
-                            return it;
-                          }
-
-                          const prev = [...it.messages];
-                          const i = prev.length - 1;
-                          if (i >= 0) prev[i] = updater(prev[i]);
-
-                          return {
-                            ...it,
-                            messages: prev,
-                          };
-                        }) ?? [
-                          {
-                            sessionId: data.sessionId,
-                            messages: [
-                              updater({
-                                key: uid(),
-                                role: data.username,
-                                createdAt: new Date().toISOString(),
-                                content: { type: 'text', content: '' },
-                                loading: true,
-                              }),
-                            ],
-                          },
-                        ],
-                      },
-                      loading: false,
-                    };
-                  }),
+                updateLast: (updater: (msg: Message) => Message) => {
+                  updateLastSubAgentMessage(data.sessionId, data.username, updater);
+                },
               };
 
               if (data.type === 'sub_agent_completed') {
-                updateLastMessage((last) => {
-                  return {
-                    ...last,
-                    content: {
-                      ...last.content,
-                      subAgentConversations: last.content.subAgentConversations?.map((it) => {
-                        if (it.sessionId !== data.sessionId) {
-                          return it;
-                        }
-
-                        return {
-                          ...it,
-                          status: 'completed',
-                        };
-                      }),
-                    },
-                    loading: false,
-                  };
-                });
+                updateSubAgentConversationStatus(data.sessionId, 'completed');
               }
 
               processNewMessage(data, subAgentMessageStore);
@@ -547,12 +477,23 @@ export const useChatMessageActions = () => {
     }
 
     setResponseLoading(true);
-    addMessage({
-      key: uid(),
-      role: aiEmployee.username,
-      content: { type: 'text', content: '' },
-      loading: true,
-    });
+
+    const lastRenderedMessage = renderedMessages.at(-1);
+    if (lastRenderedMessage?.type === 'conversation-group') {
+      addSubAgentMessage(lastRenderedMessage.key, {
+        key: uid(),
+        role: lastRenderedMessage.roleName,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    } else {
+      addMessage({
+        key: uid(),
+        role: aiEmployee.username,
+        content: { type: 'text', content: '' },
+        loading: true,
+      });
+    }
 
     const controller = new AbortController();
     setAbortController(controller);

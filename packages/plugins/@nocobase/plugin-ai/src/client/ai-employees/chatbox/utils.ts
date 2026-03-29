@@ -10,7 +10,7 @@
 import { Application } from '@nocobase/client';
 import dayjs from 'dayjs';
 import duration from 'dayjs/plugin/duration';
-import { ContextItem, SkillSettings, TaskMessage } from '../types';
+import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
 import PluginAIClient from '../..';
 
 dayjs.extend(duration);
@@ -178,7 +178,7 @@ export const formatConversationDuration = (durationMs?: number) => {
 export type RenderedItem =
   | {
       type: 'message';
-      message: import('../types').Message;
+      message: Message;
       isRoot: boolean;
     }
   | {
@@ -198,7 +198,7 @@ const toTimestamp = (value?: string | Date) => {
   return Number.isNaN(timestamp) ? null : timestamp;
 };
 
-const getConversationDurationMs = (messages: import('../types').Message[] = []) => {
+const getConversationDurationMs = (messages: Message[] = []) => {
   const firstTimestamp = toTimestamp(messages[0]?.createdAt);
   const lastTimestamp = toTimestamp(messages[messages.length - 1]?.createdAt);
 
@@ -209,7 +209,7 @@ const getConversationDurationMs = (messages: import('../types').Message[] = []) 
   return Math.max(0, lastTimestamp - firstTimestamp);
 };
 
-export const flattenMessages = (messages: import('../types').Message[] = [], isRoot = true): RenderedItem[] => {
+export const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
   return messages.flatMap((msg) => {
     const subAgentItems =
       msg.content?.subAgentConversations?.flatMap((conversation) => {
