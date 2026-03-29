@@ -207,16 +207,20 @@ describe('FlowsFloatContextMenu', () => {
     const host = getHost(getByTestId('content'));
     mockRect(host, { top: 112, left: 124, width: 160, height: 60 });
 
-    const overlay = appContainer.querySelector('[data-model-uid="portal-model"]') as HTMLDivElement;
-    expect(overlay).toBeTruthy();
+    expect(appContainer.querySelector('[data-model-uid="portal-model"]')).toBeNull();
     expect(host.querySelector('.nb-toolbar-container')).toBeNull();
-    expect(document.body.querySelector('[data-model-uid="portal-model"]')).toBe(overlay);
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="portal-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
 
     await waitFor(() => {
       expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
     });
-
-    fireEvent.mouseEnter(host);
 
     await waitFor(() => {
       expect(overlay.className).toContain('nb-toolbar-visible');
@@ -262,14 +266,19 @@ describe('FlowsFloatContextMenu', () => {
     const host = getHost(content);
     mockRect(host, { top: 100, left: 150, width: 180, height: 72 });
 
-    const overlay = appContainer.querySelector('[data-model-uid="renderer-model"]') as HTMLDivElement;
-    expect(overlay).toBeTruthy();
+    expect(appContainer.querySelector('[data-model-uid="renderer-model"]')).toBeNull();
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="renderer-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
 
     await waitFor(() => {
       expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
     });
-
-    fireEvent.mouseEnter(host);
 
     await waitFor(() => {
       expect(overlay.className).toContain('nb-toolbar-visible');
@@ -339,17 +348,20 @@ describe('FlowsFloatContextMenu', () => {
     mockRect(host, { top: 140, left: 280, width: 220, height: 48 });
     mockRect(insetHost, { top: 220, left: 320, width: 220, height: 48 });
 
-    const overlay = drawerWrapper.querySelector('[data-model-uid="field-model"]') as HTMLDivElement;
-    const insetOverlay = drawerWrapper.querySelector('[data-model-uid="field-inset-model"]') as HTMLDivElement;
-    expect(overlay).toBeTruthy();
-    expect(insetOverlay).toBeTruthy();
+    expect(drawerWrapper.querySelector('[data-model-uid="field-model"]')).toBeNull();
+    expect(drawerWrapper.querySelector('[data-model-uid="field-inset-model"]')).toBeNull();
+
+    fireEvent.mouseEnter(host);
+
+    const overlay = await waitFor(() => {
+      const nextOverlay = drawerWrapper.querySelector('[data-model-uid="field-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
 
     await waitFor(() => {
       expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
-      expect(within(insetOverlay).getByLabelText('flows-settings')).toBeTruthy();
     });
-
-    fireEvent.mouseEnter(host);
 
     await waitFor(() => {
       expect(overlay.className).toContain('nb-toolbar-portal-absolute');
@@ -361,6 +373,16 @@ describe('FlowsFloatContextMenu', () => {
     });
 
     fireEvent.mouseEnter(insetHost);
+
+    const insetOverlay = await waitFor(() => {
+      const nextOverlay = drawerWrapper.querySelector('[data-model-uid="field-inset-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(insetOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
 
     await waitFor(() => {
       expect(insetOverlay.className).toContain('nb-toolbar-portal-absolute');
@@ -399,15 +421,20 @@ describe('FlowsFloatContextMenu', () => {
     mockRect(parentHost, { top: 10, left: 10, width: 240, height: 120 });
     mockRect(childHost, { top: 28, left: 36, width: 120, height: 48 });
 
-    const parentOverlay = appContainer.querySelector('[data-model-uid="parent-model"]') as HTMLDivElement;
-    const childOverlay = appContainer.querySelector('[data-model-uid="child-model"]') as HTMLDivElement;
+    expect(appContainer.querySelector('[data-model-uid="parent-model"]')).toBeNull();
+    expect(appContainer.querySelector('[data-model-uid="child-model"]')).toBeNull();
+
+    fireEvent.mouseEnter(parentHost);
+
+    const parentOverlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="parent-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
 
     await waitFor(() => {
       expect(within(parentOverlay).getByLabelText('flows-settings')).toBeTruthy();
-      expect(within(childOverlay).getByLabelText('flows-settings')).toBeTruthy();
     });
-
-    fireEvent.mouseEnter(parentHost);
 
     await waitFor(() => {
       expect(parentOverlay.className).toContain('nb-toolbar-visible');
@@ -415,6 +442,16 @@ describe('FlowsFloatContextMenu', () => {
 
     fireEvent.mouseEnter(childHost);
     fireEvent.mouseMove(childHost);
+
+    const childOverlay = await waitFor(() => {
+      const nextOverlay = appContainer.querySelector('[data-model-uid="child-model"]') as HTMLDivElement | null;
+      expect(nextOverlay).toBeTruthy();
+      return nextOverlay as HTMLDivElement;
+    });
+
+    await waitFor(() => {
+      expect(within(childOverlay).getByLabelText('flows-settings')).toBeTruthy();
+    });
 
     await waitFor(() => {
       expect(childOverlay.className).toContain('nb-toolbar-visible');

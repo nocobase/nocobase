@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState, useCallback, useRef, useEffect, useMemo, useLayoutEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Alert, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -38,6 +38,11 @@ type ToolbarPortalPositioningMode = 'fixed' | 'absolute';
 interface ToolbarPortalHostConfig {
   mountElement: HTMLElement;
   positioningElement: HTMLElement;
+  positioningMode: ToolbarPortalPositioningMode;
+}
+
+interface ToolbarPortalRenderSnapshot {
+  mountElement: HTMLElement;
   positioningMode: ToolbarPortalPositioningMode;
 }
 
@@ -433,21 +438,6 @@ const getToolbarPortalHostConfig = (hostEl: HTMLElement | null): ToolbarPortalHo
   };
 };
 
-const isSamePortalHostConfig = (
-  prevConfig: ToolbarPortalHostConfig | null,
-  nextConfig: ToolbarPortalHostConfig | null,
-) => {
-  if (!prevConfig || !nextConfig) {
-    return prevConfig === nextConfig;
-  }
-
-  return (
-    prevConfig.mountElement === nextConfig.mountElement &&
-    prevConfig.positioningElement === nextConfig.positioningElement &&
-    prevConfig.positioningMode === nextConfig.positioningMode
-  );
-};
-
 const parseToolbarInsetValue = (value: React.CSSProperties['top']) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     return value;
@@ -799,9 +789,10 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const [isToolbarPinned, setIsToolbarPinned] = useState(false);
     const [activeChildToolbarIds, setActiveChildToolbarIds] = useState<string[]>([]);
     const [portalRect, setPortalRect] = useState<ToolbarPortalRect>(defaultPortalRect);
-    const [portalHostConfig, setPortalHostConfig] = useState<ToolbarPortalHostConfig | null>(null);
+    const [portalRenderSnapshot, setPortalRenderSnapshot] = useState<ToolbarPortalRenderSnapshot | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const toolbarContainerRef = useRef<HTMLDivElement>(null);
+    const portalHostConfigRef = useRef<ToolbarPortalHostConfig | null>(null);
     const portalRafIdRef = useRef<number | null>(null);
     const hideToolbarTimerRef = useRef<number | null>(null);
     const reportedChildActivityToAncestorsRef = useRef(false);
@@ -811,6 +802,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       !hideMenu &&
       !hasActiveChildToolbar &&
       (isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned);
+    const shouldRenderToolbar = isToolbarVisible || isToolbarPinned || isDraggingToolbar;
     const isToolbarInteractionActive =
       isHostHovered || isToolbarHovered || isDraggingToolbar || isToolbarPinned || hideToolbarTimerRef.current !== null;
 
@@ -822,22 +814,37 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     }, []);
 
     const updatePortalRect = useCallback(() => {
-      if (!containerRef.current) {
+      const hostElement = containerRef.current;
+      if (!hostElement) {
         return;
       }
 
-      const nextPortalHostConfig = getToolbarPortalHostConfig(containerRef.current);
+      const nextPortalHostConfig = getToolbarPortalHostConfig(hostElement);
+      portalHostConfigRef.current = nextPortalHostConfig;
+      setPortalRenderSnapshot((prevSnapshot) => {
+        if (!nextPortalHostConfig) {
+          return prevSnapshot === null ? prevSnapshot : null;
+        }
+
+        if (
+          prevSnapshot?.mountElement === nextPortalHostConfig.mountElement &&
+          prevSnapshot?.positioningMode === nextPortalHostConfig.positioningMode
+        ) {
+          return prevSnapshot;
+        }
+
+        return {
+          mountElement: nextPortalHostConfig.mountElement,
+          positioningMode: nextPortalHostConfig.positioningMode,
+        };
+      });
+
       const nextRect = calculatePortalRect(
-        containerRef.current,
+        hostElement,
         nextPortalHostConfig,
         toolbarStyle,
         toolbarContainerRef.current,
       );
-
-      setPortalHostConfig((prevConfig) => {
-        return isSamePortalHostConfig(prevConfig, nextPortalHostConfig) ? prevConfig : nextPortalHostConfig;
-      });
-
       setPortalRect((prevRect) => {
         if (
           prevRect.top === nextRect.top &&
@@ -874,16 +881,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       }, TOOLBAR_HIDE_DELAY);
     }, [clearHideToolbarTimer, isDraggingToolbar, isToolbarPinned]);
 
-    const getPopupContainer = useCallback(
-      (triggerNode?: HTMLElement) => {
-        return (
-          portalHostConfig?.mountElement ||
-          getToolbarPortalHostConfig(triggerNode || containerRef.current)?.mountElement ||
-          document.body
-        );
-      },
-      [portalHostConfig],
-    );
+    const getPopupContainer = useCallback((triggerNode?: HTMLElement) => {
+      return (
+        portalHostConfigRef.current?.mountElement ||
+        getToolbarPortalHostConfig(triggerNode || containerRef.current)?.mountElement ||
+        document.body
+      );
+    }, []);
 
     const handleSettingsMenuOpenChange = useCallback((open: boolean) => {
       setIsToolbarPinned(open);
@@ -907,20 +911,15 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         getPopupContainer,
         handleSettingsMenuOpenChange,
         model,
-        portalHostConfig,
         settingsMenuLevel,
         showCopyUidButton,
         showDeleteButton,
       ],
     );
 
-    useLayoutEffect(() => {
-      updatePortalRect();
-    }, [updatePortalRect]);
-
     // 监听可见期间的尺寸与滚动变化，持续同步 portal overlay 的坐标。
     useEffect(() => {
-      if (!isToolbarVisible) {
+      if (!shouldRenderToolbar) {
         return;
       }
 
@@ -940,15 +939,18 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       if (containerRef.current) {
         resizeObserver?.observe(containerRef.current);
       }
-      if (portalHostConfig?.mountElement && portalHostConfig.mountElement !== containerRef.current) {
-        resizeObserver?.observe(portalHostConfig.mountElement);
+      if (
+        portalHostConfigRef.current?.mountElement &&
+        portalHostConfigRef.current.mountElement !== containerRef.current
+      ) {
+        resizeObserver?.observe(portalHostConfigRef.current.mountElement);
       }
       if (
-        portalHostConfig?.positioningElement &&
-        portalHostConfig.positioningElement !== containerRef.current &&
-        portalHostConfig.positioningElement !== portalHostConfig.mountElement
+        portalHostConfigRef.current?.positioningElement &&
+        portalHostConfigRef.current.positioningElement !== containerRef.current &&
+        portalHostConfigRef.current.positioningElement !== portalHostConfigRef.current.mountElement
       ) {
-        resizeObserver?.observe(portalHostConfig.positioningElement);
+        resizeObserver?.observe(portalHostConfigRef.current.positioningElement);
       }
 
       window.addEventListener('resize', handleViewportChange);
@@ -959,7 +961,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         window.removeEventListener('resize', handleViewportChange);
         window.removeEventListener('scroll', handleViewportChange, true);
       };
-    }, [isToolbarVisible, portalHostConfig, schedulePortalRectUpdate, updatePortalRect]);
+    }, [schedulePortalRectUpdate, shouldRenderToolbar, updatePortalRect]);
 
     // 子级工具栏激活时隐藏父级工具栏，避免多层 overlay 同时压住内容。
     useEffect(() => {
@@ -1025,6 +1027,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         if (portalRafIdRef.current !== null) {
           window.cancelAnimationFrame(portalRafIdRef.current);
         }
+        portalHostConfigRef.current = null;
         clearHideToolbarTimer();
       };
     }, [clearHideToolbarTimer, model.uid]);
@@ -1033,8 +1036,9 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     useEffect(() => {
       if (isToolbarPinned) {
         clearHideToolbarTimer();
+        updatePortalRect();
       }
-    }, [clearHideToolbarTimer, isToolbarPinned]);
+    }, [clearHideToolbarTimer, isToolbarPinned, updatePortalRect]);
 
     // children 结构变化后，重新检测按钮子节点。
     useEffect(() => {
@@ -1131,7 +1135,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     const toolbarContainerClassName = [
       toolbarContainerStyles({ showBackground, showBorder, ctx: model.context }),
       'nb-toolbar-portal',
-      portalHostConfig?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
+      portalRenderSnapshot?.positioningMode === 'absolute' ? 'nb-toolbar-portal-absolute' : 'nb-toolbar-portal-fixed',
       isToolbarVisible ? 'nb-toolbar-visible' : '',
       className?.includes('nb-in-template') ? 'nb-in-template' : '',
     ]
@@ -1146,7 +1150,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
       ...omitToolbarPortalInsetStyle(toolbarStyle),
     } satisfies React.CSSProperties;
 
-    const toolbarNode = (
+    const toolbarNode = shouldRenderToolbar ? (
       <div
         ref={toolbarContainerRef}
         className={`nb-toolbar-container ${toolbarContainerClassName}`}
@@ -1178,6 +1182,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
             onMouseEnter={handleToolbarMouseEnter}
             onMouseLeave={handleToolbarMouseLeave}
             onDragStart={() => {
+              updatePortalRect();
               setIsDraggingToolbar(true);
               schedulePortalRectUpdate();
             }}
@@ -1188,7 +1193,7 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
           />
         )}
       </div>
-    );
+    ) : null;
 
     return (
       <div
@@ -1201,7 +1206,10 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
         onMouseLeave={handleHostMouseLeave}
       >
         {children}
-        {portalHostConfig?.mountElement ? createPortal(toolbarNode, portalHostConfig.mountElement) : toolbarNode}
+        {toolbarNode &&
+          (portalRenderSnapshot?.mountElement
+            ? createPortal(toolbarNode, portalRenderSnapshot.mountElement)
+            : toolbarNode)}
       </div>
     );
   },
