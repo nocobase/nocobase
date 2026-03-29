@@ -45,6 +45,7 @@ export const useChatMessageActions = () => {
   const setContextItems = useChatMessagesStore.use.setContextItems();
   const setWebSearching = useChatMessagesStore.use.setWebSearching();
   const addSubAgentMessage = useChatMessagesStore.use.addSubAgentMessage();
+  const addSubAgentMessages = useChatMessagesStore.use.addSubAgentMessages();
   const updateLastSubAgentMessage = useChatMessagesStore.use.updateLastSubAgentMessage();
   const updateSubAgentConversationStatus = useChatMessagesStore.use.updateSubAgentConversationStatus();
 
@@ -188,6 +189,7 @@ export const useChatMessageActions = () => {
         });
         store.updateLast((last) => ({
           ...last,
+          createdAt: new Date().toISOString(),
           content: {
             ...last.content,
             from: data.from,
@@ -214,6 +216,7 @@ export const useChatMessageActions = () => {
           }
           return {
             ...last,
+            createdAt: new Date().toISOString(),
             content: {
               ...last.content,
               from: data.from,
@@ -230,6 +233,7 @@ export const useChatMessageActions = () => {
         store.updateLast((last) => {
           return {
             ...last,
+            createdAt: new Date().toISOString(),
             content: {
               ...last.content,
               from: data.from,
@@ -445,6 +449,7 @@ export const useChatMessageActions = () => {
     if (last?.role === 'error') {
       setMessages((prev) => prev.slice(0, -1));
     }
+    const lastRenderedMessage = renderedMessages.at(-1);
 
     const parsedWorkContext = await parseWorkContext(app, workContext);
     const msgs = sendMsgs.map((msg, index) => ({
@@ -454,17 +459,32 @@ export const useChatMessageActions = () => {
       attachments: index === 0 ? attachments : undefined,
       workContext: index === 0 ? parsedWorkContext : undefined,
     }));
-    addMessages(
-      sendMsgs.map((msg, index) => ({
-        key: uid(),
-        role: 'user',
-        content: {
-          ...msg,
-          attachments: index === 0 ? attachments : undefined,
-          workContext: index === 0 ? workContext : undefined,
-        },
-      })),
-    );
+    if (lastRenderedMessage?.type === 'conversation-group') {
+      addSubAgentMessages(
+        lastRenderedMessage.key,
+        sendMsgs.map((msg, index) => ({
+          key: uid(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    } else {
+      addMessages(
+        sendMsgs.map((msg, index) => ({
+          key: uid(),
+          role: 'user',
+          content: {
+            ...msg,
+            attachments: index === 0 ? attachments : undefined,
+            workContext: index === 0 ? workContext : undefined,
+          },
+        })),
+      );
+    }
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
@@ -478,7 +498,6 @@ export const useChatMessageActions = () => {
 
     setResponseLoading(true);
 
-    const lastRenderedMessage = renderedMessages.at(-1);
     if (lastRenderedMessage?.type === 'conversation-group') {
       addSubAgentMessage(lastRenderedMessage.key, {
         key: uid(),

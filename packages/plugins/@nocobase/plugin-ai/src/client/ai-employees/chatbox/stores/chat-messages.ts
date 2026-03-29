@@ -57,6 +57,7 @@ export interface ChatMessagesActions {
   setFlowContext: (ctx: any) => void;
 
   addSubAgentMessage: (sessionId: string, msg: Message) => void;
+  addSubAgentMessages: (sessionId: string, msgs: Message[]) => void;
   updateLastSubAgentMessage: (sessionId: string, username: string, updater: (msg: Message) => Message) => void;
   updateSubAgentConversationStatus: (sessionId: string, status: 'pending' | 'completed') => void;
 }
@@ -173,6 +174,10 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   },
 
   addSubAgentMessage(sessionId, msg) {
+    get().addSubAgentMessages(sessionId, [msg]);
+  },
+
+  addSubAgentMessages(sessionId, msgs) {
     get().updateLastMessage((last) => {
       return {
         ...last,
@@ -185,12 +190,12 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
 
             return {
               ...it,
-              messages: [...it.messages, msg],
+              messages: [...it.messages, ...msgs],
             };
           }) ?? [
             {
               sessionId,
-              messages: [msg],
+              messages: msgs,
             },
           ],
         },
