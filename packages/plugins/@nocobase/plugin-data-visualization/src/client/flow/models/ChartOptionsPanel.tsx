@@ -16,6 +16,25 @@ import { FunctionOutlined, LineChartOutlined } from '@ant-design/icons';
 import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
 import { observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { useCompile, useDataSourceManager } from '@nocobase/client';
+import { getFieldOptions } from './QueryBuilder.service';
+
+const flattenFieldTitleMap = (options: any[] = [], prefix: string[] = [], map = new Map<string, string>()) => {
+  for (const option of options) {
+    if (!option?.name) continue;
+    const path = [...prefix, option.name];
+    map.set(path.join('.'), option.title || option.name);
+    if (option.children?.length) {
+      flattenFieldTitleMap(option.children, path, map);
+    }
+  }
+  return map;
+};
+
+const toFieldPath = (field: string | string[] | undefined) => {
+  if (!field) return '';
+  return Array.isArray(field) ? field.filter(Boolean).join('.') : field;
+};
 
 export const chartOptionDefaultValue = `return {
   dataset: { source: ctx.data.objects || [] },
@@ -36,9 +55,38 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const form = useForm();
   // 从 flow ctx 和 configStore 计算 columns
   const ctx = useFlowSettingsContext<any>();
+  const dm = useDataSourceManager();
+  const compile = useCompile();
   const uid = ctx?.model?.uid;
   const previewData = configStore.results[uid]?.result || [];
-  const columns = React.useMemo<string[]>(() => Object.keys(previewData?.[0] ?? {}), [previewData]);
+  const previewColumns = React.useMemo<string[]>(() => Object.keys(previewData?.[0] ?? {}), [previewData]);
+  const query = form?.values?.query;
+  const collectionPath = query?.collectionPath;
+
+  const fieldTitleMap = React.useMemo(() => {
+    return flattenFieldTitleMap(getFieldOptions(dm, compile, collectionPath));
+  }, [collectionPath, compile, dm]);
+
+  const columnOptions = React.useMemo(() => {
+    const items = [...(query?.dimensions || []), ...(query?.measures || [])];
+    const queryColumnMap = new Map<string, string>();
+    const derivedColumns: string[] = [];
+
+    for (const item of items) {
+      const fieldPath = toFieldPath(item?.field);
+      if (!fieldPath) continue;
+      const key = item?.alias || fieldPath;
+      queryColumnMap.set(key, item?.alias || fieldTitleMap.get(fieldPath) || fieldPath);
+      derivedColumns.push(key);
+    }
+
+    const columns = Array.from(new Set([...derivedColumns, ...previewColumns]));
+
+    return columns.map((column) => ({
+      value: column,
+      label: queryColumnMap.get(column) || fieldTitleMap.get(column) || column,
+    }));
+  }, [fieldTitleMap, previewColumns, query?.dimensions, query?.measures]);
 
   // 受控 value 与回写 formily
   const mode = form?.values?.chart?.option?.mode || 'basic';
@@ -128,7 +176,12 @@ export const ChartOptionsPanel: React.FC = observer(() => {
       </div>
 
       {mode === 'basic' ? (
-        <ChartOptionsBuilder columns={columns} initialValues={builderValue} onChange={handleBuilderChange} />
+        <ChartOptionsBuilder
+          columns={columnOptions.map((item) => item.value)}
+          fieldOptions={columnOptions}
+          initialValues={builderValue}
+          onChange={handleBuilderChange}
+        />
       ) : (
         <div>
           <ChartOptionsEditor value={rawValue ?? chartOptionDefaultValue} onChange={handleRawChange} />
