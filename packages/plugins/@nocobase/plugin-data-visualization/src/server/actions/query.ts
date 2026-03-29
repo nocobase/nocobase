@@ -24,7 +24,7 @@ const getDB = (ctx: Context, dataSource: string) => {
 const getTimezone = (ctx: Context) =>
   ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
 
-const checkPermission = async (ctx: Context, next: Next) => {
+export const checkPermission = async (ctx: Context, next: Next) => {
   try {
     const result = await applyQueryPermission({
       acl: ctx.app.dataSourceManager.get(ctx.action.params.values.dataSource)?.acl || ctx.app.acl,
@@ -41,6 +41,7 @@ const checkPermission = async (ctx: Context, next: Next) => {
   } catch (err) {
     if (err instanceof NoPermissionError) {
       ctx.throw(403, 'No permissions');
+      return;
     }
     throw err;
   }

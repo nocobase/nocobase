@@ -43,6 +43,11 @@ describe('external data source', () => {
     adminAgent = await app.agent().login(adminUser);
   });
 
+  afterAll(async () => {
+    await app.db.clean({ drop: true });
+    await app.destroy();
+  });
+
   it('should check permission for external data source', async () => {
     await app.db.getRepository('roles').create({
       values: {
