@@ -52,7 +52,7 @@ export const Messages: React.FC = () => {
           }
 
           if (item.status === 'completed' && !(item.key in next)) {
-            next[item.key] = true;
+            next[item.key] = false;
             changed = true;
           }
 
