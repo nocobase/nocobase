@@ -10,10 +10,10 @@
 import type { TFuncKey, TOptions } from 'i18next';
 import type { Application } from './Application';
 
-export class Plugin<T = any> {
+export class Plugin<T = any, TApp extends Application = Application> {
   constructor(
     public options: T,
-    protected app: Application,
+    protected app: TApp,
   ) {
     this.options = options;
     this.app = app;
