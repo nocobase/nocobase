@@ -87,6 +87,8 @@ const MyComponent = () => {
 **注意事项：**
 - 工具栏项目组件内部需要处理所有逻辑（点击、菜单、状态等）
 - 使用 Tooltip 提供操作说明，提升用户体验
+- `FlowModelRenderer.showFlowSettings` 的工具栏会默认通过 portal 渲染到最近的 popup root，其次是 `#nocobase-app-container`，最后才 fallback 到 `document.body`
+- `FlowModelRenderer.showFlowSettings.style.top/left/right/bottom` 会作为 portal overlay 的 inset 使用，可用于向外扩展 hover 框
 
 #### 步骤上下文 (Step Context)
 

@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { IncomingMessage } from 'http';
+import { IncomingRequest } from '.';
+
 export function resolvePublicPath(appPublicPath = '/') {
   const normalized = String(appPublicPath || '/').trim() || '/';
   const withLeadingSlash = normalized.startsWith('/') ? normalized : `/${normalized}`;
@@ -49,4 +52,33 @@ export function injectRuntimeScript(html: string, runtimeScript: string) {
   }
 
   return `${runtimeScript}\n${html}`;
+}
+
+function splitCommaSeparatedValues(value: string, limit: number) {
+  return value.split(',', limit).map((v) => v.trim());
+}
+
+export function getHost(req: IncomingMessage | IncomingRequest) {
+  let host = req.headers['x-forwarded-host'];
+  if (!host) {
+    host = req.headers[':authority'] || req.headers['host'];
+  }
+  if (!host) return '';
+  host = splitCommaSeparatedValues(host as string, 1)[0];
+  // Host header may contain userinfo (e.g., "user@host") which is invalid per RFC 7230.
+  // Use URL parser to correctly extract the host portion.
+  if (host.includes('@')) {
+    try {
+      host = new URL(`http://${host}`).host;
+    } catch (e) {
+      return '';
+    }
+  }
+  return host;
+}
+
+export function getHostname(req: IncomingMessage | IncomingRequest) {
+  const host = getHost(req);
+  if (!host) return '';
+  return host.split(':', 1)[0];
 }

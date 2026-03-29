@@ -35,6 +35,8 @@ import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
 import { Duplex } from 'node:stream';
 
+export { getHost, getHostname } from './utils';
+
 const compress = promisify(compression());
 
 export interface IncomingRequest {
@@ -63,7 +65,7 @@ interface RunOptions {
 }
 
 export interface AppSelectorMiddlewareContext {
-  req: IncomingRequest;
+  req: IncomingMessage | IncomingRequest;
   resolvedAppName: string | null;
 }
 
@@ -179,12 +181,12 @@ export class Gateway extends EventEmitter {
         const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
         const appPathPrefix = `${apiBasePath}/__app/`;
 
-        if (appName) {
-          ctx.resolvedAppName = appName;
+        if (req.headers['x-app']) {
+          ctx.resolvedAppName = req.headers['x-app'] as string;
         }
 
-        if (req.headers['x-app']) {
-          ctx.resolvedAppName = req.headers['x-app'];
+        if (appName) {
+          ctx.resolvedAppName = appName;
         }
 
         if (parsedUrl.pathname?.startsWith(appPathPrefix)) {
@@ -389,7 +391,7 @@ export class Gateway extends EventEmitter {
     const supervisor = AppSupervisor.getInstance();
     let handleApp = 'main';
     try {
-      handleApp = await this.getRequestHandleAppName(req as IncomingRequest);
+      handleApp = await this.getRequestHandleAppName(req);
     } catch (error) {
       this.getLogger('main', res).error('Failed to get handle app name', { error });
       this.responseErrorWithCode('APP_INITIALIZING', res, { appName: handleApp });
@@ -552,7 +554,7 @@ export class Gateway extends EventEmitter {
     return this.selectorMiddlewares;
   }
 
-  async getRequestHandleAppName(req: IncomingRequest) {
+  async getRequestHandleAppName(req: IncomingMessage | IncomingRequest) {
     const appSelectorMiddlewares = this.selectorMiddlewares.sort();
 
     const ctx: AppSelectorMiddlewareContext = {
