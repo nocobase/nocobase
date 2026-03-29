@@ -10,10 +10,10 @@
 import { Context, Next } from '@nocobase/actions';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
+import { NoPermissionError } from '@nocobase/acl';
+import { applyQueryPermission } from '@nocobase/plugin-acl';
 import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
-import { assign } from '@nocobase/utils';
-import { checkFilterParams, NoPermissionError } from '@nocobase/acl';
 import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
 const getDB = (ctx: Context, dataSource: string) => {
@@ -21,36 +21,31 @@ const getDB = (ctx: Context, dataSource: string) => {
   return ds?.collectionManager.db;
 };
 
-const getChartQueryPermission = async (ctx: Context, collection: string, acl: any) => {
-  const actionCtx: any = {
-    app: ctx.app,
-    db: ctx.db,
-    database: ctx.database ?? ctx.db,
-    getCurrentRepository: ctx.getCurrentRepository,
-    request: ctx.request,
-    req: ctx.req,
-    action: {
-      actionName: 'list',
-      name: 'list',
-      params: {},
-      resourceName: collection,
-      mergeParams() {},
-    },
-    state: {
-      ...ctx.state,
-      currentRole: ctx.state.currentRole,
-      currentRoles: ctx.state.currentRoles,
-      currentUser: ctx.state.currentUser?.toJSON ? ctx.state.currentUser.toJSON() : ctx.state.currentUser,
-    },
-    permission: {},
-    throw(...args) {
-      ctx.throw(...args);
-    },
-  };
+const getTimezone = (ctx: Context) =>
+  ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
 
-  await acl.getActionParams(actionCtx);
+const checkPermission = async (ctx: Context, next: Next) => {
+  try {
+    const result = await applyQueryPermission({
+      acl: ctx.app.dataSourceManager.get(ctx.action.params.values.dataSource)?.acl || ctx.app.acl,
+      db: getDB(ctx, ctx.action.params.values.dataSource) || ctx.db,
+      resourceName: ctx.action.params.values.collection,
+      query: ctx.action.params.values,
+      currentUser: ctx.state?.currentUser,
+      currentRole: ctx.state?.currentRole,
+      currentRoles: ctx.state?.currentRoles,
+      timezone: getTimezone(ctx) as string,
+      state: ctx.state,
+    });
+    ctx.action.params.values = result.query;
+  } catch (err) {
+    if (err instanceof NoPermissionError) {
+      ctx.throw(403, 'No permissions');
+    }
+    throw err;
+  }
 
-  return actionCtx.permission;
+  await next();
 };
 
 export const queryData = async (ctx: Context, next: Next) => {
@@ -98,31 +93,6 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   if (useCache) {
     await cache.set(uid, ctx.body, cacheConfig?.ttl * 1000);
   }
-};
-
-export const checkPermission = async (ctx: Context, next: Next) => {
-  const { collection, dataSource } = ctx.action.params.values as QueryParams;
-  const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const permission = await getChartQueryPermission(ctx, collection, acl);
-  const filterParams = permission?.parsedParams?.filter;
-
-  if (filterParams) {
-    try {
-      checkFilterParams(ctx.database.getCollection(collection), filterParams);
-    } catch (e) {
-      if (e instanceof NoPermissionError) {
-        ctx.throw(403, 'No permissions');
-      }
-    }
-    const filter = ctx.action.params.values.filter || {};
-    ctx.action.params.values = {
-      ...ctx.action.params.values,
-      filter: assign(filter, filterParams, {
-        filter: 'andMerge',
-      }),
-    };
-  }
-  return next();
 };
 
 export const query = async (ctx: Context, next: Next) => {
