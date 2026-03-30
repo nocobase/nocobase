@@ -9,11 +9,13 @@
 
 import type { McpTool } from '@nocobase/ai';
 import type { McpToolCallContext } from '@nocobase/ai';
+import type { McpToolsManager } from '@nocobase/ai';
 import type { OpenAPIV3 } from 'openapi-types';
 import { requireModule } from '@nocobase/utils';
 import { merge as deepmerge } from '@nocobase/utils';
 import inject from 'light-my-request';
 import { sanitizeJsonSchemaForOpenAITools } from './schema-utils';
+import { Application } from '@nocobase/server';
 
 type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
@@ -170,6 +172,49 @@ function joinUrl(baseUrl: string, path: string) {
   return `${normalizedBase}${normalizedPath}`;
 }
 
+export function parseResourceActionFromPath(pathTemplate: string) {
+  const normalizedPath = pathTemplate.replace(/^\/+/, '');
+  const separatorIndex = normalizedPath.lastIndexOf(':');
+
+  if (separatorIndex === -1) {
+    return {};
+  }
+
+  const resourcePath = normalizedPath.slice(0, separatorIndex);
+  const actionName = normalizedPath.slice(separatorIndex + 1);
+  const resourceName = resourcePath
+    .split('/')
+    .filter((segment) => segment && !segment.startsWith('{'))
+    .join('.');
+
+  if (!resourceName || !actionName) {
+    return {};
+  }
+
+  return {
+    resourceName,
+    actionName,
+  };
+}
+
+function toPascalCase(value: string) {
+  return value
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join('');
+}
+
+export function normalizeMcpToolName(tool: Pick<McpToolDefinitionWithBaseUrl, 'name' | 'pathTemplate'>) {
+  const actionMeta = parseResourceActionFromPath(tool.pathTemplate);
+
+  if (actionMeta.resourceName && actionMeta.actionName) {
+    return toPascalCase(`${actionMeta.resourceName}_${actionMeta.actionName}`);
+  }
+
+  return toPascalCase(tool.name);
+}
+
 function buildQueryValue(value: any) {
   if (typeof value === 'undefined') {
     return undefined;
@@ -260,12 +305,7 @@ function buildRequest(
 }
 
 export async function collectMcpToolsFromSwagger(options: {
-  app: {
-    db: any;
-    version: { get: () => Promise<string> };
-    resourcer: { options?: { prefix?: string } };
-    callback: () => any;
-  };
+  app: Application;
   packagePatterns?: string[];
 }): Promise<McpTool[]> {
   const { app, packagePatterns } = options;
@@ -312,9 +352,14 @@ export async function collectMcpToolsFromSwagger(options: {
   const mcpTools = (await getToolsFromOpenApi(swagger)) as McpToolDefinitionWithBaseUrl[];
 
   return mcpTools.map((tool) => {
-    return {
-      name: tool.name,
+    const actionMeta = parseResourceActionFromPath(tool.pathTemplate);
+    const mcpTool: McpTool = {
+      name: normalizeMcpToolName(tool),
       description: tool.description,
+      resourceName: actionMeta.resourceName,
+      actionName: actionMeta.actionName,
+      path: tool.pathTemplate,
+      method: tool.method.toUpperCase(),
       inputSchema: sanitizeJsonSchemaForOpenAITools(tool.inputSchema),
       call: async (args: Record<string, any>, context?: McpToolCallContext) => {
         const request = buildRequest(tool, args, context);
@@ -352,8 +397,18 @@ export async function collectMcpToolsFromSwagger(options: {
           );
         }
 
-        return body;
+        return app.aiManager.mcpToolsManager.postProcessToolResult(mcpTool, body, {
+          args,
+          callContext: context,
+          response: {
+            statusCode: response.statusCode,
+            headers: response.headers,
+            body,
+          },
+        });
       },
     };
+
+    return mcpTool;
   });
 }

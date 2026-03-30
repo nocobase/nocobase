@@ -8,7 +8,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { McpToolsManager } from '@nocobase/ai';
 import { sanitizeJsonSchemaForOpenAITools } from '../schema-utils';
+import { normalizeMcpToolName, parseResourceActionFromPath } from '../mcp-tools';
 
 describe('sanitizeJsonSchemaForOpenAITools', () => {
   it('should remove null type and nullable markers recursively', () => {
@@ -68,5 +70,65 @@ describe('sanitizeJsonSchemaForOpenAITools', () => {
         },
       },
     });
+  });
+
+  it('should parse resource and action names from action paths', () => {
+    expect(parseResourceActionFromPath('/collections:list')).toEqual({
+      resourceName: 'collections',
+      actionName: 'list',
+    });
+
+    expect(parseResourceActionFromPath('/collections/{filterByTk}/fields:list')).toEqual({
+      resourceName: 'collections.fields',
+      actionName: 'list',
+    });
+  });
+
+  it('should apply registered post processors by resource and action', async () => {
+    const manager = new McpToolsManager();
+
+    manager.registerToolResultPostProcessor('collections', 'list', (result) => {
+      return {
+        ...result,
+        compressed: true,
+      };
+    });
+
+    const output = await manager.postProcessToolResult(
+      {
+        name: 'collections_list',
+        description: 'list collections',
+        resourceName: 'collections',
+        actionName: 'list',
+        call: async () => null,
+      },
+      {
+        data: [],
+      },
+      {
+        args: {},
+      },
+    );
+
+    expect(output).toEqual({
+      data: [],
+      compressed: true,
+    });
+  });
+
+  it('should normalize generated tool names without method prefixes', () => {
+    expect(
+      normalizeMcpToolName({
+        name: 'PostCollectionsFields_destroy',
+        pathTemplate: '/collections/{filterByTk}/fields:destroy',
+      }),
+    ).toBe('CollectionsFieldsDestroy');
+
+    expect(
+      normalizeMcpToolName({
+        name: 'GetCollections_listMeta',
+        pathTemplate: '/collections:listMeta',
+      }),
+    ).toBe('CollectionsListMeta');
   });
 });
