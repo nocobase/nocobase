@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/acl",
-  "version": "2.0.19",
+  "version": "2.0.29",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",

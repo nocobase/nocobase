@@ -10,7 +10,7 @@
 import { reaction } from '@formily/reactive';
 import { flatten, getValuesByPath } from '@nocobase/utils/client';
 import _ from 'lodash';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParseDataScopeFilter } from '../../schema-settings';
 import { DEBOUNCE_WAIT } from '../../variables';
 import { getPath } from '../../variables/utils/getPath';
@@ -30,26 +30,42 @@ export function useParsedFilter({
   onFilterChange?: (filter: any) => void;
 }) {
   const { parseFilter, findVariable } = useParseDataScopeFilter();
+  const filterOptionKey = JSON.stringify(filterOption);
+  const filterOptionRef = useRef(filterOption);
+  const onFilterChangeRef = useRef(onFilterChange);
   const [filter, setFilter] = useState({});
-  const [parseVariableLoading, setParseVariableLoading] = useState(!!filterOption);
+  const [parsedFilterOptionKey, setParsedFilterOptionKey] = useState(() => (filterOption ? null : filterOptionKey));
+  const parseVariableLoading = !!filterOption && parsedFilterOptionKey !== filterOptionKey;
+
+  filterOptionRef.current = filterOption;
+  onFilterChangeRef.current = onFilterChange;
 
   useEffect(() => {
-    if (!filterOption) return;
+    const currentFilterOption = filterOptionRef.current;
 
+    if (!currentFilterOption) {
+      setFilter({});
+      setParsedFilterOptionKey(filterOptionKey);
+      return;
+    }
+
+    let canceled = false;
     const _run = async () => {
-      setParseVariableLoading(true);
-      const result = await parseFilter(filterOption);
-      setParseVariableLoading(false);
+      const result = await parseFilter(currentFilterOption);
+      if (canceled) {
+        return;
+      }
       setFilter(result);
-      onFilterChange?.(result);
+      setParsedFilterOptionKey(filterOptionKey);
+      onFilterChangeRef.current?.(result);
     };
     _run();
     const run = _.debounce(_run, DEBOUNCE_WAIT);
 
-    reaction(
+    const dispose = reaction(
       () => {
         // 这一步主要是为了使 reaction 能够收集到依赖
-        const flat = flatten(filterOption, {
+        const flat = flatten(currentFilterOption, {
           breakOn({ key }) {
             return key.startsWith('$') && key !== '$and' && key !== '$or';
           },
@@ -95,7 +111,13 @@ export function useParsedFilter({
         equals: _.isEqual,
       },
     );
-  }, [JSON.stringify(filterOption), parseFilter, findVariable]);
+
+    return () => {
+      canceled = true;
+      run.cancel();
+      dispose();
+    };
+  }, [filterOptionKey, findVariable, parseFilter]);
 
   return {
     /** 数据范围的筛选参数 */

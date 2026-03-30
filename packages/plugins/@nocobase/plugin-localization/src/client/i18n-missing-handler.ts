@@ -123,6 +123,8 @@ export class MissingKeyHandler {
       await this.context.api.request({
         method: 'POST',
         url: '/localizationTexts:missing',
+        skipNotify: true,
+        skipAuth: true,
         data: {
           keys: keysToSubmit,
           locale: this.currentLocale,

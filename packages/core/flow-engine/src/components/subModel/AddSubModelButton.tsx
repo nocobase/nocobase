@@ -9,7 +9,7 @@
 
 import { Switch } from 'antd';
 import _ from 'lodash';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { FlowModelContext } from '../../flowContext';
 import { FlowModel } from '../../models';
 import { CreateModelOptions, ModelConstructor } from '../../types';
@@ -666,6 +666,20 @@ const AddSubModelButtonCore = function AddSubModelButton({
     () => transformItems(finalItems, model, subModelKey, subModelType),
     [finalItems, model, subModelKey, subModelType],
   );
+
+  useEffect(() => {
+    const handleSubModelChange = () => {
+      setRefreshTick((x) => x + 1);
+    };
+
+    model.emitter.on('onSubModelAdded', handleSubModelChange);
+    model.emitter.on('onSubModelRemoved', handleSubModelChange);
+
+    return () => {
+      model.emitter.off('onSubModelAdded', handleSubModelChange);
+      model.emitter.off('onSubModelRemoved', handleSubModelChange);
+    };
+  }, [model]);
 
   return (
     <LazyDropdown
