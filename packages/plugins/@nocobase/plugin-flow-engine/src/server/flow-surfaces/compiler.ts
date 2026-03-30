@@ -278,10 +278,7 @@ function syncRouteTabNode(
   state: CompilerState,
   target: FlowSurfaceTarget,
   currentNode: any,
-  desiredNode: Pick<
-    FlowSurfaceNodeSpec,
-    'uid' | 'use' | 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels'
-  >,
+  desiredNode: FlowSurfaceApplySpec,
 ) {
   const tabTarget = { tabSchemaUid: String(target.tabSchemaUid || currentNode.uid || '').trim() };
   syncTabNode(ops, state, tabTarget, currentNode, desiredNode);
@@ -292,10 +289,7 @@ function syncTabNode(
   state: CompilerState,
   tabTarget: FlowSurfaceTarget,
   currentNode: any,
-  desiredNode: Pick<
-    FlowSurfaceNodeSpec,
-    'uid' | 'use' | 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels'
-  >,
+  desiredNode: FlowSurfaceApplySpec,
 ) {
   emitDomainSettingOps(
     ops,

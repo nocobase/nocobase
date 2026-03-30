@@ -46,6 +46,8 @@ import type {
   FlowSurfaceMutateOp,
   FlowSurfaceMutateValues,
   FlowSurfaceNodeDomain,
+  FlowSurfaceNodeSpec,
+  FlowSurfaceNodeSubModel,
   FlowSurfaceTarget,
 } from './types';
 
@@ -112,6 +114,21 @@ const POPUP_ACTION_USES = new Set([
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel', 'FilterFormSubmitActionModel']);
 const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
+
+type FlowSurfaceAddFieldResult = {
+  uid?: string;
+  parentUid?: string;
+  subKey?: string;
+  fieldUse?: string;
+  type?: string;
+  renderer?: string;
+  defaultTargetUid?: string;
+  associationPathName?: string;
+  fieldPath?: string;
+  wrapperUid?: string;
+  fieldUid?: string;
+  innerFieldUid?: string;
+};
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -850,7 +867,11 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    const blockGridUid = tree.subModels?.grid?.uid || tree.subModels?.item?.subModels?.grid?.uid;
+    const gridNode = getSingleNodeSubModel(tree.subModels?.grid);
+    const itemNode = getSingleNodeSubModel(tree.subModels?.item);
+    const itemGridNode = getSingleNodeSubModel(itemNode?.subModels?.grid);
+    const columnNodes = getNodeSubModelList(tree.subModels?.columns);
+    const blockGridUid = gridNode?.uid || itemGridNode?.uid;
     const popupGridUid = popupSurface?.gridUid;
     return {
       uid: created,
@@ -858,13 +879,11 @@ export class FlowSurfacesService {
       subKey,
       ...(blockGridUid || popupGridUid ? { gridUid: blockGridUid || popupGridUid } : {}),
       ...(blockGridUid ? { blockGridUid } : {}),
-      ...(tree.subModels?.item?.uid ? { itemUid: tree.subModels.item.uid } : {}),
-      ...(tree.subModels?.item?.subModels?.grid?.uid ? { itemGridUid: tree.subModels.item.subModels.grid.uid } : {}),
-      ...(Array.isArray(tree.subModels?.columns)
+      ...(itemNode?.uid ? { itemUid: itemNode.uid } : {}),
+      ...(itemGridNode?.uid ? { itemGridUid: itemGridNode.uid } : {}),
+      ...(columnNodes.length
         ? {
-            actionsColumnUid: _.castArray(tree.subModels.columns).find(
-              (item: any) => item?.use === 'TableActionsColumnModel',
-            )?.uid,
+            actionsColumnUid: columnNodes.find((item) => item.use === 'TableActionsColumnModel')?.uid,
           }
         : {}),
       ...(popupSurface
@@ -879,7 +898,7 @@ export class FlowSurfacesService {
     };
   }
 
-  async addField(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async addField(values: Record<string, any>, options: { transaction?: any } = {}): Promise<FlowSurfaceAddFieldResult> {
     const target = await this.locator.resolve(values.target, options);
     const container = await this.surfaceContext.resolveFieldContainer(target.uid, options.transaction);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
@@ -1085,11 +1104,12 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
+    const assignFormNode = getSingleNodeSubModel(action.subModels?.assignForm);
     return {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
-      ...(action.subModels?.assignForm?.uid ? { assignFormUid: action.subModels.assignForm.uid } : {}),
+      ...(assignFormNode?.uid ? { assignFormUid: assignFormNode.uid } : {}),
     };
   }
 
@@ -3322,14 +3342,9 @@ export class FlowSurfacesService {
   private getCollection(dataSourceKey: string, collectionName: string) {
     const normalizedDataSourceKey = dataSourceKey || 'main';
     const dataSourceManager = this.plugin.app.dataSourceManager;
-    const dataSource =
-      dataSourceManager?.get?.(normalizedDataSourceKey) || dataSourceManager?.getDataSource?.(normalizedDataSourceKey);
+    const dataSource = dataSourceManager?.get?.(normalizedDataSourceKey);
     return (
-      dataSourceManager?.getCollection?.(normalizedDataSourceKey, collectionName) ||
-      dataSource?.getCollection?.(collectionName) ||
       dataSource?.collectionManager?.getCollection?.(collectionName) ||
-      dataSource?.collectionManager?.collections?.get?.(collectionName) ||
-      dataSource?.collectionManager?.db?.getCollection?.(collectionName) ||
       this.plugin.app.db?.getCollection?.(collectionName)
     );
   }
@@ -3630,6 +3645,20 @@ export class FlowSurfacesService {
 
 function buildDefinedPayload(payload: Record<string, any>) {
   return _.pickBy(payload, (value) => !_.isUndefined(value));
+}
+
+function getSingleNodeSubModel(subModel?: FlowSurfaceNodeSubModel | null): FlowSurfaceNodeSpec | undefined {
+  if (!subModel || Array.isArray(subModel)) {
+    return undefined;
+  }
+  return subModel;
+}
+
+function getNodeSubModelList(subModel?: FlowSurfaceNodeSubModel | null): FlowSurfaceNodeSpec[] {
+  if (!subModel) {
+    return [];
+  }
+  return Array.isArray(subModel) ? subModel : [subModel];
 }
 
 function flattenModel(node: any, carry: Record<string, any> = {}) {

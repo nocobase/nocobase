@@ -91,6 +91,12 @@ export type FlowSurfaceNodeSpec = {
   subModels?: Record<string, FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[]>;
 };
 
+export type FlowSurfaceNodeSubModel = FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[];
+
+export type FlowSurfaceNodeDefaults = Partial<
+  Pick<FlowSurfaceNodeSpec, 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry' | 'subModels'>
+>;
+
 export type FlowSurfaceApplyMode = 'replace';
 export type FlowSurfaceComposeMode = 'append' | 'replace';
 

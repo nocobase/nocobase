@@ -9,7 +9,7 @@
 
 import { uid } from '@nocobase/utils';
 import _ from 'lodash';
-import type { FlowSurfaceNodeSpec } from './types';
+import type { FlowSurfaceNodeDefaults, FlowSurfaceNodeSpec } from './types';
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
 
 type BuildFieldParams = {
@@ -501,7 +501,11 @@ export function assignClientKeysToUids(
   return next;
 }
 
-function buildActionDefaults(options: { use: string; containerUse?: string; resourceInit?: Record<string, any> }) {
+function buildActionDefaults(options: {
+  use: string;
+  containerUse?: string;
+  resourceInit?: Record<string, any>;
+}): FlowSurfaceNodeDefaults {
   const props = inferActionDefaultProps(options.use);
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
   const stepParams: Record<string, any> = {
@@ -693,7 +697,7 @@ function applyContainerActionStyle(props: Record<string, any>, containerUse?: st
   return props;
 }
 
-function buildBlockDefaults(use: string) {
+function buildBlockDefaults(use: string): FlowSurfaceNodeDefaults {
   if (use === 'JSBlockModel') {
     return {
       stepParams: {
@@ -704,7 +708,7 @@ function buildBlockDefaults(use: string) {
   return {};
 }
 
-function getStandaloneFieldDefaults(use: string) {
+function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
   switch (use) {
     case 'JSFieldModel':
       return {

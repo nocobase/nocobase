@@ -1452,7 +1452,7 @@ function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
   nodeContracts.set(use, contract);
 }
 
-[
+const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['RootPageModel', PAGE_NODE_CONTRACT],
   ['ChildPageModel', PAGE_NODE_CONTRACT],
   ['RootPageTabModel', TAB_NODE_CONTRACT],
@@ -1502,7 +1502,9 @@ function registerNodeContract(use: string, contract: FlowSurfaceNodeContract) {
   ['JSFormActionModel', JS_ACTION_CONTRACT],
   ['FilterFormJSActionModel', JS_ACTION_CONTRACT],
   ['JSActionModel', JS_ACTION_CONTRACT],
-].forEach(([use, contract]) => registerNodeContract(use, contract as FlowSurfaceNodeContract));
+];
+
+NODE_CONTRACT_ENTRIES.forEach(([use, contract]) => registerNodeContract(use, contract));
 
 KNOWN_FIELD_NODE_USES.forEach((use) =>
   registerNodeContract(
