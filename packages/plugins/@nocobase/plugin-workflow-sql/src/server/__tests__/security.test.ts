@@ -46,8 +46,8 @@ describe('workflow > instructions > sql > security', () => {
   describe('sql injection prevention (safe mode)', () => {
     it('tautology in WHERE clause (1 OR 1=1)', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
-      await PostRepo.create({ values: { title: 't1' } });
-      await PostRepo.create({ values: { title: 't2' } });
+      await PostRepo.create({ values: { title: 't1' }, hooks: false });
+      await PostRepo.create({ values: { title: 't2' }, hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'sql',
@@ -73,7 +73,7 @@ describe('workflow > instructions > sql > security', () => {
 
     it('UNION SELECT injection', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
-      await PostRepo.create({ values: { title: 'normal' } });
+      await PostRepo.create({ values: { title: 'normal' }, hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'sql',
@@ -98,7 +98,7 @@ describe('workflow > instructions > sql > security', () => {
 
     it('semicolon with DROP TABLE', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
-      await PostRepo.create({ values: { title: 'keep' } });
+      await PostRepo.create({ values: { title: 'keep' }, hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'sql',
@@ -126,7 +126,7 @@ describe('workflow > instructions > sql > security', () => {
 
     it('comment bypass (-- )', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
-      await PostRepo.create({ values: { title: 'secret' } });
+      await PostRepo.create({ values: { title: 'secret' }, hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'sql',
