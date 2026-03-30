@@ -101,6 +101,7 @@ PopupSubTableFormSubmitActionModel.registerFlow({
             return `${prefixPath}.${v}`;
           });
           parentResource.addUpdateAssociationValues(newUpdateAssociations);
+          blockModel.resetUserModifiedFields?.();
         } catch (error) {
           return;
         }

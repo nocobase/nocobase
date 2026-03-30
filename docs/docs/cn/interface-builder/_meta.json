@@ -483,6 +483,11 @@
           },
           {
             "type": "custom-link",
+            "label": "自定义请求",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
           },

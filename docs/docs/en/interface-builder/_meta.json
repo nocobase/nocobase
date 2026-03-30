@@ -438,6 +438,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Custom Request",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "Pop-up",
             "link": "/interface-builder/actions/types/link"
           },

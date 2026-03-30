@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { McpTool, McpToolCallContext } from '@nocobase/ai';
+import type { McpTool, McpToolCallContext, McpToolsManager } from '@nocobase/ai';
 import inject from 'light-my-request';
 
 type CrudAction = 'list' | 'get' | 'create' | 'update' | 'destroy';
@@ -156,11 +156,22 @@ function buildHeaders(args: BusinessTableCrudArgs, context?: McpToolCallContext)
   return headers;
 }
 
+function createCrudActionToolMeta(args: BusinessTableCrudArgs): McpTool {
+  return {
+    name: 'crud',
+    description: 'Generic CRUD fallback tool',
+    resourceName: args.resource,
+    actionName: args.action,
+    call: async () => null,
+  };
+}
+
 export function createCrudTool(options: {
   app: {
     callback: () => any;
     resourcer: { options?: { prefix?: string } };
   };
+  mcpToolsManager: McpToolsManager;
 }): McpTool {
   const prefix = options.app.resourcer.options?.prefix || '/api';
 
@@ -304,7 +315,15 @@ export function createCrudTool(options: {
         );
       }
 
-      return body;
+      return options.mcpToolsManager.postProcessToolResult(createCrudActionToolMeta(typedArgs), body, {
+        args: typedArgs,
+        callContext: context,
+        response: {
+          statusCode: response.statusCode,
+          headers: response.headers,
+          body,
+        },
+      });
     },
   };
 }
