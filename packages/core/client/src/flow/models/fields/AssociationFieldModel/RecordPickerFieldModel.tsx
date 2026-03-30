@@ -113,6 +113,26 @@ export function injectRecordPickerPopupContext(model: FlowModel, viewCtx: any, f
   });
 }
 
+export function buildRecordPickerPopupContextInputArgs(
+  ctx: any,
+  options: {
+    currentItemValue?: any;
+    extraInputArgs?: Record<string, any>;
+  } = {},
+) {
+  const { parentItem, parentItemMeta, parentItemResolver } = buildRecordPickerParentItemContext(ctx);
+  const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
+
+  return {
+    ...(options.extraInputArgs || {}),
+    parentItem,
+    parentItemMeta,
+    parentItemResolver,
+    currentItemValue: options.currentItemValue,
+    openerUids,
+  };
+}
+
 function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
@@ -403,9 +423,6 @@ RecordPickerFieldModel.registerFlow({
         const sourceRecord = ctx.item?.value ?? ctx.record;
         const sourceId = sourceRecord ? sourceCollection?.getFilterByTK?.(sourceRecord) : undefined;
         const associationName = ctx.collectionField?.resourceName;
-        const { parentItem, parentItemMeta, parentItemResolver } = buildRecordPickerParentItemContext(ctx);
-        const currentItemValue = ctx.inputArgs.currentItemValue ?? {};
-        const openerUids = buildOpenerUids(ctx, ctx.inputArgs);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -418,11 +435,9 @@ RecordPickerFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             ...(associationName && sourceId != null ? { associationName, sourceId } : {}),
             collectionField: ctx.collectionField,
-            parentItem,
-            parentItemMeta,
-            parentItemResolver,
-            currentItemValue,
-            openerUids,
+            ...buildRecordPickerPopupContextInputArgs(ctx, {
+              currentItemValue: ctx.inputArgs.currentItemValue ?? {},
+            }),
             rowSelectionProps: {
               type: toOne ? 'radio' : 'checkbox',
               defaultSelectedRows: () => {
