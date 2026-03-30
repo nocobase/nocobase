@@ -51,6 +51,11 @@
       },
       {
         "type": "custom-link",
+        "label": "AddSubModelButton",
+        "link": "/flow-engine/add-sub-model"
+      },
+      {
+        "type": "custom-link",
         "label": "FlowModel 持久化",
         "link": "/flow-engine/flow-model-repository"
       },

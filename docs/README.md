@@ -22,3 +22,18 @@ Customize the theme by ejecting the components. After ejecting, you can find the
 ```bash
 yarn eject <ComponentName>
 ```
+
+## demo preview
+
+use `@docs/*` to import the demo components, which will be replaced with the actual path during build.
+
+```tsx
+import { HelloModel } from '@docs/cn/flow-engine/_demos/HelloModel';
+```
+
+Then use the demo component in the markdown file:
+
+```markdown
+```tsx file="./_demos/flow-model-renderer.tsx" preview
+```
+```

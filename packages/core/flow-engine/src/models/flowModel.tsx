@@ -1185,17 +1185,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return model;
   }
 
-  filterSubModels<K extends keyof Structure['subModels'], R>(
+  filterSubModels<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => boolean,
-  ): ArrayElementType<Structure['subModels'][K]>[] {
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>, index: number) => boolean,
+  ): ArrayElementType<NonNullable<Structure['subModels']>[K]>[] {
     const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
       return [];
     }
 
-    const results: ArrayElementType<Structure['subModels'][K]>[] = [];
+    const results: ArrayElementType<NonNullable<Structure['subModels']>[K]>[] = [];
 
     _.castArray(model)
       .sort((a, b) => (a.sortIndex || 0) - (b.sortIndex || 0))
@@ -1209,9 +1209,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return results;
   }
 
-  mapSubModels<K extends keyof Structure['subModels'], R>(
+  mapSubModels<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>, index: number) => R,
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>, index: number) => R,
   ): R[] {
     const model = (this.subModels as any)[subKey as string];
 
@@ -1231,7 +1231,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return results;
   }
 
-  hasSubModel<K extends keyof Structure['subModels']>(subKey: K) {
+  hasSubModel<K extends keyof NonNullable<Structure['subModels']>>(subKey: K) {
     const subModel = (this.subModels as any)[subKey as string];
     if (!subModel) {
       return false;
@@ -1239,10 +1239,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return _.castArray(subModel).length > 0;
   }
 
-  findSubModel<K extends keyof Structure['subModels'], R>(
+  findSubModel<K extends keyof NonNullable<Structure['subModels']>, R>(
     subKey: K,
-    callback: (model: ArrayElementType<Structure['subModels'][K]>) => R,
-  ): ArrayElementType<Structure['subModels'][K]> | null {
+    callback: (model: ArrayElementType<NonNullable<Structure['subModels']>[K]>) => R,
+  ): ArrayElementType<NonNullable<Structure['subModels']>[K]> | null {
     const model = (this.subModels as any)[subKey as string];
 
     if (!model) {
@@ -1252,7 +1252,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return (
       (_.castArray(model).find((item) => {
         return (callback as (model: any) => R)(item);
-      }) as ArrayElementType<Structure['subModels'][K]> | undefined) || null
+      }) as ArrayElementType<NonNullable<Structure['subModels']>[K]> | undefined) || null
     );
   }
 
