@@ -212,18 +212,17 @@ export default class extends Trigger {
         return context.throw(500);
       }
 
-      const { lastSavedJob, nodesMap } = processor;
-      const lastNode = nodesMap.get(lastSavedJob?.nodeId);
+      const { terminated } = processor;
       // NOTE: passthrough
       if (processor.execution.status === EXECUTION_STATUS.RESOLVED) {
-        if (lastNode?.type === 'end') {
+        if (terminated) {
           return;
         }
         continue;
       }
       // NOTE: intercept
       if (processor.execution.status < EXECUTION_STATUS.STARTED) {
-        if (lastNode?.type !== 'end') {
+        if (!terminated) {
           return context.throw(500, 'Workflow on your action failed, please contact the administrator');
         }
 

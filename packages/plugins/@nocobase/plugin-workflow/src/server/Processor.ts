@@ -66,6 +66,11 @@ export default class Processor {
    */
   lastSavedJob: JobModel | null = null;
 
+  /**
+   * @experimental
+   */
+  terminated = false;
+
   constructor(
     public execution: ExecutionModel,
     public options: ProcessorOptions,
