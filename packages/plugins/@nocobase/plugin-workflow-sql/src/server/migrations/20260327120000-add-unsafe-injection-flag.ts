@@ -11,7 +11,7 @@ import { Migration } from '@nocobase/server';
 import { parse } from '@nocobase/utils';
 
 export default class extends Migration {
-  appVersion = '<2.0.29';
+  appVersion = '<2.0.30';
   async up() {
     const { db } = this.context;
 

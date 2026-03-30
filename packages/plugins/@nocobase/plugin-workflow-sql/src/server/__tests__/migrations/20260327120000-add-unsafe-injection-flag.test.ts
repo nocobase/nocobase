@@ -10,9 +10,9 @@
 import Database from '@nocobase/database';
 import { Application } from '@nocobase/server';
 import { getApp } from '@nocobase/plugin-workflow-test';
-import { parse } from '@nocobase/utils';
 
 import Plugin from '../..';
+import Migration from '../../migrations/20260327120000-add-unsafe-injection-flag';
 
 describe('migration - add unsafe injection flag', () => {
   let app: Application;
@@ -39,20 +39,6 @@ describe('migration - add unsafe injection flag', () => {
 
   afterEach(() => app.destroy());
 
-  async function runMigrationLogic() {
-    const NodeRepo = db.getRepository('flow_nodes');
-    const nodes = await NodeRepo.find({ filter: { type: 'sql' } });
-    for (const node of nodes) {
-      const sql = node.config?.sql || '';
-      const template = parse(sql);
-      if (template.parameters?.length) {
-        node.set('config', { ...node.config, unsafeInjection: true });
-        node.changed('config', true);
-        await node.save({ silent: true });
-      }
-    }
-  }
-
   it('should mark node with variables as unsafeInjection', async () => {
     const n1 = await workflow.createNode({
       type: 'sql',
@@ -61,7 +47,8 @@ describe('migration - add unsafe injection flag', () => {
       },
     });
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     expect(n1.config.unsafeInjection).toBe(true);
@@ -75,7 +62,8 @@ describe('migration - add unsafe injection flag', () => {
       },
     });
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     expect(n1.config.unsafeInjection).toBeUndefined();
@@ -89,7 +77,8 @@ describe('migration - add unsafe injection flag', () => {
       },
     });
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     expect(n1.config.unsafeInjection).toBeUndefined();
@@ -101,7 +90,8 @@ describe('migration - add unsafe injection flag', () => {
       config: {},
     });
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     expect(n1.config.unsafeInjection).toBeUndefined();
@@ -115,7 +105,8 @@ describe('migration - add unsafe injection flag', () => {
       },
     });
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     expect(n1.config.unsafeInjection).toBe(true);
@@ -139,7 +130,8 @@ describe('migration - add unsafe injection flag', () => {
 
     await n1.setDownstream(n2);
 
-    await runMigrationLogic();
+    const migration = new Migration({ db: app.db, app } as any);
+    await migration.up();
 
     await n1.reload();
     await n2.reload();
