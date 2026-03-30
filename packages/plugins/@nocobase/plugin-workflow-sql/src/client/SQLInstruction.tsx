@@ -12,6 +12,7 @@ import { ArrayItems } from '@formily/antd-v5';
 import { useForm } from '@formily/react';
 import { Space, Input, Alert, Button } from 'antd';
 import { parse } from '@nocobase/utils/client';
+import { set } from 'lodash';
 
 import {
   Instruction,
@@ -45,27 +46,25 @@ function UnsafeInjectionWarning() {
     const template = parse(sql);
     const parameters = template.parameters || [];
 
-    // Deduplicate and assign letter names a-z
-    const uniqueKeys = [...new Map(parameters.map((p) => [p.key, p])).keys()];
-    const keyToName = new Map<string, string>();
+    // Deduplicate and assign new names
+    const uniqueKeys: string[] = [
+      ...new Set(
+        parameters.map((p: { key: string }) => p.key).filter((key) => key && typeof key === 'string') as string[],
+      ),
+    ];
+    const context = {};
     uniqueKeys.forEach((key, index) => {
-      keyToName.set(key, String.fromCharCode(97 + index)); // a, b, c, ...
+      set(context, key, `:var${index}`);
     });
 
     // Build variables config
-    const variables = uniqueKeys.map((key) => ({
-      name: keyToName.get(key),
+    const variables = uniqueKeys.map((key, index) => ({
+      name: `var${index}`,
       value: `{{${key}}}`,
     }));
 
     // Replace {{...}} in SQL with :name placeholders
-    const regex = /{{(\w|:|[\s\-+.,@/()?=*_$])+}}/g;
-    const newSql = sql.replace(regex, (match) => {
-      const key = match.substr(2, match.length - 4).trim();
-      const baseKey = key.includes(':') ? key.substr(0, key.indexOf(':')) : key;
-      const name = keyToName.get(baseKey);
-      return name ? `:${name}` : match;
-    });
+    const newSql = template(context);
 
     form.setValues({
       sql: newSql,
