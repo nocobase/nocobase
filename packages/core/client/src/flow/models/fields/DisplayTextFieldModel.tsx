@@ -12,8 +12,11 @@ import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTextFieldModel extends ClickableFieldModel {
-  t(value: string) {
+  t(value: string | undefined | null) {
     // 如果 value 是 {{ 开头 }} 结尾，则认为是 i18n 表达式，需要翻译
+    if (typeof value !== 'string') {
+      return value;
+    }
     if (value.startsWith('{{') && value.endsWith('}}')) {
       return this.translate(value);
     }

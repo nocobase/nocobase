@@ -334,6 +334,38 @@ describe('query', () => {
       const userId = filter.$and[1].userId.$eq;
       expect(userId).toBe(user.id);
     });
+
+    it('should reuse flow-engine variable resolver for filter values', async () => {
+      const user = await db.getRepository('users').findOne();
+      const context = {
+        ...ctx,
+        auth: {
+          user,
+        },
+        state: {
+          currentUser: user,
+        },
+        get: (key: string) => {
+          return {
+            'x-timezone': '',
+          }[key];
+        },
+        getCurrentLocale: () => 'en-US',
+        action: {
+          params: {
+            values: {
+              filter: {
+                userId: { $eq: '{{ ctx.user.id }}' },
+              },
+            },
+          },
+        },
+      };
+
+      await parseVariables(context, async () => {});
+
+      expect(context.action.params.values.filter.userId.$eq).toBe(user.id);
+    });
   });
 
   describe('cacheMiddleware', () => {
