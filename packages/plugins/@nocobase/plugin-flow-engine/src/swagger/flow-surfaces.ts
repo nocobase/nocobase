@@ -7,11 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  FLOW_SURFACES_ACTION_METHODS,
-  FLOW_SURFACES_ACTION_NAMES,
-  type FlowSurfacesActionName,
-} from '../server/flow-surfaces/constants';
+import { FLOW_SURFACES_ACTION_METHODS, FLOW_SURFACES_ACTION_NAMES } from '../server/flow-surfaces/constants';
 
 const FLOW_SURFACES_TAG = 'flowSurfaces';
 const ANY_OBJECT_SCHEMA = {
@@ -53,6 +49,49 @@ const ACTION_TYPE_ENUM = [
   'reset',
   'collapse',
 ];
+const NON_RECORD_ACTION_TYPE_ENUM = [
+  'filter',
+  'addNew',
+  'popup',
+  'refresh',
+  'expandCollapse',
+  'bulkDelete',
+  'bulkEdit',
+  'bulkUpdate',
+  'export',
+  'exportAttachments',
+  'import',
+  'link',
+  'upload',
+  'js',
+  'composeEmail',
+  'templatePrint',
+  'triggerWorkflow',
+  'submit',
+  'reset',
+  'collapse',
+];
+const RECORD_ACTION_TYPE_ENUM = [
+  'popup',
+  'js',
+  'composeEmail',
+  'templatePrint',
+  'triggerWorkflow',
+  'duplicate',
+  'addChild',
+  'view',
+  'edit',
+  'delete',
+  'updateRecord',
+];
+const DOC_ONLY_ACTION_METHODS = {
+  addRecordAction: 'post',
+  addBlocks: 'post',
+  addFields: 'post',
+  addActions: 'post',
+  addRecordActions: 'post',
+} as const;
+type FlowSurfacesDocOnlyActionName = keyof typeof DOC_ONLY_ACTION_METHODS;
 
 function ref(name: string) {
   return {
@@ -456,6 +495,91 @@ const examples = {
       code: 'return record.nickname;',
     },
   },
+  configurePage: {
+    target: {
+      uid: 'employees-page-uid',
+    },
+    changes: {
+      icon: 'UserOutlined',
+      enableHeader: false,
+    },
+  },
+  configureTableAdvanced: {
+    target: {
+      uid: 'tree-table-block-uid',
+    },
+    changes: {
+      quickEdit: true,
+      treeTable: true,
+      defaultExpandAllRows: true,
+      dragSort: true,
+      dragSortBy: 'sort',
+    },
+  },
+  configureEditForm: {
+    target: {
+      uid: 'edit-form-block-uid',
+    },
+    changes: {
+      colon: false,
+      dataScope: {
+        logic: '$and',
+        items: [
+          {
+            path: 'status',
+            operator: '$eq',
+            value: 'draft',
+          },
+        ],
+      },
+    },
+  },
+  configureDetails: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    changes: {
+      colon: true,
+      linkageRules: [
+        {
+          when: {
+            path: 'status',
+            operator: '$eq',
+            value: 'archived',
+          },
+          set: {
+            hidden: true,
+          },
+        },
+      ],
+    },
+  },
+  configureActionModes: {
+    target: {
+      uid: 'compose-email-action-uid',
+    },
+    changes: {
+      linkageRules: [
+        {
+          when: {
+            path: 'status',
+            operator: '$eq',
+            value: 'draft',
+          },
+          set: {
+            disabled: true,
+          },
+        },
+      ],
+      editMode: 'drawer',
+      updateMode: 'overwrite',
+      duplicateMode: 'popup',
+      collapsedRows: 2,
+      defaultCollapsed: true,
+      emailFieldNames: ['email', 'backupEmail'],
+      defaultSelectAllRecords: true,
+    },
+  },
   createPage: {
     title: 'Employees',
     tabTitle: 'Overview',
@@ -567,11 +691,11 @@ const examples = {
   },
   addAction: {
     target: {
-      uid: 'table-actions-column-uid',
+      uid: 'filter-form-block-uid',
     },
-    type: 'view',
+    type: 'submit',
     props: {
-      title: 'View',
+      title: 'Apply filters',
     },
   },
   addLinkAction: {
@@ -600,6 +724,120 @@ const examples = {
         },
       },
     },
+  },
+  addRecordAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'view',
+    props: {
+      title: 'View user',
+    },
+  },
+  addRecordJsAction: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    type: 'js',
+    props: {
+      title: 'Inspect record',
+      type: 'default',
+    },
+    stepParams: {
+      clickSettings: {
+        runJs: {
+          version: '1.0.0',
+          code: 'return currentRecord?.id;',
+        },
+      },
+    },
+  },
+  addBlocks: {
+    target: {
+      uid: 'page-grid-uid',
+    },
+    blocks: [
+      {
+        key: 'usersTable',
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'users',
+        },
+      },
+      {
+        key: 'teamNotes',
+        type: 'markdown',
+        props: {
+          content: '# Team notes',
+        },
+      },
+    ],
+  },
+  addFields: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    fields: [
+      {
+        key: 'username',
+        fieldPath: 'username',
+      },
+      {
+        key: 'nickname',
+        fieldPath: 'nickname',
+        renderer: 'js',
+      },
+    ],
+  },
+  addActions: {
+    target: {
+      uid: 'filter-form-block-uid',
+    },
+    actions: [
+      {
+        key: 'submit',
+        type: 'submit',
+        props: {
+          title: 'Search',
+        },
+      },
+      {
+        key: 'reset',
+        type: 'reset',
+        props: {
+          title: 'Reset filters',
+        },
+      },
+    ],
+  },
+  addRecordActions: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    recordActions: [
+      {
+        key: 'view',
+        type: 'view',
+        props: {
+          title: 'View user',
+        },
+      },
+      {
+        key: 'edit',
+        type: 'edit',
+        props: {
+          title: 'Edit user',
+        },
+      },
+      {
+        key: 'delete',
+        type: 'delete',
+        props: {
+          title: 'Delete user',
+        },
+      },
+    ],
   },
   updateSettings: {
     target: {
@@ -740,9 +978,12 @@ const examples = {
   getPopupQuery: {
     uid: 'view-action-uid',
   },
+  getPageQuery: {
+    pageSchemaUid: 'employees-page-schema',
+  },
 };
 
-const actionDocs: Record<FlowSurfacesActionName, any> = {
+const actionDocs: Record<string, any> = {
   catalog: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
@@ -758,9 +999,11 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
     description: [
       '读取标准化后的 Flow surface 读回结果，作为 CLI / 编排工具的稳定读口。',
       '',
-      'target 使用 query 参数表达；以下 4 个字段共同组成定位器。',
+      '只接受根级定位字段；以下 4 个字段共同组成定位器。',
+      '不要使用 `{ target: { ... } }` 包裹。',
       '',
       `示例：GET /api/flowSurfaces:get?uid=${examples.getPopupQuery.uid}`,
+      `示例：GET /api/flowSurfaces:get?pageSchemaUid=${examples.getPageQuery.pageSchemaUid}`,
     ].join('\n'),
     parameters: [
       parameterRef('flowSurfaceTargetUid'),
@@ -855,6 +1098,27 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
             jsItemSettings: {
               summary: 'Configure a JS item with label and runJs code/version',
               value: examples.configureJsItem,
+            },
+            pageHeaderSettings: {
+              summary: 'Configure page icon and enableHeader using simple changes',
+              value: examples.configurePage,
+            },
+            tableAdvancedSettings: {
+              summary: 'Configure advanced table simple keys such as quickEdit/treeTable/dragSort',
+              value: examples.configureTableAdvanced,
+            },
+            editFormSettings: {
+              summary: 'Configure edit form colon and dataScope with a FilterGroup',
+              value: examples.configureEditForm,
+            },
+            detailsSettings: {
+              summary: 'Configure details colon and linkageRules',
+              value: examples.configureDetails,
+            },
+            actionBehaviorSettings: {
+              summary:
+                'Configure action linkageRules, edit/update/duplicate modes, collapsed rows and email selection defaults',
+              value: examples.configureActionModes,
             },
           },
         },
@@ -976,9 +1240,9 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
   },
   addAction: {
     tags: [FLOW_SURFACES_TAG],
-    summary: 'Add an action under an allowed action container',
+    summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的 action。典型场景包括 table row action、form submit、filter-form reset。',
+      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。',
     ),
     requestBody: {
       required: true,
@@ -986,8 +1250,8 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
         'application/json': {
           schema: ref('FlowSurfaceAddActionRequest'),
           examples: {
-            view: {
-              summary: 'Create a normal view action under a table row action container',
+            submit: {
+              summary: 'Create a submit action under a filter-form action container',
               value: examples.addAction,
             },
             link: {
@@ -1003,6 +1267,68 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
       },
     },
     responses: responses('FlowSurfaceAddActionResult'),
+  },
+  addRecordAction: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add a record action under a record-capable owner target',
+    description: valuesCompatibilityNote(
+      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；服务端会自动解析 canonical record action container。',
+    ),
+    requestBody: {
+      required: true,
+      content: {
+        'application/json': {
+          schema: ref('FlowSurfaceAddRecordActionRequest'),
+          examples: {
+            view: {
+              summary: 'Create a view action under a table record-action owner target',
+              value: examples.addRecordAction,
+            },
+            js: {
+              summary: 'Create a JS record action under a details block owner target',
+              value: examples.addRecordJsAction,
+            },
+          },
+        },
+      },
+    },
+    responses: responses('FlowSurfaceAddRecordActionResult'),
+  },
+  addBlocks: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add multiple blocks sequentially under the same target',
+    description: valuesCompatibilityNote(
+      '在同一 target 下顺序批量创建 block。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+    ),
+    requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
+    responses: responses('FlowSurfaceAddBlocksResult'),
+  },
+  addFields: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add multiple fields sequentially under the same target',
+    description: valuesCompatibilityNote(
+      '在同一 target 下顺序批量创建 field。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+    ),
+    requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
+    responses: responses('FlowSurfaceAddFieldsResult'),
+  },
+  addActions: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add multiple non-record actions sequentially under the same target',
+    description: valuesCompatibilityNote(
+      '在同一 target 下顺序批量创建非 record action。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。',
+    ),
+    requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
+    responses: responses('FlowSurfaceAddActionsResult'),
+  },
+  addRecordActions: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add multiple record actions sequentially under the same record-capable owner target',
+    description: valuesCompatibilityNote(
+      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。采用部分成功语义：单项失败不会回滚其它项。',
+    ),
+    requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
+    responses: responses('FlowSurfaceAddRecordActionsResult'),
   },
   updateSettings: {
     tags: [FLOW_SURFACES_TAG],
@@ -1062,6 +1388,15 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
     responses: responses('FlowSurfaceMutationResponse'),
   },
 };
+
+const extraPaths = Object.fromEntries(
+  (Object.keys(DOC_ONLY_ACTION_METHODS) as FlowSurfacesDocOnlyActionName[]).map((actionName) => [
+    `/flowSurfaces:${actionName}`,
+    {
+      [DOC_ONLY_ACTION_METHODS[actionName]]: actionDocs[actionName],
+    },
+  ]),
+);
 
 const parameters = {
   flowSurfaceTargetUid: {
@@ -1599,7 +1934,8 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
-        description: 'Public record/item-level actions exposed for table/list/gridCard targets.',
+        description:
+          'Public record/item-level actions exposed for record-capable targets such as table/details/list/gridCard.',
         items: ref('FlowSurfaceCatalogItem'),
       },
       editableDomains: {
@@ -1752,7 +2088,30 @@ const schemas = {
           },
           type: {
             type: 'string',
-            enum: ACTION_TYPE_ENUM,
+            enum: NON_RECORD_ACTION_TYPE_ENUM,
+          },
+          settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceComposeActionPopup'),
+        },
+        additionalProperties: false,
+      },
+    ],
+  },
+  FlowSurfaceComposeRecordActionSpec: {
+    oneOf: [
+      {
+        type: 'string',
+      },
+      {
+        type: 'object',
+        required: ['type'],
+        properties: {
+          key: {
+            type: 'string',
+          },
+          type: {
+            type: 'string',
+            enum: RECORD_ACTION_TYPE_ENUM,
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceComposeActionPopup'),
@@ -1798,8 +2157,9 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
-        description: 'Public semantic group for record/item-level actions on table/list/gridCard blocks.',
-        items: ref('FlowSurfaceComposeActionSpec'),
+        description:
+          'Public semantic group for record/item-level actions on record-capable blocks such as table/details/list/gridCard.',
+        items: ref('FlowSurfaceComposeRecordActionSpec'),
       },
     },
     additionalProperties: false,
@@ -1943,7 +2303,8 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
-        description: 'Returned record/item-level action results for table/list/gridCard public compose semantics.',
+        description:
+          'Returned record/item-level action results for record-capable public compose semantics such as table/details/list/gridCard.',
         items: ref('FlowSurfaceComposeActionResult'),
       },
     },
@@ -2404,7 +2765,7 @@ const schemas = {
       target: ref('FlowSurfaceTarget'),
       type: {
         type: 'string',
-        enum: ACTION_TYPE_ENUM,
+        enum: NON_RECORD_ACTION_TYPE_ENUM,
       },
       use: {
         type: 'string',
@@ -2431,6 +2792,344 @@ const schemas = {
       },
       assignFormUid: {
         type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceTarget'),
+      type: {
+        type: 'string',
+        enum: RECORD_ACTION_TYPE_ENUM,
+      },
+      use: {
+        type: 'string',
+      },
+      resourceInit: ref('FlowSurfaceResourceInit'),
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionResult: {
+    allOf: [ref('FlowSurfaceAddActionResult')],
+  },
+  FlowSurfaceBatchItemError: {
+    type: 'object',
+    properties: {
+      message: {
+        type: 'string',
+      },
+    },
+    required: ['message'],
+    additionalProperties: true,
+  },
+  FlowSurfaceAddBlockItem: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: [
+          'table',
+          'createForm',
+          'editForm',
+          'details',
+          'filterForm',
+          'list',
+          'gridCard',
+          'markdown',
+          'iframe',
+          'chart',
+          'actionPanel',
+          'jsBlock',
+        ],
+      },
+      use: {
+        type: 'string',
+      },
+      resourceInit: ref('FlowSurfaceResourceInit'),
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddFieldItem: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+      },
+      fieldPath: {
+        type: 'string',
+      },
+      renderer: {
+        type: 'string',
+        enum: ['js'],
+      },
+      type: {
+        type: 'string',
+        enum: ['jsColumn', 'jsItem'],
+      },
+      associationPathName: {
+        type: 'string',
+      },
+      dataSourceKey: {
+        type: 'string',
+      },
+      collectionName: {
+        type: 'string',
+      },
+      fieldUse: {
+        type: 'string',
+      },
+      defaultTargetUid: {
+        type: 'string',
+      },
+      targetBlockUid: {
+        type: 'string',
+      },
+      targetUid: {
+        type: 'string',
+      },
+      wrapperProps: ANY_OBJECT_SCHEMA,
+      fieldProps: ANY_OBJECT_SCHEMA,
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddActionItem: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: NON_RECORD_ACTION_TYPE_ENUM,
+      },
+      use: {
+        type: 'string',
+      },
+      resourceInit: ref('FlowSurfaceResourceInit'),
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionItem: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+        enum: RECORD_ACTION_TYPE_ENUM,
+      },
+      use: {
+        type: 'string',
+      },
+      resourceInit: ref('FlowSurfaceResourceInit'),
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddBlocksRequest: {
+    type: 'object',
+    required: ['target', 'blocks'],
+    properties: {
+      target: ref('FlowSurfaceTarget'),
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceAddBlockItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddFieldsRequest: {
+    type: 'object',
+    required: ['target', 'fields'],
+    properties: {
+      target: ref('FlowSurfaceTarget'),
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceAddFieldItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddActionsRequest: {
+    type: 'object',
+    required: ['target', 'actions'],
+    properties: {
+      target: ref('FlowSurfaceTarget'),
+      actions: {
+        type: 'array',
+        items: ref('FlowSurfaceAddActionItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionsRequest: {
+    type: 'object',
+    required: ['target', 'recordActions'],
+    properties: {
+      target: ref('FlowSurfaceTarget'),
+      recordActions: {
+        type: 'array',
+        items: ref('FlowSurfaceAddRecordActionItem'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddBlocksItemResult: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      key: {
+        type: 'string',
+      },
+      ok: {
+        type: 'boolean',
+      },
+      result: ref('FlowSurfaceAddBlockResult'),
+      error: ref('FlowSurfaceBatchItemError'),
+    },
+    required: ['index', 'ok'],
+    additionalProperties: false,
+  },
+  FlowSurfaceAddFieldsItemResult: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      key: {
+        type: 'string',
+      },
+      ok: {
+        type: 'boolean',
+      },
+      result: ref('FlowSurfaceAddFieldResult'),
+      error: ref('FlowSurfaceBatchItemError'),
+    },
+    required: ['index', 'ok'],
+    additionalProperties: false,
+  },
+  FlowSurfaceAddActionsItemResult: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      key: {
+        type: 'string',
+      },
+      ok: {
+        type: 'boolean',
+      },
+      result: ref('FlowSurfaceAddActionResult'),
+      error: ref('FlowSurfaceBatchItemError'),
+    },
+    required: ['index', 'ok'],
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionsItemResult: {
+    type: 'object',
+    properties: {
+      index: {
+        type: 'integer',
+      },
+      key: {
+        type: 'string',
+      },
+      ok: {
+        type: 'boolean',
+      },
+      result: ref('FlowSurfaceAddRecordActionResult'),
+      error: ref('FlowSurfaceBatchItemError'),
+    },
+    required: ['index', 'ok'],
+    additionalProperties: false,
+  },
+  FlowSurfaceAddBlocksResult: {
+    type: 'object',
+    properties: {
+      blocks: {
+        type: 'array',
+        items: ref('FlowSurfaceAddBlocksItemResult'),
+      },
+      successCount: {
+        type: 'integer',
+      },
+      errorCount: {
+        type: 'integer',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddFieldsResult: {
+    type: 'object',
+    properties: {
+      fields: {
+        type: 'array',
+        items: ref('FlowSurfaceAddFieldsItemResult'),
+      },
+      successCount: {
+        type: 'integer',
+      },
+      errorCount: {
+        type: 'integer',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddActionsResult: {
+    type: 'object',
+    properties: {
+      actions: {
+        type: 'array',
+        items: ref('FlowSurfaceAddActionsItemResult'),
+      },
+      successCount: {
+        type: 'integer',
+      },
+      errorCount: {
+        type: 'integer',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddRecordActionsResult: {
+    type: 'object',
+    properties: {
+      recordActions: {
+        type: 'array',
+        items: ref('FlowSurfaceAddRecordActionsItemResult'),
+      },
+      successCount: {
+        type: 'integer',
+      },
+      errorCount: {
+        type: 'integer',
       },
     },
     additionalProperties: false,
@@ -2660,6 +3359,20 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceMutateAddRecordActionValues: {
+    type: 'object',
+    properties: {
+      target: ref('FlowSurfaceMutateTarget'),
+      type: ref('FlowSurfaceResolvableString'),
+      use: ref('FlowSurfaceResolvableString'),
+      resourceInit: ref('FlowSurfaceMutateResourceInit'),
+      props: ANY_OBJECT_SCHEMA,
+      decoratorProps: ANY_OBJECT_SCHEMA,
+      stepParams: ANY_OBJECT_SCHEMA,
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceMutateUpdateSettingsValues: {
     type: 'object',
     properties: {
@@ -2866,6 +3579,22 @@ const schemas = {
       },
     ],
   },
+  FlowSurfaceMutateOpAddRecordAction: {
+    allOf: [
+      ref('FlowSurfaceMutateOpBase'),
+      {
+        type: 'object',
+        required: ['type', 'values'],
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['addRecordAction'],
+          },
+          values: ref('FlowSurfaceMutateAddRecordActionValues'),
+        },
+      },
+    ],
+  },
   FlowSurfaceMutateOpUpdateSettings: {
     allOf: [
       ref('FlowSurfaceMutateOpBase'),
@@ -2957,6 +3686,7 @@ const schemas = {
       ref('FlowSurfaceMutateOpAddBlock'),
       ref('FlowSurfaceMutateOpAddField'),
       ref('FlowSurfaceMutateOpAddAction'),
+      ref('FlowSurfaceMutateOpAddRecordAction'),
       ref('FlowSurfaceMutateOpUpdateSettings'),
       ref('FlowSurfaceMutateOpSetEventFlows'),
       ref('FlowSurfaceMutateOpSetLayout'),
@@ -3005,6 +3735,7 @@ const schemas = {
       ref('FlowSurfaceAddBlockResult'),
       ref('FlowSurfaceAddFieldResult'),
       ref('FlowSurfaceAddActionResult'),
+      ref('FlowSurfaceAddRecordActionResult'),
       ref('FlowSurfaceUpdateSettingsResult'),
       ref('FlowSurfaceSetEventFlowsResult'),
       ref('FlowSurfaceSetLayoutResult'),
@@ -3064,7 +3795,10 @@ export default {
       description: 'Atomic and declarative FlowModel surface orchestration for external CLI and automation tools',
     },
   ],
-  paths,
+  paths: {
+    ...paths,
+    ...extraPaths,
+  },
   components: {
     parameters,
     schemas,

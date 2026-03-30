@@ -222,10 +222,17 @@ export class FlowSurfaceRouteSync {
     return {
       title:
         readRouteProp(route, 'title') ?? pageModel?.props?.title ?? pageModel?.stepParams?.pageSettings?.general?.title,
+      icon:
+        readRouteProp(route, 'icon') ?? pageModel?.props?.icon ?? pageModel?.stepParams?.pageSettings?.general?.icon,
       enableTabs: !!(
         readRouteProp(route, 'enableTabs') ??
         pageModel?.props?.enableTabs ??
         pageModel?.stepParams?.pageSettings?.general?.enableTabs
+      ),
+      enableHeader: firstDefined(
+        readRouteProp(route, 'enableHeader'),
+        pageModel?.props?.enableHeader,
+        pageModel?.stepParams?.pageSettings?.general?.enableHeader,
       ),
       displayTitle: !!(
         readRouteProp(route, 'displayTitle') ??
@@ -241,14 +248,22 @@ export class FlowSurfaceRouteSync {
     const nextGeneral = nextPayload.stepParams?.pageSettings?.general || {};
     const routePatch: Record<string, any> = {};
     const nextTitle = firstDefined(nextGeneral.title, nextProps.title);
+    const nextIcon = firstDefined(nextGeneral.icon, nextProps.icon);
     const nextEnableTabs = firstDefined(nextGeneral.enableTabs, nextProps.enableTabs);
+    const nextEnableHeader = firstDefined(nextGeneral.enableHeader, nextProps.enableHeader);
     const nextDisplayTitle = firstDefined(nextGeneral.displayTitle, nextProps.displayTitle);
 
     if (!_.isUndefined(nextTitle)) {
       routePatch.title = nextTitle;
     }
+    if (!_.isUndefined(nextIcon)) {
+      routePatch.icon = nextIcon;
+    }
     if (!_.isUndefined(nextEnableTabs)) {
       routePatch.enableTabs = !!nextEnableTabs;
+    }
+    if (!_.isUndefined(nextEnableHeader)) {
+      routePatch.enableHeader = !!nextEnableHeader;
     }
     if (!_.isUndefined(nextDisplayTitle)) {
       routePatch.displayTitle = !!nextDisplayTitle;
@@ -260,7 +275,13 @@ export class FlowSurfaceRouteSync {
 
     return {
       title: routePatch.title ?? readRouteProp(route, 'title') ?? current?.props?.title,
+      ...(!_.isUndefined(routePatch.icon) ? { icon: routePatch.icon } : {}),
       enableTabs: routePatch.enableTabs ?? !!(readRouteProp(route, 'enableTabs') ?? current?.props?.enableTabs),
+      ...(!_.isUndefined(routePatch.enableHeader)
+        ? { enableHeader: routePatch.enableHeader }
+        : !_.isUndefined(readRouteProp(route, 'enableHeader'))
+          ? { enableHeader: !!readRouteProp(route, 'enableHeader') }
+          : {}),
       displayTitle:
         routePatch.displayTitle ??
         !!(

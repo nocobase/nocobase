@@ -181,7 +181,7 @@ export async function captureFlowSurfaceFromLocalDb(options: {
   target: Record<string, any>;
   loadPersisted: (context: { target: Record<string, any>; readback: any }) => Promise<any>;
 }) {
-  const readback = await options.service.get({ target: options.target });
+  const readback = await options.service.get(options.target);
   const rawPersisted = await options.loadPersisted({ target: options.target, readback });
   if (!rawPersisted) {
     throw new Error('captureFlowSurfaceFromLocalDb requires a real rawPersisted snapshot');
@@ -198,17 +198,20 @@ export async function captureFlowSurfaceFromAdminApi(options: {
   target: Record<string, any>;
   loadPersisted: (context: { target: Record<string, any>; readback: any }) => Promise<any>;
 }) {
-  const response = await fetch(`${options.baseUrl.replace(/\/$/, '')}/api/flowSurfaces:get`, {
-    method: 'POST',
+  const search = new URLSearchParams(
+    Object.entries(options.target || {}).reduce(
+      (carry, [key, value]) => ({
+        ...carry,
+        ...(typeof value === 'undefined' ? {} : { [key]: String(value) }),
+      }),
+      {},
+    ),
+  );
+  const response = await fetch(`${options.baseUrl.replace(/\/$/, '')}/api/flowSurfaces:get?${search.toString()}`, {
+    method: 'GET',
     headers: {
       Authorization: `Bearer ${options.token}`,
-      'Content-Type': 'application/json',
     },
-    body: JSON.stringify({
-      values: {
-        target: options.target,
-      },
-    }),
   });
   const payload = await response.json();
   const readback = payload?.data || payload;

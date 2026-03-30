@@ -62,12 +62,32 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
       ctx.body = await service.transaction((transaction) => service.addBlock(getValues(ctx), { transaction }));
       await next();
     },
+    addBlocks: async (ctx, next) => {
+      ctx.body = await service.addBlocks(getValues(ctx));
+      await next();
+    },
     addField: async (ctx, next) => {
       ctx.body = await service.transaction((transaction) => service.addField(getValues(ctx), { transaction }));
       await next();
     },
+    addFields: async (ctx, next) => {
+      ctx.body = await service.addFields(getValues(ctx));
+      await next();
+    },
     addAction: async (ctx, next) => {
       ctx.body = await service.transaction((transaction) => service.addAction(getValues(ctx), { transaction }));
+      await next();
+    },
+    addActions: async (ctx, next) => {
+      ctx.body = await service.addActions(getValues(ctx));
+      await next();
+    },
+    addRecordAction: async (ctx, next) => {
+      ctx.body = await service.transaction((transaction) => service.addRecordAction(getValues(ctx), { transaction }));
+      await next();
+    },
+    addRecordActions: async (ctx, next) => {
+      ctx.body = await service.addRecordActions(getValues(ctx));
       await next();
     },
     updateSettings: async (ctx, next) => {

@@ -4,11 +4,30 @@
 
 ## 推荐调用顺序
 
-1. 先用 `flowSurfaces:createPage` 创建页面。
-2. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
-3. 再用 `flowSurfaces:configure` 修改高频配置。
-4. 删除与排序继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`。
-5. 只有当上述公开语义不够时，才降级到底层 `addBlock`、`addField`、`addAction`、`updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+1. 先用 `flowSurfaces:get` 读取已有 surface。
+2. 再用 `flowSurfaces:createPage` 创建页面。
+3. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
+4. 再用 `flowSurfaces:configure` 修改高频配置。
+5. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
+6. 删除与排序继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`。
+7. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+
+## 读取接口约定
+
+- `flowSurfaces:get` 只接受根级定位字段：`uid`、`pageSchemaUid`、`tabSchemaUid`、`routeId`
+- 不要写成 `{ "target": { "uid": "..." } }`
+- 最常用的是：
+
+```text
+GET /api/flowSurfaces:get?uid=view-action-uid
+GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
+```
+
+## 直写接口约定
+
+- `addAction` 只用于非 record action：block / form / filter-form / action-panel
+- `addRecordAction` 只用于 record action：table / details / list / gridCard
+- `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
 
 ## 能力矩阵
 
@@ -134,11 +153,11 @@
 }
 ```
 
-`table` / `list` / `gridCard` 的公开语义统一为：
+`table` / `details` / `list` / `gridCard` 的公开语义统一为：
 
 - `actions` = block 级 actions
 - `recordActions` = record/item 级 actions
-- `catalog(target=table/list/gridCard)` 也会按同样语义分别返回 `actions` 和 `recordActions`
+- `catalog(target=table/details/list/gridCard)` 也会按同样语义分别返回 `actions` 和 `recordActions`
 
 `roles.title` 这种 to-many relation leaf path 在 display 场景下是允许的。服务端会自动归一化成 association-value binding，调用方不需要自己处理 `associationPathName`、`titleField` 或点击上下文。
 
@@ -289,6 +308,139 @@
 }
 ```
 
+## 示例 5.3：直接追加 record action
+
+`addRecordAction` 的 target 传 record-capable owner target，不要传 table 内部的 actions column uid。
+
+```json
+{
+  "target": {
+    "uid": "users-table-uid"
+  },
+  "type": "view",
+  "props": {
+    "title": "查看用户"
+  }
+}
+```
+
+`addAction` 和 `addRecordAction` 要严格拆开：
+
+- 非 record action 走 `addAction`
+- record action 走 `addRecordAction`
+- table / details / list / gridCard 的 record action 不要再混进 `addAction`
+
+## 示例 5.4：批量追加 block / field / action / record action
+
+批量 API 都是“同一 target 下顺序执行 + 部分成功”。
+
+`addBlocks`：
+
+```json
+{
+  "target": {
+    "uid": "page-grid-uid"
+  },
+  "blocks": [
+    {
+      "key": "usersTable",
+      "type": "table",
+      "resourceInit": {
+        "dataSourceKey": "main",
+        "collectionName": "users"
+      }
+    },
+    {
+      "key": "teamNotes",
+      "type": "markdown",
+      "props": {
+        "content": "# Team notes"
+      }
+    }
+  ]
+}
+```
+
+`addFields`：
+
+```json
+{
+  "target": {
+    "uid": "table-block-uid"
+  },
+  "fields": [
+    {
+      "key": "username",
+      "fieldPath": "username"
+    },
+    {
+      "key": "nickname",
+      "fieldPath": "nickname",
+      "renderer": "js"
+    }
+  ]
+}
+```
+
+`addActions`：
+
+```json
+{
+  "target": {
+    "uid": "filter-form-block-uid"
+  },
+  "actions": [
+    {
+      "key": "submit",
+      "type": "submit",
+      "props": {
+        "title": "Search"
+      }
+    },
+    {
+      "key": "reset",
+      "type": "reset",
+      "props": {
+        "title": "Reset filters"
+      }
+    }
+  ]
+}
+```
+
+`addRecordActions`：
+
+```json
+{
+  "target": {
+    "uid": "table-block-uid"
+  },
+  "recordActions": [
+    {
+      "key": "view",
+      "type": "view",
+      "props": {
+        "title": "查看用户"
+      }
+    },
+    {
+      "key": "edit",
+      "type": "edit",
+      "props": {
+        "title": "编辑用户"
+      }
+    },
+    {
+      "key": "delete",
+      "type": "delete",
+      "props": {
+        "title": "删除用户"
+      }
+    }
+  ]
+}
+```
+
 ## 示例 6：JS block / JS action / JS field
 
 ### 6.1 `jsBlock`
@@ -418,10 +570,125 @@ JS block:
 
 JS field / JS action / JS column / JS item 也都支持 `code`、`version` 这两个高频改配字段；其它简单字段继续用同一个 `configure`：
 
+- page: `title`、`documentTitle`、`displayTitle`、`enableTabs`、`icon`、`enableHeader`
+- table: `resource`、`pageSize`、`density`、`showRowNumbers`、`sorting`、`dataScope`、`quickEdit`、`treeTable`、`defaultExpandAllRows`、`dragSort`、`dragSortBy`
+- form / createForm / editForm: `layout`、`labelAlign`、`labelWidth`、`labelWrap`、`assignRules`、`colon`
+- editForm: `dataScope`
+- details: `resource`、`layout`、`labelAlign`、`labelWidth`、`labelWrap`、`sorting`、`dataScope`、`colon`、`linkageRules`
 - field wrapper: `label`、`tooltip`、`width`、`titleField`、`clickToOpen`、`openView`
-- action: `title`、`tooltip`、`icon`、`type`、`danger`、`openView`、`confirm`、`assignValues`
+- action: `title`、`tooltip`、`icon`、`type`、`danger`、`openView`、`confirm`、`assignValues`、`linkageRules`、`editMode`、`updateMode`、`duplicateMode`、`collapsedRows`、`defaultCollapsed`、`emailFieldNames`、`defaultSelectAllRecords`
 - jsColumn: `title`、`tooltip`、`width`、`fixed`
 - jsItem: `label`、`tooltip`、`extra`、`showLabel`、`labelWidth`、`labelWrap`
+
+page 高配示例：
+
+```json
+{
+  "target": {
+    "uid": "employees-page-uid"
+  },
+  "changes": {
+    "icon": "UserOutlined",
+    "enableHeader": false
+  }
+}
+```
+
+table 高配示例：
+
+```json
+{
+  "target": {
+    "uid": "tree-table-block-uid"
+  },
+  "changes": {
+    "quickEdit": true,
+    "treeTable": true,
+    "defaultExpandAllRows": true,
+    "dragSort": true,
+    "dragSortBy": "sort"
+  }
+}
+```
+
+editForm 高配示例：
+
+```json
+{
+  "target": {
+    "uid": "edit-form-block-uid"
+  },
+  "changes": {
+    "colon": false,
+    "dataScope": {
+      "logic": "$and",
+      "items": [
+        {
+          "path": "status",
+          "operator": "$eq",
+          "value": "draft"
+        }
+      ]
+    }
+  }
+}
+```
+
+details 高配示例：
+
+```json
+{
+  "target": {
+    "uid": "details-block-uid"
+  },
+  "changes": {
+    "colon": true,
+    "linkageRules": [
+      {
+        "when": {
+          "path": "status",
+          "operator": "$eq",
+          "value": "archived"
+        },
+        "set": {
+          "hidden": true
+        }
+      }
+    ]
+  }
+}
+```
+
+action 高配示例：
+
+```json
+{
+  "target": {
+    "uid": "compose-email-action-uid"
+  },
+  "changes": {
+    "linkageRules": [
+      {
+        "when": {
+          "path": "status",
+          "operator": "$eq",
+          "value": "draft"
+        },
+        "set": {
+          "disabled": true
+        }
+      }
+    ],
+    "editMode": "drawer",
+    "updateMode": "overwrite",
+    "duplicateMode": "popup",
+    "collapsedRows": 2,
+    "defaultCollapsed": true,
+    "emailFieldNames": ["email", "backupEmail"],
+    "defaultSelectAllRecords": true
+  }
+}
+```
 
 ## 删除与修改
 

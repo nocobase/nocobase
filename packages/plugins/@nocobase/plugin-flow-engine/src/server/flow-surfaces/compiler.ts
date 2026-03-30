@@ -580,10 +580,11 @@ function createActionNode(
       requireCreateSupported: true,
     },
   );
-  const opId = nextOpId(state, 'addAction');
+  const opType = actionCatalogItem.scope === 'record' ? 'addRecordAction' : 'addAction';
+  const opId = nextOpId(state, opType);
   ops.push({
     opId,
-    type: 'addAction',
+    type: opType,
     values: {
       target: {
         uid: parentRef.uidRef,

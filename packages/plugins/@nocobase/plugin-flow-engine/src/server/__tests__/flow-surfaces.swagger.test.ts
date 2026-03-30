@@ -10,13 +10,20 @@
 import swaggerDocument from '../../swagger';
 import { FLOW_SURFACES_ACTION_METHODS, FLOW_SURFACES_ACTION_NAMES } from '../flow-surfaces/constants';
 
+const DOC_ONLY_ACTION_NAMES = ['addRecordAction', 'addBlocks', 'addFields', 'addActions', 'addRecordActions'] as const;
+
 describe('flowSurfaces swagger', () => {
-  it('should keep exported swagger paths aligned with public flowSurfaces actions', () => {
-    const expectedPaths = FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`).sort();
+  it('should keep exported swagger paths aligned with public flowSurfaces actions plus doc-only future actions', () => {
+    const expectedPaths = [
+      ...FLOW_SURFACES_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`),
+      ...DOC_ONLY_ACTION_NAMES.map((actionName) => `/flowSurfaces:${actionName}`),
+    ].sort();
+    const actualPaths = Object.keys(swaggerDocument.paths).sort();
 
     expect(swaggerDocument.openapi).toBe('3.0.2');
     expect(swaggerDocument.info?.title).toBe('NocoBase API - Flow engine plugin');
-    expect(Object.keys(swaggerDocument.paths).sort()).toEqual(expectedPaths);
+    expect(actualPaths).toEqual(expect.arrayContaining(expectedPaths));
+    expect(new Set(actualPaths).size).toBe(actualPaths.length);
 
     for (const actionName of FLOW_SURFACES_ACTION_NAMES) {
       const path = `/flowSurfaces:${actionName}`;
@@ -26,6 +33,15 @@ describe('flowSurfaces swagger', () => {
       expect(pathItem).toBeTruthy();
       expect(pathItem[expectedMethod]).toBeTruthy();
       expect(Object.keys(pathItem)).toEqual([expectedMethod]);
+    }
+
+    for (const actionName of DOC_ONLY_ACTION_NAMES) {
+      const path = `/flowSurfaces:${actionName}`;
+      const pathItem = swaggerDocument.paths[path];
+
+      expect(pathItem).toBeTruthy();
+      expect(pathItem.post).toBeTruthy();
+      expect(Object.keys(pathItem)).toEqual(['post']);
     }
   });
 
@@ -46,11 +62,22 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceGetResponse).toBeTruthy();
     expect(schemas.FlowSurfaceComposeRequest).toBeTruthy();
     expect(schemas.FlowSurfaceComposeResult).toBeTruthy();
+    expect(schemas.FlowSurfaceComposeRecordActionSpec).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureRequest).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureResult).toBeTruthy();
     expect(schemas.FlowSurfaceMutateOp).toBeTruthy();
     expect(schemas.FlowSurfaceMutationResponse).toBeTruthy();
     expect(schemas.FlowSurfaceErrorResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceAddRecordActionRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddRecordActionResult).toBeTruthy();
+    expect(schemas.FlowSurfaceAddBlocksRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddFieldsRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddActionsRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddRecordActionsRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddBlocksResult).toBeTruthy();
+    expect(schemas.FlowSurfaceAddFieldsResult).toBeTruthy();
+    expect(schemas.FlowSurfaceAddActionsResult).toBeTruthy();
+    expect(schemas.FlowSurfaceAddRecordActionsResult).toBeTruthy();
 
     expect(schemas.FlowSurfaceNodeSpec.properties.subModels.additionalProperties.oneOf).toEqual(
       expect.arrayContaining([
@@ -75,13 +102,14 @@ describe('flowSurfaces swagger', () => {
     );
 
     const mutateOpRefs = (schemas.FlowSurfaceMutateOp.oneOf || []).map((item: any) => item.$ref);
-    expect(mutateOpRefs).toHaveLength(14);
+    expect(mutateOpRefs).toHaveLength(15);
     expect(mutateOpRefs).toEqual(
       expect.arrayContaining([
         '#/components/schemas/FlowSurfaceMutateOpCreatePage',
         '#/components/schemas/FlowSurfaceMutateOpAddBlock',
         '#/components/schemas/FlowSurfaceMutateOpAddField',
         '#/components/schemas/FlowSurfaceMutateOpAddAction',
+        '#/components/schemas/FlowSurfaceMutateOpAddRecordAction',
         '#/components/schemas/FlowSurfaceMutateOpUpdateSettings',
         '#/components/schemas/FlowSurfaceMutateOpSetLayout',
         '#/components/schemas/FlowSurfaceMutateOpRemoveNode',
@@ -101,7 +129,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogItem',
     );
-    expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain('table/list/gridCard');
+    expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain(
+      'table/details/list/gridCard',
+    );
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
@@ -143,11 +173,12 @@ describe('flowSurfaces swagger', () => {
     expect(composeRequest.examples.jsBlock.value.blocks[0].settings.code).toContain('Hello from JS block');
 
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.items.$ref).toBe(
-      '#/components/schemas/FlowSurfaceComposeActionSpec',
+      '#/components/schemas/FlowSurfaceComposeRecordActionSpec',
     );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.actions.description).toContain('Block-level actions');
-    expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain('table/list/gridCard');
-    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.scope).toBeUndefined();
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain(
+      'table/details/list/gridCard',
+    );
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.type.enum).toEqual(
       expect.arrayContaining(['table', 'filterForm', 'actionPanel', 'jsBlock']),
     );
@@ -166,21 +197,26 @@ describe('flowSurfaces swagger', () => {
         'templatePrint',
         'triggerWorkflow',
         'link',
-        'duplicate',
-        'addChild',
-        'view',
         'submit',
         'reset',
         'collapse',
         'js',
       ]),
     );
+    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.type.enum).not.toEqual(
+      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']),
+    );
+    expect(schemas.FlowSurfaceComposeRecordActionSpec.oneOf[1].properties.type.enum).toEqual(
+      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild', 'popup', 'js']),
+    );
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionResult',
     );
-    expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.description).toContain('table/list/gridCard');
+    expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.description).toContain(
+      'table/details/list/gridCard',
+    );
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.type.enum).toEqual(
@@ -207,6 +243,27 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.jsFieldSettings.value.changes.code).toContain('toUpperCase');
     expect(configureRequest.examples.jsColumnSettings.value.changes.fixed).toBe('left');
     expect(configureRequest.examples.jsItemSettings.value.changes.showLabel).toBe(true);
+    expect(configureRequest.examples.pageHeaderSettings.value.changes.icon).toBe('UserOutlined');
+    expect(configureRequest.examples.pageHeaderSettings.value.changes.enableHeader).toBe(false);
+    expect(configureRequest.examples.tableAdvancedSettings.value.changes.quickEdit).toBe(true);
+    expect(configureRequest.examples.tableAdvancedSettings.value.changes.treeTable).toBe(true);
+    expect(configureRequest.examples.tableAdvancedSettings.value.changes.defaultExpandAllRows).toBe(true);
+    expect(configureRequest.examples.tableAdvancedSettings.value.changes.dragSort).toBe(true);
+    expect(configureRequest.examples.tableAdvancedSettings.value.changes.dragSortBy).toBe('sort');
+    expect(configureRequest.examples.editFormSettings.value.changes.colon).toBe(false);
+    expect(configureRequest.examples.editFormSettings.value.changes.dataScope.logic).toBe('$and');
+    expect(configureRequest.examples.detailsSettings.value.changes.colon).toBe(true);
+    expect(configureRequest.examples.detailsSettings.value.changes.linkageRules).toHaveLength(1);
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.editMode).toBe('drawer');
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.updateMode).toBe('overwrite');
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.duplicateMode).toBe('popup');
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.collapsedRows).toBe(2);
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.defaultCollapsed).toBe(true);
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.emailFieldNames).toEqual([
+      'email',
+      'backupEmail',
+    ]);
+    expect(configureRequest.examples.actionBehaviorSettings.value.changes.defaultSelectAllRecords).toBe(true);
 
     const addFieldRequest =
       swaggerDocument.paths['/flowSurfaces:addField'].post.requestBody.content['application/json'];
@@ -230,7 +287,7 @@ describe('flowSurfaces swagger', () => {
 
     const addActionRequest =
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];
-    expect(addActionRequest.examples.view.value.type).toBe('view');
+    expect(addActionRequest.examples.submit.value.type).toBe('submit');
     expect(addActionRequest.examples.link.value.type).toBe('link');
     expect(addActionRequest.examples.js.value.type).toBe('js');
     expect(addActionRequest.examples.js.value.stepParams.clickSettings.runJs.version).toBe('1.0.0');
@@ -248,15 +305,72 @@ describe('flowSurfaces swagger', () => {
         'templatePrint',
         'triggerWorkflow',
         'link',
-        'duplicate',
-        'addChild',
-        'view',
         'submit',
         'reset',
         'collapse',
         'js',
       ]),
     );
+    expect(schemas.FlowSurfaceAddActionRequest.properties.type.enum).not.toEqual(
+      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild']),
+    );
+
+    const addRecordActionRequest =
+      swaggerDocument.paths['/flowSurfaces:addRecordAction'].post.requestBody.content['application/json'];
+    expect(addRecordActionRequest.examples.view.value.type).toBe('view');
+    expect(addRecordActionRequest.examples.js.value.type).toBe('js');
+    expect(addRecordActionRequest.examples.js.value.stepParams.clickSettings.runJs.code).toContain('currentRecord');
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).toEqual(
+      expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild', 'popup', 'js']),
+    );
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).not.toEqual(
+      expect.arrayContaining(['submit', 'reset', 'filter', 'bulkDelete']),
+    );
+
+    const addBlocksRequest =
+      swaggerDocument.paths['/flowSurfaces:addBlocks'].post.requestBody.content['application/json'];
+    expect(addBlocksRequest.example.blocks).toHaveLength(2);
+    expect(addBlocksRequest.example.blocks[0].type).toBe('table');
+    expect(addBlocksRequest.example.blocks[1].type).toBe('markdown');
+    expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
+    expect(schemas.FlowSurfaceAddBlocksResult.properties.blocks.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceAddBlocksItemResult',
+    );
+    expect(schemas.FlowSurfaceAddBlocksResult.properties.successCount.type).toBe('integer');
+    expect(schemas.FlowSurfaceAddBlocksResult.properties.errorCount.type).toBe('integer');
+
+    const addFieldsRequest =
+      swaggerDocument.paths['/flowSurfaces:addFields'].post.requestBody.content['application/json'];
+    expect(addFieldsRequest.example.fields).toHaveLength(2);
+    expect(addFieldsRequest.example.fields[1].renderer).toBe('js');
+    expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target', 'fields']);
+    expect(schemas.FlowSurfaceAddFieldsResult.properties.fields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceAddFieldsItemResult',
+    );
+
+    const addActionsRequest =
+      swaggerDocument.paths['/flowSurfaces:addActions'].post.requestBody.content['application/json'];
+    expect(addActionsRequest.example.actions).toHaveLength(2);
+    expect(addActionsRequest.example.actions[0].type).toBe('submit');
+    expect(addActionsRequest.example.actions[1].type).toBe('reset');
+    expect(schemas.FlowSurfaceAddActionsRequest.required).toEqual(['target', 'actions']);
+    expect(schemas.FlowSurfaceAddActionsResult.properties.actions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceAddActionsItemResult',
+    );
+
+    const addRecordActionsRequest =
+      swaggerDocument.paths['/flowSurfaces:addRecordActions'].post.requestBody.content['application/json'];
+    expect(addRecordActionsRequest.example.recordActions).toHaveLength(3);
+    expect(addRecordActionsRequest.example.recordActions.map((item: any) => item.type)).toEqual([
+      'view',
+      'edit',
+      'delete',
+    ]);
+    expect(schemas.FlowSurfaceAddRecordActionsRequest.required).toEqual(['target', 'recordActions']);
+    expect(schemas.FlowSurfaceAddRecordActionsResult.properties.recordActions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceAddRecordActionsItemResult',
+    );
+    expect(schemas.FlowSurfaceAddRecordActionsResult.properties.successCount.type).toBe('integer');
 
     const mutateRequest = swaggerDocument.paths['/flowSurfaces:mutate'].post.requestBody.content['application/json'];
     expect(mutateRequest.example.atomic).toBe(true);
@@ -272,15 +386,37 @@ describe('flowSurfaces swagger', () => {
     const getPath = swaggerDocument.paths['/flowSurfaces:get'].get;
     expect(getPath.requestBody).toBeUndefined();
     expect(getPath.parameters).toHaveLength(4);
+    expect(getPath.parameters.map((parameter: any) => parameter.$ref)).toEqual([
+      '#/components/parameters/flowSurfaceTargetUid',
+      '#/components/parameters/flowSurfaceTargetPageSchemaUid',
+      '#/components/parameters/flowSurfaceTargetTabSchemaUid',
+      '#/components/parameters/flowSurfaceTargetRouteId',
+    ]);
+    expect(getPath.description).toContain('只接受根级定位字段');
+    expect(getPath.description).toContain('不要使用 `{ target: { ... } }` 包裹');
 
     for (const actionName of [
+      'catalog',
       'compose',
       'configure',
+      'createPage',
+      'destroyPage',
+      'addTab',
+      'updateTab',
+      'moveTab',
+      'removeTab',
       'addBlock',
       'addAction',
+      'addRecordAction',
+      'addBlocks',
+      'addFields',
+      'addActions',
+      'addRecordActions',
       'updateSettings',
       'setEventFlows',
       'setLayout',
+      'moveNode',
+      'removeNode',
       'mutate',
       'apply',
     ] as const) {

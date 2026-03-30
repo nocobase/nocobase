@@ -719,7 +719,7 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+    expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'view',
         'edit',
@@ -788,7 +788,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(rowActionOnTableBlock.status).toBe(500);
-    expect(readErrorMessage(rowActionOnTableBlock)).toContain(`is not allowed under 'TableBlockModel'`);
+    expect(readErrorMessage(rowActionOnTableBlock)).toContain(`use addRecordAction`);
 
     const blockActionOnRowContainer = await rootAgent.resource('flowSurfaces').addAction({
       values: {
@@ -799,7 +799,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(blockActionOnRowContainer.status).toBe(500);
-    expect(readErrorMessage(blockActionOnRowContainer)).toContain(`is not allowed under 'TableActionsColumnModel'`);
+    expect(readErrorMessage(blockActionOnRowContainer)).toContain(`record action surface`);
 
     const hiddenDeleteOnForm = await rootAgent.resource('flowSurfaces').addAction({
       values: {
@@ -1100,7 +1100,7 @@ describe('flowSurfaces API contract', () => {
     );
   });
 
-  it('should support table/list-like recordActions grouping while still rejecting unsupported action containers', async () => {
+  it('should support recordActions grouping on all record-capable blocks while still rejecting unsupported action containers', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose record action validation page',
       tabTitle: 'Compose record action validation tab',
@@ -1157,10 +1157,9 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(detailsRecordActionsRes.status).toBe(500);
-    expect(readErrorMessage(detailsRecordActionsRes)).toContain(
-      `recordActions only support 'table', 'list' or 'gridCard'`,
-    );
+    expect(detailsRecordActionsRes.status).toBe(200);
+    const detailsBlock = getData(detailsRecordActionsRes).blocks.find((item: any) => item.key === 'details');
+    expect(detailsBlock.recordActions.map((item: any) => item.type)).toEqual(['view']);
 
     const listBlockOnlyRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -1181,7 +1180,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(listBlockOnlyRes.status).toBe(500);
-    expect(readErrorMessage(listBlockOnlyRes)).toContain(`is not allowed under 'ListBlockModel'`);
+    expect(readErrorMessage(listBlockOnlyRes)).toContain(`must be placed under recordActions`);
 
     const gridCardRecordOnlyRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -1202,7 +1201,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(gridCardRecordOnlyRes.status).toBe(500);
-    expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`is not allowed under 'GridCardItemModel'`);
+    expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`must be placed under actions`);
   });
 
   it('should reject legacy scope overrides mixed into compose actions and recordActions', async () => {
@@ -2523,9 +2522,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: {
-        target,
-      },
+      values: target,
     }),
   );
 }

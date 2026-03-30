@@ -148,6 +148,7 @@ export type FlowSurfaceMutateOp = {
     | 'addBlock'
     | 'addField'
     | 'addAction'
+    | 'addRecordAction'
     | 'updateSettings'
     | 'setEventFlows'
     | 'setLayout'

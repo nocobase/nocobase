@@ -901,7 +901,7 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    expect(rowActionCatalog.actions.map((item: any) => item.key)).toEqual(
+    expect(rowActionCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'duplicate',
         'view',
@@ -916,8 +916,8 @@ describe('flowSurfaces resource', () => {
       ]),
     );
     expect(
-      rowActionCatalog.actions.find((item: any) => item.use === 'ViewActionModel')?.settingsContract?.stepParams?.groups
-        ?.buttonSettings?.allowedPaths,
+      rowActionCatalog.recordActions.find((item: any) => item.use === 'ViewActionModel')?.settingsContract?.stepParams
+        ?.groups?.buttonSettings?.allowedPaths,
     ).toEqual(
       expect.arrayContaining([
         'general.title',
@@ -1106,7 +1106,7 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(detailsCatalog.blocks).toEqual([]);
-    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+    expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'view',
         'edit',
@@ -3442,7 +3442,7 @@ describe('flowSurfaces resource', () => {
     expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
     );
-    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+    expect(detailsCatalog.recordActions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'view',
         'edit',
@@ -3469,11 +3469,11 @@ describe('flowSurfaces resource', () => {
     const tableExpandCollapse = await addAction(rootAgent, tableUid, 'expandCollapse');
     const tableBulkUpdate = await addAction(rootAgent, tableUid, 'bulkUpdate');
     const tableComposeEmail = await addAction(rootAgent, tableUid, 'composeEmail');
-    const rowAddChild = await addAction(rootAgent, actionsColumnUid, 'addChild');
-    const rowDuplicate = await addAction(rootAgent, actionsColumnUid, 'duplicate');
-    const rowComposeEmail = await addAction(rootAgent, actionsColumnUid, 'composeEmail');
+    const rowAddChild = await addRecordAction(rootAgent, actionsColumnUid, 'addChild');
+    const rowDuplicate = await addRecordAction(rootAgent, actionsColumnUid, 'duplicate');
+    const rowComposeEmail = await addRecordAction(rootAgent, actionsColumnUid, 'composeEmail');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
-    const detailsView = await addAction(rootAgent, detailsUid, 'view');
+    const detailsView = await addRecordAction(rootAgent, detailsUid, 'view');
     const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
     const filterReset = await addAction(rootAgent, filterFormUid, 'reset');
     const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
@@ -3666,7 +3666,7 @@ describe('flowSurfaces resource', () => {
     expect(filterFormCatalog.fields.some((item: any) => item.renderer === 'js' || item.type === 'jsItem')).toBe(false);
 
     expect(tableCatalog.actions.map((item: any) => item.key)).toContain('js');
-    expect(detailsCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(detailsCatalog.recordActions.map((item: any) => item.key)).toContain('js');
     expect(createFormCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(actionPanelCatalog.actions.map((item: any) => item.key)).toEqual(
@@ -4982,9 +4982,7 @@ describe('flowSurfaces resource', () => {
     expect(applyRes).toBeTruthy();
 
     const readback = await service.get({
-      target: {
-        uid: page.gridUid,
-      },
+      uid: page.gridUid,
     });
     const items = _.castArray(readback.tree.subModels?.items || []);
     expect(items).toHaveLength(2);
@@ -5879,9 +5877,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: {
-        target,
-      },
+      values: target,
     }),
   );
 }
@@ -5916,8 +5912,33 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string, ex
 }
 
 async function addAction(rootAgent: any, targetUid: string, type: string, extraValues: Record<string, any> = {}) {
+  const values = {
+    target: {
+      uid: targetUid,
+    },
+    type,
+    ...extraValues,
+  };
+  const response = await rootAgent.resource('flowSurfaces').addAction({
+    values,
+  });
+  if (response.status === 200) {
+    return getData(response);
+  }
+  const message = readErrorMessage(response);
+  if (message.includes('use addRecordAction')) {
+    return getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values,
+      }),
+    );
+  }
+  return getData(response);
+}
+
+async function addRecordAction(rootAgent: any, targetUid: string, type: string, extraValues: Record<string, any> = {}) {
   return getData(
-    await rootAgent.resource('flowSurfaces').addAction({
+    await rootAgent.resource('flowSurfaces').addRecordAction({
       values: {
         target: {
           uid: targetUid,

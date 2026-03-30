@@ -830,6 +830,10 @@ function getData(response: any) {
   return response.body.data;
 }
 
+function readErrorMessage(response: any) {
+  return response?.body?.errors?.[0]?.message || '';
+}
+
 async function createPage(rootAgent: any, values: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').createPage({
@@ -841,9 +845,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: {
-        target,
-      },
+      values: target,
     }),
   );
 }
@@ -871,17 +873,28 @@ async function addField(rootAgent: any, targetUid: string, fieldPath: string, ex
 }
 
 async function addAction(rootAgent: any, targetUid: string, type: string, extraValues: Record<string, any> = {}) {
-  return getData(
-    await rootAgent.resource('flowSurfaces').addAction({
-      values: {
-        target: {
-          uid: targetUid,
-        },
-        type,
-        ...extraValues,
-      },
-    }),
-  );
+  const values = {
+    target: {
+      uid: targetUid,
+    },
+    type,
+    ...extraValues,
+  };
+  const response = await rootAgent.resource('flowSurfaces').addAction({
+    values,
+  });
+  if (response.status === 200) {
+    return getData(response);
+  }
+  const message = readErrorMessage(response);
+  if (message.includes('use addRecordAction')) {
+    return getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values,
+      }),
+    );
+  }
+  return getData(response);
 }
 
 async function setupCreateParityCollections(rootAgent: any) {

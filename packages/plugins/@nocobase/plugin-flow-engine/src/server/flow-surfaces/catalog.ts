@@ -533,7 +533,7 @@ GRID_NODE_CONTRACT.domains.props = keyedDomain(['rows', 'sizes', 'rowOrder'], 'r
 
 const PAGE_NODE_CONTRACT = createContract({
   editableDomains: ['props', 'stepParams', 'flowRegistry'],
-  props: ['title', 'displayTitle', 'enableTabs'],
+  props: ['title', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'],
   stepParams: ['pageSettings'],
   flowRegistry: true,
   eventCapabilities: {
@@ -547,7 +547,14 @@ const PAGE_NODE_CONTRACT = createContract({
 });
 PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
   pageSettings: {
-    allowedPaths: ['general.title', 'general.documentTitle', 'general.displayTitle', 'general.enableTabs'],
+    allowedPaths: [
+      'general.title',
+      'general.documentTitle',
+      'general.displayTitle',
+      'general.enableTabs',
+      'general.icon',
+      'general.enableHeader',
+    ],
     mergeStrategy: 'deep',
     eventBindingSteps: ['general'],
     pathSchemas: {
@@ -555,6 +562,8 @@ PAGE_NODE_CONTRACT.domains.stepParams = groupedDomain({
       'general.documentTitle': STRING_SCHEMA,
       'general.displayTitle': BOOLEAN_SCHEMA,
       'general.enableTabs': BOOLEAN_SCHEMA,
+      'general.icon': STRING_SCHEMA,
+      'general.enableHeader': BOOLEAN_SCHEMA,
     },
   },
 });
