@@ -7,7 +7,7 @@
     "noEmit": true,
     "skipLibCheck": true,
     "useDefineForClassFields": true,
-    "baseUrl": ".",
+    "baseUrl": "..",
     /* modules */
     "module": "ESNext",
     "moduleDetection": "force",
@@ -19,18 +19,7 @@
     /* type checking */
     "strict": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "paths": {
-      "@docs/*": ["./docs/*"],
-      "@nocobase/client-v2": ["../packages/core/client-v2/src/index.ts"],
-      "@nocobase/client-v2/*": ["../packages/core/client-v2/src/*"],
-      "@nocobase/flow-engine": ["../packages/core/flow-engine/src/index.ts"],
-      "@nocobase/flow-engine/*": ["../packages/core/flow-engine/src/*"],
-      "@nocobase/shared": ["../packages/core/shared/src/index.ts"],
-      "@nocobase/shared/*": ["../packages/core/shared/src/*"],
-      "@nocobase/sdk": ["../packages/core/sdk/src/index.ts"],
-      "@nocobase/sdk/*": ["../packages/core/sdk/src/*"]
-    }
+    "noUnusedParameters": true
   },
   "include": ["docs", "theme", "rspress.config.ts"],
   "mdx": {

@@ -161,16 +161,12 @@ export default defineConfig({
     cleanUrls: true,
   },
   builderConfig: {
+    source: {
+      tsconfigPath: path.join(__dirname, 'tsconfig.json'),
+    },
     plugins: [pluginSass(), pluginNodePolyfill()],
     resolve: {
-      alias: {
-        '@docs': path.join(__dirname, `docs`),
-        '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
-        '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
-        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
-        '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
-        '@nocobase/utils/client': path.join(__dirname, '../packages/core/utils/src/client'),
-      },
+      aliasStrategy: 'prefer-tsconfig',
     },
   },
   markdown: {
