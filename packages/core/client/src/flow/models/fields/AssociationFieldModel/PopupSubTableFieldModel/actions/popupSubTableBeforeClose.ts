@@ -8,6 +8,7 @@
  */
 
 import type { FlowModel } from '@nocobase/flow-engine';
+import type { HookAPI } from 'antd/es/modal/useModal';
 
 type PopupBeforeClosePayload = {
   result?: any;
@@ -82,14 +83,7 @@ export function bindPopupSubTableBeforeClose({
 }: {
   view: PopupViewLike;
   model?: FlowModel | null;
-  modal: {
-    confirm: (options: {
-      title: string;
-      content: string;
-      okText: string;
-      cancelText: string;
-    }) => Promise<boolean> | boolean;
-  };
+  modal: Pick<HookAPI, 'confirm'>;
   t: (key: string) => string;
 }) {
   const collectDirtyFormModelUids = (ignoredDirtyFormModelUids: string[] = []) => {
