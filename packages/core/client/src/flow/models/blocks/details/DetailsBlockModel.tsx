@@ -347,7 +347,6 @@ DetailsBlockModel.registerFlow({
       },
     },
     fieldslinkageRulesRefresh: {
-      // typo, but keep it for compatible
       use: 'linkageRulesRefresh',
       defaultParams: {
         actionName: 'detailsFieldLinkageRules',
