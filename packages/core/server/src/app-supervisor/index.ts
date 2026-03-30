@@ -293,11 +293,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.appOptionsFactory = factory ?? appOptionsFactory;
   }
 
-  async bootstrapApp(appName: string) {
-    return this.processAdapter.bootstrapApp(appName);
+  async bootstrapApp(appName: string, options: GetAppOptions = {}) {
+    return this.processAdapter.bootstrapApp(appName, options);
   }
 
-  async initApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
+  async initApp({ appName, options }: { appName: string; options?: GetAppOptions }): Promise<Application | void> {
     const loadButNotStart = options?.upgrading;
 
     const mainApp = await this.getApp('main');
@@ -325,12 +325,14 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (this.hasApp(appName)) {
       return;
     }
-    this.registerApp({ appModel, mainApp });
+    const app = this.registerApp({ appModel, mainApp, options });
 
     // must skip load on upgrade
-    if (!loadButNotStart) {
+    if (!loadButNotStart && !options?.skipSupervisor) {
       await this.startApp(appName);
     }
+
+    return app;
   }
 
   setAppError(appName: string, error: Error) {
@@ -366,8 +368,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async setAppStatus(appName: string, status: AppStatus, options = {}) {
-    if (isTransient()) {
-      this.logger.debug('App running as worker, status will not be set', { appName, status });
+    if (isTransient() || this.apps[appName]?.options?.skipSupervisor) {
+      this.logger.debug('App running as worker or skip supervisor, status will not be set', { appName, status });
       return;
     }
     this.logger.debug('Setting app status', { appName, status });
@@ -375,6 +377,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async clearAppStatus(appName: string) {
+    if (isTransient() || this.apps[appName]?.options?.skipSupervisor) {
+      return;
+    }
     if (typeof this.discoveryAdapter.clearAppStatus !== 'function') {
       return;
     }
@@ -392,7 +397,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getBootstrapLock(appName);
   }
 
-  registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
+  registerApp({
+    appModel,
+    mainApp,
+    hook,
+    options: extraOptions,
+  }: {
+    appModel: AppModel;
+    mainApp?: Application;
+    hook?: boolean;
+    options?: GetAppOptions;
+  }) {
     const appName = appModel.name;
     const appOptions = lodash.cloneDeep(appModel.options || {});
     if (this.aesEncryptor && appOptions?.encryptedDbPassword) {
@@ -405,20 +420,23 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         });
       }
     }
-    let options = appOptions;
+    let options = {
+      ...appOptions,
+      ...extraOptions,
+    };
     if (mainApp) {
       const defaultAppOptions = this.appOptionsFactory(appName, mainApp, appOptions);
       // Some legacy app options factories do not accept options parameter
       // Thus, we need to merge manually here again
       options = {
-        ...lodash.merge({}, defaultAppOptions, appOptions),
+        ...lodash.merge({}, defaultAppOptions, appOptions, extraOptions),
         name: appName,
       };
     }
 
     const app = new Application(options);
 
-    if (hook ?? !isTransient()) {
+    if (hook ?? (!isTransient() && !options.skipSupervisor)) {
       app.on('afterStart', async () => {
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
@@ -734,7 +752,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    if (isTransient()) {
+    if (isTransient() || app.options.skipSupervisor) {
       return;
     }
 

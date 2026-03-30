@@ -27,23 +27,32 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'getApp', appName });
       return;
     }
+    let app: Application | void;
     if (!options.withOutBootStrap) {
-      await this.bootstrapApp(appName);
+      app = await this.bootstrapApp(appName, options);
     }
+
+    if (options.skipSupervisor) {
+      return app;
+    }
+
     return this.apps[appName];
   }
 
-  async bootstrapApp(appName: string) {
+  async bootstrapApp(appName: string, options: GetAppOptions = {}): Promise<Application | void> {
     if (appName !== 'main' || !this.apps[appName]) {
       this.setAppStatus(appName, 'not_found');
       return;
     }
     const status = this.getAppStatus('main');
     if (this.hasApp(appName) && status && status !== 'preparing') {
-      return;
+      return this.apps[appName];
     }
-    this.setAppStatus('main', 'initializing');
-    this.setAppStatus('main', 'initialized');
+    if (!options.skipSupervisor) {
+      this.setAppStatus('main', 'initializing');
+      this.setAppStatus('main', 'initialized');
+    }
+    return this.apps[appName];
   }
 
   addApp(app: Application) {
@@ -55,7 +64,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       throw new Error(`app ${app.name} already exists`);
     }
     this.apps[app.name] = app;
-    if (!this.status || this.status === 'not_found') {
+    if (!app.options.skipSupervisor && (!this.status || this.status === 'not_found')) {
       this.setAppStatus(app.name, 'preparing');
     }
     return app;

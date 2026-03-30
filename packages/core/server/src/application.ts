@@ -281,9 +281,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
 
-    if (!options.skipSupervisor) {
-      this._appSupervisor.addApp(this);
-    }
+    this._appSupervisor.addApp(this);
   }
 
   private static staticCommands = [];

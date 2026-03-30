@@ -160,7 +160,7 @@ export interface AppProcessAdapter {
   getApp(appName: string, options?: GetAppOptions): Promise<Application>;
   // Check whether app instance exists in supervisor
   hasApp(appName: string): boolean;
-  bootstrapApp(appName: string): Promise<void>;
+  bootstrapApp(appName: string, options?: GetAppOptions): Promise<Application | void>;
   // Return all currently managed application instances.
   getApps?(): Application[];
   // Create a new app, perparing database, install app

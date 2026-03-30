@@ -473,7 +473,10 @@ export class Gateway extends EventEmitter {
       await createStoragePluginsSymlink();
     }
 
-    const mainApp = AppSupervisor.getInstance().bootMainApp(options.mainAppOptions);
+    const mainApp = AppSupervisor.getInstance().bootMainApp({
+      ...options.mainAppOptions,
+      skipSupervisor: options.mainAppOptions.skipSupervisor ?? !isMainThread,
+    });
 
     // NOTE: to avoid listener number warning (default to 10)
     // See: https://nodejs.org/api/events.html#emittersetmaxlistenersn
