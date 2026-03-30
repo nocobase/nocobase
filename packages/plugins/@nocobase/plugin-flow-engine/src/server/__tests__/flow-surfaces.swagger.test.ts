@@ -95,44 +95,97 @@ describe('flowSurfaces swagger', () => {
 
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
+    expect(schemas.FlowSurfaceCatalogResponse.properties.actions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCatalogItem',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceCatalogItem',
+    );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain('table/list/gridCard');
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
     expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
-    expect(composeRequest.examples.filterTable.value.blocks[1].fields).toEqual(
+    const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
+    expect(filterTableBlock.fields).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           fieldPath: 'roles.title',
         }),
       ]),
     );
+    expect(filterTableBlock.actions).toEqual(['filter', 'addNew', 'refresh', 'bulkDelete', 'link']);
+    expect(filterTableBlock.recordActions.map((item: any) => (typeof item === 'string' ? item : item.type))).toEqual([
+      'view',
+      'edit',
+      'popup',
+      'updateRecord',
+      'delete',
+    ]);
+    expect(filterTableBlock.recordActions[2].popup.blocks[0].type).toBe('details');
     expect(composeRequest.examples.staticBlocks.value.blocks[0].type).toBe('markdown');
     expect(composeRequest.examples.staticBlocks.value.blocks[1].type).toBe('iframe');
     expect(composeRequest.examples.listRich.value.blocks[0].type).toBe('list');
     expect(composeRequest.examples.listRich.value.blocks[0].recordActions).toBeTruthy();
+    expect(
+      composeRequest.examples.listRich.value.blocks[0].recordActions.map((item: any) =>
+        typeof item === 'string' ? item : item.type,
+      ),
+    ).toEqual(expect.arrayContaining(['view', 'edit', 'popup', 'delete']));
     expect(composeRequest.examples.gridCardRich.value.blocks[0].type).toBe('gridCard');
     expect(composeRequest.examples.gridCardRich.value.blocks[0].recordActions).toBeTruthy();
+    expect(
+      composeRequest.examples.gridCardRich.value.blocks[0].recordActions.map((item: any) =>
+        typeof item === 'string' ? item : item.type,
+      ),
+    ).toEqual(expect.arrayContaining(['view', 'edit', 'updateRecord', 'delete']));
     expect(composeRequest.examples.jsBlock.value.blocks[0].type).toBe('jsBlock');
     expect(composeRequest.examples.jsBlock.value.blocks[0].settings.code).toContain('Hello from JS block');
 
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionSpec',
     );
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.actions.description).toContain('Block-level actions');
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.recordActions.description).toContain('table/list/gridCard');
+    expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.scope).toBeUndefined();
     expect(schemas.FlowSurfaceComposeBlockSpec.properties.type.enum).toEqual(
       expect.arrayContaining(['table', 'filterForm', 'actionPanel', 'jsBlock']),
     );
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[2].properties.type.enum).toEqual(['jsColumn', 'jsItem']);
     expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.type.enum).toEqual(
-      expect.arrayContaining(['view', 'submit', 'reset', 'js']),
+      expect.arrayContaining([
+        'filter',
+        'expandCollapse',
+        'bulkEdit',
+        'bulkUpdate',
+        'export',
+        'exportAttachments',
+        'upload',
+        'composeEmail',
+        'templatePrint',
+        'triggerWorkflow',
+        'link',
+        'duplicate',
+        'addChild',
+        'view',
+        'submit',
+        'reset',
+        'collapse',
+        'js',
+      ]),
     );
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.itemGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionResult',
     );
+    expect(schemas.FlowSurfaceComposeBlockResult.properties.recordActions.description).toContain('table/list/gridCard');
     expect(schemas.FlowSurfaceComposeActionResult.properties.popupGridUid.type).toBe('string');
     expect(schemas.FlowSurfaceComposeActionResult.properties.assignFormUid.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeActionResult.properties.type.enum).toEqual(
+      expect.arrayContaining(['link', 'popup', 'duplicate', 'updateRecord', 'templatePrint', 'triggerWorkflow']),
+    );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
 
@@ -178,10 +231,31 @@ describe('flowSurfaces swagger', () => {
     const addActionRequest =
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];
     expect(addActionRequest.examples.view.value.type).toBe('view');
+    expect(addActionRequest.examples.link.value.type).toBe('link');
     expect(addActionRequest.examples.js.value.type).toBe('js');
     expect(addActionRequest.examples.js.value.stepParams.clickSettings.runJs.version).toBe('1.0.0');
+    expect(schemas.FlowSurfaceAddActionRequest.properties.scope).toBeUndefined();
     expect(schemas.FlowSurfaceAddActionRequest.properties.type.enum).toEqual(
-      expect.arrayContaining(['view', 'submit', 'reset', 'js']),
+      expect.arrayContaining([
+        'filter',
+        'expandCollapse',
+        'bulkEdit',
+        'bulkUpdate',
+        'export',
+        'exportAttachments',
+        'upload',
+        'composeEmail',
+        'templatePrint',
+        'triggerWorkflow',
+        'link',
+        'duplicate',
+        'addChild',
+        'view',
+        'submit',
+        'reset',
+        'collapse',
+        'js',
+      ]),
     );
 
     const mutateRequest = swaggerDocument.paths['/flowSurfaces:mutate'].post.requestBody.content['application/json'];

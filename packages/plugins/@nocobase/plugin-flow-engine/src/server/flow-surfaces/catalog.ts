@@ -8,6 +8,7 @@
  */
 
 import type {
+  FlowSurfaceActionScope,
   FlowSurfaceCatalogItem,
   FlowSurfaceDomainContract,
   FlowSurfaceDomainGroupContract,
@@ -15,6 +16,21 @@ import type {
   FlowSurfaceNodeContract,
   FlowSurfaceNodeDomain,
 } from './types';
+import {
+  ACTION_PANEL_ACTION_CONTAINER_USES,
+  assertActionScopeMatchesContainer,
+  assertKnownActionContainerUse,
+  COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+  DETAILS_ACTION_CONTAINER_USES,
+  FILTER_FORM_ACTION_CONTAINER_USES,
+  FORM_ACTION_CONTAINER_USES,
+  getActionContainerScope,
+  LIST_BLOCK_ACTION_CONTAINER_USES,
+  LIST_RECORD_ACTION_CONTAINER_USES,
+  RECORD_ACTION_CONTAINER_USES,
+  TABLE_BLOCK_ACTION_CONTAINER_USES,
+  TABLE_ROW_ACTION_CONTAINER_USES,
+} from './action-scope';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -263,14 +279,15 @@ const DETAILS_FIELD_CONTAINER_USES = new Set([
 ]);
 const FILTER_FIELD_CONTAINER_USES = new Set(['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel']);
 const TABLE_FIELD_CONTAINER_USES = new Set(['TableBlockModel', 'TableColumnModel']);
-const TABLE_BLOCK_ACTION_CONTAINER_USES = ['TableBlockModel'];
-const TABLE_ROW_ACTION_CONTAINER_USES = ['TableActionsColumnModel'];
-const LIST_BLOCK_ACTION_CONTAINER_USES = ['ListBlockModel', 'GridCardBlockModel'];
-const LIST_RECORD_ACTION_CONTAINER_USES = ['ListItemModel', 'GridCardItemModel'];
-const DETAILS_ACTION_CONTAINER_USES = ['DetailsBlockModel'];
-const FORM_ACTION_CONTAINER_USES = ['FormBlockModel', 'CreateFormModel', 'EditFormModel'];
-const FILTER_FORM_ACTION_CONTAINER_USES = ['FilterFormBlockModel'];
-const ACTION_PANEL_ACTION_CONTAINER_USES = ['ActionPanelBlockModel'];
+type FlowSurfaceActionRegistryItem = {
+  publicKey: string;
+  label: string;
+  scope: FlowSurfaceActionScope;
+  scene?: string;
+  use: string;
+  allowedContainerUses: string[];
+  createSupported?: boolean;
+};
 const JS_EDITABLE_FIELD_USE_SET = new Set(['JSEditableFieldModel']);
 const JS_DISPLAY_FIELD_USE_SET = new Set(['JSFieldModel']);
 const EDITABLE_FIELD_USE_SET = new Set([
@@ -1387,6 +1404,35 @@ const SUBMIT_ACTION_CONTRACT = createContract({
     },
   },
 });
+
+const FILTER_FORM_SUBMIT_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'submitSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    submitSettings: {
+      stepKeys: ['doFilter'],
+    },
+  },
+});
+FILTER_FORM_SUBMIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  submitSettings: {
+    allowedPaths: [],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['doFilter'],
+  },
+});
 SUBMIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
   submitSettings: {
@@ -1398,6 +1444,93 @@ SUBMIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.enable': BOOLEAN_SCHEMA,
       'confirm.title': STRING_SCHEMA,
       'confirm.content': STRING_SCHEMA,
+    },
+  },
+});
+
+const BULK_EDIT_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'bulkEditSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    bulkEditSettings: {
+      stepKeys: ['editMode'],
+    },
+  },
+});
+BULK_EDIT_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  bulkEditSettings: {
+    allowedPaths: ['editMode.value'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['editMode'],
+    pathSchemas: {
+      'editMode.value': STRING_SCHEMA,
+    },
+  },
+});
+
+const BULK_UPDATE_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'assignSettings', 'apply'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    assignSettings: {
+      stepKeys: ['confirm', 'updateMode', 'assignFieldValues'],
+    },
+    apply: {
+      stepKeys: ['apply'],
+    },
+  },
+});
+BULK_UPDATE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  assignSettings: {
+    allowedPaths: [
+      'confirm.enable',
+      'confirm.title',
+      'confirm.content',
+      'updateMode.value',
+      'assignFieldValues.assignedValues',
+      'assignFieldValues.assignedValues.*',
+    ],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['confirm', 'updateMode', 'assignFieldValues'],
+    pathSchemas: {
+      'confirm.enable': BOOLEAN_SCHEMA,
+      'confirm.title': STRING_SCHEMA,
+      'confirm.content': STRING_SCHEMA,
+      'updateMode.value': STRING_SCHEMA,
+      'assignFieldValues.assignedValues': OBJECT_SCHEMA,
+    },
+  },
+  apply: {
+    allowedPaths: ['apply.assignedValues', 'apply.assignedValues.*'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['apply'],
+    pathSchemas: {
+      'apply.assignedValues': OBJECT_SCHEMA,
     },
   },
 });
@@ -1420,6 +1553,196 @@ const SIMPLE_ACTION_CONTRACT = createContract({
 });
 SIMPLE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
   buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+});
+
+const FILTER_FORM_COLLAPSE_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'collapseSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ['collapseToggle'],
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    collapseSettings: {
+      stepKeys: ['toggle', 'defaultCollapsed'],
+    },
+  },
+});
+FILTER_FORM_COLLAPSE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  collapseSettings: {
+    allowedPaths: ['toggle.collapsedRows', 'defaultCollapsed.value'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['toggle', 'defaultCollapsed'],
+    pathSchemas: {
+      'toggle.collapsedRows': NUMBER_SCHEMA,
+      'defaultCollapsed.value': BOOLEAN_SCHEMA,
+    },
+  },
+});
+
+const DUPLICATE_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'duplicateModeSettings', 'duplicateSettings', 'popupSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    duplicateModeSettings: {
+      stepKeys: ['duplicateMode'],
+    },
+    duplicateSettings: {
+      stepKeys: ['confirm'],
+    },
+    popupSettings: {
+      stepKeys: ['confirm', 'openView'],
+    },
+  },
+});
+DUPLICATE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  duplicateModeSettings: {
+    allowedPaths: ['duplicateMode.duplicateMode', 'duplicateMode.collection'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['duplicateMode'],
+    pathSchemas: {
+      'duplicateMode.duplicateMode': STRING_SCHEMA,
+      'duplicateMode.collection': STRING_SCHEMA,
+    },
+  },
+  duplicateSettings: {
+    allowedPaths: CONFIRM_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['confirm'],
+    pathSchemas: {
+      'confirm.enable': BOOLEAN_SCHEMA,
+      'confirm.title': STRING_SCHEMA,
+      'confirm.content': STRING_SCHEMA,
+    },
+  },
+  popupSettings: {
+    allowedPaths: [...CONFIRM_ALLOWED_PATHS, ...OPEN_VIEW_ALLOWED_PATHS],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['confirm', 'openView'],
+    pathSchemas: {
+      'confirm.enable': BOOLEAN_SCHEMA,
+      'confirm.title': STRING_SCHEMA,
+      'confirm.content': STRING_SCHEMA,
+      'openView.mode': STRING_SCHEMA,
+      'openView.size': STRING_SCHEMA,
+      'openView.pageModelClass': STRING_SCHEMA,
+      'openView.dataSourceKey': STRING_SCHEMA,
+      'openView.collectionName': STRING_SCHEMA,
+      'openView.associationName': STRING_SCHEMA,
+      'openView.title': STRING_SCHEMA,
+      'openView.uid': STRING_SCHEMA,
+      'openView.subModelKey': STRING_SCHEMA,
+      'openView.navigation': BOOLEAN_SCHEMA,
+    },
+  },
+});
+
+const UPLOAD_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'selectExitRecordSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    selectExitRecordSettings: {
+      stepKeys: ['openView'],
+    },
+  },
+});
+UPLOAD_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  selectExitRecordSettings: {
+    allowedPaths: ['openView.mode', 'openView.size'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: {
+      'openView.mode': STRING_SCHEMA,
+      'openView.size': STRING_SCHEMA,
+    },
+  },
+});
+
+const MAIL_SEND_ACTION_CONTRACT = createContract({
+  editableDomains: ['props', 'decoratorProps', 'stepParams', 'flowRegistry'],
+  props: ACTION_PROP_KEYS,
+  decoratorProps: ['labelWidth', 'labelWrap'],
+  stepParams: ['buttonSettings', 'popupSettings', 'sendEmailSettings'],
+  flowRegistry: true,
+  eventCapabilities: {
+    direct: ACTION_DIRECT_EVENTS,
+    object: ACTION_OBJECT_EVENTS,
+  },
+  eventBindings: {
+    buttonSettings: {
+      stepKeys: ['general', 'linkageRules'],
+    },
+    popupSettings: {
+      stepKeys: ['openView'],
+    },
+    sendEmailSettings: {
+      stepKeys: ['emailFieldNames', 'defaultSelectAllRecords'],
+    },
+  },
+});
+MAIL_SEND_ACTION_CONTRACT.domains.stepParams = groupedDomain({
+  buttonSettings: ACTION_BUTTON_SETTINGS_GROUP,
+  popupSettings: {
+    allowedPaths: OPEN_VIEW_ALLOWED_PATHS,
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['openView'],
+    pathSchemas: {
+      'openView.mode': STRING_SCHEMA,
+      'openView.size': STRING_SCHEMA,
+      'openView.pageModelClass': STRING_SCHEMA,
+      'openView.dataSourceKey': STRING_SCHEMA,
+      'openView.collectionName': STRING_SCHEMA,
+      'openView.associationName': STRING_SCHEMA,
+      'openView.title': STRING_SCHEMA,
+      'openView.uid': STRING_SCHEMA,
+      'openView.subModelKey': STRING_SCHEMA,
+      'openView.navigation': BOOLEAN_SCHEMA,
+    },
+  },
+  sendEmailSettings: {
+    allowedPaths: ['emailFieldNames.value', 'defaultSelectAllRecords.value'],
+    clearable: true,
+    mergeStrategy: 'deep',
+    eventBindingSteps: ['emailFieldNames', 'defaultSelectAllRecords'],
+    pathSchemas: {
+      'emailFieldNames.value': ARRAY_SCHEMA,
+      'defaultSelectAllRecords.value': STRING_SCHEMA,
+    },
+  },
 });
 
 const JS_ACTION_CONTRACT = createContract({
@@ -1489,14 +1812,32 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['ViewActionModel', POPUP_ACTION_CONTRACT],
   ['EditActionModel', POPUP_ACTION_CONTRACT],
   ['PopupCollectionActionModel', POPUP_ACTION_CONTRACT],
+  ['AddChildActionModel', POPUP_ACTION_CONTRACT],
   ['DeleteActionModel', DELETE_ACTION_CONTRACT],
   ['BulkDeleteActionModel', DELETE_ACTION_CONTRACT],
   ['UpdateRecordActionModel', UPDATE_RECORD_ACTION_CONTRACT],
+  ['BulkEditActionModel', BULK_EDIT_ACTION_CONTRACT],
+  ['BulkUpdateActionModel', BULK_UPDATE_ACTION_CONTRACT],
+  ['DuplicateActionModel', DUPLICATE_ACTION_CONTRACT],
   ['FormSubmitActionModel', SUBMIT_ACTION_CONTRACT],
-  ['FilterFormSubmitActionModel', SUBMIT_ACTION_CONTRACT],
+  ['FilterFormSubmitActionModel', FILTER_FORM_SUBMIT_ACTION_CONTRACT],
   ['FilterFormResetActionModel', SIMPLE_ACTION_CONTRACT],
+  ['FilterFormCollapseActionModel', FILTER_FORM_COLLAPSE_ACTION_CONTRACT],
+  ['FilterActionModel', SIMPLE_ACTION_CONTRACT],
   ['RefreshActionModel', SIMPLE_ACTION_CONTRACT],
   ['LinkActionModel', SIMPLE_ACTION_CONTRACT],
+  ['ExpandCollapseActionModel', SIMPLE_ACTION_CONTRACT],
+  ['ExportActionModel', SIMPLE_ACTION_CONTRACT],
+  ['ExportAttachmentActionModel', SIMPLE_ACTION_CONTRACT],
+  ['ImportActionModel', SIMPLE_ACTION_CONTRACT],
+  ['TemplatePrintCollectionActionModel', SIMPLE_ACTION_CONTRACT],
+  ['TemplatePrintRecordActionModel', SIMPLE_ACTION_CONTRACT],
+  ['CollectionTriggerWorkflowActionModel', SIMPLE_ACTION_CONTRACT],
+  ['RecordTriggerWorkflowActionModel', SIMPLE_ACTION_CONTRACT],
+  ['FormTriggerWorkflowActionModel', SIMPLE_ACTION_CONTRACT],
+  ['WorkbenchTriggerWorkflowActionModel', SIMPLE_ACTION_CONTRACT],
+  ['UploadActionModel', UPLOAD_ACTION_CONTRACT],
+  ['MailSendActionModel', MAIL_SEND_ACTION_CONTRACT],
   ['JSCollectionActionModel', JS_ACTION_CONTRACT],
   ['JSRecordActionModel', JS_ACTION_CONTRACT],
   ['JSFormActionModel', JS_ACTION_CONTRACT],
@@ -1843,26 +2184,43 @@ function isActionAllowedInContainer(item: FlowSurfaceCatalogItem, containerUse?:
   return Array.isArray(item.allowedContainerUses) && item.allowedContainerUses.includes(containerUse);
 }
 
-function toPublicActionCatalogItem(item: FlowSurfaceCatalogItem, containerUse?: string): FlowSurfaceCatalogItem {
-  if (item.key === 'filterSubmit' && containerUse === 'FilterFormBlockModel') {
-    return {
-      ...item,
-      key: 'submit',
-    };
+function getContainerScopedActionCatalogItems(
+  items: FlowSurfaceCatalogItem[],
+  containerUse?: string,
+  options: {
+    allowUnknownContainer?: boolean;
+    context: string;
+  } = {
+    context: 'resolveAction',
+  },
+) {
+  if (!containerUse) {
+    return items;
   }
+  const containerScope = getActionContainerScope(containerUse);
+  if (!containerScope) {
+    if (options.allowUnknownContainer) {
+      return [];
+    }
+    assertKnownActionContainerUse({
+      containerUse,
+      context: options.context,
+    });
+    return [];
+  }
+  return items.filter((item) => item.scope === containerScope && isActionAllowedInContainer(item, containerUse));
+}
+
+function toPublicActionCatalogItem(item: FlowSurfaceCatalogItem): FlowSurfaceCatalogItem {
   return item;
 }
 
-export function getAvailableActionCatalogItems(containerUse?: string) {
-  const visible = containerUse
-    ? actionCatalog.filter((item) => isActionAllowedInContainer(item, containerUse))
-    : actionCatalog.filter((item) => item.key !== 'filterSubmit');
-  const normalized = visible.map((item) => toPublicActionCatalogItem(item, containerUse));
-  const dedupeBy = containerUse
-    ? (item: FlowSurfaceCatalogItem) => `${item.key}:${item.use}`
-    : (item: FlowSurfaceCatalogItem) => item.key;
+function dedupeActionCatalogItems(
+  items: FlowSurfaceCatalogItem[],
+  dedupeBy: (item: FlowSurfaceCatalogItem) => string,
+): FlowSurfaceCatalogItem[] {
   const seen = new Set<string>();
-  return normalized.filter((item) => {
+  return items.filter((item) => {
     const key = dedupeBy(item);
     if (seen.has(key)) {
       return false;
@@ -1870,6 +2228,19 @@ export function getAvailableActionCatalogItems(containerUse?: string) {
     seen.add(key);
     return true;
   });
+}
+
+export function getAvailableActionCatalogItems(containerUse?: string, scope?: FlowSurfaceActionScope) {
+  const visible = getContainerScopedActionCatalogItems(actionCatalog, containerUse, {
+    allowUnknownContainer: true,
+    context: 'catalog',
+  });
+  const scoped = scope ? visible.filter((item) => item.scope === scope) : visible;
+  const normalized = scoped.map((item) => toPublicActionCatalogItem(item));
+  return dedupeActionCatalogItems(
+    normalized,
+    containerUse ? (item) => `${item.key}:${item.use}` : (item) => `${item.key}:${item.scope || ''}:${item.use}`,
+  );
 }
 
 const COLLECTION_RESOURCE_REQUIRED = new Set([
@@ -1898,186 +2269,375 @@ export const blockCatalog: FlowSurfaceCatalogItem[] = FLOW_SURFACE_BLOCK_SUPPORT
   }),
 );
 
-export const actionCatalog: FlowSurfaceCatalogItem[] = [
-  makeCatalogItem({
-    key: 'addNew',
+const actionRegistry: FlowSurfaceActionRegistryItem[] = [
+  {
+    publicKey: 'filter',
+    label: 'Filter',
+    scope: 'block',
+    scene: 'collection',
+    use: 'FilterActionModel',
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'addNew',
     label: 'Add new',
-    kind: 'action',
+    scope: 'block',
     scene: 'collection',
     use: 'AddNewActionModel',
-    allowedContainerUses: [...TABLE_BLOCK_ACTION_CONTAINER_USES, ...LIST_BLOCK_ACTION_CONTAINER_USES],
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'view',
-    label: 'View',
-    kind: 'action',
-    scene: 'record',
-    use: 'ViewActionModel',
-    allowedContainerUses: [
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'edit',
-    label: 'Edit',
-    kind: 'action',
-    scene: 'record',
-    use: 'EditActionModel',
-    allowedContainerUses: [
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'popup',
+  },
+  {
+    publicKey: 'popup',
     label: 'Popup',
-    kind: 'action',
-    scene: 'all',
+    scope: 'block',
+    scene: 'collection',
     use: 'PopupCollectionActionModel',
-    allowedContainerUses: [
-      ...TABLE_BLOCK_ACTION_CONTAINER_USES,
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'refresh',
+  },
+  {
+    publicKey: 'refresh',
     label: 'Refresh',
-    kind: 'action',
+    scope: 'block',
     scene: 'collection',
     use: 'RefreshActionModel',
-    allowedContainerUses: [...TABLE_BLOCK_ACTION_CONTAINER_USES, ...LIST_BLOCK_ACTION_CONTAINER_USES],
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'bulkDelete',
+  },
+  {
+    publicKey: 'expandCollapse',
+    label: 'Expand/Collapse',
+    scope: 'block',
+    scene: 'collection',
+    use: 'ExpandCollapseActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'bulkDelete',
     label: 'Bulk delete',
-    kind: 'action',
+    scope: 'block',
     scene: 'collection',
     use: 'BulkDeleteActionModel',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'delete',
-    label: 'Delete',
-    kind: 'action',
-    scene: 'record',
-    use: 'DeleteActionModel',
-    allowedContainerUses: [
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
+  },
+  {
+    publicKey: 'bulkEdit',
+    label: 'Bulk edit',
+    scope: 'block',
+    scene: 'collection',
+    use: 'BulkEditActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'updateRecord',
-    label: 'Update record',
-    kind: 'action',
-    scene: 'record',
-    use: 'UpdateRecordActionModel',
-    allowedContainerUses: [
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
+  },
+  {
+    publicKey: 'bulkUpdate',
+    label: 'Bulk update',
+    scope: 'block',
+    scene: 'collection',
+    use: 'BulkUpdateActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'link',
+  },
+  {
+    publicKey: 'export',
+    label: 'Export',
+    scope: 'block',
+    scene: 'collection',
+    use: 'ExportActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'exportAttachments',
+    label: 'Export attachments',
+    scope: 'block',
+    scene: 'collection',
+    use: 'ExportAttachmentActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'import',
+    label: 'Import',
+    scope: 'block',
+    scene: 'collection',
+    use: 'ImportActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'link',
     label: 'Link',
-    kind: 'action',
+    scope: 'block',
     scene: 'collection',
     use: 'LinkActionModel',
     allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'submit',
+  },
+  {
+    publicKey: 'upload',
+    label: 'Upload',
+    scope: 'block',
+    scene: 'collection',
+    use: 'UploadActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'js',
+    label: 'JS action',
+    scope: 'block',
+    scene: 'collection',
+    use: 'JSCollectionActionModel',
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'composeEmail',
+    label: 'Compose email',
+    scope: 'block',
+    scene: 'collection',
+    use: 'MailSendActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'templatePrint',
+    label: 'Template print',
+    scope: 'block',
+    scene: 'collection',
+    use: 'TemplatePrintCollectionActionModel',
+    allowedContainerUses: TABLE_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'triggerWorkflow',
+    label: 'Trigger workflow',
+    scope: 'block',
+    scene: 'collection',
+    use: 'CollectionTriggerWorkflowActionModel',
+    allowedContainerUses: COLLECTION_BLOCK_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'duplicate',
+    label: 'Duplicate',
+    scope: 'record',
+    scene: 'record',
+    use: 'DuplicateActionModel',
+    allowedContainerUses: TABLE_ROW_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'addChild',
+    label: 'Add child',
+    scope: 'record',
+    scene: 'record',
+    use: 'AddChildActionModel',
+    allowedContainerUses: TABLE_ROW_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'view',
+    label: 'View',
+    scope: 'record',
+    scene: 'record',
+    use: 'ViewActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'edit',
+    label: 'Edit',
+    scope: 'record',
+    scene: 'record',
+    use: 'EditActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'popup',
+    label: 'Popup',
+    scope: 'record',
+    scene: 'record',
+    use: 'PopupCollectionActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'composeEmail',
+    label: 'Compose email',
+    scope: 'record',
+    scene: 'record',
+    use: 'MailSendActionModel',
+    allowedContainerUses: [...TABLE_ROW_ACTION_CONTAINER_USES, ...DETAILS_ACTION_CONTAINER_USES],
+    createSupported: true,
+  },
+  {
+    publicKey: 'delete',
+    label: 'Delete',
+    scope: 'record',
+    scene: 'record',
+    use: 'DeleteActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'updateRecord',
+    label: 'Update record',
+    scope: 'record',
+    scene: 'record',
+    use: 'UpdateRecordActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'js',
+    label: 'JS action',
+    scope: 'record',
+    scene: 'record',
+    use: 'JSRecordActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'templatePrint',
+    label: 'Template print',
+    scope: 'record',
+    scene: 'record',
+    use: 'TemplatePrintRecordActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'triggerWorkflow',
+    label: 'Trigger workflow',
+    scope: 'record',
+    scene: 'record',
+    use: 'RecordTriggerWorkflowActionModel',
+    allowedContainerUses: RECORD_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'submit',
     label: 'Submit',
-    kind: 'action',
+    scope: 'form',
     scene: 'form',
     use: 'FormSubmitActionModel',
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'filterSubmit',
-    label: 'Submit',
-    kind: 'action',
-    scene: 'form',
-    use: 'FilterFormSubmitActionModel',
-    allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'reset',
-    label: 'Reset',
-    kind: 'action',
-    scene: 'form',
-    use: 'FilterFormResetActionModel',
-    allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'js',
+  },
+  {
+    publicKey: 'js',
     label: 'JS action',
-    kind: 'action',
-    scene: 'collection',
-    use: 'JSCollectionActionModel',
-    allowedContainerUses: [...TABLE_BLOCK_ACTION_CONTAINER_USES, ...LIST_BLOCK_ACTION_CONTAINER_USES],
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'js',
-    label: 'JS action',
-    kind: 'action',
-    scene: 'record',
-    use: 'JSRecordActionModel',
-    allowedContainerUses: [
-      ...TABLE_ROW_ACTION_CONTAINER_USES,
-      ...DETAILS_ACTION_CONTAINER_USES,
-      ...LIST_RECORD_ACTION_CONTAINER_USES,
-    ],
-    createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'js',
-    label: 'JS action',
-    kind: 'action',
+    scope: 'form',
     scene: 'form',
     use: 'JSFormActionModel',
     allowedContainerUses: FORM_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'js',
+  },
+  {
+    publicKey: 'triggerWorkflow',
+    label: 'Trigger workflow',
+    scope: 'form',
+    scene: 'form',
+    use: 'FormTriggerWorkflowActionModel',
+    allowedContainerUses: FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'submit',
+    label: 'Submit',
+    scope: 'filterForm',
+    scene: 'form',
+    use: 'FilterFormSubmitActionModel',
+    allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'reset',
+    label: 'Reset',
+    scope: 'filterForm',
+    scene: 'form',
+    use: 'FilterFormResetActionModel',
+    allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'collapse',
+    label: 'Collapse',
+    scope: 'filterForm',
+    scene: 'form',
+    use: 'FilterFormCollapseActionModel',
+    allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
+  {
+    publicKey: 'js',
     label: 'JS action',
-    kind: 'action',
+    scope: 'filterForm',
     scene: 'form',
     use: 'FilterFormJSActionModel',
     allowedContainerUses: FILTER_FORM_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
-  makeCatalogItem({
-    key: 'js',
+  },
+  {
+    publicKey: 'js',
     label: 'JS action',
-    kind: 'action',
+    scope: 'actionPanel',
     scene: 'all',
     use: 'JSActionModel',
     allowedContainerUses: ACTION_PANEL_ACTION_CONTAINER_USES,
     createSupported: true,
-  }),
+  },
+  {
+    publicKey: 'triggerWorkflow',
+    label: 'Trigger workflow',
+    scope: 'actionPanel',
+    scene: 'all',
+    use: 'WorkbenchTriggerWorkflowActionModel',
+    allowedContainerUses: ACTION_PANEL_ACTION_CONTAINER_USES,
+    createSupported: true,
+  },
 ];
+
+function validateActionRegistryItem(item: FlowSurfaceActionRegistryItem) {
+  if (!item.allowedContainerUses.length) {
+    throw new Error(`flowSurfaces action registry '${item.publicKey}' must declare allowedContainerUses`);
+  }
+  if (!nodeContracts.has(item.use)) {
+    throw new Error(`flowSurfaces action registry '${item.publicKey}' references unsupported use '${item.use}'`);
+  }
+  item.allowedContainerUses.forEach((containerUse) =>
+    assertActionScopeMatchesContainer({
+      actionScope: item.scope,
+      containerUse,
+      context: `action registry '${item.publicKey}'`,
+    }),
+  );
+}
+
+actionRegistry.forEach((item) => validateActionRegistryItem(item));
+
+function makeActionCatalogItem(item: FlowSurfaceActionRegistryItem): FlowSurfaceCatalogItem {
+  return makeCatalogItem({
+    key: item.publicKey,
+    label: item.label,
+    kind: 'action',
+    scope: item.scope,
+    scene: item.scene,
+    use: item.use,
+    allowedContainerUses: item.allowedContainerUses,
+    createSupported: item.createSupported,
+  });
+}
+
+export const actionCatalog: FlowSurfaceCatalogItem[] = actionRegistry.map((item) => makeActionCatalogItem(item));
+export const ACTION_PUBLIC_KEYS = dedupeActionCatalogItems(actionCatalog, (item) => item.key).map((item) => item.key);
 
 export const SERVICE_SUPPORTED_FLOW_SURFACE_BLOCK_KEYS = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(
   (entry) => entry.createSupported,
@@ -2090,14 +2650,16 @@ export const ACTION_CATALOG_BY_KEY = actionCatalog.reduce((map, item) => {
   map.set(item.key, entries);
   return map;
 }, new Map<string, FlowSurfaceCatalogItem[]>());
-export const ACTION_CATALOG_BY_USE = new Map(actionCatalog.map((item) => [item.use, item]));
+export const ACTION_CATALOG_BY_USE = actionCatalog.reduce((map, item) => {
+  const entries = map.get(item.use) || [];
+  entries.push(item);
+  map.set(item.use, entries);
+  return map;
+}, new Map<string, FlowSurfaceCatalogItem[]>());
 export const BLOCK_KEY_BY_USE = new Map(blockCatalog.map((item) => [item.use, item.key]));
 export const ACTION_KEY_BY_USE = new Map(actionCatalog.map((item) => [item.use, toPublicActionCatalogItem(item).key]));
 
-function normalizeActionCatalogKey(type?: string, containerUse?: string) {
-  if (String(type || '').trim() === 'submit' && containerUse === 'FilterFormBlockModel') {
-    return 'filterSubmit';
-  }
+function normalizeActionCatalogKey(type?: string) {
   return String(type || '').trim();
 }
 
@@ -2135,14 +2697,32 @@ export function resolveSupportedActionCatalogItem(
 ) {
   const requestedType = String(input.type || '').trim();
   const normalizedUse = String(input.use || '').trim();
-  let item = normalizedUse ? ACTION_CATALOG_BY_USE.get(normalizedUse) : undefined;
+  let item: FlowSurfaceCatalogItem | undefined;
+  if (input.containerUse) {
+    assertKnownActionContainerUse({
+      containerUse: input.containerUse,
+      context: 'resolveAction',
+    });
+  }
+
+  if (normalizedUse) {
+    const useCandidates = ACTION_CATALOG_BY_USE.get(normalizedUse) || [];
+    const matched = getContainerScopedActionCatalogItems(useCandidates, input.containerUse);
+    if (useCandidates.length && input.containerUse && !matched.length) {
+      throw new Error(`flowSurfaces addAction '${normalizedUse}' is not allowed under '${input.containerUse}'`);
+    }
+    if (matched.length > 1 && !input.containerUse) {
+      throw new Error(
+        `flowSurfaces addAction use '${normalizedUse}' requires containerUse to resolve a public action capability`,
+      );
+    }
+    item = matched[0];
+  }
 
   if (!item && requestedType) {
-    const normalizedType = normalizeActionCatalogKey(input.type, input.containerUse);
+    const normalizedType = normalizeActionCatalogKey(input.type);
     const candidates = (normalizedType ? ACTION_CATALOG_BY_KEY.get(normalizedType) : undefined) || [];
-    const matched = candidates.filter(
-      (candidate) => !input.containerUse || isActionAllowedInContainer(candidate, input.containerUse),
-    );
+    const matched = getContainerScopedActionCatalogItems(candidates, input.containerUse);
     if (candidates.length && input.containerUse && !matched.length) {
       throw new Error(`flowSurfaces addAction '${requestedType}' is not allowed under '${input.containerUse}'`);
     }
@@ -2158,7 +2738,7 @@ export function resolveSupportedActionCatalogItem(
     throw new Error(`flowSurfaces addAction only supports registered action types/uses`);
   }
   if (requestedType) {
-    const publicKey = toPublicActionCatalogItem(item, input.containerUse).key;
+    const publicKey = toPublicActionCatalogItem(item).key;
     if (requestedType !== publicKey) {
       throw new Error(
         `flowSurfaces addAction only supports public action type '${publicKey}' under '${
@@ -2169,9 +2749,7 @@ export function resolveSupportedActionCatalogItem(
   }
   if (input.containerUse && !isActionAllowedInContainer(item, input.containerUse)) {
     throw new Error(
-      `flowSurfaces addAction '${toPublicActionCatalogItem(item, input.containerUse).key}' is not allowed under '${
-        input.containerUse
-      }'`,
+      `flowSurfaces addAction '${toPublicActionCatalogItem(item).key}' is not allowed under '${input.containerUse}'`,
     );
   }
   if (options.requireCreateSupported && item.createSupported === false) {
@@ -2181,8 +2759,11 @@ export function resolveSupportedActionCatalogItem(
 }
 
 export function getNodeContract(use?: string): FlowSurfaceNodeContract {
-  if (use && nodeContracts.has(use)) {
-    return nodeContracts.get(use)!;
+  if (use) {
+    const contract = nodeContracts.get(use);
+    if (contract) {
+      return contract;
+    }
   }
 
   return READONLY_NODE_CONTRACT;

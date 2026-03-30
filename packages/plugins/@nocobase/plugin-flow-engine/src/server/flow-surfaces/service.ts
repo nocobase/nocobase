@@ -20,9 +20,11 @@ import {
   resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
 } from './catalog';
+import { assertRequestedActionScope, normalizeActionScope } from './action-scope';
 import {
   buildActionTree,
   buildBlockTree,
+  buildCanonicalTableActionsColumnNode,
   buildFieldTree,
   buildStandaloneFieldNode,
   buildPersistedRootPageModel,
@@ -85,12 +87,30 @@ const ACTION_BUTTON_USES = new Set([
   'PopupCollectionActionModel',
   'DeleteActionModel',
   'BulkDeleteActionModel',
+  'BulkEditActionModel',
   'UpdateRecordActionModel',
+  'BulkUpdateActionModel',
+  'DuplicateActionModel',
+  'AddChildActionModel',
+  'FilterActionModel',
+  'ExpandCollapseActionModel',
   'FormSubmitActionModel',
   'FilterFormSubmitActionModel',
   'FilterFormResetActionModel',
+  'FilterFormCollapseActionModel',
   'RefreshActionModel',
   'LinkActionModel',
+  'ExportActionModel',
+  'ExportAttachmentActionModel',
+  'ImportActionModel',
+  'UploadActionModel',
+  'TemplatePrintCollectionActionModel',
+  'TemplatePrintRecordActionModel',
+  'CollectionTriggerWorkflowActionModel',
+  'RecordTriggerWorkflowActionModel',
+  'FormTriggerWorkflowActionModel',
+  'WorkbenchTriggerWorkflowActionModel',
+  'MailSendActionModel',
   'JSCollectionActionModel',
   'JSRecordActionModel',
   'JSFormActionModel',
@@ -110,9 +130,12 @@ const POPUP_ACTION_USES = new Set([
   'ViewActionModel',
   'EditActionModel',
   'PopupCollectionActionModel',
+  'DuplicateActionModel',
+  'AddChildActionModel',
+  'MailSendActionModel',
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
-const SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel', 'FilterFormSubmitActionModel']);
+const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
 const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
 
 type FlowSurfaceAddFieldResult = {
@@ -162,6 +185,10 @@ export class FlowSurfacesService {
     });
   }
 
+  private allocateRouteSortValue(offset = 0) {
+    return Date.now() * 1000 + Math.floor(Math.random() * 1000) + offset;
+  }
+
   async catalog(input: { target?: FlowSurfaceTarget }, options: { transaction?: any } = {}) {
     const target = input?.target;
     const resolved = target ? await this.locator.resolve(target, options) : null;
@@ -169,12 +196,17 @@ export class FlowSurfacesService {
     const fieldCatalog = target ? await this.buildFieldCatalog(target, options.transaction) : [];
     const availableBlocks = this.surfaceContext.filterBlocksByTarget(node, resolved);
     const availableActions = getAvailableActionCatalogItems(node?.use);
+    const recordActionContainerUse = getCatalogRecordActionContainerUse(node?.use);
+    const availableRecordActions = recordActionContainerUse
+      ? getAvailableActionCatalogItems(recordActionContainerUse, 'record')
+      : [];
 
     return {
       target: resolved || null,
       blocks: availableBlocks,
       fields: fieldCatalog,
       actions: availableActions,
+      recordActions: availableRecordActions,
       editableDomains: this.getEditableDomains(node?.use),
       settingsSchema: getSettingsSchemaForUse(node?.use),
       settingsContract: getNodeContract(node?.use).domains,
@@ -339,7 +371,7 @@ export class FlowSurfacesService {
     for (const block of createdBlocks) {
       const actionResults: Array<Record<string, any>> = [];
       for (const actionSpec of block.spec.actions) {
-        const containerUid = this.resolveComposeActionContainerUid(block.spec, block.result, actionSpec);
+        const containerUid = this.resolveComposeActionContainerUid(block.spec, block.result);
         const createdAction = await this.addAction(
           {
             target: {
@@ -381,7 +413,7 @@ export class FlowSurfacesService {
         actionResults.push({
           key: actionSpec.key,
           type: actionSpec.type,
-          scope: actionSpec.scope,
+          scope: createdAction.scope,
           uid: createdAction.uid,
           parentUid: createdAction.parentUid,
           ...actionRefs,
@@ -393,7 +425,14 @@ export class FlowSurfacesService {
     for (const block of createdBlocks) {
       const recordActionResults: Array<Record<string, any>> = [];
       for (const actionSpec of block.spec.recordActions) {
-        const containerUid = this.resolveComposeRecordActionContainerUid(block.spec, block.result);
+        const containerUid = await this.resolveComposeRecordActionContainerUid(
+          block.spec,
+          block.result,
+          options.transaction,
+        );
+        if (block.spec.type === 'table' && !block.result.actionsColumnUid) {
+          block.result.actionsColumnUid = containerUid;
+        }
         const createdAction = await this.addAction(
           {
             target: {
@@ -435,6 +474,7 @@ export class FlowSurfacesService {
         recordActionResults.push({
           key: actionSpec.key,
           type: actionSpec.type,
+          scope: createdAction.scope,
           uid: createdAction.uid,
           parentUid: createdAction.parentUid,
           ...actionRefs,
@@ -568,11 +608,14 @@ export class FlowSurfacesService {
     const tabTitle = values.tabTitle || 'Untitled';
     const enableTabs = !!values.enableTabs;
     const displayTitle = values.displayTitle !== false;
+    const pageSort = this.allocateRouteSortValue();
+    const initialTabSort = this.allocateRouteSortValue(1);
 
     const desktopRoutes = this.db.getRepository('desktopRoutes');
     await desktopRoutes.create({
       values: {
         type: 'flowPage',
+        sort: pageSort,
         title,
         icon: values.icon,
         schemaUid: pageSchemaUid,
@@ -584,6 +627,7 @@ export class FlowSurfacesService {
         children: [
           {
             type: 'tabs',
+            sort: initialTabSort,
             title: tabTitle,
             icon: values.tabIcon,
             schemaUid: tabSchemaUid,
@@ -688,9 +732,11 @@ export class FlowSurfacesService {
     const tabSchemaUid = values.tabSchemaUid || uid();
     const tabSchemaName = values.tabSchemaName || uid();
     const title = values.title || 'Untitled';
+    const sort = this.allocateRouteSortValue();
     const route = await this.db.getRepository('desktopRoutes').create({
       values: {
         type: 'tabs',
+        sort,
         title,
         icon: values.icon,
         parentId: pageRoute.get('id'),
@@ -873,6 +919,10 @@ export class FlowSurfacesService {
     const columnNodes = getNodeSubModelList(tree.subModels?.columns);
     const blockGridUid = gridNode?.uid || itemGridNode?.uid;
     const popupGridUid = popupSurface?.gridUid;
+    const actionsColumnUid =
+      catalogItem.use === 'TableBlockModel'
+        ? await this.ensureTableActionsColumn(created, options.transaction)
+        : columnNodes.find((item) => item.use === 'TableActionsColumnModel')?.uid;
     return {
       uid: created,
       parentUid,
@@ -881,11 +931,7 @@ export class FlowSurfacesService {
       ...(blockGridUid ? { blockGridUid } : {}),
       ...(itemNode?.uid ? { itemUid: itemNode.uid } : {}),
       ...(itemGridNode?.uid ? { itemGridUid: itemGridNode.uid } : {}),
-      ...(columnNodes.length
-        ? {
-            actionsColumnUid: columnNodes.find((item) => item.use === 'TableActionsColumnModel')?.uid,
-          }
-        : {}),
+      ...(actionsColumnUid ? { actionsColumnUid } : {}),
       ...(popupSurface
         ? {
             pageUid: popupSurface.pageUid,
@@ -1074,6 +1120,7 @@ export class FlowSurfacesService {
 
   async addAction(values: Record<string, any>, options: { transaction?: any } = {}) {
     const container = await this.surfaceContext.resolveActionContainer(values.target, options.transaction);
+    const requestedScope = normalizeActionScope(values.scope);
     const actionCatalogItem = resolveSupportedActionCatalogItem(
       {
         type: values.type,
@@ -1084,6 +1131,16 @@ export class FlowSurfacesService {
         requireCreateSupported: true,
       },
     );
+    const resolvedScope = actionCatalogItem.scope;
+    if (!resolvedScope) {
+      throw new Error(`flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`);
+    }
+    assertRequestedActionScope({
+      requestedScope,
+      resolvedScope,
+      containerUse: container.ownerUse,
+      context: 'addAction',
+    });
     const resourceContext = container.ownerUid
       ? await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null)
       : null;
@@ -1111,6 +1168,7 @@ export class FlowSurfacesService {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
+      scope: actionCatalogItem.scope,
       ...(assignFormNode?.uid ? { assignFormUid: assignFormNode.uid } : {}),
     };
   }
@@ -1469,14 +1527,14 @@ export class FlowSurfacesService {
     if (!key || !type) {
       throw new Error(`flowSurfaces compose block #${index + 1} requires key and type`);
     }
-    resolveSupportedBlockCatalogItem({ type }, { requireCreateSupported: true });
+    const blockCatalogItem = resolveSupportedBlockCatalogItem({ type }, { requireCreateSupported: true });
     const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
     const recordActions = _.castArray(input.recordActions || []).map((action, actionIndex) =>
       normalizeComposeActionSpec(action, actionIndex),
     );
-    this.validateComposeActionGroups(type, actions, recordActions);
+    this.validateComposeActionGroups(blockCatalogItem.use, actions, recordActions);
     return {
       key,
       type,
@@ -1499,22 +1557,7 @@ export class FlowSurfacesService {
     return keyRefs[ref].uid;
   }
 
-  private resolveComposeActionContainerUid(blockSpec: any, blockResult: any, actionSpec: any) {
-    if (blockSpec.type === 'table') {
-      const scope =
-        actionSpec.scope === 'block' || actionSpec.scope === 'row'
-          ? actionSpec.scope
-          : inferTableComposeActionScope(actionSpec.type);
-      if (scope === 'row') {
-        if (!blockResult.actionsColumnUid) {
-          throw new Error(
-            `flowSurfaces compose cannot add row action '${actionSpec.type}' without a table actions column`,
-          );
-        }
-        return blockResult.actionsColumnUid;
-      }
-      return blockResult.uid;
-    }
+  private resolveComposeActionContainerUid(blockSpec: any, blockResult: any) {
     return blockResult.uid;
   }
 
@@ -1525,9 +1568,12 @@ export class FlowSurfacesService {
     return blockResult.uid;
   }
 
-  private resolveComposeRecordActionContainerUid(blockSpec: any, blockResult: any) {
+  private async resolveComposeRecordActionContainerUid(blockSpec: any, blockResult: any, transaction?: any) {
+    if (blockSpec.type === 'table') {
+      return this.ensureTableActionsColumn(blockResult.uid, transaction);
+    }
     if (!LIST_LIKE_COMPOSE_BLOCK_TYPES.has(blockSpec.type)) {
-      throw new Error(`flowSurfaces compose recordActions only support 'list' or 'gridCard' blocks`);
+      throw new Error(`flowSurfaces compose recordActions only support 'table', 'list' or 'gridCard' blocks`);
     }
     if (!blockResult.itemUid) {
       throw new Error(`flowSurfaces compose block '${blockSpec.key}' is missing its item subtree`);
@@ -1535,27 +1581,25 @@ export class FlowSurfacesService {
     return blockResult.itemUid;
   }
 
-  private validateComposeActionGroups(type: string, actions: any[], recordActions: any[]) {
-    const recordContainerUse = getComposeRecordActionContainerUse(type);
-    const blockContainerUse = getComposeBlockActionContainerUse(type);
+  private validateComposeActionGroups(blockUse: string, actions: any[], recordActions: any[]) {
+    const blockContainerUse = blockUse;
+    const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
 
     if (recordActions.length && !recordContainerUse) {
-      throw new Error(`flowSurfaces compose recordActions only support 'list' or 'gridCard' blocks`);
+      throw new Error(`flowSurfaces compose recordActions only support 'table', 'list' or 'gridCard' blocks`);
     }
 
-    if (blockContainerUse && LIST_LIKE_COMPOSE_BLOCK_TYPES.has(type)) {
-      actions.forEach((action) => {
-        resolveSupportedActionCatalogItem(
-          {
-            type: action.type,
-            containerUse: blockContainerUse,
-          },
-          {
-            requireCreateSupported: true,
-          },
-        );
-      });
-    }
+    actions.forEach((action) => {
+      resolveSupportedActionCatalogItem(
+        {
+          type: action.type,
+          containerUse: blockContainerUse,
+        },
+        {
+          requireCreateSupported: true,
+        },
+      );
+    });
 
     if (recordContainerUse) {
       recordActions.forEach((action) => {
@@ -2798,6 +2842,19 @@ export class FlowSurfacesService {
       : !_.isUndefined(changes.openView)
         ? true
         : undefined;
+    const exactBindingInit =
+      bindingChange && normalizedBinding
+        ? {
+            fieldSettings: {
+              init: this.buildExactFieldSettingsInitPayload({
+                dataSourceKey: normalizedBinding.dataSourceKey,
+                collectionName: normalizedBinding.collectionName,
+                fieldPath: normalizedBinding.fieldPath,
+                associationPathName: normalizedBinding.associationPathName,
+              }),
+            },
+          }
+        : undefined;
     return this.updateSettings(
       {
         target,
@@ -2817,18 +2874,7 @@ export class FlowSurfacesService {
             : {}),
         }),
         stepParams: buildDefinedPayload({
-          ...(bindingChange && !parentWrapper?.uid
-            ? {
-                fieldSettings: {
-                  init: this.buildExactFieldSettingsInitPayload({
-                    dataSourceKey: normalizedBinding!.dataSourceKey,
-                    collectionName: normalizedBinding!.collectionName,
-                    fieldPath: normalizedBinding!.fieldPath,
-                    associationPathName: normalizedBinding!.associationPathName,
-                  }),
-                },
-              }
-            : {}),
+          ...(!parentWrapper?.uid && exactBindingInit ? exactBindingInit : {}),
           ...(hasOwnDefined(changes, 'clickToOpen') || !_.isUndefined(changes.openView)
             ? {
                 displayFieldSettings: {
@@ -2902,23 +2948,28 @@ export class FlowSurfacesService {
       };
     }
     if (!_.isUndefined(changes.openView)) {
-      if (!POPUP_ACTION_USES.has(use)) {
+      if (use === 'UploadActionModel') {
+        stepParams.selectExitRecordSettings = {
+          openView: changes.openView,
+        };
+      } else if (!POPUP_ACTION_USES.has(use)) {
         throw new Error(`flowSurfaces configure action '${use}' does not support openView`);
+      } else {
+        stepParams.popupSettings = {
+          openView: changes.openView,
+        };
       }
-      stepParams.popupSettings = {
-        openView: changes.openView,
-      };
     }
     if (!_.isUndefined(changes.confirm)) {
       if (DELETE_ACTION_USES.has(use)) {
         stepParams.deleteSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
-      } else if (SUBMIT_ACTION_USES.has(use)) {
+      } else if (CONFIRMABLE_SUBMIT_ACTION_USES.has(use)) {
         stepParams.submitSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
-      } else if (use === 'UpdateRecordActionModel') {
+      } else if (['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
         stepParams.assignSettings = {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
@@ -2927,7 +2978,7 @@ export class FlowSurfacesService {
       }
     }
     if (hasOwnDefined(changes, 'assignValues')) {
-      if (use !== 'UpdateRecordActionModel') {
+      if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
         throw new Error(`flowSurfaces configure action '${use}' does not support assignValues`);
       }
       stepParams.assignSettings = {
@@ -3411,6 +3462,38 @@ export class FlowSurfacesService {
     return childUid;
   }
 
+  private async ensureTableActionsColumn(tableUid: string, transaction?: any) {
+    const table = await this.repository.findModelById(tableUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (table?.use !== 'TableBlockModel') {
+      throw new Error(
+        `flowSurfaces table recordActions require a TableBlockModel target, got '${table?.use || tableUid}'`,
+      );
+    }
+
+    const attachedColumns = _.castArray(table?.subModels?.columns || []).filter(
+      (item: any) => item?.use === 'TableActionsColumnModel' && item?.uid,
+    );
+    if (attachedColumns.length) {
+      return attachedColumns[0].uid;
+    }
+
+    const columnTree = buildCanonicalTableActionsColumnNode();
+    this.contractGuard.validateNodeTreeAgainstContract(columnTree);
+    await this.repository.upsertModel(
+      {
+        parentId: tableUid,
+        subKey: 'columns',
+        subType: 'array',
+        ...columnTree,
+      },
+      { transaction },
+    );
+    return columnTree.uid;
+  }
+
   private async ensurePopupSurface(parentUid: string, transaction?: any) {
     const existingPage = await this.repository.findModelByParentId(parentUid, {
       transaction,
@@ -3519,10 +3602,14 @@ export class FlowSurfacesService {
       MULTI_VALUE_ASSOCIATION_INTERFACES.has(associationInterface || '');
 
     if (shouldBindAssociationValue) {
+      const associationFieldPath = parsed.associationPathName;
+      if (!associationFieldPath) {
+        throw new Error('flowSurfaces field binding requires associationPathName for multi-value association display');
+      }
       return {
         dataSourceKey: parsed.dataSourceKey,
         collectionName: parsed.collectionName,
-        fieldPath: parsed.associationPathName!,
+        fieldPath: associationFieldPath,
         associationPathName: undefined,
         defaultTitleField: parsed.leafFieldPath,
         usesAssociationValueBinding: true,
@@ -3768,7 +3855,6 @@ function normalizeComposeActionSpec(input: any, index: number) {
     return {
       key: type,
       type,
-      scope: undefined,
       settings: {},
       popup: undefined,
     };
@@ -3783,10 +3869,12 @@ function normalizeComposeActionSpec(input: any, index: number) {
   if (!type) {
     throw new Error(`flowSurfaces compose action #${index + 1} requires type`);
   }
+  if (!_.isUndefined(input.scope)) {
+    throw new Error(`flowSurfaces compose action #${index + 1} does not support scope, use actions or recordActions`);
+  }
   return {
     key: String(input.key || type).trim(),
     type,
-    scope: input.scope === 'block' || input.scope === 'row' ? input.scope : undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
     popup: _.isPlainObject(input.popup) ? input.popup : undefined,
   };
@@ -3915,30 +4003,17 @@ function splitComposeFieldChanges(changes: Record<string, any>) {
   };
 }
 
-function getComposeBlockActionContainerUse(type: string) {
-  switch (String(type || '').trim()) {
-    case 'list':
-      return 'ListBlockModel';
-    case 'gridCard':
-      return 'GridCardBlockModel';
-    default:
-      return null;
-  }
-}
-
-function getComposeRecordActionContainerUse(type: string) {
-  switch (String(type || '').trim()) {
-    case 'list':
+function getCatalogRecordActionContainerUse(use?: string) {
+  switch (String(use || '').trim()) {
+    case 'TableBlockModel':
+      return 'TableActionsColumnModel';
+    case 'ListBlockModel':
       return 'ListItemModel';
-    case 'gridCard':
+    case 'GridCardBlockModel':
       return 'GridCardItemModel';
     default:
       return null;
   }
-}
-
-function inferTableComposeActionScope(type: string) {
-  return ['view', 'edit', 'popup', 'delete', 'updateRecord'].includes(String(type || '').trim()) ? 'row' : 'block';
 }
 
 function normalizeRowSpans(spans?: Array<number | undefined>) {

@@ -27,6 +27,7 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('moveNode');
     expect(content).toContain('"type": "filterForm"');
     expect(content).toContain('"type": "table"');
+    expect(content).toContain('"recordActions"');
     expect(content).toContain('"type": "jsBlock"');
     expect(content).toContain('"type": "js"');
     expect(content).toContain('"renderer": "js"');
@@ -43,12 +44,29 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('"type": "actionPanel"');
     expect(content).toContain('"type": "list"');
     expect(content).toContain('"type": "gridCard"');
-    expect(content).toContain('"recordActions"');
+    expect(content).toContain('`bulkDelete`');
+    expect(content).toContain('`bulkEdit`');
+    expect(content).toContain('`bulkUpdate`');
+    expect(content).toContain('`expandCollapse`');
+    expect(content).toContain('`export`');
+    expect(content).toContain('`upload`');
+    expect(content).toContain('`composeEmail`');
+    expect(content).toContain('`templatePrint`');
+    expect(content).toContain('`triggerWorkflow`');
+    expect(content).toContain('`duplicate`');
+    expect(content).toContain('`addChild`');
+    expect(content).toContain('`collapse`');
+    expect(content).toContain('`link`');
+    expect(content).toContain('`updateRecord`');
     expect(content).toContain('"span": 3');
     expect(content).toContain('"span": 7');
+    expect(content).toContain('`table` / `list` / `gridCard`');
+    expect(content).toContain('`catalog(target=table/list/gridCard)`');
     expect(content).toContain('wrapperUid/fieldUid');
     expect(content).toContain('popupPageUid/popupTabUid/popupGridUid');
     expect(content).toContain('flow-surfaces-ai-js-models.md');
+    expect(content).not.toContain('rowActions');
+    expect(content).not.toContain('"actions": ["addNew", "view", "edit", "delete"]');
   });
 
   it('should keep playbook as a thin wrapper and keep the JS companion doc aligned', () => {

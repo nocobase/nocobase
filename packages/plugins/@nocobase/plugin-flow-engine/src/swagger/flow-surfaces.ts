@@ -25,6 +25,34 @@ const FILTER_GROUP_EXAMPLE = {
 const STRING_OR_INTEGER_SCHEMA = {
   oneOf: [{ type: 'string' }, { type: 'integer' }],
 };
+const ACTION_TYPE_ENUM = [
+  'filter',
+  'addNew',
+  'popup',
+  'refresh',
+  'expandCollapse',
+  'bulkDelete',
+  'bulkEdit',
+  'bulkUpdate',
+  'export',
+  'exportAttachments',
+  'import',
+  'link',
+  'upload',
+  'js',
+  'composeEmail',
+  'templatePrint',
+  'triggerWorkflow',
+  'duplicate',
+  'addChild',
+  'view',
+  'edit',
+  'delete',
+  'updateRecord',
+  'submit',
+  'reset',
+  'collapse',
+];
 
 function ref(name: string) {
   return {
@@ -120,7 +148,7 @@ const examples = {
             target: 'table',
           },
         ],
-        actions: ['submit', 'reset'],
+        actions: ['submit', 'reset', 'collapse'],
       },
       {
         key: 'table',
@@ -130,7 +158,30 @@ const examples = {
           collectionName: 'users',
         },
         fields: ['username', 'nickname', { fieldPath: 'roles.title' }],
-        actions: ['addNew', 'view', 'edit', 'delete'],
+        actions: ['filter', 'addNew', 'refresh', 'bulkDelete', 'link'],
+        recordActions: [
+          'view',
+          'edit',
+          {
+            type: 'popup',
+            popup: {
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'details',
+                  type: 'details',
+                  resource: {
+                    dataSourceKey: 'main',
+                    collectionName: 'users',
+                  },
+                  fields: ['username', 'nickname'],
+                },
+              ],
+            },
+          },
+          'updateRecord',
+          'delete',
+        ],
       },
     ],
     layout: {
@@ -523,6 +574,15 @@ const examples = {
       title: 'View',
     },
   },
+  addLinkAction: {
+    target: {
+      uid: 'table-block-uid',
+    },
+    type: 'link',
+    props: {
+      title: 'Open docs',
+    },
+  },
   addJsAction: {
     target: {
       uid: 'action-panel-uid',
@@ -723,7 +783,7 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
           schema: ref('FlowSurfaceComposeRequest'),
           examples: {
             filterTable: {
-              summary: 'Compose a filter-form and table with a simple 3:7 row layout',
+              summary: 'Compose a filter-form and table with block actions, record actions and a simple 3:7 row layout',
               value: examples.compose,
             },
             staticBlocks: {
@@ -929,6 +989,10 @@ const actionDocs: Record<FlowSurfacesActionName, any> = {
             view: {
               summary: 'Create a normal view action under a table row action container',
               value: examples.addAction,
+            },
+            link: {
+              summary: 'Create a link action under a table block action container',
+              value: examples.addLinkAction,
             },
             js: {
               summary: 'Create a JS action under an action-panel container',
@@ -1530,6 +1594,12 @@ const schemas = {
       },
       actions: {
         type: 'array',
+        description: 'Public block/form/filter-form/action-panel actions available under the resolved target.',
+        items: ref('FlowSurfaceCatalogItem'),
+      },
+      recordActions: {
+        type: 'array',
+        description: 'Public record/item-level actions exposed for table/list/gridCard targets.',
         items: ref('FlowSurfaceCatalogItem'),
       },
       editableDomains: {
@@ -1682,23 +1752,7 @@ const schemas = {
           },
           type: {
             type: 'string',
-            enum: [
-              'addNew',
-              'refresh',
-              'bulkDelete',
-              'view',
-              'edit',
-              'popup',
-              'delete',
-              'updateRecord',
-              'submit',
-              'reset',
-              'js',
-            ],
-          },
-          scope: {
-            type: 'string',
-            enum: ['block', 'row'],
+            enum: ACTION_TYPE_ENUM,
           },
           settings: ANY_OBJECT_SCHEMA,
           popup: ref('FlowSurfaceComposeActionPopup'),
@@ -1739,12 +1793,12 @@ const schemas = {
       },
       actions: {
         type: 'array',
+        description: 'Block-level actions. For table/list/gridCard, prefer block-wide collection actions here.',
         items: ref('FlowSurfaceComposeActionSpec'),
       },
       recordActions: {
         type: 'array',
-        description:
-          'Only valid for list/gridCard blocks. Creates item-level record actions under the generated item node.',
+        description: 'Public semantic group for record/item-level actions on table/list/gridCard blocks.',
         items: ref('FlowSurfaceComposeActionSpec'),
       },
     },
@@ -1815,22 +1869,7 @@ const schemas = {
       },
       type: {
         type: 'string',
-        enum: [
-          'addNew',
-          'refresh',
-          'bulkDelete',
-          'view',
-          'edit',
-          'popup',
-          'delete',
-          'updateRecord',
-          'submit',
-          'reset',
-          'js',
-        ],
-      },
-      scope: {
-        type: 'string',
+        enum: ACTION_TYPE_ENUM,
       },
       uid: {
         type: 'string',
@@ -1904,6 +1943,7 @@ const schemas = {
       },
       recordActions: {
         type: 'array',
+        description: 'Returned record/item-level action results for table/list/gridCard public compose semantics.',
         items: ref('FlowSurfaceComposeActionResult'),
       },
     },
@@ -2364,19 +2404,7 @@ const schemas = {
       target: ref('FlowSurfaceTarget'),
       type: {
         type: 'string',
-        enum: [
-          'addNew',
-          'refresh',
-          'bulkDelete',
-          'view',
-          'edit',
-          'popup',
-          'delete',
-          'updateRecord',
-          'submit',
-          'reset',
-          'js',
-        ],
+        enum: ACTION_TYPE_ENUM,
       },
       use: {
         type: 'string',
@@ -3008,19 +3036,7 @@ const schemas = {
             },
             type: {
               type: 'string',
-              enum: [
-                'addNew',
-                'view',
-                'edit',
-                'popup',
-                'refresh',
-                'bulkDelete',
-                'delete',
-                'updateRecord',
-                'submit',
-                'reset',
-                'js',
-              ],
+              enum: ACTION_TYPE_ENUM,
             },
           },
           required: ['message'],

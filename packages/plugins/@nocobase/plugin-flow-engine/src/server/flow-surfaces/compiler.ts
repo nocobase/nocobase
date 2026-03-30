@@ -11,7 +11,7 @@ import _ from 'lodash';
 import {
   ACTION_KEY_BY_USE,
   BLOCK_KEY_BY_USE,
-  getAvailableActionCatalogItems,
+  resolveSupportedActionCatalogItem,
   resolveSupportedBlockCatalogItem,
   resolveSupportedFieldCapability,
 } from './catalog';
@@ -571,10 +571,15 @@ function createActionNode(
   parentRef: CompiledNodeRef,
   desiredNode: FlowSurfaceNodeSpec,
 ) {
-  const actionCatalogItem = getAvailableActionCatalogItems(parentRef.use).find((item) => item.use === desiredNode.use);
-  if (!actionCatalogItem || actionCatalogItem.createSupported === false) {
-    throw new Error(`flowSurfaces apply action '${desiredNode.use}' is not a public capability`);
-  }
+  const actionCatalogItem = resolveSupportedActionCatalogItem(
+    {
+      use: desiredNode.use,
+      containerUse: parentRef.use,
+    },
+    {
+      requireCreateSupported: true,
+    },
+  );
   const opId = nextOpId(state, 'addAction');
   ops.push({
     opId,
@@ -585,6 +590,7 @@ function createActionNode(
       },
       ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
       type: actionCatalogItem.key,
+      scope: actionCatalogItem.scope,
       resourceInit: extractResourceInit(desiredNode),
       props: desiredNode.props,
       decoratorProps: desiredNode.decoratorProps,

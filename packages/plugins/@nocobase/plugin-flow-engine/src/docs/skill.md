@@ -20,10 +20,16 @@
 
 ### 常用 action `type`
 
-- collection: `addNew`、`refresh`、`bulkDelete`
-- record: `view`、`edit`、`popup`、`delete`、`updateRecord`
-- form: `submit`、`reset`
+- block: `filter`、`addNew`、`popup`、`refresh`、`expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`、`triggerWorkflow`
+- record: `view`、`edit`、`popup`、`duplicate`、`addChild`、`delete`、`updateRecord`、`composeEmail`、`templatePrint`、`triggerWorkflow`
+- form / filter-form: `submit`、`reset`、`collapse`、`triggerWorkflow`
 - JS action: `js`
+
+其中：
+
+- table block 额外支持 `expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`
+- tree table 的 `recordActions` 额外支持 `duplicate`、`addChild`、`composeEmail`
+- filter-form 额外支持 `collapse`
 
 ### 常用 field 公开语义
 
@@ -85,7 +91,30 @@
           "fieldPath": "roles.title"
         }
       ],
-      "actions": ["addNew", "view", "edit", "delete"]
+      "actions": ["addNew", "refresh", "bulkDelete", "link"],
+      "recordActions": [
+        "view",
+        "edit",
+        {
+          "type": "popup",
+          "popup": {
+            "mode": "replace",
+            "blocks": [
+              {
+                "key": "details",
+                "type": "details",
+                "resource": {
+                  "dataSourceKey": "main",
+                  "collectionName": "users"
+                },
+                "fields": ["username", "nickname"]
+              }
+            ]
+          }
+        },
+        "updateRecord",
+        "delete"
+      ]
     }
   ],
   "layout": {
@@ -104,6 +133,12 @@
   }
 }
 ```
+
+`table` / `list` / `gridCard` 的公开语义统一为：
+
+- `actions` = block 级 actions
+- `recordActions` = record/item 级 actions
+- `catalog(target=table/list/gridCard)` 也会按同样语义分别返回 `actions` 和 `recordActions`
 
 `roles.title` 这种 to-many relation leaf path 在 display 场景下是允许的。服务端会自动归一化成 association-value binding，调用方不需要自己处理 `associationPathName`、`titleField` 或点击上下文。
 
@@ -206,11 +241,11 @@
 }
 ```
 
-### 5.2 `list` / `gridCard`
+### 5.2 `table` / `list` / `gridCard`
 
-- `fields` = item 内容字段
+- `fields` = table record / list item / grid card item 的内容字段
 - `actions` = block 级 actions
-- `recordActions` = 每条 item 的 actions
+- `recordActions` = table 每行 / list 每个 item / grid card 每张卡片上的 record actions
 
 ```json
 {

@@ -9,6 +9,7 @@
 
 export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
+export type FlowSurfaceActionScope = 'block' | 'record' | 'form' | 'filterForm' | 'actionPanel';
 
 export type FlowSurfaceTarget = {
   uid?: string;
@@ -69,6 +70,7 @@ export type FlowSurfaceCatalogItem = {
   label: string;
   use: string;
   kind: 'page' | 'tab' | 'block' | 'field' | 'action';
+  scope?: FlowSurfaceActionScope;
   scene?: string;
   requiredInitParams?: string[];
   allowedContainerUses?: string[];

@@ -9,7 +9,7 @@
 
 import { uid } from '@nocobase/utils';
 import _ from 'lodash';
-import type { FlowSurfaceNodeDefaults, FlowSurfaceNodeSpec } from './types';
+import type { FlowSurfaceCatalogItem, FlowSurfaceNodeDefaults, FlowSurfaceNodeSpec } from './types';
 import { resolveSupportedActionCatalogItem, resolveSupportedBlockCatalogItem } from './catalog';
 
 type BuildFieldParams = {
@@ -239,19 +239,7 @@ export function buildBlockTree(options: {
 
   if (use === 'TableBlockModel') {
     model.subModels = {
-      columns: [
-        {
-          uid: uid(),
-          use: 'TableActionsColumnModel',
-          stepParams: {
-            tableColumnSettings: {
-              title: {
-                title: '{{t("Actions")}}',
-              },
-            },
-          },
-        },
-      ],
+      columns: [buildCanonicalTableActionsColumnNode()],
     };
   } else if (['FormBlockModel', 'CreateFormModel', 'EditFormModel', 'AssignFormModel'].includes(use)) {
     model.subModels = {
@@ -444,7 +432,7 @@ export function buildActionTree(options: {
   stepParams?: Record<string, any>;
   flowRegistry?: Record<string, any>;
 }) {
-  const use = resolveSupportedActionCatalogItem(
+  const catalogItem = resolveSupportedActionCatalogItem(
     {
       type: options.type,
       use: options.use,
@@ -453,9 +441,11 @@ export function buildActionTree(options: {
     {
       requireCreateSupported: true,
     },
-  ).use;
+  );
+  const use = catalogItem.use;
   const defaults = buildActionDefaults({
     use,
+    catalogItem,
     containerUse: options.containerUse,
     resourceInit: options.resourceInit,
   });
@@ -472,6 +462,35 @@ export function buildActionTree(options: {
     stepParams,
     flowRegistry: _.merge({}, _.cloneDeep(defaults.flowRegistry || {}), _.cloneDeep(options.flowRegistry || {})),
     ...(defaults.subModels ? { subModels: _.cloneDeep(defaults.subModels) } : {}),
+  };
+}
+
+export function buildCanonicalTableActionsColumnNode(
+  options: {
+    uid?: string;
+    props?: Record<string, any>;
+    decoratorProps?: Record<string, any>;
+    stepParams?: Record<string, any>;
+    flowRegistry?: Record<string, any>;
+  } = {},
+) {
+  return {
+    uid: options.uid || uid(),
+    use: 'TableActionsColumnModel',
+    props: _.cloneDeep(options.props || {}),
+    decoratorProps: _.cloneDeep(options.decoratorProps || {}),
+    stepParams: _.merge(
+      {},
+      {
+        tableColumnSettings: {
+          title: {
+            title: '{{t("Actions")}}',
+          },
+        },
+      },
+      _.cloneDeep(options.stepParams || {}),
+    ),
+    flowRegistry: _.cloneDeep(options.flowRegistry || {}),
   };
 }
 
@@ -504,10 +523,11 @@ export function assignClientKeysToUids(
 
 function buildActionDefaults(options: {
   use: string;
+  catalogItem: FlowSurfaceCatalogItem;
   containerUse?: string;
   resourceInit?: Record<string, any>;
 }): FlowSurfaceNodeDefaults {
-  const props = inferActionDefaultProps(options.use);
+  const props = inferActionDefaultProps(options.use, options.catalogItem.scope);
   const normalizedProps = applyContainerActionStyle(props, options.containerUse);
   const stepParams: Record<string, any> = {
     buttonSettings: {
@@ -516,7 +536,17 @@ function buildActionDefaults(options: {
   };
   const subModels: Record<string, any> = {};
 
-  if (['AddNewActionModel', 'ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel'].includes(options.use)) {
+  if (
+    [
+      'AddNewActionModel',
+      'ViewActionModel',
+      'EditActionModel',
+      'PopupCollectionActionModel',
+      'DuplicateActionModel',
+      'AddChildActionModel',
+      'MailSendActionModel',
+    ].includes(options.use)
+  ) {
     stepParams.popupSettings = {
       openView: {
         mode: 'drawer',
@@ -549,12 +579,15 @@ function buildActionDefaults(options: {
     };
   }
 
-  if (options.use === 'UpdateRecordActionModel') {
+  if (['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(options.use)) {
     stepParams.assignSettings = {
       confirm: {
         enable: false,
-        title: 'Perform the Update record',
-        content: 'Are you sure you want to perform the Update record action?',
+        title: options.use === 'BulkUpdateActionModel' ? 'Perform the Bulk update' : 'Perform the Update record',
+        content:
+          options.use === 'BulkUpdateActionModel'
+            ? 'Are you sure you want to perform the Bulk update action?'
+            : 'Are you sure you want to perform the Update record action?',
       },
       assignFieldValues: {
         assignedValues: {},
@@ -593,7 +626,7 @@ function buildActionDefaults(options: {
   };
 }
 
-function inferActionDefaultProps(use: string) {
+function inferActionDefaultProps(use: string, scope?: FlowSurfaceCatalogItem['scope']) {
   const map: Record<string, Record<string, any>> = {
     AddNewActionModel: {
       type: 'primary',
@@ -623,17 +656,89 @@ function inferActionDefaultProps(use: string) {
       title: 'Update record',
       icon: 'EditOutlined',
     },
+    BulkUpdateActionModel: {
+      title: 'Bulk update',
+      icon: 'EditOutlined',
+    },
+    FilterActionModel: {
+      title: 'Filter',
+      icon: 'FilterOutlined',
+    },
     RefreshActionModel: {
       title: 'Refresh',
       icon: 'ReloadOutlined',
+    },
+    ExpandCollapseActionModel: {
+      title: 'Expand/Collapse',
+      icon: 'DownOutlined',
     },
     BulkDeleteActionModel: {
       title: 'Delete',
       icon: 'DeleteOutlined',
     },
+    BulkEditActionModel: {
+      title: 'Bulk edit',
+      icon: 'EditOutlined',
+    },
+    ExportActionModel: {
+      title: 'Export',
+      icon: 'DownloadOutlined',
+    },
+    ExportAttachmentActionModel: {
+      title: 'Export attachments',
+      icon: 'DownloadOutlined',
+    },
+    ImportActionModel: {
+      title: 'Import',
+      icon: 'UploadOutlined',
+    },
     LinkActionModel: {
       type: 'link',
       title: 'Link',
+    },
+    UploadActionModel: {
+      title: 'Upload',
+      icon: 'UploadOutlined',
+    },
+    DuplicateActionModel: {
+      type: 'link',
+      title: 'Duplicate',
+      icon: 'CopyOutlined',
+    },
+    AddChildActionModel: {
+      type: 'link',
+      title: 'Add child',
+      icon: 'PlusOutlined',
+    },
+    TemplatePrintCollectionActionModel: {
+      title: 'Template print',
+      icon: 'PrinterOutlined',
+    },
+    TemplatePrintRecordActionModel: {
+      type: 'link',
+      title: 'Template print',
+      icon: 'PrinterOutlined',
+    },
+    CollectionTriggerWorkflowActionModel: {
+      title: 'Trigger workflow',
+      icon: 'PlayCircleOutlined',
+    },
+    RecordTriggerWorkflowActionModel: {
+      type: 'link',
+      title: 'Trigger workflow',
+      icon: 'PlayCircleOutlined',
+    },
+    FormTriggerWorkflowActionModel: {
+      title: 'Trigger workflow',
+      icon: 'PlayCircleOutlined',
+    },
+    WorkbenchTriggerWorkflowActionModel: {
+      title: 'Trigger workflow',
+      icon: 'PlayCircleOutlined',
+    },
+    MailSendActionModel: {
+      title: 'Compose email',
+      icon: 'MailOutlined',
     },
     FormSubmitActionModel: {
       title: 'Submit',
@@ -646,6 +751,10 @@ function inferActionDefaultProps(use: string) {
     },
     FilterFormResetActionModel: {
       title: 'Reset',
+    },
+    FilterFormCollapseActionModel: {
+      type: 'link',
+      title: 'Collapse button',
     },
     JSCollectionActionModel: {
       title: 'JS action',
@@ -673,8 +782,8 @@ function inferActionDefaultProps(use: string) {
 
   return _.cloneDeep(
     map[use] || {
-      title: 'Action',
-      type: 'default',
+      title: humanizeActionTitle(use),
+      ...(scope === 'record' ? { type: 'link' } : { type: 'default' }),
     },
   );
 }
@@ -746,4 +855,15 @@ function getStandaloneFieldDefaults(use: string): FlowSurfaceNodeDefaults {
     default:
       return {};
   }
+}
+
+function humanizeActionTitle(use: string) {
+  const normalized = String(use || '')
+    .replace(/ActionModel$/, '')
+    .replace(/(Collection|Record|Form|Workbench)$/, '');
+  return (
+    _.startCase(normalized)
+      .replace(/\bJs\b/g, 'JS')
+      .trim() || 'Action'
+  );
 }

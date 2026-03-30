@@ -763,7 +763,38 @@ describe('flowSurfaces resource', () => {
     );
     expect(tableCatalog.blocks).toEqual([]);
     expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['addNew', 'popup', 'refresh', 'js']),
+      expect.arrayContaining([
+        'filter',
+        'addNew',
+        'popup',
+        'refresh',
+        'bulkDelete',
+        'bulkEdit',
+        'bulkUpdate',
+        'export',
+        'exportAttachments',
+        'import',
+        'link',
+        'upload',
+        'js',
+        'composeEmail',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
+    );
+    expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining([
+        'duplicate',
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
     );
     expect(tableCatalog.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
@@ -871,7 +902,18 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(rowActionCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+      expect.arrayContaining([
+        'duplicate',
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
     );
     expect(
       rowActionCatalog.actions.find((item: any) => item.use === 'ViewActionModel')?.settingsContract?.stepParams?.groups
@@ -905,7 +947,9 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(createFormCatalog.blocks).toEqual([]);
-    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(expect.arrayContaining(['submit', 'js']));
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+    );
     expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
       expect.arrayContaining([
         'layout.layout',
@@ -1063,7 +1107,17 @@ describe('flowSurfaces resource', () => {
     );
     expect(detailsCatalog.blocks).toEqual([]);
     expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+      expect.arrayContaining([
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
     );
     expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value']),
@@ -3182,20 +3236,20 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
 
-    const createFormCatalog = getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: createFormUid,
-          },
-        },
-      }),
-    );
     const tableCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
           target: {
             uid: tableUid,
+          },
+        },
+      }),
+    );
+    const createFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createFormUid,
           },
         },
       }),
@@ -3343,6 +3397,15 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
 
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+        },
+      }),
+    );
     const createFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
         values: {
@@ -3370,23 +3433,76 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(expect.arrayContaining(['submit', 'js']));
+    expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['expandCollapse', 'bulkEdit', 'bulkUpdate', 'upload', 'composeEmail']),
+    );
+    expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['duplicate', 'addChild', 'composeEmail']),
+    );
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+    );
     expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+      expect.arrayContaining([
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
     );
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
-      expect.arrayContaining(['submit', 'reset', 'js']),
+      expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
     );
 
+    const tableReadback = await getSurface(rootAgent, { uid: tableUid });
+    const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
+      (column: any) => column?.use === 'TableActionsColumnModel',
+    )?.uid;
+    expect(actionsColumnUid).toBeTruthy();
+
+    const tableBulkEdit = await addAction(rootAgent, tableUid, 'bulkEdit');
+    const tableExpandCollapse = await addAction(rootAgent, tableUid, 'expandCollapse');
+    const tableBulkUpdate = await addAction(rootAgent, tableUid, 'bulkUpdate');
+    const tableComposeEmail = await addAction(rootAgent, tableUid, 'composeEmail');
+    const rowAddChild = await addAction(rootAgent, actionsColumnUid, 'addChild');
+    const rowDuplicate = await addAction(rootAgent, actionsColumnUid, 'duplicate');
+    const rowComposeEmail = await addAction(rootAgent, actionsColumnUid, 'composeEmail');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
     const detailsView = await addAction(rootAgent, detailsUid, 'view');
     const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
     const filterReset = await addAction(rootAgent, filterFormUid, 'reset');
+    const filterCollapse = await addAction(rootAgent, filterFormUid, 'collapse');
 
+    expect((await getSurface(rootAgent, { uid: tableBulkEdit.uid })).tree.use).toBe('BulkEditActionModel');
+    expect((await getSurface(rootAgent, { uid: tableExpandCollapse.uid })).tree.use).toBe('ExpandCollapseActionModel');
+    expect((await getSurface(rootAgent, { uid: tableBulkUpdate.uid })).tree.use).toBe('BulkUpdateActionModel');
+    expect((await getSurface(rootAgent, { uid: tableComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
+    expect((await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.use).toBe('AddChildActionModel');
+    expect((await getSurface(rootAgent, { uid: rowDuplicate.uid })).tree.use).toBe('DuplicateActionModel');
+    expect((await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.use).toBe('MailSendActionModel');
     expect((await getSurface(rootAgent, { uid: formSubmit.uid })).tree.use).toBe('FormSubmitActionModel');
     expect((await getSurface(rootAgent, { uid: detailsView.uid })).tree.use).toBe('ViewActionModel');
     expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.use).toBe('FilterFormSubmitActionModel');
+    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.stepParams?.submitSettings).toBeUndefined();
     expect((await getSurface(rootAgent, { uid: filterReset.uid })).tree.use).toBe('FilterFormResetActionModel');
+    expect((await getSurface(rootAgent, { uid: filterCollapse.uid })).tree.use).toBe('FilterFormCollapseActionModel');
+    expect(
+      (await getSurface(rootAgent, { uid: rowAddChild.uid })).tree.stepParams?.popupSettings?.openView,
+    ).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+    });
+    expect(
+      (await getSurface(rootAgent, { uid: rowComposeEmail.uid })).tree.stepParams?.popupSettings?.openView,
+    ).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+    });
 
     const createFormDeleteRes = await rootAgent.resource('flowSurfaces').addAction({
       values: {
@@ -3553,7 +3669,9 @@ describe('flowSurfaces resource', () => {
     expect(detailsCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(createFormCatalog.actions.map((item: any) => item.key)).toContain('js');
     expect(filterFormCatalog.actions.map((item: any) => item.key)).toContain('js');
-    expect(actionPanelCatalog.actions.map((item: any) => item.key)).toEqual(['js']);
+    expect(actionPanelCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['js', 'triggerWorkflow']),
+    );
 
     const table = await flowRepo.findModelById(tableUid, { includeAsyncNode: true });
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
@@ -6030,763 +6148,3 @@ async function waitForFixtureCollectionsReady(
 
   throw new Error(`Fixture collections are not ready: ${Object.keys(requiredCollections).join(', ')}`);
 }
-
-describe('flowSurfaces contract precision isolated', () => {
-  let isolatedApp: MockServer;
-  let isolatedDb: Database;
-  let isolatedRootAgent: any;
-
-  beforeAll(async () => {
-    isolatedApp = await createFlowSurfacesMockServer();
-    isolatedDb = isolatedApp.db;
-    isolatedRootAgent = await loginFlowSurfacesRootAgent(isolatedApp);
-    await setupFixtureCollections(isolatedRootAgent, isolatedDb);
-  }, 120000);
-
-  afterAll(async () => {
-    if (isolatedApp) {
-      await isolatedApp.destroy();
-    }
-  });
-
-  it('should expose grouped path-level contracts for core collection blocks in an isolated suite', async () => {
-    const page = await createPage(isolatedRootAgent, {
-      title: 'Isolated contract page',
-      tabTitle: 'Isolated contract tab',
-    });
-
-    const cases = [
-      {
-        block: 'table',
-        type: 'table',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'tableSettings'],
-        groupKey: 'tableSettings',
-        expectedPaths: ['quickEdit.editable', 'dataScope.filter', 'defaultSorting.sort', 'dragSort.dragSort'],
-        forbiddenPaths: ['quickEdit', 'quickEdit.*', 'dataScope', 'dataScope.*', 'defaultSorting', 'defaultSorting.*'],
-      },
-      {
-        block: 'create-form',
-        type: 'createForm',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
-        groupKey: 'formModelSettings',
-        expectedPaths: ['layout.layout', 'assignRules.value'],
-        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
-        eventOnlyGroupKey: 'formSettings',
-        eventOnlyAllowedPaths: [],
-        eventOnlySteps: ['init', 'refresh'],
-      },
-      {
-        block: 'edit-form',
-        type: 'editForm',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
-        groupKey: 'formModelSettings',
-        expectedPaths: ['layout.layout', 'assignRules.value'],
-        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
-        eventOnlyGroupKey: 'formSettings',
-        eventOnlyAllowedPaths: ['dataScope.filter'],
-        eventOnlySteps: ['init', 'dataScope', 'refresh'],
-      },
-      {
-        block: 'form',
-        type: 'form',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings'],
-        groupKey: 'formModelSettings',
-        expectedPaths: ['layout.layout', 'assignRules.value'],
-        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
-        missingGroupKey: 'formSettings',
-      },
-      {
-        block: 'details',
-        type: 'details',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'detailsSettings'],
-        groupKey: 'detailsSettings',
-        expectedPaths: ['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value'],
-        forbiddenPaths: [
-          'layout.*',
-          'dataScope',
-          'dataScope.*',
-          'defaultSorting',
-          'defaultSorting.*',
-          'linkageRules',
-          'linkageRules.*',
-        ],
-      },
-      {
-        block: 'filter-form',
-        type: 'filterForm',
-        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
-        expectedGroups: ['resourceSettings', 'formFilterBlockModelSettings'],
-        groupKey: 'formFilterBlockModelSettings',
-        expectedPaths: ['layout.layout', 'defaultValues.value'],
-        forbiddenPaths: ['layout', 'layout.*', 'defaultValues', 'defaultValues.*'],
-      },
-    ];
-
-    for (const testCase of cases) {
-      const uid = await addBlock(isolatedRootAgent, page.tabSchemaUid, testCase.type, testCase.resourceInit);
-      const catalog = getData(
-        await isolatedRootAgent.resource('flowSurfaces').catalog({
-          values: {
-            target: {
-              uid,
-            },
-          },
-        }),
-      );
-      const stepParamsContract = catalog.settingsContract?.stepParams;
-      const groupContract = stepParamsContract?.groups?.[testCase.groupKey];
-
-      expect({
-        block: testCase.block,
-        hasGroups: !!stepParamsContract?.groups,
-        allowedKeys: stepParamsContract?.allowedKeys,
-      }).toMatchObject({
-        block: testCase.block,
-        hasGroups: true,
-        allowedKeys: expect.arrayContaining(testCase.expectedGroups),
-      });
-
-      expect({
-        block: testCase.block,
-        allowedPaths: groupContract?.allowedPaths,
-      }).toMatchObject({
-        block: testCase.block,
-        allowedPaths: expect.arrayContaining(testCase.expectedPaths),
-      });
-
-      for (const forbiddenPath of testCase.forbiddenPaths) {
-        expect({
-          block: testCase.block,
-          allowedPaths: groupContract?.allowedPaths,
-        }).toMatchObject({
-          block: testCase.block,
-        });
-        expect(groupContract?.allowedPaths).not.toContain(forbiddenPath);
-      }
-
-      if (testCase.eventOnlyGroupKey) {
-        expect({
-          block: testCase.block,
-          allowedPaths: stepParamsContract?.groups?.[testCase.eventOnlyGroupKey]?.allowedPaths,
-          eventBindingSteps: stepParamsContract?.groups?.[testCase.eventOnlyGroupKey]?.eventBindingSteps,
-        }).toMatchObject({
-          block: testCase.block,
-          allowedPaths: testCase.eventOnlyAllowedPaths,
-          eventBindingSteps: expect.arrayContaining(testCase.eventOnlySteps),
-        });
-      }
-
-      if (testCase.missingGroupKey) {
-        expect(stepParamsContract?.groups?.[testCase.missingGroupKey]).toBeUndefined();
-      }
-    }
-  });
-
-  it('should reject invalid nested paths and event-only writes in an isolated suite', async () => {
-    const page = await createPage(isolatedRootAgent, {
-      title: 'Isolated validation page',
-      tabTitle: 'Isolated validation tab',
-    });
-
-    const tableUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'table', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const createFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'createForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const editFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'editForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const detailsUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'details', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const filterFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'filterForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-
-    const validCases = [
-      {
-        block: 'table',
-        uid: tableUid,
-        stepParams: {
-          tableSettings: {
-            dataScope: {
-              filter: {
-                logic: '$and',
-                items: [],
-              },
-            },
-            defaultSorting: {
-              sort: [],
-            },
-          },
-        },
-      },
-      {
-        block: 'create-form',
-        uid: createFormUid,
-        stepParams: {
-          formModelSettings: {
-            assignRules: {
-              value: [],
-            },
-          },
-          eventSettings: {
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
-      },
-      {
-        block: 'edit-form',
-        uid: editFormUid,
-        stepParams: {
-          formModelSettings: {
-            assignRules: {
-              value: [],
-            },
-          },
-          eventSettings: {
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
-      },
-      {
-        block: 'details',
-        uid: detailsUid,
-        stepParams: {
-          detailsSettings: {
-            dataScope: {
-              filter: {
-                logic: '$and',
-                items: [],
-              },
-            },
-            defaultSorting: {
-              sort: [],
-            },
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
-      },
-      {
-        block: 'filter-form',
-        uid: filterFormUid,
-        stepParams: {
-          formFilterBlockModelSettings: {
-            defaultValues: {
-              value: [],
-            },
-          },
-        },
-      },
-    ];
-
-    for (const testCase of validCases) {
-      const response = await isolatedRootAgent.resource('flowSurfaces').updateSettings({
-        values: {
-          target: {
-            uid: testCase.uid,
-          },
-          stepParams: testCase.stepParams,
-        },
-      });
-      expect({
-        block: testCase.block,
-        status: response.status,
-      }).toMatchObject({
-        block: testCase.block,
-        status: 200,
-      });
-    }
-
-    const validCreateFormEventBinding = await isolatedRootAgent.resource('flowSurfaces').setEventFlows({
-      values: {
-        target: {
-          uid: createFormUid,
-        },
-        flowRegistry: {
-          createFormRefresh: {
-            key: 'createFormRefresh',
-            on: {
-              eventName: 'submit',
-              phase: 'beforeStep',
-              flowKey: 'formSettings',
-              stepKey: 'refresh',
-            },
-            steps: {},
-          },
-        },
-      },
-    });
-    expect(validCreateFormEventBinding.status).toBe(200);
-
-    const validEditFormEventBinding = await isolatedRootAgent.resource('flowSurfaces').setEventFlows({
-      values: {
-        target: {
-          uid: editFormUid,
-        },
-        flowRegistry: {
-          editFormInit: {
-            key: 'editFormInit',
-            on: {
-              eventName: 'submit',
-              phase: 'beforeStep',
-              flowKey: 'formSettings',
-              stepKey: 'init',
-            },
-            steps: {},
-          },
-          editFormRefresh: {
-            key: 'editFormRefresh',
-            on: {
-              eventName: 'submit',
-              phase: 'beforeStep',
-              flowKey: 'formSettings',
-              stepKey: 'refresh',
-            },
-            steps: {},
-          },
-        },
-      },
-    });
-    expect(validEditFormEventBinding.status).toBe(200);
-
-    const invalidCases = [
-      {
-        block: 'table',
-        uid: tableUid,
-        stepParams: {
-          tableSettings: {
-            quickEdit: {
-              unsupported: true,
-            },
-          },
-        },
-      },
-      {
-        block: 'create-form-layout',
-        uid: createFormUid,
-        stepParams: {
-          formModelSettings: {
-            layout: {
-              unsupported: true,
-            },
-          },
-        },
-      },
-      {
-        block: 'create-form-event-only',
-        uid: createFormUid,
-        stepParams: {
-          formSettings: {
-            init: {
-              collectionName: 'employees',
-            },
-          },
-        },
-      },
-      {
-        block: 'edit-form-event-only',
-        uid: editFormUid,
-        stepParams: {
-          formSettings: {
-            dataScope: {
-              unsupported: true,
-            },
-          },
-        },
-      },
-      {
-        block: 'details',
-        uid: detailsUid,
-        stepParams: {
-          detailsSettings: {
-            defaultSorting: {
-              unsupported: true,
-            },
-          },
-        },
-      },
-      {
-        block: 'filter-form',
-        uid: filterFormUid,
-        stepParams: {
-          formFilterBlockModelSettings: {
-            defaultValues: {
-              unsupported: [],
-            },
-          },
-        },
-      },
-    ];
-
-    for (const testCase of invalidCases) {
-      const response = await isolatedRootAgent.resource('flowSurfaces').updateSettings({
-        values: {
-          target: {
-            uid: testCase.uid,
-          },
-          stepParams: testCase.stepParams,
-        },
-      });
-      expect({
-        block: testCase.block,
-        status: response.status,
-      }).toMatchObject({
-        block: testCase.block,
-        status: 500,
-      });
-    }
-  });
-});
-
-describe('flowSurfaces API contract isolated', () => {
-  let isolatedApp: MockServer;
-  let isolatedDb: Database;
-  let isolatedFlowRepo: FlowModelRepository;
-  let isolatedRoutesRepo: Repository;
-  let isolatedRootAgent: any;
-
-  beforeAll(async () => {
-    isolatedApp = await createFlowSurfacesMockServer();
-    isolatedDb = isolatedApp.db;
-    isolatedFlowRepo = isolatedDb.getCollection('flowModels').repository as FlowModelRepository;
-    isolatedRoutesRepo = isolatedDb.getRepository('desktopRoutes');
-    isolatedRootAgent = await loginFlowSurfacesRootAgent(isolatedApp);
-    await setupFixtureCollections(isolatedRootAgent, isolatedDb);
-  }, 120000);
-
-  afterAll(async () => {
-    if (isolatedApp) {
-      await isolatedApp.destroy();
-    }
-  });
-
-  it('should default apply to replace and reject unsupported mode values in an isolated suite', async () => {
-    const page = await createPage(isolatedRootAgent, {
-      title: 'Isolated contract page',
-      tabTitle: 'Isolated contract tab',
-    });
-
-    const defaultApplyRes = await isolatedRootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
-        spec: {
-          props: {
-            title: 'Isolated tab default replace',
-            icon: 'TableOutlined',
-          },
-          stepParams: {
-            pageTabSettings: {
-              tab: {
-                title: 'Isolated tab default replace',
-                icon: 'TableOutlined',
-                documentTitle: 'Isolated tab default document',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect({
-      case: 'apply-default-mode',
-      status: defaultApplyRes.status,
-    }).toMatchObject({
-      case: 'apply-default-mode',
-      status: 200,
-    });
-
-    const explicitReplaceRes = await isolatedRootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
-        mode: 'replace',
-        spec: {
-          props: {
-            title: 'Isolated tab explicit replace',
-            icon: 'AppstoreOutlined',
-          },
-          stepParams: {
-            pageTabSettings: {
-              tab: {
-                title: 'Isolated tab explicit replace',
-                icon: 'AppstoreOutlined',
-                documentTitle: 'Isolated tab explicit document',
-              },
-            },
-          },
-        },
-      },
-    });
-    expect({
-      case: 'apply-explicit-replace',
-      status: explicitReplaceRes.status,
-    }).toMatchObject({
-      case: 'apply-explicit-replace',
-      status: 200,
-    });
-
-    const invalidApplyRes = await isolatedRootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
-        mode: 'merge',
-        spec: {
-          props: {
-            title: 'Invalid apply mode',
-          },
-        },
-      },
-    });
-    expect({
-      case: 'apply-invalid-mode',
-      status: invalidApplyRes.status,
-      message: invalidApplyRes.body.errors?.[0]?.message,
-    }).toMatchObject({
-      case: 'apply-invalid-mode',
-      status: 500,
-      message: expect.stringContaining(`mode='replace'`),
-    });
-
-    const tabRoute = await isolatedRoutesRepo.findOne({
-      filter: {
-        schemaUid: page.tabSchemaUid,
-      },
-    });
-    const tabReadback = await getSurface(isolatedRootAgent, {
-      tabSchemaUid: page.tabSchemaUid,
-    });
-    expect(tabRoute?.get('title')).toBe('Isolated tab explicit replace');
-    expect(tabRoute?.get('icon')).toBe('AppstoreOutlined');
-    expect(tabRoute?.get('options')?.documentTitle).toBe('Isolated tab explicit document');
-    expect(tabReadback.tree.use).toBe('RootPageTabModel');
-    expect(tabReadback.tree.props).toMatchObject({
-      title: 'Isolated tab explicit replace',
-      icon: 'AppstoreOutlined',
-    });
-    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
-      title: 'Isolated tab explicit replace',
-      icon: 'AppstoreOutlined',
-      documentTitle: 'Isolated tab explicit document',
-    });
-    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
-  });
-
-  it('should default mutate to atomic, reject atomic=false, and preserve page-tab semantics in an isolated suite', async () => {
-    const rollbackPageSchemaUid = 'isolated_atomic_page_schema_uid';
-    const rollbackTabSchemaUid = 'isolated_atomic_tab_schema_uid';
-    const rollbackRes = await isolatedRootAgent.resource('flowSurfaces').mutate({
-      values: {
-        ops: [
-          {
-            opId: 'page',
-            type: 'createPage',
-            values: {
-              pageSchemaUid: rollbackPageSchemaUid,
-              tabSchemaUid: rollbackTabSchemaUid,
-              title: 'Isolated atomic page',
-              tabTitle: 'Isolated atomic tab',
-            },
-          },
-          {
-            opId: 'block',
-            type: 'addBlock',
-            values: {
-              target: {
-                uid: {
-                  $ref: 'page.tabSchemaUid',
-                },
-              },
-              type: 'details',
-              resourceInit: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
-              },
-            },
-          },
-          {
-            type: 'addField',
-            values: {
-              target: {
-                uid: {
-                  $ref: 'block.uid',
-                },
-              },
-              fieldPath: 'not_exists',
-            },
-          },
-        ],
-      },
-    });
-    expect({
-      case: 'mutate-default-atomic-rollback',
-      status: rollbackRes.status,
-    }).toMatchObject({
-      case: 'mutate-default-atomic-rollback',
-      status: 500,
-    });
-    expect(
-      await isolatedRoutesRepo.findOne({
-        filter: {
-          schemaUid: rollbackPageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-
-    const atomicFalsePageSchemaUid = 'isolated_atomic_false_page_schema_uid';
-    const atomicFalseRes = await isolatedRootAgent.resource('flowSurfaces').mutate({
-      values: {
-        atomic: false,
-        ops: [
-          {
-            type: 'createPage',
-            values: {
-              pageSchemaUid: atomicFalsePageSchemaUid,
-              tabSchemaUid: 'isolated_atomic_false_tab_schema_uid',
-              title: 'Isolated atomic=false page',
-              tabTitle: 'Isolated atomic=false tab',
-            },
-          },
-        ],
-      },
-    });
-    expect({
-      case: 'mutate-atomic-false',
-      status: atomicFalseRes.status,
-      message: atomicFalseRes.body.errors?.[0]?.message,
-    }).toMatchObject({
-      case: 'mutate-atomic-false',
-      status: 500,
-      message: expect.stringContaining('atomic=true'),
-    });
-    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('v1');
-    expect(
-      await isolatedRoutesRepo.findOne({
-        filter: {
-          schemaUid: atomicFalsePageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-
-    const created = await createPage(isolatedRootAgent, {
-      title: 'Isolated lifecycle page',
-      tabTitle: 'Isolated lifecycle tab',
-    });
-
-    const pageRoute = await isolatedRoutesRepo.findOne({
-      filter: {
-        schemaUid: created.pageSchemaUid,
-      },
-      appends: ['children'],
-    });
-    expect(pageRoute?.get('type')).toBe('flowPage');
-    expect(pageRoute?.get('children')).toHaveLength(1);
-
-    const pageModel = await isolatedFlowRepo.findModelByParentId(created.pageSchemaUid, {
-      subKey: 'page',
-      includeAsyncNode: true,
-    });
-    expect(pageModel?.use).toBe('RootPageModel');
-    expect(pageModel?.subModels?.tabs).toBeUndefined();
-
-    const initialReadback = await getSurface(isolatedRootAgent, {
-      pageSchemaUid: created.pageSchemaUid,
-    });
-    expect(initialReadback.tree.use).toBe('RootPageModel');
-    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.use).toBe('RootPageTabModel');
-    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.subModels?.grid?.use).toBe('BlockGridModel');
-
-    const addedTab = getData(
-      await isolatedRootAgent.resource('flowSurfaces').addTab({
-        values: {
-          target: {
-            pageSchemaUid: created.pageSchemaUid,
-          },
-          title: 'Isolated added tab',
-        },
-      }),
-    );
-    expect(
-      await isolatedFlowRepo.findModelById(addedTab.tabSchemaUid, {
-        includeAsyncNode: true,
-      }),
-    ).toMatchObject({
-      uid: addedTab.tabSchemaUid,
-      schema: {
-        use: 'RouteModel',
-      },
-    });
-    expect(
-      await isolatedFlowRepo.findModelByParentId(addedTab.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toMatchObject({
-      use: 'BlockGridModel',
-    });
-
-    await isolatedRootAgent.resource('flowSurfaces').removeTab({
-      values: {
-        tabSchemaUid: addedTab.tabSchemaUid,
-      },
-    });
-    expect(
-      await isolatedRoutesRepo.findOne({
-        filter: {
-          schemaUid: addedTab.tabSchemaUid,
-        },
-      }),
-    ).toBeNull();
-    expect(
-      await isolatedFlowRepo.findModelByParentId(addedTab.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
-
-    await isolatedRootAgent.resource('flowSurfaces').destroyPage({
-      values: {
-        pageSchemaUid: created.pageSchemaUid,
-      },
-    });
-    expect(
-      await isolatedRoutesRepo.findOne({
-        filter: {
-          schemaUid: created.pageSchemaUid,
-        },
-      }),
-    ).toBeNull();
-    expect(
-      await isolatedFlowRepo.findModelByParentId(created.pageSchemaUid, {
-        subKey: 'page',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
-    expect(
-      await isolatedFlowRepo.findModelByParentId(created.tabSchemaUid, {
-        subKey: 'grid',
-        includeAsyncNode: true,
-      }),
-    ).toBeNull();
-  });
-});

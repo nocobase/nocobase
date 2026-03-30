@@ -577,6 +577,31 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(unknownActionRes)).toContain('registered action types/uses');
   });
 
+  it('should expose full public action catalog variants without collapsing cross-scope action keys', async () => {
+    const globalCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {},
+      }),
+    );
+
+    const popupVariants = globalCatalog.actions
+      .filter((item: any) => item.key === 'popup')
+      .map((item: any) => `${item.scope}:${item.use}`);
+    expect(popupVariants).toEqual(
+      expect.arrayContaining(['block:PopupCollectionActionModel', 'record:PopupCollectionActionModel']),
+    );
+
+    const submitVariants = globalCatalog.actions
+      .filter((item: any) => item.key === 'submit')
+      .map((item: any) => `${item.scope}:${item.use}`);
+    expect(submitVariants).toEqual(
+      expect.arrayContaining(['form:FormSubmitActionModel', 'filterForm:FilterFormSubmitActionModel']),
+    );
+
+    const jsVariants = globalCatalog.actions.filter((item: any) => item.key === 'js').map((item: any) => item.scope);
+    expect(jsVariants).toEqual(expect.arrayContaining(['block', 'record', 'form', 'filterForm', 'actionPanel']));
+  });
+
   it('should expose public catalog action keys for representative block targets', async () => {
     const page = await createPage(rootAgent, {
       title: 'Catalog contract page',
@@ -632,14 +657,45 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(tableCatalog.actions.map((item: any) => item.key)).toEqual([
-      'addNew',
-      'popup',
-      'refresh',
-      'bulkDelete',
-      'link',
-      'js',
-    ]);
+    expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining([
+        'filter',
+        'addNew',
+        'popup',
+        'refresh',
+        'expandCollapse',
+        'bulkDelete',
+        'bulkEdit',
+        'bulkUpdate',
+        'export',
+        'exportAttachments',
+        'import',
+        'link',
+        'upload',
+        'js',
+        'composeEmail',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
+    );
+    expect(tableCatalog.rowActions).toBeUndefined();
+    expect(tableCatalog.actions.map((item: any) => item.key)).not.toEqual(expect.arrayContaining(['view', 'edit']));
+    expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining([
+        'duplicate',
+        'addChild',
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
+    );
+    expect(tableCatalog.recordActions.length).toBeGreaterThan(0);
 
     const createFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -650,7 +706,9 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit', 'js']);
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'js', 'triggerWorkflow']),
+    );
 
     const detailsCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -661,14 +719,19 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual([
-      'view',
-      'edit',
-      'popup',
-      'delete',
-      'updateRecord',
-      'js',
-    ]);
+    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining([
+        'view',
+        'edit',
+        'popup',
+        'composeEmail',
+        'delete',
+        'updateRecord',
+        'js',
+        'templatePrint',
+        'triggerWorkflow',
+      ]),
+    );
 
     const filterFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -679,22 +742,24 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit', 'reset', 'js']);
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'reset', 'collapse', 'js']),
+    );
   });
 
-  it('should reject direct addAction types that are hidden by the public catalog of the target container', async () => {
+  it('should reject direct addAction types that do not match the public action scope of the target container', async () => {
     const page = await createPage(rootAgent, {
       title: 'Action visibility page',
       tabTitle: 'Action visibility tab',
     });
-    const filterForm = await addBlockData(rootAgent, {
+    const table = await addBlockData(rootAgent, {
       target: {
         uid: page.tabSchemaUid,
       },
-      type: 'filterForm',
+      type: 'table',
       resourceInit: {
         dataSourceKey: 'main',
-        collectionName: '',
+        collectionName: 'employees',
       },
     });
     const createForm = await addBlockData(rootAgent, {
@@ -707,17 +772,34 @@ describe('flowSurfaces API contract', () => {
         collectionName: 'employees',
       },
     });
+    const tableReadback = await getSurface(rootAgent, {
+      uid: table.uid,
+    });
+    const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
+      (item: any) => item?.use === 'TableActionsColumnModel',
+    )?.uid;
 
-    const hiddenFilterSubmit = await rootAgent.resource('flowSurfaces').addAction({
+    const rowActionOnTableBlock = await rootAgent.resource('flowSurfaces').addAction({
       values: {
         target: {
-          uid: filterForm.uid,
+          uid: table.uid,
         },
-        type: 'filterSubmit',
+        type: 'view',
       },
     });
-    expect(hiddenFilterSubmit.status).toBe(500);
-    expect(readErrorMessage(hiddenFilterSubmit)).toContain(`public action type 'submit'`);
+    expect(rowActionOnTableBlock.status).toBe(500);
+    expect(readErrorMessage(rowActionOnTableBlock)).toContain(`is not allowed under 'TableBlockModel'`);
+
+    const blockActionOnRowContainer = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        type: 'refresh',
+      },
+    });
+    expect(blockActionOnRowContainer.status).toBe(500);
+    expect(readErrorMessage(blockActionOnRowContainer)).toContain(`is not allowed under 'TableActionsColumnModel'`);
 
     const hiddenDeleteOnForm = await rootAgent.resource('flowSurfaces').addAction({
       values: {
@@ -771,7 +853,8 @@ describe('flowSurfaces API contract', () => {
               collectionName: 'users',
             },
             fields: ['username', 'nickname'],
-            actions: ['addNew', 'view', 'edit', 'delete'],
+            actions: ['filter', 'addNew', 'refresh'],
+            recordActions: ['view', 'edit', 'delete'],
           },
         ],
         layout: {
@@ -815,7 +898,7 @@ describe('flowSurfaces API contract', () => {
         .map((item: any) => item?.stepParams?.fieldSettings?.init?.fieldPath),
     ).toEqual(expect.arrayContaining(['username', 'nickname']));
     expect(_.castArray(tableReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
-      expect.arrayContaining(['AddNewActionModel']),
+      expect.arrayContaining(['FilterActionModel', 'AddNewActionModel', 'RefreshActionModel']),
     );
 
     const actionsColumnUid = _.castArray(tableReadback.tree.subModels?.columns || []).find(
@@ -1017,7 +1100,7 @@ describe('flowSurfaces API contract', () => {
     );
   });
 
-  it('should reject compose recordActions on unsupported blocks and mixed block/item action groups on list-like blocks', async () => {
+  it('should support table/list-like recordActions grouping while still rejecting unsupported action containers', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose record action validation page',
       tabTitle: 'Compose record action validation tab',
@@ -1036,13 +1119,48 @@ describe('flowSurfaces API contract', () => {
               dataSourceKey: 'main',
               collectionName: 'employees',
             },
+            actions: ['addNew', 'refresh'],
+            recordActions: ['view', 'delete'],
+          },
+        ],
+      },
+    });
+    expect(tableRecordActionsRes.status).toBe(200);
+
+    const tableBlock = getData(tableRecordActionsRes).blocks.find((item: any) => item.key === 'table');
+    expect(tableBlock.actions.map((item: any) => item.type)).toEqual(['addNew', 'refresh']);
+    expect(tableBlock.recordActions.map((item: any) => item.type)).toEqual(['view', 'delete']);
+    expect(tableBlock.actionsColumnUid).toBeTruthy();
+
+    const tableRecordActionReadback = await getSurface(rootAgent, {
+      uid: tableBlock.actionsColumnUid,
+    });
+    expect(_.castArray(tableRecordActionReadback.tree.subModels?.actions || []).map((item: any) => item?.use)).toEqual(
+      expect.arrayContaining(['ViewActionModel', 'DeleteActionModel']),
+    );
+
+    const detailsRecordActionsRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'details',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
             recordActions: ['view'],
           },
         ],
       },
     });
-    expect(tableRecordActionsRes.status).toBe(500);
-    expect(readErrorMessage(tableRecordActionsRes)).toContain(`recordActions only support 'list' or 'gridCard'`);
+    expect(detailsRecordActionsRes.status).toBe(500);
+    expect(readErrorMessage(detailsRecordActionsRes)).toContain(
+      `recordActions only support 'table', 'list' or 'gridCard'`,
+    );
 
     const listBlockOnlyRes = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -1087,6 +1205,69 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`is not allowed under 'GridCardItemModel'`);
   });
 
+  it('should reject legacy scope overrides mixed into compose actions and recordActions', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose scope validation page',
+      tabTitle: 'Compose scope validation tab',
+    });
+
+    const legacyScopeOnBlockActionsRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            actions: [
+              {
+                type: 'addNew',
+                scope: 'block',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(legacyScopeOnBlockActionsRes.status).toBe(500);
+    expect(readErrorMessage(legacyScopeOnBlockActionsRes)).toContain(
+      'does not support scope, use actions or recordActions',
+    );
+
+    const legacyScopeOnRecordActionsRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'table',
+            type: 'table',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            recordActions: [
+              {
+                type: 'view',
+                scope: 'row',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(legacyScopeOnRecordActionsRes.status).toBe(500);
+    expect(readErrorMessage(legacyScopeOnRecordActionsRes)).toContain(
+      'does not support scope, use actions or recordActions',
+    );
+  });
+
   it('should support compose replace and configure simple changes while rejecting raw patch keys', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose replace page',
@@ -1108,7 +1289,8 @@ describe('flowSurfaces API contract', () => {
                 collectionName: 'users',
               },
               fields: ['username', 'nickname'],
-              actions: ['view', 'delete'],
+              actions: ['filter', 'addNew'],
+              recordActions: ['view', 'delete'],
             },
           ],
         },
@@ -1815,7 +1997,8 @@ describe('flowSurfaces API contract', () => {
                 collectionName: 'employees',
               },
               fields: ['nickname'],
-              actions: ['updateRecord'],
+              actions: ['refresh'],
+              recordActions: ['updateRecord'],
             },
           ],
         },
@@ -1827,7 +2010,7 @@ describe('flowSurfaces API contract', () => {
     const formField = formBlock.fields.find((item: any) => item.fieldPath === 'bio');
     const formSubmitAction = formBlock.actions.find((item: any) => item.type === 'submit');
     const tableField = tableBlock.fields.find((item: any) => item.fieldPath === 'nickname');
-    const updateRecordAction = tableBlock.actions.find((item: any) => item.type === 'updateRecord');
+    const updateRecordAction = tableBlock.recordActions.find((item: any) => item.type === 'updateRecord');
 
     expect(
       (
@@ -2087,7 +2270,8 @@ describe('flowSurfaces API contract', () => {
                 collectionName: 'users',
               },
               fields: ['username', 'nickname', 'roles.title'],
-              actions: ['view', 'edit', 'delete'],
+              actions: ['filter', 'addNew'],
+              recordActions: ['view', 'edit', 'delete'],
             },
           ],
           layout: {
