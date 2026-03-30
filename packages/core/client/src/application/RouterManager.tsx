@@ -9,7 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
-import { matchRoutes, useParams } from 'react-router';
+import { matchRoutes } from 'react-router';
 import {
   BrowserRouterProps,
   createBrowserRouter,
