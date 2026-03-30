@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import type { McpToolsManager } from '@nocobase/ai';
+
 function toArray(value: any) {
   if (Array.isArray(value)) {
     return value;
@@ -139,13 +141,7 @@ export function simplifyDataSourceFieldsListResult(
   };
 }
 
-export function registerDataSourceManagerMcpPostProcessors(manager: {
-  registerToolResultPostProcessor: (
-    resourceName: string,
-    actionName: string,
-    processor: (result: any, context?: { args?: Record<string, any> }) => any,
-  ) => void;
-}) {
+export function registerDataSourceManagerMcpPostProcessors(manager: McpToolsManager) {
   manager.registerToolResultPostProcessor('dataSources', 'list', simplifyDataSourceListResult);
   manager.registerToolResultPostProcessor('dataSources', 'listEnabled', simplifyDataSourceListResult);
   manager.registerToolResultPostProcessor('dataSources.collections', 'list', simplifyDataSourceCollectionsListResult);
