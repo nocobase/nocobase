@@ -10,7 +10,15 @@ interface FlowModelRendererProps {
   uid?: string;
 
   /** 是否显示流设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean; // 默认 false
+  showFlowSettings?:
+    | boolean
+    | {
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        toolbarPosition?: 'inside' | 'above' | 'below';
+      }; // 默认 false
 
   /** 流设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -34,6 +42,10 @@ interface FlowModelRendererProps {
 - **model**: 要渲染的 FlowModel 实例
 - **uid**: 流模型的唯一标识符
 - **showFlowSettings**: 是否显示流设置入口，如按钮、菜单等
+  - 传入对象时可进一步控制工具栏背景、边框、拖拽把手和自定义样式
+  - `toolbarPosition` 用于控制图标条显示在宿主框内部、上方或下方
+  - 工具栏会默认通过 portal 渲染到最近的 popup root，其次是 `#nocobase-app-container`，最后才 fallback 到 `document.body`
+  - `style.top/left/right/bottom` 会作为 portal overlay 的 inset 使用，可用于向外扩展 hover 框
 - **flowSettingsVariant**: 流设置的交互风格
   - `dropdown`: 下拉菜单形式（默认）
   - `contextMenu`: 右键上下文菜单
@@ -83,6 +95,14 @@ interface FlowModelRendererProps {
   model={model} 
   showFlowSettings 
   settingsMenuLevel={2} // 包含子模型设置
+/>
+
+// 调整工具栏渲染位置
+<FlowModelRenderer
+  model={model}
+  showFlowSettings={{
+    toolbarPosition: 'above',
+  }}
 />
 
 // 完整配置示例

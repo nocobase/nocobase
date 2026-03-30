@@ -42,6 +42,7 @@
     "@nocobase/database": "2.x",
     "@nocobase/plugin-ai": "2.x",
     "@nocobase/plugin-data-source-main": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x",
     "@nocobase/utils": "2.x"
