@@ -41,21 +41,6 @@ export function makeRequestKey() {
   return `req-${uid()}`;
 }
 
-export function parseJsonString(input: unknown) {
-  if (typeof input !== 'string') {
-    return input;
-  }
-  const trimmed = input.trim();
-  if (!trimmed) {
-    return input;
-  }
-  try {
-    return JSON.parse(trimmed);
-  } catch (error) {
-    return input;
-  }
-}
-
 export function normalizeNameValueArray(arr: any): RequestNameValue[] {
   if (!Array.isArray(arr)) {
     return [];
@@ -169,79 +154,7 @@ export const getDownloadFilename = (contentDisposition: string): string | undefi
   }
 };
 
-export const getCollectionNameFromContext = (ctx: any) => {
-  return (
-    ctx.collection?.name ||
-    ctx.collectionField?.collectionName ||
-    ctx.blockModel?.collection?.name ||
-    ctx.resource?.name ||
-    ctx.resourceName
-  );
-};
-
-export const getDataSourceKeyFromContext = (ctx: any) => {
-  return (
-    ctx.collection?.dataSourceKey ||
-    ctx.dataSource?.key ||
-    ctx.blockModel?.collection?.dataSourceKey ||
-    ctx.resource?.getDataSourceKey?.()
-  );
-};
-
-export const getSelectedRecordFromContext = (ctx: any) => {
-  if (typeof ctx?.record !== 'undefined') {
-    return ctx.record;
-  }
-
-  const fromInputArgs = ctx?.inputArgs?.$nSelectedRecord ?? ctx?.inputArgs?.selectedRows;
-  if (typeof fromInputArgs !== 'undefined') {
-    return fromInputArgs;
-  }
-
-  const fromResource =
-    (typeof ctx?.resource?.getSelectedRows === 'function' ? ctx.resource.getSelectedRows() : undefined) ??
-    ctx?.resource?.selectedRows;
-  if (typeof fromResource !== 'undefined') {
-    return fromResource;
-  }
-
-  return [];
-};
-
-export const getFormValuesFromContext = (ctx: any): Record<string, any> | undefined => {
-  if (ctx?.form?.values && typeof ctx.form.values === 'object') {
-    return ctx.form.values;
-  }
-
-  const rawFormValues = ctx?.blockModel?.form?.getFieldsValue?.();
-  if (!rawFormValues || typeof rawFormValues !== 'object') {
-    return undefined;
-  }
-
-  if ((rawFormValues as any).values && typeof (rawFormValues as any).values === 'object') {
-    return (rawFormValues as any).values;
-  }
-
-  return rawFormValues as Record<string, any>;
-};
-
-export const getCurrentRecordFromContext = (ctx: any) => {
-  const formValues = getFormValuesFromContext(ctx);
-  if (formValues) {
-    return formValues;
-  }
-
-  if (ctx.record && typeof ctx.record === 'object') {
-    return ctx.record;
-  }
-
-  return {};
-};
-
 export const buildCustomRequestOptions = (ctx: any, params: CustomRequestConfigParams) => {
-  const collectionName = getCollectionNameFromContext(ctx);
-  const dataSourceKey = getDataSourceKeyFromContext(ctx);
-
   return {
     method: params?.method || 'POST',
     url: params?.url,
@@ -250,8 +163,6 @@ export const buildCustomRequestOptions = (ctx: any, params: CustomRequestConfigP
     data: normalizeBodyData(params?.data),
     timeout: params?.timeout,
     responseType: params?.responseType || 'json',
-    ...(collectionName ? { collectionName } : {}),
-    ...(dataSourceKey ? { dataSourceKey } : {}),
   };
 };
 
@@ -357,12 +268,6 @@ export const resolveCustomRequestVars = async (ctx: any, variablePaths?: string[
 
 export const buildCustomRequestSendData = async (ctx: any, variablePaths?: string[]) => {
   return {
-    currentRecord: {
-      dataSourceKey: getDataSourceKeyFromContext(ctx),
-      data: getCurrentRecordFromContext(ctx),
-    },
-    $nForm: getFormValuesFromContext(ctx),
-    $nSelectedRecord: getSelectedRecordFromContext(ctx),
     vars: await resolveCustomRequestVars(ctx, variablePaths),
   };
 };
