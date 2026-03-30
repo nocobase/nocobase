@@ -1117,7 +1117,6 @@ describe('AddSubModelButton toggleable behavior', () => {
   // Minimal fake repository for save/destroy
   class FakeRepo implements IFlowModelRepository<any> {
     findOne = vi.fn().mockResolvedValue(null);
-    ensure = vi.fn(async (values: any) => await this.findOne(values));
     save = vi.fn().mockResolvedValue({});
     destroy = vi.fn().mockResolvedValue(true);
     move = vi.fn().mockResolvedValue(undefined);

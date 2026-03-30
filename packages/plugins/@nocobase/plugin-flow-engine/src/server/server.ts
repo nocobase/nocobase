@@ -10,15 +10,9 @@
 import { MagicAttributeModel } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
-import { uid } from '@nocobase/utils';
-import { createFlowModelActions } from './flow-models/action-handlers';
-import { createFlowModelsMutateTransactionMiddleware } from './flow-models/mutate-executor';
-import {
-  FlowSchemaContributionCollector,
-  RegisterFlowSchemasOptions,
-} from './flow-models/schema-contribution-collector';
-import { FlowModelValidationFacade } from './flow-models/validation-facade';
-import { FlowSchemaService } from './flow-schema-service';
+import { tval, uid } from '@nocobase/utils';
+import path, { resolve } from 'path';
+import { uiSchemaActions } from './actions/ui-schema-action';
 import { FlowSchemaModel } from './model';
 import FlowModelRepository from './repository';
 
@@ -39,7 +33,7 @@ function extractFields(obj) {
     const regex = /\{\{\s*t\s+['"]([^'"]+)['"]\s*\}\}/g;
     let match;
     while ((match = regex.exec(content)) !== null) {
-      fields.push(match[1]);
+      fields.push(match[1]); // 提取 xxx
     }
   }
 
@@ -47,16 +41,6 @@ function extractFields(obj) {
 }
 
 export class PluginUISchemaStorageServer extends Plugin {
-  protected readonly flowSchemaService = new FlowSchemaService();
-
-  protected createFlowSchemaContributionCollector() {
-    return new FlowSchemaContributionCollector(this.app, this.flowSchemaService);
-  }
-
-  protected createFlowModelValidationFacade() {
-    return new FlowModelValidationFacade(this.flowSchemaService, this.app);
-  }
-
   registerRepository() {
     this.app.db.registerRepositories({
       FlowModelRepository,
@@ -67,11 +51,9 @@ export class PluginUISchemaStorageServer extends Plugin {
     const db = this.app.db;
     const pm = this.app.pm;
 
-    this.flowSchemaService.setApp(this.app);
     this.app.db.registerModels({ MagicAttributeModel, FlowSchemaModel });
 
     this.registerRepository();
-    await this.createFlowSchemaContributionCollector().collectPluginFlowSchemaContributions();
 
     this.app.acl.registerSnippet({
       name: 'ui.flowModels',
@@ -100,6 +82,7 @@ export class PluginUISchemaStorageServer extends Plugin {
     db.on('flowModels.afterCreate', async function insertSchema(model, options) {
       const { transaction } = options;
       const uiSchemaRepository = db.getCollection('flowModels').repository as FlowModelRepository;
+
       const context = options.context;
 
       if (context?.disableInsertHook) {
@@ -127,17 +110,64 @@ export class PluginUISchemaStorageServer extends Plugin {
       await uiSchemaRepository.remove(model.get('name'), { transaction });
     });
 
-    this.app.resourceManager.use(createFlowModelsMutateTransactionMiddleware());
-
     this.app.resourceManager.define({
       name: 'flowModels',
-      actions: createFlowModelActions({
-        flowSchemaService: this.flowSchemaService,
-        validationFacade: this.createFlowModelValidationFacade(),
-      }),
+      actions: {
+        findOne: async (ctx, next) => {
+          const { uid, parentId, subKey, includeAsyncNode = false } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          if (uid) {
+            ctx.body = await repository.findModelById(uid, { includeAsyncNode });
+          } else if (parentId) {
+            ctx.body = await repository.findModelByParentId(parentId, { subKey, includeAsyncNode });
+          }
+          await next();
+        },
+        duplicate: async (ctx, next) => {
+          const { uid } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const duplicated = await repository.duplicate(uid);
+          ctx.body = duplicated;
+          await next();
+        },
+        attach: async (ctx, next) => {
+          const { uid, parentId, subKey, subType, position } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const attached = await repository.attach(String(uid || '').trim(), {
+            parentId: String(parentId || '').trim(),
+            subKey: String(subKey || '').trim(),
+            subType,
+            position,
+          });
+          ctx.body = attached;
+          await next();
+        },
+        move: async (ctx, next) => {
+          const { sourceId, targetId, position } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          await repository.move({ sourceId, targetId, position });
+          ctx.body = 'ok';
+          await next();
+        },
+        save: async (ctx, next) => {
+          const { values } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          const uid = await repository.upsertModel(values);
+          ctx.body = uid;
+          // ctx.body = await repository.findModelById(uid);
+          await next();
+        },
+        destroy: async (ctx, next) => {
+          const { filterByTk } = ctx.action.params;
+          const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
+          await repository.remove(filterByTk);
+          ctx.body = 'ok';
+          await next();
+        },
+      },
     });
 
-    this.app.acl.allow('flowModels', ['findOne', 'schema', 'schemas', 'schemaBundle'], 'loggedIn');
+    this.app.acl.allow('flowModels', ['findOne'], 'loggedIn');
   }
 
   async load() {
@@ -167,10 +197,6 @@ export class PluginUISchemaStorageServer extends Plugin {
       { name: 'flowModels:insertAdjacent', getSourceAndTarget: getSourceAndTargetForInsertAdjacentAction },
       { name: 'flowModels:patch', getSourceAndTarget: getSourceAndTargetForPatchAction },
     ]);
-  }
-
-  registerFlowSchemas(options: RegisterFlowSchemasOptions) {
-    this.createFlowSchemaContributionCollector().registerFlowSchemas(options);
   }
 }
 

@@ -13,6 +13,7 @@ import type { OpenAPIV3 } from 'openapi-types';
 import { requireModule } from '@nocobase/utils';
 import { merge as deepmerge } from '@nocobase/utils';
 import inject from 'light-my-request';
+import { sanitizeJsonSchemaForOpenAITools } from './schema-utils';
 
 type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
@@ -314,7 +315,7 @@ export async function collectMcpToolsFromSwagger(options: {
     return {
       name: tool.name,
       description: tool.description,
-      inputSchema: tool.inputSchema,
+      inputSchema: sanitizeJsonSchemaForOpenAITools(tool.inputSchema),
       call: async (args: Record<string, any>, context?: McpToolCallContext) => {
         const request = buildRequest(tool, args, context);
         if (request.missingPathParams.length > 0) {
