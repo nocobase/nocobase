@@ -1,3 +1,4 @@
+# v2
 FROM node:20-bookworm as builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
 ARG COMMIT_HASH
