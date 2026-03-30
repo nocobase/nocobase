@@ -1,0 +1,26 @@
+{
+  "target": {
+    "kind": "block",
+    "use": "ChartBlockModel"
+  },
+  "tree": {
+    "alias": "block.chart1",
+    "use": "ChartBlockModel"
+  },
+  "pageRoute": {
+    "alias": "page.route",
+    "type": "flowPage",
+    "title": "Fixture Blocks",
+    "icon": null,
+    "options": null
+  },
+  "tabs": [
+    {
+      "alias": "tab.main.route",
+      "type": "tabs",
+      "title": null,
+      "icon": null,
+      "options": null
+    }
+  ]
+}

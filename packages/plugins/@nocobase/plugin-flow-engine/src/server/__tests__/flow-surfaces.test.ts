@@ -1,0 +1,6774 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import type { Database, Repository } from '@nocobase/database';
+import { MockServer } from '@nocobase/test';
+import _ from 'lodash';
+import FlowModelRepository from '../repository';
+import {
+  buildPersistedRootPageModel,
+  buildPopupPageTree,
+  buildSyntheticRootPageTabModel,
+} from '../flow-surfaces/builder';
+import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
+import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
+
+describe('flowSurfaces resource builders', () => {
+  it('should keep persisted page builder separate from synthetic tab and popup builders', async () => {
+    const persistedPage = buildPersistedRootPageModel({
+      pageUid: 'persisted-page',
+      pageTitle: 'Persisted page',
+      routeId: 1,
+      enableTabs: true,
+      displayTitle: false,
+      pageDocumentTitle: 'Persisted document title',
+    });
+    expect(persistedPage).toMatchObject({
+      uid: 'persisted-page',
+      use: 'RootPageModel',
+      props: {
+        routeId: 1,
+        title: 'Persisted page',
+        enableTabs: true,
+        displayTitle: false,
+      },
+      stepParams: {
+        pageSettings: {
+          general: {
+            title: 'Persisted page',
+            enableTabs: true,
+            displayTitle: false,
+            documentTitle: 'Persisted document title',
+          },
+        },
+      },
+    });
+    expect(persistedPage.subModels).toBeUndefined();
+
+    const syntheticTab = buildSyntheticRootPageTabModel({
+      uid: 'synthetic-tab',
+      title: 'Synthetic tab',
+      icon: 'TableOutlined',
+      documentTitle: 'Synthetic document title',
+      route: {
+        id: 100,
+        schemaUid: 'synthetic-tab',
+      },
+      props: {
+        custom: true,
+      },
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            closable: false,
+          },
+        },
+      },
+      grid: {
+        uid: 'synthetic-grid',
+        use: 'BlockGridModel',
+      },
+    });
+    expect(syntheticTab).toMatchObject({
+      uid: 'synthetic-tab',
+      use: 'RootPageTabModel',
+      props: {
+        custom: true,
+        title: 'Synthetic tab',
+        icon: 'TableOutlined',
+      },
+      stepParams: {
+        pageTabSettings: {
+          tab: {
+            title: 'Synthetic tab',
+            icon: 'TableOutlined',
+            documentTitle: 'Synthetic document title',
+            closable: false,
+          },
+        },
+      },
+      subModels: {
+        grid: {
+          uid: 'synthetic-grid',
+          use: 'BlockGridModel',
+        },
+      },
+    });
+
+    const popupPage = buildPopupPageTree({
+      pageUid: 'popup-page',
+      tabUid: 'popup-tab',
+      gridUid: 'popup-grid',
+      pageTitle: 'Popup page',
+      tabTitle: 'Popup tab',
+      displayTitle: true,
+      enableTabs: true,
+    });
+    expect(popupPage.use).toBe('ChildPageModel');
+    expect(_.castArray(popupPage.subModels?.tabs || [])[0]).toMatchObject({
+      uid: 'popup-tab',
+      use: 'ChildPageTabModel',
+      subModels: {
+        grid: {
+          uid: 'popup-grid',
+          use: 'BlockGridModel',
+        },
+      },
+    });
+  });
+});
+
+describe('flowSurfaces resource', () => {
+  let app: MockServer;
+  let db: Database;
+  let flowRepo: FlowModelRepository;
+  let routesRepo: Repository;
+  let rootAgent: any;
+
+  beforeAll(async () => {
+    app = await createFlowSurfacesMockServer();
+    db = app.db;
+    flowRepo = db.getCollection('flowModels').repository as FlowModelRepository;
+    routesRepo = db.getRepository('desktopRoutes');
+    rootAgent = await loginFlowSurfacesRootAgent(app);
+    await setupFixtureCollections(rootAgent, db);
+  }, 120000);
+
+  afterAll(async () => {
+    if (app) {
+      await app.destroy();
+    }
+  });
+
+  it('should create page and manage tabs through flowSurfaces', async () => {
+    const created = await createPage(rootAgent, {
+      title: 'Employees page',
+      tabTitle: 'Main tab',
+    });
+
+    const pageRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: created.pageSchemaUid,
+      },
+      appends: ['children'],
+    });
+    expect(pageRoute?.get('type')).toBe('flowPage');
+    expect(pageRoute?.get('children')).toHaveLength(1);
+    expect(_.castArray(pageRoute?.get('children') || [])[0]?.get?.('hidden')).toBe(true);
+
+    const pageModel = await flowRepo.findModelByParentId(created.pageSchemaUid, {
+      subKey: 'page',
+      includeAsyncNode: true,
+    });
+    expect(pageModel?.use).toBe('RootPageModel');
+    expect(pageModel?.props?.routeId).toBe(pageRoute?.get('id'));
+    expect(pageModel?.subModels?.tabs).toBeUndefined();
+
+    const initialReadback = await getSurface(rootAgent, {
+      pageSchemaUid: created.pageSchemaUid,
+    });
+    expect(initialReadback.tree.use).toBe('RootPageModel');
+    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.use).toBe('RootPageTabModel');
+    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.subModels?.grid?.use).toBe('BlockGridModel');
+    const initialTabGrid = await flowRepo.findModelByParentId(created.tabSchemaUid, {
+      subKey: 'grid',
+      includeAsyncNode: true,
+    });
+    expect(initialTabGrid?.use).toBe('BlockGridModel');
+
+    const addedTab = await getData(
+      await rootAgent.resource('flowSurfaces').addTab({
+        values: {
+          target: {
+            pageSchemaUid: created.pageSchemaUid,
+          },
+          title: 'Secondary tab',
+          documentTitle: 'Secondary browser title',
+        },
+      }),
+    );
+    expect(
+      await flowRepo.findModelById(addedTab.tabSchemaUid, {
+        includeAsyncNode: true,
+      }),
+    ).toMatchObject({
+      uid: addedTab.tabSchemaUid,
+      schema: {
+        use: 'RouteModel',
+      },
+    });
+    expect(
+      await flowRepo.findModelByParentId(addedTab.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toMatchObject({
+      use: 'BlockGridModel',
+    });
+
+    const moveTabRes = await rootAgent.resource('flowSurfaces').moveTab({
+      values: {
+        sourceTabSchemaUid: addedTab.tabSchemaUid,
+        targetTabSchemaUid: created.tabSchemaUid,
+        position: 'before',
+      },
+    });
+    expect(moveTabRes.status).toBe(200);
+
+    await rootAgent.resource('flowSurfaces').updateTab({
+      values: {
+        target: {
+          tabSchemaUid: addedTab.tabSchemaUid,
+        },
+        title: 'Secondary tab updated',
+        icon: 'AppstoreOutlined',
+        documentTitle: 'Updated browser title',
+      },
+    });
+
+    const updatedTabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: addedTab.tabSchemaUid,
+      },
+    });
+    expect(updatedTabRoute?.get('title')).toBe('Secondary tab updated');
+    expect(updatedTabRoute?.get('icon')).toBe('AppstoreOutlined');
+    expect(updatedTabRoute?.get('options').documentTitle).toBe('Updated browser title');
+
+    const tabReadback = await getSurface(rootAgent, {
+      tabSchemaUid: addedTab.tabSchemaUid,
+    });
+    expect(tabReadback.tree.use).toBe('RootPageTabModel');
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Secondary tab updated',
+      icon: 'AppstoreOutlined',
+      documentTitle: 'Updated browser title',
+    });
+    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
+
+    await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          tabSchemaUid: addedTab.tabSchemaUid,
+        },
+        props: {
+          title: 'Secondary tab via settings',
+          icon: 'SettingOutlined',
+        },
+        stepParams: {
+          pageTabSettings: {
+            tab: {
+              title: 'Secondary tab via settings',
+              icon: 'SettingOutlined',
+              documentTitle: 'Settings browser title',
+            },
+          },
+        },
+      },
+    });
+
+    const tabRouteAfterSettings = await routesRepo.findOne({
+      filter: {
+        schemaUid: addedTab.tabSchemaUid,
+      },
+    });
+    expect(tabRouteAfterSettings?.get('title')).toBe('Secondary tab via settings');
+    expect(tabRouteAfterSettings?.get('icon')).toBe('SettingOutlined');
+    expect(tabRouteAfterSettings?.get('options').documentTitle).toBe('Settings browser title');
+    const tabReadbackAfterSettings = await getSurface(rootAgent, {
+      tabSchemaUid: addedTab.tabSchemaUid,
+    });
+    expect(tabReadbackAfterSettings.tree.props).toMatchObject({
+      title: 'Secondary tab via settings',
+      icon: 'SettingOutlined',
+    });
+    expect(tabReadbackAfterSettings.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Secondary tab via settings',
+      icon: 'SettingOutlined',
+      documentTitle: 'Settings browser title',
+    });
+
+    const readback = await getSurface(rootAgent, {
+      pageSchemaUid: created.pageSchemaUid,
+    });
+    expect(readback.tabs).toHaveLength(2);
+    expect(readback.tabs[0].schemaUid).toBe(addedTab.tabSchemaUid);
+    expect(readback.tabs[1].schemaUid).toBe(created.tabSchemaUid);
+
+    await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        tabSchemaUid: addedTab.tabSchemaUid,
+      },
+    });
+
+    const removedTabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: addedTab.tabSchemaUid,
+      },
+    });
+    expect(removedTabRoute).toBeNull();
+    expect(
+      await flowRepo.findModelByParentId(addedTab.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+
+    await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        pageSchemaUid: created.pageSchemaUid,
+      },
+    });
+
+    expect(
+      await routesRepo.findOne({
+        filter: {
+          schemaUid: created.pageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+    expect(
+      await flowRepo.findModelByParentId(created.pageSchemaUid, {
+        subKey: 'page',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+    expect(
+      await flowRepo.findModelByParentId(created.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+  });
+
+  it('should sync page settings updates back to desktop route state', async () => {
+    const created = await createPage(rootAgent, {
+      title: 'Settings page',
+      tabTitle: 'Settings tab',
+      enableTabs: true,
+    });
+
+    await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          pageSchemaUid: created.pageSchemaUid,
+        },
+        props: {
+          title: 'Settings page updated',
+          enableTabs: false,
+          displayTitle: false,
+        },
+        stepParams: {
+          pageSettings: {
+            general: {
+              title: 'Settings page updated',
+              documentTitle: 'Page-level browser title',
+              displayTitle: false,
+              enableTabs: false,
+            },
+          },
+        },
+      },
+    });
+
+    const pageRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: created.pageSchemaUid,
+      },
+      appends: ['children'],
+    });
+    expect(pageRoute?.get('title')).toBe('Settings page updated');
+    expect(pageRoute?.get('enableTabs')).toBe(false);
+    expect(pageRoute?.get('displayTitle')).toBe(false);
+    expect(pageRoute?.get('options')?.documentTitle).toBeUndefined();
+    expect(_.castArray(pageRoute?.get('children') || [])[0]?.get?.('hidden')).toBe(true);
+
+    const readback = await getSurface(rootAgent, {
+      pageSchemaUid: created.pageSchemaUid,
+    });
+    expect(readback.tree.props).toMatchObject({
+      title: 'Settings page updated',
+      enableTabs: false,
+      displayTitle: false,
+    });
+    expect(readback.tree.stepParams?.pageSettings?.general).toMatchObject({
+      title: 'Settings page updated',
+      documentTitle: 'Page-level browser title',
+      displayTitle: false,
+      enableTabs: false,
+    });
+    expect(readback.pageRoute.title).toBe('Settings page updated');
+    expect(readback.pageRoute.displayTitle).toBe(false);
+  });
+
+  it('should sync tab flowRegistry back to both route state and synthetic RootPageTabModel readback', async () => {
+    const created = await createPage(rootAgent, {
+      title: 'Tab flow registry page',
+      tabTitle: 'Registry tab',
+    });
+
+    const setFlows = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          tabSchemaUid: created.tabSchemaUid,
+        },
+        flowRegistry: {
+          tabBeforeRender: {
+            key: 'tabBeforeRender',
+            on: 'beforeRender',
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(setFlows.status).toBe(200);
+
+    const updatedTabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: created.tabSchemaUid,
+      },
+    });
+    expect(updatedTabRoute?.get('options')?.flowRegistry).toMatchObject({
+      tabBeforeRender: {
+        key: 'tabBeforeRender',
+      },
+    });
+
+    const tabReadback = await getSurface(rootAgent, {
+      tabSchemaUid: created.tabSchemaUid,
+    });
+    expect(tabReadback.tree.use).toBe('RootPageTabModel');
+    expect(tabReadback.tree.flowRegistry).toMatchObject({
+      tabBeforeRender: {
+        key: 'tabBeforeRender',
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      tabSchemaUid: created.tabSchemaUid,
+    });
+    expect(readback.tree.flowRegistry).toMatchObject({
+      tabBeforeRender: {
+        key: 'tabBeforeRender',
+      },
+    });
+  });
+
+  it('should enforce mutate atomic and apply replace contracts without changing tab readback semantics', async () => {
+    const rollbackPageSchemaUid = 'default_atomic_page_schema_uid';
+    const rollbackTabSchemaUid = 'default_atomic_tab_schema_uid';
+    const rollbackRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid: rollbackPageSchemaUid,
+              tabSchemaUid: rollbackTabSchemaUid,
+              title: 'Default atomic page',
+              tabTitle: 'Default atomic tab',
+            },
+          },
+          {
+            opId: 'block',
+            type: 'addBlock',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+          {
+            type: 'addField',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'block.uid',
+                },
+              },
+              fieldPath: 'not_exists',
+            },
+          },
+        ],
+      },
+    });
+    expect(rollbackRes.status).toBe(500);
+    expect(
+      await routesRepo.findOne({
+        filter: {
+          schemaUid: rollbackPageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const atomicFalsePageSchemaUid = 'atomic_false_page_schema_uid';
+    const atomicFalseRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        atomic: false,
+        ops: [
+          {
+            type: 'createPage',
+            values: {
+              pageSchemaUid: atomicFalsePageSchemaUid,
+              tabSchemaUid: 'atomic_false_tab_schema_uid',
+              title: 'Atomic false page',
+              tabTitle: 'Atomic false tab',
+            },
+          },
+        ],
+      },
+    });
+    expect(atomicFalseRes.status).toBe(500);
+    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('atomic=true');
+    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('v1');
+    expect(
+      await routesRepo.findOne({
+        filter: {
+          schemaUid: atomicFalsePageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const page = await createPage(rootAgent, {
+      title: 'Contract page',
+      tabTitle: 'Contract tab',
+    });
+
+    const defaultApplyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        spec: {
+          props: {
+            title: 'Contract tab default replace',
+            icon: 'TableOutlined',
+          },
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: 'Contract tab default replace',
+                icon: 'TableOutlined',
+                documentTitle: 'Contract tab default document',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(defaultApplyRes.status).toBe(200);
+
+    const explicitReplaceRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        spec: {
+          props: {
+            title: 'Contract tab explicit replace',
+            icon: 'AppstoreOutlined',
+          },
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: 'Contract tab explicit replace',
+                icon: 'AppstoreOutlined',
+                documentTitle: 'Contract tab explicit document',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(explicitReplaceRes.status).toBe(200);
+
+    const invalidApplyMode = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        mode: 'merge',
+        spec: {
+          props: {
+            title: 'Contract tab invalid replace',
+          },
+        },
+      },
+    });
+    expect(invalidApplyMode.status).toBe(500);
+    expect(invalidApplyMode.body.errors?.[0]?.message).toContain(`mode='replace'`);
+    expect(invalidApplyMode.body.errors?.[0]?.message).toContain('v1');
+
+    const tabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: page.tabSchemaUid,
+      },
+    });
+    const tabReadback = await getSurface(rootAgent, {
+      tabSchemaUid: page.tabSchemaUid,
+    });
+    expect(tabRoute?.get('title')).toBe('Contract tab explicit replace');
+    expect(tabRoute?.get('icon')).toBe('AppstoreOutlined');
+    expect(tabRoute?.get('options').documentTitle).toBe('Contract tab explicit document');
+    expect(tabReadback.tree.use).toBe('RootPageTabModel');
+    expect(tabReadback.tree.props).toMatchObject({
+      title: 'Contract tab explicit replace',
+      icon: 'AppstoreOutlined',
+    });
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Contract tab explicit replace',
+      icon: 'AppstoreOutlined',
+      documentTitle: 'Contract tab explicit document',
+    });
+    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
+  });
+
+  it('should expose catalog by table form details and filter-form contexts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Catalog page',
+      tabTitle: 'Catalog tab',
+    });
+
+    const tabCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(tabCatalog.blocks.map((item: any) => item.use)).toEqual(
+      expect.arrayContaining([
+        'TableBlockModel',
+        'CreateFormModel',
+        'EditFormModel',
+        'FormBlockModel',
+        'DetailsBlockModel',
+        'FilterFormBlockModel',
+        'ListBlockModel',
+        'GridCardBlockModel',
+        'JSBlockModel',
+        'MarkdownBlockModel',
+        'IframeBlockModel',
+        'MapBlockModel',
+        'ChartBlockModel',
+        'CommentsBlockModel',
+        'ActionPanelBlockModel',
+      ]),
+    );
+    expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
+    expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
+    expect(tabCatalog.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['tab.title', 'tab.icon', 'tab.documentTitle']),
+    );
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
+        ?.listSettings,
+    ).toBeTruthy();
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
+        ?.listSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['pageSize.pageSize', 'dataScope.filter']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ListBlockModel')?.settingsContract?.stepParams?.groups
+        ?.listSettings?.allowedPaths,
+    ).not.toContain('dataScope.*');
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
+        ?.GridCardSettings,
+    ).toBeTruthy();
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
+        ?.GridCardSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['rowCount.rowCount', 'dataScope.filter']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'GridCardBlockModel')?.settingsContract?.stepParams?.groups
+        ?.GridCardSettings?.allowedPaths,
+    ).not.toContain('dataScope.*');
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'JSBlockModel')?.settingsContract?.decoratorProps?.allowedKeys,
+    ).toEqual(expect.arrayContaining(['title', 'description', 'className']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'JSBlockModel')?.settingsContract?.stepParams?.groups
+        ?.jsSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['runJs.code', 'runJs.version']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')?.settingsContract?.stepParams?.groups
+        ?.markdownBlockSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['editMarkdown.content']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'IframeBlockModel')?.settingsContract?.stepParams?.groups
+        ?.iframeBlockSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['editIframe.mode', 'editIframe.url', 'editIframe.html']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ActionPanelBlockModel')?.settingsContract?.stepParams?.groups
+        ?.actionPanelBlockSetting?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['layout.layout', 'ellipsis.ellipsis']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.settingsContract?.stepParams?.groups
+        ?.createMapBlock?.allowedPaths,
+    ).toEqual(
+      expect.arrayContaining(['init.mapField', 'init.marker', 'dataScope.filter', 'lineSort.sort', 'mapZoom.zoom']),
+    );
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.settingsContract?.stepParams?.groups
+        ?.createMapBlock?.allowedPaths,
+    ).not.toContain('dataScope.*');
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.settingsContract?.stepParams?.groups
+        ?.commentsSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['pageSize.pageSize', 'dataScope.filter']));
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.settingsContract?.stepParams?.groups
+        ?.commentsSettings?.allowedPaths,
+    ).not.toContain('dataScope.*');
+    expect(
+      tabCatalog.blocks.find((item: any) => item.use === 'ChartBlockModel')?.settingsContract?.stepParams?.groups
+        ?.chartSettings?.allowedPaths,
+    ).toEqual(expect.arrayContaining(['configure', 'configure.*']));
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const tableCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableBlockUid,
+          },
+        },
+      }),
+    );
+    expect(tableCatalog.blocks).toEqual([]);
+    expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['addNew', 'popup', 'refresh', 'js']),
+    );
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.resourceSettings?.allowedPaths).toEqual(
+      expect.arrayContaining([
+        'init.dataSourceKey',
+        'init.collectionName',
+        'init.associationName',
+        'init.associationPathName',
+      ]),
+    );
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).toEqual(
+      expect.arrayContaining([
+        'quickEdit.editable',
+        'showRowNumbers.showIndex',
+        'pageSize.pageSize',
+        'dataScope.filter',
+        'defaultSorting.sort',
+        'treeTable.treeTable',
+        'defaultExpandAllRows.defaultExpandAllRows',
+        'tableDensity.size',
+        'dragSort.dragSort',
+        'dragSortBy.dragSortBy',
+      ]),
+    );
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit');
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('quickEdit.*');
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope');
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain('dataScope.*');
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'defaultSorting',
+    );
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.allowedPaths).not.toContain(
+      'defaultSorting.*',
+    );
+    expect(
+      tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.pathSchemas?.['dataScope.filter'],
+    ).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      properties: {
+        logic: {
+          enum: ['$and', '$or'],
+        },
+        items: {
+          type: 'array',
+        },
+      },
+      'x-flowSurfaceFormat': 'filter-group',
+    });
+    expect(
+      tableCatalog.settingsSchema?.stepParams?.properties?.tableSettings?.properties?.dataScope?.properties?.filter,
+    ).toMatchObject({
+      type: 'object',
+      required: expect.arrayContaining(['logic', 'items']),
+      properties: {
+        logic: {
+          enum: ['$and', '$or'],
+        },
+        items: {
+          type: 'array',
+        },
+      },
+      'x-flowSurfaceFormat': 'filter-group',
+    });
+    expect(tableCatalog.settingsContract?.stepParams?.groups?.tableSettings?.eventBindingSteps).toEqual(
+      expect.arrayContaining([
+        'quickEdit',
+        'showRowNumbers',
+        'pageSize',
+        'dataScope',
+        'defaultSorting',
+        'treeTable',
+        'defaultExpandAllRows',
+        'tableDensity',
+        'dragSort',
+        'dragSortBy',
+      ]),
+    );
+    expect(tableCatalog.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
+    expect(tableCatalog.fields.some((item: any) => item.key === 'nickname')).toBe(true);
+    expect(tableCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
+    expect(tableCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'JSFieldModel',
+      renderer: 'js',
+    });
+    expect(tableCatalog.fields.find((item: any) => item.key === 'jsColumn')).toMatchObject({
+      use: 'JSColumnModel',
+      fieldUse: 'JSColumnModel',
+      type: 'jsColumn',
+    });
+
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    expect(actionsColumnUid).toBeTruthy();
+
+    const rowActionCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: actionsColumnUid,
+          },
+        },
+      }),
+    );
+    expect(rowActionCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+    );
+    expect(
+      rowActionCatalog.actions.find((item: any) => item.use === 'ViewActionModel')?.settingsContract?.stepParams?.groups
+        ?.buttonSettings?.allowedPaths,
+    ).toEqual(
+      expect.arrayContaining([
+        'general.title',
+        'general.tooltip',
+        'general.icon',
+        'general.type',
+        'general.danger',
+        'general.color',
+        'linkageRules',
+      ]),
+    );
+    expect(rowActionCatalog.settingsContract?.props?.allowedKeys).toEqual(
+      expect.arrayContaining(['title', 'tooltip', 'width', 'fixed']),
+    );
+
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+        },
+      }),
+    );
+    expect(createFormCatalog.blocks).toEqual([]);
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(expect.arrayContaining(['submit', 'js']));
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
+      expect.arrayContaining([
+        'layout.layout',
+        'layout.labelAlign',
+        'layout.labelWidth',
+        'layout.labelWrap',
+        'layout.colon',
+        'assignRules.value',
+      ]),
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'layout',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'layout.*',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules.*',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['linkageRules.value']),
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+      'linkageRules',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+      'linkageRules.*',
+    );
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual([]);
+    expect(createFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
+      expect.arrayContaining(['init', 'refresh']),
+    );
+    expect(
+      createFormCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
+    ).toEqual(expect.arrayContaining(['label', 'showLabel', 'tooltip', 'extra']));
+    expect(
+      createFormCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
+    ).not.toContain('title');
+    expect(createFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'JSEditableFieldModel',
+      renderer: 'js',
+    });
+    expect(createFormCatalog.fields.find((item: any) => item.key === 'jsItem')).toMatchObject({
+      use: 'JSItemModel',
+      fieldUse: 'JSItemModel',
+      type: 'jsItem',
+    });
+
+    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const editFormCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: editFormUid,
+          },
+        },
+      }),
+    );
+    expect(editFormCatalog.blocks).toEqual([]);
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
+      expect.arrayContaining([
+        'layout.layout',
+        'layout.labelAlign',
+        'layout.labelWidth',
+        'layout.labelWrap',
+        'layout.colon',
+        'assignRules.value',
+      ]),
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'layout',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'layout.*',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules.*',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['linkageRules.value']),
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+      'linkageRules',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+      'linkageRules.*',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['dataScope.filter']),
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain('dataScope');
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.allowedPaths).not.toContain(
+      'dataScope.*',
+    );
+    expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
+      expect.arrayContaining(['init', 'dataScope', 'refresh']),
+    );
+
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'form', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const formCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: formUid,
+          },
+        },
+      }),
+    );
+    expect(formCatalog.blocks).toEqual([]);
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['layout.layout', 'assignRules.value']),
+    );
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain('layout');
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain('layout.*');
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules',
+    );
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
+      'assignRules.*',
+    );
+    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['linkageRules.value']),
+    );
+    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain('linkageRules');
+    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
+      'linkageRules.*',
+    );
+    expect(formCatalog.settingsContract?.stepParams?.groups?.formSettings).toBeUndefined();
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsUid,
+          },
+        },
+      }),
+    );
+    expect(detailsCatalog.blocks).toEqual([]);
+    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).toEqual(
+      expect.arrayContaining(['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value']),
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain('layout');
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'layout.*',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'dataScope',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'dataScope.*',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'defaultSorting',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'defaultSorting.*',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'linkageRules',
+    );
+    expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
+      'linkageRules.*',
+    );
+
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterFormUid,
+          },
+        },
+      }),
+    );
+    expect(filterFormCatalog.blocks).toEqual([]);
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'reset', 'js']),
+    );
+    expect(filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths).toEqual(
+      expect.arrayContaining([
+        'layout.layout',
+        'layout.labelAlign',
+        'layout.labelWidth',
+        'layout.labelWrap',
+        'layout.colon',
+        'defaultValues.value',
+      ]),
+    );
+    expect(
+      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+    ).not.toContain('layout');
+    expect(
+      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+    ).not.toContain('layout.*');
+    expect(
+      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+    ).not.toContain('defaultValues');
+    expect(
+      filterFormCatalog.settingsContract?.stepParams?.groups?.formFilterBlockModelSettings?.allowedPaths,
+    ).not.toContain('defaultValues.*');
+    expect(
+      tableCatalog.fields.find((item: any) => item.key === 'nickname')?.settingsContract?.props?.allowedKeys,
+    ).toEqual(expect.arrayContaining(['title', 'tooltip', 'width', 'fixed', 'editable', 'sorter']));
+  });
+
+  it('should enforce grouped path-level contracts for core collection blocks', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Core block contract page',
+      tabTitle: 'Core block contract tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'form', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const validTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+          },
+          tableSettings: {
+            quickEdit: {
+              editable: true,
+            },
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            defaultSorting: {
+              sort: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validTableSettings.status).toBe(200);
+
+    const invalidTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        stepParams: {
+          tableSettings: {
+            dataScope: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidTableSettings.status).toBe(500);
+    const tableReadback = await getSurface(rootAgent, {
+      uid: tableUid,
+    });
+    expect(tableReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    expect(tableReadback.tree.stepParams?.tableSettings?.quickEdit).toMatchObject({
+      editable: true,
+    });
+
+    const validCreateFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              layout: 'horizontal',
+              labelAlign: 'right',
+              labelWidth: 160,
+              labelWrap: false,
+              colon: false,
+            },
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validCreateFormSettings.status).toBe(200);
+
+    const invalidCreateFormLayout = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidCreateFormLayout.status).toBe(500);
+
+    const invalidCreateFormEventOnlyGroup = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        stepParams: {
+          formSettings: {
+            init: {
+              collectionName: 'employees',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidCreateFormEventOnlyGroup.status).toBe(500);
+    const createFormReadback = await getSurface(rootAgent, {
+      uid: createFormUid,
+    });
+    expect(createFormReadback.tree.stepParams?.formModelSettings?.layout).toMatchObject({
+      layout: 'horizontal',
+      labelAlign: 'right',
+      labelWidth: 160,
+      labelWrap: false,
+      colon: false,
+    });
+    expect(createFormReadback.tree.stepParams?.eventSettings?.linkageRules).toMatchObject({
+      value: [],
+    });
+
+    const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: editFormUid,
+        },
+        stepParams: {
+          formSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(validEditFormSettings.status).toBe(200);
+
+    const invalidEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: editFormUid,
+        },
+        stepParams: {
+          formSettings: {
+            dataScope: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidEditFormSettings.status).toBe(500);
+
+    const validFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validFormSettings.status).toBe(200);
+
+    const invalidFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        stepParams: {
+          eventSettings: {
+            linkageRules: {
+              unsupported: [],
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFormSettings.status).toBe(500);
+
+    const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        stepParams: {
+          detailsSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            defaultSorting: {
+              sort: [],
+            },
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validDetailsSettings.status).toBe(200);
+
+    const invalidDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        stepParams: {
+          detailsSettings: {
+            defaultSorting: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidDetailsSettings.status).toBe(500);
+
+    const validFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterFormUid,
+        },
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validFilterFormSettings.status).toBe(200);
+
+    const invalidFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterFormUid,
+        },
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: {
+              unsupported: [],
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFilterFormSettings.status).toBe(500);
+    const filterFormReadback = await getSurface(rootAgent, {
+      uid: filterFormUid,
+    });
+    expect(filterFormReadback.tree.stepParams?.formFilterBlockModelSettings?.defaultValues).toMatchObject({
+      value: [],
+    });
+  });
+
+  it('should support the first-batch formal built-in blocks through addBlock and get', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Supported blocks page',
+      tabTitle: 'Supported blocks tab',
+    });
+
+    const blockCases = [
+      {
+        type: 'list',
+        expectedUse: 'ListBlockModel',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      {
+        type: 'gridCard',
+        expectedUse: 'GridCardBlockModel',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+      },
+      { type: 'markdown', expectedUse: 'MarkdownBlockModel' },
+      { type: 'iframe', expectedUse: 'IframeBlockModel' },
+      { type: 'chart', expectedUse: 'ChartBlockModel' },
+      { type: 'actionPanel', expectedUse: 'ActionPanelBlockModel' },
+    ];
+
+    for (const blockCase of blockCases) {
+      const created = getData(
+        await rootAgent.resource('flowSurfaces').addBlock({
+          values: {
+            target: {
+              uid: page.tabSchemaUid,
+            },
+            type: blockCase.type,
+            resourceInit: blockCase.resourceInit,
+          },
+        }),
+      );
+
+      const readback = await getSurface(rootAgent, {
+        uid: created.uid,
+      });
+      expect(readback.tree.use).toBe(blockCase.expectedUse);
+
+      if (blockCase.type === 'list' || blockCase.type === 'gridCard') {
+        expect(created.itemUid).toBeTruthy();
+        expect(created.gridUid).toBeTruthy();
+      }
+    }
+  });
+
+  it('should enforce real block settings keys for supported built-in block contracts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Block contract page',
+      tabTitle: 'Block contract tab',
+    });
+
+    const markdownBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+        },
+      }),
+    );
+    const invalidMarkdownSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: markdownBlock.uid,
+        },
+        stepParams: {
+          markdownSettings: {
+            editMarkdown: {
+              content: 'legacy-key',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidMarkdownSettings.status).toBe(500);
+
+    const validMarkdownSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: markdownBlock.uid,
+        },
+        stepParams: {
+          markdownBlockSettings: {
+            editMarkdown: {
+              content: 'real-key',
+            },
+          },
+        },
+      },
+    });
+    expect(validMarkdownSettings.status).toBe(200);
+
+    const actionPanelBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'actionPanel',
+        },
+      }),
+    );
+    const invalidActionPanelSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: actionPanelBlock.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'legacy-button-key',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidActionPanelSettings.status).toBe(500);
+
+    const validActionPanelSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: actionPanelBlock.uid,
+        },
+        stepParams: {
+          actionPanelBlockSetting: {
+            layout: {
+              layout: 'list',
+            },
+          },
+        },
+      },
+    });
+    expect(validActionPanelSettings.status).toBe(200);
+
+    const listBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'list',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidListSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: listBlock.uid,
+        },
+        stepParams: {
+          cardSettings: {
+            layout: {
+              layout: 'vertical',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidListSettings.status).toBe(500);
+
+    const validListSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: listBlock.uid,
+        },
+        stepParams: {
+          listSettings: {
+            pageSize: {
+              pageSize: 20,
+            },
+          },
+        },
+      },
+    });
+    expect(validListSettings.status).toBe(200);
+
+    const createFormBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'createForm',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidCreateFormLayoutPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormBlock.uid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              legacy: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidCreateFormLayoutPath.status).toBe(500);
+
+    const invalidCreateFormEventOnlyWrite = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormBlock.uid,
+        },
+        stepParams: {
+          formSettings: {
+            refresh: {
+              force: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidCreateFormEventOnlyWrite.status).toBe(500);
+
+    const validCreateFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormBlock.uid,
+        },
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              layout: 'horizontal',
+              labelAlign: 'left',
+              labelWidth: 160,
+              labelWrap: true,
+              colon: true,
+            },
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validCreateFormSettings.status).toBe(200);
+
+    const validCreateFormEventBinding = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: createFormBlock.uid,
+        },
+        flowRegistry: {
+          createFormRefresh: {
+            key: 'createFormRefresh',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'refresh',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validCreateFormEventBinding.status).toBe(200);
+
+    const editFormBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'editForm',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidEditFormEventOnlyWrite = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: editFormBlock.uid,
+        },
+        stepParams: {
+          formSettings: {
+            refresh: {
+              force: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidEditFormEventOnlyWrite.status).toBe(500);
+
+    const validEditFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: editFormBlock.uid,
+        },
+        stepParams: {
+          formSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(validEditFormSettings.status).toBe(200);
+
+    const validEditFormEventBinding = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: editFormBlock.uid,
+        },
+        flowRegistry: {
+          editFormInit: {
+            key: 'editFormInit',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'init',
+            },
+            steps: {},
+          },
+          editFormRefresh: {
+            key: 'editFormRefresh',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'refresh',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validEditFormEventBinding.status).toBe(200);
+
+    const createFormReadback = await getSurface(rootAgent, {
+      uid: createFormBlock.uid,
+    });
+    expect(createFormReadback.tree.flowRegistry?.createFormRefresh).toMatchObject({
+      key: 'createFormRefresh',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeStep',
+        flowKey: 'formSettings',
+        stepKey: 'refresh',
+      },
+    });
+    const editFormReadback = await getSurface(rootAgent, {
+      uid: editFormBlock.uid,
+    });
+    expect(editFormReadback.tree.flowRegistry?.editFormInit).toMatchObject({
+      key: 'editFormInit',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeStep',
+        flowKey: 'formSettings',
+        stepKey: 'init',
+      },
+    });
+    expect(editFormReadback.tree.flowRegistry?.editFormRefresh).toMatchObject({
+      key: 'editFormRefresh',
+      on: {
+        eventName: 'submit',
+        phase: 'beforeStep',
+        flowKey: 'formSettings',
+        stepKey: 'refresh',
+      },
+    });
+
+    const detailsBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidDetailsLayoutPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: detailsBlock.uid,
+        },
+        stepParams: {
+          detailsSettings: {
+            layout: {
+              legacy: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidDetailsLayoutPath.status).toBe(500);
+
+    const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: detailsBlock.uid,
+        },
+        stepParams: {
+          detailsSettings: {
+            layout: {
+              layout: 'vertical',
+              labelAlign: 'left',
+              labelWidth: 120,
+              labelWrap: true,
+              colon: true,
+            },
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            defaultSorting: {
+              sort: [],
+            },
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validDetailsSettings.status).toBe(200);
+
+    const filterFormBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'filterForm',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidFilterFormDefaultValuePath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterFormBlock.uid,
+        },
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: {
+              legacy: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFilterFormDefaultValuePath.status).toBe(500);
+
+    const validFilterFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterFormBlock.uid,
+        },
+        stepParams: {
+          formFilterBlockModelSettings: {
+            layout: {
+              layout: 'horizontal',
+              labelAlign: 'left',
+              labelWidth: 140,
+              labelWrap: true,
+              colon: true,
+            },
+            defaultValues: {
+              value: [],
+            },
+          },
+        },
+      },
+    });
+    expect(validFilterFormSettings.status).toBe(200);
+
+    const tableBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      }),
+    );
+    const invalidTableLegacyStep = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableBlock.uid,
+        },
+        stepParams: {
+          paginationSettings: {
+            pageSize: {
+              pageSize: 50,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidTableLegacyStep.status).toBe(500);
+
+    const invalidTableNestedPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableBlock.uid,
+        },
+        stepParams: {
+          tableSettings: {
+            quickEdit: {
+              legacy: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidTableNestedPath.status).toBe(500);
+
+    const validTableSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableBlock.uid,
+        },
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+          },
+          tableSettings: {
+            quickEdit: {
+              editable: true,
+            },
+            showRowNumbers: {
+              showIndex: false,
+            },
+            pageSize: {
+              pageSize: 50,
+            },
+            tableDensity: {
+              size: 'small',
+            },
+            dragSort: {
+              dragSort: true,
+            },
+          },
+        },
+      },
+    });
+    expect(validTableSettings.status).toBe(200);
+
+    const chartBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'chart',
+        },
+      }),
+    );
+    const invalidChartSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: chartBlock.uid,
+        },
+        stepParams: {
+          chartSettings: {
+            legacy: true,
+          },
+        },
+      },
+    });
+    expect(invalidChartSettings.status).toBe(500);
+
+    const validChartSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: chartBlock.uid,
+        },
+        stepParams: {
+          chartSettings: {
+            configure: {
+              query: {
+                mode: 'builder',
+              },
+              chart: {
+                option: {
+                  mode: 'basic',
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(validChartSettings.status).toBe(200);
+  });
+
+  it('should enforce real action button settings keys and linkageRules event bindings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Action contract page',
+      tabTitle: 'Action contract tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+
+    const invalidLegacyButtonStep = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              htmlType: 'submit',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidLegacyButtonStep.status).toBe(500);
+
+    const validActionSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        props: {
+          htmlType: 'submit',
+          position: 'fixed',
+          tooltip: 'Open the popup view',
+          danger: true,
+          color: '#1677ff',
+        },
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Open view',
+              tooltip: 'Open the popup view',
+              type: 'link',
+              danger: true,
+              color: '#1677ff',
+            },
+          },
+        },
+      },
+    });
+    expect(validActionSettings.status).toBe(200);
+
+    const missingLinkageRulesFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        flowRegistry: {
+          linkageRefresh: {
+            key: 'linkageRefresh',
+            on: {
+              eventName: 'click',
+              phase: 'beforeStep',
+              flowKey: 'buttonSettings',
+              stepKey: 'linkageRules',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(missingLinkageRulesFlow.status).toBe(500);
+
+    const configureLinkageRules = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            linkageRules: [],
+          },
+        },
+      },
+    });
+    expect(configureLinkageRules.status).toBe(200);
+
+    const invalidLinkageRulesType = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        stepParams: {
+          buttonSettings: {
+            linkageRules: {
+              legacy: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidLinkageRulesType.status).toBe(500);
+
+    const validLinkageRulesFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        flowRegistry: {
+          linkageRefresh: {
+            key: 'linkageRefresh',
+            on: {
+              eventName: 'click',
+              phase: 'beforeStep',
+              flowKey: 'buttonSettings',
+              stepKey: 'linkageRules',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validLinkageRulesFlow.status).toBe(200);
+
+    const actionReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    expect(actionReadback.tree.props).toMatchObject({
+      htmlType: 'submit',
+      position: 'fixed',
+      tooltip: 'Open the popup view',
+      danger: true,
+      color: '#1677ff',
+    });
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general).toMatchObject({
+      title: 'Open view',
+      tooltip: 'Open the popup view',
+      type: 'link',
+      danger: true,
+      color: '#1677ff',
+    });
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.htmlType).toBeUndefined();
+    expect(actionReadback.tree.stepParams?.buttonSettings?.general?.position).toBeUndefined();
+    expect(actionReadback.tree.stepParams?.buttonSettings?.linkageRules).toEqual([]);
+  });
+
+  it('should reject create-time payloads that bypass the shared settings contract', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Create contract page',
+      tabTitle: 'Create contract tab',
+    });
+
+    const invalidBlockCreate = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'markdown',
+        stepParams: {
+          markdownSettings: {
+            editMarkdown: {
+              content: 'legacy-create-key',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidBlockCreate.status).toBe(500);
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+
+    const invalidActionCreate = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        type: 'view',
+        stepParams: {
+          buttonSettings: {
+            general: {
+              htmlType: 'submit',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidActionCreate.status).toBe(500);
+  });
+
+  it('should enforce real wrapper and column props contracts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Wrapper contract page',
+      tabTitle: 'Wrapper contract tab',
+    });
+
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const formField = await addField(rootAgent, formUid, 'nickname');
+
+    const invalidLegacyWrapperTitle = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formField.wrapperUid,
+        },
+        props: {
+          title: 'Legacy wrapper title',
+        },
+      },
+    });
+    expect(invalidLegacyWrapperTitle.status).toBe(500);
+
+    const validWrapperProps = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formField.wrapperUid,
+        },
+        props: {
+          label: 'Employee nickname',
+          showLabel: false,
+          tooltip: 'Nickname tooltip',
+          extra: 'Nickname description',
+        },
+      },
+    });
+    expect(validWrapperProps.status).toBe(200);
+
+    const wrapperReadback = await getSurface(rootAgent, {
+      uid: formField.wrapperUid,
+    });
+    expect(wrapperReadback.tree.props).toMatchObject({
+      label: 'Employee nickname',
+      showLabel: false,
+      tooltip: 'Nickname tooltip',
+      extra: 'Nickname description',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const tableField = await addField(rootAgent, tableUid, 'nickname');
+    const table = await flowRepo.findModelById(tableUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+
+    const validTableColumnProps = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: tableField.wrapperUid,
+        },
+        props: {
+          title: 'Nickname column',
+          tooltip: 'Nickname column tooltip',
+          width: 260,
+          fixed: 'left',
+          sorter: true,
+        },
+      },
+    });
+    expect(validTableColumnProps.status).toBe(200);
+
+    const tableColumnReadback = await getSurface(rootAgent, {
+      uid: tableField.wrapperUid,
+    });
+    expect(tableColumnReadback.tree.props).toMatchObject({
+      title: 'Nickname column',
+      tooltip: 'Nickname column tooltip',
+      width: 260,
+      fixed: 'left',
+      sorter: true,
+    });
+
+    const invalidActionColumnLabel = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        props: {
+          label: 'Bad label key',
+        },
+      },
+    });
+    expect(invalidActionColumnLabel.status).toBe(500);
+
+    const validActionColumnProps = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        props: {
+          title: 'Actions',
+          tooltip: 'Actions tooltip',
+          width: 300,
+          fixed: 'right',
+        },
+      },
+    });
+    expect(validActionColumnProps.status).toBe(200);
+
+    const actionColumnReadback = await getSurface(rootAgent, {
+      uid: actionsColumnUid,
+    });
+    expect(actionColumnReadback.tree.props).toMatchObject({
+      title: 'Actions',
+      tooltip: 'Actions tooltip',
+      width: 300,
+      fixed: 'right',
+    });
+  });
+
+  it('should build simple table surface with create action row actions and relation columns', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Table page',
+      tabTitle: 'Table tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumn = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    );
+    expect(actionsColumn?.uid).toBeTruthy();
+
+    const addNewAction = await addAction(rootAgent, tableBlockUid, 'addNew', {
+      props: {
+        title: 'Create New',
+      },
+    });
+    expect(addNewAction.uid).toBeTruthy();
+
+    await addAction(rootAgent, actionsColumn.uid, 'view');
+    await addAction(rootAgent, actionsColumn.uid, 'edit');
+    await addAction(rootAgent, actionsColumn.uid, 'popup');
+    await addAction(rootAgent, actionsColumn.uid, 'delete');
+
+    const nicknameField = await addField(rootAgent, tableBlockUid, 'nickname');
+    const statusField = await addField(rootAgent, tableBlockUid, 'status');
+    const relationField = await addField(rootAgent, tableBlockUid, 'department.title');
+
+    const readback = await getSurface(rootAgent, {
+      uid: tableBlockUid,
+    });
+    const block = readback.tree;
+    expect(block.use).toBe('TableBlockModel');
+    expect(block.stepParams?.resourceSettings?.init).toEqual({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    expect(_.castArray(block.subModels?.actions || []).map((item: any) => item.use)).toContain('AddNewActionModel');
+    expect(
+      _.castArray(
+        _.castArray(block.subModels?.columns || []).find((item: any) => item.use === 'TableActionsColumnModel')
+          ?.subModels?.actions || [],
+      ).map((item: any) => item.use),
+    ).toEqual(
+      expect.arrayContaining(['ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel', 'DeleteActionModel']),
+    );
+
+    const relationColumn = _.castArray(block.subModels?.columns || []).find(
+      (column: any) => column.uid === relationField.wrapperUid,
+    );
+    expect(relationColumn?.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      associationPathName: 'department',
+      fieldPath: 'department.title',
+    });
+    expect(relationColumn?.subModels?.field?.uid).toBe(relationField.fieldUid);
+    const nicknameColumn = _.castArray(block.subModels?.columns || []).find(
+      (column: any) => column.uid === nicknameField.wrapperUid,
+    );
+    expect(nicknameColumn?.props || {}).not.toHaveProperty('title');
+    expect(nicknameColumn?.props || {}).not.toHaveProperty('dataIndex');
+
+    const bundle = createFlowSurfaceFixture(readback);
+    expect(listFixtureAliases(bundle)).toEqual(
+      expect.arrayContaining([
+        'block.table1',
+        'action.addNew1',
+        'column.actions1',
+        'action.view1',
+        'action.edit1',
+        'action.popup1',
+        'action.delete1',
+        'field.nickname.wrapper',
+        'field.nickname.inner',
+        'field.status.wrapper',
+        'field.department.title.wrapper',
+      ]),
+    );
+    expect(bundle.refs['field.nickname.wrapper'].uid).toBe(nicknameField.wrapperUid);
+    expect(bundle.refs['field.status.wrapper'].uid).toBe(statusField.wrapperUid);
+  });
+
+  it('should support nested popup surfaces to depth 3', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Nested popup page',
+      tabTitle: 'Nested popup tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+
+    await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        stepParams: {
+          popupSettings: {
+            openView: {
+              mode: 'dialog',
+              size: 'large',
+            },
+          },
+        },
+      },
+    });
+
+    const firstPopupBlock = await getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: viewAction.uid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            associationName: 'employees.tasks',
+            sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+          },
+        },
+      }),
+    );
+    const firstPopupTable = await flowRepo.findModelById(firstPopupBlock.uid, { includeAsyncNode: true });
+    const firstPopupActionsColumnUid = _.castArray(firstPopupTable?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const secondPopupAction = await addAction(rootAgent, firstPopupActionsColumnUid, 'popup');
+
+    const secondPopupBlock = await getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: secondPopupAction.uid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'departments',
+          },
+        },
+      }),
+    );
+    const secondPopupTable = await flowRepo.findModelById(secondPopupBlock.uid, { includeAsyncNode: true });
+    const secondPopupActionsColumnUid = _.castArray(secondPopupTable?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const thirdPopupAction = await addAction(rootAgent, secondPopupActionsColumnUid, 'popup');
+
+    await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: thirdPopupAction.uid,
+        },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'departments',
+        },
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    expect(readback.tree.use).toBe('ViewActionModel');
+    expect(readback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      size: 'large',
+      pageModelClass: 'ChildPageModel',
+    });
+    expect(readback.tree.subModels?.page?.use).toBe('ChildPageModel');
+    expect(_.castArray(readback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.use).toBe(
+      'BlockGridModel',
+    );
+
+    const bundle = createFlowSurfaceFixture(readback);
+    expect(listFixtureAliases(bundle)).toEqual(
+      expect.arrayContaining([
+        'action.view1',
+        'action.view1.popup.page',
+        'action.view1.popup.tab',
+        'action.view1.popup.grid',
+        'block.table1',
+        'action.popup1',
+        'action.popup1.popup.page',
+        'action.popup1.popup.grid',
+        'block.table2',
+        'action.popup2',
+        'action.popup2.popup.grid',
+        'block.details1',
+      ]),
+    );
+  });
+
+  it('should create create-form block with fields actions and layout round-trip', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Create form page',
+      tabTitle: 'Create form tab',
+    });
+
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const nicknameField = await addField(rootAgent, formUid, 'nickname');
+    const statusField = await addField(rootAgent, formUid, 'status');
+    const submitAction = await addAction(rootAgent, formUid, 'submit');
+
+    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
+    const gridUid = form?.subModels?.grid?.uid;
+    await rootAgent.resource('flowSurfaces').setLayout({
+      values: {
+        target: {
+          uid: gridUid,
+        },
+        rows: {
+          row1: [[nicknameField.wrapperUid], [statusField.wrapperUid]],
+        },
+        sizes: {
+          row1: [12, 12],
+        },
+        rowOrder: ['row1'],
+      },
+    });
+    await rootAgent.resource('flowSurfaces').moveNode({
+      values: {
+        sourceUid: statusField.wrapperUid,
+        targetUid: nicknameField.wrapperUid,
+        position: 'before',
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    expect(readback.tree.use).toBe('CreateFormModel');
+    expect(readback.tree.subModels?.grid?.use).toBe('FormGridModel');
+    expect(_.castArray(readback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
+      'FormSubmitActionModel',
+    ]);
+    expect(_.castArray(readback.tree.subModels?.actions || [])[0]?.uid).toBe(submitAction.uid);
+    expect(readback.tree.subModels?.grid?.props?.rows).toEqual({
+      row1: [[nicknameField.wrapperUid], [statusField.wrapperUid]],
+    });
+    expect(readback.tree.subModels?.grid?.props?.rowOrder).toEqual(['row1']);
+  });
+
+  it('should create edit-form and details blocks with fields actions and event flow replacement', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Edit and details page',
+      tabTitle: 'Edit and details tab',
+    });
+
+    const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const editField = await addField(rootAgent, editFormUid, 'nickname');
+    const detailsField = await addField(rootAgent, detailsUid, 'department.title');
+    const editSubmit = await addAction(rootAgent, editFormUid, 'submit');
+    const updateRecordAction = await addAction(rootAgent, detailsUid, 'updateRecord');
+
+    await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: updateRecordAction.uid,
+        },
+        flowRegistry: {
+          beforeAssignConfirm: {
+            key: 'beforeAssignConfirm',
+            title: 'Before assign confirm',
+            on: {
+              eventName: 'click',
+              phase: 'beforeStep',
+              flowKey: 'assignSettings',
+              stepKey: 'confirm',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+
+    const editReadback = await getSurface(rootAgent, {
+      uid: editFormUid,
+    });
+    expect(editReadback.tree.use).toBe('EditFormModel');
+    expect(_.castArray(editReadback.tree.subModels?.actions || [])[0]?.uid).toBe(editSubmit.uid);
+    expect(_.castArray(editReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(editField.wrapperUid);
+
+    const detailsReadback = await getSurface(rootAgent, {
+      uid: detailsUid,
+    });
+    const updateActionReadback = await getSurface(rootAgent, {
+      uid: updateRecordAction.uid,
+    });
+    expect(detailsReadback.tree.use).toBe('DetailsBlockModel');
+    expect(_.castArray(detailsReadback.tree.subModels?.actions || [])[0]?.uid).toBe(updateRecordAction.uid);
+    expect(updateRecordAction.assignFormUid).toBeTruthy();
+    expect(updateActionReadback.tree.flowRegistry?.beforeAssignConfirm?.on).toMatchObject({
+      eventName: 'click',
+      phase: 'beforeStep',
+      flowKey: 'assignSettings',
+      stepKey: 'confirm',
+    });
+    expect(_.castArray(detailsReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(
+      detailsField.wrapperUid,
+    );
+  });
+
+  it('should create filter-form block and clickable field popup surface', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter and click page',
+      tabTitle: 'Filter and click tab',
+    });
+
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterField = await addField(rootAgent, filterFormUid, 'status');
+    const filterAction = await addAction(rootAgent, filterFormUid, 'submit');
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const clickableField = await addField(rootAgent, detailsUid, 'department.title');
+    await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: clickableField.fieldUid,
+        },
+        props: {
+          clickToOpen: true,
+        },
+        stepParams: {
+          displayFieldSettings: {
+            clickToOpen: {
+              clickToOpen: true,
+            },
+          },
+          popupSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'departments',
+              associationName: 'employees.department',
+            },
+          },
+        },
+      },
+    });
+
+    const popupBlock = await getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: clickableField.fieldUid,
+          },
+          type: 'details',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'departments',
+          },
+        },
+      }),
+    );
+    expect(popupBlock.pageUid).toBeTruthy();
+    expect(popupBlock.gridUid).toBeTruthy();
+    expect(popupBlock.popupPageUid).toBe(popupBlock.pageUid);
+    expect(popupBlock.popupGridUid).toBeTruthy();
+    expect(popupBlock.blockGridUid).toBeTruthy();
+    expect(popupBlock.gridUid).toBe(popupBlock.blockGridUid);
+    expect(popupBlock.popupGridUid).not.toBe(popupBlock.blockGridUid);
+
+    const filterReadback = await getSurface(rootAgent, {
+      uid: filterFormUid,
+    });
+    expect(filterReadback.tree.use).toBe('FilterFormBlockModel');
+    expect(_.castArray(filterReadback.tree.subModels?.actions || []).map((item: any) => item.use)).toEqual([
+      'FilterFormSubmitActionModel',
+    ]);
+    expect(_.castArray(filterReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(
+      filterField.wrapperUid,
+    );
+    expect(_.castArray(filterReadback.tree.subModels?.actions || [])[0]?.uid).toBe(filterAction.uid);
+
+    const fieldReadback = await getSurface(rootAgent, {
+      uid: clickableField.fieldUid,
+    });
+    expect(fieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(fieldReadback.tree.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
+    expect(fieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+    });
+    expect(fieldReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+
+    await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: clickableField.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {},
+        },
+      },
+    });
+
+    const clearedFieldReadback = await getSurface(rootAgent, {
+      uid: clickableField.fieldUid,
+    });
+    expect(clearedFieldReadback.tree.stepParams?.popupSettings).toEqual({});
+  });
+
+  it('should require explicit filter targets and persist default filter field props plus filterManager bindings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter target page',
+      tabTitle: 'Filter target tab',
+    });
+
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const filterCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterFormUid,
+          },
+        },
+      }),
+    );
+    const nicknameTargets = filterCatalog.fields
+      .filter((item: any) => item.key === 'nickname')
+      .map((item: any) => item.targetBlockUid);
+    expect(nicknameTargets).toEqual(expect.arrayContaining([tableUid, detailsUid]));
+    expect(filterCatalog.fields.find((item: any) => item.key === 'nickname')?.requiredInitParams).toEqual(
+      expect.arrayContaining(['fieldPath', 'defaultTargetUid']),
+    );
+
+    const missingTargetField = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: filterFormUid,
+        },
+        fieldPath: 'nickname',
+      },
+    });
+    expect(missingTargetField.status).toBe(500);
+
+    const bioFormField = await addField(rootAgent, createFormUid, 'bio');
+    const bioReadback = await getSurface(rootAgent, {
+      uid: bioFormField.fieldUid,
+    });
+    expect(bioReadback.tree.use).toBe('TextareaFieldModel');
+    expect(bioReadback.tree.props).toMatchObject({
+      autoSize: {
+        minRows: 3,
+        maxRows: 10,
+      },
+    });
+
+    const bioFilterField = await addField(rootAgent, filterFormUid, 'bio', {
+      defaultTargetUid: tableUid,
+    });
+    const departmentField = await addField(rootAgent, filterFormUid, 'department', {
+      defaultTargetUid: tableUid,
+    });
+    const isManagerField = await addField(rootAgent, filterFormUid, 'isManager', {
+      defaultTargetUid: detailsUid,
+    });
+
+    const bioFilterReadback = await getSurface(rootAgent, {
+      uid: bioFilterField.fieldUid,
+    });
+    expect(bioFilterReadback.tree.use).toBe('InputFieldModel');
+
+    const departmentReadback = await getSurface(rootAgent, {
+      uid: departmentField.fieldUid,
+    });
+    expect(departmentReadback.tree.use).toBe('FilterFormRecordSelectFieldModel');
+    expect(departmentReadback.tree.props).toMatchObject({
+      allowMultiple: true,
+      multiple: true,
+      quickCreate: 'none',
+    });
+    const departmentWrapperReadback = await getSurface(rootAgent, {
+      uid: departmentField.wrapperUid,
+    });
+    expect(departmentField.defaultTargetUid).toBe(tableUid);
+    expect(departmentWrapperReadback.tree.stepParams?.filterFormItemSettings?.init?.defaultTargetUid).toBe(tableUid);
+
+    const checkboxReadback = await getSurface(rootAgent, {
+      uid: isManagerField.fieldUid,
+    });
+    expect(checkboxReadback.tree.use).toBe('SelectFieldModel');
+    expect(checkboxReadback.tree.props).toMatchObject({
+      allowClear: true,
+      multiple: false,
+    });
+    expect(checkboxReadback.tree.props?.options).toEqual([
+      { label: '{{t("Yes")}}', value: true },
+      { label: '{{t("No")}}', value: false },
+    ]);
+
+    const pageGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(pageGrid?.filterManager).toEqual(
+      expect.arrayContaining([
+        {
+          filterId: bioFilterField.wrapperUid,
+          targetId: tableUid,
+          filterPaths: ['bio'],
+        },
+        {
+          filterId: departmentField.wrapperUid,
+          targetId: tableUid,
+          filterPaths: ['department.id'],
+        },
+        {
+          filterId: isManagerField.wrapperUid,
+          targetId: detailsUid,
+          filterPaths: ['isManager'],
+        },
+      ]),
+    );
+
+    const updateFilterTarget = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: bioFilterField.wrapperUid,
+        },
+        stepParams: {
+          filterFormItemSettings: {
+            init: {
+              defaultTargetUid: detailsUid,
+            },
+          },
+        },
+      },
+    });
+    expect(updateFilterTarget.status).toBe(200);
+
+    const pageGridAfterTargetUpdate = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterTargetUpdate?.filterManager || []).find(
+        (item: any) => item.filterId === bioFilterField.wrapperUid,
+      ),
+    ).toMatchObject({
+      targetId: detailsUid,
+      filterPaths: ['bio'],
+    });
+
+    const updateFilterFieldFromInner = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: bioFilterField.fieldUid,
+        },
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+              fieldPath: 'nickname',
+            },
+          },
+        },
+      },
+    });
+    expect(updateFilterFieldFromInner.status).toBe(200);
+
+    const bioWrapperAfterInnerUpdate = await getSurface(rootAgent, {
+      uid: bioFilterField.wrapperUid,
+    });
+    const bioInnerAfterInnerUpdate = await getSurface(rootAgent, {
+      uid: bioFilterField.fieldUid,
+    });
+    expect(bioWrapperAfterInnerUpdate.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'nickname',
+    });
+    expect(bioInnerAfterInnerUpdate.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'nickname',
+    });
+    const pageGridAfterInnerFieldUpdate = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterInnerFieldUpdate?.filterManager || []).find(
+        (item: any) => item.filterId === bioFilterField.wrapperUid,
+      ),
+    ).toMatchObject({
+      targetId: detailsUid,
+      filterPaths: ['nickname'],
+    });
+
+    const updateFilterFieldFromWrapper = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: bioFilterField.wrapperUid,
+        },
+        stepParams: {
+          fieldSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+              fieldPath: 'status',
+            },
+          },
+        },
+      },
+    });
+    expect(updateFilterFieldFromWrapper.status).toBe(200);
+
+    const bioWrapperAfterWrapperUpdate = await getSurface(rootAgent, {
+      uid: bioFilterField.wrapperUid,
+    });
+    const bioInnerAfterWrapperUpdate = await getSurface(rootAgent, {
+      uid: bioFilterField.fieldUid,
+    });
+    expect(bioWrapperAfterWrapperUpdate.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'status',
+    });
+    expect(bioInnerAfterWrapperUpdate.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'status',
+    });
+    const pageGridAfterWrapperFieldUpdate = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterWrapperFieldUpdate?.filterManager || []).find(
+        (item: any) => item.filterId === bioFilterField.wrapperUid,
+      ),
+    ).toMatchObject({
+      targetId: detailsUid,
+      filterPaths: ['status'],
+    });
+
+    const applyFilterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const applyFilterForm = await flowRepo.findModelById(applyFilterFormUid, { includeAsyncNode: true });
+    const applyFilterGridUid = applyFilterForm?.subModels?.grid?.uid;
+    const applyFilterField = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: applyFilterGridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                clientKey: 'applied-filter',
+                use: 'FilterFormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'nickname',
+                    },
+                  },
+                  filterFormItemSettings: {
+                    init: {
+                      defaultTargetUid: detailsUid,
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'InputFieldModel',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'nickname',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyFilterField.status).toBe(200);
+    const appliedWrapperUid = applyFilterField.body.data.clientKeyToUid['applied-filter'];
+    expect(appliedWrapperUid).toBeTruthy();
+
+    const pageGridAfterApply = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterApply?.filterManager || []).find((item: any) => item.filterId === appliedWrapperUid),
+    ).toMatchObject({
+      targetId: detailsUid,
+      filterPaths: ['nickname'],
+    });
+
+    const removeFilterField = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        uid: departmentField.wrapperUid,
+      },
+    });
+    expect(removeFilterField.status).toBe(200);
+
+    const pageGridAfterRemove = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(
+      _.castArray(pageGridAfterRemove?.filterManager || []).some(
+        (item: any) => item.filterId === departmentField.wrapperUid,
+      ),
+    ).toBe(false);
+  });
+
+  it('should keep field capability inference aligned across catalog addField and apply', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Field capability page',
+      tabTitle: 'Field capability tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const createFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+        },
+      }),
+    );
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+        },
+      }),
+    );
+    const filterCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterFormUid,
+          },
+        },
+      }),
+    );
+
+    const formNicknameField = createFormCatalog.fields.find((item: any) => item.key === 'nickname');
+    const formStatusField = createFormCatalog.fields.find((item: any) => item.key === 'status');
+    const tableNicknameField = tableCatalog.fields.find((item: any) => item.key === 'nickname');
+    const filterNicknameField = filterCatalog.fields.find(
+      (item: any) => item.key === 'nickname' && (item.targetBlockUid === tableUid || !item.targetBlockUid),
+    );
+
+    expect(formNicknameField).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'InputFieldModel',
+    });
+    expect(tableNicknameField).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(filterNicknameField).toMatchObject({
+      use: 'FilterFormItemModel',
+      fieldUse: 'InputFieldModel',
+    });
+
+    const explicitFormField = await addField(rootAgent, createFormUid, 'nickname', {
+      fieldUse: formNicknameField.fieldUse,
+    });
+    expect(explicitFormField.fieldUse).toBe(formNicknameField.fieldUse);
+
+    const explicitFormFieldReadback = await getSurface(rootAgent, {
+      uid: explicitFormField.fieldUid,
+    });
+    expect(explicitFormFieldReadback.tree.use).toBe(formNicknameField.fieldUse);
+
+    const mismatchedFieldUseRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        fieldPath: 'nickname',
+        fieldUse: tableNicknameField.fieldUse,
+      },
+    });
+    expect(mismatchedFieldUseRes.status).toBe(500);
+    expect(readErrorMessage(mismatchedFieldUseRes)).toContain(`does not match inferred fieldUse`);
+
+    const unknownFieldUseRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        fieldPath: 'nickname',
+        fieldUse: 'UnknownFieldModel',
+      },
+    });
+    expect(unknownFieldUseRes.status).toBe(500);
+    expect(readErrorMessage(unknownFieldUseRes)).toContain(`is not allowed under`);
+
+    const explicitFilterField = await addField(rootAgent, filterFormUid, 'nickname', {
+      defaultTargetUid: tableUid,
+      fieldUse: filterNicknameField.fieldUse,
+    });
+    expect(explicitFilterField.fieldUse).toBe(filterNicknameField.fieldUse);
+
+    const explicitFilterFieldReadback = await getSurface(rootAgent, {
+      uid: explicitFilterField.fieldUid,
+    });
+    expect(explicitFilterFieldReadback.tree.use).toBe(filterNicknameField.fieldUse);
+
+    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
+    const applyFieldRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: createForm?.subModels?.grid?.uid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                clientKey: 'catalog-form-field',
+                use: formStatusField.use,
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'status',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: formStatusField.fieldUse,
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'status',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyFieldRes.status).toBe(200);
+    expect(applyFieldRes.body.data.clientKeyToUid['catalog-form-field']).toBeTruthy();
+  });
+
+  it('should keep action visibility aligned between catalog and direct addAction', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Action visibility page',
+      tabTitle: 'Action visibility tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const createFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+        },
+      }),
+    );
+    const detailsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsUid,
+          },
+        },
+      }),
+    );
+    const filterFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterFormUid,
+          },
+        },
+      }),
+    );
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(expect.arrayContaining(['submit', 'js']));
+    expect(detailsCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['view', 'edit', 'popup', 'delete', 'updateRecord', 'js']),
+    );
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['submit', 'reset', 'js']),
+    );
+
+    const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
+    const detailsView = await addAction(rootAgent, detailsUid, 'view');
+    const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
+    const filterReset = await addAction(rootAgent, filterFormUid, 'reset');
+
+    expect((await getSurface(rootAgent, { uid: formSubmit.uid })).tree.use).toBe('FormSubmitActionModel');
+    expect((await getSurface(rootAgent, { uid: detailsView.uid })).tree.use).toBe('ViewActionModel');
+    expect((await getSurface(rootAgent, { uid: filterSubmit.uid })).tree.use).toBe('FilterFormSubmitActionModel');
+    expect((await getSurface(rootAgent, { uid: filterReset.uid })).tree.use).toBe('FilterFormResetActionModel');
+
+    const createFormDeleteRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        type: 'delete',
+      },
+    });
+    expect(createFormDeleteRes.status).toBe(500);
+    expect(readErrorMessage(createFormDeleteRes)).toContain(`is not allowed under 'CreateFormModel'`);
+
+    const filterFormViewRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: filterFormUid,
+        },
+        type: 'view',
+      },
+    });
+    expect(filterFormViewRes.status).toBe(500);
+    expect(readErrorMessage(filterFormViewRes)).toContain(`is not allowed under 'FilterFormBlockModel'`);
+
+    const tableSubmitRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'submit',
+      },
+    });
+    expect(tableSubmitRes.status).toBe(500);
+    expect(readErrorMessage(tableSubmitRes)).toContain(`is not allowed under 'TableBlockModel'`);
+  });
+
+  it('should expose js public capabilities consistently across catalog, direct APIs and configure', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'JS capability page',
+      tabTitle: 'JS capability tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
+    const jsBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'jsBlock', {});
+    const composedJsBlockRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.gridUid,
+          },
+          blocks: [
+            {
+              key: 'composedHero',
+              type: 'jsBlock',
+              settings: {
+                title: 'Composed hero',
+                description: 'Composed through flowSurfaces',
+                className: 'composed-hero',
+                version: '1.0.0',
+                code: "return { type: 'div', children: ['Composed hero'] };",
+              },
+            },
+          ],
+        },
+      }),
+    );
+    const composedJsBlockUid = composedJsBlockRes.blocks?.[0]?.uid;
+    expect(composedJsBlockUid).toBeTruthy();
+
+    const pageCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+        },
+      }),
+    );
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+        },
+      }),
+    );
+    const detailsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsUid,
+          },
+        },
+      }),
+    );
+    const createFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+        },
+      }),
+    );
+    const filterFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: filterFormUid,
+          },
+        },
+      }),
+    );
+    const actionPanelCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: actionPanelUid,
+          },
+        },
+      }),
+    );
+
+    expect(pageCatalog.blocks.map((item: any) => item.key)).toContain('jsBlock');
+    expect(tableCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'JSFieldModel',
+      renderer: 'js',
+    });
+    expect(tableCatalog.fields.find((item: any) => item.key === 'jsColumn')).toMatchObject({
+      use: 'JSColumnModel',
+      fieldUse: 'JSColumnModel',
+      type: 'jsColumn',
+    });
+    expect(createFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'JSEditableFieldModel',
+      renderer: 'js',
+    });
+    expect(createFormCatalog.fields.find((item: any) => item.key === 'jsItem')).toMatchObject({
+      use: 'JSItemModel',
+      fieldUse: 'JSItemModel',
+      type: 'jsItem',
+    });
+    expect(filterFormCatalog.fields.some((item: any) => item.renderer === 'js' || item.type === 'jsItem')).toBe(false);
+
+    expect(tableCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(detailsCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).toContain('js');
+    expect(actionPanelCatalog.actions.map((item: any) => item.key)).toEqual(['js']);
+
+    const table = await flowRepo.findModelById(tableUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    expect(actionsColumnUid).toBeTruthy();
+
+    const tableJsAction = await addAction(rootAgent, tableUid, 'js');
+    const rowJsAction = await addAction(rootAgent, actionsColumnUid, 'js');
+    const detailsJsAction = await addAction(rootAgent, detailsUid, 'js');
+    const formJsAction = await addAction(rootAgent, createFormUid, 'js');
+    const filterJsAction = await addAction(rootAgent, filterFormUid, 'js');
+    const panelJsAction = await addAction(rootAgent, actionPanelUid, 'js');
+
+    expect((await getSurface(rootAgent, { uid: tableJsAction.uid })).tree.use).toBe('JSCollectionActionModel');
+    expect((await getSurface(rootAgent, { uid: rowJsAction.uid })).tree.use).toBe('JSRecordActionModel');
+    expect((await getSurface(rootAgent, { uid: detailsJsAction.uid })).tree.use).toBe('JSRecordActionModel');
+    expect((await getSurface(rootAgent, { uid: formJsAction.uid })).tree.use).toBe('JSFormActionModel');
+    expect((await getSurface(rootAgent, { uid: filterJsAction.uid })).tree.use).toBe('FilterFormJSActionModel');
+    expect((await getSurface(rootAgent, { uid: panelJsAction.uid })).tree.use).toBe('JSActionModel');
+
+    const tableJsField = await addField(rootAgent, tableUid, 'nickname', {
+      renderer: 'js',
+    });
+    const detailsJsField = await addField(rootAgent, detailsUid, 'nickname', {
+      renderer: 'js',
+    });
+    const formJsField = await addField(rootAgent, createFormUid, 'nickname', {
+      renderer: 'js',
+    });
+    const jsColumn = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: tableUid,
+          },
+          type: 'jsColumn',
+          props: {
+            title: 'JS runtime column',
+          },
+        },
+      }),
+    );
+    const jsItem = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: createFormUid,
+          },
+          type: 'jsItem',
+          props: {
+            label: 'JS runtime item',
+          },
+        },
+      }),
+    );
+
+    expect(tableJsField.renderer).toBe('js');
+    expect(formJsField.renderer).toBe('js');
+    expect(jsColumn.type).toBe('jsColumn');
+    expect(jsItem.type).toBe('jsItem');
+    expect((await getSurface(rootAgent, { uid: tableJsField.fieldUid })).tree.use).toBe('JSFieldModel');
+    expect((await getSurface(rootAgent, { uid: detailsJsField.fieldUid })).tree.use).toBe('JSFieldModel');
+    expect((await getSurface(rootAgent, { uid: formJsField.fieldUid })).tree.use).toBe('JSEditableFieldModel');
+    expect((await getSurface(rootAgent, { uid: jsColumn.uid })).tree.use).toBe('JSColumnModel');
+    expect((await getSurface(rootAgent, { uid: jsItem.uid })).tree.use).toBe('JSItemModel');
+
+    const invalidFilterRenderer = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: filterFormUid,
+        },
+        fieldPath: 'nickname',
+        renderer: 'js',
+        defaultTargetUid: tableUid,
+      },
+    });
+    expect(invalidFilterRenderer.status).toBe(500);
+    expect(readErrorMessage(invalidFilterRenderer)).toContain(`renderer 'js' is not allowed`);
+
+    const invalidFormJsColumn = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        type: 'jsColumn',
+      },
+    });
+    expect(invalidFormJsColumn.status).toBe(500);
+    expect(readErrorMessage(invalidFormJsColumn)).toContain(`field type 'jsColumn'`);
+
+    const invalidTableJsItem = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        type: 'jsItem',
+      },
+    });
+    expect(invalidTableJsItem.status).toBe(500);
+    expect(readErrorMessage(invalidTableJsItem)).toContain(`field type 'jsItem'`);
+
+    const jsBlockConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsBlockUid,
+        },
+        changes: {
+          title: 'Users hero',
+          description: 'JS block summary',
+          className: 'users-hero',
+          version: '1.0.1',
+          code: "return { type: 'div', children: ['Users hero'] };",
+        },
+      },
+    });
+    expect(jsBlockConfigureRes.status).toBe(200);
+
+    const jsFieldConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tableJsField.wrapperUid,
+        },
+        changes: {
+          label: 'Nickname JS',
+          version: '1.0.1',
+          code: "return record.nickname?.toUpperCase?.() || '';",
+        },
+      },
+    });
+    expect(jsFieldConfigureRes.status).toBe(200);
+
+    const jsActionConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: panelJsAction.uid,
+        },
+        changes: {
+          title: 'Run diagnostics',
+          version: '1.0.1',
+          code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+        },
+      },
+    });
+    expect(jsActionConfigureRes.status).toBe(200);
+
+    const jsColumnConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsColumn.uid,
+        },
+        changes: {
+          title: 'JS column',
+          width: 280,
+          fixed: 'left',
+          version: '1.0.1',
+          code: 'return record.nickname;',
+        },
+      },
+    });
+    expect(jsColumnConfigureRes.status).toBe(200);
+
+    const jsItemConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: jsItem.uid,
+        },
+        changes: {
+          label: 'JS item',
+          showLabel: true,
+          labelWidth: 120,
+          version: '1.0.1',
+          code: 'return record.nickname;',
+        },
+      },
+    });
+    expect(jsItemConfigureRes.status).toBe(200);
+
+    const jsBlockReadback = await getSurface(rootAgent, { uid: jsBlockUid });
+    const composedJsBlockReadback = await getSurface(rootAgent, { uid: composedJsBlockUid });
+    const jsFieldReadback = await getSurface(rootAgent, { uid: tableJsField.fieldUid });
+    const jsActionReadback = await getSurface(rootAgent, { uid: panelJsAction.uid });
+    const jsColumnReadback = await getSurface(rootAgent, { uid: jsColumn.uid });
+    const jsItemReadback = await getSurface(rootAgent, { uid: jsItem.uid });
+
+    expect(jsBlockReadback.tree.use).toBe('JSBlockModel');
+    expect(composedJsBlockReadback.tree.use).toBe('JSBlockModel');
+    expect(composedJsBlockReadback.tree.decoratorProps).toMatchObject({
+      title: 'Composed hero',
+      description: 'Composed through flowSurfaces',
+      className: 'composed-hero',
+    });
+    expect(jsBlockReadback.tree.decoratorProps).toMatchObject({
+      title: 'Users hero',
+      description: 'JS block summary',
+      className: 'users-hero',
+    });
+    expect(jsBlockReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: "return { type: 'div', children: ['Users hero'] };",
+    });
+    expect(jsFieldReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: "return record.nickname?.toUpperCase?.() || '';",
+    });
+    expect(jsActionReadback.tree.stepParams?.clickSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'await ctx.runjs(\'console.log("diagnostics")\');',
+    });
+    expect(jsColumnReadback.tree.props).toMatchObject({
+      title: 'JS column',
+      width: 280,
+      fixed: 'left',
+    });
+    expect(jsColumnReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'return record.nickname;',
+    });
+    expect(jsItemReadback.tree.props).toMatchObject({
+      label: 'JS item',
+      showLabel: true,
+    });
+    expect(jsItemReadback.tree.decoratorProps).toMatchObject({
+      labelWidth: 120,
+    });
+    expect(jsItemReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
+      version: '1.0.1',
+      code: 'return record.nickname;',
+    });
+  });
+
+  it('should compile supported js public capabilities through apply', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'JS apply page',
+      tabTitle: 'JS apply tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const actionPanelUid = await addBlock(rootAgent, page.tabSchemaUid, 'actionPanel', {});
+
+    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
+    const formGridUid = createForm?.subModels?.grid?.uid;
+    expect(formGridUid).toBeTruthy();
+
+    const tableApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        spec: {
+          subModels: {
+            columns: [
+              {
+                clientKey: 'js-column',
+                use: 'JSColumnModel',
+                props: {
+                  title: 'JS apply column',
+                },
+                stepParams: {
+                  jsSettings: {
+                    runJs: {
+                      version: '1.0.0',
+                      code: 'return record.nickname;',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(tableApply.status).toBe(200);
+    const jsColumnUid = tableApply.body.data.clientKeyToUid['js-column'];
+    expect(jsColumnUid).toBeTruthy();
+    expect((await getSurface(rootAgent, { uid: jsColumnUid })).tree.use).toBe('JSColumnModel');
+
+    const formApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: formGridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                clientKey: 'js-item',
+                use: 'JSItemModel',
+                props: {
+                  label: 'JS apply item',
+                },
+                stepParams: {
+                  jsSettings: {
+                    runJs: {
+                      version: '1.0.0',
+                      code: 'return record.nickname;',
+                    },
+                  },
+                },
+              },
+              {
+                clientKey: 'js-bound-field',
+                use: 'FormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'nickname',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'JSEditableFieldModel',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'nickname',
+                        },
+                      },
+                      jsSettings: {
+                        runJs: {
+                          version: '1.0.0',
+                          code: 'return record.nickname;',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(formApply.status).toBe(200);
+    const jsItemUid = formApply.body.data.clientKeyToUid['js-item'];
+    const jsBoundWrapperUid = formApply.body.data.clientKeyToUid['js-bound-field'];
+    expect(jsItemUid).toBeTruthy();
+    expect(jsBoundWrapperUid).toBeTruthy();
+    expect((await getSurface(rootAgent, { uid: jsItemUid })).tree.use).toBe('JSItemModel');
+    const jsBoundFieldReadback = await getSurface(rootAgent, { uid: jsBoundWrapperUid });
+    expect(jsBoundFieldReadback.tree.use).toBe('FormItemModel');
+    expect(jsBoundFieldReadback.tree.subModels?.field?.use).toBe('JSEditableFieldModel');
+
+    const panelApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: actionPanelUid,
+        },
+        spec: {
+          subModels: {
+            actions: [
+              {
+                clientKey: 'js-panel-action',
+                use: 'JSActionModel',
+                props: {
+                  title: 'Run JS',
+                },
+                stepParams: {
+                  clickSettings: {
+                    runJs: {
+                      version: '1.0.0',
+                      code: 'return 1;',
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(panelApply.status).toBe(200);
+    const jsPanelActionUid = panelApply.body.data.clientKeyToUid['js-panel-action'];
+    expect(jsPanelActionUid).toBeTruthy();
+    expect((await getSurface(rootAgent, { uid: jsPanelActionUid })).tree.use).toBe('JSActionModel');
+  });
+
+  it('should fail apply compilation early for non-public block action and field capabilities', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Apply capability page',
+      tabTitle: 'Apply capability tab',
+    });
+
+    const unknownBlockApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                use: 'UnknownBlockModel',
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(unknownBlockApply.status).toBe(500);
+    expect(readErrorMessage(unknownBlockApply)).toContain(`block 'UnknownBlockModel' is not a public capability`);
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+
+    const unknownActionApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        spec: {
+          subModels: {
+            actions: [
+              {
+                use: 'UnknownActionModel',
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(unknownActionApply.status).toBe(500);
+    expect(readErrorMessage(unknownActionApply)).toContain(`action 'UnknownActionModel' is not a public capability`);
+
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createForm = await flowRepo.findModelById(createFormUid, { includeAsyncNode: true });
+    const formGridUid = createForm?.subModels?.grid?.uid;
+
+    const invalidWrapperApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: formGridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                use: 'TableColumnModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'nickname',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'InputFieldModel',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'nickname',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(invalidWrapperApply.status).toBe(500);
+    expect(readErrorMessage(invalidWrapperApply)).toContain(`field wrapper 'TableColumnModel'`);
+
+    const invalidFieldUseApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: formGridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                use: 'FormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'nickname',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'DisplayTextFieldModel',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'nickname',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(invalidFieldUseApply.status).toBe(500);
+    expect(readErrorMessage(invalidFieldUseApply)).toContain(`fieldUse 'DisplayTextFieldModel'`);
+  });
+
+  it('should support mutate ref chain rollback apply replace subtree and stable get readback', async () => {
+    const pageSchemaUid = 'rollback_page_schema_uid';
+    const tabSchemaUid = 'rollback_tab_schema_uid';
+    const rollbackRes = await rootAgent.resource('flowSurfaces').mutate({
+      values: {
+        atomic: true,
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid,
+              tabSchemaUid,
+              title: 'Rollback page',
+              tabTitle: 'Rollback tab',
+            },
+          },
+          {
+            opId: 'block',
+            type: 'addBlock',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+          {
+            type: 'addField',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'block.uid',
+                },
+              },
+              fieldPath: 'not_exists',
+            },
+          },
+        ],
+      },
+    });
+    expect(rollbackRes.status).toBe(500);
+    expect(
+      await routesRepo.findOne({
+        filter: {
+          schemaUid: pageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const page = await createPage(rootAgent, {
+      title: 'Apply page',
+      tabTitle: 'Apply tab',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
+    const gridUid = form?.subModels?.grid?.uid;
+
+    const applyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: gridUid,
+        },
+        spec: {
+          props: {
+            rows: {
+              row1: [['field-a']],
+            },
+            sizes: {
+              row1: [24],
+            },
+            rowOrder: ['row1'],
+          },
+          subModels: {
+            items: [
+              {
+                clientKey: 'field-a',
+                use: 'FormItemModel',
+                stepParams: {
+                  fieldSettings: {
+                    init: {
+                      dataSourceKey: 'main',
+                      collectionName: 'employees',
+                      fieldPath: 'nickname',
+                    },
+                  },
+                },
+                subModels: {
+                  field: {
+                    use: 'InputFieldModel',
+                    stepParams: {
+                      fieldSettings: {
+                        init: {
+                          dataSourceKey: 'main',
+                          collectionName: 'employees',
+                          fieldPath: 'nickname',
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyRes.status).toBe(200);
+    expect(applyRes.body.data.clientKeyToUid['field-a']).toBeTruthy();
+
+    const tabApplyTarget = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        spec: {
+          props: {
+            title: 'Apply tab updated',
+            icon: 'TableOutlined',
+          },
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: 'Apply tab updated',
+                icon: 'TableOutlined',
+                documentTitle: 'Apply tab document',
+              },
+            },
+          },
+          flowRegistry: {
+            beforeRenderApply: {
+              key: 'beforeRenderApply',
+              on: 'beforeRender',
+              steps: {},
+            },
+          },
+        },
+      },
+    });
+    expect(tabApplyTarget.status).toBe(200);
+
+    const firstReadback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    const secondReadback = await getSurface(rootAgent, {
+      uid: formUid,
+    });
+    const tabReadback = await getSurface(rootAgent, {
+      tabSchemaUid: page.tabSchemaUid,
+    });
+    const tabRoute = await routesRepo.findOne({
+      filter: {
+        schemaUid: page.tabSchemaUid,
+      },
+    });
+    expect(_.castArray(firstReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(
+      applyRes.body.data.clientKeyToUid['field-a'],
+    );
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Apply tab updated',
+      icon: 'TableOutlined',
+      documentTitle: 'Apply tab document',
+    });
+    expect(_.castArray(tabReadback.tree.subModels?.grid?.subModels?.items || [])[0]?.uid).toBeTruthy();
+    expect(tabRoute?.get('title')).toBe('Apply tab updated');
+    expect(tabRoute?.get('icon')).toBe('TableOutlined');
+    expect(tabRoute?.get('options').documentTitle).toBe('Apply tab document');
+    expect(tabRoute?.get('options').flowRegistry).toEqual({
+      beforeRenderApply: {
+        key: 'beforeRenderApply',
+        on: 'beforeRender',
+        steps: {},
+      },
+    });
+    expect(createFlowSurfaceFixture(firstReadback).canonical).toEqual(
+      createFlowSurfaceFixture(secondReadback).canonical,
+    );
+  });
+
+  it('should apply replace on page target with tab add update move remove and existing client key reuse', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Apply page root',
+      tabTitle: 'Main tab',
+      enableTabs: true,
+    });
+
+    const secondaryTab = await getData(
+      await rootAgent.resource('flowSurfaces').addTab({
+        values: {
+          target: {
+            pageSchemaUid: page.pageSchemaUid,
+          },
+          title: 'Secondary tab',
+          documentTitle: 'Secondary tab document',
+        },
+      }),
+    );
+
+    const pageApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        spec: {
+          props: {
+            title: 'Apply page root updated',
+            enableTabs: true,
+          },
+          stepParams: {
+            pageSettings: {
+              general: {
+                title: 'Apply page root updated',
+                enableTabs: true,
+              },
+            },
+          },
+          subModels: {
+            tabs: [
+              {
+                uid: secondaryTab.tabSchemaUid,
+                clientKey: 'existing-tab',
+                use: 'RootPageTabModel',
+                props: {
+                  title: 'Secondary first',
+                },
+                stepParams: {
+                  pageTabSettings: {
+                    tab: {
+                      title: 'Secondary first',
+                      documentTitle: 'Secondary first document',
+                    },
+                  },
+                },
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                  },
+                },
+              },
+              {
+                clientKey: 'new-tab',
+                use: 'RootPageTabModel',
+                props: {
+                  title: 'Fresh tab',
+                },
+                stepParams: {
+                  pageTabSettings: {
+                    tab: {
+                      title: 'Fresh tab',
+                      documentTitle: 'Fresh tab document',
+                    },
+                  },
+                },
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(pageApply.status).toBe(200);
+    expect(pageApply.body.data.clientKeyToUid['existing-tab']).toBe(secondaryTab.tabSchemaUid);
+    expect(pageApply.body.data.clientKeyToUid['new-tab']).toBeTruthy();
+
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(pageReadback.tree.props).toMatchObject({
+      title: 'Apply page root updated',
+      enableTabs: true,
+    });
+    expect(pageReadback.tabs).toHaveLength(2);
+    expect(pageReadback.tabs[0].schemaUid).toBe(secondaryTab.tabSchemaUid);
+    expect(pageReadback.tabs[1].schemaUid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
+    expect(pageReadback.tabs[0].title).toBe('Secondary first');
+    expect(pageReadback.tabs[1].title).toBe('Fresh tab');
+
+    expect(
+      await routesRepo.findOne({
+        filter: {
+          schemaUid: page.tabSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const pageApplyWithoutTabs = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        spec: {
+          props: {
+            title: 'Apply page wrapper only',
+            enableTabs: true,
+          },
+          stepParams: {
+            pageSettings: {
+              general: {
+                title: 'Apply page wrapper only',
+                enableTabs: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(pageApplyWithoutTabs.status).toBe(200);
+
+    const pageReadbackAfterWrapperOnly = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(pageReadbackAfterWrapperOnly.tabs).toHaveLength(2);
+    expect(pageReadbackAfterWrapperOnly.tabs[0].schemaUid).toBe(secondaryTab.tabSchemaUid);
+    expect(pageReadbackAfterWrapperOnly.tabs[1].schemaUid).toBe(pageApply.body.data.clientKeyToUid['new-tab']);
+  });
+
+  it('should apply replace on popup page target and keep popup subtree canonical', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup apply page',
+      tabTitle: 'Popup apply tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+
+    await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      },
+    });
+
+    const popupBefore = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupPageUid = popupBefore.tree.subModels?.page?.uid;
+    const popupTabUid = _.castArray(popupBefore.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid;
+    expect(popupPageUid).toBeTruthy();
+    expect(popupTabUid).toBeTruthy();
+
+    const popupApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: popupPageUid,
+        },
+        spec: {
+          props: {
+            title: 'Popup surface',
+            displayTitle: true,
+            enableTabs: true,
+          },
+          stepParams: {
+            pageSettings: {
+              general: {
+                title: 'Popup surface',
+                displayTitle: true,
+                enableTabs: true,
+              },
+            },
+          },
+          subModels: {
+            tabs: [
+              {
+                uid: popupTabUid,
+                use: 'ChildPageTabModel',
+                props: {
+                  title: 'Popup tab',
+                },
+                stepParams: {
+                  pageTabSettings: {
+                    tab: {
+                      title: 'Popup tab',
+                    },
+                  },
+                },
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                    props: {
+                      rows: {
+                        row1: [['popup-md']],
+                      },
+                      sizes: {
+                        row1: [24],
+                      },
+                      rowOrder: ['row1'],
+                    },
+                    subModels: {
+                      items: [
+                        {
+                          clientKey: 'popup-md',
+                          use: 'MarkdownBlockModel',
+                          props: {
+                            content: 'Popup markdown body',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(popupApply.status).toBe(200);
+    expect(popupApply.body.data.clientKeyToUid['popup-md']).toBeTruthy();
+
+    const popupAfter = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupPage = popupAfter.tree.subModels?.page;
+    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+    const popupGridItems = _.castArray(popupTab?.subModels?.grid?.subModels?.items || []);
+    expect(popupPage.props).toMatchObject({
+      title: 'Popup surface',
+      displayTitle: true,
+      enableTabs: true,
+    });
+    expect(popupTab.props).toMatchObject({
+      title: 'Popup tab',
+    });
+    expect(popupGridItems).toHaveLength(1);
+    expect(popupGridItems[0].use).toBe('MarkdownBlockModel');
+    expect(popupGridItems[0].props?.content).toBe('Popup markdown body');
+
+    const popupWrapperOnlyApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: popupPageUid,
+        },
+        spec: {
+          props: {
+            title: 'Popup surface wrapper only',
+            displayTitle: true,
+            enableTabs: true,
+          },
+          stepParams: {
+            pageSettings: {
+              general: {
+                title: 'Popup surface wrapper only',
+                displayTitle: true,
+                enableTabs: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(popupWrapperOnlyApply.status).toBe(200);
+
+    const popupAfterWrapperOnly = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupItemsAfterWrapperOnly = _.castArray(
+      popupAfterWrapperOnly.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    );
+    expect(popupItemsAfterWrapperOnly).toHaveLength(1);
+    expect(popupItemsAfterWrapperOnly[0].props?.content).toBe('Popup markdown body');
+  });
+
+  it('should apply replace on popup host target and bootstrap popup wrapper settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup host apply page',
+      tabTitle: 'Popup host apply tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+
+    const popupApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        spec: {
+          subModels: {
+            page: {
+              use: 'ChildPageModel',
+              props: {
+                title: 'Popup bootstrap',
+                displayTitle: true,
+                enableTabs: true,
+              },
+              stepParams: {
+                pageSettings: {
+                  general: {
+                    title: 'Popup bootstrap',
+                    documentTitle: 'Popup bootstrap document',
+                    displayTitle: true,
+                    enableTabs: true,
+                  },
+                },
+              },
+              flowRegistry: {
+                popupPageFlow: {
+                  key: 'popupPageFlow',
+                  on: 'beforeRender',
+                  steps: {},
+                },
+              },
+              subModels: {
+                tabs: [
+                  {
+                    use: 'ChildPageTabModel',
+                    props: {
+                      title: 'Bootstrap tab',
+                      icon: 'EyeOutlined',
+                    },
+                    stepParams: {
+                      pageTabSettings: {
+                        tab: {
+                          title: 'Bootstrap tab',
+                          icon: 'EyeOutlined',
+                          documentTitle: 'Popup bootstrap tab',
+                        },
+                      },
+                    },
+                    flowRegistry: {
+                      popupTabFlow: {
+                        key: 'popupTabFlow',
+                        on: 'beforeRender',
+                        steps: {},
+                      },
+                    },
+                    subModels: {
+                      grid: {
+                        use: 'BlockGridModel',
+                        flowRegistry: {
+                          popupGridFlow: {
+                            key: 'popupGridFlow',
+                            on: 'beforeRender',
+                            steps: {},
+                          },
+                        },
+                        subModels: {
+                          items: [
+                            {
+                              clientKey: 'popup-md',
+                              use: 'MarkdownBlockModel',
+                              props: {
+                                content: 'Popup bootstrap body',
+                              },
+                            },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(popupApply.status).toBe(200);
+    expect(popupApply.body.data.clientKeyToUid['popup-md']).toBeTruthy();
+
+    const popupReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupPage = popupReadback.tree.subModels?.page;
+    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+    const popupGrid = popupTab?.subModels?.grid;
+    const popupItems = _.castArray(popupGrid?.subModels?.items || []);
+    expect(popupPage?.props).toMatchObject({
+      title: 'Popup bootstrap',
+      displayTitle: true,
+      enableTabs: true,
+    });
+    expect(popupPage?.stepParams?.pageSettings?.general).toMatchObject({
+      title: 'Popup bootstrap',
+      documentTitle: 'Popup bootstrap document',
+      displayTitle: true,
+      enableTabs: true,
+    });
+    expect(popupPage?.flowRegistry).toMatchObject({
+      popupPageFlow: {
+        on: 'beforeRender',
+      },
+    });
+    expect(popupTab?.props).toMatchObject({
+      title: 'Bootstrap tab',
+      icon: 'EyeOutlined',
+    });
+    expect(popupTab?.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Bootstrap tab',
+      icon: 'EyeOutlined',
+      documentTitle: 'Popup bootstrap tab',
+    });
+    expect(popupTab?.flowRegistry).toMatchObject({
+      popupTabFlow: {
+        on: 'beforeRender',
+      },
+    });
+    expect(popupGrid?.flowRegistry).toMatchObject({
+      popupGridFlow: {
+        on: 'beforeRender',
+      },
+    });
+    expect(popupItems).toHaveLength(1);
+    expect(popupItems[0].props?.content).toBe('Popup bootstrap body');
+  });
+
+  it('should allow popup host apply bootstrap with an empty popup grid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup skeleton page',
+      tabTitle: 'Popup skeleton tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+
+    const popupApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        spec: {
+          subModels: {
+            page: {
+              use: 'ChildPageModel',
+              subModels: {
+                tabs: [
+                  {
+                    use: 'ChildPageTabModel',
+                    subModels: {
+                      grid: {
+                        use: 'BlockGridModel',
+                        subModels: {
+                          items: [],
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(popupApply.status).toBe(200);
+
+    const popupReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupPage = popupReadback.tree.subModels?.page;
+    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+    const popupGrid = popupTab?.subModels?.grid;
+    const popupItems = _.castArray(popupGrid?.subModels?.items || []);
+    expect(popupPage?.use).toBe('ChildPageModel');
+    expect(popupTab?.use).toBe('ChildPageTabModel');
+    expect(popupGrid?.use).toBe('BlockGridModel');
+    expect(popupItems).toHaveLength(0);
+    expect(popupGrid?.props).toMatchObject({
+      rows: {},
+      sizes: {},
+      rowOrder: [],
+    });
+  });
+
+  it('should preserve existing duplicate same-use blocks when apply matches by sibling order', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Duplicate markdown page',
+      tabTitle: 'Duplicate markdown tab',
+    });
+
+    const firstBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.gridUid,
+          },
+          type: 'markdown',
+          props: {
+            content: 'Alpha',
+          },
+        },
+      }),
+    );
+    const secondBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.gridUid,
+          },
+          type: 'markdown',
+          props: {
+            content: 'Beta',
+          },
+        },
+      }),
+    );
+
+    const applyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'Alpha updated',
+                },
+              },
+              {
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'Beta updated',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyRes.status).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.gridUid,
+    });
+    const items = _.castArray(readback.tree.subModels?.items || []);
+    expect(items).toHaveLength(2);
+    expect(items[0].uid).toBe(firstBlock.uid);
+    expect(items[1].uid).toBe(secondBlock.uid);
+    expect(items[0].props?.content).toBe('Alpha updated');
+    expect(items[1].props?.content).toBe('Beta updated');
+  });
+
+  it('should preserve existing duplicate same-use actions when apply matches by sibling order', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Duplicate popup action page',
+      tabTitle: 'Duplicate popup action tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+
+    const firstPopup = await addAction(rootAgent, actionsColumnUid, 'popup', {
+      props: {
+        title: 'Popup A',
+      },
+    });
+    const secondPopup = await addAction(rootAgent, actionsColumnUid, 'popup', {
+      props: {
+        title: 'Popup B',
+      },
+    });
+
+    const applyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        spec: {
+          subModels: {
+            actions: [
+              {
+                use: 'PopupCollectionActionModel',
+                props: {
+                  title: 'Popup A updated',
+                },
+              },
+              {
+                use: 'PopupCollectionActionModel',
+                props: {
+                  title: 'Popup B updated',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyRes.status).toBe(200);
+
+    const readback = await getSurface(rootAgent, {
+      uid: actionsColumnUid,
+    });
+    const actions = _.castArray(readback.tree.subModels?.actions || []);
+    expect(actions).toHaveLength(2);
+    expect(actions[0].uid).toBe(firstPopup.uid);
+    expect(actions[1].uid).toBe(secondPopup.uid);
+    expect(actions[0].props?.title).toBe('Popup A updated');
+    expect(actions[1].props?.title).toBe('Popup B updated');
+  });
+
+  it('should reject ambiguous duplicate same-use reuse when apply cannot identify which node to keep', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Duplicate ambiguity page',
+      tabTitle: 'Duplicate ambiguity tab',
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+
+    await addAction(rootAgent, actionsColumnUid, 'popup', {
+      props: {
+        title: 'Popup A',
+      },
+    });
+    await addAction(rootAgent, actionsColumnUid, 'popup', {
+      props: {
+        title: 'Popup B',
+      },
+    });
+
+    const applyRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        spec: {
+          subModels: {
+            actions: [
+              {
+                use: 'PopupCollectionActionModel',
+                props: {
+                  title: 'Only one popup remains',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(applyRes.status).toBe(500);
+  });
+
+  it('should auto-generate deterministic layout for apply replace without explicit grid layout', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Auto layout page',
+      tabTitle: 'Auto layout tab',
+    });
+
+    const createRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                clientKey: 'md-a',
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'A',
+                },
+              },
+              {
+                clientKey: 'md-b',
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'B',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(createRes.status).toBe(200);
+
+    const firstUid = createRes.body.data.clientKeyToUid['md-a'];
+    const secondUid = createRes.body.data.clientKeyToUid['md-b'];
+    const firstReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(firstReadback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1', 'autoRow2'],
+      rows: {
+        autoRow1: [[firstUid]],
+        autoRow2: [[secondUid]],
+      },
+      sizes: {
+        autoRow1: [24],
+        autoRow2: [24],
+      },
+    });
+
+    const customLayout = await rootAgent.resource('flowSurfaces').setLayout({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        rows: {
+          legacyRow: [[firstUid], [secondUid]],
+        },
+        sizes: {
+          legacyRow: [12, 12],
+        },
+        rowOrder: ['legacyRow'],
+      },
+    });
+    expect(customLayout.status).toBe(200);
+
+    const resetLegacyLayoutRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                uid: firstUid,
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'A',
+                },
+              },
+              {
+                uid: secondUid,
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'B',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(resetLegacyLayoutRes.status).toBe(200);
+
+    const resetReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(resetReadback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1', 'autoRow2'],
+      rows: {
+        autoRow1: [[firstUid]],
+        autoRow2: [[secondUid]],
+      },
+      sizes: {
+        autoRow1: [24],
+        autoRow2: [24],
+      },
+    });
+
+    const reorderRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                uid: secondUid,
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'B updated',
+                },
+              },
+              {
+                uid: firstUid,
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'A updated',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(reorderRes.status).toBe(200);
+
+    const secondReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(secondReadback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1', 'autoRow2'],
+      rows: {
+        autoRow1: [[secondUid]],
+        autoRow2: [[firstUid]],
+      },
+      sizes: {
+        autoRow1: [24],
+        autoRow2: [24],
+      },
+    });
+
+    const removeRes = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        spec: {
+          subModels: {
+            items: [
+              {
+                uid: secondUid,
+                use: 'MarkdownBlockModel',
+                props: {
+                  content: 'Only B remains',
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(removeRes.status).toBe(200);
+
+    const thirdReadback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(thirdReadback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1'],
+      rows: {
+        autoRow1: [[secondUid]],
+      },
+      sizes: {
+        autoRow1: [24],
+      },
+    });
+
+    const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
+    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
+      (column: any) => column.use === 'TableActionsColumnModel',
+    )?.uid;
+    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        type: 'markdown',
+        props: {
+          content: 'Bootstrap popup',
+        },
+      },
+    });
+    const popupHost = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    const popupPageUid = popupHost.tree.subModels?.page?.uid;
+    const popupTabUid = _.castArray(popupHost.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid;
+
+    const popupApply = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: popupPageUid,
+        },
+        spec: {
+          subModels: {
+            tabs: [
+              {
+                uid: popupTabUid,
+                use: 'ChildPageTabModel',
+                subModels: {
+                  grid: {
+                    use: 'BlockGridModel',
+                    subModels: {
+                      items: [
+                        {
+                          clientKey: 'popup-md',
+                          use: 'MarkdownBlockModel',
+                          props: {
+                            content: 'Popup auto layout',
+                          },
+                        },
+                      ],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+    expect(popupApply.status).toBe(200);
+
+    const popupReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    expect(
+      _.castArray(popupReadback.tree.subModels?.page?.subModels?.tabs || [])[0]?.subModels?.grid?.props,
+    ).toMatchObject({
+      rowOrder: ['autoRow1'],
+      sizes: {
+        autoRow1: [24],
+      },
+    });
+  });
+
+  it('should reject invalid settings paths events and layouts', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Validation page',
+      tabTitle: 'Validation tab',
+    });
+    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, formUid, 'nickname');
+    const form = await flowRepo.findModelById(formUid, { includeAsyncNode: true });
+    const gridUid = form?.subModels?.grid?.uid;
+
+    const invalidSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          forbiddenSettings: {
+            foo: 'bar',
+          },
+        },
+      },
+    });
+    expect(invalidSettings.status).toBe(500);
+
+    const invalidNestedPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          displayFieldSettings: {
+            clickToOpen: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidNestedPath.status).toBe(500);
+
+    const invalidFieldSettingsPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          fieldSettings: {
+            editor: {
+              widget: 'legacy',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFieldSettingsPath.status).toBe(500);
+
+    const invalidWrapperFieldSettingsPathAgain = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.wrapperUid,
+        },
+        stepParams: {
+          fieldSettings: {
+            editor: {
+              widget: 'legacy-wrapper',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidWrapperFieldSettingsPathAgain.status).toBe(500);
+
+    const invalidWrapperFieldSettingsPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.wrapperUid,
+        },
+        stepParams: {
+          fieldSettings: {
+            editor: {
+              widget: 'legacy',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidWrapperFieldSettingsPath.status).toBe(500);
+
+    const invalidPopupSettingPath = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {
+            openView: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+    });
+    expect(invalidPopupSettingPath.status).toBe(500);
+
+    const invalidPageType = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        stepParams: {
+          pageSettings: {
+            general: {
+              displayTitle: 'not-a-boolean',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidPageType.status).toBe(500);
+
+    const invalidFieldType = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          displayFieldSettings: {
+            clickToOpen: {
+              clickToOpen: 'bad-value',
+            },
+          },
+        },
+      },
+    });
+    expect(invalidFieldType.status).toBe(500);
+
+    const configurePopupSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {
+            openView: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+              mode: 'drawer',
+            },
+          },
+        },
+      },
+    });
+    expect(configurePopupSettings.status).toBe(200);
+
+    const validPopupFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        flowRegistry: {
+          popupFlow: {
+            key: 'popupFlow',
+            on: {
+              eventName: 'click',
+              phase: 'beforeStep',
+              flowKey: 'popupSettings',
+              stepKey: 'openView',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validPopupFlow.status).toBe(200);
+
+    const clearPopupSettingsWithBoundFlow = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {},
+        },
+      },
+    });
+    expect(clearPopupSettingsWithBoundFlow.status).toBe(500);
+
+    const invalidFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        flowRegistry: {
+          badFlow: {
+            key: 'badFlow',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'popupSettings',
+              stepKey: 'missingStep',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(invalidFlow.status).toBe(500);
+
+    const clearPopupSettings = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        stepParams: {
+          popupSettings: {},
+        },
+        flowRegistry: {},
+      },
+    });
+    expect(clearPopupSettings.status).toBe(200);
+
+    const invalidClearedPopupFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        flowRegistry: {
+          clearedPopupFlow: {
+            key: 'clearedPopupFlow',
+            on: {
+              eventName: 'click',
+              phase: 'beforeStep',
+              flowKey: 'popupSettings',
+              stepKey: 'openView',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(invalidClearedPopupFlow.status).toBe(500);
+
+    const invalidResourceFlow = await rootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: formUid,
+        },
+        flowRegistry: {
+          badResourceFlow: {
+            key: 'badResourceFlow',
+            on: {
+              eventName: 'beforeRender',
+              phase: 'beforeStep',
+              flowKey: 'resourceSettings',
+              stepKey: 'init',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(invalidResourceFlow.status).toBe(500);
+
+    const invalidLayout = await rootAgent.resource('flowSurfaces').setLayout({
+      values: {
+        target: {
+          uid: gridUid,
+        },
+        rows: {
+          row1: [[field.wrapperUid]],
+        },
+        sizes: {},
+        rowOrder: ['row1'],
+      },
+    });
+    expect(invalidLayout.status).toBe(500);
+  });
+
+  it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Filter group contract page',
+      tabTitle: 'Filter group contract tab',
+    });
+
+    const createdTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'table',
+          resourceInit: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+          stepParams: {
+            tableSettings: {
+              dataScope: {
+                filter: {},
+              },
+            },
+          },
+        },
+      }),
+    );
+
+    let tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const configureEmptyFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: {},
+        },
+      },
+    });
+    expect(configureEmptyFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const configureNullFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: null,
+        },
+      },
+    });
+    expect(configureNullFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const directEmptyFilter = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        stepParams: {
+          tableSettings: {
+            dataScope: {
+              filter: {},
+            },
+          },
+        },
+      },
+    });
+    expect(directEmptyFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const applyEmptyFilter = await rootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        spec: {
+          stepParams: {
+            tableSettings: {
+              dataScope: {
+                filter: null,
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(applyEmptyFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [],
+    });
+
+    const validFilter = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        stepParams: {
+          tableSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [
+                  {
+                    path: 'nickname',
+                    operator: '$eq',
+                    value: 'alpha',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      },
+    });
+    expect(validFilter.status).toBe(200);
+
+    tableSurface = await getSurface(rootAgent, {
+      uid: createdTable.uid,
+    });
+    expect(tableSurface.tree.stepParams?.tableSettings?.dataScope?.filter).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'nickname',
+          operator: '$eq',
+          value: 'alpha',
+        },
+      ],
+    });
+
+    const invalidFilters = [
+      { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'logic and items' },
+      { case: 'missing-items', filter: { logic: '$and' }, reason: 'logic and items' },
+      { case: 'items-not-array', filter: { logic: '$and', items: {} }, reason: 'items must be an array' },
+      { case: 'invalid-logic', filter: { logic: '$xx', items: [] }, reason: "logic must be '$and' or '$or'" },
+      {
+        case: 'invalid-nested-item',
+        filter: { logic: '$and', items: [{ foo: 'bar' }] },
+        reason: 'Invalid filter item type',
+      },
+    ];
+
+    for (const testCase of invalidFilters) {
+      const response = await rootAgent.resource('flowSurfaces').updateSettings({
+        values: {
+          target: {
+            uid: createdTable.uid,
+          },
+          stepParams: {
+            tableSettings: {
+              dataScope: {
+                filter: testCase.filter,
+              },
+            },
+          },
+        },
+      });
+      expect({
+        case: testCase.case,
+        status: response.status,
+      }).toMatchObject({
+        case: testCase.case,
+        status: 500,
+      });
+      expect(readErrorMessage(response)).toContain('stepParams.tableSettings.dataScope.filter');
+      expect(readErrorMessage(response)).toContain('FilterGroup');
+      expect(readErrorMessage(response)).toContain('{"logic":"$and","items":[]}');
+      expect(readErrorMessage(response)).toContain(testCase.reason);
+    }
+  });
+});
+
+function getData(response: any) {
+  expect(response.status).toBe(200);
+  return response.body.data;
+}
+
+function readErrorMessage(response: any) {
+  return response?.body?.errors?.[0]?.message || '';
+}
+
+async function createPage(rootAgent: any, values: Record<string, any>) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').createPage({
+      values,
+    }),
+  );
+}
+
+async function getSurface(rootAgent: any, target: Record<string, any>) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').get({
+      values: {
+        target,
+      },
+    }),
+  );
+}
+
+async function addBlock(rootAgent: any, targetUid: string, type: string, resourceInit: Record<string, any>) {
+  const data = getData(
+    await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: targetUid,
+        },
+        type,
+        resourceInit,
+      },
+    }),
+  );
+  return data.uid;
+}
+
+async function addField(rootAgent: any, targetUid: string, fieldPath: string, extraValues: Record<string, any> = {}) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: targetUid,
+        },
+        fieldPath,
+        ...extraValues,
+      },
+    }),
+  );
+}
+
+async function addAction(rootAgent: any, targetUid: string, type: string, extraValues: Record<string, any> = {}) {
+  return getData(
+    await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: targetUid,
+        },
+        type,
+        ...extraValues,
+      },
+    }),
+  );
+}
+
+async function setupFixtureCollections(rootAgent: any, db?: Database) {
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'departments',
+      title: 'Departments',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'location', type: 'string', interface: 'input' },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'employees',
+      title: 'Employees',
+      fields: [
+        { name: 'nickname', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'input' },
+        { name: 'age', type: 'integer', interface: 'number' },
+        { name: 'bio', type: 'text', interface: 'textarea' },
+        { name: 'isManager', type: 'boolean', interface: 'checkbox' },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'department',
+      type: 'belongsTo',
+      target: 'departments',
+      foreignKey: 'departmentId',
+      interface: 'm2o',
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'tasks',
+      title: 'Tasks',
+      fields: [
+        { name: 'title', type: 'string', interface: 'input' },
+        { name: 'status', type: 'string', interface: 'input' },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'tasks').create({
+    values: {
+      name: 'employee',
+      type: 'belongsTo',
+      target: 'employees',
+      foreignKey: 'employeeId',
+      interface: 'm2o',
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'tasks',
+      type: 'hasMany',
+      target: 'tasks',
+      foreignKey: 'employeeId',
+      interface: 'o2m',
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'employee_logs',
+      title: 'Employee logs',
+      fields: [{ name: 'content', type: 'string', interface: 'textarea' }],
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employee_logs').create({
+    values: {
+      name: 'employee',
+      type: 'belongsTo',
+      target: 'employees',
+      foreignKey: 'employeeId',
+      interface: 'm2o',
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'logs',
+      type: 'hasMany',
+      target: 'employee_logs',
+      foreignKey: 'employeeId',
+      interface: 'o2m',
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'skills',
+      title: 'Skills',
+      fields: [{ name: 'label', type: 'string', interface: 'input' }],
+    },
+  });
+
+  await rootAgent.resource('collections').create({
+    values: {
+      name: 'employee_skills',
+      title: 'employee_skills',
+      fields: [
+        {
+          name: 'id',
+          type: 'integer',
+          autoIncrement: true,
+          primaryKey: true,
+          allowNull: false,
+          interface: 'id',
+        },
+      ],
+    },
+  });
+
+  await rootAgent.resource('collections.fields', 'employees').create({
+    values: {
+      name: 'skills',
+      type: 'belongsToMany',
+      target: 'skills',
+      through: 'employee_skills',
+      foreignKey: 'employeeId',
+      otherKey: 'skillId',
+      interface: 'm2m',
+    },
+  });
+
+  if (db) {
+    await waitForFixtureCollectionsReady(db, {
+      departments: ['title', 'location'],
+      employees: ['nickname', 'status', 'age', 'bio', 'isManager', 'departmentId'],
+      tasks: ['title', 'status', 'employeeId'],
+      employee_logs: ['content', 'employeeId'],
+      skills: ['label'],
+    });
+  }
+
+  const department = await rootAgent.resource('departments').create({
+    values: {
+      title: 'R&D',
+      location: 'Shenzhen',
+    },
+  });
+  const departmentId = department.body.data.id;
+
+  const employee = await rootAgent.resource('employees').create({
+    values: {
+      nickname: 'Alice',
+      status: 'active',
+      age: 30,
+      departmentId,
+    },
+  });
+  const employeeId = employee.body.data.id;
+
+  await rootAgent.resource('tasks').create({
+    values: {
+      title: 'Prepare report',
+      status: 'todo',
+      employeeId,
+    },
+  });
+
+  await rootAgent.resource('employee_logs').create({
+    values: {
+      content: 'Initial log',
+      employeeId,
+    },
+  });
+
+  await rootAgent.resource('skills').create({
+    values: {
+      label: 'TypeScript',
+    },
+  });
+}
+
+async function waitForFixtureCollectionsReady(
+  db: Database,
+  requiredCollections: Record<string, string[]>,
+  timeoutMs = 15000,
+) {
+  const deadline = Date.now() + timeoutMs;
+  const queryInterface = db.sequelize.getQueryInterface();
+
+  while (Date.now() < deadline) {
+    let allReady = true;
+
+    for (const [collectionName, requiredColumns] of Object.entries(requiredCollections)) {
+      const collection = db.getCollection(collectionName);
+      const tableName = collection?.model?.getTableName?.() || collection?.name || collectionName;
+
+      try {
+        const columns = await queryInterface.describeTable(tableName as any);
+        const missingColumns = requiredColumns.filter((column) => !columns?.[column]);
+        if (missingColumns.length) {
+          allReady = false;
+          break;
+        }
+      } catch {
+        allReady = false;
+        break;
+      }
+    }
+
+    if (allReady) {
+      return;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+
+  throw new Error(`Fixture collections are not ready: ${Object.keys(requiredCollections).join(', ')}`);
+}
+
+describe('flowSurfaces contract precision isolated', () => {
+  let isolatedApp: MockServer;
+  let isolatedDb: Database;
+  let isolatedRootAgent: any;
+
+  beforeAll(async () => {
+    isolatedApp = await createFlowSurfacesMockServer();
+    isolatedDb = isolatedApp.db;
+    isolatedRootAgent = await loginFlowSurfacesRootAgent(isolatedApp);
+    await setupFixtureCollections(isolatedRootAgent, isolatedDb);
+  }, 120000);
+
+  afterAll(async () => {
+    if (isolatedApp) {
+      await isolatedApp.destroy();
+    }
+  });
+
+  it('should expose grouped path-level contracts for core collection blocks in an isolated suite', async () => {
+    const page = await createPage(isolatedRootAgent, {
+      title: 'Isolated contract page',
+      tabTitle: 'Isolated contract tab',
+    });
+
+    const cases = [
+      {
+        block: 'table',
+        type: 'table',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'tableSettings'],
+        groupKey: 'tableSettings',
+        expectedPaths: ['quickEdit.editable', 'dataScope.filter', 'defaultSorting.sort', 'dragSort.dragSort'],
+        forbiddenPaths: ['quickEdit', 'quickEdit.*', 'dataScope', 'dataScope.*', 'defaultSorting', 'defaultSorting.*'],
+      },
+      {
+        block: 'create-form',
+        type: 'createForm',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
+        groupKey: 'formModelSettings',
+        expectedPaths: ['layout.layout', 'assignRules.value'],
+        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
+        eventOnlyGroupKey: 'formSettings',
+        eventOnlyAllowedPaths: [],
+        eventOnlySteps: ['init', 'refresh'],
+      },
+      {
+        block: 'edit-form',
+        type: 'editForm',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings', 'formSettings'],
+        groupKey: 'formModelSettings',
+        expectedPaths: ['layout.layout', 'assignRules.value'],
+        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
+        eventOnlyGroupKey: 'formSettings',
+        eventOnlyAllowedPaths: ['dataScope.filter'],
+        eventOnlySteps: ['init', 'dataScope', 'refresh'],
+      },
+      {
+        block: 'form',
+        type: 'form',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'formModelSettings', 'eventSettings'],
+        groupKey: 'formModelSettings',
+        expectedPaths: ['layout.layout', 'assignRules.value'],
+        forbiddenPaths: ['layout', 'layout.*', 'assignRules', 'assignRules.*'],
+        missingGroupKey: 'formSettings',
+      },
+      {
+        block: 'details',
+        type: 'details',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'detailsSettings'],
+        groupKey: 'detailsSettings',
+        expectedPaths: ['layout.layout', 'dataScope.filter', 'defaultSorting.sort', 'linkageRules.value'],
+        forbiddenPaths: [
+          'layout.*',
+          'dataScope',
+          'dataScope.*',
+          'defaultSorting',
+          'defaultSorting.*',
+          'linkageRules',
+          'linkageRules.*',
+        ],
+      },
+      {
+        block: 'filter-form',
+        type: 'filterForm',
+        resourceInit: { dataSourceKey: 'main', collectionName: 'employees' },
+        expectedGroups: ['resourceSettings', 'formFilterBlockModelSettings'],
+        groupKey: 'formFilterBlockModelSettings',
+        expectedPaths: ['layout.layout', 'defaultValues.value'],
+        forbiddenPaths: ['layout', 'layout.*', 'defaultValues', 'defaultValues.*'],
+      },
+    ];
+
+    for (const testCase of cases) {
+      const uid = await addBlock(isolatedRootAgent, page.tabSchemaUid, testCase.type, testCase.resourceInit);
+      const catalog = getData(
+        await isolatedRootAgent.resource('flowSurfaces').catalog({
+          values: {
+            target: {
+              uid,
+            },
+          },
+        }),
+      );
+      const stepParamsContract = catalog.settingsContract?.stepParams;
+      const groupContract = stepParamsContract?.groups?.[testCase.groupKey];
+
+      expect({
+        block: testCase.block,
+        hasGroups: !!stepParamsContract?.groups,
+        allowedKeys: stepParamsContract?.allowedKeys,
+      }).toMatchObject({
+        block: testCase.block,
+        hasGroups: true,
+        allowedKeys: expect.arrayContaining(testCase.expectedGroups),
+      });
+
+      expect({
+        block: testCase.block,
+        allowedPaths: groupContract?.allowedPaths,
+      }).toMatchObject({
+        block: testCase.block,
+        allowedPaths: expect.arrayContaining(testCase.expectedPaths),
+      });
+
+      for (const forbiddenPath of testCase.forbiddenPaths) {
+        expect({
+          block: testCase.block,
+          allowedPaths: groupContract?.allowedPaths,
+        }).toMatchObject({
+          block: testCase.block,
+        });
+        expect(groupContract?.allowedPaths).not.toContain(forbiddenPath);
+      }
+
+      if (testCase.eventOnlyGroupKey) {
+        expect({
+          block: testCase.block,
+          allowedPaths: stepParamsContract?.groups?.[testCase.eventOnlyGroupKey]?.allowedPaths,
+          eventBindingSteps: stepParamsContract?.groups?.[testCase.eventOnlyGroupKey]?.eventBindingSteps,
+        }).toMatchObject({
+          block: testCase.block,
+          allowedPaths: testCase.eventOnlyAllowedPaths,
+          eventBindingSteps: expect.arrayContaining(testCase.eventOnlySteps),
+        });
+      }
+
+      if (testCase.missingGroupKey) {
+        expect(stepParamsContract?.groups?.[testCase.missingGroupKey]).toBeUndefined();
+      }
+    }
+  });
+
+  it('should reject invalid nested paths and event-only writes in an isolated suite', async () => {
+    const page = await createPage(isolatedRootAgent, {
+      title: 'Isolated validation page',
+      tabTitle: 'Isolated validation tab',
+    });
+
+    const tableUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const editFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(isolatedRootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const validCases = [
+      {
+        block: 'table',
+        uid: tableUid,
+        stepParams: {
+          tableSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            defaultSorting: {
+              sort: [],
+            },
+          },
+        },
+      },
+      {
+        block: 'create-form',
+        uid: createFormUid,
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+      {
+        block: 'edit-form',
+        uid: editFormUid,
+        stepParams: {
+          formModelSettings: {
+            assignRules: {
+              value: [],
+            },
+          },
+          eventSettings: {
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+      {
+        block: 'details',
+        uid: detailsUid,
+        stepParams: {
+          detailsSettings: {
+            dataScope: {
+              filter: {
+                logic: '$and',
+                items: [],
+              },
+            },
+            defaultSorting: {
+              sort: [],
+            },
+            linkageRules: {
+              value: [],
+            },
+          },
+        },
+      },
+      {
+        block: 'filter-form',
+        uid: filterFormUid,
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: {
+              value: [],
+            },
+          },
+        },
+      },
+    ];
+
+    for (const testCase of validCases) {
+      const response = await isolatedRootAgent.resource('flowSurfaces').updateSettings({
+        values: {
+          target: {
+            uid: testCase.uid,
+          },
+          stepParams: testCase.stepParams,
+        },
+      });
+      expect({
+        block: testCase.block,
+        status: response.status,
+      }).toMatchObject({
+        block: testCase.block,
+        status: 200,
+      });
+    }
+
+    const validCreateFormEventBinding = await isolatedRootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        flowRegistry: {
+          createFormRefresh: {
+            key: 'createFormRefresh',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'refresh',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validCreateFormEventBinding.status).toBe(200);
+
+    const validEditFormEventBinding = await isolatedRootAgent.resource('flowSurfaces').setEventFlows({
+      values: {
+        target: {
+          uid: editFormUid,
+        },
+        flowRegistry: {
+          editFormInit: {
+            key: 'editFormInit',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'init',
+            },
+            steps: {},
+          },
+          editFormRefresh: {
+            key: 'editFormRefresh',
+            on: {
+              eventName: 'submit',
+              phase: 'beforeStep',
+              flowKey: 'formSettings',
+              stepKey: 'refresh',
+            },
+            steps: {},
+          },
+        },
+      },
+    });
+    expect(validEditFormEventBinding.status).toBe(200);
+
+    const invalidCases = [
+      {
+        block: 'table',
+        uid: tableUid,
+        stepParams: {
+          tableSettings: {
+            quickEdit: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+      {
+        block: 'create-form-layout',
+        uid: createFormUid,
+        stepParams: {
+          formModelSettings: {
+            layout: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+      {
+        block: 'create-form-event-only',
+        uid: createFormUid,
+        stepParams: {
+          formSettings: {
+            init: {
+              collectionName: 'employees',
+            },
+          },
+        },
+      },
+      {
+        block: 'edit-form-event-only',
+        uid: editFormUid,
+        stepParams: {
+          formSettings: {
+            dataScope: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+      {
+        block: 'details',
+        uid: detailsUid,
+        stepParams: {
+          detailsSettings: {
+            defaultSorting: {
+              unsupported: true,
+            },
+          },
+        },
+      },
+      {
+        block: 'filter-form',
+        uid: filterFormUid,
+        stepParams: {
+          formFilterBlockModelSettings: {
+            defaultValues: {
+              unsupported: [],
+            },
+          },
+        },
+      },
+    ];
+
+    for (const testCase of invalidCases) {
+      const response = await isolatedRootAgent.resource('flowSurfaces').updateSettings({
+        values: {
+          target: {
+            uid: testCase.uid,
+          },
+          stepParams: testCase.stepParams,
+        },
+      });
+      expect({
+        block: testCase.block,
+        status: response.status,
+      }).toMatchObject({
+        block: testCase.block,
+        status: 500,
+      });
+    }
+  });
+});
+
+describe('flowSurfaces API contract isolated', () => {
+  let isolatedApp: MockServer;
+  let isolatedDb: Database;
+  let isolatedFlowRepo: FlowModelRepository;
+  let isolatedRoutesRepo: Repository;
+  let isolatedRootAgent: any;
+
+  beforeAll(async () => {
+    isolatedApp = await createFlowSurfacesMockServer();
+    isolatedDb = isolatedApp.db;
+    isolatedFlowRepo = isolatedDb.getCollection('flowModels').repository as FlowModelRepository;
+    isolatedRoutesRepo = isolatedDb.getRepository('desktopRoutes');
+    isolatedRootAgent = await loginFlowSurfacesRootAgent(isolatedApp);
+    await setupFixtureCollections(isolatedRootAgent, isolatedDb);
+  }, 120000);
+
+  afterAll(async () => {
+    if (isolatedApp) {
+      await isolatedApp.destroy();
+    }
+  });
+
+  it('should default apply to replace and reject unsupported mode values in an isolated suite', async () => {
+    const page = await createPage(isolatedRootAgent, {
+      title: 'Isolated contract page',
+      tabTitle: 'Isolated contract tab',
+    });
+
+    const defaultApplyRes = await isolatedRootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        spec: {
+          props: {
+            title: 'Isolated tab default replace',
+            icon: 'TableOutlined',
+          },
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: 'Isolated tab default replace',
+                icon: 'TableOutlined',
+                documentTitle: 'Isolated tab default document',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect({
+      case: 'apply-default-mode',
+      status: defaultApplyRes.status,
+    }).toMatchObject({
+      case: 'apply-default-mode',
+      status: 200,
+    });
+
+    const explicitReplaceRes = await isolatedRootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        spec: {
+          props: {
+            title: 'Isolated tab explicit replace',
+            icon: 'AppstoreOutlined',
+          },
+          stepParams: {
+            pageTabSettings: {
+              tab: {
+                title: 'Isolated tab explicit replace',
+                icon: 'AppstoreOutlined',
+                documentTitle: 'Isolated tab explicit document',
+              },
+            },
+          },
+        },
+      },
+    });
+    expect({
+      case: 'apply-explicit-replace',
+      status: explicitReplaceRes.status,
+    }).toMatchObject({
+      case: 'apply-explicit-replace',
+      status: 200,
+    });
+
+    const invalidApplyRes = await isolatedRootAgent.resource('flowSurfaces').apply({
+      values: {
+        target: {
+          tabSchemaUid: page.tabSchemaUid,
+        },
+        mode: 'merge',
+        spec: {
+          props: {
+            title: 'Invalid apply mode',
+          },
+        },
+      },
+    });
+    expect({
+      case: 'apply-invalid-mode',
+      status: invalidApplyRes.status,
+      message: invalidApplyRes.body.errors?.[0]?.message,
+    }).toMatchObject({
+      case: 'apply-invalid-mode',
+      status: 500,
+      message: expect.stringContaining(`mode='replace'`),
+    });
+
+    const tabRoute = await isolatedRoutesRepo.findOne({
+      filter: {
+        schemaUid: page.tabSchemaUid,
+      },
+    });
+    const tabReadback = await getSurface(isolatedRootAgent, {
+      tabSchemaUid: page.tabSchemaUid,
+    });
+    expect(tabRoute?.get('title')).toBe('Isolated tab explicit replace');
+    expect(tabRoute?.get('icon')).toBe('AppstoreOutlined');
+    expect(tabRoute?.get('options')?.documentTitle).toBe('Isolated tab explicit document');
+    expect(tabReadback.tree.use).toBe('RootPageTabModel');
+    expect(tabReadback.tree.props).toMatchObject({
+      title: 'Isolated tab explicit replace',
+      icon: 'AppstoreOutlined',
+    });
+    expect(tabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Isolated tab explicit replace',
+      icon: 'AppstoreOutlined',
+      documentTitle: 'Isolated tab explicit document',
+    });
+    expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
+  });
+
+  it('should default mutate to atomic, reject atomic=false, and preserve page-tab semantics in an isolated suite', async () => {
+    const rollbackPageSchemaUid = 'isolated_atomic_page_schema_uid';
+    const rollbackTabSchemaUid = 'isolated_atomic_tab_schema_uid';
+    const rollbackRes = await isolatedRootAgent.resource('flowSurfaces').mutate({
+      values: {
+        ops: [
+          {
+            opId: 'page',
+            type: 'createPage',
+            values: {
+              pageSchemaUid: rollbackPageSchemaUid,
+              tabSchemaUid: rollbackTabSchemaUid,
+              title: 'Isolated atomic page',
+              tabTitle: 'Isolated atomic tab',
+            },
+          },
+          {
+            opId: 'block',
+            type: 'addBlock',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'page.tabSchemaUid',
+                },
+              },
+              type: 'details',
+              resourceInit: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+            },
+          },
+          {
+            type: 'addField',
+            values: {
+              target: {
+                uid: {
+                  $ref: 'block.uid',
+                },
+              },
+              fieldPath: 'not_exists',
+            },
+          },
+        ],
+      },
+    });
+    expect({
+      case: 'mutate-default-atomic-rollback',
+      status: rollbackRes.status,
+    }).toMatchObject({
+      case: 'mutate-default-atomic-rollback',
+      status: 500,
+    });
+    expect(
+      await isolatedRoutesRepo.findOne({
+        filter: {
+          schemaUid: rollbackPageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const atomicFalsePageSchemaUid = 'isolated_atomic_false_page_schema_uid';
+    const atomicFalseRes = await isolatedRootAgent.resource('flowSurfaces').mutate({
+      values: {
+        atomic: false,
+        ops: [
+          {
+            type: 'createPage',
+            values: {
+              pageSchemaUid: atomicFalsePageSchemaUid,
+              tabSchemaUid: 'isolated_atomic_false_tab_schema_uid',
+              title: 'Isolated atomic=false page',
+              tabTitle: 'Isolated atomic=false tab',
+            },
+          },
+        ],
+      },
+    });
+    expect({
+      case: 'mutate-atomic-false',
+      status: atomicFalseRes.status,
+      message: atomicFalseRes.body.errors?.[0]?.message,
+    }).toMatchObject({
+      case: 'mutate-atomic-false',
+      status: 500,
+      message: expect.stringContaining('atomic=true'),
+    });
+    expect(atomicFalseRes.body.errors?.[0]?.message).toContain('v1');
+    expect(
+      await isolatedRoutesRepo.findOne({
+        filter: {
+          schemaUid: atomicFalsePageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+
+    const created = await createPage(isolatedRootAgent, {
+      title: 'Isolated lifecycle page',
+      tabTitle: 'Isolated lifecycle tab',
+    });
+
+    const pageRoute = await isolatedRoutesRepo.findOne({
+      filter: {
+        schemaUid: created.pageSchemaUid,
+      },
+      appends: ['children'],
+    });
+    expect(pageRoute?.get('type')).toBe('flowPage');
+    expect(pageRoute?.get('children')).toHaveLength(1);
+
+    const pageModel = await isolatedFlowRepo.findModelByParentId(created.pageSchemaUid, {
+      subKey: 'page',
+      includeAsyncNode: true,
+    });
+    expect(pageModel?.use).toBe('RootPageModel');
+    expect(pageModel?.subModels?.tabs).toBeUndefined();
+
+    const initialReadback = await getSurface(isolatedRootAgent, {
+      pageSchemaUid: created.pageSchemaUid,
+    });
+    expect(initialReadback.tree.use).toBe('RootPageModel');
+    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.use).toBe('RootPageTabModel');
+    expect(_.castArray(initialReadback.tree.subModels?.tabs || [])[0]?.subModels?.grid?.use).toBe('BlockGridModel');
+
+    const addedTab = getData(
+      await isolatedRootAgent.resource('flowSurfaces').addTab({
+        values: {
+          target: {
+            pageSchemaUid: created.pageSchemaUid,
+          },
+          title: 'Isolated added tab',
+        },
+      }),
+    );
+    expect(
+      await isolatedFlowRepo.findModelById(addedTab.tabSchemaUid, {
+        includeAsyncNode: true,
+      }),
+    ).toMatchObject({
+      uid: addedTab.tabSchemaUid,
+      schema: {
+        use: 'RouteModel',
+      },
+    });
+    expect(
+      await isolatedFlowRepo.findModelByParentId(addedTab.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toMatchObject({
+      use: 'BlockGridModel',
+    });
+
+    await isolatedRootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        tabSchemaUid: addedTab.tabSchemaUid,
+      },
+    });
+    expect(
+      await isolatedRoutesRepo.findOne({
+        filter: {
+          schemaUid: addedTab.tabSchemaUid,
+        },
+      }),
+    ).toBeNull();
+    expect(
+      await isolatedFlowRepo.findModelByParentId(addedTab.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+
+    await isolatedRootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        pageSchemaUid: created.pageSchemaUid,
+      },
+    });
+    expect(
+      await isolatedRoutesRepo.findOne({
+        filter: {
+          schemaUid: created.pageSchemaUid,
+        },
+      }),
+    ).toBeNull();
+    expect(
+      await isolatedFlowRepo.findModelByParentId(created.pageSchemaUid, {
+        subKey: 'page',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+    expect(
+      await isolatedFlowRepo.findModelByParentId(created.tabSchemaUid, {
+        subKey: 'grid',
+        includeAsyncNode: true,
+      }),
+    ).toBeNull();
+  });
+});

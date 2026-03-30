@@ -1,0 +1,56 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+export const FLOW_SURFACES_ACTION_NAMES = [
+  'catalog',
+  'get',
+  'compose',
+  'configure',
+  'createPage',
+  'destroyPage',
+  'addTab',
+  'updateTab',
+  'moveTab',
+  'removeTab',
+  'addBlock',
+  'addField',
+  'addAction',
+  'updateSettings',
+  'setEventFlows',
+  'setLayout',
+  'moveNode',
+  'removeNode',
+  'mutate',
+  'apply',
+] as const;
+
+export type FlowSurfacesActionName = (typeof FLOW_SURFACES_ACTION_NAMES)[number];
+
+export const FLOW_SURFACES_ACTION_METHODS: Record<FlowSurfacesActionName, 'get' | 'post'> = {
+  catalog: 'post',
+  get: 'get',
+  compose: 'post',
+  configure: 'post',
+  createPage: 'post',
+  destroyPage: 'post',
+  addTab: 'post',
+  updateTab: 'post',
+  moveTab: 'post',
+  removeTab: 'post',
+  addBlock: 'post',
+  addField: 'post',
+  addAction: 'post',
+  updateSettings: 'post',
+  setEventFlows: 'post',
+  setLayout: 'post',
+  moveNode: 'post',
+  removeNode: 'post',
+  mutate: 'post',
+  apply: 'post',
+};

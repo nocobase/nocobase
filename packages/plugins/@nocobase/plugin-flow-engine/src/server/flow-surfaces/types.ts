@@ -1,0 +1,167 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 'flowRegistry';
+export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
+
+export type FlowSurfaceTarget = {
+  uid?: string;
+  pageSchemaUid?: string;
+  tabSchemaUid?: string;
+  routeId?: string | number;
+};
+
+export type FlowSurfaceContainerKind =
+  | 'page'
+  | 'tab'
+  | 'grid'
+  | 'block'
+  | 'field-container'
+  | 'action-container'
+  | 'node';
+
+export type FlowSurfaceDomainContract = {
+  allowedKeys: string[];
+  wildcard?: boolean;
+  mergeStrategy: FlowSurfaceMergeStrategy;
+  schema: Record<string, any>;
+  groups?: Record<string, FlowSurfaceDomainGroupContract>;
+};
+
+export type FlowSurfaceEventCapabilities = {
+  direct?: string[];
+  object?: string[];
+};
+
+export type FlowSurfaceDomainGroupContract = {
+  allowedPaths: string[];
+  clearable?: boolean;
+  mergeStrategy: FlowSurfaceMergeStrategy;
+  schema: Record<string, any>;
+  eventBindingSteps?: string[] | '*';
+  pathSchemas?: Record<string, Record<string, any>>;
+};
+
+export type FlowSurfaceEventBindingContract = {
+  stepKeys?: string[] | '*';
+};
+
+export type FlowSurfaceLayoutCapabilities = {
+  supported: boolean;
+};
+
+export type FlowSurfaceNodeContract = {
+  editableDomains: FlowSurfaceNodeDomain[];
+  domains: Partial<Record<FlowSurfaceNodeDomain, FlowSurfaceDomainContract>>;
+  eventCapabilities?: FlowSurfaceEventCapabilities;
+  layoutCapabilities?: FlowSurfaceLayoutCapabilities;
+  eventBindings?: Record<string, FlowSurfaceEventBindingContract>;
+};
+
+export type FlowSurfaceCatalogItem = {
+  key: string;
+  label: string;
+  use: string;
+  kind: 'page' | 'tab' | 'block' | 'field' | 'action';
+  scene?: string;
+  requiredInitParams?: string[];
+  allowedContainerUses?: string[];
+  editableDomains: FlowSurfaceNodeDomain[];
+  settingsSchema: Record<string, any>;
+  settingsContract?: Partial<Record<FlowSurfaceNodeDomain, FlowSurfaceDomainContract>>;
+  eventCapabilities?: FlowSurfaceEventCapabilities;
+  layoutCapabilities?: FlowSurfaceLayoutCapabilities;
+  createSupported?: boolean;
+};
+
+export type FlowSurfaceNodeSpec = {
+  uid?: string;
+  clientKey?: string;
+  use: string;
+  props?: Record<string, any>;
+  decoratorProps?: Record<string, any>;
+  stepParams?: Record<string, any>;
+  flowRegistry?: Record<string, any>;
+  subModels?: Record<string, FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[]>;
+};
+
+export type FlowSurfaceApplyMode = 'replace';
+export type FlowSurfaceComposeMode = 'append' | 'replace';
+
+export type FlowSurfaceApplySpec = {
+  props?: Record<string, any>;
+  decoratorProps?: Record<string, any>;
+  stepParams?: Record<string, any>;
+  flowRegistry?: Record<string, any>;
+  subModels?: Record<string, FlowSurfaceNodeSpec | FlowSurfaceNodeSpec[]>;
+};
+
+export type FlowSurfaceAtomicFlag = true;
+
+export type FlowSurfaceMutateValues = {
+  target?: FlowSurfaceTarget;
+  ops?: FlowSurfaceMutateOp[];
+  atomic?: true;
+};
+
+export type FlowSurfaceApplyValues = {
+  target: FlowSurfaceTarget;
+  spec: FlowSurfaceApplySpec;
+  mode?: 'replace';
+};
+
+export type FlowSurfaceComposeValues = {
+  target: FlowSurfaceTarget;
+  mode?: FlowSurfaceComposeMode;
+  blocks?: Array<Record<string, any>>;
+  layout?: Record<string, any>;
+};
+
+export type FlowSurfaceConfigureValues = {
+  target: FlowSurfaceTarget;
+  changes: Record<string, any>;
+};
+
+export type FlowSurfaceMutateOp = {
+  opId?: string;
+  type:
+    | 'createPage'
+    | 'destroyPage'
+    | 'addTab'
+    | 'updateTab'
+    | 'moveTab'
+    | 'removeTab'
+    | 'addBlock'
+    | 'addField'
+    | 'addAction'
+    | 'updateSettings'
+    | 'setEventFlows'
+    | 'setLayout'
+    | 'moveNode'
+    | 'removeNode';
+  target?: FlowSurfaceTarget;
+  values?: Record<string, any>;
+};
+
+export type FlowSurfaceResolvedTarget = {
+  target: FlowSurfaceTarget;
+  uid: string;
+  kind: FlowSurfaceContainerKind;
+  node?: any;
+  route?: any;
+  pageRoute?: any;
+  tabRoute?: any;
+  pageModel?: any;
+};
+
+export type FlowSurfaceExecutorContext = {
+  transaction?: any;
+  refs: Map<string, any>;
+  clientKeyToUid: Record<string, string>;
+};
