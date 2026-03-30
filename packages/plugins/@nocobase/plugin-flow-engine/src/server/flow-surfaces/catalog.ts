@@ -1605,9 +1605,6 @@ function inferEditableFieldUse(fieldInterface: string) {
 }
 
 function inferDisplayFieldUse(fieldInterface: string) {
-  if (['m2o', 'o2o', 'oho', 'obo', 'updatedBy', 'createdBy'].includes(fieldInterface)) {
-    return 'DisplaySubItemFieldModel';
-  }
   if (['m2m', 'o2m', 'mbm'].includes(fieldInterface)) {
     return 'DisplaySubTableFieldModel';
   }
@@ -1618,12 +1615,13 @@ function inferDisplayFieldUse(fieldInterface: string) {
     id: 'DisplayNumberFieldModel',
     snowflakeId: 'DisplayNumberFieldModel',
     json: 'DisplayJSONFieldModel',
-    select: 'DisplayEnumFieldModel',
-    multipleSelect: 'DisplayEnumFieldModel',
-    radioGroup: 'DisplayEnumFieldModel',
-    checkboxGroup: 'DisplayEnumFieldModel',
-    collection: 'DisplayEnumFieldModel',
-    tableoid: 'DisplayEnumFieldModel',
+    // Real frontend saved fixtures still read back these enum-like displays as text fields.
+    select: 'DisplayTextFieldModel',
+    multipleSelect: 'DisplayTextFieldModel',
+    radioGroup: 'DisplayTextFieldModel',
+    checkboxGroup: 'DisplayTextFieldModel',
+    collection: 'DisplayTextFieldModel',
+    tableoid: 'DisplayTextFieldModel',
     icon: 'DisplayIconFieldModel',
     checkbox: 'DisplayCheckboxFieldModel',
     password: 'DisplayPasswordFieldModel',

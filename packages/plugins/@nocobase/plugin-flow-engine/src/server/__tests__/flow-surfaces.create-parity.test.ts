@@ -910,7 +910,11 @@ async function setupCreateParityCollections(rootAgent: any) {
         { name: 'vaccinated', type: 'boolean', interface: 'checkbox' },
         { name: 'lastVisitAt', type: 'date', interface: 'datetime' },
         { name: 'notes', type: 'text', interface: 'textarea' },
+        { name: 'createdAt', type: 'date', interface: 'createdAt', field: 'createdAt' },
+        { name: 'updatedAt', type: 'date', interface: 'updatedAt', field: 'updatedAt' },
       ],
+      createdAt: true,
+      updatedAt: true,
     },
   });
 

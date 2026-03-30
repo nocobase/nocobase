@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createMockServer, MockServer } from '@nocobase/test';
+import { createMockServer, MockServer, type MockServerOptions } from '@nocobase/test';
 import { FLOW_SURFACES_TEST_PLUGINS } from './flow-surfaces.test-plugins';
 
-export async function createFlowSurfacesMockServer() {
+export async function createFlowSurfacesMockServer(options: MockServerOptions = {}) {
   return createMockServer({
     registerActions: true,
     acl: true,
@@ -18,6 +18,7 @@ export async function createFlowSurfacesMockServer() {
     beforeInstall: async (app) => {
       await app.cleanDb();
     },
+    ...options,
   });
 }
 

@@ -225,8 +225,9 @@ export function buildBlockTree(options: {
   ).use;
   const defaults = buildBlockDefaults(use);
   const baseStepParams = _.merge({}, _.cloneDeep(defaults.stepParams || {}), _.cloneDeep(options.stepParams || {}));
-  if (options.resourceInit) {
-    _.set(baseStepParams, ['resourceSettings', 'init'], options.resourceInit);
+  const normalizedResourceInit = _.pickBy(_.cloneDeep(options.resourceInit || {}), (value) => !_.isUndefined(value));
+  if (Object.keys(normalizedResourceInit).length) {
+    _.set(baseStepParams, ['resourceSettings', 'init'], normalizedResourceInit);
   }
 
   const model: FlowSurfaceNodeSpec = {

@@ -902,11 +902,13 @@ export class FlowSurfacesService {
     const target = await this.locator.resolve(values.target, options);
     const container = await this.surfaceContext.resolveFieldContainer(target.uid, options.transaction);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
+    const requestedStandaloneType =
+      typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
     const fieldCapability = resolveSupportedFieldCapability({
       containerUse: container.ownerUse,
-      requestedWrapperUse: container.wrapperUse,
+      requestedWrapperUse: requestedStandaloneType ? undefined : container.wrapperUse,
       requestedRenderer: values.renderer,
-      requestedType: values.type,
+      requestedType: requestedStandaloneType,
       allowUnresolvedFieldUse: true,
     });
 
@@ -2448,6 +2450,7 @@ export class FlowSurfacesService {
     const wrapperAllowed =
       current?.use === 'TableColumnModel'
         ? [
+            'label',
             'title',
             'tooltip',
             'width',
@@ -2515,7 +2518,16 @@ export class FlowSurfacesService {
       throw new Error(`flowSurfaces configure field wrapper does not support: ${unknownKeys.join(', ')}`);
     }
 
-    const wrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version']);
+    const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version']);
+    const wrapperChanges =
+      current?.use === 'TableColumnModel' &&
+      !hasOwnDefined(rawWrapperChanges, 'title') &&
+      hasOwnDefined(rawWrapperChanges, 'label')
+        ? {
+            ...rawWrapperChanges,
+            title: rawWrapperChanges.label,
+          }
+        : rawWrapperChanges;
     const innerUid = current?.subModels?.field?.uid;
     const innerField = innerUid
       ? current?.subModels?.field ||

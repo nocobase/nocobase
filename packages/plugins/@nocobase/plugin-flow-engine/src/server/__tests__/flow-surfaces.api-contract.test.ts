@@ -638,6 +638,7 @@ describe('flowSurfaces API contract', () => {
       'refresh',
       'bulkDelete',
       'link',
+      'js',
     ]);
 
     const createFormCatalog = getData(
@@ -649,7 +650,7 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit']);
+    expect(createFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit', 'js']);
 
     const detailsCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -666,6 +667,7 @@ describe('flowSurfaces API contract', () => {
       'popup',
       'delete',
       'updateRecord',
+      'js',
     ]);
 
     const filterFormCatalog = getData(
@@ -677,7 +679,7 @@ describe('flowSurfaces API contract', () => {
         },
       }),
     );
-    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit', 'reset']);
+    expect(filterFormCatalog.actions.map((item: any) => item.key)).toEqual(['submit', 'reset', 'js']);
   });
 
   it('should reject direct addAction types that are hidden by the public catalog of the target container', async () => {
@@ -1357,7 +1359,14 @@ describe('flowSurfaces API contract', () => {
             settings: {
               pageSize: 20,
               dataScope: {
-                nickname: 'alpha',
+                logic: '$and',
+                items: [
+                  {
+                    path: 'nickname',
+                    operator: '$eq',
+                    value: 'alpha',
+                  },
+                ],
               },
               sorting: [
                 {
@@ -1379,7 +1388,14 @@ describe('flowSurfaces API contract', () => {
               columns: 3,
               rowCount: 2,
               dataScope: {
-                username: 'grid-user',
+                logic: '$and',
+                items: [
+                  {
+                    path: 'username',
+                    operator: '$eq',
+                    value: 'grid-user',
+                  },
+                ],
               },
               sorting: [
                 {
@@ -1465,7 +1481,14 @@ describe('flowSurfaces API contract', () => {
       },
       dataScope: {
         filter: {
-          nickname: 'alpha',
+          logic: '$and',
+          items: [
+            {
+              path: 'nickname',
+              operator: '$eq',
+              value: 'alpha',
+            },
+          ],
         },
       },
       defaultSorting: {
@@ -1498,7 +1521,14 @@ describe('flowSurfaces API contract', () => {
       },
       dataScope: {
         filter: {
-          username: 'grid-user',
+          logic: '$and',
+          items: [
+            {
+              path: 'username',
+              operator: '$eq',
+              value: 'grid-user',
+            },
+          ],
         },
       },
       defaultSorting: {
@@ -1543,7 +1573,14 @@ describe('flowSurfaces API contract', () => {
             changes: {
               pageSize: 50,
               dataScope: {
-                nickname: 'beta',
+                logic: '$and',
+                items: [
+                  {
+                    path: 'nickname',
+                    operator: '$eq',
+                    value: 'beta',
+                  },
+                ],
               },
               sorting: [
                 {
@@ -1571,7 +1608,14 @@ describe('flowSurfaces API contract', () => {
               },
               rowCount: 4,
               dataScope: {
-                username: 'grid-updated',
+                logic: '$and',
+                items: [
+                  {
+                    path: 'username',
+                    operator: '$eq',
+                    value: 'grid-updated',
+                  },
+                ],
               },
               sorting: [
                 {
@@ -1653,7 +1697,14 @@ describe('flowSurfaces API contract', () => {
       },
       dataScope: {
         filter: {
-          nickname: 'beta',
+          logic: '$and',
+          items: [
+            {
+              path: 'nickname',
+              operator: '$eq',
+              value: 'beta',
+            },
+          ],
         },
       },
       defaultSorting: {
@@ -1683,7 +1734,14 @@ describe('flowSurfaces API contract', () => {
       },
       dataScope: {
         filter: {
-          username: 'grid-updated',
+          logic: '$and',
+          items: [
+            {
+              path: 'username',
+              operator: '$eq',
+              value: 'grid-updated',
+            },
+          ],
         },
       },
       defaultSorting: {
@@ -1986,7 +2044,7 @@ describe('flowSurfaces API contract', () => {
       resourceIndex: page.pageSchemaUid,
     });
     expect(removedSchemaRes.status || removedSchemaRes.statusCode).toBe(200);
-    expect(removedSchemaRes.body.data).toBeFalsy();
+    expect(removedSchemaRes.body.data || {}).toEqual({});
   });
 
   it('should normalize users.roles title display fields into association-value binding and keep popup context on the clicked role record', async () => {

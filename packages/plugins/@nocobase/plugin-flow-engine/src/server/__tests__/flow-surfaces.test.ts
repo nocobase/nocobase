@@ -16,6 +16,7 @@ import {
   buildPopupPageTree,
   buildSyntheticRootPageTabModel,
 } from '../flow-surfaces/builder';
+import { FlowSurfacesService } from '../flow-surfaces/service';
 import { createFlowSurfaceFixture, listFixtureAliases } from './flow-surfaces.fixtures';
 import { createFlowSurfacesMockServer, loginFlowSurfacesRootAgent } from './flow-surfaces.mock-server';
 
@@ -139,6 +140,10 @@ describe('flowSurfaces resource', () => {
     rootAgent = await loginFlowSurfacesRootAgent(app);
     await setupFixtureCollections(rootAgent, db);
   }, 120000);
+
+  beforeEach(async () => {
+    rootAgent = await loginFlowSurfacesRootAgent(app);
+  });
 
   afterAll(async () => {
     if (app) {
@@ -4788,14 +4793,20 @@ describe('flowSurfaces resource', () => {
   });
 
   it('should preserve existing duplicate same-use blocks when apply matches by sibling order', async () => {
-    const page = await createPage(rootAgent, {
-      title: 'Duplicate markdown page',
-      tabTitle: 'Duplicate markdown tab',
-    });
+    const service = new FlowSurfacesService(app.pm.get('flow-engine') as any);
+    const page = await service.transaction((transaction) =>
+      service.createPage(
+        {
+          title: 'Duplicate markdown page',
+          tabTitle: 'Duplicate markdown tab',
+        },
+        { transaction },
+      ),
+    );
 
-    const firstBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
+    const firstBlock = await service.transaction((transaction) =>
+      service.addBlock(
+        {
           target: {
             uid: page.gridUid,
           },
@@ -4804,11 +4815,12 @@ describe('flowSurfaces resource', () => {
             content: 'Alpha',
           },
         },
-      }),
+        { transaction },
+      ),
     );
-    const secondBlock = getData(
-      await rootAgent.resource('flowSurfaces').addBlock({
-        values: {
+    const secondBlock = await service.transaction((transaction) =>
+      service.addBlock(
+        {
           target: {
             uid: page.gridUid,
           },
@@ -4817,38 +4829,44 @@ describe('flowSurfaces resource', () => {
             content: 'Beta',
           },
         },
-      }),
+        { transaction },
+      ),
     );
 
-    const applyRes = await rootAgent.resource('flowSurfaces').apply({
-      values: {
-        target: {
-          uid: page.gridUid,
-        },
-        spec: {
-          subModels: {
-            items: [
-              {
-                use: 'MarkdownBlockModel',
-                props: {
-                  content: 'Alpha updated',
+    const applyRes = await service.transaction((transaction) =>
+      service.apply(
+        {
+          target: {
+            uid: page.gridUid,
+          },
+          spec: {
+            subModels: {
+              items: [
+                {
+                  use: 'MarkdownBlockModel',
+                  props: {
+                    content: 'Alpha updated',
+                  },
                 },
-              },
-              {
-                use: 'MarkdownBlockModel',
-                props: {
-                  content: 'Beta updated',
+                {
+                  use: 'MarkdownBlockModel',
+                  props: {
+                    content: 'Beta updated',
+                  },
                 },
-              },
-            ],
+              ],
+            },
           },
         },
-      },
-    });
-    expect(applyRes.status).toBe(200);
+        { transaction },
+      ),
+    );
+    expect(applyRes).toBeTruthy();
 
-    const readback = await getSurface(rootAgent, {
-      uid: page.gridUid,
+    const readback = await service.get({
+      target: {
+        uid: page.gridUid,
+      },
     });
     const items = _.castArray(readback.tree.subModels?.items || []);
     expect(items).toHaveLength(2);

@@ -637,10 +637,13 @@ function createFieldNode(
   }
 
   const innerField = normalizeChildren(desiredNode.subModels?.field)[0];
+  const requestedRenderer =
+    innerField?.use === 'JSFieldModel' || innerField?.use === 'JSEditableFieldModel' ? 'js' : undefined;
   const fieldCapability = resolveSupportedFieldCapability({
     containerUse: parentRef.use,
     requestedWrapperUse: desiredNode.use,
     requestedFieldUse: innerField?.use,
+    requestedRenderer,
     allowUnresolvedFieldUse: true,
   });
   const fieldInit =
@@ -664,6 +667,7 @@ function createFieldNode(
       associationPathName: fieldInit.associationPathName,
       dataSourceKey: fieldInit.dataSourceKey,
       collectionName: fieldInit.collectionName,
+      ...(requestedRenderer ? { renderer: requestedRenderer } : {}),
       ...(fieldCapability.fieldUse ? { fieldUse: fieldCapability.fieldUse } : {}),
       ...(defaultTargetUid ? { defaultTargetUid } : {}),
       wrapperProps: desiredNode.props,
