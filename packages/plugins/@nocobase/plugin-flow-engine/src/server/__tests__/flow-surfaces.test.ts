@@ -2341,6 +2341,143 @@ describe('flowSurfaces resource', () => {
     expect(invalidActionCreate.status).toBe(500);
   });
 
+  it('should support inline settings and popup on singular add APIs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Inline add page',
+      tabTitle: 'Inline add tab',
+    });
+
+    const addTableRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'table',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+        settings: {
+          title: 'Employees table',
+          pageSize: 50,
+        },
+      },
+    });
+    expect(addTableRes.status).toBe(200);
+    const table = getData(addTableRes);
+    const tableReadback = await getSurface(rootAgent, {
+      uid: table.uid,
+    });
+    expect(tableReadback.tree.props?.title).toBe('Employees table');
+    expect(tableReadback.tree.stepParams?.tableSettings?.pageSize?.pageSize).toBe(50);
+
+    const addFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        fieldPath: 'nickname',
+        settings: {
+          title: 'Employee nickname',
+          width: 220,
+        },
+      },
+    });
+    expect(addFieldRes.status).toBe(200);
+    const field = getData(addFieldRes);
+    const fieldWrapperReadback = await getSurface(rootAgent, {
+      uid: field.wrapperUid,
+    });
+    expect(fieldWrapperReadback.tree.props?.title).toBe('Employee nickname');
+    expect(fieldWrapperReadback.tree.props?.width).toBe(220);
+    expect(fieldWrapperReadback.tree.stepParams?.tableColumnSettings?.title?.title).toBe('Employee nickname');
+
+    const addActionRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addNew',
+        settings: {
+          title: 'Create employee',
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'form',
+              type: 'createForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+              actions: ['submit'],
+            },
+          ],
+        },
+      },
+    });
+    expect(addActionRes.status).toBe(200);
+    const addAction = getData(addActionRes);
+    expect(addAction.popupPageUid).toBeTruthy();
+    expect(addAction.popupTabUid).toBeTruthy();
+    expect(addAction.popupGridUid).toBeTruthy();
+    const addActionReadback = await getSurface(rootAgent, {
+      uid: addAction.uid,
+    });
+    expect(addActionReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('Create employee');
+    const addActionPopupPage = await getSurface(rootAgent, {
+      uid: addAction.popupPageUid,
+    });
+    expect(addActionPopupPage.tree.use).toBe('ChildPageModel');
+
+    const addRecordActionRes = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'view',
+        settings: {
+          title: 'View employee',
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+            mode: 'drawer',
+          },
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'details',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['nickname'],
+            },
+          ],
+        },
+      },
+    });
+    expect(addRecordActionRes.status).toBe(200);
+    const recordAction = getData(addRecordActionRes);
+    expect(recordAction.popupPageUid).toBeTruthy();
+    expect(recordAction.popupTabUid).toBeTruthy();
+    expect(recordAction.popupGridUid).toBeTruthy();
+    const recordActionReadback = await getSurface(rootAgent, {
+      uid: recordAction.uid,
+    });
+    expect(recordActionReadback.tree.stepParams?.buttonSettings?.general?.title).toBe('View employee');
+    expect(recordActionReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      mode: 'drawer',
+    });
+  });
+
   it('should enforce real wrapper and column props contracts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Wrapper contract page',

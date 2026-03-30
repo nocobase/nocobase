@@ -79,6 +79,9 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('`addFields`：');
     expect(content).toContain('`addActions`：');
     expect(content).toContain('`addRecordActions`：');
+    expect(content).toContain('direct `add*` 现在也支持 inline `settings`');
+    expect(content).toContain('`settings` 写法就是 `configure.changes` 的写法');
+    expect(content).toContain('popup-capable action 还可以直接带 `popup`');
     expect(content).toContain('`icon`、`enableHeader`');
     expect(content).toContain('`quickEdit`、`treeTable`、`defaultExpandAllRows`、`dragSort`、`dragSortBy`');
     expect(content).toContain('`colon`');

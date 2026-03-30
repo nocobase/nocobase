@@ -1518,6 +1518,206 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(unknownSimpleField)).toContain('does not support');
   });
 
+  it('should support inline settings and popup on direct add and batch add APIs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Direct add inline page',
+      tabTitle: 'Direct add inline tab',
+    });
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'table',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            settings: {
+              title: 'Employees table',
+              pageSize: 50,
+            },
+          },
+          {
+            key: 'notes',
+            type: 'markdown',
+            settings: {
+              content: '# Team notes',
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(2);
+    expect(addBlocksData.errorCount).toBe(0);
+    const tableUid = addBlocksData.blocks.find((item: any) => item.key === 'table')?.result?.uid;
+    expect(tableUid).toBeTruthy();
+
+    const addFieldsRes = await rootAgent.resource('flowSurfaces').addFields({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fields: [
+          {
+            key: 'nickname',
+            fieldPath: 'nickname',
+            settings: {
+              title: 'Employee nickname',
+              width: 220,
+            },
+          },
+          {
+            key: 'bad-field',
+            fieldPath: 'status',
+            settings: {
+              badSetting: true,
+            },
+          },
+        ],
+      },
+    });
+    expect(addFieldsRes.status).toBe(200);
+    const addFieldsData = getData(addFieldsRes);
+    expect(addFieldsData.successCount).toBe(1);
+    expect(addFieldsData.errorCount).toBe(1);
+    expect(addFieldsData.fields[0].ok).toBe(true);
+    expect(addFieldsData.fields[1].ok).toBe(false);
+    expect(addFieldsData.fields[1].error.message).toContain('settings invalid');
+    expect(addFieldsData.fields[1].error.message).toContain('supported keys');
+
+    const fieldReadback = await getSurface(rootAgent, {
+      uid: addFieldsData.fields[0].result.wrapperUid,
+    });
+    expect(fieldReadback.tree.props?.title).toBe('Employee nickname');
+    expect(fieldReadback.tree.props?.width).toBe(220);
+
+    const addActionsRes = await rootAgent.resource('flowSurfaces').addActions({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        actions: [
+          {
+            key: 'addNew',
+            type: 'addNew',
+            settings: {
+              title: 'Create employee',
+            },
+            popup: {
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'form',
+                  type: 'createForm',
+                  resource: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                  },
+                  fields: ['nickname'],
+                  actions: ['submit'],
+                },
+              ],
+            },
+          },
+          {
+            key: 'refresh-with-popup',
+            type: 'refresh',
+            popup: {
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'details',
+                  type: 'details',
+                  resource: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                  },
+                  fields: ['nickname'],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(addActionsRes.status).toBe(200);
+    const addActionsData = getData(addActionsRes);
+    expect(addActionsData.successCount).toBe(1);
+    expect(addActionsData.errorCount).toBe(1);
+    expect(addActionsData.actions[0].result.popupPageUid).toBeTruthy();
+    expect(addActionsData.actions[1].error.message).toContain(`type 'refresh' does not support popup`);
+
+    const addRecordActionsRes = await rootAgent.resource('flowSurfaces').addRecordActions({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        recordActions: [
+          {
+            key: 'view',
+            type: 'view',
+            settings: {
+              title: 'View employee',
+              openView: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+                mode: 'drawer',
+              },
+            },
+            popup: {
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'details',
+                  type: 'details',
+                  resource: {
+                    dataSourceKey: 'main',
+                    collectionName: 'employees',
+                  },
+                  fields: ['nickname'],
+                },
+              ],
+            },
+          },
+          {
+            key: 'delete',
+            type: 'delete',
+            settings: {
+              confirm: true,
+            },
+          },
+        ],
+      },
+    });
+    expect(addRecordActionsRes.status).toBe(200);
+    const addRecordActionsData = getData(addRecordActionsRes);
+    expect(addRecordActionsData.successCount).toBe(2);
+    expect(addRecordActionsData.errorCount).toBe(0);
+    expect(addRecordActionsData.recordActions[0].result.popupGridUid).toBeTruthy();
+
+    const addFieldRawUnknownRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fieldPath: 'status',
+        settings: {
+          badSetting: true,
+        },
+      },
+    });
+    expect(addFieldRawUnknownRes.status).toBe(500);
+    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('settings invalid');
+    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported keys');
+  });
+
   it('should compose and configure list grid-card and static blocks with simple semantic settings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose static page',

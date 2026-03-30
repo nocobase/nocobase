@@ -626,17 +626,11 @@ const examples = {
       uid: 'page-grid-uid',
     },
     type: 'jsBlock',
-    decoratorProps: {
+    settings: {
       title: 'Users banner',
       description: 'Custom JS rendered banner',
-    },
-    stepParams: {
-      jsSettings: {
-        runJs: {
-          version: '1.0.0',
-          code: "return { type: 'div', children: ['Users banner'] };",
-        },
-      },
+      version: '1.0.0',
+      code: "return { type: 'div', children: ['Users banner'] };",
     },
   },
   addField: {
@@ -645,6 +639,11 @@ const examples = {
     },
     fieldPath: 'nickname',
     renderer: 'js',
+    settings: {
+      label: 'Nickname (JS)',
+      code: 'return value?.toUpperCase?.() || value;',
+      version: '1.0.0',
+    },
   },
   addRelationField: {
     target: {
@@ -652,23 +651,21 @@ const examples = {
     },
     fieldPath: 'title',
     associationPathName: 'department',
+    settings: {
+      title: 'Department title',
+      width: 240,
+    },
   },
   addJsColumn: {
     target: {
       uid: 'table-block-uid',
     },
     type: 'jsColumn',
-    props: {
+    settings: {
       title: 'Runtime column',
       width: 240,
-    },
-    stepParams: {
-      jsSettings: {
-        runJs: {
-          version: '1.0.0',
-          code: 'return record.nickname;',
-        },
-      },
+      version: '1.0.0',
+      code: 'return record.nickname;',
     },
   },
   addJsItem: {
@@ -676,17 +673,11 @@ const examples = {
       uid: 'create-form-grid-uid',
     },
     type: 'jsItem',
-    props: {
+    settings: {
       label: 'Runtime item',
       showLabel: true,
-    },
-    stepParams: {
-      jsSettings: {
-        runJs: {
-          version: '1.0.0',
-          code: 'return record.nickname;',
-        },
-      },
+      version: '1.0.0',
+      code: 'return record.nickname;',
     },
   },
   addAction: {
@@ -694,8 +685,9 @@ const examples = {
       uid: 'filter-form-block-uid',
     },
     type: 'submit',
-    props: {
+    settings: {
       title: 'Apply filters',
+      confirm: false,
     },
   },
   addLinkAction: {
@@ -703,7 +695,7 @@ const examples = {
       uid: 'table-block-uid',
     },
     type: 'link',
-    props: {
+    settings: {
       title: 'Open docs',
     },
   },
@@ -712,17 +704,11 @@ const examples = {
       uid: 'action-panel-uid',
     },
     type: 'js',
-    props: {
+    settings: {
       title: 'Run JS',
       type: 'primary',
-    },
-    stepParams: {
-      clickSettings: {
-        runJs: {
-          version: '1.0.0',
-          code: 'return await ctx.runjs(\'console.log("hello")\');',
-        },
-      },
+      version: '1.0.0',
+      code: 'return await ctx.runjs(\'console.log("hello")\');',
     },
   },
   addRecordAction: {
@@ -730,8 +716,27 @@ const examples = {
       uid: 'table-block-uid',
     },
     type: 'view',
-    props: {
+    settings: {
       title: 'View user',
+      openView: {
+        dataSourceKey: 'main',
+        collectionName: 'users',
+        mode: 'drawer',
+      },
+    },
+    popup: {
+      mode: 'replace',
+      blocks: [
+        {
+          key: 'details',
+          type: 'details',
+          resource: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+          },
+          fields: ['username', 'nickname'],
+        },
+      ],
     },
   },
   addRecordJsAction: {
@@ -739,17 +744,11 @@ const examples = {
       uid: 'details-block-uid',
     },
     type: 'js',
-    props: {
+    settings: {
       title: 'Inspect record',
       type: 'default',
-    },
-    stepParams: {
-      clickSettings: {
-        runJs: {
-          version: '1.0.0',
-          code: 'return currentRecord?.id;',
-        },
-      },
+      version: '1.0.0',
+      code: 'return currentRecord?.id;',
     },
   },
   addBlocks: {
@@ -764,11 +763,15 @@ const examples = {
           dataSourceKey: 'main',
           collectionName: 'users',
         },
+        settings: {
+          title: 'Users table',
+          pageSize: 50,
+        },
       },
       {
         key: 'teamNotes',
         type: 'markdown',
-        props: {
+        settings: {
           content: '# Team notes',
         },
       },
@@ -782,11 +785,20 @@ const examples = {
       {
         key: 'username',
         fieldPath: 'username',
+        settings: {
+          title: 'User name',
+          width: 220,
+        },
       },
       {
         key: 'nickname',
         fieldPath: 'nickname',
         renderer: 'js',
+        settings: {
+          label: 'Nickname (JS)',
+          code: 'return value;',
+          version: '1.0.0',
+        },
       },
     ],
   },
@@ -798,14 +810,15 @@ const examples = {
       {
         key: 'submit',
         type: 'submit',
-        props: {
+        settings: {
           title: 'Search',
+          confirm: false,
         },
       },
       {
         key: 'reset',
         type: 'reset',
-        props: {
+        settings: {
           title: 'Reset filters',
         },
       },
@@ -819,21 +832,40 @@ const examples = {
       {
         key: 'view',
         type: 'view',
-        props: {
+        settings: {
           title: 'View user',
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'users',
+            mode: 'drawer',
+          },
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'details',
+              type: 'details',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username'],
+            },
+          ],
         },
       },
       {
         key: 'edit',
         type: 'edit',
-        props: {
+        settings: {
           title: 'Edit user',
         },
       },
       {
         key: 'delete',
         type: 'delete',
-        props: {
+        settings: {
           title: 'Delete user',
         },
       },
@@ -1182,7 +1214,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。',
+      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。创建后可直接用 `settings` 复用 `configure.changes` 的 simple changes 语义完成基础改配。',
     ),
     requestBody: {
       required: true,
@@ -1208,7 +1240,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。',
+      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。创建后可直接用 `settings` 复用 `configure.changes` 的 simple changes 语义。',
     ),
     requestBody: {
       required: true,
@@ -1242,7 +1274,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。',
+      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。创建后可直接用 `settings` 复用 `configure.changes`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
     ),
     requestBody: {
       required: true,
@@ -1272,7 +1304,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；服务端会自动解析 canonical record action container。',
+      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；服务端会自动解析 canonical record action container。创建后可直接用 `settings` 复用 `configure.changes`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
     ),
     requestBody: {
       required: true,
@@ -1298,7 +1330,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple blocks sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 block。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+      '在同一 target 下顺序批量创建 block。每项都可带 `settings`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
     ),
     requestBody: requestBody('FlowSurfaceAddBlocksRequest', examples.addBlocks),
     responses: responses('FlowSurfaceAddBlocksResult'),
@@ -1307,7 +1339,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 field。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+      '在同一 target 下顺序批量创建 field。每项都可带 `settings`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -1316,7 +1348,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple non-record actions sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建非 record action。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。',
+      '在同一 target 下顺序批量创建非 record action。每项都可带 `settings`，popup-capable action 还可带 `popup`。采用部分成功语义；record action 不属于这个入口，请改用 `addRecordActions`。',
     ),
     requestBody: requestBody('FlowSurfaceAddActionsRequest', examples.addActions),
     responses: responses('FlowSurfaceAddActionsResult'),
@@ -1325,7 +1357,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple record actions sequentially under the same record-capable owner target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。采用部分成功语义：单项失败不会回滚其它项。',
+      '在同一 target 下顺序批量创建 record action。target 使用 record-capable owner target，服务端会自动解析 canonical record action container。每项都可带 `settings`，popup-capable action 还可带 `popup`。采用部分成功语义：单项失败不会回滚其它项。',
     ),
     requestBody: requestBody('FlowSurfaceAddRecordActionsRequest', examples.addRecordActions),
     responses: responses('FlowSurfaceAddRecordActionsResult'),
@@ -2612,6 +2644,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2707,6 +2740,7 @@ const schemas = {
       },
       wrapperProps: ANY_OBJECT_SCHEMA,
       fieldProps: ANY_OBJECT_SCHEMA,
+      settings: ANY_OBJECT_SCHEMA,
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2771,6 +2805,8 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2793,6 +2829,18 @@ const schemas = {
       assignFormUid: {
         type: 'string',
       },
+      assignFormGridUid: {
+        type: 'string',
+      },
+      popupPageUid: {
+        type: 'string',
+      },
+      popupTabUid: {
+        type: 'string',
+      },
+      popupGridUid: {
+        type: 'string',
+      },
     },
     additionalProperties: false,
   },
@@ -2809,6 +2857,8 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2856,6 +2906,7 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2902,6 +2953,7 @@ const schemas = {
       },
       wrapperProps: ANY_OBJECT_SCHEMA,
       fieldProps: ANY_OBJECT_SCHEMA,
+      settings: ANY_OBJECT_SCHEMA,
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2922,6 +2974,8 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -2943,6 +2997,8 @@ const schemas = {
         type: 'string',
       },
       resourceInit: ref('FlowSurfaceResourceInit'),
+      settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,

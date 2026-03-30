@@ -318,8 +318,27 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
     "uid": "users-table-uid"
   },
   "type": "view",
-  "props": {
-    "title": "查看用户"
+  "settings": {
+    "title": "查看用户",
+    "openView": {
+      "dataSourceKey": "main",
+      "collectionName": "users",
+      "mode": "drawer"
+    }
+  },
+  "popup": {
+    "mode": "replace",
+    "blocks": [
+      {
+        "key": "details",
+        "type": "details",
+        "resource": {
+          "dataSourceKey": "main",
+          "collectionName": "users"
+        },
+        "fields": ["username", "nickname"]
+      }
+    ]
   }
 }
 ```
@@ -329,6 +348,9 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - 非 record action 走 `addAction`
 - record action 走 `addRecordAction`
 - table / details / list / gridCard 的 record action 不要再混进 `addAction`
+- direct `add*` 现在也支持 inline `settings`
+- 这里的 `settings` 写法就是 `configure.changes` 的写法
+- popup-capable action 还可以直接带 `popup`
 
 ## 示例 5.4：批量追加 block / field / action / record action
 
@@ -348,12 +370,16 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
       "resourceInit": {
         "dataSourceKey": "main",
         "collectionName": "users"
+      },
+      "settings": {
+        "title": "Users table",
+        "pageSize": 50
       }
     },
     {
       "key": "teamNotes",
       "type": "markdown",
-      "props": {
+      "settings": {
         "content": "# Team notes"
       }
     }
@@ -371,12 +397,21 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
   "fields": [
     {
       "key": "username",
-      "fieldPath": "username"
+      "fieldPath": "username",
+      "settings": {
+        "title": "User name",
+        "width": 220
+      }
     },
     {
       "key": "nickname",
       "fieldPath": "nickname",
-      "renderer": "js"
+      "renderer": "js",
+      "settings": {
+        "label": "Nickname (JS)",
+        "code": "return value;",
+        "version": "1.0.0"
+      }
     }
   ]
 }
@@ -393,14 +428,15 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
     {
       "key": "submit",
       "type": "submit",
-      "props": {
-        "title": "Search"
+      "settings": {
+        "title": "Search",
+        "confirm": false
       }
     },
     {
       "key": "reset",
       "type": "reset",
-      "props": {
+      "settings": {
         "title": "Reset filters"
       }
     }
@@ -419,21 +455,40 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
     {
       "key": "view",
       "type": "view",
-      "props": {
-        "title": "查看用户"
+      "settings": {
+        "title": "查看用户",
+        "openView": {
+          "dataSourceKey": "main",
+          "collectionName": "users",
+          "mode": "drawer"
+        }
+      },
+      "popup": {
+        "mode": "replace",
+        "blocks": [
+          {
+            "key": "details",
+            "type": "details",
+            "resource": {
+              "dataSourceKey": "main",
+              "collectionName": "users"
+            },
+            "fields": ["username"]
+          }
+        ]
       }
     },
     {
       "key": "edit",
       "type": "edit",
-      "props": {
+      "settings": {
         "title": "编辑用户"
       }
     },
     {
       "key": "delete",
       "type": "delete",
-      "props": {
+      "settings": {
         "title": "删除用户"
       }
     }

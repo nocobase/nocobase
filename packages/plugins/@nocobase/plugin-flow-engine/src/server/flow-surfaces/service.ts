@@ -297,17 +297,7 @@ export class FlowSurfacesService {
     }
 
     for (const block of createdBlocks) {
-      if (block.spec.settings && Object.keys(block.spec.settings).length) {
-        await this.configure(
-          {
-            target: {
-              uid: block.result.uid,
-            },
-            changes: block.spec.settings,
-          },
-          options,
-        );
-      }
+      await this.applyInlineNodeSettings('compose block', block.result.uid, block.spec.settings, options);
     }
 
     for (const block of createdBlocks) {
@@ -329,31 +319,7 @@ export class FlowSurfacesService {
           options,
         );
 
-        if (fieldSpec.settings && Object.keys(fieldSpec.settings).length) {
-          const { wrapperChanges, fieldChanges } = splitComposeFieldChanges(fieldSpec.settings);
-          if (Object.keys(wrapperChanges).length) {
-            await this.configure(
-              {
-                target: {
-                  uid: createdField.wrapperUid || createdField.uid,
-                },
-                changes: wrapperChanges,
-              },
-              options,
-            );
-          }
-          if (Object.keys(fieldChanges).length) {
-            await this.configure(
-              {
-                target: {
-                  uid: createdField.fieldUid || createdField.uid,
-                },
-                changes: fieldChanges,
-              },
-              options,
-            );
-          }
-        }
+        await this.applyInlineFieldSettings('compose field', createdField, fieldSpec.settings, options);
 
         fieldResults.push({
           key: fieldSpec.key,
@@ -385,31 +351,8 @@ export class FlowSurfacesService {
           options,
         );
 
-        if (actionSpec.settings && Object.keys(actionSpec.settings).length) {
-          await this.configure(
-            {
-              target: {
-                uid: createdAction.uid,
-              },
-              changes: actionSpec.settings,
-            },
-            options,
-          );
-        }
-
-        if (actionSpec.popup) {
-          await this.compose(
-            {
-              target: {
-                uid: createdAction.uid,
-              },
-              mode: actionSpec.popup.mode || 'replace',
-              blocks: actionSpec.popup.blocks || [],
-              layout: actionSpec.popup.layout,
-            },
-            options,
-          );
-        }
+        await this.applyInlineNodeSettings('compose action', createdAction.uid, actionSpec.settings, options);
+        await this.applyInlineActionPopup('compose action', createdAction.uid, actionSpec.popup, options);
 
         const actionRefs = await this.collectComposeActionRefs(createdAction.uid, options.transaction);
 
@@ -441,31 +384,8 @@ export class FlowSurfacesService {
           block.result.actionsColumnUid = createdAction.parentUid;
         }
 
-        if (actionSpec.settings && Object.keys(actionSpec.settings).length) {
-          await this.configure(
-            {
-              target: {
-                uid: createdAction.uid,
-              },
-              changes: actionSpec.settings,
-            },
-            options,
-          );
-        }
-
-        if (actionSpec.popup) {
-          await this.compose(
-            {
-              target: {
-                uid: createdAction.uid,
-              },
-              mode: actionSpec.popup.mode || 'replace',
-              blocks: actionSpec.popup.blocks || [],
-              layout: actionSpec.popup.layout,
-            },
-            options,
-          );
-        }
+        await this.applyInlineNodeSettings('compose recordAction', createdAction.uid, actionSpec.settings, options);
+        await this.applyInlineActionPopup('compose recordAction', createdAction.uid, actionSpec.popup, options);
 
         const actionRefs = await this.collectComposeActionRefs(createdAction.uid, options.transaction);
 
@@ -881,6 +801,7 @@ export class FlowSurfacesService {
   }
 
   async addBlock(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
         type: values.type,
@@ -921,7 +842,7 @@ export class FlowSurfacesService {
       catalogItem.use === 'TableBlockModel'
         ? await this.ensureTableActionsColumn(created, options.transaction)
         : columnNodes.find((item) => item.use === 'TableActionsColumnModel')?.uid;
-    return {
+    const result = {
       uid: created,
       parentUid,
       subKey,
@@ -940,9 +861,12 @@ export class FlowSurfacesService {
           }
         : {}),
     };
+    await this.applyInlineNodeSettings('addBlock', created, inlineSettings, options);
+    return result;
   }
 
   async addField(values: Record<string, any>, options: { transaction?: any } = {}): Promise<FlowSurfaceAddFieldResult> {
+    const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
     const target = await this.locator.resolve(values.target, options);
     const container = await this.surfaceContext.resolveFieldContainer(target.uid, options.transaction);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
@@ -977,13 +901,15 @@ export class FlowSurfacesService {
         { transaction: options.transaction },
       );
 
-      return {
+      const result = {
         uid: node.uid,
         parentUid: container.parentUid,
         subKey: container.subKey,
         fieldUse: fieldCapability.standaloneUse,
         type: values.type,
       };
+      await this.applyInlineStandaloneFieldSettings('addField', result.uid, inlineSettings, options);
+      return result;
     }
 
     const requestedFilterTargetUid = values.defaultTargetUid || values.targetBlockUid || values.targetUid;
@@ -1099,7 +1025,7 @@ export class FlowSurfacesService {
       );
     }
 
-    return {
+    const result = {
       uid: tree.wrapperUid,
       wrapperUid: tree.wrapperUid,
       fieldUid: tree.innerUid,
@@ -1114,9 +1040,13 @@ export class FlowSurfacesService {
       associationPathName: normalizedFieldBinding.associationPathName,
       fieldPath: normalizedFieldBinding.fieldPath,
     };
+    await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
+    return result;
   }
 
   async addAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
+    const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
     const container = await this.surfaceContext.resolveActionContainer(values.target, options.transaction);
     if (getActionContainerScope(container.ownerUse) === 'record') {
       throw new Error(
@@ -1132,6 +1062,9 @@ export class FlowSurfacesService {
     const resolvedScope = actionCatalogItem.scope;
     if (!resolvedScope) {
       throw new Error(`flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`);
+    }
+    if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
+      throw new Error(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
     }
     assertRequestedActionScope({
       requestedScope,
@@ -1161,17 +1094,20 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    const assignFormNode = getSingleNodeSubModel(action.subModels?.assignForm);
+    await this.applyInlineNodeSettings('addAction', created, inlineSettings, options);
+    await this.applyInlineActionPopup('addAction', created, inlinePopup, options);
     return {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
-      ...(assignFormNode?.uid ? { assignFormUid: assignFormNode.uid } : {}),
+      ...(await this.collectComposeActionRefs(created, options.transaction)),
     };
   }
 
   async addRecordAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
+    const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
     const container = await this.resolveRecordActionContainer(values.target, options.transaction);
     const requestedScope = normalizeActionScope(values.scope);
     const actionCatalogItem = this.resolveAddRecordActionCatalogItem({
@@ -1181,6 +1117,9 @@ export class FlowSurfacesService {
       ownerUse: container.ownerUse,
     });
     const resolvedScope = actionCatalogItem.scope;
+    if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
+      throw new Error(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
+    }
     assertRequestedActionScope({
       requestedScope,
       resolvedScope,
@@ -1209,13 +1148,14 @@ export class FlowSurfacesService {
       },
       { transaction: options.transaction },
     );
-    const assignFormNode = getSingleNodeSubModel(action.subModels?.assignForm);
+    await this.applyInlineNodeSettings('addRecordAction', created, inlineSettings, options);
+    await this.applyInlineActionPopup('addRecordAction', created, inlinePopup, options);
     return {
       uid: created,
       parentUid: container.parentUid,
       subKey: container.subKey,
       scope: actionCatalogItem.scope,
-      ...(assignFormNode?.uid ? { assignFormUid: assignFormNode.uid } : {}),
+      ...(await this.collectComposeActionRefs(created, options.transaction)),
     };
   }
 
@@ -1257,6 +1197,131 @@ export class FlowSurfacesService {
       resultField: 'recordActions',
       invoke: (itemValues, options) => this.addRecordAction(itemValues, options),
     });
+  }
+
+  private normalizeInlineSettings(actionName: string, settings: any) {
+    if (_.isUndefined(settings)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(settings)) {
+      throw new Error(`flowSurfaces ${actionName} settings must be an object`);
+    }
+    return settings;
+  }
+
+  private normalizeInlinePopup(actionName: string, popup: any) {
+    if (_.isUndefined(popup)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(popup)) {
+      throw new Error(`flowSurfaces ${actionName} popup must be an object`);
+    }
+    return popup;
+  }
+
+  private async applyInlineNodeSettings(
+    actionName: string,
+    targetUid: string | undefined,
+    settings: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    if (!targetUid || !settings || !Object.keys(settings).length) {
+      return;
+    }
+    try {
+      await this.configure(
+        {
+          target: {
+            uid: targetUid,
+          },
+          changes: settings,
+        },
+        options,
+      );
+    } catch (error: any) {
+      throw new Error(`flowSurfaces ${actionName} settings invalid: ${error?.message || String(error)}`);
+    }
+  }
+
+  private async applyInlineFieldSettings(
+    actionName: string,
+    result: FlowSurfaceAddFieldResult,
+    settings: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    if (!settings || !Object.keys(settings).length) {
+      return;
+    }
+    if (!result.wrapperUid || !result.fieldUid) {
+      await this.applyInlineStandaloneFieldSettings(actionName, result.uid, settings, options);
+      return;
+    }
+    try {
+      const wrapperNode = await this.repository.findModelById(result.wrapperUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      const { wrapperChanges, fieldChanges } = splitComposeFieldChanges(settings, wrapperNode?.use);
+      if (Object.keys(wrapperChanges).length) {
+        await this.configure(
+          {
+            target: {
+              uid: result.wrapperUid,
+            },
+            changes: wrapperChanges,
+          },
+          options,
+        );
+      }
+      if (Object.keys(fieldChanges).length) {
+        await this.configure(
+          {
+            target: {
+              uid: result.fieldUid,
+            },
+            changes: fieldChanges,
+          },
+          options,
+        );
+      }
+    } catch (error: any) {
+      throw new Error(`flowSurfaces ${actionName} settings invalid: ${error?.message || String(error)}`);
+    }
+  }
+
+  private async applyInlineStandaloneFieldSettings(
+    actionName: string,
+    targetUid: string | undefined,
+    settings: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    await this.applyInlineNodeSettings(actionName, targetUid, settings, options);
+  }
+
+  private async applyInlineActionPopup(
+    actionName: string,
+    actionUid: string,
+    popup: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    if (!popup) {
+      return;
+    }
+    try {
+      await this.compose(
+        {
+          target: {
+            uid: actionUid,
+          },
+          mode: popup.mode || 'replace',
+          blocks: popup.blocks || [],
+          layout: popup.layout,
+        },
+        options,
+      );
+    } catch (error: any) {
+      throw new Error(`flowSurfaces ${actionName} popup invalid: ${error?.message || String(error)}`);
+    }
   }
 
   async updateSettings(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -2170,12 +2235,8 @@ export class FlowSurfacesService {
   }
 
   private async configurePage(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['title', 'documentTitle', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure page does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'documentTitle', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'];
+    assertSupportedSimpleChanges('page', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2213,10 +2274,8 @@ export class FlowSurfacesService {
   }
 
   private async configureTab(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
-    const unknownKeys = Object.keys(changes).filter((key) => !['title', 'icon', 'documentTitle'].includes(key));
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure tab does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'icon', 'documentTitle'];
+    assertSupportedSimpleChanges('tab', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2245,29 +2304,24 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'displayTitle',
-          'height',
-          'heightMode',
-          'resource',
-          'pageSize',
-          'density',
-          'showRowNumbers',
-          'sorting',
-          'dataScope',
-          'quickEdit',
-          'treeTable',
-          'defaultExpandAllRows',
-          'dragSort',
-          'dragSortBy',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure table does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'height',
+      'heightMode',
+      'resource',
+      'pageSize',
+      'density',
+      'showRowNumbers',
+      'sorting',
+      'dataScope',
+      'quickEdit',
+      'treeTable',
+      'defaultExpandAllRows',
+      'dragSort',
+      'dragSortBy',
+    ];
+    assertSupportedSimpleChanges('table', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2342,10 +2396,7 @@ export class FlowSurfacesService {
       'colon',
       ...(use === 'EditFormModel' ? ['dataScope'] : []),
     ];
-    const unknownKeys = Object.keys(changes).filter((key) => !allowedKeys.includes(key));
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure form does not support: ${unknownKeys.join(', ')}`);
-    }
+    assertSupportedSimpleChanges('form', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const nextStepParams: Record<string, any> = {};
     if (changes.resource) {
@@ -2405,25 +2456,20 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'displayTitle',
-          'resource',
-          'layout',
-          'labelAlign',
-          'labelWidth',
-          'labelWrap',
-          'colon',
-          'sorting',
-          'dataScope',
-          'linkageRules',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure details does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'resource',
+      'layout',
+      'labelAlign',
+      'labelWidth',
+      'labelWrap',
+      'colon',
+      'sorting',
+      'dataScope',
+      'linkageRules',
+    ];
+    assertSupportedSimpleChanges('details', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
@@ -2490,22 +2536,17 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'displayTitle',
-          'resource',
-          'layout',
-          'labelAlign',
-          'labelWidth',
-          'labelWrap',
-          'defaultValues',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure filterForm does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'resource',
+      'layout',
+      'labelAlign',
+      'labelWidth',
+      'labelWrap',
+      'defaultValues',
+    ];
+    assertSupportedSimpleChanges('filterForm', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
@@ -2561,23 +2602,18 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'displayTitle',
-          'height',
-          'heightMode',
-          'resource',
-          'pageSize',
-          'dataScope',
-          'sorting',
-          'layout',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure list does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'height',
+      'heightMode',
+      'resource',
+      'pageSize',
+      'dataScope',
+      'sorting',
+      'layout',
+    ];
+    assertSupportedSimpleChanges('list', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
@@ -2619,24 +2655,19 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'displayTitle',
-          'height',
-          'heightMode',
-          'resource',
-          'columns',
-          'rowCount',
-          'dataScope',
-          'sorting',
-          'layout',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure gridCard does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'height',
+      'heightMode',
+      'resource',
+      'columns',
+      'rowCount',
+      'dataScope',
+      'sorting',
+      'layout',
+    ];
+    assertSupportedSimpleChanges('gridCard', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const columns = normalizeGridCardColumns(changes.columns);
     return this.updateSettings(
@@ -2680,10 +2711,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter((key) => !['title', 'displayTitle', 'content'].includes(key));
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure markdown does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'displayTitle', 'content'];
+    assertSupportedSimpleChanges('markdown', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2712,15 +2741,19 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        !['title', 'displayTitle', 'height', 'heightMode', 'mode', 'url', 'html', 'params', 'allow', 'htmlId'].includes(
-          key,
-        ),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure iframe does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'displayTitle',
+      'height',
+      'heightMode',
+      'mode',
+      'url',
+      'html',
+      'params',
+      'allow',
+      'htmlId',
+    ];
+    assertSupportedSimpleChanges('iframe', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2761,12 +2794,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['title', 'displayTitle', 'height', 'heightMode', 'configure'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure chart does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'displayTitle', 'height', 'heightMode', 'configure'];
+    assertSupportedSimpleChanges('chart', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2793,12 +2822,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['title', 'displayTitle', 'layout', 'ellipsis'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure actionPanel does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'displayTitle', 'layout', 'ellipsis'];
+    assertSupportedSimpleChanges('actionPanel', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
       {
@@ -2827,12 +2852,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['title', 'description', 'className', 'code', 'version'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure jsBlock does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'description', 'className', 'code', 'version'];
+    assertSupportedSimpleChanges('jsBlock', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2861,10 +2882,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter((key) => !['title', 'tooltip', 'width', 'fixed'].includes(key));
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure action column does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'tooltip', 'width', 'fixed'];
+    assertSupportedSimpleChanges('action column', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2893,12 +2912,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['title', 'tooltip', 'width', 'fixed', 'code', 'version'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure jsColumn does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['title', 'tooltip', 'width', 'fixed', 'code', 'version'];
+    assertSupportedSimpleChanges('jsColumn', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -2939,12 +2954,8 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !['label', 'tooltip', 'extra', 'showLabel', 'labelWidth', 'labelWrap', 'code', 'version'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure jsItem does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = ['label', 'tooltip', 'extra', 'showLabel', 'labelWidth', 'labelWrap', 'code', 'version'];
+    assertSupportedSimpleChanges('jsItem', changes, allowedKeys);
     return this.updateSettings(
       {
         target,
@@ -3043,12 +3054,13 @@ export class FlowSurfacesService {
                 'labelWidth',
                 'labelWrap',
               ];
-    const unknownKeys = Object.keys(changes).filter(
-      (key) => !wrapperAllowed.includes(key) && !['clickToOpen', 'openView', 'code', 'version'].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure field wrapper does not support: ${unknownKeys.join(', ')}`);
-    }
+    assertSupportedSimpleChanges('field wrapper', changes, [
+      ...wrapperAllowed,
+      'clickToOpen',
+      'openView',
+      'code',
+      'version',
+    ]);
 
     const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version']);
     const wrapperChanges =
@@ -3220,30 +3232,25 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'fieldPath',
-          'associationPathName',
-          'titleField',
-          'clickToOpen',
-          'openView',
-          'title',
-          'icon',
-          'autoSize',
-          'allowClear',
-          'multiple',
-          'allowMultiple',
-          'quickCreate',
-          'mode',
-          'options',
-          'code',
-          'version',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure field does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'fieldPath',
+      'associationPathName',
+      'titleField',
+      'clickToOpen',
+      'openView',
+      'title',
+      'icon',
+      'autoSize',
+      'allowClear',
+      'multiple',
+      'allowMultiple',
+      'quickCreate',
+      'mode',
+      'options',
+      'code',
+      'version',
+    ];
+    assertSupportedSimpleChanges('field', changes, allowedKeys);
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
     const parentUid = current?.uid ? await this.locator.findParentUid(current.uid, options.transaction) : null;
@@ -3401,35 +3408,30 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const unknownKeys = Object.keys(changes).filter(
-      (key) =>
-        ![
-          'title',
-          'tooltip',
-          'icon',
-          'type',
-          'color',
-          'htmlType',
-          'position',
-          'danger',
-          'openView',
-          'confirm',
-          'assignValues',
-          'linkageRules',
-          'editMode',
-          'updateMode',
-          'duplicateMode',
-          'collapsedRows',
-          'defaultCollapsed',
-          'emailFieldNames',
-          'defaultSelectAllRecords',
-          'code',
-          'version',
-        ].includes(key),
-    );
-    if (unknownKeys.length) {
-      throw new Error(`flowSurfaces configure action does not support: ${unknownKeys.join(', ')}`);
-    }
+    const allowedKeys = [
+      'title',
+      'tooltip',
+      'icon',
+      'type',
+      'color',
+      'htmlType',
+      'position',
+      'danger',
+      'openView',
+      'confirm',
+      'assignValues',
+      'linkageRules',
+      'editMode',
+      'updateMode',
+      'duplicateMode',
+      'collapsedRows',
+      'defaultCollapsed',
+      'emailFieldNames',
+      'defaultSelectAllRecords',
+      'code',
+      'version',
+    ];
+    assertSupportedSimpleChanges('action', changes, allowedKeys);
     const stepParams: Record<string, any> = {};
     if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
       stepParams.buttonSettings = {
@@ -4534,8 +4536,56 @@ function normalizeSimpleConfirm(confirm: any) {
   throw new Error('flowSurfaces configure confirm must be a boolean or object');
 }
 
-function splitComposeFieldChanges(changes: Record<string, any>) {
+function assertSupportedSimpleChanges(context: string, changes: Record<string, any>, allowedKeys: string[]) {
+  const unknownKeys = Object.keys(changes).filter((key) => !allowedKeys.includes(key));
+  if (!unknownKeys.length) {
+    return;
+  }
+  throw new Error(
+    `flowSurfaces configure ${context} does not support: ${unknownKeys.join(', ')}; supported keys: ${allowedKeys.join(
+      ', ',
+    )}`,
+  );
+}
+
+function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {
   ensureNoRawSimpleChangeKeys(changes);
+  const supportedKeys = [
+    'label',
+    'tooltip',
+    'extra',
+    'showLabel',
+    'width',
+    'fixed',
+    'sorter',
+    'fieldPath',
+    'associationPathName',
+    'initialValue',
+    'required',
+    'disabled',
+    'maxCount',
+    'pattern',
+    'titleField',
+    'dataIndex',
+    'editable',
+    'labelWidth',
+    'labelWrap',
+    'name',
+    'clickToOpen',
+    'openView',
+    'title',
+    'icon',
+    'autoSize',
+    'allowClear',
+    'multiple',
+    'allowMultiple',
+    'quickCreate',
+    'mode',
+    'options',
+    'code',
+    'version',
+  ];
+  assertSupportedSimpleChanges('field', changes, supportedKeys);
   const wrapperChanges = _.pick(changes, [
     'label',
     'tooltip',
@@ -4557,11 +4607,12 @@ function splitComposeFieldChanges(changes: Record<string, any>) {
     'labelWidth',
     'labelWrap',
     'name',
+    ...(wrapperUse === 'TableColumnModel' ? ['title'] : []),
   ]);
   const fieldChanges = _.pick(changes, [
     'clickToOpen',
     'openView',
-    'title',
+    ...(wrapperUse === 'TableColumnModel' ? [] : ['title']),
     'icon',
     'autoSize',
     'allowClear',
