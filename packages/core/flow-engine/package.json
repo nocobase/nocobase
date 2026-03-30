@@ -11,6 +11,7 @@
     "@nocobase/sdk": "2.0.29",
     "@nocobase/shared": "2.0.29",
     "ahooks": "^3.7.2",
+    "axios": "^1.7.0",
     "dayjs": "^1.11.9",
     "dompurify": "^3.0.2",
     "lodash": "^4.x",
