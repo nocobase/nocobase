@@ -82,6 +82,6 @@ export default class InAppNotificationChannel extends BaseNotificationChannel {
     defineMyInAppChannels(this.app);
     this.app.acl.allow('myInAppMessages', '*', 'loggedIn');
     this.app.acl.allow('myInAppChannels', '*', 'loggedIn');
-    this.app.acl.allow('notificationInAppMessages', '*', 'loggedIn');
+    this.app.acl.allow('notificationInAppMessages', 'updateMyOwn', 'loggedIn');
   }
 }
