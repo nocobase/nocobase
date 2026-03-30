@@ -30,6 +30,7 @@ export const useChatMessageActions = () => {
   const plugin = usePlugin('ai') as PluginAIClient;
   const aiConfigRepository = useAIConfigRepository();
 
+  const isEditingMessage = useChatBoxStore.use.isEditingMessage();
   const setIsEditingMessage = useChatBoxStore.use.setIsEditingMessage();
   const setEditingMessageId = useChatBoxStore.use.setEditingMessageId();
   const setModel = useChatBoxStore.use.setModel();
@@ -459,7 +460,7 @@ export const useChatMessageActions = () => {
       attachments: index === 0 ? attachments : undefined,
       workContext: index === 0 ? parsedWorkContext : undefined,
     }));
-    if (lastRenderedMessage?.type === 'conversation-group') {
+    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
       addSubAgentMessages(
         lastRenderedMessage.key,
         sendMsgs.map((msg, index) => ({
@@ -498,7 +499,7 @@ export const useChatMessageActions = () => {
 
     setResponseLoading(true);
 
-    if (lastRenderedMessage?.type === 'conversation-group') {
+    if (lastRenderedMessage?.type === 'conversation-group' && !isEditingMessage) {
       addSubAgentMessage(lastRenderedMessage.key, {
         key: uid(),
         role: lastRenderedMessage.roleName,
