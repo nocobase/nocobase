@@ -108,6 +108,18 @@ export type Action = {
   onClick: (content: string) => void;
 };
 
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
+};
+
 export type SendOptions = {
   sessionId?: string;
   aiEmployee?: AIEmployee;
