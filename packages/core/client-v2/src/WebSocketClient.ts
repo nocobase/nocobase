@@ -96,7 +96,7 @@ export class WebSocketClient {
   }
 
   get pingInterval() {
-    return this.options?.pingInterval || 30000;
+    return this.options?.pingInterval || 300000;
   }
 
   get readyState() {
