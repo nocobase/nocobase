@@ -138,7 +138,13 @@ export class PluginMcpServerServer extends Plugin {
         app: this.app,
         packagePatterns,
       })
-        .then((apiTools) => [...apiTools, createCrudTool({ app: this.app })])
+        .then((apiTools) => [
+          ...apiTools,
+          createCrudTool({
+            app: this.app,
+            mcpToolsManager: this.ai.mcpToolsManager,
+          }),
+        ])
         .catch((error) => {
           this.mcpToolsCache.delete(cacheKey);
           throw error;
