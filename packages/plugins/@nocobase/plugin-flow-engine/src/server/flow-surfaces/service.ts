@@ -32,6 +32,7 @@ import {
 } from './builder';
 import { compileApplySpec } from './compiler';
 import { FlowSurfaceContractGuard } from './contract-guard';
+import { FlowSurfaceBadRequestError } from './errors';
 import { executeMutateOps } from './executor';
 import { SurfaceLocator } from './locator';
 import { FlowSurfaceRouteSync } from './route-sync';
@@ -1239,7 +1240,7 @@ export class FlowSurfacesService {
         options,
       );
     } catch (error: any) {
-      throw new Error(`flowSurfaces ${actionName} settings invalid: ${error?.message || String(error)}`);
+      rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} settings invalid`);
     }
   }
 
@@ -1285,7 +1286,7 @@ export class FlowSurfacesService {
         );
       }
     } catch (error: any) {
-      throw new Error(`flowSurfaces ${actionName} settings invalid: ${error?.message || String(error)}`);
+      rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} settings invalid`);
     }
   }
 
@@ -1320,7 +1321,7 @@ export class FlowSurfacesService {
         options,
       );
     } catch (error: any) {
-      throw new Error(`flowSurfaces ${actionName} popup invalid: ${error?.message || String(error)}`);
+      rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);
     }
   }
 
@@ -1671,10 +1672,17 @@ export class FlowSurfacesService {
 
   private normalizeGetTarget(input: Record<string, any>): FlowSurfaceTarget {
     if (!_.isPlainObject(input)) {
-      throw new Error(`flowSurfaces:get requires root locator fields`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces:get requires root locator fields`);
     }
     if (Object.prototype.hasOwnProperty.call(input, 'target')) {
-      throw new Error(`flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`);
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces:get only accepts root locator fields; do not wrap them in 'target'`,
+      );
+    }
+    if (hasNonEmptyGetWrapperValue(input.values)) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces:get only accepts root locator fields; do not wrap them in 'values'`,
+      );
     }
     const target = buildDefinedPayload({
       uid: input.uid,
@@ -1683,7 +1691,9 @@ export class FlowSurfacesService {
       routeId: input.routeId,
     });
     if (!Object.keys(target).length) {
-      throw new Error(`flowSurfaces:get requires one of uid, pageSchemaUid, tabSchemaUid or routeId`);
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces:get requires one of uid, pageSchemaUid, tabSchemaUid or routeId`,
+      );
     }
     return target;
   }
@@ -4463,7 +4473,7 @@ function normalizeSimpleResourceInit(input: any) {
     return undefined;
   }
   if (!_.isPlainObject(input)) {
-    throw new Error('flowSurfaces simple resource must be an object');
+    throw new FlowSurfaceBadRequestError('flowSurfaces simple resource must be an object');
   }
   const normalized = buildDefinedPayload({
     dataSourceKey: input.dataSourceKey,
@@ -4474,7 +4484,7 @@ function normalizeSimpleResourceInit(input: any) {
     filterByTk: input.filterByTk,
   });
   if (!Object.keys(normalized).length) {
-    throw new Error('flowSurfaces simple resource cannot be empty');
+    throw new FlowSurfaceBadRequestError('flowSurfaces simple resource cannot be empty');
   }
   return normalized;
 }
@@ -4513,11 +4523,11 @@ function normalizeGridCardColumns(columns: any) {
       xxl: columns.xxl,
     });
     if (!Object.keys(normalized).length) {
-      throw new Error('flowSurfaces configure gridCard columns cannot be empty');
+      throw new FlowSurfaceBadRequestError('flowSurfaces configure gridCard columns cannot be empty');
     }
     return normalized;
   }
-  throw new Error('flowSurfaces configure gridCard columns must be a number or responsive object');
+  throw new FlowSurfaceBadRequestError('flowSurfaces configure gridCard columns must be a number or responsive object');
 }
 
 function normalizeSimpleConfirm(confirm: any) {
@@ -4533,7 +4543,7 @@ function normalizeSimpleConfirm(confirm: any) {
       content: confirm.content,
     });
   }
-  throw new Error('flowSurfaces configure confirm must be a boolean or object');
+  throw new FlowSurfaceBadRequestError('flowSurfaces configure confirm must be a boolean or object');
 }
 
 function assertSupportedSimpleChanges(context: string, changes: Record<string, any>, allowedKeys: string[]) {
@@ -4541,11 +4551,32 @@ function assertSupportedSimpleChanges(context: string, changes: Record<string, a
   if (!unknownKeys.length) {
     return;
   }
-  throw new Error(
+  throw new FlowSurfaceBadRequestError(
     `flowSurfaces configure ${context} does not support: ${unknownKeys.join(', ')}; supported keys: ${allowedKeys.join(
       ', ',
     )}`,
   );
+}
+
+function hasNonEmptyGetWrapperValue(value: any) {
+  if (_.isNil(value)) {
+    return false;
+  }
+  if (_.isPlainObject(value)) {
+    return Object.keys(value).length > 0;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0;
+  }
+  return true;
+}
+
+function rethrowInlineConfigurationError(error: any, prefix: string): never {
+  const message = `${prefix}: ${error?.message || String(error)}`;
+  if (error instanceof FlowSurfaceBadRequestError) {
+    throw new FlowSurfaceBadRequestError(message);
+  }
+  throw new Error(message);
 }
 
 function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {

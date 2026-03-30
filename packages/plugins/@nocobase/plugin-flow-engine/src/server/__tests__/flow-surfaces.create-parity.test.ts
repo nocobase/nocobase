@@ -845,7 +845,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: target,
+      ...target,
     }),
   );
 }

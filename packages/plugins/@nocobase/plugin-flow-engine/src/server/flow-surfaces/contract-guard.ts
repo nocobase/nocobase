@@ -10,6 +10,7 @@
 import _ from 'lodash';
 import { transformFilter } from '@nocobase/utils';
 import { getNodeContract } from './catalog';
+import { FlowSurfaceBadRequestError } from './errors';
 import type { FlowSurfaceDomainContract, FlowSurfaceDomainGroupContract, FlowSurfaceNodeDomain } from './types';
 
 const EMPTY_GRID_ITEM_UID = '__EMPTY__';
@@ -360,7 +361,7 @@ function normalizeFilterGroupValue(
     return _.cloneDeep(value);
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces updateSettings domain '${context.domain}.${context.groupKey}.${path}' on '${context.use}' expects FilterGroup like ${FILTER_GROUP_EXAMPLE}: ${reason}`,
     );
   }
@@ -368,16 +369,16 @@ function normalizeFilterGroupValue(
 
 function assertFilterGroupShape(filter: any) {
   if (!_.isPlainObject(filter)) {
-    throw new Error('Invalid filter: filter must be an object');
+    throw new FlowSurfaceBadRequestError('Invalid filter: filter must be an object');
   }
   if (!('logic' in filter) || !('items' in filter)) {
-    throw new Error('Invalid filter: filter must have logic and items properties');
+    throw new FlowSurfaceBadRequestError('Invalid filter: filter must have logic and items properties');
   }
   if (filter.logic !== '$and' && filter.logic !== '$or') {
-    throw new Error("Invalid filter: logic must be '$and' or '$or'");
+    throw new FlowSurfaceBadRequestError("Invalid filter: logic must be '$and' or '$or'");
   }
   if (!Array.isArray(filter.items)) {
-    throw new Error('Invalid filter: items must be an array');
+    throw new FlowSurfaceBadRequestError('Invalid filter: items must be an array');
   }
   filter.items.forEach((item) => {
     if (_.isPlainObject(item) && 'logic' in item && 'items' in item) {
@@ -387,7 +388,7 @@ function assertFilterGroupShape(filter: any) {
     if (_.isPlainObject(item) && typeof item.path === 'string' && typeof item.operator === 'string') {
       return;
     }
-    throw new Error('Invalid filter item type');
+    throw new FlowSurfaceBadRequestError('Invalid filter item type');
   });
 }
 

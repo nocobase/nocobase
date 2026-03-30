@@ -1718,6 +1718,62 @@ describe('flowSurfaces API contract', () => {
     expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported keys');
   });
 
+  it('should keep batch addBlocks partial-success semantics when filter payload is invalid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Batch filter contract page',
+      tabTitle: 'Batch filter contract tab',
+    });
+
+    const addBlocksRes = await rootAgent.resource('flowSurfaces').addBlocks({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'valid-table',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            settings: {
+              title: 'Valid employees table',
+            },
+          },
+          {
+            key: 'invalid-filter-table',
+            type: 'table',
+            resourceInit: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            settings: {
+              dataScope: {
+                foo: 'bar',
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(addBlocksRes.status).toBe(200);
+    const addBlocksData = getData(addBlocksRes);
+    expect(addBlocksData.successCount).toBe(1);
+    expect(addBlocksData.errorCount).toBe(1);
+    expect(addBlocksData.blocks[0].ok).toBe(true);
+    expect(addBlocksData.blocks[1].ok).toBe(false);
+    expect(addBlocksData.blocks[1].error.message).toContain('settings invalid');
+    expect(addBlocksData.blocks[1].error.message).toContain('stepParams.tableSettings.dataScope.filter');
+    expect(addBlocksData.blocks[1].error.message).toContain('FilterGroup');
+    expect(addBlocksData.blocks[1].error.message).toContain('{"logic":"$and","items":[]}');
+
+    const validTableReadback = await getSurface(rootAgent, {
+      uid: addBlocksData.blocks[0].result.uid,
+    });
+    expect(validTableReadback.tree.props?.title).toBe('Valid employees table');
+  });
+
   it('should compose and configure list grid-card and static blocks with simple semantic settings', async () => {
     const page = await createPage(rootAgent, {
       title: 'Compose static page',
@@ -2722,7 +2778,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: target,
+      ...target,
     }),
   );
 }

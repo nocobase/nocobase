@@ -5787,6 +5787,39 @@ describe('flowSurfaces resource', () => {
     expect(invalidLayout.status).toBe(500);
   });
 
+  it('should expose flowSurfaces:get as GET-only root locator query API', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'GET surface page',
+      tabTitle: 'GET surface tab',
+    });
+
+    const pageReadbackRes = await rootAgent.resource('flowSurfaces').get({
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(pageReadbackRes.status).toBe(200);
+    expect(getData(pageReadbackRes).target.pageRoute.id).toBe(page.routeId);
+
+    const routeReadbackRes = await rootAgent.resource('flowSurfaces').get({
+      routeId: page.routeId,
+    });
+    expect(routeReadbackRes.status).toBe(200);
+    expect(getData(routeReadbackRes).target.pageRoute.schemaUid).toBe(page.pageSchemaUid);
+
+    const postGetRes = await rootAgent.post('/api/flowSurfaces:get').send({
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    expect(postGetRes.status).toBe(400);
+    expect(readErrorMessage(postGetRes)).toContain('only supports GET');
+
+    const wrappedTargetRes = await rootAgent.get(`/api/flowSurfaces:get?target[uid]=${page.tabSchemaUid}`);
+    expect(wrappedTargetRes.status).toBe(400);
+    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
+
+    const wrappedValuesRes = await rootAgent.get(`/api/flowSurfaces:get?values[uid]=${page.tabSchemaUid}`);
+    expect(wrappedValuesRes.status).toBe(400);
+    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+  });
+
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {
     const page = await createPage(rootAgent, {
       title: 'Filter group contract page',
@@ -5952,6 +5985,23 @@ describe('flowSurfaces resource', () => {
       ],
     });
 
+    const invalidConfigureFilter = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: createdTable.uid,
+        },
+        changes: {
+          dataScope: {
+            foo: 'bar',
+          },
+        },
+      },
+    });
+    expect(invalidConfigureFilter.status).toBe(400);
+    expect(readErrorMessage(invalidConfigureFilter)).toContain('stepParams.tableSettings.dataScope.filter');
+    expect(readErrorMessage(invalidConfigureFilter)).toContain('FilterGroup');
+    expect(readErrorMessage(invalidConfigureFilter)).toContain('logic and items');
+
     const invalidFilters = [
       { case: 'missing-logic-items', filter: { foo: 'bar' }, reason: 'logic and items' },
       { case: 'missing-items', filter: { logic: '$and' }, reason: 'logic and items' },
@@ -5984,7 +6034,7 @@ describe('flowSurfaces resource', () => {
         status: response.status,
       }).toMatchObject({
         case: testCase.case,
-        status: 500,
+        status: 400,
       });
       expect(readErrorMessage(response)).toContain('stepParams.tableSettings.dataScope.filter');
       expect(readErrorMessage(response)).toContain('FilterGroup');
@@ -6014,7 +6064,7 @@ async function createPage(rootAgent: any, values: Record<string, any>) {
 async function getSurface(rootAgent: any, target: Record<string, any>) {
   return getData(
     await rootAgent.resource('flowSurfaces').get({
-      values: target,
+      ...target,
     }),
   );
 }

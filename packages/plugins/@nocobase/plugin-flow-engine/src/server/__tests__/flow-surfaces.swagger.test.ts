@@ -433,6 +433,7 @@ describe('flowSurfaces swagger', () => {
     ]);
     expect(getPath.description).toContain('只接受根级定位字段');
     expect(getPath.description).toContain('不要使用 `{ target: { ... } }` 包裹');
+    expect(getPath.description).toContain('不要使用 `{ values: { ... } }` 包裹');
 
     for (const actionName of [
       'catalog',
