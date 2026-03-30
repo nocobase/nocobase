@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-oidc'
+title: "认证：OIDC"
+description: "NocoBase OIDC SSO 认证：遵循 OpenID Connect 协议，授权码模式，支持 Google、Microsoft Entra ID 等 IdP，Issuer、Client ID、字段映射配置。"
+keywords: "OIDC,OpenID Connect,SSO,单点登录,Google,Microsoft Entra,NocoBase"
 ---
 
 # 认证：OIDC

@@ -1,3 +1,9 @@
+---
+title: "RunJS APIResource"
+description: "RunJS APIResource 基于 URL 发起 HTTP 请求的通用资源，适用于自定义接口、第三方 API，setURL、refresh、getData，继承 FlowResource。"
+keywords: "APIResource,ctx.makeResource,setURL,FlowResource,自定义接口,RunJS,NocoBase"
+---
+
 # APIResource
 
 基于 URL 发起请求的**通用 API 资源**，适用于任意 HTTP 接口。继承自 FlowResource 基类，并扩展了请求配置与 `refresh()`。与 [MultiRecordResource](./multi-record-resource.md)、[SingleRecordResource](./single-record-resource.md) 不同，APIResource 不依赖资源名，直接按 URL 请求，适合自定义接口、第三方 API 等场景。

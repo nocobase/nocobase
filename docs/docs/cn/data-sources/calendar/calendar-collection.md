@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-calendar"
+title: "日历表"
+description: "日历数据表存储日期与事件信息，配合日历区块使用，需配置标题、开始时间、结束时间等字段。"
+keywords: "日历表,Calendar Collection,日历事件,日程,NocoBase"
 ---
-
 # 日历表
 
 ## 介绍

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-wecom'
+title: "企业微信通知"
+description: "企业微信通知渠道：向企业微信用户发送通知，支持文本卡片、Markdown、模版卡片，需配置企业微信认证器。"
+keywords: "企业微信通知,WeCom,企业微信,文本卡片,Markdown,模版卡片,通知管理,NocoBase"
 ---
 
 # 通知：企业微信

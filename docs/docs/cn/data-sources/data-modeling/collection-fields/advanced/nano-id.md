@@ -1,3 +1,9 @@
+---
+title: "Nano ID"
+description: "Nano ID 字段，存储短唯一标识符。"
+keywords: "Nano ID,nanoId,短唯一 ID,ID 生成,高级字段,NocoBase"
+---
+
 # Nano ID
 
 ## 介绍

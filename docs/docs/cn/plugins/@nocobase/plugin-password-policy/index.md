@@ -1,6 +1,8 @@
 ---
 displayName: "密码策略"
 packageName: '@nocobase/plugin-password-policy'
+title: "密码策略"
+keywords: "密码策略,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

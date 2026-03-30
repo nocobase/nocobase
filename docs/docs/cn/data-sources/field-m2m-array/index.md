@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-field-m2m-array"
+title: "多对多（数组）"
+description: "使用数组字段保存目标表多个唯一键，建立多对多关联，如文章-标签多对多，无需中间表。"
+keywords: "多对多数组,M2M Array,数组关联,BelongsToMany,NocoBase"
 ---
-
 # 多对多（数组）
 
 ## 介绍

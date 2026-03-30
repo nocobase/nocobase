@@ -1,3 +1,9 @@
+---
+title: "插件项目目录结构"
+description: "NocoBase 插件项目结构：Yarn Workspace、packages/plugins、storage、client/server 目录、lerna.json 配置。"
+keywords: "项目结构,Yarn Workspace,packages/plugins,插件目录,create-nocobase-app,NocoBase"
+---
+
 # 项目目录结构
 
 无论是通过 Git 克隆源码，还是使用 `create-nocobase-app` 初始化项目，生成的 NocoBase 工程本质上都是一个基于 **Yarn Workspace** 的多包仓库。

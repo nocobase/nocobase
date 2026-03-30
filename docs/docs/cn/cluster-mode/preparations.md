@@ -1,3 +1,9 @@
+---
+title: "集群部署准备工作"
+description: "集群部署前准备：商业插件授权（PubSub、Queue、Lock、WorkerID 适配器）、数据库、Redis/RabbitMQ 中间件、共享存储、负载均衡配置。"
+keywords: "集群准备,商业插件授权,Redis 中间件,RabbitMQ,共享存储,负载均衡,Nginx,NocoBase"
+---
+
 # 准备工作
 
 部署集群应用前，需要完成以下准备工作。

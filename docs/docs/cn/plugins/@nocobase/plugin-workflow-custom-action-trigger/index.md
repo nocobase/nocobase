@@ -1,6 +1,8 @@
 ---
 displayName: "工作流：自定义操作事件"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
+title: "工作流：自定义操作事件"
+keywords: "工作流：自定义操作事件,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

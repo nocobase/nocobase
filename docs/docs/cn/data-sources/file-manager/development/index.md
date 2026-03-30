@@ -1,3 +1,9 @@
+---
+title: "文件管理器扩展开发"
+description: "扩展文件类型预览组件、自定义附件字段、上传逻辑，基于 attachmentFileTypes、mime-match 等 API。"
+keywords: "文件管理器扩展,附件字段扩展,文件预览扩展,attachmentFileTypes,NocoBase"
+---
+
 # 扩展开发
 
 ## 扩展前端文件类型

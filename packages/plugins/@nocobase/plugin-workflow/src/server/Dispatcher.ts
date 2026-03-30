@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 
 import { Transaction, Transactionable } from 'sequelize';
 
@@ -37,17 +37,16 @@ export type EventOptions = {
 export default class Dispatcher {
   private ready = false;
   private executing: Promise<any> | null = null;
+  private preparing: Promise<any> | null = null;
   private pending: Pending[] = [];
   private events: CachedEvent[] = [];
   private eventsCount = 0;
 
   get idle() {
-    return this.ready && !this.executing && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.preparing && !this.pending.length && !this.events.length;
   }
 
-  constructor(private readonly plugin: PluginWorkflowServer) {
-    this.prepare = this.prepare.bind(this);
-  }
+  constructor(private readonly plugin: PluginWorkflowServer) {}
 
   public readonly onQueueExecution: QueueEventOptions['process'] = async (event) => {
     const ExecutionRepo = this.plugin.db.getRepository('executions');
@@ -114,12 +113,61 @@ export default class Dispatcher {
     logger.info(`new event triggered, now events: ${this.events.length}`);
     logger.debug(`event data:`, { context });
 
-    if (this.events.length > 1) {
-      logger.info(`new event is pending to be prepared after previous preparation is finished`);
+    this.prepare();
+  }
+
+  private prepare() {
+    if (this.preparing) {
       return;
     }
 
-    setImmediate(this.prepare);
+    this.preparing = (async () => {
+      try {
+        while (this.events.length) {
+          if (this.executing && this.plugin.db.options.dialect === 'sqlite') {
+            await this.executing;
+          }
+
+          const event = this.events.shift();
+          this.eventsCount = this.events.length;
+          if (!event) continue;
+
+          const logger = this.plugin.getLogger(event[0].id);
+          logger.info(`preparing execution for event`);
+
+          try {
+            const execution = await this.createExecution(...event);
+            // NOTE: cache first execution for most cases
+            if (!execution?.dispatched) {
+              if (this.plugin.serving() && !this.executing && !this.pending.length) {
+                logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
+                this.pending.push({ execution });
+              } else {
+                logger.info(
+                  `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
+                );
+                try {
+                  await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
+                    executionId: execution.id,
+                  });
+                } catch (qErr) {
+                  logger.error(`publishing execution (${execution.id}) to queue failed:`, { error: qErr });
+                }
+              }
+            }
+          } catch (error) {
+            logger.error(`failed to create execution:`, { error });
+          }
+        }
+      } finally {
+        this.preparing = null;
+        if (this.events.length) {
+          this.prepare();
+        } else {
+          this.dispatch();
+        }
+      }
+    })();
   }
 
   public async resume(job) {
@@ -145,17 +193,29 @@ export default class Dispatcher {
 
   public async beforeStop() {
     this.ready = false;
-    if (this.events.length) {
-      await this.prepare();
+    this.plugin.getLogger('dispatcher').info('app is stopping, draining local queues...');
+
+    while (this.preparing || this.executing || this.events.length || this.pending.length) {
+      if (this.preparing) {
+        await this.preparing;
+      }
+      if (this.executing) {
+        await this.executing;
+      }
+      if (this.events.length && !this.preparing) {
+        this.prepare();
+      }
+      if (this.pending.length && !this.executing) {
+        this.dispatch();
+      }
+      await new Promise((resolve) => setImmediate(resolve));
     }
-    if (this.executing) {
-      await this.executing;
-    }
+
+    this.plugin.getLogger('dispatcher').info('local queues drained');
   }
 
   public dispatch() {
-    if (!this.ready) {
-      this.plugin.getLogger('dispatcher').warn(`app is not ready, new dispatching will be ignored`);
+    if (!this.ready && !this.pending.length && !this.events.length) {
       return;
     }
 
@@ -165,7 +225,8 @@ export default class Dispatcher {
     }
 
     if (this.events.length) {
-      return this.prepare();
+      this.prepare();
+      return;
     }
 
     this.executing = (async () => {
@@ -179,7 +240,7 @@ export default class Dispatcher {
           this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
         }
       } else {
-        if (this.plugin.serving()) {
+        if (this.ready && this.plugin.serving()) {
           execution = await this.acquireQueueingExecution();
           if (execution) {
             next = [execution];
@@ -187,7 +248,9 @@ export default class Dispatcher {
         } else {
           this.plugin
             .getLogger('dispatcher')
-            .warn(`${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance, new dispatching will be ignored`);
+            .warn(
+              `${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance or app not ready, new dispatching will be ignored`,
+            );
         }
       }
       if (next) {
@@ -326,56 +389,6 @@ export default class Dispatcher {
 
     return execution;
   }
-
-  private prepare = async () => {
-    if (this.executing && this.plugin.db.options.dialect === 'sqlite') {
-      await this.executing;
-    }
-
-    const event = this.events.shift();
-    this.eventsCount = this.events.length;
-    if (!event) {
-      this.plugin.getLogger('dispatcher').info(`events queue is empty, no need to prepare`);
-      return;
-    }
-
-    const logger = this.plugin.getLogger(event[0].id);
-    logger.info(`preparing execution for event`);
-
-    try {
-      const execution = await this.createExecution(...event);
-      // NOTE: cache first execution for most cases
-      if (!execution?.dispatched) {
-        if (this.plugin.serving() && !this.executing && !this.pending.length) {
-          logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
-          this.pending.push({ execution });
-        } else {
-          logger.info(
-            `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
-          );
-          try {
-            await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
-              executionId: execution.id,
-            });
-          } catch (qErr) {
-            logger.error(`publishing execution (${execution.id}) to queue failed:`, { error: qErr });
-          }
-        }
-      }
-    } catch (error) {
-      logger.error(`failed to create execution:`, { error });
-    }
-
-    if (this.events.length) {
-      await this.prepare();
-    } else {
-      this.plugin.getLogger('dispatcher').info('no more events need to be prepared, dispatching...');
-      if (this.executing) {
-        await this.executing;
-      }
-      this.dispatch();
-    }
-  };
 
   private async acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null> {
     const logger = this.plugin.getLogger(execution.workflowId);

@@ -1,3 +1,9 @@
+---
+title: "自定义品牌"
+description: "自定义品牌：配置登录页底部品牌文字、右上角「关于」菜单、网站 favicon，支持 HTML 格式，Logo 在系统设置中配置。"
+keywords: "自定义品牌,品牌配置,favicon,关于菜单,登录页品牌,系统管理,NocoBase"
+---
+
 # 自定义品牌
 
 ## 介绍

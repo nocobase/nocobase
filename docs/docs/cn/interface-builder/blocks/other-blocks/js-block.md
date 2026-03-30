@@ -1,3 +1,9 @@
+---
+title: "JSBlock JS 区块"
+description: "JSBlock JS 区块：在独立区块中执行自定义 JavaScript，支持 React、ctx、动态渲染，FlowEngine JS 模型。"
+keywords: "JSBlock,JS 区块,JavaScript 区块,自定义区块,FlowEngine,界面搭建,NocoBase"
+---
+
 # JS Block 区块
 
 ## 介绍

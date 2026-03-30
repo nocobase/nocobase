@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mysql"
+title: "外部数据源 - MySQL"
+description: "接入外部 MySQL 数据库（>=5.7）作为数据源，只读连接已有数据库，数据表同步与字段配置。"
+keywords: "外部 MySQL,MySQL 数据源,外部数据库,数据表同步,NocoBase"
 ---
-
 # 外部数据源 - MySQL
 
 ## 介绍

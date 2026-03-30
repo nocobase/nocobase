@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow'
+title: "工作流概述"
+description: "工作流：可视化编排自动化业务流程，触发器与节点、审批、数据同步、HTTP 请求、人机协同，无需编写代码。"
+keywords: "工作流,自动化,触发器,审批,流程编排,数据同步,人机协同,NocoBase"
 ---
 
 # 概述

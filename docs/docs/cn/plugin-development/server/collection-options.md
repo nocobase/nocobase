@@ -1,3 +1,9 @@
+---
+title: "Collection 配置参数"
+description: "NocoBase defineCollection 配置：name、title、migrationRules、inherits、fields、timestamps、autoGenId 等。"
+keywords: "CollectionOptions,defineCollection,name,fields,migrationRules,inherits,NocoBase"
+---
+
 
 ## Collection 配置参数说明
 

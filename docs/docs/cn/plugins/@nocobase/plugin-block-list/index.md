@@ -1,6 +1,8 @@
 ---
 displayName: "区块：列表"
 packageName: '@nocobase/plugin-block-list'
+title: "区块：列表"
+keywords: "区块：列表,插件,NocoBase"
 description: |
   以列表形式展示数据,支持分页设置
 isFree: true

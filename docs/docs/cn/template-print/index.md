@@ -1,3 +1,9 @@
+---
+title: "模板打印"
+description: "NocoBase 模板打印：Word/Excel/PPT 模板、占位符、动态数据填充、PDF 输出、报价单合同发票生成。"
+keywords: "模板打印,Word,Excel,PDF,占位符,NocoBase"
+---
+
 # 模板打印
 
 <PluginInfo commercial="true" name="action-template-print"></PluginInfo>

@@ -11,6 +11,7 @@ import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base/FieldModel';
 export class AssociationFieldModel extends FieldModel {
   operator = '$eq';
+  updateAssociation = true;
 }
 
 AssociationFieldModel.registerFlow({
@@ -21,8 +22,12 @@ AssociationFieldModel.registerFlow({
       async handler(ctx, params) {
         if ((ctx.model as any).updateAssociation) {
           const currentBlock = ctx.model.context.blockModel;
-          const resource = currentBlock.context.resource as SingleRecordResource;
-          resource.addUpdateAssociationValues((ctx.model.parent as FormItemModel).fieldPath);
+          const resource = currentBlock?.context?.resource as SingleRecordResource | undefined;
+          const fieldPath = (ctx.model.parent as FormItemModel | undefined)?.fieldPath;
+          if (!resource || !fieldPath) {
+            return;
+          }
+          resource.addUpdateAssociationValues(fieldPath);
         }
       },
     },

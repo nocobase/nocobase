@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-cas'
+title: "认证：CAS"
+description: "NocoBase CAS 认证：遵循 Central Authentication Service 协议，使用第三方 IdP 账号登录，激活插件、添加认证、配置并登录。"
+keywords: "CAS,Central Authentication Service,SSO,单点登录,IdP,NocoBase"
 ---
 
 # 认证：CAS

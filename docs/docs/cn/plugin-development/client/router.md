@@ -1,3 +1,9 @@
+---
+title: "Router 路由"
+description: "NocoBase 客户端路由：app.router、add、路由注册、页面导航、React Router 集成。"
+keywords: "Router,路由,app.router,路由注册,页面导航,React Router,NocoBase"
+---
+
 # Router 路由
 
 NocoBase 客户端提供了灵活的路由管理器，支持通过 `router.add()` 和 `pluginSettingsRouter.add()` 扩展页面和插件设置页。

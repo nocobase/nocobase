@@ -1,3 +1,9 @@
+---
+title: "JSAction JS 操作"
+description: "JSAction JS 操作：自定义操作按钮，执行 JavaScript 逻辑，支持 ctx、表单、区块联动。"
+keywords: "JSAction,JS 操作,自定义操作,JavaScript,界面搭建,NocoBase"
+---
+
 # JS Action
 
 ## 介绍

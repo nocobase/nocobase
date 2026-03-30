@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-ui-templates"
+title: "UI 模板"
+description: "界面搭建 UI 模板：预设布局模板、页面模板，快速创建标准界面，支持自定义模板扩展。"
+keywords: "UI 模板,布局模板,页面模板,界面模板,界面搭建,NocoBase"
 ---
-
 # UI 模板
 
 ## 介绍

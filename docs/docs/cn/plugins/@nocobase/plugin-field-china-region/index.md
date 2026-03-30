@@ -1,6 +1,8 @@
 ---
 displayName: "数据表字段：中国行政区划"
 packageName: '@nocobase/plugin-field-china-region'
+title: "数据表字段：中国行政区划"
+keywords: "数据表字段：中国行政区划,插件,NocoBase"
 description: |
   提供中国行政区划数据和字段类型。
 isFree: true

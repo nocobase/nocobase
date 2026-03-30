@@ -1,3 +1,9 @@
+---
+title: "API 参考"
+description: "工作流扩展 API 参考：Workflow Model、节点执行上下文、触发器 API、变量传递。"
+keywords: "工作流,API 参考,Workflow Model,节点上下文,触发器 API,NocoBase"
+---
+
 # API 参考
 
 ## 服务端

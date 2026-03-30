@@ -1,3 +1,9 @@
+---
+title: "模板打印配置"
+description: "NocoBase 模板打印配置：激活详情区块与表格区块的模板打印功能、配置模板。"
+keywords: "模板打印,配置,configuration,NocoBase"
+---
+
 ## 配置说明
 
 ### 激活模板打印功能

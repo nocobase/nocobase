@@ -1,3 +1,9 @@
+---
+title: "DataSourceManager"
+description: "NocoBase 数据源管理器 API：管理多 DataSource 实例，DataSource 抽象类。"
+keywords: "DataSourceManager,DataSource,多数据源,数据源管理,NocoBase"
+---
+
 # DataSourceManager
 
 `DataSourceManager` 是多 `dataSource` 实例的管理类。

@@ -1,3 +1,9 @@
+---
+title: "ctx.model"
+description: "ctx.model 当前 RunJS 执行上下文所在的 FlowModel 实例，JSBlock/JSField/JSAction 默认入口，BlockModel、ActionModel、JSEditableFieldModel。"
+keywords: "ctx.model,FlowModel,BlockModel,ActionModel,JSBlock,JSField,JSAction,RunJS,NocoBase"
+---
+
 # ctx.model
 
 当前 RunJS 执行上下文所在的 `FlowModel` 实例，是 JSBlock、JSField、JSAction 等场景的默认入口。具体类型随上下文变化：可能是 `BlockModel`、`ActionModel`、`JSEditableFieldModel` 等子类。

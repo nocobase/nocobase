@@ -1,3 +1,9 @@
+---
+title: "编写第一个 NocoBase 插件"
+description: "从零创建区块插件：yarn pm create、插件骨架、client/server 目录、注册区块、开发调试流程。"
+keywords: "编写插件,第一个插件,yarn pm create,插件骨架,区块插件,NocoBase 插件开发"
+---
+
 # 编写第一个插件
 
 本文将带你从零开始创建一个可在页面中使用的区块插件，帮助你了解 NocoBase 插件的基本结构和开发流程。

@@ -1,6 +1,8 @@
 ---
 displayName: "可视化数据表管理"
 packageName: '@nocobase/plugin-graph-collection-manager'
+title: "可视化数据表管理"
+keywords: "可视化数据表管理,插件,NocoBase"
 description: |
   类似 ER 图的工具，目前只支持主数据库。
 isFree: true

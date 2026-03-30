@@ -1,3 +1,9 @@
+---
+title: "Formula.js"
+description: "Formula.js 兼容 Excel 公式：日期、金融、工程、逻辑、数学、统计、文本函数，用于公式字段、联动规则、工作流计算。"
+keywords: "Formula.js,Excel 公式,日期函数,数学函数,统计函数,金融函数,NocoBase"
+---
+
 # Formula.js
 
 [Formula.js](http://formulajs.info/) 提供了大量兼容 Excel 的函数。

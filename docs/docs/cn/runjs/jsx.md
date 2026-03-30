@@ -1,3 +1,9 @@
+---
+title: "RunJS JSX 语法"
+description: "RunJS 支持 JSX 语法，像写 React 组件一样编写代码，自动编译为 createElement，内置 React、antd，用于 JSBlock、JSField 自定义 UI。"
+keywords: "JSX,React,antd,JSBlock,JSField,createElement,RunJS,NocoBase"
+---
+
 # JSX
 
 RunJS 支持 JSX 语法，可以像写 React 组件一样编写代码，JSX 会在执行前自动编译。

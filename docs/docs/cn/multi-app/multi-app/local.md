@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-app-supervisor'
+title: "共享内存多应用模式"
+description: "共享内存模式：单实例多应用，APP_DISCOVERY_ADAPTER=local、APP_PROCESS_ADAPTER=local，独立数据库/Schema、JWT 密钥、自定义域名，/apps/:appName/admin 访问。"
+keywords: "共享内存,local 模式,APP_DISCOVERY_ADAPTER,APP_PROCESS_ADAPTER,子应用,应用监管器,NocoBase"
 ---
-
 # 共享内存模式
 
 ## 介绍

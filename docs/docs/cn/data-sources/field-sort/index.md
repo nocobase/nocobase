@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-field-sort"
+title: "排序字段"
+description: "排序字段对数据表记录排序，支持先分组再排序（sort1），用于自定义记录显示顺序。"
+keywords: "排序字段,Sort 字段,分组排序,sort1,NocoBase"
 ---
-
 # 排序字段
 
 ## 介绍

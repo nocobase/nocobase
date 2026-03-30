@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "Outlook 配置"
+description: "Outlook 邮箱接入：Azure 注册、Microsoft Entra ID、App registrations、Client ID/Secret、OAuth 回调 URL 配置。"
+keywords: "Outlook 配置,微软邮箱,Azure,Microsoft Entra ID,OAuth,NocoBase"
 ---
-
 # 微软配置
 
 ### 前置条件

@@ -1,3 +1,9 @@
+---
+title: "Telemetry 遥测"
+description: "NocoBase 服务端遥测：指标、追踪、可观测性、Telemetry API。"
+keywords: "Telemetry,遥测,指标,追踪,可观测性,NocoBase"
+---
+
 # 遥测
 
 :::warning{title=实验性}

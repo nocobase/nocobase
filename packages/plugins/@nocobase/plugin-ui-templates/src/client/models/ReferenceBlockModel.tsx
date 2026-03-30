@@ -287,19 +287,6 @@ export class ReferenceBlockModel extends BlockModel {
       } catch (_) {
         // ignore
       }
-    } else {
-      currentResource.setDataSourceKey?.(init.dataSourceKey);
-      currentResource.setResourceName?.(init.associationName || init.collectionName);
-      if (Object.prototype.hasOwnProperty.call(init, 'sourceId')) {
-        currentResource.setSourceId?.(init.sourceId);
-      } else if ('sourceId' in currentResource) {
-        currentResource.sourceId = null;
-      }
-      if (Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
-        currentResource.setFilterByTk?.(init.filterByTk);
-      } else {
-        currentResource.removeRequestParameter?.('filterByTk');
-      }
     }
 
     if (currentAppends.length) {

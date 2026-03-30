@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+title: "自定义操作事件"
+description: "自定义操作事件触发器：绑定自定义操作按钮，点击时触发工作流，实现按钮驱动的自动化。"
+keywords: "工作流,自定义操作事件,Custom Action,按钮触发,工作流绑定,NocoBase"
 ---
-
 # 自定义操作事件
 
 ## 介绍

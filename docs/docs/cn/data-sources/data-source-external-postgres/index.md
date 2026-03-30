@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-postgres"
+title: "外部数据源 - PostgreSQL"
+description: "接入外部 PostgreSQL 数据库（>=9.5）作为数据源，只读连接已有数据库，数据表同步与字段配置。"
+keywords: "外部 PostgreSQL,PostgreSQL 数据源,外部数据库,数据表同步,NocoBase"
 ---
-
 # 外部数据源 - PostgreSQL
 
 ## 介绍

@@ -1,3 +1,9 @@
+---
+title: "数字"
+description: "数字字段，支持整数、小数、double、float、decimal 等类型。"
+keywords: "数字,number,数值字段,double,float,decimal,NocoBase"
+---
+
 # 数字
 
 ## 介绍

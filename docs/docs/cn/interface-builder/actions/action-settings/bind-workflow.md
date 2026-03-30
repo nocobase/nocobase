@@ -1,3 +1,9 @@
+---
+title: "绑定工作流"
+description: "操作设置：将操作按钮绑定到工作流，点击时触发指定工作流执行。"
+keywords: "绑定工作流,bind workflow,工作流触发,操作设置,界面搭建,NocoBase"
+---
+
 # 绑定工作流
 
 ## 介绍

@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工角色与权限"
+description: "AI 员工权限管理：控制角色可用的 AI 员工、数据访问权限（系统内置工具遵循用户权限、工作流自定义工具独立权限）、Overall Analytics 与 SQL Execution 区别。"
+keywords: "AI 员工权限,角色权限,数据访问,Overall Analytics,SQL Execution,NocoBase"
+---
+
 # 角色与权限
 
 ## 介绍

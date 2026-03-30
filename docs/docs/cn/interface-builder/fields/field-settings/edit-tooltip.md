@@ -1,3 +1,9 @@
+---
+title: "编辑提示信息"
+description: "字段设置：配置字段的 tooltip 提示信息，鼠标悬停时显示。"
+keywords: "编辑提示,tooltip,提示信息,字段设置,界面搭建,NocoBase"
+---
+
 # 编辑提示信息
 
 ## 介绍

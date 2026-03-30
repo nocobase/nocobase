@@ -1,3 +1,9 @@
+---
+title: "Database"
+description: "NocoBase Database API：数据库实例、Collection 定义、Repository 操作、连接配置。"
+keywords: "Database API,数据库实例,Collection,Repository,连接配置,NocoBase"
+---
+
 # Database
 
 ## 概览

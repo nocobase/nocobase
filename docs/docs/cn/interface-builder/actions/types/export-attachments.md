@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-action-export-pro"
+title: "导出附件操作"
+description: "导出附件操作：导出记录关联的文件附件，支持批量导出、压缩包下载。"
+keywords: "导出附件,ExportAttachments,附件导出,文件下载,界面搭建,NocoBase"
 ---
 # 导出附件
 

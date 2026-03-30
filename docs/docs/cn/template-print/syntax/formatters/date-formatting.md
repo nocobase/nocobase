@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 日期格式化"
+description: "模板打印日期格式化器：formatD 按 patternOut/patternIn 格式化日期，支持 YYYY-MM-DD、HH:mm 等格式。"
+keywords: "模板打印,日期格式化,formatD,NocoBase"
+---
+
 ### 日期格式化
 
 #### 1. :formatD(patternOut, patternIn)

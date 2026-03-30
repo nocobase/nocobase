@@ -1,3 +1,9 @@
+---
+title: "Middleware 中间件"
+description: "NocoBase 服务端中间件：app.use、Koa 中间件、请求拦截、资源中间件。"
+keywords: "Middleware,中间件,app.use,Koa,请求拦截,资源中间件,NocoBase"
+---
+
 # Middleware 中间件
 
 NocoBase Server 的中间件（Middleware）本质上是 **Koa 中间件**，你可以像在 Koa 一样操作 `ctx` 对象处理请求和响应。但由于 NocoBase 需要管理不同业务层的逻辑，如果所有中间件都放在一起，会非常难以维护和管理。  

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-acl'
+title: "NocoBase 角色管理"
+description: "NocoBase 角色管理：Admin、Member 默认角色、角色增删改、角色标识、默认角色配置、角色切换、多角色分配。"
+keywords: "角色管理,Admin,Member,默认角色,角色切换,ACL,NocoBase"
 ---
 
 # 角色

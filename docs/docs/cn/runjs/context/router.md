@@ -1,3 +1,9 @@
+---
+title: "ctx.router"
+description: "ctx.router 路由实例，用于编程式导航、获取当前路径、跳转页面。"
+keywords: "ctx.router,路由,编程式导航,跳转页面,RunJS,NocoBase"
+---
+
 # ctx.router
 
 基于 React Router 的路由实例，用于在 RunJS 中通过代码进行导航。通常与 `ctx.route`、`ctx.location` 配合使用。

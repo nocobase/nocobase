@@ -1,3 +1,9 @@
+---
+title: "NocoBase RunJS 概述"
+description: "RunJS 是 NocoBase 中 JS 区块、JS 字段、JS 操作的 JavaScript 执行环境，支持顶层 await、ctx 上下文、导入模块、容器内渲染，运行于安全沙箱。"
+keywords: "RunJS,JS 区块,JS 字段,JS 操作,JavaScript 执行环境,ctx 上下文,沙箱,NocoBase"
+---
+
 # RunJS 概述
 
 RunJS 是 NocoBase 中用于 **JS 区块**、**JS 字段**、**JS 操作** 等场景的 JavaScript 执行环境。代码运行在受限沙箱中，可安全访问 `ctx`（上下文 API），并具备以下能力：

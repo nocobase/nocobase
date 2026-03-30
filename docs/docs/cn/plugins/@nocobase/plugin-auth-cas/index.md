@@ -1,6 +1,8 @@
 ---
 displayName: "认证：CAS"
 packageName: '@nocobase/plugin-auth-cas'
+title: "认证：CAS"
+keywords: "认证：CAS,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

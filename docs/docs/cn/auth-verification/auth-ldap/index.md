@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-ldap'
+title: "认证：LDAP"
+description: "NocoBase LDAP 认证：遵循 LDAP 协议，使用 LDAP 服务器账号密码登录，配置 LDAP URL、Bind DN、Search DN、属性映射。"
+keywords: "LDAP,目录服务,企业认证,Bind DN,Search DN,属性映射,NocoBase"
 ---
 
 # 认证：LDAP

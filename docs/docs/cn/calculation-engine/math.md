@@ -1,3 +1,9 @@
+---
+title: "Math.js"
+description: "Math.js 数学库：表达式解析、代数、算术、矩阵、复数、三角函数、统计、单位转换，用于公式字段与工作流计算。"
+keywords: "Math.js,表达式解析,矩阵运算,代数计算,统计函数,单位转换,NocoBase"
+---
+
 # Mathjs
 
 [Math.js](https://mathjs.org/) 是一个功能丰富的 JavaScript 和 Node.js 数学库。

@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工联网搜索"
+description: "联网搜索补充模型训练数据之外的最新信息，取决于模型是否支持 Web Search，在对话输入区域开启/关闭。"
+keywords: "联网搜索,Web Search,AI 检索,NocoBase"
+---
+
 # 联网搜索
 
 联网搜索用于补充模型训练数据之外的最新信息。

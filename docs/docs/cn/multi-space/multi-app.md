@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-multi-app-manager"
+title: "多应用插件"
+description: "Multi-App 插件：动态创建独立子应用，独立数据库/Schema、端口、自定义域名，/_app/:appName/admin 访问，PM2 命令行管理，多租户场景。"
+keywords: "多应用,Multi-App,子应用,多租户,独立数据库,PM2,yarn nocobase pm2,NocoBase"
 ---
-
 # 多应用
 
 

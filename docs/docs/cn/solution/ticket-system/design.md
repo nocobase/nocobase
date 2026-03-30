@@ -1,3 +1,9 @@
+---
+title: "工单方案详细设计"
+description: "工单方案 v2.0 详细设计：T 型数据架构（主表+业务附表）、AI 员工团队（Sam/Grace/Max/Lexi）、知识自循环、核心表结构、工作流。"
+keywords: "工单设计,T 型架构,AI 工单,工单主表,知识库,SLA,NocoBase"
+---
+
 # 工单方案详细设计
 
 > **版本**: v2.0-beta

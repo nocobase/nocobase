@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "从企业微信同步用户数据"
+description: "NocoBase 从企业微信同步用户数据：企业微信自建应用、企业 ID、AgentId、Secret、通讯录同步、可信 IP 配置。"
+keywords: "企业微信,WeCom,用户同步,通讯录同步,AgentId,Secret,NocoBase"
+---
+
 # 从企业微信同步用户数据
 
 <PluginInfo commercial="true" name="wecom"></PluginInfo>

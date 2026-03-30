@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
+title: "Iframe 区块"
+description: "Iframe 区块：嵌入外部网页或应用，通过 URL 加载第三方内容，支持跨域展示。"
+keywords: "Iframe 区块,Iframe,嵌入网页,外部链接,界面搭建,NocoBase"
 ---
 # Iframe 区块
 

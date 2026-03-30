@@ -1,3 +1,9 @@
+---
+title: "ACL 权限控制（客户端）"
+description: "NocoBase 客户端 ACL：app.acl、can、权限判断、界面元素显隐、前端权限控制。"
+keywords: "ACL,权限控制,app.acl,can,前端权限,客户端,NocoBase"
+---
+
 # ACL 权限控制
 
 :::tip

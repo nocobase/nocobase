@@ -1,9 +1,9 @@
 ---
-
 pkg: '@nocobase/plugin-action-duplicate'
-
+title: "复制操作"
+description: "复制操作：复制当前记录，创建新记录并填充相同数据。"
+keywords: "复制操作,Duplicate,复制记录,界面搭建,NocoBase"
 ---
-
 # 复制
 
 ## 介绍

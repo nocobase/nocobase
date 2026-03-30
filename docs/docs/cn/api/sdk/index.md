@@ -1,3 +1,9 @@
+---
+title: "APIClient"
+description: "NocoBase 前端 SDK APIClient：HTTP 请求、Auth、Storage，调用后端 API。"
+keywords: "APIClient,SDK,HTTP 请求,前端 API,Auth,Storage,NocoBase"
+---
+
 # APIClient
 
 ## 概览

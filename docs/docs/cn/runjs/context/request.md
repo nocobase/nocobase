@@ -1,3 +1,9 @@
+---
+title: "ctx.request()"
+description: "ctx.request() 在 RunJS 中发起带认证的 HTTP 请求，自动携带 baseURL、Token、locale，沿用应用拦截与错误处理。"
+keywords: "ctx.request,HTTP 请求,baseURL,Token,认证,RunJS,NocoBase"
+---
+
 # ctx.request()
 
 在 RunJS 中发起带认证的 HTTP 请求。请求会自动携带当前应用的 baseURL、Token、 locale、 role 等，并沿用应用的请求拦截与错误处理逻辑。

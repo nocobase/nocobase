@@ -1,3 +1,9 @@
+---
+title: "ctx.t()"
+description: "ctx.t() RunJS 国际化翻译方法，根据 key 返回当前语言文案。"
+keywords: "ctx.t,国际化,翻译,多语言文案,RunJS,NocoBase"
+---
+
 # ctx.t()
 
 在 RunJS 中用于翻译文案的 i18n 快捷函数，基于当前上下文的语言设置。适合按钮、标题、提示等内联文案的国际化。

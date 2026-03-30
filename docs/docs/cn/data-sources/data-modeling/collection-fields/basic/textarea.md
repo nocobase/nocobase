@@ -1,3 +1,9 @@
+---
+title: "多行文本"
+description: "多行文本字段，适用于长文本输入，支持换行与多行编辑。"
+keywords: "多行文本,textarea,文本域,文本字段,NocoBase"
+---
+
 # 多行文本
 
 ## 介绍

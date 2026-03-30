@@ -1,3 +1,9 @@
+---
+title: "CronJobManager 定时任务"
+description: "NocoBase 定时任务：app.cronJobManager、cron 表达式、注册与调度定时任务。"
+keywords: "CronJobManager,定时任务,cron,app.cronJobManager,任务调度,NocoBase"
+---
+
 # CronJobManager 定时任务管理
 
 `CronJobManager` 是 NocoBase 提供的一个基于 [cron](https://www.npmjs.com/package/cron) 的定时任务管理器。它允许插件在服务端注册定时任务，用于周期性执行特定逻辑。

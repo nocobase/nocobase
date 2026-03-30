@@ -1,6 +1,8 @@
 import { pluginSass } from '@rsbuild/plugin-sass';
 import { defineConfig, type RspressPlugin } from '@rspress/core';
 import { pluginLlms } from '@rspress/plugin-llms';
+import { pluginOgDescription } from './plugins/pluginOgDescription';
+import { pluginRemoveGenerator } from './plugins/pluginRemoveGenerator';
 // import { pluginPreview } from '@rspress/plugin-preview';
 import * as path from 'node:path';
 import * as fs from 'node:fs/promises';
@@ -22,7 +24,7 @@ const locales = {
 
 const currentLocale = locales[lang as keyof typeof locales] || locales.en;
 
-const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr'];
+const indexLanguages = ['en', 'cn', 'ja', 'ko', 'es', 'pt', 'de', 'fr', 'ru'];
 
 const langMap = {
   en: 'en-US',
@@ -33,6 +35,7 @@ const langMap = {
   pt: 'pt-PT',
   de: 'de-DE',
   fr: 'fr-FR',
+  ru: 'ru-RU',
 };
 
 function sitemap(): RspressPlugin {
@@ -187,6 +190,8 @@ export default defineConfig({
     //   },
     // }),
     pluginLlms(),
+    pluginOgDescription(),
+    pluginRemoveGenerator(),
     sitemap(),
   ],
   lang,

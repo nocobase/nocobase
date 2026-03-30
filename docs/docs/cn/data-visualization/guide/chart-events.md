@@ -1,3 +1,9 @@
+---
+title: "自定义交互事件"
+description: "通过 chart.on 注册 ECharts 交互事件：点击高亮、跳转页面、下钻分析、打开弹窗，支持 params 参数与 dispatchAction。"
+keywords: "图表交互事件,chart.on,点击高亮,跳转,下钻,dispatchAction,NocoBase"
+---
+
 # 自定义交互事件
 
 在事件编辑器编写 JS，通过 ECharts 实例 `chart` 注册交互行为，实现联动。例如跳转到新页面、打开弹窗下钻分析等。

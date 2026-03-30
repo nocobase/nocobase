@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-block-list"
+title: "列表区块"
+description: "列表区块：以列表形式展示数据源数据，支持卡片式布局、分页、筛选、操作配置。"
+keywords: "列表区块,ListBlock,数据列表,卡片布局,分页筛选,界面搭建,NocoBase"
 ---
 # 列表区块
 

@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-app-supervisor'
+title: "多环境混合部署模式"
+description: "多环境模式：Supervisor 入口应用 + Worker 工作应用，Redis 配置缓存与命令通信，APP_MODE、ENVIRONMENT_NAME、Docker Compose 部署，应用访问代理。"
+keywords: "多环境,remote 模式,Supervisor,Worker,APP_MODE,Redis,Docker Compose,应用代理,NocoBase"
 ---
-
 # 多环境模式
 
 ## 介绍

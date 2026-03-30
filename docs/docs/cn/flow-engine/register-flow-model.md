@@ -1,3 +1,9 @@
+---
+title: "注册 FlowModel"
+description: "注册 FlowModel：FlowEngine.registerFlowModel 将 FlowModel 注册到引擎，供插件与页面使用，registerFlowModel 用法。"
+keywords: "注册 FlowModel,registerFlowModel,FlowEngine,插件注册,FlowModel 注册,NocoBase"
+---
+
 # 注册 FlowModel
 
 ## 从自定义 FlowModel 开始

@@ -1,3 +1,9 @@
+---
+title: "BaseAuth"
+description: "NocoBase 认证基类：BaseAuth 扩展认证类型的基类。"
+keywords: "BaseAuth,认证,扩展认证,NocoBase"
+---
+
 # BaseAuth
 
 ## 概览

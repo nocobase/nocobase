@@ -1,3 +1,9 @@
+---
+title: "Client Plugin 客户端插件"
+description: "NocoBase 客户端插件：继承 Plugin 类、registerBlock、registerField、registerComponent、生命周期。"
+keywords: "Client Plugin,Plugin 类,registerBlock,registerField,registerComponent,客户端插件,NocoBase"
+---
+
 # Plugin 插件
 
 在 NocoBase 中，**客户端插件（Client Plugin）** 是扩展和定制前端功能的主要方式。通过继承 `@nocobase/client` 提供的 `Plugin` 基类，开发者可以在不同生命周期阶段注册逻辑、添加页面组件、扩展菜单或集成第三方功能。

@@ -1,3 +1,9 @@
+---
+title: "NocoBase CRM 2.0 解决方案"
+description: "基于 NocoBase 低代码的模块化销售管理系统：线索→商机→报价→订单全流程，AI 员工辅助决策，客户/商机/报价/订单/产品/邮件模块可裁剪，自托管数据主权。"
+keywords: "NocoBase CRM,客户管理,商机管理,销售漏斗,低代码,AI 员工,NocoBase"
+---
+
 # NocoBase CRM 2.0 解决方案
 
 > 基于 NocoBase 低代码平台的模块化销售管理系统，AI 员工辅助决策

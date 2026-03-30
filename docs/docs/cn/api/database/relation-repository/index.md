@@ -1,3 +1,9 @@
+---
+title: "RelationRepository"
+description: "NocoBase 关系型 Repository：不加载关联即可操作关联数据，BelongsTo/HasMany/BelongsToMany 等实现。"
+keywords: "RelationRepository,BelongsTo,HasMany,BelongsToMany,关联 Repository,NocoBase"
+---
+
 # RelationRepository
 
 `RelationRepository` 是关系类型的 `Repository` 对象，`RelationRepository` 可以实现在不加载关联的情况下对关联数据进行操作。基于 `RelationRepository`，每种关联都派生出对应的实现，分别为

@@ -1,3 +1,9 @@
+---
+title: "线"
+description: "线几何字段，存储线段（PostgreSQL line 类型）。"
+keywords: "线,line,几何字段,PostgreSQL,NocoBase"
+---
+
 # 线
 
 ## 介绍

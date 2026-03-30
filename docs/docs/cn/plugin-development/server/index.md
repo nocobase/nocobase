@@ -1,3 +1,9 @@
+---
+title: "插件服务端开发概述"
+description: "NocoBase 服务端插件开发：Plugin 类、app、db、资源、ACL、数据库、迁移、中间件、事件、命令行。"
+keywords: "服务端插件,Server Plugin,Plugin 类,app,db,ACL,迁移,NocoBase"
+---
+
 # 概述
 
 NocoBase 服务端插件开发提供了多种功能和能力，帮助开发者定制和扩展 NocoBase 的核心功能。以下是 NocoBase 服务端插件开发的主要能力和相关章节：

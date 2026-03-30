@@ -1,3 +1,9 @@
+---
+title: "JSItem JS 项"
+description: "JSItem JS 项：在子表格项中嵌入自定义逻辑，支持 React、ctx、行数据访问。"
+keywords: "JSItem,JS 项,子表格,自定义逻辑,界面搭建,NocoBase"
+---
+
 # JS Item
 
 ## 介绍

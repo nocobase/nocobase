@@ -37,10 +37,8 @@ describe('dataLoadingMode action (v2)', () => {
 
   it('applies manual mode only for list resources', () => {
     const resource = new MultiRecordResource(new FlowContext());
-    const setStepParams = vi.fn();
     const blockModel = {
       resource,
-      setStepParams,
       hasActiveFilters: vi.fn().mockReturnValue(false),
     } as any;
     const setDataSpy = vi.spyOn(resource, 'setData');
@@ -50,7 +48,6 @@ describe('dataLoadingMode action (v2)', () => {
 
     dataLoadingMode.handler?.({ blockModel } as any, { mode: 'manual' });
 
-    expect(setStepParams).toHaveBeenCalledWith('dataLoadingModeSettings', { mode: 'manual' });
     expect(setDataSpy).toHaveBeenCalledWith([]);
     expect(setMetaSpy).toHaveBeenCalledWith({ count: 0, hasNext: false });
     expect(setPageSpy).toHaveBeenCalledWith(1);
@@ -59,17 +56,14 @@ describe('dataLoadingMode action (v2)', () => {
 
   it('refreshes data when switching to auto mode for list resources', () => {
     const resource = new MultiRecordResource(new FlowContext());
-    const setStepParams = vi.fn();
     const blockModel = {
       resource,
-      setStepParams,
       hasActiveFilters: vi.fn().mockReturnValue(true),
     } as any;
     const refreshSpy = vi.spyOn(resource, 'refresh').mockResolvedValue();
 
     dataLoadingMode.handler?.({ blockModel } as any, { mode: 'auto' });
 
-    expect(setStepParams).toHaveBeenCalledWith('dataLoadingModeSettings', { mode: 'auto' });
     expect(refreshSpy).toHaveBeenCalled();
   });
 });

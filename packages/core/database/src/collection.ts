@@ -273,7 +273,7 @@ export class Collection<
         label: `${this.name}.${field.name}`,
         value: val,
       });
-      const { error } = joiSchema.validate(val, { convert: false });
+      const { error } = joiSchema.validate(val);
       if (error) {
         throw error;
       }

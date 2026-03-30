@@ -1,3 +1,9 @@
+---
+title: "嵌入 NocoBase 到外部系统"
+description: "Embed 插件将 NocoBase 页面嵌入其他网站或应用：复制嵌入链接、token 用户打通、iframe 集成，商业插件。"
+keywords: "嵌入 NocoBase,Embed 插件,iframe 嵌入,用户打通,token 认证,外部系统集成,NocoBase"
+---
+
 # 嵌入 NocoBase
 
 <PluginInfo commercial="true" name="embed"></PluginInfo>

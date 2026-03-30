@@ -1,3 +1,9 @@
+---
+title: "文件管理器"
+description: "文件表、附件字段与文件存储引擎，支持本地存储、阿里云 OSS、Amazon S3、腾讯云 COS，管理文件元信息与上传。"
+keywords: "文件管理器,文件表,附件字段,存储引擎,OSS,S3,COS,NocoBase"
+---
+
 # 文件管理器
 
 <PluginInfo name="file-manager"></PluginInfo>

@@ -1,3 +1,9 @@
+---
+title: "ctx.on()"
+description: "ctx.on() 监听区块或表单事件，如 valuesChange、submit，用于联动、校验、自定义逻辑。"
+keywords: "ctx.on,事件监听,valuesChange,submit,表单联动,RunJS,NocoBase"
+---
+
 # ctx.on()
 
 在 RunJS 中订阅上下文事件（如字段值变化、属性变化、资源刷新等）。事件会根据类型映射到 `ctx.element` 上的自定义 DOM 事件或 `ctx.resource` 的内部事件总线。

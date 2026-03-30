@@ -1,3 +1,9 @@
+---
+title: "HasOneRepository"
+description: "NocoBase HasOne 关系 Repository：处理一对一关联的增删改查，接口与 BelongsToRepository 一致。"
+keywords: "HasOneRepository,HasOne,一对一,Repository,NocoBase"
+---
+
 # HasOneRepository
 
 ## 概览

@@ -1,6 +1,8 @@
 ---
 displayName: "模板打印"
 packageName: '@nocobase/plugin-action-template-print'
+title: "模板打印"
+keywords: "模板打印,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

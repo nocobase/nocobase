@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "RAG 检索增强生成"
+description: "在 AI 员工设置中启用 RAG，配置 Knowledge Base Prompt、知识库选择、Top K、Score 阈值，AI 基于检索文档回复。"
+keywords: "RAG,检索增强,知识库检索,Top K,NocoBase"
+---
+
 # RAG 检索
 
 ## 介绍

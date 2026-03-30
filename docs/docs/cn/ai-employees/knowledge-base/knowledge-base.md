@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 知识库管理"
+description: "知识库是 RAG 检索基础，组织文档并构建索引。创建 Local/Readonly/External 知识库、上传文档、配置向量存储与文件存储。"
+keywords: "知识库,Local 知识库,RAG,向量存储,文档上传,NocoBase"
+---
+
 # 知识库
 
 ## 介绍

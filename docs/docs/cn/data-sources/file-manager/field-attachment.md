@@ -1,3 +1,9 @@
+---
+title: "附件字段"
+description: "附件字段与文件表关联，支持「附件类型字段」或「关系字段」配置，用于存储图片、文档等文件。"
+keywords: "附件字段,Field Attachment,文件字段,文件关联,NocoBase"
+---
+
 # 附件字段
 
 <PluginInfo name="file-manager"></PluginInfo>

@@ -1,3 +1,9 @@
+---
+title: "Markdown(Vditor)"
+description: "基于 Vditor 的 Markdown 富文本字段，支持 Markdown 语法编辑与预览。"
+keywords: "Markdown,Vditor,富文本字段,Markdown 编辑器,NocoBase"
+---
+
 # Markdown(Vditor)
 
 ## 介绍

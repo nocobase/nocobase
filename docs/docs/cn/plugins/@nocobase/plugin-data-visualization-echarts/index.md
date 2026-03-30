@@ -1,6 +1,8 @@
 ---
 displayName: "数据可视化：ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
+title: "数据可视化：ECharts"
+keywords: "数据可视化：ECharts,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

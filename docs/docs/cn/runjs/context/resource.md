@@ -1,3 +1,9 @@
+---
+title: "ctx.resource"
+description: "ctx.resource 当前区块关联的 API 资源实例，用于 CRUD、刷新、获取选中行等数据操作。"
+keywords: "ctx.resource,API 资源,CRUD,getData,refresh,RunJS,NocoBase"
+---
+
 # ctx.resource
 
 当前上下文中的 **FlowResource** 实例，用于访问和操作数据。多数区块（表单、表格、详情等）和弹窗场景下，运行环境会预先绑定 `ctx.resource`；JSBlock 等默认无 resource 的场景，需先调用 [ctx.initResource()](./init-resource.md) 初始化，再通过 `ctx.resource` 使用。

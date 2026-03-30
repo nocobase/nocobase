@@ -1,3 +1,9 @@
+---
+title: "ctx.off()"
+description: "ctx.off() 移除 ctx.on() 注册的事件监听器，用于清理、避免重复监听。"
+keywords: "ctx.off,ctx.on,事件监听,移除监听,RunJS,NocoBase"
+---
+
 # ctx.off()
 
 移除通过 `ctx.on(eventName, handler)` 注册的事件监听。常与 [ctx.on](./on.md) 配合使用，在适当时机取消订阅，避免内存泄漏或重复触发。

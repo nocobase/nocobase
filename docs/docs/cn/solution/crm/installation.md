@@ -1,3 +1,9 @@
+---
+title: "CRM 2.0 如何安装"
+description: "CRM 2.0 安装部署：备份管理器还原（专业/企业版）或 SQL 文件导入（社区版），需 PostgreSQL 16，DB_UNDERSCORED 不能为 true。"
+keywords: "CRM 安装,备份还原,备份管理器,SQL 导入,PostgreSQL,NocoBase"
+---
+
 # 如何安装
 
 > 当前版本采用**备份还原**的形式进行部署。在后续版本中，我们可能会更换为**增量迁移**的形式，以便于将解决方案集成到您已有的系统中。

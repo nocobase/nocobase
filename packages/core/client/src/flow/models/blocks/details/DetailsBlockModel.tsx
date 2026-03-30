@@ -35,6 +35,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
   subModels?: { grid: DetailsGridModel; actions?: RecordActionModel[] };
 }> {
   static scene = BlockSceneEnum.oam;
+  private hadSingleRecordData = false;
+  private hasMultiRefreshDispatched = false;
 
   _defaultCustomModelClasses = {
     RecordActionGroupModel: 'RecordActionGroupModel',
@@ -63,6 +65,8 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
   onInit(options: any): void {
     super.onInit(options);
+    this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+    this.hasMultiRefreshDispatched = false;
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
@@ -73,10 +77,32 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       ),
       meta: recordMeta,
     });
+
+    this.resource.on('refresh', () => {
+      if (this.isMultiRecordResource()) {
+        this.hasMultiRefreshDispatched = true;
+        void dispatchEventDeep(this, 'paginationChange');
+        return;
+      }
+
+      const hadDataBefore = this.hadSingleRecordData;
+      this.hadSingleRecordData = this.resource?.hasData?.() ?? false;
+
+      // 初次从“无数据”加载到“有数据”时不触发分页联动刷新，避免初始化阶段额外调度。
+      if (!hadDataBefore) {
+        return;
+      }
+
+      void dispatchEventDeep(this, 'paginationChange');
+    });
   }
 
   isMultiRecordResource() {
     return this.resource instanceof MultiRecordResource;
+  }
+
+  hasDispatchedMultiRefresh() {
+    return this.hasMultiRefreshDispatched;
   }
 
   getCurrentRecord() {
@@ -94,7 +120,6 @@ export class DetailsBlockModel extends CollectionBlockModel<{
       multiResource.setPage(page);
       multiResource.loading = true;
       await this.refresh();
-      await dispatchEventDeep(this, 'paginationChange');
     }
   };
 
@@ -339,6 +364,21 @@ DetailsBlockModel.registerFlow({
     refreshPaginationRelatedStates: {
       async handler(ctx) {
         if (ctx.model.hidden || !ctx.model.isMultiRecordResource()) {
+          return;
+        }
+        if (ctx.model.hasDispatchedMultiRefresh()) {
+          return;
+        }
+
+        const resource: any = ctx.model.resource;
+        if (!resource) {
+          return;
+        }
+        const loadingMode = resource.dataLoadingMode ?? resource.loadingMode;
+        const isManualLoadingMode = loadingMode === 'manual';
+        const hasActiveFilters = typeof resource.hasActiveFilters === 'function' ? resource.hasActiveFilters() : false;
+        // 仅当 manual 且无活动筛选时，refresh 流程可能不会触发，才兜底分发一次。
+        if (!isManualLoadingMode || hasActiveFilters) {
           return;
         }
 

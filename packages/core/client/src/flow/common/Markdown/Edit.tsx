@@ -261,28 +261,28 @@ const Edit = (props) => {
     };
   }, [zIndex]);
 
-  useLayoutEffect(() => {
-    if (!containerRef.current) return;
+  // useLayoutEffect(() => {
+  //   if (!containerRef.current) return;
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const target = entry.target;
-        if (target.className.includes('vditor--fullscreen')) {
-          document.body.appendChild(target);
-          vdFullscreen.current = true;
-        } else if (vdFullscreen.current) {
-          containerParentRef.current?.appendChild(target);
-          vdFullscreen.current = false;
-        }
-      }
-    });
+  //   const observer = new ResizeObserver((entries) => {
+  //     for (const entry of entries) {
+  //       const target = entry.target;
+  //       if (target.className.includes('vditor--fullscreen')) {
+  //         document.body.appendChild(target);
+  //         vdFullscreen.current = true;
+  //       } else if (vdFullscreen.current) {
+  //         containerParentRef.current?.appendChild(target);
+  //         vdFullscreen.current = false;
+  //       }
+  //     }
+  //   });
 
-    observer.observe(containerRef.current);
+  //   observer.observe(containerRef.current);
 
-    return () => {
-      observer.unobserve(containerRef.current);
-    };
-  }, []);
+  //   return () => {
+  //     observer.unobserve(containerRef.current);
+  //   };
+  // }, []);
 
   return wrapSSR(
     <div ref={containerParentRef} className={`${hashId} ${containerClassName}`}>

@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件中心使用指南"
+description: "邮件中心：Link account 账号关联、OAuth 授权、数据同步、邮件筛选、收发、删除账户。"
+keywords: "邮件中心,账号关联,Link account,OAuth 授权,数据同步,NocoBase"
 ---
 
 # 邮件中心

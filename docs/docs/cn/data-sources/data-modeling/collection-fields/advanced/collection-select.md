@@ -1,3 +1,9 @@
+---
+title: "数据表选择器"
+description: "数据表选择器字段，从指定数据表中选择关联记录。"
+keywords: "数据表选择器,collection-select,关联选择,Collection,NocoBase"
+---
+
 # 数据表选择器
 
 ## 介绍

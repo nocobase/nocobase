@@ -8,7 +8,6 @@
  */
 
 import { defineAction } from '@nocobase/flow-engine';
-import { FlowRuntimeContext } from '@nocobase/flow-engine';
 
 type LinkageRulesRefreshParams = {
   /**
@@ -36,8 +35,22 @@ export const linkageRulesRefresh = defineAction({
     // Prefer running on the current model; fallback to blockModel when the current model doesn't own the flow.
     if (!hasFlow) return;
 
-    // If forks exist, skip running on master (template) model to avoid polluting baseline state.
-    if (!model?.isFork && model?.forks?.size) {
+    // In runtime, only skip master when there are mounted forks that can handle the same flow.
+    // Otherwise master is likely the rendered model and still needs refresh.
+    // In design mode, always refresh master so the currently edited model state stays in sync.
+    const flowSettingsEnabled = Boolean(
+      (ctx as any)?.flowSettingsEnabled || (model as any)?.context?.flowSettingsEnabled,
+    );
+    const hasMountedForkWithFlow =
+      !model?.isFork &&
+      !!model?.forks?.size &&
+      Array.from(model?.forks || []).some((fork: any) => {
+        if (!fork || fork.disposed) return false;
+        if (!fork?.context?.ref?.current) return false;
+        return !!fork?.getFlow?.(flowKey);
+      });
+    const isMasterMounted = Boolean((model as any)?.context?.ref?.current);
+    if (hasMountedForkWithFlow && !isMasterMounted && !flowSettingsEnabled) {
       return;
     }
 

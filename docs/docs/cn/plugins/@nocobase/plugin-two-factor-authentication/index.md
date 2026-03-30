@@ -1,6 +1,8 @@
 ---
 displayName: "双因素身份认证 (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
+title: "双因素身份认证 (2FA)"
+keywords: "双因素身份认证 (2FA),插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

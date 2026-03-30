@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-file-manager'
+title: "文件管理器概述"
+description: "NocoBase 文件管理器插件：文件表、附件字段、多存储引擎（本地/S3/OSS/COS）、文件预览、HTTP API 上传、扩展开发指南。"
+keywords: "文件管理器,文件表,附件字段,存储引擎,文件预览,HTTP API,扩展开发,NocoBase"
 ---
 
 # 文件管理器

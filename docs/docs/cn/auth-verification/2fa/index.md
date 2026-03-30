@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-two-factor-authentication'
+title: "双因素身份认证 (2FA)"
+description: "NocoBase 双因素身份认证：密码登录时需额外验证（OTP、TOTP），管理员启用 2FA、绑定验证器，用户绑定与验证流程。"
+keywords: "2FA,双因素认证,MFA,OTP,TOTP,验证器绑定,NocoBase"
 ---
 
 # 双因素身份认证 (2FA)

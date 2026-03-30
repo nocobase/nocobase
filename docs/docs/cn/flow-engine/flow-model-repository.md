@@ -1,3 +1,9 @@
+---
+title: "FlowModel 持久化与 Repository"
+description: "FlowModel 持久化与 Repository 模式：数据加载、保存、与数据源交互，支持 CRUD 操作，FlowEngine 数据管理。"
+keywords: "FlowModel 持久化,Repository,数据加载,CRUD,数据源交互,FlowEngine,NocoBase"
+---
+
 # FlowModel 持久化
 
 FlowEngine 提供了完整的持久化体系

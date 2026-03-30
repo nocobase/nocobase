@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-file-storage-s3-pro'
+title: "存储引擎：S3 Pro"
+description: "S3 Pro 兼容 S3 协议：客户端直传、预签名 URL、私有访问，支持 AWS S3、阿里云 OSS、腾讯云 COS、MinIO、Cloudflare R2 配置。"
+keywords: "S3 Pro,S3 兼容,客户端直传,预签名 URL,MinIO,Cloudflare R2,对象存储,NocoBase"
 ---
-
 # 存储引擎：S3 (Pro)
 
 ## 介绍

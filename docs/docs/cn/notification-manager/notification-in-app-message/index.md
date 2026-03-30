@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-notification-in-app-message'
+title: "站内信通知"
+description: "站内信通知渠道：应用内实时接收消息通知，内置渠道无需安装，支持工作流触发、营销线索跟进等场景。"
+keywords: "站内信,In-App Message,应用内通知,实时消息,通知管理,NocoBase"
 ---
 
 # 通知：站内信

@@ -1,3 +1,9 @@
+---
+title: "Event 事件"
+description: "NocoBase 服务端事件：app.on、app.emit、事件监听与触发、插件间事件通信。"
+keywords: "Event,事件,app.on,app.emit,事件监听,事件触发,NocoBase"
+---
+
 
 # Event 事件
 

@@ -1,3 +1,9 @@
+---
+title: "客户端插件测试"
+description: "NocoBase 客户端插件单元测试、组件测试、Mock、测试工具。"
+keywords: "插件测试,单元测试,组件测试,客户端测试,NocoBase"
+---
+
 # Test 测试
 
 :::tip

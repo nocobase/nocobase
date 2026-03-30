@@ -1,6 +1,8 @@
 ---
 displayName: "多关键词筛选"
 packageName: '@nocobase/plugin-multi-keyword-filter'
+title: "多关键词筛选"
+keywords: "多关键词筛选,插件,NocoBase"
 supportedVersions:
   - 1.x
 description: |

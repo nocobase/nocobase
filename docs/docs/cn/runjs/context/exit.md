@@ -1,3 +1,9 @@
+---
+title: "ctx.exit()"
+description: "ctx.exit() 退出当前 Flow 或事件流，可带返回值，用于条件分支、提前结束。"
+keywords: "ctx.exit,退出 Flow,事件流,条件分支,RunJS,NocoBase"
+---
+
 # ctx.exit()
 
 终止当前事件流的执行，后续步骤不会运行。常用于业务条件不满足、用户取消或发生不可恢复错误时。

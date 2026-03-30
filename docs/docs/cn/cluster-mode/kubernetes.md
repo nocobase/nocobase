@@ -1,3 +1,9 @@
+---
+title: "Kubernetes 部署"
+description: "在 K8S/K3S 中部署 NocoBase 集群：ConfigMap 环境变量、Deployment、共享存储 PVC、Redis/PostgreSQL 中间件、负载均衡与健康检查。"
+keywords: "Kubernetes 部署,K8S,K3S,ConfigMap,Deployment,PVC 共享存储,集群部署,NocoBase"
+---
+
 # Kubernetes 部署
 
 本文旨在指导用户快速在 K8S 环境中部署集群模式的 NocoBase，假设读者熟悉 K8S 环境，并已完成 [准备工作](./preparations.md) 中的内容。

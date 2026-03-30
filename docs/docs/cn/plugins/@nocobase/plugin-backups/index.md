@@ -1,6 +1,8 @@
 ---
 displayName: "备份管理器"
 packageName: '@nocobase/plugin-backups'
+title: "备份管理器"
+keywords: "备份管理器,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

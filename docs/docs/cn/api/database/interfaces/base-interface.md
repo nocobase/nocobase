@@ -1,3 +1,9 @@
+---
+title: "BaseInterface"
+description: "NocoBase Database 基础接口：BaseInterface 类型定义。"
+keywords: "BaseInterface,Database 基础接口,类型定义,NocoBase"
+---
+
 # BaseInterface
 
 ## 概览

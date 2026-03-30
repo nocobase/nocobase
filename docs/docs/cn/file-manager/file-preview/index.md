@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "文件预览"
+description: "文件字段支持点击缩略图预览，内置图片、PDF、视频等浏览器原生格式，可扩展 Office 等插件实现 Word/Excel/PPT 预览。"
+keywords: "文件预览,Preview,缩略图,Office 预览,PDF 预览,图片预览,NocoBase"
+---
+
 # 文件预览
 
 在包含文件字段（含附件字段）的界面中，可以通过点击文件缩略图或图标来预览文件。内置预览功能支持多种文件类型，包括图片、PDF 和大部分浏览器原生支持的文件类型。

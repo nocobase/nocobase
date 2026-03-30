@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-collection-tree"
+title: "树表"
+description: "树结构表存储层次关系数据，采用邻接表设计，适用于组织架构、分类目录、评论嵌套等场景。"
+keywords: "树表,树形集合,邻接表,层次数据,Tree Collection,NocoBase"
 ---
-
 # 树表
 
 ## 介绍

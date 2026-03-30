@@ -1,3 +1,9 @@
+---
+title: "FindOneOptions"
+description: "NocoBase Repository findOne 方法参数：与 find 相同，仅返回单条数据，无需 limit。"
+keywords: "FindOneOptions,Repository,findOne,查询,NocoBase"
+---
+
 **类型**
 
 ```typescript

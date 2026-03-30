@@ -1,3 +1,9 @@
+---
+title: "NocoBase 翻译贡献指南"
+description: "为 NocoBase 贡献多语言翻译：系统界面与插件本地化、locales 仓库结构、自定义语言包、Crowdin 协作流程。"
+keywords: "翻译贡献,多语言,本地化,locales,Crowdin,i18n,国际化,NocoBase"
+---
+
 # 翻译贡献
 
 NocoBase 的默认语言是英语。目前，主应用程序支持英语、意大利语、荷兰语、简体中文和日语。我们诚挚邀请您为其他语言贡献翻译，让全球用户都能享受更便捷的 NocoBase 体验。

@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 与插件"
+description: "FlowEngine 与插件：插件如何注册 FlowModel、扩展能力、与 NocoBase 插件体系集成，registerFlowModel 用法。"
+keywords: "FlowEngine,插件,registerFlowModel,插件扩展,NocoBase 插件体系,NocoBase"
+---
+
 # FlowEngine 与插件的关系
 
 **FlowEngine** 并不是插件，而是作为 **内核 API** 提供给插件使用，用于衔接内核能力与业务扩展。

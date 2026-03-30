@@ -1,3 +1,9 @@
+---
+title: "RunJS 导入模块"
+description: "RunJS 模块导入：ctx.libs 内置 React/antd/dayjs/formula、ctx.importAsync ESM 动态加载、ctx.requireAsync UMD、esm.sh CDN 配置。"
+keywords: "导入模块,ctx.libs,ctx.importAsync,ctx.requireAsync,ESM,esm.sh,NocoBase RunJS"
+---
+
 # 导入模块
 
 RunJS 中可使用两类模块：**内置模块**（通过 `ctx.libs` 直接使用，无需 import）和 **外部模块**（通过 `ctx.importAsync()` 或 `ctx.requireAsync()` 按需加载）。

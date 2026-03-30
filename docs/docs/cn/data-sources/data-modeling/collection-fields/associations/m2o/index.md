@@ -1,3 +1,9 @@
+---
+title: "多对一"
+description: "多对一关系字段（M2O），多个实体关联同一父实体，如学生-班级。"
+keywords: "多对一,M2O,BelongsTo,关联,NocoBase"
+---
+
 
 # 多对一
 

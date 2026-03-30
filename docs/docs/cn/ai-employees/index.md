@@ -1,5 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai"
+title: "AI 员工概述"
+description: "AI 员工是 NocoBase 深度集成在业务系统里的智能体能力，支持理解业务上下文、直接执行操作、角色化协作，可配置 LLM 服务、技能与知识库。"
+keywords: "AI 员工,AI Employees,NocoBase 智能体,LLM,大模型,协作,技能,知识库"
 ---
 
 # 概述

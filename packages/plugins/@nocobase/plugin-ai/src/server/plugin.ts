@@ -43,6 +43,7 @@ import { AICodingManager } from './manager/ai-coding-manager';
 import { kimiProviderOptions } from './llm-providers/kimi';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
+import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -74,6 +75,19 @@ export class PluginAIServer extends Plugin {
       },
     });
     this.snowflake = new Snowflake(pluginRecord?.createdAt.getTime());
+    this.app.cronJobManager.addJob({
+      cronTime: '0 0 2 * * *',
+      onTick: async () => {
+        try {
+          const checkpointSaver = new SequelizeCollectionSaver(() => this.app.mainDataSource);
+          const checkpointCleaner = new CheckpointCleaner(() => this.app.mainDataSource, checkpointSaver);
+          const expiredAt = new Date(Date.now() - 48 * 60 * 60 * 1000);
+          await checkpointCleaner.cleanOutdated(expiredAt);
+        } catch (e) {
+          this.app.log.error('langChain checkpoint clean job fail', e);
+        }
+      },
+    });
   }
 
   async load() {

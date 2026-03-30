@@ -1,3 +1,9 @@
+---
+title: "BelongsToRepository"
+description: "NocoBase Repository API：BelongsToRepository 用于处理 BelongsTo 关系，接口与 HasOneRepository 一致。"
+keywords: "BelongsToRepository,Repository,BelongsTo,关系,NocoBase"
+---
+
 ## BelongsToRepository
 
 其接口与 [HasOneRepository](./has-one-repository.md) 一致。

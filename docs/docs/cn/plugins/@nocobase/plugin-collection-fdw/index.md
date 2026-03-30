@@ -1,6 +1,8 @@
 ---
 displayName: "数据表：连接外部数据（FDW）"
 packageName: '@nocobase/plugin-collection-fdw'
+title: "数据表：连接外部数据（FDW）"
+keywords: "数据表：连接外部数据（FDW）,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

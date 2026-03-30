@@ -1,3 +1,9 @@
+---
+title: "NocoBase 工单方案简介"
+description: "基于 NocoBase 低代码的 AI 驱动智能工单中台：多源接入、AI 辅助分类、智能分派、SLA 监控、客户评价闭环，支持设备维修、IT 支持、客户投诉等场景。"
+keywords: "NocoBase 工单,工单系统,Ticket,客服工单,SLA,AI 工单,NocoBase"
+---
+
 # 工单方案简介
 
 > **提示**：当前版本为早期预览版，功能尚不完善，我们正在持续改进中。欢迎反馈建议！

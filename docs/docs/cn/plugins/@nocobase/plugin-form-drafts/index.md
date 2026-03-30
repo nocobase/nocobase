@@ -1,6 +1,8 @@
 ---
 displayName: "表单草稿"
 packageName: '@nocobase/plugin-form-drafts'
+title: "表单草稿"
+keywords: "表单草稿,插件,NocoBase"
 supportedVersions:
   - 2.x
 description: |

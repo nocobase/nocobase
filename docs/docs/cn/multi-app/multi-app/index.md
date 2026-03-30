@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-app-supervisor'
+title: "NocoBase 多应用管理"
+description: "AppSupervisor 多应用管理：单应用、共享内存多应用、多环境混合部署，SaaS/多租户场景，应用创建、启动、停止、生命周期管理。"
+keywords: "多应用,Multi App,AppSupervisor,共享内存,多环境部署,SaaS,多租户,NocoBase"
 ---
-
 # 多应用管理
 
 ## 功能概述

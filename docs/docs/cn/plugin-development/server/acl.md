@@ -1,3 +1,9 @@
+---
+title: "ACL 权限控制（服务端）"
+description: "NocoBase 服务端 ACL：registerSnippet、allow/deny、权限片段、角色权限、中间件、条件判断。"
+keywords: "ACL,权限控制,registerSnippet,allow,deny,权限片段,角色权限,NocoBase"
+---
+
 # ACL 权限控制
 
 ACL（Access Control List）用于控制资源操作权限。你可以将权限赋予角色，也可以跳过角色限制直接约束权限。ACL 系统提供了灵活的权限管理机制，支持权限片段、中间件、条件判断等多种方式。

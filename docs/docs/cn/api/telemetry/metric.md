@@ -1,3 +1,9 @@
+---
+title: "Metric"
+description: "NocoBase 指标 API：Metric 类方法、指标记录。"
+keywords: "Metric,指标 API,指标记录,Telemetry,NocoBase"
+---
+
 # Metric
 
 ## 类方法

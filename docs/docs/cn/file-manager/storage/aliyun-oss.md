@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "存储引擎：阿里云 OSS"
+description: "NocoBase 内置阿里云 OSS 存储引擎配置：区域、AccessKey、存储桶、超时时间，适用于阿里云对象存储。"
+keywords: "阿里云 OSS,阿里云存储,AccessKey,存储桶,对象存储,OSS 配置,NocoBase"
+---
+
 # 存储引擎：阿里云 OSS
 
 基于阿里云 OSS 的存储引擎，使用前需要准备相关账号和权限。

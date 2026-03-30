@@ -1,6 +1,8 @@
 ---
 displayName: "数据源：人大金仓（KingbaseES）"
 packageName: '@nocobase/plugin-data-source-kingbase'
+title: "数据源：人大金仓（KingbaseES）"
+keywords: "数据源：人大金仓（KingbaseES）,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

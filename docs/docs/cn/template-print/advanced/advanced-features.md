@@ -1,3 +1,9 @@
+---
+title: "模板打印 - 高级功能"
+description: "模板打印高级功能：页码更新、目录生成、分页控制，Word 与 LibreOffice 插入方式。"
+keywords: "模板打印,高级功能,页码,目录,分页,NocoBase"
+---
+
 ## 高级功能
 
 ### 分页

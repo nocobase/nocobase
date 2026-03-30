@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-oracle"
+title: "外部数据源 - Oracle"
+description: "接入外部 Oracle 数据库（>=11g）作为数据源，只读连接已有数据库，数据表同步与字段配置。"
+keywords: "外部 Oracle,Oracle 数据源,外部数据库,数据表同步,NocoBase"
 ---
-
 # 外部数据源 - Oracle
 
 ## 介绍

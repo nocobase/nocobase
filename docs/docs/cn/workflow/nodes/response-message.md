@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-response-message'
+title: "工作流节点 - 响应消息"
+description: "响应消息节点：向客户端反馈自定义消息，支持操作前事件、自定义操作事件。"
+keywords: "工作流,响应消息,Response Message,客户端反馈,NocoBase"
 ---
 
 # 响应消息

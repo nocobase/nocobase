@@ -1,3 +1,9 @@
+---
+title: "认证扩展 API 参考"
+description: "NocoBase 认证扩展 API：Auth、BaseAuth、AuthModel（findUser、newUser、findOrCreateUser）、registerType 客户端接口、路由配置。"
+keywords: "认证扩展 API,Auth,BaseAuth,AuthModel,registerType,findUser,NocoBase"
+---
+
 # API 参考
 
 ## 服务端

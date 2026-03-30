@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "工作流节点 - 流程输出"
+description: "流程输出节点：在被调用工作流中定义输出值，供调用者使用。"
+keywords: "工作流,流程输出,Output,子流程输出,变量传递,NocoBase"
 ---
 
 # 流程输出

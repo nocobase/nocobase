@@ -1,3 +1,9 @@
+---
+title: "工作流触发器 - 定时任务"
+description: "定时任务触发器：自定义时间（cron）、数据表时间字段触发，按秒精度执行，定时调度工作流。"
+keywords: "工作流,定时任务,Schedule,Cron,定时调度,NocoBase"
+---
+
 # 定时任务
 
 ## 介绍

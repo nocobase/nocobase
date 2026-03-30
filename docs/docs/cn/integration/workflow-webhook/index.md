@@ -1,3 +1,9 @@
+---
+title: "工作流 Webhook 集成"
+description: "Webhook 触发器接收外部 HTTP 调用触发工作流：表单提交、消息通知、数据同步、GitHub/GitLab 事件，配置签名验证、同步/异步模式、安全实践。"
+keywords: "工作流 Webhook,Webhook 触发器,外部系统集成,表单提交,GitHub Webhook,签名验证,NocoBase"
+---
+
 # 工作流 Webhook 集成
 
 通过 Webhook 触发器,NocoBase 可以接收来自第三方系统的 HTTP 调用并自动触发工作流,实现与外部系统的无缝集成。

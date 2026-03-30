@@ -30,6 +30,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import React, { ReactNode } from 'react';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { TextAreaWithContextSelector } from '../../../components/TextAreaWithContextSelector';
 import { BasePageTabModel } from './PageTabModel';
 
@@ -42,6 +43,16 @@ type PageModelStructure = {
 const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
   > .ant-tabs-nav .ant-tabs-tab {
     min-width: 54px;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn {
+    display: block;
+    width: 100%;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn > [data-has-float-menu='true'] {
+    display: block;
+    width: 100%;
   }
 `;
 
@@ -372,6 +383,53 @@ export class PageModel extends FlowModel<PageModelStructure> {
     );
   }
 }
+
+PageModel.registerEvents({
+  close: {
+    title: tExpr('Close'),
+    name: 'close',
+    hideInSettings(ctx) {
+      return !!ctx.view?.preventClose;
+    },
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: tExpr('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
+  },
+});
+
+PageModel.registerFlow({
+  key: 'closeGuard',
+  title: tExpr('Close guard'),
+  on: 'close',
+  steps: {
+    confirmUnsavedChanges: {
+      title: tExpr('Unsaved changes confirmation'),
+      async handler(ctx) {
+        if (!ctx.inputArgs?.dirty?.hasDirtyForms) {
+          return;
+        }
+
+        const confirmed = await ctx.modal.confirm({
+          title: ctx.t('Unsaved changes'),
+          content: ctx.t("Are you sure you don't want to save?"),
+          okText: ctx.t('Confirm'),
+          cancelText: ctx.t('Cancel'),
+        });
+
+        if (!confirmed) {
+          ctx.inputArgs?.controller?.prevent?.();
+          ctx.exitAll();
+        }
+      },
+    },
+  },
+});
 
 PageModel.registerFlow({
   key: 'pageSettings',

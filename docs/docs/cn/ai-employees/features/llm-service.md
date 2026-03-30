@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "配置 LLM 服务"
+description: "配置 AI 员工可用的 LLM 服务，支持 OpenAI、Gemini、Claude、DeepSeek、Qwen、Kimi、Ollama，新建服务、启用排序与可用性测试。"
+keywords: "LLM 服务,OpenAI,Claude,Gemini,DeepSeek,Ollama,NocoBase AI"
+---
+
 # 配置 LLM 服务
 
 在使用 AI 员工前，需要先配置可用的 LLM 服务。

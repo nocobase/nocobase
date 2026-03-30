@@ -1,3 +1,9 @@
+---
+title: "HasManyRepository"
+description: "NocoBase HasMany 关系 Repository：处理一对多关联的增删改查。"
+keywords: "HasManyRepository,HasMany,一对多,Repository,NocoBase"
+---
+
 # HasManyRepository
 
 `HasManyRepository` 是用于处理 `HasMany` 关系的 `Relation Repository`。

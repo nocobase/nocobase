@@ -1,3 +1,9 @@
+---
+title: "表格字段"
+description: "表格字段：用于表格区块中的列组件，支持自定义列渲染、排序、筛选。"
+keywords: "表格字段,TableColumn,表格列,列渲染,界面搭建,NocoBase"
+---
+
 # 表格字段
 
 ## 介绍

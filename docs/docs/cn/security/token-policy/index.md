@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth'
+title: "Token 安全策略"
+description: "Token 安全策略：配置会话有效期、Token 有效周期、过期 Token 刷新时限，JWT 鉴权、自动刷新机制，插件设置-安全性入口。"
+keywords: "Token 安全策略,会话有效期,Token 有效期,JWT,自动刷新,安全配置,NocoBase"
 ---
 
 # Token 安全策略

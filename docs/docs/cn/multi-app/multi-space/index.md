@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
+title: "NocoBase 多空间"
+description: "多空间插件：单实例逻辑隔离，多门店/多组织数据隔离，空间字段、用户分配、空间切换、老数据归类，专业版插件。"
+keywords: "多空间,Multi Space,空间隔离,多门店,多组织,空间字段,数据隔离,NocoBase"
 ---
-
 # 多空间
 
 <PluginInfo name="multi-space" licenseBundled="professional"></PluginInfo>

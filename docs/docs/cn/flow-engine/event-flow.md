@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 事件流"
+description: "FlowEngine 事件流：Flow 中事件驱动的逻辑编排，Step 串联执行，管理属性变化与事件响应。"
+keywords: "事件流,Event Flow,Step,Flow 编排,属性变化,事件响应,FlowEngine,NocoBase"
+---
+
 # 事件流
 
 在 FlowEngine 中，界面的所有组件都是 **事件驱动（Event-driven）** 的。  

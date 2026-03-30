@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件签名"
+description: "邮件签名配置：创建签名、设置默认签名，在发件正文框内选择签名插入。"
+keywords: "邮件签名,签名管理,默认签名,NocoBase"
 ---
-
 # 邮件签名
 
 ## 签名配置

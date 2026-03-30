@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+title: "通过 HTTP API 同步用户数据"
+description: "NocoBase 通过 HTTP API 同步用户数据：POST /api/userData:push、UserData/DepartmentData 格式、API 密钥、Bearer token。"
+keywords: "HTTP API,用户数据同步,userData:push,API 密钥,Bearer token,NocoBase"
+---
+
 # 通过 HTTP API 同步用户数据
 
 ## 获取 API 密钥

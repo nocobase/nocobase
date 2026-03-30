@@ -1,3 +1,9 @@
+---
+title: "数据可视化常见问题"
+description: "图表选择、数据查询 Builder/SQL 互通、字段映射、预览与保存、ECharts 图表类型等常见问题解答。"
+keywords: "数据可视化 FAQ,图表选择,折线图,柱状图,饼图,Builder,SQL 模式,预览保存,NocoBase"
+---
+
 # 常见问题
 
 ## 图表选择问题

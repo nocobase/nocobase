@@ -1,3 +1,9 @@
+---
+title: "字段赋值"
+description: "操作设置：配置操作执行时对表单字段的赋值，实现联动赋值、默认值填充。"
+keywords: "字段赋值,assign values,联动赋值,操作设置,界面搭建,NocoBase"
+---
+
 # 字段赋值
 
 ## 介绍

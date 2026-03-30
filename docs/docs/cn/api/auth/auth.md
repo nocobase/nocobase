@@ -1,3 +1,9 @@
+---
+title: "Auth"
+description: "NocoBase 认证 API：Auth 认证类，验证用户身份、签发 token。"
+keywords: "Auth API,认证,登录,登出,token 签发,NocoBase"
+---
+
 # Auth
 
 ## 概览

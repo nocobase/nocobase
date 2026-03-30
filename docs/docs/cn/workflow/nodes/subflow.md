@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
+title: "工作流节点 - 调用工作流"
+description: "调用工作流节点：调用子流程、传递变量、复用流程逻辑、流程拆分。"
+keywords: "工作流,调用工作流,Subflow,子流程,流程复用,NocoBase"
 ---
 
 # 调用工作流

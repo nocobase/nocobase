@@ -1,3 +1,9 @@
+---
+title: "IRepository"
+description: "NocoBase IRepository 接口：Repository 模型操作方法接口，适配数据源 CRUD。"
+keywords: "IRepository,接口,Repository,CRUD,NocoBase"
+---
+
 # IRepository
 
 `Repository` 接口定义了一系列的模型操作方法，用于适配数据源的增删改查操作。

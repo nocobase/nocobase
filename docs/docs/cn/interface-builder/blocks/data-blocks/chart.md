@@ -1,7 +1,9 @@
 ---
 pkg: '@nocobase/plugin-data-visualization'
+title: "图表区块"
+description: "图表区块：以图表形式展示数据，支持柱状图、折线图、饼图等多种图表类型，数据可视化。"
+keywords: "图表区块,Chart,柱状图,折线图,饼图,数据可视化,界面搭建,NocoBase"
 ---
-
 # Chart
 
 ## 介绍

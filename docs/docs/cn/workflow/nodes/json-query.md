@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-json-query'
+title: "工作流节点 - JSON 计算"
+description: "JSON 计算节点：对 JSON 数据计算或结构变换，支持多种计算引擎。"
+keywords: "工作流,JSON 计算,JSON Query,JSON 变换,NocoBase"
 ---
 
 # JSON 计算

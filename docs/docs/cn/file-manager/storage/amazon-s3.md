@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "存储引擎：Amazon S3"
+description: "NocoBase 内置 Amazon S3 存储引擎配置：区域、AccessKey ID/Secret、存储桶名称，适用于 AWS 云存储。"
+keywords: "Amazon S3,AWS,存储桶,AccessKey,云存储,S3 配置,NocoBase"
+---
+
 # 存储引擎：Amazon S3
 
 基于 Amazon S3 的存储引擎，使用前需要准备相关账号和权限。

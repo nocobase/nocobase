@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-users'
+title: "NocoBase 用户管理"
+description: "NocoBase 用户管理：添加用户、修改资料与密码、角色分配、用户表区块配置、超级管理员、Root 权限。"
+keywords: "用户管理,添加用户,角色分配,用户表,超级管理员,Root 权限,NocoBase"
 ---
 
 # 用户

@@ -1,3 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+title: "文件上传 HTTP API"
+description: "附件字段与文件表支持通过 HTTP API 上传，含服务端上传（S3/OSS/COS）与客户端直传（S3-Pro 预签名 URL），含 curl 示例。"
+keywords: "HTTP API,文件上传,attachments create,预签名 URL,S3-Pro,服务端上传,客户端上传,NocoBase"
+---
+
 # HTTP API
 
 附件字段和文件表的文件上传均支持通过 HTTP API 进行处理。根据附件或文件表使用的存储引擎不同，分别有不同的调用方式。

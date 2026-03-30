@@ -1,6 +1,8 @@
 ---
 displayName: "邮件管理"
 packageName: '@nocobase/plugin-email-manager'
+title: "邮件管理"
+keywords: "邮件管理,插件,NocoBase"
 supportedVersions:
   - 1.x
   - 2.x

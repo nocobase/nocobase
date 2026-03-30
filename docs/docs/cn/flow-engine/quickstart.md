@@ -1,3 +1,9 @@
+---
+title: "FlowEngine 快速开始"
+description: "FlowEngine 快速开始：构建可编排的按钮组件，从 define、registerFlow 到 createModel 完整示例，5 步上手 FlowModel。"
+keywords: "FlowEngine 快速开始,FlowModel,define,registerFlow,createModel,可编排组件,按钮组件,NocoBase"
+---
+
 # 快速开始：构建可编排的按钮组件
 
 在 React 中，我们通常这样渲染一个按钮组件：

@@ -1,3 +1,9 @@
+---
+title: "OIDC 配置示例：Microsoft Entra ID"
+description: "Microsoft Entra ID 配置 OIDC 登录：注册应用程序、配置回调 URL、获取 Client ID、Client Secret、Tenant ID，填写 NocoBase 认证器。"
+keywords: "OIDC,Microsoft Entra,Azure AD,OAuth,Client ID,回调 URL,NocoBase"
+---
+
 # Microsoft Entra ID
 
 > https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app  

@@ -1,3 +1,9 @@
+---
+title: "默认值"
+description: "字段设置：配置字段默认值，支持固定值、表达式、变量引用。"
+keywords: "默认值,default value,字段默认,界面搭建,NocoBase"
+---
+
 # 默认值
 
 ## 介绍

@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-sms'
+title: "短信认证"
+description: "NocoBase 短信认证：通过短信验证码注册和登录，需配合 plugin-verification 短信验证器，支持用户不存在时自动注册。"
+keywords: "短信认证,短信登录,SMS 登录,验证码登录,自动注册,NocoBase"
 ---
 
 # 短信认证

@@ -1,3 +1,9 @@
+---
+title: "主题编辑器"
+description: "主题编辑器：基于 Ant Design 5.x 定制 SeedToken/MapToken/AliasToken，支持暗黑/紧凑模式，新增/编辑/删除主题，设置默认主题与用户可选主题。"
+keywords: "主题编辑器,Ant Design 主题,暗黑模式,紧凑模式,SeedToken,MapToken,AliasToken,自定义主题,系统管理,NocoBase"
+---
+
 # 主题编辑器
 
 > 当前主题功能基于 Ant Design 5.x 版本实现，建议在阅读本文之前先了解[定制主题](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98)的相关概念。

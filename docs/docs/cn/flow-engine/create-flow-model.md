@@ -1,3 +1,9 @@
+---
+title: "创建 FlowModel"
+description: "创建 FlowModel：define、registerFlow、renderComponent 等步骤，从零开始编写可编排组件，FlowEngine 开发入门。"
+keywords: "创建 FlowModel,define,registerFlow,renderComponent,可编排组件,FlowEngine 开发,NocoBase"
+---
+
 # 创建 FlowModel
 
 ## 作为根节点

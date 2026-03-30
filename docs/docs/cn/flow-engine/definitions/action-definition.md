@@ -1,3 +1,9 @@
+---
+title: "ActionDefinition 动作定义"
+description: "ActionDefinition 定义可重用动作，可在多个流和步骤中引用，封装 handler、uiSchema、defaultParams，FlowEngine 核心执行单元。"
+keywords: "ActionDefinition,动作定义,handler,uiSchema,defaultParams,Flow 步骤,FlowEngine,NocoBase"
+---
+
 # ActionDefinition
 
 ActionDefinition 定义了可重用的动作，这些动作可以在多个流和步骤中被引用。动作是流引擎中的核心执行单元，封装了具体的业务逻辑。

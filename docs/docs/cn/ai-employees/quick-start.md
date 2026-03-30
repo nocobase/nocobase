@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+title: "AI 员工快速开始"
+description: "5 分钟完成 AI 员工最小可用配置：安装插件、配置 LLM 模型、启用内置员工、开始协作，含 Cole、Ellis、Dex、Viz 等预置员工一览。"
+keywords: "AI 员工快速开始,NocoBase AI 配置,LLM 服务,内置员工,Cole,Dex,Viz"
+---
+
 # 快速开始
 
 让我们用 5 分钟完成 AI 员工的最小可用配置。

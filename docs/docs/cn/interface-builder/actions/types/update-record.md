@@ -1,3 +1,9 @@
+---
+title: "更新记录操作"
+description: "更新记录操作：直接更新记录指定字段，无需打开表单。"
+keywords: "更新记录,UpdateRecord,字段更新,界面搭建,NocoBase"
+---
+
 # 更新记录
 
 ## 介绍

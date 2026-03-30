@@ -1,5 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-javascript'
+title: "工作流节点 - JavaScript 脚本"
+description: "JavaScript 脚本节点：执行服务端自定义脚本，使用上游变量、返回值供下游使用。"
+keywords: "工作流,JavaScript,脚本,自定义逻辑,服务端脚本,NocoBase"
 ---
 
 # JavaScript 脚本

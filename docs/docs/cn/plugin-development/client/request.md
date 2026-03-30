@@ -1,3 +1,9 @@
+---
+title: "Request 请求"
+description: "NocoBase 客户端请求：api.request、APIClient、HTTP 请求、调用后端 API。"
+keywords: "Request,api.request,APIClient,HTTP 请求,API 调用,NocoBase"
+---
+
 # Request 请求
 
 NocoBase 提供了一个基于 [Axios](https://axios-http.com/) 封装的 `APIClient`，用于在任意能够获取 `Context` 的地方都可以发起 HTTP 请求。

@@ -213,6 +213,7 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
  */
 export type FlowEventName =
   | 'click'
+  | 'close'
   | 'submit'
   | 'reset'
   | 'remove'

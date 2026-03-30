@@ -1,3 +1,9 @@
+---
+title: "ctx.sql"
+description: "ctx.sql 执行原始 SQL 的 API，用于数据源直接查询，需注意权限与注入安全。"
+keywords: "ctx.sql,SQL 执行,数据查询,run,runById,runBySQL,RunJS,NocoBase"
+---
+
 # ctx.sql
 
 `ctx.sql` 提供 SQL 执行与管理能力，常用于 RunJS（如 JSBlock、事件流）中直接访问数据库。支持临时 SQL 执行、按 ID 执行已保存的 SQL 模板、参数绑定、模板变量（`{{ctx.xxx}}`）以及结果类型控制。

@@ -1,3 +1,9 @@
+---
+title: "Cache 缓存"
+description: "NocoBase 服务端缓存：app.cacheManager、get/set/del、缓存实例、插件中访问缓存。"
+keywords: "Cache,缓存,cacheManager,get,set,del,服务端缓存,NocoBase"
+---
+
 # Cache 缓存
 
 NocoBase 的 Cache 模块基于 <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> 封装，为插件开发提供缓存功能。系统内置了两种缓存类型：

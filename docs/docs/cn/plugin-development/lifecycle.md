@@ -1,3 +1,9 @@
+---
+title: "插件生命周期"
+description: "NocoBase 插件生命周期钩子：install、enable、disable、uninstall、load、loadAsync，服务端与客户端挂载时机。"
+keywords: "插件生命周期,load,loadAsync,install,enable,disable,卸载,NocoBase"
+---
+
 # 生命周期
 
 整理插件在服务端与客户端的生命周期钩子，帮助开发者正确地注册与释放资源。

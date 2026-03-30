@@ -1,7 +1,9 @@
 ---
 pkg: "@nocobase/plugin-email-manager"
+title: "邮件备注"
+description: "在邮件详情右侧编辑备注，备注添加完成后可在邮件详情中查看。"
+keywords: "邮件备注,备注管理,邮件管理,NocoBase"
 ---
-
 # 邮件备注
 
 在邮件详情右侧可 **编辑备注**。
