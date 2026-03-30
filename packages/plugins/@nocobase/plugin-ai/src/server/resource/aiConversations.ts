@@ -58,6 +58,9 @@ export default {
 
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
       const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
@@ -82,6 +85,9 @@ export default {
 
     async update(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
       const { filterByTk: sessionId } = ctx.action.params;
       const { title } = ctx.action.params.values || {};
       const repo = ctx.db.getRepository('aiConversations');
@@ -316,6 +322,11 @@ export default {
     },
 
     async sendMessages(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
       const {
         sessionId,
         aiEmployee: employeeName,
@@ -325,6 +336,7 @@ export default {
         webSearch,
         stream = true,
       } = ctx.action.params.values || {};
+
       const shouldStream = stream !== false;
       if (shouldStream) {
         setupSSEHeaders(ctx);
@@ -352,7 +364,10 @@ export default {
 
       try {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
-          filterByTk: sessionId,
+          filter: {
+            sessionId,
+            userId,
+          },
         });
 
         if (!conversation) {
@@ -437,13 +452,34 @@ export default {
     },
 
     async abort(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
       const { sessionId } = ctx.action.params.values || {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+          userId,
+        },
+      });
+
+      if (!conversation) {
+        ctx.throw(404, 'conversation not found');
+      }
+
       plugin.aiEmployeesManager.abortConversation(sessionId);
       await next();
     },
 
     async resendMessages(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
       setupSSEHeaders(ctx);
 
       const { sessionId, webSearch, model } = ctx.action.params.values || {};
@@ -457,6 +493,7 @@ export default {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
           filter: {
             sessionId,
+            userId,
           },
         });
 
@@ -623,6 +660,10 @@ export default {
     },
 
     async resumeToolCall(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
       setupSSEHeaders(ctx);
 
       const { sessionId, messageId, model, webSearch } = ctx.action.params.values || {};
@@ -634,7 +675,7 @@ export default {
         const conversation = await ctx.db.getRepository('aiConversations').findOne({
           filter: {
             sessionId,
-            userId: ctx.auth?.user.id,
+            userId,
           },
         });
         if (!conversation) {

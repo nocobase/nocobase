@@ -143,7 +143,50 @@ describe('openView action - close behavior', () => {
     );
   });
 
+  it('allows callers to ignore already confirmed dirty forms', async () => {
+    const ignoredReset = vi.fn();
+    const remainingReset = vi.fn();
+    const pageModel = createPageModel({
+      subModels: {
+        items: [
+          {
+            uid: 'ignored-form-uid',
+            subModels: {},
+            getUserModifiedFields: () => new Set(['title']),
+            resetUserModifiedFields: ignoredReset,
+          },
+          {
+            uid: 'remaining-form-uid',
+            subModels: {},
+            getUserModifiedFields: () => new Set(['nickname']),
+            resetUserModifiedFields: remainingReset,
+          },
+        ],
+      },
+    });
+    const { currentView } = await openAndLoad(pageModel);
+
+    const allowed = await currentView.beforeClose({
+      force: false,
+      ignoredDirtyFormModelUids: ['ignored-form-uid'],
+    });
+
+    expect(allowed).toBe(true);
+    expect(pageModel.dispatchEvent).toHaveBeenCalledWith(
+      'close',
+      expect.objectContaining({
+        dirty: {
+          hasDirtyForms: true,
+          formModelUids: ['remaining-form-uid'],
+        },
+      }),
+    );
+    expect(ignoredReset).not.toHaveBeenCalled();
+    expect(remainingReset).toHaveBeenCalledTimes(1);
+  });
+
   it('allows dynamic close flows to prevent closing after confirmation', async () => {
+    const resetUserModifiedFields = vi.fn();
     const dispatchEvent = vi.fn().mockImplementation(async (_eventName: string, inputArgs: any) => {
       inputArgs.controller.prevent();
     });
@@ -154,6 +197,7 @@ describe('openView action - close behavior', () => {
             uid: 'dirty-form-uid',
             subModels: {},
             getUserModifiedFields: () => new Set(['title']),
+            resetUserModifiedFields,
           },
         ],
       },
@@ -175,6 +219,7 @@ describe('openView action - close behavior', () => {
         controller: expect.any(Object),
       }),
     );
+    expect(resetUserModifiedFields).not.toHaveBeenCalled();
   });
 
   it('blocks closing when a close flow exits via ctx.exit()', async () => {
