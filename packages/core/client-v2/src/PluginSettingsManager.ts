@@ -54,17 +54,21 @@ export interface PluginSettingsPageType {
   [index: string]: any;
 }
 
-export class PluginSettingsManager {
+export class PluginSettingsManager<TApp extends Application = Application> {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
-  public app: Application;
+  public app: TApp;
   private cachedList = {};
 
-  constructor(_pluginSettings: Record<string, PluginSettingOptions>, app: Application) {
+  constructor(_pluginSettings: Record<string, PluginSettingOptions>, app: TApp) {
     this.app = app;
     Object.entries(_pluginSettings || {}).forEach(([name, pluginSettingOptions]) => {
       this.add(name, pluginSettingOptions);
     });
+  }
+
+  protected renderIcon(icon: PluginSettingOptions['icon']) {
+    return this.app.flowEngine.context.renderIon?.(icon);
   }
 
   clearCache() {
@@ -156,7 +160,7 @@ export class PluginSettingsManager {
       title,
       isAllow,
       label: title,
-      icon: this.app.flowEngine.context.renderIon?.(icon),
+      icon: this.renderIcon(icon),
       path: this.getRoutePath(name),
       key: name,
       children: children.length ? children : undefined,

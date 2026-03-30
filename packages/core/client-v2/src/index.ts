@@ -15,3 +15,4 @@ export * from './Plugin';
 export * from './WebSocketClient';
 export * from './RouterManager';
 export * from './PluginManager';
+export * from './PluginSettingsManager';
