@@ -51,10 +51,10 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
-export class RouterManager {
+export class RouterManager<TApp extends Application = Application> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
-  public app: Application;
+  public app: TApp;
   public router;
   get basename() {
     return this.router.basename;
@@ -66,7 +66,7 @@ export class RouterManager {
     return this.router.navigate;
   }
 
-  constructor(options: RouterOptions = {}, app: Application) {
+  constructor(options: RouterOptions = {}, app: TApp) {
     this.options = options;
     this.app = app;
     this.routes = options.routes || {};

@@ -13,3 +13,4 @@ export * from './context';
 export * from './MockApplication';
 export * from './Plugin';
 export * from './WebSocketClient';
+export * from './RouterManager';
