@@ -9,7 +9,7 @@ class HelloBlockModel extends FlowModel {
         {this.mapSubModels('items', (item) => {
           return <FlowModelRenderer key={item.uid} model={item} showFlowSettings={{ showBorder: true }} />;
         })}
-        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={[BaseCollectionModel]}>
+        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={[OtherBlocksModel]}>
           <Button>Add block</Button>
         </AddSubModelButton>
       </Space>
@@ -17,7 +17,14 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class BaseCollectionModel extends FlowModel {
+class OtherBlocksModel extends FlowModel {}
+
+OtherBlocksModel.define({
+  hide: true,
+  label: 'Other blocks',
+});
+
+class BaseCollectionModel extends OtherBlocksModel {
   static defineChildren(ctx: FlowModelContext) {
     const ds = ctx.dataSourceManager.getDataSource('main');
     return ds.getCollections().map((collection) => {
@@ -37,8 +44,6 @@ class BaseCollectionModel extends FlowModel {
 
 BaseCollectionModel.define({
   hide: true,
-  label: 'Collections',
-  menuType: 'submenu',
 });
 
 class Hello1CollectionModel extends BaseCollectionModel {
@@ -63,11 +68,16 @@ class Hello2CollectionModel extends BaseCollectionModel {
   }
 }
 
+Hello2CollectionModel.define({
+  children: false,
+});
+
 class PluginHelloModel extends Plugin {
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({
       HelloBlockModel,
+      OtherBlocksModel,
       BaseCollectionModel,
       Hello1CollectionModel,
       Hello2CollectionModel,

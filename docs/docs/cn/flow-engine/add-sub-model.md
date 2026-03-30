@@ -48,6 +48,7 @@ interface SubModelItem {
   label?: string;
   type?: 'group' | 'divider';
   disabled?: boolean;
+  hide?: boolean | ((ctx: FlowModelContext) => boolean | Promise<boolean>);
   icon?: React.ReactNode;
   children?: SubModelItemsType;
   useModel?: string;
@@ -65,6 +66,7 @@ interface SubModelItem {
 | `label` | `string` | 显示文本。 |
 | `type` | `'group' \| 'divider'` | 分组或分隔符。省略时为普通项或子菜单。 |
 | `disabled` | `boolean` | 是否禁用当前项。 |
+| `hide` | `boolean` \| `(ctx) => boolean \| Promise<boolean>` | 动态隐藏（返回 `true` 表示隐藏）。 |
 | `icon` | `React.ReactNode` | 图标内容。 |
 | `children` | `SubModelItemsType` | 子菜单项，用于嵌套分组或子菜单。 |
 | `useModel` | `string` | 指定使用的 Model 类型（注册名）。 |
@@ -111,6 +113,14 @@ interface SubModelItem {
 - 也可以是自定义的上下文属性或方法；
 - `items` 和 `children` 都支持 async 调用。
 
+### 动态隐藏菜单项（hide）
+
+```tsx file="./_demos/add-sub-model/add-sub-model-hide.tsx" preview
+```
+
+- `hide` 支持 `boolean` 或函数（支持 async）；返回 `true` 表示隐藏；
+- 会递归作用于 group 与 children。
+
 ### 使用分组、子菜单和分隔符
 
 ```tsx file="./_demos/add-sub-model/add-sub-model-basic-children.tsx" preview
@@ -137,6 +147,14 @@ interface SubModelItem {
 - 所有继承 `subModelBaseClasses` 的 FlowModel 都会罗列出来；
 - 自动按 `subModelBaseClasses` 分组并去重。
 
+### 通过继承类 + `menuType=submenu` 实现二级菜单
+
+```tsx file="./_demos/add-sub-model/add-sub-model-submenu-base-class.tsx" preview
+```
+
+- 给基类通过 `Model.define({ menuType: 'submenu' })` 指定展示形态；
+- 作为一级项出现，展开为二级菜单；可与其它分组按 `meta.sort` 混排排序。
+
 ### 通过 `Model.defineChildren()` 的方式自定义子菜单
 
 ```tsx file="./_demos/add-sub-model/add-sub-model-define-children.tsx" preview
@@ -146,3 +164,11 @@ interface SubModelItem {
 
 ```tsx file="./_demos/add-sub-model/add-sub-model-group-children.tsx" preview
 ```
+
+### 在子菜单中启用搜索
+
+```tsx file="./_demos/add-sub-model/add-sub-model-submenu-search.tsx" preview
+```
+
+- 任何包含 `children` 的菜单项只要设置 `searchable: true`，即会在该层级显示搜索框；
+- 支持同级存在 group 与非 group 的混合结构，搜索仅作用于当前层级。

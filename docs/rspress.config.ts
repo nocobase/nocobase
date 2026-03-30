@@ -169,6 +169,7 @@ export default defineConfig({
         '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
         '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
         '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
+        '@nocobase/utils/client': path.join(__dirname, '../packages/core/utils/src/client'),
       },
     },
   },
@@ -178,20 +179,7 @@ export default defineConfig({
     },
   },
   plugins: [
-    pluginPreview({
-      iframeOptions: {
-        builderConfig: {
-          resolve: {
-            alias: {
-              '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
-              '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
-              '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
-              '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
-            },
-          },
-        },
-      },
-    }),
+    pluginPreview(),
     pluginLlms(),
     pluginSchema(),
     pluginOgDescription(),
