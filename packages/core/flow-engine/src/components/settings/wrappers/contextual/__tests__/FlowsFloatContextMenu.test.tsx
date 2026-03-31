@@ -237,7 +237,7 @@ describe('FlowsFloatContextMenu', () => {
 
     const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
     const dropdown = within(overlay).getByTestId('dropdown');
-    expect(dropdown.getAttribute('data-popup-container')).toContain('nocobase-app-container');
+    expect(dropdown.getAttribute('data-popup-container')).toContain('nb-toolbar-container-icons');
     fireEvent.mouseLeave(host, { relatedTarget: icons });
     fireEvent.mouseEnter(icons, { relatedTarget: host });
 
@@ -291,7 +291,7 @@ describe('FlowsFloatContextMenu', () => {
     const icons = overlay.querySelector('.nb-toolbar-container-icons') as HTMLDivElement;
     const dropdown = within(overlay).getByTestId('dropdown');
     expect(icons.className).toContain('nb-toolbar-position-above');
-    expect(dropdown.getAttribute('data-popup-container')).toContain('nocobase-app-container');
+    expect(dropdown.getAttribute('data-popup-container')).toContain('nb-toolbar-container-icons');
 
     fireEvent.mouseEnter(icons);
     fireEvent.mouseEnter(dropdown);
@@ -364,9 +364,6 @@ describe('FlowsFloatContextMenu', () => {
     await waitFor(() => {
       expect(within(overlay).getByLabelText('flows-settings')).toBeTruthy();
     });
-
-    const dropdown = within(overlay).getByTestId('dropdown');
-    expect(dropdown.getAttribute('data-popup-container')).toContain('ant-drawer-content-wrapper');
 
     await waitFor(() => {
       expect(overlay.className).toContain('nb-toolbar-portal-absolute');

@@ -196,6 +196,7 @@ interface DefaultSettingsIconProps {
 
 const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
 const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+const MODAL_POPUP_HOST_SELECTOR = '.ant-modal-wrap, .ant-modal, .ant-modal-root';
 const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
   width: max-content;
   min-width: max-content;
@@ -215,6 +216,14 @@ const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
     (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
     (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
   );
+};
+
+const isModalPopupHost = (container?: HTMLElement | null) => {
+  if (!container) {
+    return false;
+  }
+
+  return container.matches?.(MODAL_POPUP_HOST_SELECTOR) || !!container.closest?.(MODAL_POPUP_HOST_SELECTOR);
 };
 
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
@@ -242,10 +251,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, [onDropdownVisibleChange]);
   const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
     (triggerNode) => {
-      // 优先复用外层 contextual toolbar 解析出的 popup host，避免弹窗内容区裁剪 dropdown。
+      const externalPopupContainer = getPopupContainer?.(triggerNode);
+      const toolbarPopupContainer = getToolbarPopupContainer(triggerNode);
+
+      // 仅在 modal 场景优先使用外层 popup host，避免被 modal content 裁剪。
+      // 其他场景仍优先使用本地 toolbar 容器，保证鼠标从 icon 移到菜单时不会提前关闭。
       return (
-        getPopupContainer?.(triggerNode) ||
-        getToolbarPopupContainer(triggerNode) ||
+        (isModalPopupHost(externalPopupContainer) ? externalPopupContainer : null) ||
+        toolbarPopupContainer ||
+        externalPopupContainer ||
         triggerNode?.parentElement ||
         document.body
       );
