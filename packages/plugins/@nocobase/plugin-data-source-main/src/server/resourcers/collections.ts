@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '@nocobase/database';
+import { Collection, Database, snakeCase } from '@nocobase/database';
 import lodash from 'lodash';
 
 export default {

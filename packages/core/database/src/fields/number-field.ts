@@ -18,7 +18,7 @@ export class IntegerField extends NumberField {
   }
 }
 
-export interface IntegerFieldOptions extends BaseColumnFieldOptions {
+export interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'integer';
 }
 

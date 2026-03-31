@@ -1,0 +1,17 @@
+{
+  "Connect to foreign data": "외부 데이터에 연결",
+  "Connection successful": "연결 성공",
+  "Create database server": "데이터베이스 서버 생성",
+  "Database": "데이터베이스",
+  "Database server": "데이터베이스 서버",
+  "Display name": "표시 이름",
+  "Edit database server": "데이터베이스 서버 편집",
+  "Host": "호스트",
+  "Password": "비밀번호",
+  "Port": "포트",
+  "Remote table": "원격 테이블",
+  "Server name": "서버 이름",
+  "Sync from remote table": "원격 테이블에서 동기화",
+  "Test Connection": "연결 테스트",
+  "Username": "사용자 이름"
+}

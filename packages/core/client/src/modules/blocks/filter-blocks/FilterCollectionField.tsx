@@ -14,15 +14,15 @@ import { merge } from '@formily/shared';
 import { concat } from 'lodash';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { isVariable, useCollectionManager_deprecated } from '../../../';
 import { useFormBlockContext } from '../../../block-provider/FormBlockProvider';
-import { useDynamicComponentProps } from '../../../hoc/withDynamicSchemaProps';
-import { ErrorFallback, useCompile, useComponent } from '../../../schema-component';
-import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
-import { useCollectionManager_deprecated } from '../../../';
 import {
   CollectionFieldProvider,
   useCollectionField,
 } from '../../../data-source/collection-field/CollectionFieldProvider';
+import { useDynamicComponentProps } from '../../../hoc/withDynamicSchemaProps';
+import { ErrorFallback, useCompile, useComponent } from '../../../schema-component';
+import { useIsAllowToSetDefaultValue } from '../../../schema-settings/hooks/useIsAllowToSetDefaultValue';
 
 type Props = {
   component: any;
@@ -93,20 +93,32 @@ export const FilterCollectionFieldInternalField: React.FC = (props: Props) => {
     setRequired(field, fieldSchema, uiSchema);
     // @ts-ignore
     field.dataSource = uiSchema.enum;
+    field.data = field.data || {};
+    field.data.dataSource = uiSchema?.enum;
     const originalProps =
-      compile({ ...(operator?.schema?.['x-component-props'] || {}), ...(uiSchema['x-component-props'] || {}) }) || {};
+      compile({
+        ...(operator?.schema?.['x-component-props'] || {}),
+        ...(uiSchema['x-component-props'] || {}),
+        ...(fieldSchema?.['x-component-props'] || {}),
+      }) || {};
 
-    field.componentProps = merge(originalProps, field.componentProps || {}, dynamicProps || {});
+    field.componentProps = merge(field.componentProps || {}, originalProps, dynamicProps || {});
   }, [uiSchemaOrigin]);
 
   if (!uiSchemaOrigin) return null;
 
-  return <Component {...props} {...dynamicProps} />;
+  const mergedProps = { ...props, ...dynamicProps };
+
+  // Prevent displaying the variable string first, then the variable value
+  if (isVariable(mergedProps.value) && mergedProps.value === fieldSchema.default) {
+    mergedProps.value = undefined;
+  }
+
+  return <Component {...mergedProps} />;
 };
 
 export const FilterCollectionField = connect((props) => {
   const fieldSchema = useFieldSchema();
-  const field = useField<Field>();
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={(err) => console.log(err)}>
       <CollectionFieldProvider name={fieldSchema.name}>

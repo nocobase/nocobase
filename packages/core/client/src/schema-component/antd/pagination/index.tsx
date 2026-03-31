@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Pagination as AntdPagination, PaginationProps as AntdPaginationProps } from 'antd';
 import React, { KeyboardEventHandler } from 'react';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';

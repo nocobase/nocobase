@@ -1,0 +1,492 @@
+/* Import Nunito font from local (Landrick style) */
+@import '@fontsource/nunito/300.css';
+@import '@fontsource/nunito/400.css';
+@import '@fontsource/nunito/600.css';
+@import '@fontsource/nunito/700.css';
+
+/* Import FontAwesome for icons - local version */
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Import Unicons for icons (matching website style) - local version */
+@import '@iconscout/unicons/css/line.css';
+
+html:not(.rp-dark) {
+  --rp-code-font-size: 14px;
+  --rp-code-block-color: #2e3440;
+  --rp-code-title-bg: #e9f0f7;
+  --rp-code-block-bg: #f6f8fa;
+  --rp-code-copy-code-hover-bg: #ffffff0d;
+  --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-feature-bg: var(--rp-c-bg-soft);
+  /* Completely disable gradient on hero title */
+  --rp-home-hero-name-background: none;
+  --rp-home-hero-name-color: #2e3440;
+}
+
+html.rp-dark {
+  --rp-code-font-size: 14px;
+  --rp-code-block-color: #e5e7eb;
+  --rp-code-title-bg: #2d2d2d;
+  --rp-code-block-bg: #242424;
+  --rp-code-copy-code-hover-bg: #ffffff0d;
+  --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-feature-bg: var(--rp-c-bg-soft);
+  /* Completely disable gradient on hero title */
+  --rp-home-hero-name-background: none;
+  --rp-home-hero-name-color: #e5e7eb;
+}
+
+.rp-banner {
+  --rp-banner-background: linear-gradient(279deg, #ff8b00 35.21%, #fb6d5b 63.34%);
+    color: rgb(255, 255, 255);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    height: 36px;
+    display: flex;
+    position: sticky;
+    top: 0px;
+    left: 0px;
+    background: var(--rp-banner-background);
+    font-weight: 700;
+}
+
+.rp-banner + div {
+  top: 36px;
+}
+
+.rspress-nav-menu-group-content>div {
+  max-height: 80vh;
+  overflow: auto;
+}
+
+/* Language dropdown hover effect - pure CSS */
+.language-dropdown {
+  /* Hover to show dropdown menu */
+  &:hover {
+    .rspress-nav-menu-group-content {
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
+    /* Rotate arrow when dropdown is open */
+    .dropdown-arrow {
+      transform: rotate(180deg) !important;
+    }
+  }
+}
+
+/* Dropdown menu styling - matching Landrick/website design */
+.rspress-nav-menu-group-content {
+  /* Reduce border radius for cleaner look */
+  div[style*="border-radius"] {
+    border-radius: 8px !important;
+  }
+
+  /* Menu items with reduced border radius */
+  .rp-rounded-2xl {
+    border-radius: 6px !important;
+  }
+}
+
+/* Landrick-style typography */
+body,
+html {
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+}
+
+/* Navigation bar styling - matching website/Landrick style */
+.rspress-nav-menu {
+  font-family: "Nunito", sans-serif !important;
+  gap: 0 !important;
+}
+
+/* Right-side navigation buttons (language, search, theme) - match menu item weight */
+.rspress-nav-menu-group-button {
+  font-weight: 600 !important;
+
+  span.rp-text-sm.rp-font-medium,
+  span.rp-font-medium {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+  }
+}
+
+/* Override Tailwind's font-medium class in navigation */
+.rspress-nav-menu .rp-font-medium {
+  font-weight: 600 !important;
+}
+
+.rspress-nav-menu-item {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.3px !important;
+  transition: color 0.3s ease !important;
+  /* Further reduce horizontal padding */
+  padding-left: 0.375rem !important;
+  padding-right: 0.375rem !important;
+  margin-left: 0.125rem !important;
+  margin-right: 0.125rem !important;
+
+  /* Add invisible placeholder for items without SVG arrow */
+  &:not(:has(svg))::after {
+    content: '';
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    margin-left: 0;
+  }
+}
+
+/* Further reduce spacing for menu groups */
+.rp-mx-3 {
+  margin-left: 0.375rem !important;
+  margin-right: 0.375rem !important;
+}
+
+/* Dropdown menu items - matching website style, precise selector */
+.rspress-nav-menu-group-content {
+  /* Only target dropdown menu items inside nav menu group */
+  .rp-font-medium.rp-my-1 {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+
+    /* Target spans specifically in dropdown links */
+    a.rp-link .rp-rounded-2xl .rp-flex span {
+      font-size: 14px !important;
+      font-weight: 700 !important;
+      letter-spacing: 0.04em !important;
+      color: var(--rp-c-text-1) !important;
+      transition: all 0.3s !important;
+    }
+
+    /* Hover effect */
+    a.rp-link:hover .rp-flex span {
+      color: var(--rp-c-brand) !important;
+    }
+  }
+}
+
+h1, h2, h3, h4, h5, h6,
+.rp-font-bold {
+  font-family: "Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif !important;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+/* Hero section typography - Landrick style */
+.rspress-home-hero-text,
+[class*="rspress-home-hero"] h1 {
+  font-family: "Nunito", sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Hero title - main heading (matching website display-4 style) */
+[class*="rspress-home-hero"] h1,
+h1[class*="rp-text"] {
+  font-size: 2.5rem !important;  /* 40px */
+  line-height: 1.2 !important;
+  font-weight: 700 !important;
+
+  @media (min-width: 640px) {
+    font-size: 3rem !important;  /* 48px */
+  }
+
+  @media (min-width: 768px) {
+    font-size: 3.5rem !important;  /* 56px - matches Bootstrap display-4 */
+  }
+}
+
+/* Hero subtitle text (matching website para-desc style) */
+.rspress-home-hero-text {
+  font-size: 1.125rem !important;  /* 18px */
+  line-height: 1.6 !important;
+  font-weight: 400 !important;
+  color: var(--rp-c-text-2) !important;
+
+  @media (min-width: 640px) {
+    font-size: 1.25rem !important;  /* 20px */
+  }
+
+  @media (min-width: 768px) {
+    font-size: 1.25rem !important;  /* 20px */
+  }
+}
+
+.rspress-home-hero-tagline {
+  font-family: "Nunito", sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.3px !important;
+  font-size: 16px !important;
+  line-height: 1.6 !important;
+
+  @media (min-width: 640px) {
+    font-size: 17px !important;
+  }
+}
+
+/* Remove the gradient mask overlay that causes the shadow effect */
+/* Only target the mask in the hero section, not the search modal backdrop */
+.rp-m-auto.rp-pt-0 [class*="mask_"] {
+  display: none !important;
+}
+
+/* Reduce Hero section padding to make it less spacious */
+.rp-m-auto.rp-pt-0 {
+  padding-top: 0 !important;
+  padding-bottom: 2rem !important;
+
+  @media (min-width: 640px) {
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+  }
+
+  @media (min-width: 768px) {
+    padding-top: 3rem !important;
+    padding-bottom: 4rem !important;
+  }
+}
+
+/* Reduce min-height of hero container */
+.rp-min-h-\[50vh\] {
+  min-height: 35vh !important;
+
+  @media (min-width: 640px) {
+    min-height: 40vh !important;
+  }
+
+  @media (min-width: 768px) {
+    min-height: 45vh !important;
+  }
+}
+
+/* Hero button styling - modern, clean look matching Landrick design */
+/* Target the actual button classes from rspress theme */
+[class*="button_"][class*="brand_"] {
+  /* Remove gradient and apply solid deep blue color */
+  background: #2f55d4 !important;
+  background-image: none !important;
+  border: 1px solid #2f55d4 !important;
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  letter-spacing: 0.5px !important;
+  outline: none !important;
+  box-shadow: rgba(47, 85, 212, 0.1) 0px 2.97875px 4.96458px 0px !important;
+  transition: all 0.3s !important;
+
+  &:hover {
+    background: #2443b8 !important;
+    background-image: none !important;
+    background-color: #2443b8 !important;
+    border-color: #2443b8 !important;
+    box-shadow: rgba(47, 85, 212, 0.2) 0px 4px 12px 0px !important;
+    transform: translateY(-1px) !important;
+    opacity: 1 !important;
+  }
+
+  &:active {
+    transform: translateY(0) !important;
+    box-shadow: rgba(47, 85, 212, 0.15) 0px 1px 3px 0px !important;
+  }
+}
+
+/* Alt button styling - Blue outline (matching website btn-outline-primary) */
+[class*="button_"][class*="alt_"] {
+  /* Blue outline style */
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: 1px solid #2f55d4 !important;
+  color: #2f55d4 !important;
+  border-radius: 6px !important;
+  padding: 8px 20px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  letter-spacing: 0.5px !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+  transition: all 0.3s !important;
+
+  /* Add > after the text */
+  &::after {
+    content: ' >';
+    margin-left: 4px;
+  }
+
+  &:hover {
+    background: #2f55d4 !important;
+    background-color: #2f55d4 !important;
+    background-image: none !important;
+    border-color: #2f55d4 !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(47, 85, 212, 0.3) !important;
+    transform: translateY(-1px) !important;
+  }
+
+  &:active {
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 2px rgba(47, 85, 212, 0.2) !important;
+  }
+}
+
+.rp-home-feature-container {
+  flex-direction: column;
+  justify-content: center;
+  max-width: 72rem;
+  height: auto;
+  margin: 0 auto;
+  padding-top: 4rem;
+  padding-bottom: 3rem;
+  display: flex;
+  position: relative;
+}
+
+.rp-home-feature-header {
+  color: var(--rp-c-text-1);
+  text-align: center;
+  margin: 0 0 1rem 0;
+  /* Matching website h3.title style - Bootstrap h3 default */
+  font-size: 1.75rem;  /* 28px */
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.2;
+
+  @media (min-width: 640px) {
+    font-size: 1.95rem;  /* ~31px */
+  }
+
+  @media (min-width: 768px) {
+    font-size: 2rem;  /* 32px */
+  }
+}
+
+.rp-home-feature-desc {
+  color: var(--landingpage-desc-color, #6b7075);
+  text-align: center;
+  max-width: 760px;
+  margin: 0 auto 2rem auto;
+  /* Matching website para-desc style */
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.6;
+
+  @media (min-width: 640px) {
+    font-size: 16px;
+  }
+
+  @media (min-width: 768px) {
+    font-size: 16px;
+  }
+}
+
+.rp-home-feature {
+  overflow: hidden;
+  margin: auto;
+  display: flex;
+  flex-wrap: wrap;
+  max-width: 72rem;
+
+  &__item {
+    width: 100%;
+
+    &--span-2,
+    &--span-4,
+    &--span-6 {
+      @media (min-width: 640px) {
+        width: 50%;
+      }
+    }
+
+    &--span-2,
+    &--span-4 {
+      @media (min-width: 768px) {
+        width: 50%;
+      }
+    }
+
+    &--span-3,
+    &--span-6 {
+      @media (min-width: 768px) {
+        width: calc(100% / 3);
+      }
+    }
+
+    &--span-3 {
+      @media (min-width: 960px) {
+        width: 25%;
+      }
+    }
+
+    &--span-4 {
+      @media (min-width: 960px) {
+        width: calc(100% / 3);
+      }
+    }
+
+    &--span-6 {
+      @media (min-width: 960px) {
+        width: 50%;
+      }
+    }
+  }
+
+  &__item-wrapper {
+    height: 100%;
+    padding: 0.5rem;
+  }
+
+  &__card {
+    height: 100%;
+    padding: 2rem;
+    border-radius: 0.75rem; /* 12px */
+    border: 1px solid transparent;
+    background: var(--rp-home-feature-bg);
+    transition: all 0.3s;
+
+    &--clickable {
+      cursor: pointer;
+    }
+
+    &:hover {
+      background: var(--rp-c-bg);
+      box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+      border: 1px solid var(--rp-c-divider);
+    }
+  }
+
+  &__title-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  &__title {
+    font-weight: 700;
+    text-align: left;
+    margin: 0;
+    font-size: 18px;
+    line-height: 1.3;
+  }
+
+  &__detail {
+    line-height: 1.6;
+    padding-top: 0.5rem;
+    font-size: 15px;
+    color: var(--rp-c-text-2);
+    font-weight: 400;
+    margin: 0;
+  }
+}

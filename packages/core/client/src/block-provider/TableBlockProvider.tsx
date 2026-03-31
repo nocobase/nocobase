@@ -17,6 +17,7 @@ import { SchemaComponentOptions } from '../schema-component';
 import { TableElementRefContext } from '../schema-component/antd/table-v2/Table';
 import { BlockProvider, useBlockRequestContext } from './BlockProvider';
 import { useBlockHeightProps } from './hooks';
+import { TableUidContext } from './TableUidContext';
 /**
  * @internal
  */
@@ -62,6 +63,8 @@ interface Props {
   children?: any;
   expandFlag?: boolean;
   dragSortBy?: string;
+  association?: string;
+  enableIndexColumn?: boolean;
 }
 
 const InternalTableBlockProvider = (props: Props) => {
@@ -74,6 +77,8 @@ const InternalTableBlockProvider = (props: Props) => {
     expandFlag: propsExpandFlag = false,
     fieldNames,
     collection,
+    association,
+    enableIndexColumn,
   } = props;
   const field: any = useField();
   const { resource, service } = useBlockRequestContext();
@@ -131,6 +136,8 @@ const InternalTableBlockProvider = (props: Props) => {
       allIncludesChildren,
       setExpandFlag: setExpandFlagValue,
       heightProps,
+      association,
+      enableIndexColumn,
     }),
     [
       allIncludesChildren,
@@ -146,6 +153,8 @@ const InternalTableBlockProvider = (props: Props) => {
       service,
       setExpandFlagValue,
       showIndex,
+      association,
+      enableIndexColumn,
     ],
   );
 
@@ -223,13 +232,15 @@ export const TableBlockProvider = withDynamicSchemaProps((props) => {
   }
 
   return (
-    <SchemaComponentOptions scope={{ treeTable }}>
-      <FormContext.Provider value={form}>
-        <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
-          <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
-        </BlockProvider>
-      </FormContext.Provider>
-    </SchemaComponentOptions>
+    <TableUidContext.Provider value={fieldSchema['x-uid']}>
+      <SchemaComponentOptions scope={{ treeTable }}>
+        <FormContext.Provider value={form}>
+          <BlockProvider name={props.name || 'table'} {...props} params={params} runWhenParamsChanged>
+            <InternalTableBlockProvider {...props} childrenColumnName={childrenColumnName} params={params} />
+          </BlockProvider>
+        </FormContext.Provider>
+      </SchemaComponentOptions>
+    </TableUidContext.Provider>
   );
 });
 

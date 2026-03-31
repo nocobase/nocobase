@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { isArray } from 'mathjs';
 import Database from '../database';
 import FieldTypeMap from './field-type-map';
 
@@ -115,6 +114,7 @@ export class ViewFieldInference {
         if (collectionField) {
           if (collectionField.options.interface) {
             inferResult.type = collectionField.type;
+            inferResult.interface = collectionField.options.interface;
             inferResult.source = `${collectionField.collection.name}.${collectionField.name}`;
           }
         }
@@ -150,7 +150,7 @@ export class ViewFieldInference {
     const queryType = this.extractTypeFromDefinition(options.type);
     const mappedType = fieldTypeMap[queryType];
 
-    if (isArray(mappedType)) {
+    if (Array.isArray(mappedType)) {
       return {
         type: mappedType[0],
         possibleTypes: mappedType,

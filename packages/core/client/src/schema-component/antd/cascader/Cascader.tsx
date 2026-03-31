@@ -116,6 +116,7 @@ export const Cascader = withDynamicSchemaProps(
         <AntdCascader
           loading={loading}
           {...others}
+          multiple={others.multiple}
           options={field.dataSource}
           loadData={loadData}
           changeOnSelect={isBoolean(changeOnSelectLast) ? !changeOnSelectLast : changeOnSelect}

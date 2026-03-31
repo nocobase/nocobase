@@ -160,8 +160,11 @@ RolesMenu.Item = function DepartmentTreeItem({ item, onEdit }) {
   const title = Schema.compile(item.title, { t });
   return (
     <Row>
-      <Col flex={3} style={{ display: 'inline-flex', alignItems: 'center' }}>
-        <span style={{ whiteSpace: 'nowrap', width: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      <Col
+        flex={3}
+        style={{ display: 'inline-flex', alignItems: 'center', flex: '1 1 0', minWidth: 0, paddingRight: '8px' }}
+      >
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
           <TagOutlined />
           <span style={{ marginLeft: '10px' }} title={title}>
             {title}

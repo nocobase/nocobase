@@ -8,12 +8,65 @@
  */
 
 import { promisify } from 'util';
-
 import nodemailer from 'nodemailer';
+import { Transporter } from 'nodemailer';
+import { FlowNodeModel, IJob, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import get from 'lodash/get';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+interface Provider {
+  port: number;
+  host: string;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}
+export default class MailerInstruction extends Instruction {
+  private static transporterMap = new Map<string, Transporter>();
+  private static configMap = new Map<string, any>();
 
-export default class extends Instruction {
+  private getTransporterKey(provider: Provider) {
+    const { host, port, auth } = provider;
+    return `${host}:${port}:${auth?.user}`;
+  }
+
+  private isConfigChanged(oldConfig: any, newConfig: any): boolean {
+    const fields = ['host', 'port', 'secure', 'auth.user', 'auth.pass'];
+    return fields.some((key) => get(oldConfig, key) !== get(newConfig, key));
+  }
+
+  private createNewTransporter(key: string, config: Provider): Transporter {
+    const transporter = nodemailer.createTransport(config);
+
+    MailerInstruction.transporterMap.set(key, transporter);
+    MailerInstruction.configMap.set(key, config);
+
+    return transporter;
+  }
+
+  private getTransporter(provider: Provider): Transporter {
+    const key = this.getTransporterKey(provider);
+
+    const newConfig = provider;
+    const oldConfig = MailerInstruction.configMap.get(key);
+
+    if (!oldConfig) {
+      return this.createNewTransporter(key, newConfig);
+    }
+
+    if (this.isConfigChanged(oldConfig, newConfig)) {
+      const oldTransporter = MailerInstruction.transporterMap.get(key);
+
+      if (oldTransporter) {
+        oldTransporter.close();
+      }
+      return this.createNewTransporter(key, newConfig);
+    }
+
+    return MailerInstruction.transporterMap.get(key)!;
+  }
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const {
       provider,
@@ -31,7 +84,8 @@ export default class extends Instruction {
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
 
-    const transporter = nodemailer.createTransport(provider);
+    const transporter = this.getTransporter(provider);
+    // const transporter = nodemailer.createTransport(provider);
     const send = promisify(transporter.sendMail.bind(transporter));
 
     const payload = {
@@ -39,9 +93,11 @@ export default class extends Instruction {
       ...(contentType === 'html' ? { html } : { text }),
       subject: subject?.trim(),
       to: to
-        .flat()
-        .map((item) => item?.trim())
-        .filter(Boolean),
+        ? to
+            .flat()
+            .map((item) => item?.trim())
+            .filter(Boolean)
+        : undefined,
       cc: cc
         ? cc
             .flat()
@@ -71,41 +127,37 @@ export default class extends Instruction {
       }
     }
 
-    const job = await processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
-    // eslint-disable-next-line promise/catch-or-return
-    send(payload)
-      .then((response) => {
-        processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
+    await processor.exit();
 
-        job.set({
-          status: JOB_STATUS.RESOLVED,
-          result: response,
-        });
-      })
-      .catch((error) => {
-        processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
 
-        job.set({
-          status: JOB_STATUS.FAILED,
-          result: error,
-        });
-      })
-      .finally(() => {
-        processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
-        setImmediate(() => {
-          this.workflow.resume(job);
-        });
+    try {
+      const response = await send(payload);
+      processor.logger.info(`smtp-mailer (#${node.id}) sent successfully.`);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = response;
+    } catch (error) {
+      processor.logger.warn(`smtp-mailer (#${node.id}) sent failed: ${error.message}`);
+
+      jobDone.status = JOB_STATUS.FAILED;
+      jobDone.result = error;
+    } finally {
+      processor.logger.debug(`smtp-mailer (#${node.id}) sending ended, resume workflow...`);
+      // At this point, the job is guaranteed to be in the database.
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
 
-    processor.logger.info(`smtp-mailer (#${node.id}) sent, waiting for response...`);
-
-    return processor.exit();
+      job.set(jobDone);
+      this.workflow.resume(job);
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {

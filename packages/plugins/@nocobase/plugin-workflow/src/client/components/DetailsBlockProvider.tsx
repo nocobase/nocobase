@@ -7,21 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useRef } from 'react';
 import { createForm } from '@formily/core';
 import { useField } from '@formily/react';
-import { get } from 'lodash';
 import {
   BlockRequestContext_deprecated,
   CollectionProvider_deprecated,
   FormBlockContext,
   RecordProvider,
   RerenderDataBlockProvider,
+  TemplateBlockProvider,
   parseCollectionName,
   useAPIClient,
   useAssociationNames,
   useBlockRequestContext,
 } from '@nocobase/client';
+import { get } from 'lodash';
+import React, { useMemo, useRef } from 'react';
 
 import { useFlowContext } from '../FlowContext';
 
@@ -85,25 +86,27 @@ export function DetailsBlockProvider({ collection, dataPath, children }) {
   const __parent = useBlockRequestContext();
 
   return (
-    <CollectionProvider_deprecated dataSource={dataSourceName} collection={resolvedCollection}>
-      <RecordProvider record={values} parent={null}>
-        <RerenderDataBlockProvider>
-          <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
-            <FormBlockContext.Provider
-              value={{
-                params,
-                form,
-                field,
-                service,
-                updateAssociationValues,
-                formBlockRef,
-              }}
-            >
-              {children}
-            </FormBlockContext.Provider>
-          </BlockRequestContext_deprecated.Provider>
-        </RerenderDataBlockProvider>
-      </RecordProvider>
-    </CollectionProvider_deprecated>
+    <TemplateBlockProvider>
+      <CollectionProvider_deprecated dataSource={dataSourceName} collection={resolvedCollection}>
+        <RecordProvider record={values} parent={null}>
+          <RerenderDataBlockProvider>
+            <BlockRequestContext_deprecated.Provider value={{ block: 'form', field, service, resource, __parent }}>
+              <FormBlockContext.Provider
+                value={{
+                  params,
+                  form,
+                  field,
+                  service,
+                  updateAssociationValues,
+                  formBlockRef,
+                }}
+              >
+                {children}
+              </FormBlockContext.Provider>
+            </BlockRequestContext_deprecated.Provider>
+          </RerenderDataBlockProvider>
+        </RecordProvider>
+      </CollectionProvider_deprecated>
+    </TemplateBlockProvider>
   );
 }

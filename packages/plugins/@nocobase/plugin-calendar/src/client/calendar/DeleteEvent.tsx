@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import { Modal, Radio, Space, Typography } from 'antd';
 import dayjs from 'dayjs';
 import React, { useContext, useState, useMemo } from 'react';

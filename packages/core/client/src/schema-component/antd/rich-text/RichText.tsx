@@ -9,9 +9,11 @@
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import React from 'react';
+import { css } from '@emotion/css';
+import classNames from 'classnames';
 import { lazy } from '../../../lazy-helper';
 import { isVariable } from '../../../variables/utils/isVariable';
-import { Input, ReadPretty as InputReadPretty } from '../input';
+import { ReadPretty as InputReadPretty } from '../input';
 import { useStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));
@@ -19,6 +21,7 @@ const ReactQuill = lazy(() => import('react-quill'));
 export const RichText = connect(
   (props) => {
     const { wrapSSR, hashId, componentCls } = useStyles();
+    const boundsClass = React.useMemo(() => `quill-bounds-${Math.random().toString(36).slice(2, 9)}`, []);
     const modules = {
       toolbar: [['bold', 'italic', 'underline', 'link'], [{ list: 'ordered' }, { list: 'bullet' }], ['clean']],
     };
@@ -35,22 +38,37 @@ export const RichText = connect(
       'link',
       'image',
     ];
-    const { value, defaultValue, onChange, disabled } = props;
+    const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
+    const quillDisabled = css`
+      .ql-container.ql-disabled {
+        background-color: #f5f5f5; /* 灰色背景 */
+        color: #999;
+        opacity: 0.7;
+        cursor: not-allowed;
+        pointer-events: none;
+        border: 1px solid #d9d9d9; /* 模拟 input 的禁用边框 */
+        border-radius: 6px;
+      }
+    `;
+
     return wrapSSR(
       <ReactQuill
-        className={`${componentCls} ${hashId}`}
-        modules={modules}
-        formats={formats}
+        className={classNames(componentCls, hashId, quillDisabled, boundsClass, {
+          'is-disabled': disabled,
+        })}
+        modules={propsModules || modules}
+        formats={propsFormats || formats}
         value={resultValue}
         onChange={(value) => {
           if (value === '<p><br></p>') {
-            onChange(undefined);
+            onChange('');
           } else {
             onChange(value);
           }
         }}
         readOnly={disabled}
+        bounds={`.${boundsClass}`}
       />,
     );
   },

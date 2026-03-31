@@ -9,6 +9,7 @@
 
 import lodash from 'lodash';
 import { filterMatch } from '@nocobase/database';
+import _ from 'lodash';
 
 export default {
   name: 'dataSources.collections',

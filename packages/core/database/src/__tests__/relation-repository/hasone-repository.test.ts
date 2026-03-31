@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../../collection';
-import Database from '../../database';
-import { HasOneRepository } from '../../relation-repository/hasone-repository';
-import { mockDatabase } from '../index';
+import { Collection, Database, HasOneRepository, createMockDatabase } from '@nocobase/database';
 
 describe('has one repository', () => {
   let db: Database;
@@ -26,7 +23,7 @@ describe('has one repository', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     User = db.collection({
       name: 'users',
       fields: [

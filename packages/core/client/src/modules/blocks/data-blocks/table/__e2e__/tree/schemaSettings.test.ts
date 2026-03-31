@@ -25,7 +25,7 @@ test.describe('tree table block schema settings', () => {
         'Set default sorting rules',
         'Records per page',
         'Connect data blocks',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });

@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import http from 'http';
-import url from 'url';
-import pg from 'pg';
 import dotenv from 'dotenv';
-import path from 'path';
-import mysql from 'mysql2/promise';
+import http from 'http';
 import mariadb from 'mariadb';
+import mysql from 'mysql2/promise';
+import path from 'path';
+import pg from 'pg';
+import url from 'url';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.test') });
 

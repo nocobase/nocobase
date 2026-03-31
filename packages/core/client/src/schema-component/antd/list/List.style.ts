@@ -48,11 +48,11 @@ const useStyles = genStyleHook('nb-list', (token) => {
         width: '100%',
         flexDirection: 'column',
         '&:not(:first-child)': {
-          paddingTop: token.paddingContentVertical,
+          marginTop: token.paddingContentVertical,
         },
 
         '&:not(:last-child)': {
-          paddingBottom: token.paddingContentVertical,
+          marginBottom: token.paddingContentVertical,
           borderBottom: `1px solid ${token.colorBorderSecondary}`,
         },
       },

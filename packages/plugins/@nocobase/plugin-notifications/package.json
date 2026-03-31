@@ -1,8 +1,10 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "1.7.0-beta.1",
+  "version": "2.1.0-beta.11",
   "description": "",
-  "license": "AGPL-3.0",
+  "displayName.ru-RU": "Уведомления",
+  "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
+  "license": "Apache-2.0",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@types/nodemailer": "6.4.4",
@@ -10,11 +12,11 @@
     "nodemailer-mock": "^1.5.11"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
-    "@nocobase/utils": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
+    "@nocobase/utils": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

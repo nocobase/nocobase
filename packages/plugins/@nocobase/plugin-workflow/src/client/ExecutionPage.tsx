@@ -37,7 +37,7 @@ export const ExecutionPage = () => {
                   action: 'get',
                   params: {
                     filter: params,
-                    appends: ['jobs', 'workflow', 'workflow.nodes'],
+                    appends: ['jobs', 'workflow', 'workflow.nodes', 'workflow.versionStats', 'workflow.stats'],
                     except: ['jobs.result', 'workflow.options'],
                   },
                 },

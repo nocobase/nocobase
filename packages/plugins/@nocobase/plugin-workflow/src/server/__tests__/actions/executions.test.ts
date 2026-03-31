@@ -24,11 +24,13 @@ describe('workflow > actions > executions', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'acl', 'auth', 'data-source-manager'],
+      plugins: ['users', 'acl', 'auth', 'data-source-manager', 'system-settings'],
       acl: true,
     });
-    agent = await app.agent().loginUsingId(1);
     db = app.db;
+    const UserRepo = db.getCollection('users').repository;
+    const user = await UserRepo.findOne();
+    agent = await app.agent().loginUsingId(user.id);
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
 
@@ -40,7 +42,6 @@ describe('workflow > actions > executions', () => {
         collection: 'posts',
       },
     });
-    const UserRepo = db.getCollection('users').repository;
     users = await UserRepo.createMany({
       records: [
         { id: 2, nickname: 'a', roles: ['admin'] },
@@ -162,9 +163,9 @@ describe('workflow > actions > executions', () => {
 
       const e2 = await workflow.getExecutions();
       expect(e2.length).toBe(1);
-      expect(e2[0].get('status')).toBe(EXECUTION_STATUS.CANCELED);
+      expect(e2[0].get('status')).toBe(EXECUTION_STATUS.ABORTED);
       const jobs = await e2[0].getJobs();
-      expect(jobs[0].status).toBe(JOB_STATUS.CANCELED);
+      expect(jobs[0].status).toBe(JOB_STATUS.ABORTED);
     });
   });
 });

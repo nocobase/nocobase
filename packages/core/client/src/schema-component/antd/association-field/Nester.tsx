@@ -14,6 +14,7 @@ import { spliceArrayState } from '@formily/core/esm/shared/internals';
 import { observer, useFieldSchema } from '@formily/react';
 import { action } from '@formily/reactive';
 import { each } from '@formily/shared';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 import { useUpdate } from 'ahooks';
 import { Button, Card, Divider, Space, Tooltip } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
@@ -41,6 +42,7 @@ import {
   useRefreshComponent,
 } from '../../../formily/NocoBaseRecursionField';
 import { RecordIndexProvider, RecordProvider } from '../../../record-provider';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { isPatternDisabled, isSystemField } from '../../../schema-settings';
 import {
   DefaultValueProvider,
@@ -140,6 +142,16 @@ const ToManyNester = observer(
     const recordData = useCollectionRecordData();
     const collection = useCollection();
     const update = useUpdate();
+    const { isMobileLayout } = useMobileLayout();
+
+    const newSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema) : fieldSchema),
+      [isMobileLayout, fieldSchema],
+    );
+    const newParentSchema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(fieldSchema.parent) : fieldSchema.parent),
+      [isMobileLayout, fieldSchema.parent],
+    );
 
     const refreshComponent = useRefreshComponent();
     const refresh = useCallback(() => {
@@ -236,6 +248,7 @@ const ToManyNester = observer(
       const filter = list.length ? { $and: [{ [`${targetKey}.$ne`]: list }] } : {};
       return filter;
     };
+
     return field.value.length > 0 ? (
       <Card
         bordered={true}
@@ -255,7 +268,7 @@ const ToManyNester = observer(
             return (
               <React.Fragment key={index}>
                 <div style={{ textAlign: 'right' }}>
-                  {!field.readPretty && allowed && (
+                  {!field.readPretty && allowed && (!fieldSchema['x-template-uid'] || index > 0) && (
                     <Tooltip key={'remove'} title={t('Remove')}>
                       <CloseOutlined
                         style={{ zIndex: 1000, color: '#a8a3a3' }}
@@ -266,6 +279,9 @@ const ToManyNester = observer(
                               deleteCount: 1,
                             });
                             field.value.splice(index, 1);
+                            if (Array.isArray(field.initialValue)) {
+                              field.initialValue.splice(index, 1);
+                            }
                             return field.onInput(field.value);
                           });
                         }}
@@ -281,7 +297,7 @@ const ToManyNester = observer(
                           <NocoBaseRecursionField
                             onlyRenderProperties
                             basePath={field.address.concat(index)}
-                            schema={fieldSchema}
+                            schema={newSchema}
                           />
                         </DefaultValueProvider>
                       </RecordIndexProvider>
@@ -356,7 +372,7 @@ const ToManyNester = observer(
                     <NocoBaseRecursionField
                       onlyRenderProperties
                       basePath={field.address}
-                      schema={fieldSchema.parent}
+                      schema={newParentSchema}
                       filterProperties={(s) => {
                         return s['x-component'] === 'AssociationField.Selector';
                       }}
@@ -382,7 +398,7 @@ const ToManyNester = observer(
               icon={<PlusOutlined />}
               onClick={() => {
                 const result = field.value;
-                result.push({});
+                result.push(markRecordAsNew({}));
                 field.value = result;
               }}
             ></Button>

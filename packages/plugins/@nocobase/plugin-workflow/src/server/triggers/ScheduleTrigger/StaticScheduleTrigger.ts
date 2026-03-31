@@ -18,40 +18,43 @@ const MAX_SAFE_INTERVAL = 2147483647;
 export default class StaticScheduleTrigger {
   private timers: Map<string, NodeJS.Timeout | null> = new Map();
 
-  constructor(public workflow: Plugin) {
-    workflow.app.on('afterStart', async () => {
-      const workflows = Array.from(this.workflow.enabledCache.values()).filter(
-        (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.STATIC,
-      );
-
-      this.inspect(workflows);
-    });
-
-    workflow.app.on('beforeStop', () => {
-      for (const timer of this.timers.values()) {
-        clearInterval(timer);
-      }
-    });
-  }
-
-  inspect(workflows: WorkflowModel[]) {
-    const now = new Date();
+  onAfterStart = () => {
+    const workflows = Array.from(this.workflow.enabledCache.values()).filter(
+      (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.STATIC,
+    );
 
     workflows.forEach((workflow) => {
-      const nextTime = this.getNextTime(workflow, now);
-      if (nextTime) {
-        this.workflow
-          .getLogger(workflow.id)
-          .info(`caching scheduled workflow will run at: ${new Date(nextTime).toISOString()}`);
-      } else {
-        this.workflow.getLogger(workflow.id).info('workflow will not be scheduled');
-      }
-      this.schedule(workflow, nextTime, nextTime >= now.getTime());
+      this.inspect(workflow);
     });
+  };
+
+  onBeforeStop = () => {
+    for (const timer of this.timers.values()) {
+      clearInterval(timer);
+    }
+  };
+
+  constructor(public workflow: Plugin) {
+    workflow.app.on('afterStart', this.onAfterStart);
+    workflow.app.on('beforeStop', this.onBeforeStop);
   }
 
-  getNextTime({ config, allExecuted }: WorkflowModel, currentDate: Date, nextSecond = false) {
-    if (config.limit && allExecuted >= config.limit) {
+  inspect(workflow: WorkflowModel) {
+    const now = new Date();
+
+    const nextTime = this.getNextTime(workflow, now);
+    if (nextTime) {
+      this.workflow
+        .getLogger(workflow.id)
+        .info(`caching scheduled workflow will run at: ${new Date(nextTime).toISOString()}`);
+    } else {
+      this.workflow.getLogger(workflow.id).info('workflow will not be scheduled');
+    }
+    this.schedule(workflow, nextTime, nextTime >= now.getTime());
+  }
+
+  getNextTime({ config, stats }: WorkflowModel, currentDate: Date, nextSecond = false) {
+    if (config.limit && stats.executed >= config.limit) {
       return null;
     }
     if (!config.startsOn) {
@@ -119,7 +122,7 @@ export default class StaticScheduleTrigger {
 
     this.workflow.trigger(workflow, { date: new Date(time) }, { eventKey });
 
-    if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
+    if (!workflow.config.repeat || (workflow.config.limit && workflow.stats.executed >= workflow.config.limit - 1)) {
       return;
     }
 
@@ -130,7 +133,7 @@ export default class StaticScheduleTrigger {
   }
 
   on(workflow) {
-    this.inspect([workflow]);
+    this.inspect(workflow);
   }
 
   off(workflow) {

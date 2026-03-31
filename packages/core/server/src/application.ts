@@ -24,8 +24,9 @@ import {
 } from '@nocobase/logger';
 import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
-
+import { AIManager } from '@nocobase/ai';
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+import { Snowflake } from '@nocobase/snowflake-id';
 import {
   applyMixins,
   AsyncEmitter,
@@ -34,7 +35,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -43,6 +43,7 @@ import { i18n, InitOptions } from 'i18next';
 import Koa, { DefaultContext as KoaDefaultContext, DefaultState as KoaDefaultState } from 'koa';
 import compose from 'koa-compose';
 import lodash from 'lodash';
+import { nanoid } from 'nanoid';
 import { RecordableHistogram } from 'node:perf_hooks';
 import path, { basename, resolve } from 'path';
 import semver from 'semver';
@@ -77,7 +78,11 @@ import { availableActions } from './acl/available-action';
 import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
+import { EventQueue, EventQueueOptions } from './event-queue';
+import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
 import { ServiceContainer } from './service-container';
+import { setupSnowflakeIdField } from './snowflake-id-field';
+import { WorkerIdAllocator } from './worker-id-allocator';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -104,7 +109,9 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 }
 
 export interface ApplicationOptions {
+  instanceId?: number;
   database?: IDatabaseOptions | Database;
+  redisConfig?: RedisConfig;
   cacheManager?: CacheManagerOptions;
   /**
    * this property is deprecated and should not be used.
@@ -131,6 +138,7 @@ export interface ApplicationOptions {
   authManager?: AuthManagerOptions;
   auditManager?: AuditManager;
   lockManager?: LockManagerOptions;
+  eventQueue?: EventQueueOptions;
 
   /**
    * @internal
@@ -196,13 +204,23 @@ type MaintainingStatus = 'command_begin' | 'command_end' | 'command_running' | '
 
 export type MaintainingCommandStatus = {
   command: {
+    components?: {
+      maintaining: string;
+      maintainingDialog: string;
+    };
     name: string;
+    [key: string]: any;
   };
   status: MaintainingStatus;
   error?: Error;
 };
 
+interface SnowflakeIdGenerator {
+  generate(): number | BigInt;
+}
+
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
+  private _instanceId: number;
   /**
    * @internal
    */
@@ -237,6 +255,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
+  public redisConnectionManager: RedisConnectionManager;
+  public workerIdAllocator: WorkerIdAllocator;
+  public snowflakeIdGenerator: SnowflakeIdGenerator;
+
+  public aiManager: AIManager;
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -250,6 +273,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   public container = new ServiceContainer();
   public lockManager: LockManager;
+  public eventQueue: EventQueue;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -264,11 +288,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private static staticCommands = [];
 
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
   }
 
   private _sqlLogger: Logger;
+
+  get instanceId() {
+    return this._instanceId;
+  }
 
   get sqlLogger() {
     return this._sqlLogger;
@@ -445,6 +477,35 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   }
 
   /**
+   * Check if the application is serving as a specific worker.
+   * @experimental
+   */
+  public serving(key?: string): boolean {
+    const { WORKER_MODE = '' } = process.env;
+    if (!WORKER_MODE) {
+      return true;
+    }
+    if (WORKER_MODE === '-') {
+      return false;
+    }
+    const topics = WORKER_MODE.trim().split(',');
+    if (key) {
+      if (WORKER_MODE === '*') {
+        return true;
+      }
+      if (topics.includes(key)) {
+        return true;
+      }
+      return false;
+    } else {
+      if (topics.includes('!')) {
+        return true;
+      }
+      return false;
+    }
+  }
+
+  /**
    * @internal
    */
   getMaintaining() {
@@ -454,10 +515,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
-  setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
+  async setMaintaining(_maintainingCommandStatus: MaintainingCommandStatus) {
     this._maintainingCommandStatus = _maintainingCommandStatus;
 
-    this.emit('maintaining', _maintainingCommandStatus);
+    await this.emitAsync('maintaining', _maintainingCommandStatus);
 
     if (_maintainingCommandStatus.status == 'command_end') {
       this._maintaining = false;
@@ -481,7 +542,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.version.get()} instead.
+   * Use {@link #this.getPackageVersion} instead.
    * @deprecated
    */
   getVersion() {
@@ -562,15 +623,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
-  /**
-   * @internal
-   */
-  async reInit() {
-    if (!this._loaded) {
-      return;
+  private async disposeServices() {
+    if (this.redisConnectionManager) {
+      await this.redisConnectionManager.close();
     }
-
-    this.log.info('app reinitializing');
 
     if (this.cacheManager) {
       await this.cacheManager.close();
@@ -583,6 +639,25 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.telemetry.started) {
       await this.telemetry.shutdown();
     }
+
+    await this.workerIdAllocator.release();
+  }
+
+  /**
+   * @internal
+   */
+  async reInit() {
+    if (!this._loaded) {
+      return;
+    }
+
+    this.log.info('app reinitializing');
+
+    // trigger the stop events to make sure old instances are cleaned up
+    await this.emitAsync('beforeStop');
+    await this.emitAsync('afterStop');
+
+    await this.disposeServices();
 
     this.closeLogger();
 
@@ -613,13 +688,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
 
-      if (this.cacheManager) {
-        await this.cacheManager.close();
-      }
-
-      if (this.telemetry.started) {
-        await this.telemetry.shutdown();
-      }
+      await this.disposeServices();
 
       const oldDb = this.db;
 
@@ -635,7 +704,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
-
     this._cacheManager = await this.createCacheManager();
 
     this.log.debug('init plugins');
@@ -648,6 +716,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.hooks !== false) {
       await this.emitAsync('beforeLoad', this, options);
+    }
+
+    if (!this._instanceId) {
+      this._instanceId = await this.workerIdAllocator.getWorkerId();
+      this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
+    }
+    if (!this.snowflakeIdGenerator) {
+      this.snowflakeIdGenerator = new Snowflake({
+        workerId: this._instanceId,
+      });
     }
 
     // Telemetry is initialized after beforeLoad hook
@@ -802,7 +880,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
       const command = await this.cli.parseAsync(argv, options);
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_end',
         command: this.activatedCommand,
       });
@@ -815,7 +893,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
         };
       }
 
-      this.setMaintaining({
+      await this.setMaintaining({
         status: 'command_error',
         command: this.activatedCommand,
         error,
@@ -942,15 +1020,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       log.error(e.message, { method: 'stop', err: e.stack });
     }
 
-    if (this.cacheManager) {
-      await this.cacheManager.close();
-    }
-
-    if (this.telemetry.started) {
-      await this.telemetry.shutdown();
-    }
+    await this.disposeServices();
 
     await this.emitAsync('afterStop', this, options);
+    this.emit('__stopped', this, options);
 
     this.stopped = true;
     log.info(`app has stopped`, { method: 'stop' });
@@ -1030,6 +1103,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     this.log.info('upgrading...');
+    const pkgVersion = this.getPackageVersion();
+    const appVersion = await this.version.get();
+    if (process.env.SKIP_SAME_VERSION_UPGRADE === 'true' && pkgVersion === appVersion) {
+      this.log.info(`app is already the latest version (${appVersion})`);
+      return;
+    }
     await this.reInit();
     const migrator1 = await this.loadCoreMigrations();
     await migrator1.beforeLoad.up();
@@ -1072,7 +1151,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
+    if (!options.quickstart) {
+      await this.emitAsync('afterUpgrade', this, options);
+    }
     await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
@@ -1119,12 +1200,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
           name: getCommandFullName(actionCommand),
         };
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_begin',
           command: this.activatedCommand,
         });
 
-        this.setMaintaining({
+        await this.setMaintaining({
           status: 'command_running',
           command: this.activatedCommand,
         });
@@ -1184,6 +1265,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+    this._instanceId = options.instanceId;
 
     this.initLogger(options.logger);
 
@@ -1198,13 +1280,22 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     this.createMainDataSource(options);
 
+    this.redisConnectionManager = new RedisConnectionManager({
+      redisConfig: options.redisConfig,
+      logger: this._logger.child({ module: 'redis-connection-manager' }),
+    });
+
+    this.workerIdAllocator = new WorkerIdAllocator();
+
     this._cronJobManager = new CronJobManager(this);
     this._env = new Environment();
 
     this._cli = this.createCLI();
     this._i18n = createI18n(options);
+    this.aiManager = new AIManager(this);
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
+    this.eventQueue = new EventQueue(this, options.eventQueue);
     this.lockManager = new LockManager({
       defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
       ...options.lockManager,
@@ -1229,8 +1320,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._telemetry = new Telemetry({
-      serviceName: `nocobase-${this.name}`,
-      version: this.getVersion(),
+      appName: this.name,
+      version: this.getPackageVersion(),
       ...options.telemetry,
     });
 
@@ -1247,6 +1338,11 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       actions: authActions,
     });
 
+    this._dataSourceManager.beforeAddDataSource((dataSource) => {
+      if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
+        setupSnowflakeIdField(this, dataSource.collectionManager.db);
+      }
+    });
     this._dataSourceManager.afterAddDataSource((dataSource) => {
       if (dataSource.collectionManager instanceof SequelizeCollectionManager) {
         for (const [actionName, actionParams] of Object.entries(availableActions)) {
@@ -1255,7 +1351,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     });
 
-    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth', before: 'default' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {
@@ -1284,6 +1380,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     for (const callback of Application.staticCommands) {
       callback(this);
     }
+
+    this.aiManager = new AIManager(this);
   }
 
   protected createMainDataSource(options: ApplicationOptions) {

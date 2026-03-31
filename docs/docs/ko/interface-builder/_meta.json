@@ -1,0 +1,494 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/interface-builder"
+  },
+  {
+    "type": "custom-link",
+    "label": "블록",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/interface-builder/blocks"
+      },
+      {
+        "type": "custom-link",
+        "label": "데이터 블록",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "테이블",
+            "link": "/interface-builder/blocks/data-blocks/table"
+          },
+          {
+            "type": "custom-link",
+            "label": "폼",
+            "link": "/interface-builder/blocks/data-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "상세 정보",
+            "link": "/interface-builder/blocks/data-blocks/details"
+          },
+          {
+            "type": "custom-link",
+            "label": "목록",
+            "link": "/interface-builder/blocks/data-blocks/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "그리드 카드",
+            "link": "/interface-builder/blocks/data-blocks/grid-card"
+          },
+          {
+            "type": "custom-link",
+            "label": "차트",
+            "link": "/interface-builder/blocks/data-blocks/chart"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "필터 블록",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "폼",
+            "link": "/interface-builder/blocks/filter-blocks/form"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "기타 블록",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "액션 패널",
+            "link": "/interface-builder/blocks/other-blocks/action-panel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Iframe",
+            "link": "/interface-builder/blocks/other-blocks/iframe"
+          },
+          {
+            "type": "custom-link",
+            "label": "참조 블록",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/interface-builder/blocks/other-blocks/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Block",
+            "link": "/interface-builder/blocks/other-blocks/js-block"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "블록 설정",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "데이터 범위",
+            "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "레이아웃",
+            "link": "/interface-builder/blocks/block-settings/block-layout"
+          },
+          {
+            "type": "custom-link",
+            "label": "블록 연동 규칙",
+            "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "필드 연동 규칙",
+            "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "정렬 규칙",
+            "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "블록 삭제",
+            "link": "/interface-builder/blocks/block-settings/block-delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "블록 제목",
+            "link": "/interface-builder/blocks/block-settings/block-title"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "필드",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "공통 설정",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "테이블 필드",
+            "link": "/interface-builder/fields/generic/table-column"
+          },
+          {
+            "type": "custom-link",
+            "label": "상세 정보 필드",
+            "link": "/interface-builder/fields/generic/detail-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "필터 폼 필드",
+            "link": "/interface-builder/fields/generic/filter-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "폼 필드",
+            "link": "/interface-builder/fields/generic/form-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "특정 설정",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "날짜",
+            "link": "/interface-builder/fields/specific/date-picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "파일 관리자",
+            "link": "/interface-builder/fields/specific/file-manager"
+          },
+          {
+            "type": "custom-link",
+            "label": "하위 폼",
+            "link": "/interface-builder/fields/specific/sub-form"
+          },
+          {
+            "type": "custom-link",
+            "label": "드롭다운 선택기",
+            "link": "/interface-builder/fields/specific/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "데이터 선택기",
+            "link": "/interface-builder/fields/specific/picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "계단식 선택기",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "하위 테이블",
+            "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "하위 상세 정보",
+            "link": "/interface-builder/fields/specific/sub-detail"
+          },
+          {
+            "type": "custom-link",
+            "label": "제목",
+            "link": "/interface-builder/fields/specific/title"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Field",
+            "link": "/interface-builder/fields/specific/js-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/fields/specific/js-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Column",
+            "link": "/interface-builder/fields/specific/js-column"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "필드 설정",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "기본값",
+            "link": "/interface-builder/fields/field-settings/default-value"
+          },
+          {
+            "type": "custom-link",
+            "label": "필드 라벨",
+            "link": "/interface-builder/fields/field-settings/edit-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "라벨 표시",
+            "link": "/interface-builder/fields/field-settings/show-label"
+          },
+          {
+            "type": "custom-link",
+            "label": "필드 도움말",
+            "link": "/interface-builder/fields/field-settings/edit-tooltip"
+          },
+          {
+            "type": "custom-link",
+            "label": "데이터 범위",
+            "link": "/interface-builder/fields/field-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "필드 컴포넌트",
+            "link": "/interface-builder/fields/field-settings/field-component"
+          },
+          {
+            "type": "custom-link",
+            "label": "숫자 서식",
+            "link": "/interface-builder/fields/field-settings/number-format"
+          },
+          {
+            "type": "custom-link",
+            "label": "모드",
+            "link": "/interface-builder/fields/field-settings/pattern"
+          },
+          {
+            "type": "custom-link",
+            "label": "필수",
+            "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "제목 필드",
+            "link": "/interface-builder/fields/field-settings/title-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "유효성 검사 규칙",
+            "link": "/interface-builder/fields/field-settings/validation-rules"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "관계 필드 컴포넌트",
+        "link": "/interface-builder/fields/association-field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "액션",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/interface-builder/actions"
+      },
+      {
+        "type": "custom-link",
+        "label": "액션 설정",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "편집 버튼",
+            "link": "/interface-builder/actions/action-settings/edit-button"
+          },
+          {
+            "type": "custom-link",
+            "label": "재확인",
+            "link": "/interface-builder/actions/action-settings/double-check"
+          },
+          {
+            "type": "custom-link",
+            "label": "필드 값 할당",
+            "link": "/interface-builder/actions/action-settings/assign-values"
+          },
+          {
+            "type": "custom-link",
+            "label": "워크플로우 연결",
+            "link": "/interface-builder/actions/action-settings/bind-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "편집 팝업",
+            "link": "/interface-builder/actions/action-settings/edit-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "액션 연동 규칙",
+            "link": "/interface-builder/actions/action-settings/linkage-rule"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "액션 유형",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "생성",
+            "link": "/interface-builder/actions/types/add-new"
+          },
+          {
+            "type": "custom-link",
+            "label": "보기",
+            "link": "/interface-builder/actions/types/view"
+          },
+          {
+            "type": "custom-link",
+            "label": "삭제",
+            "link": "/interface-builder/actions/types/delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "편집",
+            "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "가져오기",
+            "link": "/interface-builder/actions/types/import"
+          },
+          {
+            "type": "custom-link",
+            "label": "가져오기 Pro",
+            "link": "/interface-builder/actions/types/import-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "내보내기",
+            "link": "/interface-builder/actions/types/export"
+          },
+          {
+            "type": "custom-link",
+            "label": "내보내기 Pro",
+            "link": "/interface-builder/actions/types/export-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "첨부 파일 내보내기",
+            "link": "/interface-builder/actions/types/export-attachments"
+          },
+          {
+            "type": "custom-link",
+            "label": "필터",
+            "link": "/interface-builder/actions/types/filter"
+          },
+          {
+            "type": "custom-link",
+            "label": "링크",
+            "link": "/interface-builder/actions/types/link"
+          },
+          {
+            "type": "custom-link",
+            "label": "팝업 열기",
+            "link": "/interface-builder/actions/types/pop-up"
+          },
+          {
+            "type": "custom-link",
+            "label": "새로고침",
+            "link": "/interface-builder/actions/types/refresh"
+          },
+          {
+            "type": "custom-link",
+            "label": "데이터 제출",
+            "link": "/interface-builder/actions/types/submit"
+          },
+          {
+            "type": "custom-link",
+            "label": "워크플로우 트리거",
+            "link": "/interface-builder/actions/types/trigger-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "레코드 업데이트",
+            "link": "/interface-builder/actions/types/update-record"
+          },
+          {
+            "type": "custom-link",
+            "label": "일괄 업데이트",
+            "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "하위 레코드 추가",
+            "link": "/interface-builder/actions/types/add-child"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
+            "link": "/interface-builder/actions/types/js-action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "액션 권한",
+        "link": "/interface-builder/actions/permission"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "고급",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "연동 규칙",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "이벤트 플로우",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "변수",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS",
+        "link": "/interface-builder/runjs"
+      }
+    ]
+  }
+]

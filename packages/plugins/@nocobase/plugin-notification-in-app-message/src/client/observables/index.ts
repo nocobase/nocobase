@@ -9,6 +9,5 @@
 
 export * from './channel';
 export * from './message';
-export * from './sse';
 export * from './inbox';
 export * from './user';

@@ -9,13 +9,16 @@
 
 import { QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/reactive-react';
+import { observer } from '@nocobase/flow-engine';
 import { parseHTML } from '@nocobase/utils/client';
 import { Dropdown, Menu, Popover } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DropdownVisibleContext, usePlugin, useToken } from '..';
 import { useCurrentAppInfo } from '../appInfo/CurrentAppInfoProvider';
+import { MenuItemType, MenuDividerType } from 'antd/es/menu/interface';
+
+type SettingsMenuItemType = MenuItemType | MenuDividerType;
 
 /**
  * @note If you want to change here, Note the Setting block on the mobile side
@@ -30,7 +33,7 @@ const SettingsMenu: React.FC<{
   // 是否是简体中文
   const isSimplifiedChinese = data?.data?.lang === 'zh-CN';
 
-  const items = [
+  const items: SettingsMenuItemType[] = [
     {
       key: 'nocobase',
       disabled: true,
@@ -61,7 +64,7 @@ const SettingsMenu: React.FC<{
       key: 'userManual',
       label: (
         <a
-          href={isSimplifiedChinese ? 'https://docs-cn.nocobase.com/handbook' : 'https://docs.nocobase.com/handbook'}
+          href={isSimplifiedChinese ? 'https://v2.docs.nocobase.com/cn/guide/' : 'https://v2.docs.nocobase.com/guide/'}
           target="_blank"
           rel="noreferrer"
         >

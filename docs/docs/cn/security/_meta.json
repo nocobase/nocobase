@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "安全指南",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token 策略",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "密码策略",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "密码策略",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "用户锁定",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP 限制",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "审计日志",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "双因素身份认证 (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "字段加密",
+    "link": "/data-sources/field-encryption"
+  }
+]

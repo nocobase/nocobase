@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import { connect, mapProps } from '@formily/react';
 import { Select } from '@nocobase/client';
+import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const MobilePicker = connect(
   (props) => {
-    const { value, onChange, options = [], mode } = props;
+    const { value, onChange, options = [], mode, disabled } = props;
     const { t } = useTranslation();
     const [visible, setVisible] = useState(false);
     const [selected, setSelected] = useState(value || []);
@@ -38,12 +38,13 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <Select
             placeholder={t('Select')}
             value={value}
             dropdownStyle={{ display: 'none' }}
             multiple={mode === 'multiple'}
+            disabled={disabled}
             onClear={() => {
               setVisible(false);
               onChange(null);

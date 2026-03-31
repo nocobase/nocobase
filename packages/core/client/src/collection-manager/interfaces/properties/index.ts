@@ -49,7 +49,7 @@ export const unique = {
   'x-content': '{{t("Unique")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
-  'x-disabled': '{{ !createMainOnly }}',
+  'x-disabled': '{{ !createMainOnly || primaryKeyOnly }}',
   'x-reactions': [
     {
       dependencies: ['primaryKey'],
@@ -67,7 +67,7 @@ export const primaryKey = {
   'x-content': '{{t("Primary")}}',
   'x-decorator': 'FormItem',
   'x-component': 'Checkbox',
-  'x-disabled': '{{ !createMainOnly }}',
+  'x-disabled': '{{ !createMainOnly || primaryKeyOnly }}',
   'x-reactions': [
     {
       dependencies: ['unique'],

@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "@nocobase-example/plugin-simple-popup-action",
+  "displayName": "Plugin example: Simple popup action",
+  "description": "This plugin demonstrates how to use the simple popup action feature to create a simple popup action.",
+  "version": "2.1.0-beta.11",
+  "main": "dist/server/index.js",
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}

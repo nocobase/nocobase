@@ -150,14 +150,14 @@ export class CacheManager {
   /**
    * @experimental
    */
-  async createBloomFilter(options?: { store?: string }): Promise<BloomFilter> {
+  async createBloomFilter(options?: { store?: string; [key: string]: any }): Promise<BloomFilter> {
     const name = 'bloom-filter';
-    const { store = this.defaultStore } = options || {};
+    const { store = this.defaultStore, ...opts } = options || {};
     let cache: Cache;
     try {
       cache = this.getCache(name);
     } catch (error) {
-      cache = await this.createCache({ name, store });
+      cache = await this.createCache({ name, store, ...opts });
     }
     switch (store) {
       case 'memory':

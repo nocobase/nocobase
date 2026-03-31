@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Usuários",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Funções e permissões",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Configuração de função",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuração de permissão",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aplicar na UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "União de funções",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Guia de Desenvolvimento",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Estender barra de configuração de permissões",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Departamentos",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Gerenciamento de departamentos",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gerenciamento de funções de departamento",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Sincronização de dados de usuário",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Gerenciamento de sincronização",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Fontes de Dados",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeCom",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "API HTTP",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Guia de Desenvolvimento",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Estender fonte de dados de sincronização",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Estender recurso de destino de sincronização",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

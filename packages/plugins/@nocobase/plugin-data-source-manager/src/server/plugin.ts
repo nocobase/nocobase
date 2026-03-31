@@ -8,7 +8,6 @@
  */
 
 import { Application, Plugin } from '@nocobase/server';
-import { resolve } from 'path';
 import { DataSourcesCollectionModel } from './models/data-sources-collection-model';
 import { DataSourcesFieldModel } from './models/data-sources-field-model';
 import remoteCollectionsResourcer from './resourcers/data-sources-collections';
@@ -16,17 +15,18 @@ import remoteFieldsResourcer from './resourcers/data-sources-collections-fields'
 import rolesConnectionResourcesResourcer from './resourcers/data-sources-resources';
 import databaseConnectionsRolesResourcer from './resourcers/data-sources-roles';
 import { rolesRemoteCollectionsResourcer } from './resourcers/roles-data-sources-collections';
-
-import { LoadingProgress } from '@nocobase/data-source-manager';
+import dataSourcesActions from './actions/data-sources';
+import { DataSource, LoadingProgress, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import lodash from 'lodash';
 import { DataSourcesRolesResourcesModel } from './models/connections-roles-resources';
 import { DataSourcesRolesResourcesActionModel } from './models/connections-roles-resources-action';
 import { DataSourceModel } from './models/data-source';
 import { DataSourcesRolesModel } from './models/data-sources-roles-model';
+import { mergeRole } from '@nocobase/acl';
+import { loadDataSourceTablesIntoCollections } from './middlewares/load-tables';
+import { Collection } from '@nocobase/database';
 
 type DataSourceState = 'loading' | 'loaded' | 'loading-failed' | 'reloading' | 'reloading-failed';
-
-const canRefreshStatus = ['loaded', 'loading-failed', 'reloading-failed'];
 
 export class PluginDataSourceManagerServer extends Plugin {
   public dataSourceErrors: {
@@ -202,6 +202,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       if (model.changed('options') && !model.isMainRecord()) {
         model.loadIntoApplication({
           app: this.app,
+          refresh: true,
         });
 
         this.sendSyncMessage(
@@ -354,6 +355,8 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
     });
 
+    this.app.resourceManager.use(loadDataSourceTablesIntoCollections);
+
     this.app.use(async function handleAppendDataSourceCollection(ctx, next) {
       await next();
 
@@ -378,83 +381,14 @@ export class PluginDataSourceManagerServer extends Plugin {
     });
 
     const self = this;
-    this.app.actions({
-      async ['dataSources:listEnabled'](ctx, next) {
-        const dataSources = await ctx.db.getRepository('dataSources').find({
-          filter: {
-            enabled: true,
-            'type.$ne': 'main',
-          },
-        });
+    this.app.resourceManager.registerActionHandlers(dataSourcesActions);
 
-        ctx.body = dataSources.map((dataSourceModel) => {
-          return mapDataSourceWithCollection(dataSourceModel);
-        });
-
-        await next();
-      },
-
-      async ['dataSources:testConnection'](ctx, next) {
-        const { values } = ctx.action.params;
-
-        const { options, type } = values;
-
-        const klass = ctx.app.dataSourceManager.factory.getClass(type);
-
-        try {
-          await klass.testConnection(self.renderJsonTemplate(options));
-        } catch (error) {
-          throw new Error(`Test connection failed: ${error.message}`);
-        }
-
-        ctx.body = {
-          success: true,
-        };
-
-        await next();
-      },
-
-      async ['dataSources:refresh'](ctx, next) {
-        const { filterByTk, clientStatus } = ctx.action.params;
-
-        const dataSourceModel: DataSourceModel = await ctx.db.getRepository('dataSources').findOne({
-          filter: {
-            key: filterByTk,
-          },
-        });
-
-        const currentStatus = plugin.dataSourceStatus[filterByTk];
-
-        if (
-          canRefreshStatus.includes(currentStatus) &&
-          (clientStatus ? clientStatus && canRefreshStatus.includes(clientStatus) : true)
-        ) {
-          dataSourceModel.loadIntoApplication({
-            app: ctx.app,
-            refresh: true,
-          });
-
-          ctx.app.syncMessageManager.publish(self.name, {
-            type: 'loadDataSource',
-            dataSourceKey: dataSourceModel.get('key'),
-          });
-        }
-
-        ctx.body = {
-          status: plugin.dataSourceStatus[filterByTk],
-        };
-
-        await next();
-      },
-    });
-
-    this.app.resourcer.define(remoteCollectionsResourcer);
-    this.app.resourcer.define(remoteFieldsResourcer);
-    this.app.resourcer.define(rolesRemoteCollectionsResourcer);
-    this.app.resourcer.define(databaseConnectionsRolesResourcer);
-    this.app.resourcer.define(rolesConnectionResourcesResourcer);
-
-    this.app.resourcer.define({
+    this.app.resourceManager.define(remoteCollectionsResourcer);
+    this.app.resourceManager.define(remoteFieldsResourcer);
+    this.app.resourceManager.define(rolesRemoteCollectionsResourcer);
+    this.app.resourceManager.define(databaseConnectionsRolesResourcer);
+    this.app.resourceManager.define(rolesConnectionResourcesResourcer);
+    this.app.resourceManager.define({
       name: 'dataSources',
     });
 
@@ -592,6 +526,31 @@ export class PluginDataSourceManagerServer extends Plugin {
       },
     );
 
+    this.app.db.on('dataSourcesRolesResourcesScopes.afterSaveWithAssociations', async (model, options) => {
+      const { transaction } = options;
+      const dataSourcesRolesResourcesActions: DataSourcesRolesResourcesActionModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResourcesActions')
+        .find({
+          filter: { scopeId: model.get('id') },
+          transaction,
+        });
+      const rolesRolesResourceIds = dataSourcesRolesResourcesActions.map((x) => x.get('rolesResourceId'));
+      const dataSourcesRolesResources: DataSourcesRolesResourcesModel[] = await this.app.db
+        .getRepository('dataSourcesRolesResources')
+        .find({
+          filter: {
+            id: rolesRolesResourceIds,
+          },
+          transaction,
+        });
+      for (const instance of dataSourcesRolesResources) {
+        await this.app.db.emitAsync(`dataSourcesRolesResources.afterSaveWithAssociations`, instance, {
+          ...options,
+          transaction,
+        });
+      }
+    });
+
     this.app.db.on(
       'dataSourcesRolesResourcesActions.afterUpdateWithAssociations',
       async (model: DataSourcesRolesResourcesActionModel, options) => {
@@ -700,7 +659,7 @@ export class PluginDataSourceManagerServer extends Plugin {
       await next();
       const { resourceName, actionName } = action.params;
       if (resourceName === 'roles' && actionName == 'check') {
-        const roleName = ctx.state.currentRole;
+        const roleNames = ctx.state.currentRoles;
         const dataSources = await ctx.db.getRepository('dataSources').find();
 
         ctx.bodyMeta = {
@@ -716,20 +675,8 @@ export class PluginDataSourceManagerServer extends Plugin {
             }
 
             const aclInstance = dataSource.acl;
-            const roleInstance = aclInstance.getRole(roleName);
-
-            const dataObj = {
-              strategy: {},
-              resources: roleInstance ? [...roleInstance.resources.keys()] : [],
-              actions: {},
-            };
-
-            if (roleInstance) {
-              const data = roleInstance.toJSON();
-              dataObj['name'] = data['name'];
-              dataObj['strategy'] = data['strategy'];
-              dataObj['actions'] = data['actions'];
-            }
+            const roleInstances = aclInstance.getRoles(roleNames);
+            const dataObj = mergeRole(roleInstances);
 
             carry[dataSourceModel.get('key')] = dataObj;
 
@@ -759,11 +706,51 @@ export class PluginDataSourceManagerServer extends Plugin {
         },
       };
     });
+
+    this.indexFieldForAI();
   }
 
-  async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
+  indexFieldForAI() {
+    const index = this.app.aiManager.documentManager.addIndex('dataModels.fields');
+    const getFieldDocument = (dataSource: string, collection: string, field: any) => ({
+      id: `${dataSource}.${collection}.${field.name}`,
+      text: `${field.name} ${field.options?.uiSchema?.title || ''} ${collection}`,
+    });
+    this.app.dataSourceManager.beforeAddDataSource((dataSource: DataSource) => {
+      const cm = dataSource.collectionManager;
+      if (cm instanceof SequelizeCollectionManager) {
+        const db = cm.db;
+        db.on('afterDefineCollection', async (collection: Collection) => {
+          if (dataSource.name === 'main') {
+            collection.on('field.afterAdd', async (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              await index.add(doc.id, doc.text);
+            });
+            collection.on('field.afterRemove', async (field) => {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                await index.remove(doc.id);
+              } catch (err) {
+                // ignore
+              }
+            });
+          } else {
+            for (const [_, field] of collection.fields) {
+              const doc = getFieldDocument(dataSource.name, collection.name, field);
+              try {
+                await index.remove(doc.id);
+              } catch (err) {
+                // ignore
+              }
+              await index.add(doc.id, doc.text);
+            }
+          }
+        });
+      }
+    });
   }
+
+  async load() {}
 }
 
 export default PluginDataSourceManagerServer;

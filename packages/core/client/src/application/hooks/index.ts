@@ -12,3 +12,4 @@ export * from './useAppSpin';
 export * from './usePlugin';
 export * from './useRouter';
 export * from './useGlobalVariable';
+export * from './useAclSnippets';

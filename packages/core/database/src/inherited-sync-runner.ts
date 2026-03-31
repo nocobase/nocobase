@@ -61,6 +61,11 @@ export class InheritedSyncRunner {
       // find max sequence
       if (childAttributes.id && childAttributes.id.autoIncrement) {
         for (const parent of parents) {
+          const attributes = parent.model.getAttributes();
+          const parentIdField = attributes['id'];
+          if (!parentIdField?.autoIncrement) {
+            continue;
+          }
           const sequenceNameResult = await queryInterface.sequelize.query(
             `SELECT column_default
              FROM information_schema.columns
@@ -145,12 +150,16 @@ export class InheritedSyncRunner {
 
     if (options.alter) {
       const columns = await queryInterface.describeTable(tableName, options);
-
       for (const attribute in childAttributes) {
         const columnName = childAttributes[attribute].field;
-
+        const fieldName = childAttributes[attribute].fieldName;
         if (!columns[columnName]) {
-          await queryInterface.addColumn(tableName, columnName, childAttributes[columnName], options);
+          await queryInterface.addColumn(
+            tableName,
+            columnName,
+            childAttributes[columnName] || childAttributes[fieldName],
+            options,
+          );
         }
       }
     }

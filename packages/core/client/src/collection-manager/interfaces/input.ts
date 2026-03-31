@@ -32,7 +32,7 @@ const isValidateEmpty = (value: any) => {
 
 registerValidateRules({
   username(value) {
-    return /^[^@.<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @.<>"\'/)');
+    return /^[^@<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @<>"\'/)');
   },
   required(value, rule) {
     if (rule.required === false) return '';
@@ -49,6 +49,7 @@ export class InputFieldInterface extends CollectionFieldInterface {
   group = 'basic';
   order = 1;
   title = '{{t("Single line text")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier")}}';
   sortable = true;
   default = {
     interface: 'input',
@@ -60,8 +61,16 @@ export class InputFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string', 'uid'];
   hasDefaultValue = true;
+  validationType = 'string';
+  availableValidationOptions = ['min', 'max', 'length', 'pattern'];
   properties = {
     ...defaultProps,
+    trim: {
+      type: 'boolean',
+      'x-content': '{{t("Automatically remove heading and tailing spaces")}}',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
     layout: {
       type: 'void',
       title: '{{t("Index")}}',

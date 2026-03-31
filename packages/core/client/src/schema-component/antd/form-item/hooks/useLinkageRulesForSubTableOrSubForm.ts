@@ -104,6 +104,7 @@ function getLinkageRules(fieldSchema) {
   if (!fieldSchema) {
     return;
   }
+  const result = fieldSchema['x-linkage-rules'] || fieldSchema?.parent?.['x-linkage-rules'] || [];
 
-  return fieldSchema['x-linkage-rules']?.filter((k) => !k.disabled);
+  return result?.filter((k) => !k.disabled);
 }

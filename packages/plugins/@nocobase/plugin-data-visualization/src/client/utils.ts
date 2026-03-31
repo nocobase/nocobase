@@ -7,13 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';
 import { FieldOption } from './hooks';
-import { ChartRendererContext, QueryProps } from './renderer';
-import { useContext } from 'react';
+import { QueryProps } from './renderer';
 
 export const createRendererSchema = (decoratorProps: any, componentProps = {}) => {
   const { collection, config } = decoratorProps;
@@ -23,7 +21,8 @@ export const createRendererSchema = (decoratorProps: any, componentProps = {}) =
     'x-decorator': 'ChartRendererProvider',
     'x-decorator-props': decoratorProps,
     'x-acl-action': `${collection}:list`,
-    'x-designer': 'ChartRenderer.Designer',
+    'x-toolbar': 'ChartRendererToolbar',
+    'x-settings': 'chart:renderer',
     'x-component': 'CardItem',
     'x-component-props': {
       size: 'small',
@@ -106,50 +105,28 @@ export const getSelectedFields = (fields: FieldOption[], query: QueryProps) => {
   return selectedFields;
 };
 
-export const processData = (selectedFields: (FieldOption & { query?: any })[], data: any[], scope: any) => {
-  const parseEnum = (field: FieldOption, value: any) => {
-    const options = field.uiSchema?.enum as { value: string; label: string }[];
-    if (!options || !Array.isArray(options)) {
-      return value;
-    }
-    if (Array.isArray(value)) {
-      return value.map((v) => parseEnum(field, v));
-    }
-    const option = options.find((option) => option.value === (value?.toString?.() || value));
-    return Schema.compile(option?.label || value, scope);
-  };
-  return data.map((record) => {
-    const processed = {};
-    Object.entries(record).forEach(([key, value]) => {
-      const field = selectedFields.find((field) => field.value === key && !field?.query?.aggregation);
-      if (!field) {
-        processed[key] = value;
-        return;
-      }
-      switch (field.interface) {
-        case 'select':
-        case 'radioGroup':
-        case 'multipleSelect':
-          processed[key] = parseEnum(field, value);
-          break;
-        default:
-          processed[key] = value;
-      }
-    });
-    return processed;
-  });
-};
-
 export const removeUnparsableFilter = (filter: any) => {
   if (typeof filter === 'object' && filter !== null) {
     if (Array.isArray(filter)) {
       const newLogic = filter.map((condition) => removeUnparsableFilter(condition)).filter(Boolean);
       return newLogic.length > 0 ? newLogic : null;
     } else {
-      const newLogic = {};
-      for (const key in filter) {
-        const value = removeUnparsableFilter(filter[key]);
-        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+      const newLogic: any = {};
+      for (const [key, rawVal] of Object.entries(filter)) {
+        // 跳过无效键：空字符串或仅空白
+        if (typeof key === 'string' && key.trim().length === 0) {
+          continue;
+        }
+        const value = removeUnparsableFilter(rawVal);
+        // 丢弃空值/空对象/空数组
+        if (
+          value !== null &&
+          value !== undefined &&
+          !(
+            typeof value === 'object' &&
+            ((Array.isArray(value) && value.length === 0) || Object.keys(value).length === 0)
+          )
+        ) {
           newLogic[key] = value;
         }
       }
@@ -194,4 +171,16 @@ export const getFormulaInterface = (type: string) => {
     date: 'datetime',
     string: 'input',
   }[type];
+};
+
+export const isEmptyFilterObject = (filter: any) => {
+  if (!filter) return true;
+  if (Array.isArray(filter)) return filter.length === 0;
+  if (typeof filter === 'object') {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return true;
+    if (Array.isArray((filter as any).$and) && (filter as any).$and.length === 0) return true;
+    if (Array.isArray((filter as any).$or) && (filter as any).$or.length === 0) return true;
+  }
+  return false;
 };

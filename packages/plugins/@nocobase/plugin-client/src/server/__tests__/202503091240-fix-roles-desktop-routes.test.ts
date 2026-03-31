@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, createMockServer } from '@nocobase/test';
-import Migration from '../migrations/202503091240-fix-roles-desktop-routes';
-import { vi, describe, beforeEach, afterEach, test, expect } from 'vitest';
 import { Model, Repository } from '@nocobase/database';
-import _ from 'lodash';
+import { MockServer, createMockServer } from '@nocobase/test';
+import { afterEach, beforeEach, describe, expect } from 'vitest';
+import Migration from '../migrations/202503091240-fix-roles-desktop-routes';
 
 describe('202503091240-fix-roles-desktop-routes', () => {
   let app: MockServer, role1: Model, role2: Model, desktopRoutesRepo: Repository, rolesDesktopRoutesRepo: Repository;

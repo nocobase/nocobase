@@ -1,0 +1,14 @@
+{
+  "Add block": "Tambah blok",
+  "Allow linking to multiple records": "Izinkan penautan ke beberapa catatan",
+  "Detail": "Detail",
+  "Please select": "Harap pilih",
+  "Snapshot": "Snapshot",
+  "Snapshot data": "Data snapshot",
+  "Snapshot the snapshot's association fields": "Ambil snapshot bidang asosiasi snapshot",
+  "The association field to snapshot": "Bidang asosiasi yang akan di-snapshot",
+  "View record": "Lihat catatan",
+  "When a record is created, association data is backed up in a snapshot": "Ketika sebuah catatan dibuat, data asosiasi dicadangkan dalam snapshot",
+  "When adding a new record, create a snapshot for its relational record and save in the current record. The snapshot is not updated when the record is subsequently updated.": "Saat menambahkan catatan baru, buat snapshot untuk catatan relasionalnya dan simpan dalam catatan saat ini. Snapshot tidak diperbarui saat catatan selanjutnya diperbarui.",
+  "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.": "Saat menambahkan catatan baru, buat snapshot untuk catatan relasionalnya dan simpan dalam catatan baru. Snapshot tidak akan diperbarui saat catatan relasional diperbarui."
+}

@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Repository } from '@nocobase/database';
+import { Collection, createMockDatabase, Database, Repository } from '@nocobase/database';
 import { vi } from 'vitest';
-import { Collection } from '../collection';
-import { Database } from '../database';
-import { mockDatabase } from './';
 
 describe('repository', () => {
   test('value to filter', async () => {
@@ -39,7 +36,7 @@ describe('find by targetKey', function () {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -91,7 +88,7 @@ describe('repository.find', () => {
   let Tag: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -210,6 +207,19 @@ describe('repository.find', () => {
     expect(users.length).toBe(1);
   });
 
+  it('should find with limit', async () => {
+    const limitedUsers = await User.repository.find({
+      limit: 1,
+    });
+    expect(limitedUsers.length).toBe(1);
+
+    // limit is string
+    const twoUsers = await User.repository.find({
+      limit: '2' as any,
+    });
+    expect(twoUsers.length).toBe(2);
+  });
+
   it('should find with where', async () => {
     const users = await User.repository.find({
       where: {
@@ -284,7 +294,7 @@ describe('repository create with belongs to many', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
     await db.clean({ drop: true });
@@ -363,7 +373,7 @@ describe('repository.create', () => {
   let Comment: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -434,7 +444,7 @@ describe('repository.update', () => {
   let Comment: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({
@@ -687,7 +697,7 @@ describe('repository.destroy', () => {
   let Comment: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -755,7 +765,7 @@ describe('repository.relatedQuery', () => {
   let Comment: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',

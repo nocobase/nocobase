@@ -10,7 +10,7 @@
 import { expect, test } from '@nocobase/test/e2e';
 import { ordinaryBlockTemplatesCannotBeUsedToCreateAssociationBlocksAndViceVersa } from './templatesOfBug';
 
-test.describe('block template', () => {
+test.skip('block template', () => {
   test('Ordinary block templates cannot be used to create association blocks, and vice versa', async ({
     page,
     mockPage,

@@ -9,10 +9,10 @@
 
 import { isArr, isValid, toArr as toArray } from '@formily/shared';
 import { UploadFile } from 'antd/es/upload/interface';
-import { useTranslation } from 'react-i18next';
 import mime from 'mime';
 import match from 'mime-match';
 import React, { useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { UNKNOWN_FILE_ICON, UPLOAD_PLACEHOLDER } from './placeholder';
 import type { IUploadProps, UploadProps } from './type';
@@ -100,7 +100,15 @@ const testOpts = (ext: RegExp, options: { exclude?: string[]; include?: string[]
 
 export function getThumbnailPlaceholderURL(file, options: any = {}) {
   for (let i = 0; i < UPLOAD_PLACEHOLDER.length; i++) {
-    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || file.url || file.name)) {
+    const url = file.url
+      ? new URL(
+          file.url.startsWith('http://') || file.url.startsWith('https://')
+            ? file.url
+            : `${location.origin}/${file.url.replace(/^\//, '')}`,
+        )
+      : { pathname: file.filename };
+
+    if (UPLOAD_PLACEHOLDER[i].ext.test(file.extname || file.filename || url.pathname || file.name)) {
       if (testOpts(UPLOAD_PLACEHOLDER[i].ext, options)) {
         return UPLOAD_PLACEHOLDER[i].icon || UNKNOWN_FILE_ICON;
       } else {
@@ -199,11 +207,18 @@ export const toItem = (file) => {
       ...file.response.data,
     };
   }
-  return {
+  const result = {
     ...file,
     id: file.id || file.uid,
     title: file.title || file.name,
   };
+  if (file.url) {
+    result.url =
+      file.url.startsWith('https://') || file.url.startsWith('http://')
+        ? file.url
+        : `${location.origin}/${file.url.replace(/^\//, '')}`;
+  }
+  return result;
 };
 
 export const toFileList = (fileList: any) => {
@@ -250,19 +265,29 @@ export function useBeforeUpload(rules) {
   const { t } = useTranslation();
 
   return useCallback(
-    (file) => {
-      const error = validate(file, rules);
+    (file, fileList) => {
+      let proxiedFile = file;
+      if (!file.type) {
+        const extname = file.name?.match(/\.[^.]+$/)?.[0];
+        if (extname) {
+          proxiedFile = new File([file], file.name, {
+            type: mime.getType(extname) || 'application/octet-stream',
+            lastModified: file.lastModified,
+          });
+        }
+      }
+      const error = validate(proxiedFile, rules);
 
       if (error) {
         file.status = 'error';
         file.response = t(error);
       } else {
         if (file.status === 'error') {
-          delete file.status;
-          delete file.response;
+          delete proxiedFile.status;
+          delete proxiedFile.response;
         }
       }
-      return !error;
+      return error ? false : Promise.resolve(proxiedFile);
     },
     [rules],
   );

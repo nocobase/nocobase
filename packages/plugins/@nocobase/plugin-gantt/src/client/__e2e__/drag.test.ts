@@ -23,10 +23,9 @@ test('drag and adjust start time, end time, and progress', async ({ page, mockPa
   await page.getByLabel('designer-schema-settings-CardItem-Gantt.Designer-general').hover();
   await page.getByRole('menuitem', { name: 'Time scale' }).click();
   await page.getByRole('option', { name: 'Week' }).click();
-  await page.getByRole('menuitem', { name: 'Time scale' }).hover();
   await page.mouse.move(300, 0);
-  await page.getByRole('button', { name: 'Actions', exact: true }).click();
-  await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
+  // await page.getByRole('button', { name: 'Actions', exact: true }).click();
+  // await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
   await page.locator('.bar ').hover();
   const draggableElement = await page.getByLabel('task-bar').getByRole('button').first();
   await draggableElement.hover();

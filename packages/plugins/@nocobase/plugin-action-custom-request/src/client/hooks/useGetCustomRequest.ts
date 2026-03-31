@@ -12,7 +12,8 @@ import { useRequest } from '@nocobase/client';
 
 export const useGetCustomRequest = () => {
   const fieldSchema = useFieldSchema();
-  const url = `customRequests:get/${fieldSchema['x-uid']}`;
+  const requestId = fieldSchema['x-custom-request-id'] || fieldSchema['x-uid'];
+  const url = `customRequests:get/${requestId}`;
   return useRequest<{ data: { options: any; title: string; roles: any[] } }>(
     {
       url,

@@ -28,7 +28,7 @@ test.describe('bulk-destroy', () => {
     // 3. 点击批量删除按钮，Table 显示无数据
     await page.getByLabel('action-Action-Delete-destroy-').click();
     await page.getByRole('button', { name: 'OK', exact: true }).click();
-    await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data').last()).toBeVisible();
   });
 
   test('Secondary confirmation', async ({ page, mockPage, mockRecords }) => {
@@ -45,6 +45,7 @@ test.describe('bulk-destroy', () => {
     await page.getByLabel('designer-schema-settings-Action-actionSettings:bulkDelete-general').hover();
     await page.getByRole('menuitem', { name: 'Secondary confirmation' }).click();
     await page.getByLabel('Enable secondary confirmation').uncheck();
+    await expect(page.getByRole('button', { name: 'OK' })).toHaveCount(1);
     await page.getByRole('button', { name: 'OK' }).click();
     await page.mouse.move(500, 0);
 
@@ -53,6 +54,6 @@ test.describe('bulk-destroy', () => {
 
     // 3. 点击批量删除按钮，Table 显示无数据
     await page.getByLabel('action-Action-Delete-destroy-').click();
-    await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data')).toBeVisible();
+    await expect(page.getByLabel('block-item-CardItem-general-').getByText('No data').last()).toBeVisible();
   });
 });

@@ -10,7 +10,15 @@
 import { uniqBy } from 'lodash';
 import React, { createContext, useCallback, useContext } from 'react';
 
-import { Variable, parseCollectionName, useApp, useCompile, useGlobalVariable, usePlugin } from '@nocobase/client';
+import {
+  CollectionManager,
+  Variable,
+  parseCollectionName,
+  useApp,
+  useCompile,
+  useGlobalVariable,
+  usePlugin,
+} from '@nocobase/client';
 
 import WorkflowPlugin from '.';
 import { useFlowContext } from './FlowContext';
@@ -20,7 +28,7 @@ import { useAvailableUpstreams, useNodeContext, useUpstreamScopes } from './node
 export type VariableOption = {
   key?: string;
   value?: string;
-  label?: string;
+  label?: string | React.ReactNode;
   children?: VariableOption[] | null;
   [key: string]: any;
 };
@@ -38,7 +46,7 @@ export type VariableDataType =
         entity?: boolean;
       };
     }
-  | ((field: any) => boolean);
+  | ((field: any, options: { collectionManager?: CollectionManager }) => boolean);
 
 export type UseVariableOptions = {
   types?: VariableDataType[];
@@ -125,27 +133,19 @@ export const systemOptions = {
 export const BaseTypeSets = {
   boolean: new Set(['checkbox']),
   number: new Set(['integer', 'number', 'percent']),
-  string: new Set([
-    'input',
-    'password',
-    'email',
-    'phone',
-    'select',
-    'radioGroup',
-    'text',
-    'markdown',
-    'richText',
-    'expression',
-    'time',
-  ]),
-  date: new Set(['date', 'createdAt', 'updatedAt']),
+  string: new Set(['input', 'password', 'email', 'phone', 'select', 'radioGroup', 'text', 'markdown', 'richText']),
+  date: new Set(['datetime', 'datetimeNoTz', 'dateOnly', 'createdAt', 'updatedAt']),
 };
 
 // { type: 'reference', options: { collection: 'users', multiple: false } }
 // { type: 'reference', options: { collection: 'attachments', multiple: false } }
 // { type: 'reference', options: { collection: 'myExpressions', entity: false } }
 
-function matchFieldType(field, type: VariableDataType): boolean {
+function matchFieldType(
+  field,
+  type: VariableDataType,
+  { collectionManager }: { collectionManager?: CollectionManager },
+): boolean {
   if (typeof type === 'string') {
     return BaseTypeSets[type]?.has(field.interface);
   }
@@ -166,7 +166,7 @@ function matchFieldType(field, type: VariableDataType): boolean {
   }
 
   if (typeof type === 'function') {
-    return type(field);
+    return type(field, { collectionManager });
   }
 
   return false;
@@ -184,9 +184,9 @@ function getNextAppends(field, appends: string[] | null): string[] | null {
   return appends.filter((item) => item.startsWith(fieldPrefix)).map((item) => item.replace(fieldPrefix, ''));
 }
 
-function filterTypedFields({ fields, types, appends, depth = 1, compile, getCollectionFields }) {
+function filterTypedFields({ fields, types, appends, depth = 1, compile, collectionManager }) {
   return fields.filter((field) => {
-    const match = types?.length ? types.some((type) => matchFieldType(field, type)) : true;
+    const match = types?.length ? types.some((type) => matchFieldType(field, type, { collectionManager })) : true;
     if (isAssociationField(field)) {
       if (appends === null) {
         if (!depth) {
@@ -195,12 +195,12 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
         return (
           match ||
           filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            fields: getNormalizedFields(field.target, { compile, collectionManager }),
             types,
             depth: depth - 1,
             appends,
             compile,
-            getCollectionFields,
+            collectionManager,
           })
         );
       }
@@ -212,12 +212,12 @@ function filterTypedFields({ fields, types, appends, depth = 1, compile, getColl
         return (
           (nextAppends?.length || included) &&
           filterTypedFields({
-            fields: getNormalizedFields(field.target, { compile, getCollectionFields }),
+            fields: getNormalizedFields(field.target, { compile, collectionManager }),
             types,
             // depth: depth - 1,
             appends: nextAppends,
             compile,
-            getCollectionFields,
+            collectionManager,
           }).length
         );
       }
@@ -240,10 +240,14 @@ function useOptions(scope, opts) {
   };
 }
 
-export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
+export function useWorkflowVariableOptions(
+  options: UseVariableOptions = {},
+  preset: VariableOption[] = [],
+): VariableOption[] {
   const fieldNames = Object.assign({}, defaultFieldNames, options.fieldNames ?? {});
   const opts = Object.assign(options, { fieldNames });
   const result = [
+    ...preset,
     useOptions(scopeOptions, opts),
     useOptions(nodesOptions, opts),
     useOptions(triggerOptions, opts),
@@ -254,11 +258,11 @@ export function useWorkflowVariableOptions(options: UseVariableOptions = {}) {
   return result;
 }
 
-function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
+function getNormalizedFields(collectionName, { compile, collectionManager }) {
   // NOTE: for compatibility with legacy version
   const [dataSourceName, collection] = parseCollectionName(collectionName);
   // NOTE: `dataSourceName` will be ignored in new version
-  const fields = getCollectionFields(collection, dataSourceName);
+  const fields = collectionManager.getCollectionAllFields(collection);
   const fkFields: any[] = [];
   const result: any[] = [];
   fields.forEach((field) => {
@@ -281,10 +285,14 @@ function getNormalizedFields(collectionName, { compile, getCollectionFields }) {
       if (foreignKeyFieldIndex > -1) {
         const foreignKeyField = foreignKeyFields[foreignKeyFieldIndex];
         result.splice(i, 0, {
-          ...field,
           ...foreignKeyField,
+          target: field.target,
+          targetKey: field.targetKey,
+          interface: foreignKeyField.interface ?? field.interface,
+          isForeignKey: true,
           uiSchema: {
             ...field.uiSchema,
+            ...foreignKeyField.uiSchema,
             title: foreignKeyField.uiSchema?.title ? compile(foreignKeyField.uiSchema?.title) : foreignKeyField.name,
           },
         });
@@ -327,7 +335,9 @@ function loadChildren(option) {
     option.children = result;
   } else {
     option.isLeaf = true;
-    const matchingType = option.types ? option.types.some((type) => matchFieldType(option.field, type)) : true;
+    const matchingType = option.types
+      ? option.types.some((type) => matchFieldType(option.field, type, { collectionManager: this.collectionManager }))
+      : true;
     if (!matchingType) {
       option.disabled = true;
     }
@@ -342,11 +352,11 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     appends = [],
     depth = 1,
     compile,
-    getCollectionFields,
+    collectionManager,
     fieldNames = defaultFieldNames,
   } = options;
-  const computedFields = fields ?? getNormalizedFields(collection, { compile, getCollectionFields });
-  const boundLoadChildren = loadChildren.bind({ compile, getCollectionFields, fieldNames });
+  const computedFields = fields ?? getNormalizedFields(collection, { compile, collectionManager });
+  const boundLoadChildren = loadChildren.bind({ compile, collectionManager, fieldNames });
 
   const result: VariableOption[] = filterTypedFields({
     fields: computedFields,
@@ -354,7 +364,7 @@ export function getCollectionFieldOptions(options): VariableOption[] {
     depth,
     appends,
     compile,
-    getCollectionFields,
+    collectionManager,
   }).map((field) => {
     const label = compile(field.uiSchema?.title || field.name);
     const nextAppends = getNextAppends(field, appends);
@@ -378,11 +388,11 @@ export function getCollectionFieldOptions(options): VariableOption[] {
   return result;
 }
 
-export function useGetCollectionFields(dataSourceName?) {
+export function useGetDataSourceCollectionManager(dataSourceName?) {
   const app = useApp();
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
 
-  return useCallback((collectionName) => collectionManager.getCollectionAllFields(collectionName), [collectionManager]);
+  return collectionManager;
 }
 
 export function WorkflowVariableInput({ variableOptions, ...props }): JSX.Element {

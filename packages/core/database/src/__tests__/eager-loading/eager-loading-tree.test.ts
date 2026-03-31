@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { mockDatabase } from '@nocobase/database';
+import Database, { createMockDatabase } from '@nocobase/database';
 import { EagerLoadingTree } from '../../eager-loading/eager-loading-tree';
+
+const skipSqlite = process.env.DB_DIALECT == 'sqlite' ? it.skip : it;
 
 describe('Eager loading tree', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
 
@@ -379,6 +381,69 @@ describe('Eager loading tree', () => {
     const p1User = p1.get('user') as any;
     expect(p1User).toBeDefined();
     expect(p1User.get('name')).toBe('u1');
+  });
+
+  skipSqlite('should load belongs to on bigint foreign key', async () => {
+    const Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'belongsTo',
+          name: 'user',
+        },
+      ],
+    });
+
+    const User = db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+
+    await db.sync();
+
+    await Post.repository.create({
+      values: [
+        {
+          title: 'p1',
+          user: {
+            name: 'u1',
+          },
+        },
+        {
+          title: 'p2',
+          user: {
+            id: '19051207196672111',
+            name: 'u2',
+          },
+        },
+      ],
+    });
+
+    const findOptions = Post.repository.buildQueryOptions({
+      appends: ['user'],
+    });
+
+    const eagerLoadingTree = EagerLoadingTree.buildFromSequelizeOptions({
+      model: Post.model,
+      rootAttributes: findOptions.attributes,
+      includeOption: findOptions.include,
+      db: db,
+      rootQueryOptions: findOptions,
+    });
+
+    await eagerLoadingTree.load();
+
+    const root = eagerLoadingTree.root;
+    const p1 = root.instances.find((item) => item.get('title') === 'p1');
+    const p1User = p1.get('user') as any;
+    expect(p1User).toBeDefined();
+    expect(p1User.get('name')).toBe('u1');
+
+    const p2 = root.instances.find((item) => item.get('title') === 'p2');
+    const p2User = p2.get('user') as any;
+    expect(p2User).toBeDefined();
+    expect(p2User.get('name')).toBe('u2');
   });
 
   it('should load belongs to many', async () => {

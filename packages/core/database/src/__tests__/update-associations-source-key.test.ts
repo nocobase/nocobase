@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import Database from '../database';
-import { mockDatabase } from '../mock-database';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 
 describe('update associations', () => {
   let db: Database;
@@ -17,7 +15,7 @@ describe('update associations', () => {
   let Post: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -97,7 +95,7 @@ describe('update associations', () => {
   let Post: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection({
       name: 'users',
@@ -174,7 +172,7 @@ describe('update associations', () => {
   let Field: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     Table = db.collection({
       name: 'table',

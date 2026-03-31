@@ -23,6 +23,9 @@ const useStyles = createStyles(({ token, css }) => {
       background: ${colorFillAlterSolid};
       border-bottom: 1px solid ${token.colorBorderSecondary};
     `,
+    calendarBottomText: css`
+      font-size: 11px;
+    `,
     nbGanttCalendar: css`
       .calendarbottomtext: {
         textanchor: middle;

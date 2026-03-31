@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { sleep } from '@nocobase/test';
 import { lodash } from '@nocobase/utils';
 
 export default {
@@ -16,6 +17,15 @@ export default {
         status: 1,
         result: config.path == null ? result : lodash.get(result, config.path),
       };
+    },
+    duplicateConfig(node, { origin }) {
+      if (origin?.config?.duplicateFlag) {
+        return {
+          ...origin.config,
+          duplicated: true,
+        };
+      }
+      return origin?.config ?? node.config;
     },
     test(config = {}) {
       return {
@@ -86,25 +96,50 @@ export default {
 
   asyncResume: {
     async run(node, input, processor) {
-      const job = await processor.saveJob({
+      const job = processor.saveJob({
         status: 0,
         nodeId: node.id,
         nodeKey: node.key,
         upstreamId: input?.id ?? null,
       });
 
+      const plugin = processor.options.plugin;
       setTimeout(() => {
+        // Check if app is still running before resuming to avoid "Database handle is closed" error
+        if (!plugin.app || plugin.app.stopped) {
+          return;
+        }
+
         job.set({
           status: 1,
         });
 
-        processor.options.plugin.resume(job);
-      }, 100);
+        plugin.resume(job);
+      }, node.config.duration ?? 100);
 
       return null;
     },
     resume(node, job, processor) {
       return job;
+    },
+  },
+
+  timeConsume: {
+    async run({ config }, input, processor) {
+      const { duration = 1000 } = config;
+      await sleep(duration);
+      return {
+        status: 1,
+      };
+    },
+  },
+
+  recordAppId: {
+    run(node, input, processor) {
+      return {
+        status: 1,
+        result: processor.options.plugin.app.instanceId,
+      };
     },
   },
 

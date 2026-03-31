@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer } from '@formily/react';
-import { useIsAdminPage, useRequest } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
+import { useIsLoggedIn, useRequest } from '@nocobase/client';
 import React, { createContext } from 'react';
 
 const EnvAndSecretsContext = createContext<any>({});
@@ -22,8 +22,8 @@ const InternalProvider = (props) => {
 
 const EnvironmentVariablesAndSecretsProvider = observer(
   (props) => {
-    const isAdminPage = useIsAdminPage();
-    if (!isAdminPage) {
+    const isLoggedIn = useIsLoggedIn();
+    if (!isLoggedIn) {
       return <>{props.children}</>;
     }
     return <InternalProvider {...props} />;

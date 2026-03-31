@@ -48,21 +48,31 @@ ReadPretty.Input = (props: InputReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const compile = useCompile();
   // eslint-disable-next-line react-hooks/rules-of-hooks
-  const content = useMemo(
-    () => (props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value)),
-    [props.value],
-  );
+  const content = useMemo(() => {
+    if (Array.isArray(props.value)) {
+      return props.value.join(',');
+    }
+
+    return props.value && typeof props.value === 'object' ? JSON.stringify(props.value) : compile(props.value);
+  }, [props.value]);
+
+  const flexStyle = props.ellipsis ? { display: 'flex', alignItems: 'center' } : {};
 
   return (
     <div
       className={cls(prefixCls, props.className)}
-      style={{ overflowWrap: 'break-word', whiteSpace: 'normal', ...props.style }}
+      style={{
+        ...flexStyle,
+        overflowWrap: 'break-word',
+        whiteSpace: 'normal',
+        ...props.style,
+      }}
     >
-      {props.addonBefore}
-      {props.prefix}
+      {compile(props.addonBefore)}
+      {compile(props.prefix)}
       {props.ellipsis ? <EllipsisWithTooltip ellipsis={props.ellipsis}>{content}</EllipsisWithTooltip> : content}
-      {props.suffix}
-      {props.addonAfter}
+      {compile(props.suffix)}
+      {compile(props.addonAfter)}
     </div>
   );
 };
@@ -199,6 +209,7 @@ export interface URLReadPrettyProps {
 }
 
 const ellipsisStyle = { textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', display: 'block' };
+
 ReadPretty.URL = (props: URLReadPrettyProps) => {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const prefixCls = usePrefixCls('description-url', props);

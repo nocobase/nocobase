@@ -11,15 +11,16 @@ import { Plugin } from '../application/Plugin';
 import { addChildActionSettings } from '../modules/actions/add-child/addChildActionSettings';
 import { addNewActionSettings } from '../modules/actions/add-new/addNewActionSettings';
 import { customizeAddRecordActionSettings } from '../modules/actions/add-record/customizeAddRecordActionSettings';
+import { associateActionSettings } from '../modules/actions/associate/associateActionSettings';
 import { bulkDeleteActionSettings } from '../modules/actions/bulk-destroy/bulkDeleteActionSettings';
 import { deleteActionSettings } from '../modules/actions/delete/deleteActionSettings';
 import { disassociateActionSettings } from '../modules/actions/disassociate/disassociateActionSettings';
-import { associateActionSettings } from '../modules/actions/associate/associateActionSettings';
 
 import { expendableActionSettings } from '../modules/actions/expand-collapse/expendableActionSettings';
 import { filterActionSettings } from '../modules/actions/filter/filterActionSettings';
 import { customizeLinkActionSettings } from '../modules/actions/link/customizeLinkActionSettings';
 import { refreshActionSettings } from '../modules/actions/refresh/refreshActionSettings';
+import { editTableActionSettings } from '../modules/actions/edit-table/editTableActionSettings';
 import { customizeSaveRecordActionSettings } from '../modules/actions/save-record/customizeSaveRecordActionSettings';
 import { createSubmitActionSettings } from '../modules/actions/submit/createSubmitActionSettings';
 import { submitActionSettings, updateSubmitActionSettings } from '../modules/actions/submit/updateSubmitActionSettings';
@@ -66,9 +67,13 @@ import { markdownSettings } from '../modules/fields/component/Markdown/markdownS
 import { markdownVditorSettings } from '../modules/fields/component/MarkdownVditor/markdownVditorSettings';
 import { richTextSettings } from '../modules/fields/component/RichText/richTextSettings';
 // import { inputURLComponentFieldSettings } from '../modules/fields/component/Input.URL/settings';
+import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
 import { inputNumberComponentFieldSettings } from '../modules/fields/component/InputNumber/inputNumberComponentFieldSettings';
 import { subformComponentFieldSettings } from '../modules/fields/component/Nester/subformComponentFieldSettings';
-import { recordPickerComponentFieldSettings } from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
+import {
+  filterRecordPickerComponentFieldSettings,
+  recordPickerComponentFieldSettings,
+} from '../modules/fields/component/Picker/recordPickerComponentFieldSettings';
 import { subformPopoverComponentFieldSettings } from '../modules/fields/component/PopoverNester/subformPopoverComponentFieldSettings';
 import {
   filterSelectComponentFieldSettings,
@@ -76,9 +81,9 @@ import {
 } from '../modules/fields/component/Select/selectComponentFieldSettings';
 import { subTablePopoverComponentFieldSettings } from '../modules/fields/component/SubTable/subTablePopoverComponentFieldSettings';
 import { tagComponentFieldSettings } from '../modules/fields/component/Tag/tagComponentFieldSettings';
-import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
-import { dividerSettings } from '../modules/blocks/other-blocks/divider/dividerSettings';
 import { timePickerComponentFieldSettings } from '../modules/fields/component/TimePicker/timePickerComponentFieldSettings';
+import { unixTimestampComponentFieldSettings } from '../modules/fields/component/UnixTimestamp/unixTimestampComponentFieldSettings';
+import { menuItemSettings } from '../route-switch/antd/admin-layout/menuItemSettings';
 export class SchemaSettingsPlugin extends Plugin {
   async load() {
     // block settings
@@ -101,6 +106,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(addNewActionSettings);
     this.schemaSettingsManager.add(filterActionSettings);
     this.schemaSettingsManager.add(refreshActionSettings);
+    this.schemaSettingsManager.add(editTableActionSettings);
     this.schemaSettingsManager.add(viewActionSettings);
     this.schemaSettingsManager.add(editActionSettings);
     this.schemaSettingsManager.add(deleteActionSettings);
@@ -127,6 +133,7 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(selectComponentFieldSettings);
     this.schemaSettingsManager.add(filterSelectComponentFieldSettings);
     this.schemaSettingsManager.add(recordPickerComponentFieldSettings);
+    this.schemaSettingsManager.add(filterRecordPickerComponentFieldSettings);
     this.schemaSettingsManager.add(subformComponentFieldSettings);
     this.schemaSettingsManager.add(subformPopoverComponentFieldSettings);
     this.schemaSettingsManager.add(subTablePopoverComponentFieldSettings);
@@ -150,5 +157,8 @@ export class SchemaSettingsPlugin extends Plugin {
     this.schemaSettingsManager.add(previewComponentFieldSettings);
     this.schemaSettingsManager.add(dividerSettings);
     this.schemaSettingsManager.add(timePickerComponentFieldSettings);
+
+    // menu settings
+    this.schemaSettingsManager.add(menuItemSettings);
   }
 }

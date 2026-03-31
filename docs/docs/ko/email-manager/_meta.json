@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "관리자 구성",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "구성 절차",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Google 메일 구성",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Microsoft 메일 구성",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "자주 묻는 질문",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "기능 소개",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "메일 센터",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "메일 블록",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "이메일 서명",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "이메일 템플릿",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "고급",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "이메일 메모",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "이메일 할 일",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "이메일 라벨",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "대량 발송",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "임시 저장 자동화",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

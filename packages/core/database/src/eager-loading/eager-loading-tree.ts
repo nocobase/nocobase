@@ -13,6 +13,7 @@ import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 import { OptionsParser } from '../options-parser';
 import { Collection } from '../collection';
+import { processIncludes } from '../utils';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -73,7 +74,7 @@ const queryParentSQL = (options: {
   return `WITH RECURSIVE cte AS (
       SELECT ${q(targetKeyField)}, ${q(foreignKeyField)}
       FROM ${tableName}
-      WHERE ${q(targetKeyField)} IN (${nodeIds.join(',')})
+      WHERE ${q(targetKeyField)} IN ('${nodeIds.join("','")}')
       UNION ALL
       SELECT t.${q(targetKeyField)}, t.${q(foreignKeyField)}
       FROM ${tableName} AS t
@@ -172,6 +173,12 @@ export class EagerLoadingTree {
           pushAttribute(eagerLoadingTreeParent, sourceKey);
         }
 
+        if (associationType == 'BelongsToArray') {
+          const { foreignKey, targetKey } = association;
+          pushAttribute(eagerLoadingTreeParent, foreignKey);
+          pushAttribute(child, targetKey);
+        }
+
         eagerLoadingTreeParent.children.push(child);
 
         if (include.include) {
@@ -252,16 +259,6 @@ export class EagerLoadingTree {
             throw new Error(`Model ${node.model.name} does not have primary key`);
           }
 
-          includeForFilter.forEach((include: { association: string }, index: number) => {
-            const association = node.model.associations[include.association];
-            if (association?.associationType == 'BelongsToArray') {
-              includeForFilter[index] = {
-                ...include,
-                ...association.generateInclude(),
-              };
-            }
-          });
-
           // find all ids
           const ids = (
             await node.model.findAll({
@@ -270,7 +267,8 @@ export class EagerLoadingTree {
               attributes: [primaryKeyField],
               group: `${node.model.name}.${primaryKeyField}`,
               transaction,
-              include: includeForFilter,
+              include: processIncludes(includeForFilter, node.model),
+              raw: true,
             } as any)
           ).map((row) => {
             return { row, pk: row[primaryKeyField] };

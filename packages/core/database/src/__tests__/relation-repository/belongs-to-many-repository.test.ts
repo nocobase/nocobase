@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '@nocobase/database';
-import Database from '../../database';
-import { BelongsToManyRepository } from '../../relation-repository/belongs-to-many-repository';
-import { mockDatabase } from '../index';
-import { pgOnly } from '@nocobase/test';
+import { BelongsToManyRepository, Collection, createMockDatabase, Database } from '@nocobase/database';
+import { isPg } from '@nocobase/test';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('belongs to many with targetCollection', () => {
   let db: Database;
@@ -23,7 +22,7 @@ pgOnly()('belongs to many with targetCollection', () => {
   let OrgUser: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
 
@@ -98,7 +97,7 @@ pgOnly()('belongs to many with targetCollection', () => {
 describe('belongs to many with collection that has no id key', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });
@@ -184,7 +183,7 @@ describe('belongs to many with target key', function () {
   let Color: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
     Post = db.collection({
@@ -320,7 +319,7 @@ describe('belongs to many', () => {
   let Color;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     PostTag = db.collection({
       name: 'posts_tags',
@@ -964,5 +963,81 @@ describe('belongs to many', () => {
     });
 
     await transaction.commit();
+  });
+});
+
+describe('through scope', () => {
+  let db: Database;
+  let Post;
+  let Tag;
+  let PostTag;
+
+  beforeEach(async () => {
+    db = await createMockDatabase();
+    await db.clean({ drop: true });
+    PostTag = db.collection({
+      name: 'posts_tags',
+      fields: [
+        { type: 'string', name: 'tagged_at' },
+        { type: 'boolean', name: 'isAvailable' },
+      ],
+    });
+
+    Post = db.collection({
+      name: 'posts',
+      fields: [
+        { type: 'belongsToMany', name: 'tags', through: 'posts_tags', throughScope: { isAvailable: true } },
+        { type: 'string', name: 'title' },
+      ],
+    });
+
+    Tag = db.collection({
+      name: 'tags',
+      fields: [
+        { type: 'belongsToMany', name: 'posts', through: 'posts_tags' },
+        { type: 'string', name: 'name' },
+      ],
+    });
+
+    await db.sync({ force: true });
+  });
+
+  afterEach(async () => {
+    await db.close();
+  });
+
+  it('should find with scope', async () => {
+    const post = await Post.repository.create({
+      values: {
+        title: 'test',
+      },
+    });
+    const tags = await Tag.repository.create({
+      values: [
+        {
+          name: 'tag1',
+        },
+        {
+          name: 'tag2',
+        },
+      ],
+    });
+    await PostTag.repository.create({
+      values: [
+        {
+          postId: post.id,
+          tagId: tags[0].id,
+          isAvailable: true,
+        },
+        {
+          postId: post.id,
+          tagId: tags[1].id,
+          isAvailable: false,
+        },
+      ],
+    });
+    const tag = await db.getRepository('posts.tags', post.id).find();
+    expect(tag.length).toBe(1);
+    expect(tag[0].name).toBe('tag1');
   });
 });

@@ -18,17 +18,24 @@ export class ContextField extends Field {
     return DataTypes[type.toUpperCase()] || DataTypes.STRING;
   }
 
-  listener = async (model: Model, options) => {
-    const { name, dataIndex } = this.options;
+  listener = async (instances: Model[], options) => {
+    instances = Array.isArray(instances) ? instances : [instances];
+    const { name, dataIndex, applyIfUndefined } = this.options;
     const { context } = options;
-    model.set(name, lodash.get(context, dataIndex));
-    model.changed(name, true);
+    for (const instance of instances) {
+      if (applyIfUndefined && instance.get(name) !== undefined) {
+        continue;
+      }
+      instance.set(name, lodash.get(context, dataIndex));
+      instance.changed(name, true);
+    }
   };
 
   bind() {
     super.bind();
     const { createOnly } = this.options;
     this.on('beforeCreate', this.listener);
+    this.on('beforeBulkCreate', this.listener);
     if (!createOnly) {
       this.on('beforeUpdate', this.listener);
     }
@@ -38,6 +45,7 @@ export class ContextField extends Field {
     super.unbind();
     const { createOnly } = this.options;
     this.off('beforeCreate', this.listener);
+    this.off('beforeBulkCreate', this.listener);
     if (!createOnly) {
       this.off('beforeUpdate', this.listener);
     }
@@ -49,4 +57,10 @@ export interface ContextFieldOptions extends BaseColumnFieldOptions {
   dataIndex: string;
   dataType?: string;
   createOnly?: boolean;
+  /**
+   * applyIfUndefined:
+   * When true, the context value will be applied
+   * only if the field value is `undefined`.
+   */
+  applyIfUndefined?: boolean;
 }

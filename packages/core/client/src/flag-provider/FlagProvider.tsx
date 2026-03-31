@@ -35,6 +35,23 @@ export interface FlagProviderProps {
    * @default true
    */
   isVariableParsedInOtherContext?: boolean;
+  collectionField?: any; //目标赋值的数据表字段
+  children?: any;
+
+  /**
+   * 是否存在于 `筛选表单区块` 中
+   */
+  isInFilterFormBlock?: boolean;
+  isInTableCell?: boolean;
+  /**
+   * 是否存在于变量选择器中
+   */
+  isInXButton?: boolean;
+  isInMobileDrawer?: boolean;
+  /**
+   * 是否是联动规则左侧变量
+   */
+  isLeftVariable?: boolean;
 }
 
 export const FlagContext = React.createContext<Omit<FlagProviderProps, 'children'>>(null);

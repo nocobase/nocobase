@@ -1,0 +1,17 @@
+{
+  "Connect to foreign data": "外部データ接続",
+  "Connection successful": "接続成功",
+  "Create database server": "データベースサーバー作成",
+  "Database": "データベース",
+  "Database server": "データベースサーバー",
+  "Display name": "表示名",
+  "Edit database server": "データベースサーバー編集",
+  "Host": "サーバーアドレス",
+  "Password": "パスワード",
+  "Port": "ポート",
+  "Remote table": "リモートテーブル",
+  "Server name": "サーバー名",
+  "Sync from remote table": "リモートテーブルから同期",
+  "Test Connection": "接続テスト",
+  "Username": "ユーザー名"
+}

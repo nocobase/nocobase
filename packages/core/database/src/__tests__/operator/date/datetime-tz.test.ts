@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../../database';
-import { Repository } from '../../../repository';
-import { mockDatabase } from '../../index';
+import { Database, Repository, createMockDatabase } from '@nocobase/database';
 
 describe('date operator test', () => {
   let db: Database;
@@ -21,7 +19,7 @@ describe('date operator test', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       timezone: '+00:00',
     });
     await db.clean({ drop: true });

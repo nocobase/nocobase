@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "集群模式"
+  },
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "准备工作",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes 部署",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "运维流程",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "服务拆分",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "开发参考",
+    "link": "/cluster-mode/development"
+  }
+]

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Database, mockDatabase } from '@nocobase/database';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 
 describe('update', () => {
   let db: Database;
@@ -20,7 +20,7 @@ describe('update', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
     PostTag = db.collection({

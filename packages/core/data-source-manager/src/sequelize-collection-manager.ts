@@ -15,10 +15,12 @@ import {
   CollectionOptions,
   ICollection,
   ICollectionManager,
+  IField,
   IFieldInterface,
   IRepository,
   MergeOptions,
 } from './types';
+import { isNumericField } from './utils';
 
 export class SequelizeCollectionManager implements ICollectionManager {
   db: Database;
@@ -119,5 +121,9 @@ export class SequelizeCollectionManager implements ICollectionManager {
 
   getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
     return this.db.interfaceManager.getInterfaceType(name);
+  }
+
+  isNumericField(field?: IField): boolean {
+    return isNumericField(field);
   }
 }

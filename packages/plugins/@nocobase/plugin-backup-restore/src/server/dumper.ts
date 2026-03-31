@@ -11,9 +11,9 @@ import { Collection, CollectionGroupManager as DBCollectionGroupManager, DumpRul
 import archiver from 'archiver';
 import dayjs from 'dayjs';
 import fs from 'fs';
+import fse from 'fs-extra';
 import fsPromises from 'fs/promises';
 import { default as _, default as lodash } from 'lodash';
-import mkdirp from 'mkdirp';
 import path from 'path';
 import * as process from 'process';
 import stream from 'stream';
@@ -225,7 +225,7 @@ export class Dumper extends AppMigrator {
 
   async writeLockFile(fileName: string) {
     const dirname = this.backUpStorageDir();
-    await mkdirp(dirname);
+    await fse.mkdirp(dirname);
 
     const filePath = this.lockFilePath(fileName);
     await fsPromises.writeFile(filePath, 'lock', 'utf8');
@@ -490,7 +490,7 @@ export class Dumper extends AppMigrator {
 
   async packDumpedDir(fileName: string) {
     const dirname = this.backUpStorageDir();
-    await mkdirp(dirname);
+    await fse.mkdirp(dirname);
 
     const filePath = path.resolve(dirname, fileName);
     const output = fs.createWriteStream(filePath);

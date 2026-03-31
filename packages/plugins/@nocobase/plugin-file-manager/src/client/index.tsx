@@ -8,15 +8,19 @@
  */
 
 import { Plugin, useCollection } from '@nocobase/client';
-import { FileManagerProvider } from './FileManagerProvider';
-import { FileStoragePane } from './FileStorage';
-import { NAMESPACE } from './locale';
-import { storageTypes } from './schemas/storageTypes';
-import { AttachmentFieldInterface } from './interfaces/attachment';
-import { FileCollectionTemplate } from './templates';
-import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
-import { FileSizeField } from './FileSizeField';
 import { STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_LOCAL, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS } from '../constants';
+import { FileManagerProvider } from './FileManagerProvider';
+import { FileSizeField } from './FileSizeField';
+import { FileStoragePane } from './FileStorage';
+import { useAttachmentFieldProps, useFileCollectionStorageRules } from './hooks';
+import { useStorageCfg } from './hooks/useStorageUploadProps';
+import { AttachmentFieldInterface } from './interfaces/attachment';
+import { NAMESPACE } from './locale';
+import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
+import { UploadFieldModel } from './models/UploadFieldModel';
+import { UploadActionModel } from './models/UploadActionModel';
+import { storageTypes } from './schemas/storageTypes';
+import { FileCollectionTemplate } from './templates';
 
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
@@ -58,11 +62,14 @@ export class PluginFileManagerClient extends Plugin {
     this.app.addScopes({
       useAttachmentFieldProps,
       useFileCollectionStorageRules,
+      useStorageCfg,
     });
 
     this.app.addComponents({
       FileSizeField,
     });
+
+    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel, UploadFieldModel });
   }
 
   registerStorageType(name: string, options) {
@@ -72,6 +79,65 @@ export class PluginFileManagerClient extends Plugin {
   getStorageType(name: string) {
     return this.storageTypes.get(name);
   }
+
+  async uploadFile(options?: {
+    file: File;
+    fileCollectionName?: string;
+    storageType?: string;
+    storageId?: number;
+    storageRules?: {
+      size: number;
+    };
+    query?: Record<string, any>; // ⭐️ 新增可选 query 参数
+  }): Promise<{ errorMessage?: string; data?: any }> {
+    if (!options?.file) {
+      return { errorMessage: 'Missing file' };
+    }
+
+    const { file, storageType, storageId, storageRules, query = {} } = options;
+    const fileCollectionName = options?.fileCollectionName || 'attachments';
+
+    const storageTypeObj = this.getStorageType(storageType);
+
+    // 1. storageType 自定义上传
+    if (storageTypeObj?.upload) {
+      return await storageTypeObj.upload({
+        file,
+        apiClient: this.app.apiClient,
+        storageType,
+        storageId,
+        storageRules,
+        fileCollectionName,
+        query,
+      });
+    }
+
+    // 2. 默认上传 —— 拼接 URL 参数
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      /** ⭐️ 拼接 URL 查询参数 */
+      const queryString = new URLSearchParams(query).toString();
+      const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
+
+      const res = await this.app.apiClient.request({
+        url,
+        method: 'post',
+        data: formData,
+      });
+
+      return { data: res.data?.data };
+    } catch (error: any) {
+      return {
+        errorMessage: error?.message ?? 'Upload failed',
+      };
+    }
+  }
 }
+
+export { filePreviewTypes, wrapWithModalPreviewer } from './previewer/filePreviewTypes';
+export type { FilePreviewType, FilePreviewerProps } from './previewer/filePreviewTypes';
+export { CardUpload, UploadFieldModel } from './models/UploadFieldModel';
 
 export default PluginFileManagerClient;

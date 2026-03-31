@@ -10,7 +10,10 @@
 import axios, { AxiosRequestConfig } from 'axios';
 import { trim } from 'lodash';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
+import PluginFileManagerServer, { AttachmentModel } from '@nocobase/plugin-file-manager';
+import { Application } from '@nocobase/server';
+import { Readable } from 'stream';
 
 export interface Header {
   name: string;
@@ -24,18 +27,73 @@ export type RequestInstructionConfig = Pick<AxiosRequestConfig, 'url' | 'method'
   onlyData?: boolean;
 };
 
-const ContentTypeTransformers = {
-  'text/plain'(data) {
-    return data.toString();
-  },
-  'application/x-www-form-urlencoded'(data: { name: string; value: string }[]) {
-    return new URLSearchParams(
-      data.filter(({ name, value }) => name && typeof value !== 'undefined').map(({ name, value }) => [name, value]),
-    ).toString();
-  },
-};
+interface MultipartTextField {
+  valueType: 'text';
+  name: string;
+  text: string;
+}
 
-async function request(config) {
+interface MultipartFileField {
+  valueType: 'file';
+  name: string;
+  file: AttachmentModel | AttachmentModel[];
+}
+
+function getContentTypeTransformer(mimeType: string, app: Application) {
+  switch (mimeType) {
+    case 'text/plain':
+      return function (data) {
+        return data.toString();
+      };
+    case 'application/x-www-form-urlencoded':
+      return function (data: { name: string; value: string }[]) {
+        return new URLSearchParams(
+          data
+            .filter(({ name, value }) => name && typeof value !== 'undefined')
+            .map(({ name, value }) => [name, value]),
+        ).toString();
+      };
+    case 'multipart/form-data':
+      return async function (data: (MultipartTextField | MultipartFileField)[]) {
+        const form = new FormData();
+
+        for (const record of data) {
+          if (record.valueType === 'text') {
+            form.append(record.name, record.text);
+            continue;
+          }
+
+          if (record.valueType === 'file') {
+            if (record.file == null) {
+              continue;
+            }
+
+            const plugin = app.pm.get(PluginFileManagerServer) as PluginFileManagerServer;
+            const files: AttachmentModel[] = Array.isArray(record.file) ? record.file : [record.file];
+
+            for (const file of files) {
+              const { stream, contentType } = await plugin.getFileStream(file);
+
+              const chunks = [];
+              for await (const chunk of stream) {
+                chunks.push(chunk);
+              }
+
+              form.append(record.name, new Blob(chunks, { type: contentType }), file.filename);
+            }
+
+            continue;
+          }
+
+          throw new Error(`Invalid value type: ${JSON.stringify(record)}`);
+        }
+
+        return form;
+      };
+  }
+}
+
+async function request(config: RequestInstructionConfig, app: Application) {
   // default headers
   const { url, method = 'POST', contentType = 'application/json', data, timeout = 5000 } = config;
   const headers = (config.headers ?? []).reduce((result, header) => {
@@ -51,9 +109,11 @@ async function request(config) {
   );
 
   // TODO(feat): only support JSON type for now, should support others in future
-  headers['Content-Type'] = contentType;
-  const transformer = ContentTypeTransformers[contentType];
+  if (contentType !== 'multipart/form-data') {
+    headers['Content-Type'] = contentType;
+  }
 
+  const transformer = getContentTypeTransformer(contentType, app);
   return axios.request({
     url: trim(url),
     method,
@@ -62,7 +122,7 @@ async function request(config) {
     timeout,
     ...(method.toLowerCase() !== 'get' && data != null
       ? {
-          data: transformer ? transformer(data) : data,
+          data: transformer ? await transformer(data) : data,
         }
       : {}),
   });
@@ -110,7 +170,7 @@ export default class extends Instruction {
 
     if (sync) {
       try {
-        const response = await request(config);
+        const response = await request(config, this.workflow.app);
         return {
           status: JOB_STATUS.RESOLVED,
           result: responseSuccess(response, config.onlyData),
@@ -123,52 +183,45 @@ export default class extends Instruction {
       }
     }
 
-    const job = await processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
-    // eslint-disable-next-line promise/catch-or-return
-    request(config)
-      .then((response) => {
-        processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
+    await processor.exit();
 
-        job.set({
-          status: JOB_STATUS.RESOLVED,
-          result: responseSuccess(response, config.onlyData),
-        });
-      })
-      .catch((error) => {
-        if (error.isAxiosError) {
-          if (error.response) {
-            processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
-          } else if (error.request) {
-            processor.logger.error(`request (#${node.id}) failed without resposne: ${error.message}`);
-          } else {
-            processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
-          }
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+    try {
+      processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
+      const response = await request(config, this.workflow.app);
+      processor.logger.info(`request (#${node.id}) response success, status: ${response.status}`);
+      jobDone.status = JOB_STATUS.RESOLVED;
+      jobDone.result = responseSuccess(response, config.onlyData);
+    } catch (error) {
+      if (error.isAxiosError) {
+        if (error.response) {
+          processor.logger.info(`request (#${node.id}) failed with response, status: ${error.response.status}`);
+        } else if (error.request) {
+          processor.logger.error(`request (#${node.id}) failed without response: ${error.message}`);
         } else {
-          processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
+          processor.logger.error(`request (#${node.id}) initiation failed: ${error.message}`);
         }
-
-        job.set({
-          status: JOB_STATUS.FAILED,
-          result: responseFailure(error),
-        });
-      })
-      .finally(() => {
-        processor.logger.debug(`request (#${node.id}) ended, resume workflow...`);
-        setTimeout(() => {
-          job.execution = processor.execution;
-          this.workflow.resume(job);
-        });
+      } else {
+        processor.logger.error(`request (#${node.id}) failed unexpectedly: ${error.message}`);
+      }
+      jobDone.status = config.ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+      jobDone.result = responseFailure(error);
+    } finally {
+      // At this point, the job is guaranteed to be in the database.
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
 
-    processor.logger.info(`request (#${node.id}) sent to "${config.url}", waiting for response...`);
-
-    return null;
+      job.set(jobDone);
+      this.workflow.resume(job);
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
@@ -181,7 +234,7 @@ export default class extends Instruction {
 
   async test(config: RequestInstructionConfig) {
     try {
-      const response = await request(config);
+      const response = await request(config, this.workflow.app);
       return {
         status: JOB_STATUS.RESOLVED,
         result: responseSuccess(response, config.onlyData),

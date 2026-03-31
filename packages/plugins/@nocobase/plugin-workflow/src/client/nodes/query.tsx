@@ -25,14 +25,15 @@ import { CollectionBlockInitializer } from '../components/CollectionBlockInitial
 import { FilterDynamicComponent } from '../components/FilterDynamicComponent';
 import { NAMESPACE } from '../locale';
 import { appends, collection, filter, pagination, sort } from '../schemas/collection';
-import { WorkflowVariableInput, getCollectionFieldOptions, useGetCollectionFields } from '../variable';
+import { WorkflowVariableInput, getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../variable';
 import { Instruction, useNodeSavedConfig } from '.';
 import { RadioWithTooltip } from '../components';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables({ key: name, title, config }, options) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
   const compile = useCompile();
-  const getCollectionFields = useGetCollectionFields(dataSourceName);
+  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
   // const depth = config?.params?.appends?.length
   //   ? config?.params?.appends.reduce((max, item) => Math.max(max, item.split('.').length), 1)
   //   : 0;
@@ -53,7 +54,7 @@ function useVariables({ key: name, title, config }, options) {
       },
     ],
     compile,
-    getCollectionFields,
+    collectionManager,
   });
 
   return result;
@@ -183,6 +184,54 @@ export default class extends Instruction {
       Component: CollectionBlockInitializer,
       collection: node.config.collection,
       dataPath: `$jobsMapByNodeKey.${node.key}`,
+    };
+  }
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    if (!node.config.collection || node.config.multiple) {
+      return null;
+    }
+
+    return {
+      key: node.title ?? `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: node.config.collection,
+              dataPath: `$jobsMapByNodeKey.${node.key}`,
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+  useTempAssociationSource(node) {
+    if (!node?.config?.collection || node?.config?.multiple) {
+      return null;
+    }
+    return {
+      collection: node.config.collection,
+      nodeId: node.id,
+      nodeKey: node.key,
+      nodeType: 'node' as const,
     };
   }
 }

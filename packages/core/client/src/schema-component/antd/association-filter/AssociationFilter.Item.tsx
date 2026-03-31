@@ -41,6 +41,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
       handleSearchInput: _handleSearchInput,
       params,
       run,
+      dataScopeFilter,
       valueKey: _valueKey,
       labelKey: _labelKey,
       defaultCollapse,
@@ -69,8 +70,10 @@ export const AssociationFilterItem = withDynamicSchemaProps(
     useEffect(() => {
       // by default, if the default is not empty, we will auto run the filter one time
       if (fieldSchema.default) {
-        onSelected(fieldSchema.default);
-        setSelectedKeys(fieldSchema.default);
+        setTimeout(() => {
+          onSelected(fieldSchema.default);
+          setSelectedKeys(fieldSchema.default);
+        }, 100);
       }
     }, [fieldSchema.default, onSelected]);
 
@@ -94,7 +97,7 @@ export const AssociationFilterItem = withDynamicSchemaProps(
       if (searchVisible || filter) {
         run({
           ...params?.[0],
-          filter: undefined,
+          filter: dataScopeFilter,
         });
       }
       setSearchVisible(!searchVisible);

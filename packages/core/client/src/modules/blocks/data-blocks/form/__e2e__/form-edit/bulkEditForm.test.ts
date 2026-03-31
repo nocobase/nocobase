@@ -33,6 +33,7 @@ test.describe('bulk edit form', () => {
     await expect(page.getByLabel('block-item-BulkEditField-').getByText('*')).toBeVisible();
 
     // 3. 输入值，点击提交
+    await expect(page.getByLabel('block-item-BulkEditField-').getByRole('textbox')).toHaveCount(1);
     await page.getByLabel('block-item-BulkEditField-').getByRole('textbox').fill('123');
     await page.getByRole('button', { name: 'Submit' }).click();
 
@@ -65,6 +66,7 @@ test.describe('bulk edit form', () => {
     await expect(page.getByLabel('block-item-BulkEditField-').getByText('*')).toBeVisible();
 
     // 4. 点击提交按钮，应该提示一个错误
+    await expect(page.getByRole('button', { name: 'Submit' })).toHaveCount(1);
     await page.getByRole('button', { name: 'Submit' }).click();
     await expect(page.getByLabel('block-item-BulkEditField-').getByText('The field value is required')).toBeVisible();
 

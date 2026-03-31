@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "보안 가이드",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "토큰 정책",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "비밀번호 정책",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "비밀번호 정책",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "사용자 잠금",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP 제한",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "감사 로그",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "2단계 인증 (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "필드 암호화",
+    "link": "/data-sources/field-encryption"
+  }
+]

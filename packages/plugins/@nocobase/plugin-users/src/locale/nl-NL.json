@@ -1,8 +1,12 @@
 {
-    "Users & Permissions": "Users & Permissions",
-    "Add users": "Add users",
-    "Remove user": "Remove user",
-    "Are you sure you want to remove it?": "Are you sure you want to remove it?",
-    "Random password": "Random password",
-    "User profile is not allowed to be edited": "User profile is not allowed to be edited"
+  "Add user": "Gebruiker toevoegen",
+  "Add users": "Gebruikers toevoegen",
+  "Allow change password": "Wachtwoord wijzigen toestaan",
+  "Allow edit profile": "Profiel bewerken toestaan",
+  "Are you sure you want to remove it?": "Ben je zeker dat je het wil verwijderen?",
+  "Random password": "Willekeurig wachtwoord",
+  "Remove user": "Gebruiker verwijderen",
+  "User profile is not allowed to be edited": "Het gebruikersprofiel mag niet bewerkt worden.",
+  "Users & Permissions": "Gebruikers & Toegangen",
+  "Users manager": "Gebruikersbeheer"
 }

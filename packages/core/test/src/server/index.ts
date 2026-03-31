@@ -7,16 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe } from 'vitest';
 import ws from 'ws';
 
-export { MockDatabase, mockDatabase } from '@nocobase/database';
+export { createMockDatabase, MockDatabase, mockDatabase } from '@nocobase/database';
 export { default as supertest } from 'supertest';
 export * from './memory-pub-sub-adapter';
 export * from './mock-isolated-cluster';
 export * from './mock-server';
 
-export const pgOnly: () => any = () => (process.env.DB_DIALECT == 'postgres' ? describe : describe.skip);
 export const isPg = () => process.env.DB_DIALECT == 'postgres';
 export const isMysql = () => process.env.DB_DIALECT == 'mysql';
 

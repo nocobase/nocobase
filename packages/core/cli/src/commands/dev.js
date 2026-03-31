@@ -8,7 +8,7 @@
  */
 const _ = require('lodash');
 const { Command } = require('commander');
-const { generatePlugins, run, postCheck, nodeCheck, promptForTs, isPortReachable } = require('../util');
+const { generatePlugins, run, postCheck, nodeCheck, promptForTs, isPortReachable, checkDBDialect } = require('../util');
 const { getPortPromise } = require('portfinder');
 const chokidar = require('chokidar');
 const { uid } = require('@formily/shared');
@@ -19,6 +19,15 @@ function sleep(ms = 1000) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+async function buildBundleStatusHtml() {
+  const data = await fs.promises.readFile(path.resolve(__dirname, '../../templates/bundle-status.html'), 'utf-8');
+  await fs.promises.writeFile(
+    path.resolve(process.cwd(), 'node_modules/@umijs/preset-umi/assets/bundle-status.html'),
+    data,
+    'utf-8',
+  );
 }
 
 /**
@@ -36,6 +45,8 @@ module.exports = (cli) => {
     .option('-i, --inspect [port]')
     .allowUnknownOption()
     .action(async (opts) => {
+      checkDBDialect();
+      await buildBundleStatusHtml();
       let subprocess;
       const runDevClient = () => {
         console.log('starting client', 1 * clientPort);

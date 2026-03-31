@@ -1,7 +1,7 @@
 {
-  "Title field": "Titelfeld",
-  "Time scale": "Zeitskala",
-  "Start date field": "Startdatumsfeld",
   "End date field": "Enddatumsfeld",
-  "Progress field": "Fortschrittsfeld"
+  "Progress field": "Fortschrittsfeld",
+  "Start date field": "Startdatumsfeld",
+  "Time scale": "Zeitskala",
+  "Title field": "Titelfeld"
 }

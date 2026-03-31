@@ -192,6 +192,7 @@ export abstract class RelationRepository {
 
     const sourceModel = await this.getSourceModel(transaction);
 
+    this.collection.validate({ values, operation: 'create' });
     const instance = await sourceModel[createAccessor](guard.sanitize(options.values), { ...options, transaction });
 
     await updateAssociations(instance, values, { ...options, transaction });
@@ -229,7 +230,7 @@ export abstract class RelationRepository {
     return this.sourceInstance;
   }
 
-  protected accessors() {
+  public accessors() {
     return (<BelongsTo | HasOne | HasMany | BelongsToMany>this.association).accessors;
   }
 

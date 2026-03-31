@@ -18,6 +18,7 @@ test.describe('grid card block schema settings', () => {
       page,
       showMenu: async () => {
         await page.getByLabel('block-item-BlockItem-general-grid-card').hover();
+        await page.waitForTimeout(1000);
         await page.getByLabel('designer-schema-settings-BlockItem-GridCard.Designer-general').hover();
       },
       supportedOptions: [
@@ -25,7 +26,7 @@ test.describe('grid card block schema settings', () => {
         'Set the data scope',
         'Set default sorting rules',
         'Records per page',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });

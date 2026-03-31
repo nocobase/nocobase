@@ -7,18 +7,31 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, DownloadOutlined, InboxOutlined, LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  DownloadOutlined,
+  InboxOutlined,
+  LoadingOutlined,
+  PlusOutlined,
+  RedoOutlined,
+  UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Field } from '@formily/core';
 import { connect, mapProps, mapReadPretty, useField } from '@formily/react';
 import { Alert, Upload as AntdUpload, Button, Modal, Progress, Space, Tooltip } from 'antd';
+import { createGlobalStyle } from 'antd-style';
 import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import filesize from 'filesize';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
+import { useFlag } from '../../../flag-provider';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useComponent } from '../../hooks';
 import { useProps } from '../../hooks/useProps';
@@ -36,6 +49,12 @@ import {
 import { useStyles } from './style';
 import type { ComposedUpload, DraggerProps, DraggerV2Props, UploadProps } from './type';
 
+const LightBoxGlobalStyle = createGlobalStyle`
+  .ReactModal__Overlay.ReactModal__Overlay--after-open {
+    z-index: 3000 !important; // 避免预览图片时被遮挡
+  }
+`;
+
 attachmentFileTypes.add({
   match(file) {
     return matchMimetype(file, 'image/*');
@@ -45,7 +64,7 @@ attachmentFileTypes.add({
       return file.preview;
     }
     if (file.url) {
-      return `${file.url}${file.thumbnailRule || ''}`;
+      return file.url;
     }
     if (file.originFileObj) {
       return URL.createObjectURL(file.originFileObj);
@@ -53,6 +72,26 @@ attachmentFileTypes.add({
     return null;
   },
   Previewer({ index, list, onSwitchIndex }) {
+    const [angle, setAngle] = useState(0);
+    const isPatchingRef = useRef(false);
+
+    const getImageEl = () => document.querySelector('.ril-image-current') as HTMLElement | null;
+
+    const applyRotation = useCallback((el: HTMLElement | null, a: number) => {
+      if (!el) return;
+      const cur = el.style.transform || '';
+      // 去掉已有 rotate，保留 Lightbox 的 translate/scale
+      const withoutRotate = cur.replace(/rotate\([^)]*\)/g, '').trim();
+      const next = `${withoutRotate} rotate(${((a % 360) + 360) % 360}deg)`.trim();
+      if (cur === next) return; // 没变化就不写，避免重复触发
+      isPatchingRef.current = true;
+      el.style.transform = next;
+      el.style.transformOrigin = 'center center';
+      setTimeout(() => {
+        isPatchingRef.current = false;
+      }, 0);
+    }, []);
+
     const onDownload = useCallback(
       (e) => {
         e.preventDefault();
@@ -61,54 +100,112 @@ attachmentFileTypes.add({
       },
       [index, list],
     );
+    const onRotateLeft = useCallback(() => {
+      setAngle((prev) => (prev - 90) % 360);
+    }, []);
+    const onRotateRight = useCallback(() => {
+      setAngle((prev) => (prev + 90) % 360);
+    }, []);
+
+    // 角度变化时重新应用旋转
+    useEffect(() => {
+      applyRotation(getImageEl(), angle);
+    }, [angle, applyRotation]);
+
+    // 监听 Lightbox 内部 transform 改动（缩放/拖拽时）
+    useEffect(() => {
+      const el = getImageEl();
+      if (!el) return;
+      applyRotation(el, angle);
+      const observer = new MutationObserver((mutations) => {
+        if (isPatchingRef.current) return;
+        if (mutations.some((m) => m.attributeName === 'style')) {
+          applyRotation(el, angle);
+        }
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+      return () => observer.disconnect();
+    }, [applyRotation, angle, index]);
+
     return (
-      <LightBox
-        // discourageDownloads={true}
-        mainSrc={list[index]?.url}
-        nextSrc={list[(index + 1) % list.length]?.url}
-        prevSrc={list[(index + list.length - 1) % list.length]?.url}
-        onCloseRequest={() => onSwitchIndex(null)}
-        onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-        onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
-        imageTitle={list[index]?.title}
-        toolbarButtons={[
-          <button
-            key={'preview-img'}
-            style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-            type="button"
-            aria-label="Download"
-            title="Download"
-            className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-            onClick={onDownload}
-          >
-            <DownloadOutlined />
-          </button>,
-        ]}
-      />
+      <>
+        <LightBoxGlobalStyle />
+        <LightBox
+          // discourageDownloads={true}
+          mainSrc={list[index]?.url}
+          nextSrc={list[(index + 1) % list.length]?.url}
+          prevSrc={list[(index + list.length - 1) % list.length]?.url}
+          onCloseRequest={() => onSwitchIndex(null)}
+          onMovePrevRequest={() => {
+            setAngle(0);
+            onSwitchIndex((index + list.length - 1) % list.length);
+          }}
+          onMoveNextRequest={() => {
+            setAngle(0);
+            onSwitchIndex((index + 1) % list.length);
+          }}
+          onAfterOpen={() => {
+            applyRotation(getImageEl(), angle);
+          }}
+          imageTitle={list[index]?.title}
+          toolbarButtons={[
+            <button
+              key="preview-img"
+              type="button"
+              aria-label="Download"
+              title="Download"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onDownload}
+            >
+              <DownloadOutlined />
+            </button>,
+            <button
+              key="rotate-left"
+              type="button"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onRotateLeft}
+            >
+              <UndoOutlined />
+            </button>,
+            <button
+              key="rotate-right"
+              type="button"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onRotateRight}
+            >
+              <RedoOutlined />
+            </button>,
+          ]}
+        />
+      </>
     );
   },
 });
 
-const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*'];
+const iframePreviewSupportedTypes = ['application/pdf', 'audio/*', 'image/*', 'video/*', 'text/plain'];
 
 function IframePreviewer({ index, list, onSwitchIndex }) {
   const { t } = useTranslation();
   const file = list[index];
+  const url = file.url;
   const onOpen = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      window.open(file.url);
+      window.open(url);
     },
-    [file],
+    [url],
   );
   const onDownload = useCallback(
     (e) => {
       e.preventDefault();
       e.stopPropagation();
-      saveAs(file.url, `${file.title}${file.extname}`);
+      saveAs(url, `${file.title}${file.extname}`);
     },
-    [file],
+    [file.extname, file.title, url],
   );
   const onClose = useCallback(() => {
     onSwitchIndex(null);
@@ -148,7 +245,7 @@ function IframePreviewer({ index, list, onSwitchIndex }) {
       >
         {iframePreviewSupportedTypes.some((type) => matchMimetype(file, type)) ? (
           <iframe
-            src={file.url}
+            src={url}
             style={{
               width: '100%',
               maxHeight: '90vh',
@@ -184,6 +281,10 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
   const useUploadStyleVal = (useUploadStyle as any).default ? (useUploadStyle as any).default : useUploadStyle;
   // 加载 antd 的样式
   useUploadStyleVal(prefixCls);
+  const { isInTableCell } = useFlag();
+
+  const resetStyle = useMemo(() => (isInTableCell ? { display: 'inline-block' } : {}), [isInTableCell]);
+
   return wrapSSR(
     <div
       className={cls(
@@ -192,9 +293,16 @@ function ReadPretty({ value, onChange, disabled, multiple, size, ...others }: Up
         `nb-upload`,
         size ? `nb-upload-${size}` : null,
         hashId,
+        css`
+          .ant-upload-list-picture-card-container {
+            width: ${size}px !important;
+            height: ${size}px !important;
+          }
+        `,
       )}
+      style={resetStyle}
     >
-      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)}>
+      <div className={cls(`${prefixCls}-list`, `${prefixCls}-list-picture-card`)} style={resetStyle}>
         <AttachmentList
           disabled={disabled}
           readPretty
@@ -342,7 +450,12 @@ export function AttachmentList(props) {
   const onDelete = useCallback(
     (file) => {
       if (multiple) {
-        onChange(value.filter((item) => item.id !== file.id));
+        const result = value.filter((item) => item.id !== file.id);
+        if (result.length === 0) {
+          onChange(null);
+        } else {
+          onChange(result);
+        }
       } else {
         onChange(null);
       }
@@ -382,15 +495,16 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   useEffect(() => {
     if (pendingList.length) {
+      const errorFiles = pendingList.filter((item) => item.status === 'error');
       field.setFeedback({
         type: 'error',
         code: 'ValidateError',
-        messages: [t('Incomplete uploading files need to be resolved')],
+        messages: [errorFiles.length ? t('Some files are not uploaded correctly, please check.') : ' '],
       });
     } else {
       field.setFeedback({});
     }
-  }, [field, pendingList]);
+  }, [field, pendingList, t]);
 
   const onUploadChange = useCallback(
     (info) => {

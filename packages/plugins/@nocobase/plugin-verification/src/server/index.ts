@@ -9,8 +9,11 @@
 
 // @ts-ignore
 import { name } from '../../package.json';
-export { Interceptor, default } from './Plugin';
+export { default } from './Plugin';
 export * from './constants';
-export { Provider } from './providers/Provider';
+export { SMSOTPVerification } from './otp-verification/sms';
+export { Verification } from './verification';
+export { VerificationManager } from './verification-manager';
+export { SMSProvider } from './otp-verification/sms/providers';
 
 export const namespace = name;

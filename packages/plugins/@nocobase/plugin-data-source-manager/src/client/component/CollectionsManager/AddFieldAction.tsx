@@ -267,7 +267,7 @@ const AddFieldAction = (props) => {
         }
         if (record.template === 'view') {
           return {
-            type: 'group',
+            type: 'group' as const,
             label: compile(option.label),
             title: compile(option.label),
             key: option.label,
@@ -284,7 +284,7 @@ const AddFieldAction = (props) => {
           };
         }
         return {
-          type: 'group',
+          type: 'group' as const,
           label: compile(option.label),
           title: compile(option.label),
           key: option.label,
@@ -349,6 +349,7 @@ const AddFieldAction = (props) => {
               isDialect,
               disabledJSONB: false,
               createMainOnly: true,
+              primaryKeyOnly: false,
               ...scope,
             }}
           />

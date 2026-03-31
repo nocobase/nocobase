@@ -25,6 +25,14 @@ export const Options = () => {
               public: {
                 type: 'object',
                 properties: {
+                  verifier: {
+                    type: 'string',
+                    'x-component': 'VerifierSelect',
+                    'x-component-props': {
+                      title: '{{t("Verifier")}}',
+                      scene: 'auth-sms',
+                    },
+                  },
                   autoSignup: {
                     'x-decorator': 'FormItem',
                     type: 'boolean',

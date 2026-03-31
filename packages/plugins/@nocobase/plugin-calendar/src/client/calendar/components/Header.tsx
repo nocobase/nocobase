@@ -10,7 +10,7 @@
 import React, { useMemo } from 'react';
 import { getLunarDay } from '../utils';
 
-const Header = ({ date, label, drilldownView, onDrillDown, showLunar = false, type, localizer }) => {
+const Header = ({ date, label, drilldownView, onDrillDown, showLunar = false, type, localizer, locale }) => {
   const lunarElement = useMemo(() => {
     if (!showLunar) {
       return;
@@ -20,14 +20,15 @@ const Header = ({ date, label, drilldownView, onDrillDown, showLunar = false, ty
 
   const child = useMemo(() => {
     if (type === 'week') {
+      const dayLabel = localizer.format(date, 'd eee', locale);
+
       return (
-        <div>
-          <span>{localizer.format(date, 'ddd')}</span>
-          <div className="rbc-date-wrap">
-            <span className="rbc-date-solar">{localizer.format(date, 'DD')}</span>
-            {lunarElement}
-          </div>
-        </div>
+        <>
+          <span className="rbc-date-solar" style={{ fontSize: 14 }}>
+            {dayLabel}
+          </span>
+          {lunarElement}
+        </>
       );
     } else {
       return (

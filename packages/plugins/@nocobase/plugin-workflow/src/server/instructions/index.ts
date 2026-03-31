@@ -20,7 +20,7 @@ export interface IJob {
   [key: string]: unknown;
 }
 
-export type InstructionResult = IJob | Promise<IJob> | null;
+export type InstructionResult = IJob | Promise<IJob> | Promise<void> | null | void;
 
 export type Runner = (node: FlowNodeModel, input: any, processor: Processor) => InstructionResult;
 
@@ -28,7 +28,10 @@ export type InstructionInterface = {
   run: Runner;
   resume?: Runner;
   getScope?: (node: FlowNodeModel, data: any, processor: Processor) => any;
-  duplicateConfig?: (node: FlowNodeModel, options: Transactionable) => object | Promise<object>;
+  duplicateConfig?: (
+    node: FlowNodeModel,
+    options: Transactionable & { origin?: FlowNodeModel },
+  ) => object | Promise<object>;
   test?: (config: Record<string, any>) => IJob | Promise<IJob>;
 };
 

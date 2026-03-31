@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { ArrayCollapse, FormLayout } from '@formily/antd-v5';
+import { FormLayout } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { ISchema, useField, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
@@ -29,7 +29,7 @@ import { useIsAllowToSetDefaultValue } from '../../../../schema-settings/hooks/u
 import { getTempFieldState } from '../../../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { ActionType } from '../../../../schema-settings/LinkageRules/type';
 import { SchemaSettingsDefaultValue } from '../../../../schema-settings/SchemaSettingsDefaultValue';
-
+import { ArrayCollapse } from '../../../../schema-settings/LinkageRules/components/LinkageHeader';
 export const fieldSettingsFormItem = new SchemaSettings({
   name: 'fieldSettings:FormItem',
   items: [
@@ -344,12 +344,17 @@ export const fieldSettingsFormItem = new SchemaSettings({
                         type: 'object',
                         'x-component': 'ArrayCollapse.CollapsePanel',
                         'x-component-props': {
-                          header: '{{ t("Validation rule") }}',
+                          header: t('Validation rule'),
                         },
                         properties: {
                           index: {
                             type: 'void',
                             'x-component': 'ArrayCollapse.Index',
+                            'x-component-props': {
+                              style: {
+                                lineHeight: '28px',
+                              },
+                            },
                           },
                           layout: {
                             type: 'void',

@@ -32,7 +32,7 @@ export const useGetAriaLabelOfAction = (title: string) => {
   let { name: blockName } = useBlockContext() || {};
   const actionTitle = title || compile(fieldSchema.title);
   collectionName = collectionName ? `-${collectionName}` : '';
-  blockName = blockName ? `-${blockName}` : '';
+  blockName = blockName && blockName !== 'action' ? `-${blockName}` : '';
   action = action ? `-${action}` : '';
   recordName = recordName ? `-${recordName}` : '';
 

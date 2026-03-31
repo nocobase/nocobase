@@ -7,11 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-
 import { NAMESPACE } from '../../locale';
 import common from './common';
-import { useTranslation } from 'react-i18next';
 
 export default {
   title: `{{t("Aliyun OSS", { ns: "${NAMESPACE}" })}}`,
@@ -54,8 +51,16 @@ export default {
           'x-component': 'TextAreaWithGlobalScope',
           required: true,
         },
+        timeout: {
+          title: `{{t("Timeout", { ns: "${NAMESPACE}" })}}`,
+          description: `{{t('Upload timeout for a single file in milliseconds. Default is 600000.', { ns: "${NAMESPACE}" })}}`,
+          type: 'number',
+          'x-decorator': 'FormItem',
+          'x-component': 'InputNumber',
+          default: 600_000,
+        },
         thumbnailRule: {
-          title: 'Thumbnail rule',
+          title: `{{t("File pre-process parameters", { ns: "${NAMESPACE}" })}}`,
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'TextAreaWithGlobalScope',
@@ -67,9 +72,11 @@ export default {
       },
     },
     path: common.path,
+    renameMode: common.renameMode,
     rules: common.rules,
     default: common.default,
     paranoid: common.paranoid,
+    settings: common.settings,
   },
   thumbnailRuleLink: 'https://help.aliyun.com/zh/oss/user-guide/resize-images-4',
 };

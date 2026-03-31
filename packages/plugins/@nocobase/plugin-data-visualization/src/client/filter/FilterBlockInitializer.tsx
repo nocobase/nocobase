@@ -31,7 +31,8 @@ const createFilterSchema = () => {
     'x-component-props': {
       size: 'small',
     },
-    'x-designer': 'ChartFilterBlockDesigner',
+    'x-toolbar': 'ChartFilterBlockToolbar',
+    'x-settings': 'chart:filterForm:block',
     properties: {
       [uid()]: {
         type: 'void',

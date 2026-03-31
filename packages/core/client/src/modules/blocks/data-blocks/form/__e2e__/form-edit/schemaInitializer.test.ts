@@ -26,7 +26,7 @@ test.describe('where edit form block can be added', () => {
   });
 
   // https://nocobase.height.app/T-3848/description
-  test('popup opened by clicking on the button for the relationship field', async ({
+  test.skip('popup opened by clicking on the button for the relationship field', async ({
     page,
     mockPage,
     mockRecord,

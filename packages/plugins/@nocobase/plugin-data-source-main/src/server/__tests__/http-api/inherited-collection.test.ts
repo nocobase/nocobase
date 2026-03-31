@@ -7,8 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MockServer, pgOnly } from '@nocobase/test';
+import { isPg, MockServer } from '@nocobase/test';
 import { createApp } from '..';
+
+const pgOnly = () => (isPg() ? describe : describe.skip);
 
 pgOnly()('Inherited Collection', () => {
   let app: MockServer;

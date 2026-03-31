@@ -41,17 +41,11 @@ export class Table extends AntdChart {
       item._key = index;
       return item;
     });
-    const pageSize = advanced?.pagination?.pageSize || 10;
     return {
       // bordered: true,
       size: 'middle',
-      pagination:
-        dataSource.length < pageSize
-          ? false
-          : {
-              pageSize,
-            },
       dataSource,
+      ...(dataSource.length < 10 ? { pagination: false } : {}),
       columns,
       scroll: {
         x: 'max-content',

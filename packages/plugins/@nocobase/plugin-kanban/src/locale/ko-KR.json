@@ -1,0 +1,10 @@
+{
+  "Convert the following integer fields to sorting fields": "다음 정수 필드를 정렬 필드로 변환",
+  "Create sort field": "정렬 필드 생성",
+  "Enable drag and drop sorting": "드래그 앤 드롭 정렬 활성화",
+  "Global sorting": "전체 정렬",
+  "Grouped sorting based on": "기반 그룹 정렬",
+  "Set column width": "Set column width",
+  "Sorting field": "정렬 필드",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "칸반 카드 정렬에 사용되며, 그룹화 필드에 해당하는 정렬 필드만 선택할 수 있습니다."
+}

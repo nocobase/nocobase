@@ -19,6 +19,7 @@ import {
   WorkflowVariableJSON,
   WorkflowVariableRawTextArea,
   WorkflowVariableTextArea,
+  WorkflowVariableInput,
   defaultFieldNames,
 } from '@nocobase/plugin-workflow/client';
 
@@ -73,6 +74,110 @@ const BodySchema = {
                   'x-component-props': {
                     useTypedConstant: true,
                   },
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
+              },
+            },
+          },
+        },
+        properties: {
+          add: {
+            type: 'void',
+            title: `{{t("Add key-value pairs", { ns: "${NAMESPACE}" })}}`,
+            'x-component': 'ArrayItems.Addition',
+          },
+        },
+      },
+    },
+  },
+  'multipart/form-data': {
+    type: 'void',
+    properties: {
+      data: {
+        type: 'array',
+        'x-decorator': 'FormItem',
+        'x-decorator-props': {},
+        'x-component': 'ArrayItems',
+        items: {
+          type: 'object',
+          properties: {
+            space: {
+              type: 'void',
+              'x-component': 'Space',
+              properties: {
+                name: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Input',
+                  'x-component-props': {
+                    placeholder: `{{t("Name")}}`,
+                  },
+                },
+                valueType: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Select',
+                  'x-component-props': {
+                    allowClear: false,
+                  },
+                  enum: [
+                    { value: 'text', label: 'Text' },
+                    { value: 'file', label: 'File' },
+                  ],
+                  default: 'text',
+                },
+                text: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'WorkflowVariableTextArea',
+                  'x-component-props': {
+                    useTypedConstant: true,
+                  },
+                  'x-reactions': [
+                    {
+                      dependencies: ['.valueType'],
+                      fulfill: {
+                        state: {
+                          visible: '{{ $deps[0]==="text" }}',
+                        },
+                      },
+                    },
+                  ],
+                },
+                file: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'WorkflowVariableInput',
+                  'x-component-props': {
+                    variableOptions: {
+                      types: [
+                        function isFileRecordMatch(field, { collectionManager }) {
+                          if (!field.target) {
+                            return false;
+                          }
+
+                          return (
+                            field.target === 'attachments' ||
+                            collectionManager.getCollection(field.target)?.template === 'file'
+                          );
+                        },
+                      ],
+                    },
+                  },
+                  'x-reactions': [
+                    {
+                      dependencies: ['.valueType'],
+                      fulfill: {
+                        state: {
+                          visible: '{{ $deps[0]==="file" }}',
+                        },
+                      },
+                    },
+                  ],
                 },
                 remove: {
                   type: 'void',
@@ -200,6 +305,7 @@ export default class extends Instruction {
       enum: [
         { label: 'application/json', value: 'application/json' },
         { label: 'application/x-www-form-urlencoded', value: 'application/x-www-form-urlencoded' },
+        { label: 'multipart/form-data', value: 'multipart/form-data' },
         { label: 'application/xml', value: 'application/xml' },
         { label: 'text/plain', value: 'text/plain' },
       ],
@@ -363,6 +469,7 @@ export default class extends Instruction {
     WorkflowVariableJSON,
     WorkflowVariableTextArea,
     WorkflowVariableRawTextArea,
+    WorkflowVariableInput,
   };
   useVariables({ key, title, config }, { types }) {
     // eslint-disable-next-line react-hooks/rules-of-hooks

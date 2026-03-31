@@ -7,15 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useField, useFieldSchema } from '@formily/react';
+import { observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { Input as AntdInput, Button, Space, Spin, theme } from 'antd';
 import { TextAreaProps } from 'antd/es/input';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
+import { reaction } from '@formily/reactive';
+import { uid } from '@formily/shared';
 import cls from 'classnames';
+import { isEqual } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useCompile } from '../../';
 import { useCollectionRecord } from '../../../data-source';
+import { FlagProvider, useFlag } from '../../../flag-provider';
 import { useGlobalTheme } from '../../../global-theme';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { useVariableOptions } from '../../../schema-settings/VariableInput/hooks/useVariableOptions';
@@ -28,6 +31,8 @@ import { MarkdownVoidDesigner } from './Markdown.Void.Designer';
 import { registerQrcodeWebComponent } from './qrcode-webcom';
 import { useStyles } from './style';
 import { parseMarkdown } from './util';
+import { VariableScope } from '../../../variables/VariableScope';
+
 export interface MarkdownEditorProps extends Omit<TextAreaProps, 'onSubmit'> {
   scope: any[];
   defaultValue?: string;
@@ -130,7 +135,35 @@ const useMarkdownHeight = () => {
   return height - 2 * token.paddingLG;
 };
 
-export const MarkdownVoid: any = withDynamicSchemaProps(
+function extractNFormPaths(text: string): string[] {
+  const regex = /\{\{\$nForm\.([\w.]+)\}\}/g;
+  const matches = [...text.matchAll(regex)];
+  return matches.map((match) => match[1]);
+}
+
+function getValuesByPaths(values: any, paths: string[]): Record<string, any> {
+  const result: Record<string, any> = {};
+
+  for (const path of paths) {
+    const parts = path.split('.');
+    let current = values;
+
+    for (const key of parts) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        current = undefined;
+        break;
+      }
+    }
+
+    result[path] = current;
+  }
+
+  return result;
+}
+
+export const MarkdownVoidInner: any = withDynamicSchemaProps(
   observer((props: any) => {
     const { isDarkTheme } = useGlobalTheme();
     const { componentCls, hashId } = useStyles({ isDarkTheme });
@@ -145,19 +178,46 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
     const localVariables = useLocalVariables();
     const { engine } = schema?.['x-decorator-props'] || {};
     const [loading, setLoading] = useState(false);
-    const compile = useCompile();
+    const { t, i18n } = useTranslation();
+    const currentForm = useForm();
+    const formVars = extractNFormPaths(content);
+    const [triggerLinkageUpdate, setTriggerLinkageUpdate] = useState(null);
+    useEffect(() => {
+      if (formVars.length > 0) {
+        const id = uid();
+        // 延迟执行，防止一开始获取到的 form.values 值是旧的
+        setTimeout(() => {
+          currentForm.addEffects(id, () => {
+            return reaction(
+              () => {
+                const result = getValuesByPaths(currentForm.values, formVars);
+                return JSON.stringify(result);
+              },
+              () => {
+                setTriggerLinkageUpdate(uid());
+              },
+              { fireImmediately: true, equals: isEqual },
+            );
+          });
+        });
+        // 清理副作用
+        return () => {
+          currentForm.removeEffects(id);
+        };
+      }
+    }, []);
 
     useEffect(() => {
       setLoading(true);
       const cvtContentToHTML = async () => {
         setTimeout(async () => {
-          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown);
+          const replacedContent = await getRenderContent(engine, content, variables, localVariables, parseMarkdown, t);
           setHtml(replacedContent);
         });
         setLoading(false);
       };
       cvtContentToHTML();
-    }, [content, variables, localVariables, engine]);
+    }, [content, variables, localVariables, engine, triggerLinkageUpdate]);
 
     const height = useMarkdownHeight();
     const scope = useVariableOptions({
@@ -208,4 +268,16 @@ export const MarkdownVoid: any = withDynamicSchemaProps(
   { displayName: 'MarkdownVoid' },
 );
 
+export const MarkdownVoid = (props) => {
+  const flags = useFlag();
+  const fieldSchema = useFieldSchema();
+
+  return (
+    <VariableScope scopeId={fieldSchema?.['x-uid']} type="markdownBlock">
+      <FlagProvider {...flags} collectionField={true}>
+        <MarkdownVoidInner {...props} />
+      </FlagProvider>
+    </VariableScope>
+  );
+};
 MarkdownVoid.Designer = MarkdownVoidDesigner;

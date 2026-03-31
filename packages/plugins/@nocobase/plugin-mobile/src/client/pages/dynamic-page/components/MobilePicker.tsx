@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import { connect, mapProps } from '@formily/react';
 import { Select } from '@nocobase/client';
+import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const MobilePicker = connect(
@@ -37,12 +37,12 @@ const MobilePicker = connect(
 
     return (
       <>
-        <div contentEditable="false" onClick={() => !disabled && setVisible(true)}>
+        <div onClick={() => !disabled && setVisible(true)}>
           <Select
             disabled={disabled}
             value={value}
             dropdownStyle={{ display: 'none' }}
-            multiple={mode === 'multiple'}
+            multiple={['multiple', 'tags'].includes(mode)}
             onClear={() => {
               setVisible(false);
               onChange(null);
@@ -77,10 +77,10 @@ const MobilePicker = connect(
             }}
           >
             <CheckList
-              multiple={mode === 'multiple'}
+              multiple={['multiple', 'tags'].includes(mode)}
               value={Array.isArray(selected) ? selected : [selected] || []}
               onChange={(val) => {
-                if (mode === 'multiple') {
+                if (['multiple', 'tags'].includes(mode)) {
                   setSelected(val);
                 } else {
                   setSelected(val[0]);
@@ -96,7 +96,7 @@ const MobilePicker = connect(
               ))}
             </CheckList>
           </div>
-          {mode === 'multiple' && (
+          {['multiple', 'tags'].includes(mode) && (
             <Button block color="primary" onClick={handleConfirm} style={{ marginTop: '16px' }}>
               {t('Confirm')}
             </Button>
@@ -107,5 +107,7 @@ const MobilePicker = connect(
   },
   mapProps({ dataSource: 'options' }),
 );
+
+MobilePicker.displayName = 'MobilePicker';
 
 export { MobilePicker };

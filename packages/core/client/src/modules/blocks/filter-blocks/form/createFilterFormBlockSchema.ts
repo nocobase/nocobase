@@ -53,6 +53,7 @@ export const createFilterFormBlockSchema = (options: {
               layout: 'one-column',
               style: {
                 float: 'right',
+                overflow: 'hidden',
               },
             },
           },

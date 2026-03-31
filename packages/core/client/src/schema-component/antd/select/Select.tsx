@@ -8,17 +8,19 @@
  */
 
 import { CloseCircleFilled, CloseOutlined, LoadingOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { isValid, toArr } from '@formily/shared';
 import { isPlainObject } from '@nocobase/utils/client';
 import type { SelectProps as AntdSelectProps } from 'antd';
-import { Select as AntdSelect, Empty, Spin, Tag } from 'antd';
-import React from 'react';
+import { Select as AntdSelect, Empty, Spin, Tag, Tooltip } from 'antd';
+import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
 import { every } from 'lodash';
+import React, { useEffect } from 'react';
+import { isDesktop } from 'react-device-detect';
+import { useCompile } from '../../';
 import { ReadPretty } from './ReadPretty';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
-import { BaseOptionType, DefaultOptionType } from 'antd/es/select';
-import { useCompile } from '../../';
 
 export type SelectProps<
   ValueType = any,
@@ -42,6 +44,8 @@ const isEmptyObject = (val: any) => !isValid(val) || (typeof val === 'object' &&
 
 const ObjectSelect = (props: SelectProps) => {
   const { value, options, onChange, fieldNames, mode, loading, rawOptions, defaultValue, ...others } = props;
+  const rootClassName = isDesktop ? '' : fixKeyboardIssue;
+  const placement = isDesktop ? undefined : 'topLeft';
   const toValue = (v: any) => {
     if (isEmptyObject(v)) {
       return;
@@ -65,6 +69,8 @@ const ObjectSelect = (props: SelectProps) => {
 
   return (
     <AntdSelect
+      rootClassName={rootClassName}
+      placement={placement}
       // @ts-ignore
       role="button"
       data-testid={`select-object-${mode || 'single'}`}
@@ -112,6 +118,49 @@ const ObjectSelect = (props: SelectProps) => {
         );
       }}
       maxTagCount="responsive"
+      maxTagPlaceholder={(omittedValues) => (
+        <Tooltip
+          title={
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 6,
+                maxWidth: '100%',
+              }}
+            >
+              {omittedValues.map((item) => (
+                <Tag
+                  key={item.value}
+                  style={{
+                    margin: 0,
+                    background: '#fafafa',
+                    border: '1px solid #d9d9d9',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {item.label}
+                </Tag>
+              ))}
+            </div>
+          }
+          overlayInnerStyle={{
+            background: '#fff',
+            color: '#000',
+            padding: 8,
+            maxWidth: '100%',
+          }}
+          color="#fff"
+          overlayStyle={{
+            pointerEvents: 'auto',
+            maxWidth: 300,
+          }}
+        >
+          +{omittedValues.length}...
+        </Tooltip>
+      )}
       {...others}
     />
   );
@@ -119,14 +168,30 @@ const ObjectSelect = (props: SelectProps) => {
 
 const filterOption = (input, option) => (option?.label ?? '').toLowerCase().includes((input || '').toLowerCase());
 
+// 修复在 IOS 端输入时，输入框被键盘遮挡的问题。如果 input 被设置为彻底透明，就会被键盘遮挡
+const fixKeyboardIssue = css`
+  & .ant-select-selection-search-input {
+    opacity: 0.1 !important;
+  }
+`;
+
 const InternalSelect = connect(
   (props: SelectProps) => {
     const { objectValue, loading, value, rawOptions, defaultValue, ...others } = props;
     const compile = useCompile();
+    const rootClassName = isDesktop ? '' : fixKeyboardIssue;
+    const placement = isDesktop ? undefined : 'topLeft';
     let mode: any = props.multiple ? 'multiple' : props.mode;
     if (mode && !['multiple', 'tags'].includes(mode)) {
       mode = undefined;
     }
+
+    useEffect(() => {
+      if (value != null && !Array.isArray(value) && (['tags', 'multiple'].includes(props.mode) || props.multiple)) {
+        props.onChange?.([value]);
+      }
+    }, [value, props.mode, props.multiple, props.onChange]);
+
     if (objectValue) {
       return (
         <ObjectSelect
@@ -150,6 +215,8 @@ const InternalSelect = connect(
     };
     return (
       <AntdSelect
+        rootClassName={rootClassName}
+        placement={placement}
         // @ts-ignore
         role="button"
         data-testid={`select-${mode || 'single'}`}
@@ -181,6 +248,49 @@ const InternalSelect = connect(
         }}
         mode={mode}
         maxTagCount="responsive"
+        maxTagPlaceholder={(omittedValues) => (
+          <Tooltip
+            title={
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  maxWidth: '100%',
+                }}
+              >
+                {omittedValues.map((item) => (
+                  <Tag
+                    key={item.value}
+                    style={{
+                      margin: 0,
+                      background: '#fafafa',
+                      border: '1px solid #d9d9d9',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    {item.label}
+                  </Tag>
+                ))}
+              </div>
+            }
+            overlayInnerStyle={{
+              background: '#fff',
+              color: '#000',
+              padding: 8,
+              maxWidth: '100%',
+            }}
+            color="#fff"
+            overlayStyle={{
+              pointerEvents: 'auto',
+              maxWidth: 300,
+            }}
+          >
+            +{omittedValues.length}...
+          </Tooltip>
+        )}
       />
     );
   },

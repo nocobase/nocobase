@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, {
@@ -33,9 +33,10 @@ import React, {
   useState,
 } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DndContext, isBulkEditAction, useDesignable, usePopupSettings, useTableSize } from '../..';
+import { DndContext, isBulkEditAction, isWriteEmailAction, useDesignable, usePopupSettings, useTableSize } from '../..';
 import {
   BlockRequestLoadingContext,
+  FlagProvider,
   RecordIndexProvider,
   RecordProvider,
   useAssociationNames,
@@ -59,14 +60,20 @@ import {
 } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { LinkageRuleDataKeyMap } from '../../../schema-settings/LinkageRules/type';
 import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionValues';
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+
+// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
+
+// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -164,27 +171,32 @@ const useTableColumns = (
   props: { showDel?: any; isSubTable?: boolean; optimizeTextCellRender: boolean },
   paginationProps,
 ) => {
+  const { t } = useTranslation();
   const { token } = useToken();
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
-  const columnsSchemas = useMemo(() => {
-    return schema.reduceProperties((buf, s) => {
-      if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
-        return buf.concat([s]);
-      }
-      return buf;
-    }, []);
-  }, [schema, schemaInWhitelist]);
+
+  // 列配置（隐藏/删除/顺序）在设计器中会对同一个 schema 对象做原地变更，
+  // 这里不能仅依赖引用级 memo，否则会出现配置已保存但界面不立即更新。
+  const columnsSchemas = schema.reduceProperties((buf, s) => {
+    if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
+      return buf.concat([s]);
+    }
+    return buf;
+  }, []);
   const { current, pageSize } = paginationProps;
   const { isPopupVisibleControlledByURL } = usePopupSettings();
   const { refresh } = useRefreshTableColumns();
 
   const filterProperties = useCallback(
     (schema) =>
-      isBulkEditAction(schema) || !isPopupVisibleControlledByURL() || schema['x-component'] !== 'Action.Container',
+      isBulkEditAction(schema) ||
+      isWriteEmailAction(schema) ||
+      !isPopupVisibleControlledByURL() ||
+      schema['x-component'] !== 'Action.Container',
     [isPopupVisibleControlledByURL],
   );
 
@@ -192,7 +204,8 @@ const useTableColumns = (
     return css`
       .nb-action-link {
         margin: -${token.paddingContentVerticalLG}px -${token.marginSM}px;
-        padding: ${token.paddingContentVerticalLG}px ${token.paddingSM + 4}px;
+        padding: ${token.paddingContentVerticalLG}px ${token.paddingContentVerticalLG}px ${token.paddingSM}px
+          ${token.paddingSM}px;
       }
     `;
   }, [token.paddingContentVerticalLG, token.marginSM, token.margin]);
@@ -202,8 +215,9 @@ const useTableColumns = (
   // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
   const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
 
-  const columns = useMemo(
-    () =>
+  // Generate base columns from schema
+  const baseColumns = useMemo(() => {
+    return (
       columnsSchemas?.map((columnSchema: Schema) => {
         const collectionFields = columnSchema.reduceProperties((buf, s) => {
           if (isCollectionFieldComponent(s)) {
@@ -211,9 +225,15 @@ const useTableColumns = (
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
-        const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
-        const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
+        const columnKey = columnSchema['x-uid'] || columnSchema.name;
 
+        // Get original schema settings
+        const schemaHidden = !!columnSchema['x-component-props']?.['columnHidden'];
+        const columnWidth = columnSchema['x-component-props']?.width || 100;
+        const columnFixed = columnSchema['x-component-props']?.fixed;
+
+        const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
+        columnSchema.title = t(columnSchema?.title, { ns: NAMESPACE_UI_SCHEMA });
         if (uiSchema) {
           uiSchema.default = defaultValue;
         }
@@ -226,16 +246,18 @@ const useTableColumns = (
                 schema={columnSchema}
                 onlyRenderSelf
                 isUseFormilyField={false}
-                tooltip={columnSchema?.['x-component-props']?.tooltip}
+                tooltip={t(columnSchema?.['x-component-props']?.tooltip, { ns: NAMESPACE_UI_SCHEMA })}
               />
             </RefreshComponentProvider>
           ),
           dataIndex,
-          key: columnSchema.name,
+          key: columnKey,
           sorter: columnSchema['x-component-props']?.['sorter'],
-          columnHidden,
+          columnHidden: schemaHidden,
+          fixed: columnFixed,
           ...columnSchema['x-component-props'],
-          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
+          width: columnWidth,
+          schema: columnSchema,
           render: (value, record, index) => {
             return (
               <RefreshComponentProvider refresh={refresh}>
@@ -256,28 +278,65 @@ const useTableColumns = (
               record,
               schema: columnSchema,
               rowIndex,
-              columnHidden,
+              columnHidden: schemaHidden,
             };
           },
           onHeaderCell: () => {
             return {
-              columnHidden,
+              columnHidden: schemaHidden,
             };
           },
-        } as TableColumnProps<any>;
-      }),
+        } as TableColumnProps;
+      }) || []
+    );
+  }, [
+    columnsSchemas,
+    collection,
+    refresh,
+    designable,
+    filterProperties,
+    schemaToolbarBigger,
+    field,
+    props.optimizeTextCellRender,
+  ]);
 
-    [
-      columnsSchemas,
-      collection,
-      refresh,
-      designable,
-      filterProperties,
-      schemaToolbarBigger,
-      field,
-      props.optimizeTextCellRender,
-    ],
+  // Helper function to check if the table schema contains an EditTable.Action in actions
+  function hasEditTableAction(schema) {
+    const actionsProps = schema?.parent?.properties?.actions?.properties;
+    if (!actionsProps) return false;
+    return Object.values(actionsProps).some((item) => item['x-component'] === 'EditTable.Action');
+  }
+
+  // Check if the current table contains the editTable action
+  const editTableActionExists = hasEditTableAction(schema);
+
+  // Always call the hook, but only enable integration logic when needed
+  // Use the columns from the hook (either integrated or baseColumns)
+  const { columns: integratedColumns } = useTableColumnIntegration(
+    baseColumns,
+    !designable && editTableActionExists, // enable only if not designable and editTableActionExists
   );
+
+  // Apply column hidden styles and width adjustments
+  const columns = useMemo(() => {
+    return integratedColumns.map((column) => ({
+      ...column,
+      width: column.columnHidden && !designable ? 0 : column.width,
+      onCell: (record, rowIndex) => {
+        return {
+          record,
+          schema: column.schema || {},
+          rowIndex,
+          columnHidden: column.columnHidden,
+        };
+      },
+      onHeaderCell: () => {
+        return {
+          columnHidden: column.columnHidden,
+        };
+      },
+    }));
+  }, [integratedColumns, designable]);
 
   const tableColumns = useMemo(() => {
     if (!exists) {
@@ -298,11 +357,12 @@ const useTableColumns = (
 
     if (props.showDel) {
       res.push({
-        title: '',
+        title: '' as any,
         key: 'delete',
         width: 60,
         align: 'center',
         fixed: 'right',
+        // @ts-ignore
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (
@@ -339,10 +399,11 @@ const useTableColumns = (
 const SortableRow = (props: BodyRowComponentProps) => {
   const { token } = useToken();
   const id = props['data-row-key']?.toString();
-  const { setNodeRef, isOver, active, over } = useSortable({
+  const { setNodeRef, active, over } = useSortable({
     id,
   });
   const { rowIndex, ...others } = props;
+  const isOver = over?.id == id;
 
   const classObj = useMemo(() => {
     const borderColor = new TinyColor(token.colorSettings).setAlpha(0.6).toHex8String();
@@ -361,9 +422,7 @@ const SortableRow = (props: BodyRowComponentProps) => {
   }, [token.colorSettings]);
 
   const className =
-    (active?.data.current?.sortable.index ?? -1) > (over?.data.current?.sortable?.index ?? -1)
-      ? classObj.topActiveClass
-      : classObj.bottomActiveClass;
+    (active?.data.current?.sortable.index ?? -1) > rowIndex ? classObj.topActiveClass : classObj.bottomActiveClass;
 
   const row = (
     <tr
@@ -462,7 +521,7 @@ const usePaginationProps = (pagination1, pagination2, tableProps) => {
                   }
                 `}
               >
-                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+                {originalElement} <div>{current}</div>
               </div>
             );
           } else {
@@ -504,7 +563,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   padding-right: 8px;
   .nb-table-index {
     opacity: 0;
@@ -531,7 +590,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`
@@ -626,11 +686,14 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
   const styleRules = schema?.[LinkageRuleDataKeyMap['style']];
   const [dynamicStyle, setDynamicStyle] = useState({});
   const isReadPrettyMode =
-    !!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true);
-  const mergedStyle = useMemo(() => ({ ...props.style, ...dynamicStyle }), [props.style, dynamicStyle]);
-
+    (!!schema?.properties && Object.values(schema.properties).some((item) => item['x-read-pretty'] === true)) ||
+    schema?.['x-action-column'] === 'actions';
+  const mergedStyle = useMemo(
+    () => ({ overflow: 'hidden', ...props.style, ...dynamicStyle }),
+    [props.style, dynamicStyle],
+  );
   return (
-    <>
+    <FlagProvider isInTableCell>
       {/* To improve rendering performance, do not render GetStyleRules component when no style rules are set */}
       {!_.isEmpty(styleRules) && (
         <GetStyleRules record={record} schema={schema} onStyleChange={isReadPrettyMode ? setDynamicStyle : _.noop} />
@@ -638,7 +701,7 @@ const InternalBodyCellComponent = React.memo<BodyCellComponentProps>((props) => 
       <td {...others} className={classNames(props.className, cellClass)} style={mergedStyle}>
         {props.children}
       </td>
-    </>
+    </FlagProvider>
   );
 });
 
@@ -648,12 +711,15 @@ const displayNone = { display: 'none' };
 
 const BodyCellComponent = React.memo<BodyCellComponentProps>((props) => {
   const { designable } = useDesignable();
+  const style = designable ? columnOpacityStyle : columnHiddenStyle;
 
   if (props.columnHidden) {
     return (
-      <td style={designable ? columnOpacityStyle : columnHiddenStyle}>
-        {designable ? props.children : <span style={displayNone}>{props.children}</span>}
-      </td>
+      <FlagProvider isInTableCell>
+        <td style={{ overflow: 'hidden', ...style }}>
+          {designable ? props.children : <span style={displayNone}>{props.children}</span>}
+        </td>
+      </FlagProvider>
     );
   }
 
@@ -851,7 +917,7 @@ export const Table: any = withDynamicSchemaProps(
       const collection = useCollection();
       const isTableSelector = schema?.parent?.['x-decorator'] === 'TableSelectorProvider';
       const ctx = isTableSelector ? useTableSelectorContext() : useTableBlockContext();
-      const { expandFlag, allIncludesChildren } = ctx;
+      const { expandFlag, allIncludesChildren, enableIndexColumn } = ctx;
       const onRowDragEnd = useMemoizedFn(others.onRowDragEnd || (() => {}));
       const paginationProps = usePaginationProps(pagination1, pagination2, props);
       const columns = useTableColumns(others, paginationProps);
@@ -871,6 +937,8 @@ export const Table: any = withDynamicSchemaProps(
         `;
       }, [token.controlItemBgActive, token.controlItemBgActiveHover]);
       const tableBlockContextBasicValue = useTableBlockContextBasicValue();
+      const valueRef = useRef(value);
+      valueRef.current = value;
 
       useEffect(() => {
         if (tableBlockContextBasicValue?.field) {
@@ -981,8 +1049,8 @@ export const Table: any = withDynamicSchemaProps(
             }
             const fromIndex = e.active?.data.current?.sortable?.index;
             const toIndex = e.over?.data.current?.sortable?.index;
-            const from = value?.[fromIndex] || e.active;
-            const to = value?.[toIndex] || e.over;
+            const from = valueRef.current?.[fromIndex] || e.active;
+            const to = valueRef.current?.[toIndex] || e.over;
             void field.move(fromIndex, toIndex);
             onRowDragEnd({ from, to });
           }, []);
@@ -1016,73 +1084,76 @@ export const Table: any = withDynamicSchemaProps(
 
       const restProps = useMemo(
         () => ({
-          rowSelection: memoizedRowSelection
-            ? {
-                type: 'checkbox',
-                selectedRowKeys: selectedRowKeys,
-                onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                  field.data = field.data || {};
-                  field.data.selectedRowKeys = selectedRowKeys;
-                  field.data.selectedRowData = selectedRows;
-                  setSelectedRowKeys(selectedRowKeys);
-                  onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
-                },
-                onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
-                  if (tableBlockContextBasicValue) {
-                    tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
-                    tableBlockContextBasicValue.field.data.selectedRecord = record;
-                    tableBlockContextBasicValue.field.data.selected = selected;
-                  }
-                },
-                getCheckboxProps(record) {
-                  return {
-                    'aria-label': `checkbox`,
-                  };
-                },
-                renderCell: (checked, record, index, originNode) => {
-                  if (!dragSort && !showIndex) {
-                    return originNode;
-                  }
-                  const current = paginationProps?.current;
+          rowSelection:
+            enableIndexColumn !== false
+              ? memoizedRowSelection
+                ? {
+                    type: 'checkbox',
+                    selectedRowKeys: selectedRowKeys,
+                    onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                      field.data = field.data || {};
+                      field.data.selectedRowKeys = selectedRowKeys;
+                      field.data.selectedRowData = selectedRows;
+                      setSelectedRowKeys(selectedRowKeys);
+                      onRowSelectionChange?.(selectedRowKeys, selectedRows, setSelectedRowKeys);
+                    },
+                    onSelect: (record, selected: boolean, selectedRows, nativeEvent) => {
+                      if (tableBlockContextBasicValue) {
+                        tableBlockContextBasicValue.field.data = tableBlockContextBasicValue.field?.data || {};
+                        tableBlockContextBasicValue.field.data.selectedRecord = record;
+                        tableBlockContextBasicValue.field.data.selected = selected;
+                      }
+                    },
+                    getCheckboxProps(record) {
+                      return {
+                        'aria-label': `checkbox`,
+                      };
+                    },
+                    renderCell: (checked, record, index, originNode) => {
+                      if (!dragSort && !showIndex) {
+                        return originNode;
+                      }
+                      const current = paginationProps?.current;
 
-                  const pageSize = paginationProps?.pageSize || 20;
-                  if (current) {
-                    index = index + (current - 1) * pageSize + 1;
-                  } else {
-                    index = index + 1;
-                  }
-                  if (record.__index) {
-                    index = extractIndex(record.__index);
-                  }
-                  return (
-                    <div
-                      role="button"
-                      aria-label={`table-index-${index}`}
-                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                      })}
-                    >
-                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                        {dragSort && <SortHandle id={getRowKey(record)} />}
-                        {showIndex && <TableIndex index={index} />}
-                      </div>
-                      {isRowSelect && (
+                      const pageSize = paginationProps?.pageSize || 20;
+                      if (current) {
+                        index = index + (current - 1) * pageSize + 1;
+                      } else {
+                        index = index + 1;
+                      }
+                      if (record.__index) {
+                        index = extractIndex(record.__index);
+                      }
+                      return (
                         <div
-                          className={classNames(
-                            'nb-origin-node',
-                            checked ? 'checked' : null,
-                            rowSelectCheckboxCheckedClassHover,
-                          )}
+                          role="button"
+                          aria-label={`table-index-${index}`}
+                          className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                            [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                          })}
                         >
-                          {originNode}
+                          <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                            {dragSort && <SortHandle id={getRowKey(record)} />}
+                            {showIndex && <TableIndex index={index} />}
+                          </div>
+                          {isRowSelect && (
+                            <div
+                              className={classNames(
+                                'nb-origin-node',
+                                checked ? 'checked' : null,
+                                rowSelectCheckboxCheckedClassHover,
+                              )}
+                            >
+                              {originNode}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                },
-                ...memoizedRowSelection,
-              }
-            : undefined,
+                      );
+                    },
+                    ...memoizedRowSelection,
+                  }
+                : undefined
+              : undefined,
         }),
         [
           memoizedRowSelection,
@@ -1096,6 +1167,7 @@ export const Table: any = withDynamicSchemaProps(
           memoizedRowSelection,
           paginationProps,
           tableBlockContextBasicValue,
+          enableIndexColumn,
         ],
       );
 
@@ -1105,7 +1177,7 @@ export const Table: any = withDynamicSchemaProps(
             ? React.createElement<Omit<SortableContextProps, 'children'>>(
                 SortableContext,
                 {
-                  items: value?.map?.(getRowKey) || [],
+                  items: valueRef.current?.map?.(getRowKey) || [],
                 },
                 children,
               )
@@ -1118,7 +1190,7 @@ export const Table: any = withDynamicSchemaProps(
       const scroll = useMemo(() => {
         return {
           x: 'max-content',
-          y: tableHeight,
+          y: dataSource?.length === 0 ? undefined : tableHeight, // 当数据为空且设置了 y 轴高度时，表格头会缩到一起。为了解决这个问题，在数据为空时，y 轴高度需要设置为 undefined
         };
       }, [tableHeight, dataSource]);
 

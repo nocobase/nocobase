@@ -7,23 +7,52 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Application } from '@nocobase/server';
-import { LLMProvider } from '../llm-providers/provider';
+import {
+  LLMProvider,
+  LLMProviderOptions,
+  EmbeddingProvider,
+  EmbeddingProviderOptions,
+} from '../llm-providers/provider';
+import PluginAIServer from '../plugin';
+import _ from 'lodash';
+import { ToolManager } from './tool-manager';
 
-export type LLMProviderOptions = {
+export type LLMProviderMeta = {
   title: string;
-  provider: new (opts: { app: Application; serviceOptions?: any; chatOptions?: any }) => LLMProvider;
+  supportedModel?: SupportedModel[];
+  models?: Partial<Record<SupportedModel, string[]>>;
+  provider: new (opts: LLMProviderOptions) => LLMProvider;
+  embedding?: new (opts: EmbeddingProviderOptions) => EmbeddingProvider;
+  supportWebSearch?: boolean;
 };
 
-export class AIManager {
-  llmProviders = new Map<string, LLMProviderOptions>();
+export enum SupportedModel {
+  LLM = 'LLM',
+  EMBEDDING = 'EMBEDDING',
+}
 
-  registerLLMProvider(name: string, options: LLMProviderOptions) {
-    this.llmProviders.set(name, options);
+export class AIManager {
+  llmProviders = new Map<string, LLMProviderMeta>();
+  toolManager = new ToolManager();
+  constructor(protected plugin: PluginAIServer) {}
+
+  registerLLMProvider(name: string, meta: LLMProviderMeta) {
+    this.llmProviders.set(name, meta);
   }
 
   listLLMProviders() {
     const providers = this.llmProviders.entries();
-    return Array.from(providers).map(([name, { title }]) => ({ name, title }));
+    return Array.from(providers).map(([name, { title, supportedModel, supportWebSearch }]) => ({
+      name,
+      title,
+      supportedModel: supportedModel ?? [SupportedModel.LLM],
+      supportWebSearch: supportWebSearch ?? false,
+    }));
+  }
+
+  getSupportedProvider(model: SupportedModel): string[] {
+    return Array.from(this.llmProviders.entries())
+      .filter(([_, { supportedModel }]) => supportedModel && supportedModel.includes(model))
+      .map(([name]) => name);
   }
 }

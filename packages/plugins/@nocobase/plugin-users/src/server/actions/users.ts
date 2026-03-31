@@ -12,16 +12,39 @@ import { UiSchemaRepository } from '@nocobase/plugin-ui-schema-storage';
 import _ from 'lodash';
 import { namespace } from '..';
 import { ValidationError, ValidationErrorItem } from 'sequelize';
-import PluginSystemSettingsServer from '@nocobase/plugin-system-settings';
+
+function findNonVoidTypeObjects(obj: any, path = '', results = []): { name: string; props: any }[] {
+  for (const key in obj) {
+    const value = obj[key];
+
+    const currentPath = path ? `${path}.${key}` : key;
+
+    if (value && typeof value === 'object') {
+      if (value.type && value.type !== 'void') {
+        results.push({
+          name: key,
+          props: value,
+        });
+      }
+
+      if (value.properties) {
+        findNonVoidTypeObjects(value.properties, `${currentPath}.properties`, results);
+      } else {
+        findNonVoidTypeObjects(value, currentPath, results);
+      }
+    }
+  }
+
+  return results;
+}
 
 function parseProfileFormSchema(schema: any) {
   const properties = _.get(schema, 'properties.form.properties.edit.properties.grid.properties') || {};
   const fields = [];
   const requiredFields = [];
-  Object.values(properties).forEach((row: any) => {
-    const col = Object.values(row.properties)[0] as any;
-    const [name, props] = Object.entries(col.properties)[0];
-    if (props['x-read-pretty'] || props['x-disable']) {
+  const configs = findNonVoidTypeObjects(properties);
+  Object.values(configs).forEach(({ name, props }) => {
+    if (props['x-read-pretty'] || props['x-disabled']) {
       return;
     }
     if (props['required']) {

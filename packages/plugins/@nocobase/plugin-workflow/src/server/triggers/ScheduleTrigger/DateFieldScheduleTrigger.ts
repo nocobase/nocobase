@@ -7,13 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { fn, literal, Op, Transactionable, where } from '@nocobase/database';
+import { fn, literal, Model, Op, Transactionable, where } from '@nocobase/database';
 import parser from 'cron-parser';
 import type Plugin from '../../Plugin';
 import type { WorkflowModel } from '../../types';
 import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
 import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { pick } from 'lodash';
+import { toJSON } from '../../utils';
+import { EventOptions } from '../../Dispatcher';
 
 export type ScheduleOnField = {
   field: string;
@@ -34,7 +36,7 @@ export interface ScheduleTriggerConfig {
   endsOn?: string | ScheduleOnField;
 }
 
-function getOnTimestampWithOffset({ field, offset = 0, unit = 1000 }: ScheduleOnField, now: Date) {
+function getOnTimestampWithOffset({ field, offset = 0, unit = 86400000 }: ScheduleOnField, now: Date) {
   if (!field) {
     return null;
   }
@@ -54,7 +56,7 @@ function getDataOptionTime(record, on, dir = 1) {
       return time ? time : null;
     }
     case 'object': {
-      const { field, offset = 0, unit = 1000 } = on;
+      const { field, offset = 0, unit = 86400000 } = on;
       if (!field || !record.get(field)) {
         return null;
       }
@@ -104,50 +106,54 @@ export default class DateFieldScheduleTrigger {
   // caching workflows in range, default to 5min
   cacheCycle = 300_000;
 
+  onAfterStart = () => {
+    if (this.timer) {
+      return;
+    }
+
+    this.timer = setInterval(() => this.reload(), this.cacheCycle);
+
+    this.reload();
+  };
+
+  onBeforeStop = () => {
+    if (this.timer) {
+      clearInterval(this.timer);
+    }
+
+    for (const [key, timer] of this.cache.entries()) {
+      clearTimeout(timer);
+      this.cache.delete(key);
+    }
+  };
+
   constructor(public workflow: Plugin) {
-    workflow.app.on('afterStart', async () => {
-      if (this.timer) {
-        return;
-      }
-
-      this.timer = setInterval(() => this.reload(), this.cacheCycle);
-
-      this.reload();
-    });
-
-    workflow.app.on('beforeStop', () => {
-      if (this.timer) {
-        clearInterval(this.timer);
-      }
-
-      for (const [key, timer] of this.cache.entries()) {
-        clearTimeout(timer);
-        this.cache.delete(key);
-      }
-    });
+    workflow.app.on('afterStart', this.onAfterStart);
+    workflow.app.on('beforeStop', this.onBeforeStop);
   }
 
-  async reload() {
+  reload() {
+    for (const [key, timer] of this.cache.entries()) {
+      clearTimeout(timer);
+      this.cache.delete(key);
+    }
+
     const workflows = Array.from(this.workflow.enabledCache.values()).filter(
       (item) => item.type === 'schedule' && item.config.mode === SCHEDULE_MODE.DATE_FIELD,
     );
 
-    // NOTE: clear cached jobs in last cycle
-    this.cache = new Map();
-
-    this.inspect(workflows);
+    workflows.forEach((workflow) => {
+      this.inspect(workflow);
+    });
   }
 
-  inspect(workflows: WorkflowModel[]) {
+  async inspect(workflow: WorkflowModel) {
     const now = new Date();
-
-    workflows.forEach(async (workflow) => {
-      const records = await this.loadRecordsToSchedule(workflow, now);
-      this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
-      records.forEach((record) => {
-        const nextTime = this.getRecordNextTime(workflow, record);
-        this.schedule(workflow, record, nextTime, Boolean(nextTime));
-      });
+    const records = await this.loadRecordsToSchedule(workflow, now);
+    this.workflow.getLogger(workflow.id).info(`[Schedule on date field] ${records.length} records to schedule`);
+    records.forEach((record) => {
+      const nextTime = this.getRecordNextTime(workflow, record);
+      this.schedule(workflow, record, nextTime, Boolean(nextTime));
     });
   }
 
@@ -159,12 +165,12 @@ export default class DateFieldScheduleTrigger {
   //     i. endsOn after now -> yes
   //     ii. endsOn before now -> no
   async loadRecordsToSchedule(
-    { id, config: { collection, limit, startsOn, repeat, endsOn }, allExecuted }: WorkflowModel,
+    { id, config: { collection, limit, startsOn, repeat, endsOn }, stats }: WorkflowModel,
     currentDate: Date,
   ) {
     const { dataSourceManager } = this.workflow.app;
-    if (limit && allExecuted >= limit) {
-      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${allExecuted})`);
+    if (limit && stats.executed >= limit) {
+      this.workflow.getLogger(id).warn(`[Schedule on date field] limit reached (all executed ${stats.executed})`);
       return [];
     }
     if (!startsOn) {
@@ -200,17 +206,17 @@ export default class DateFieldScheduleTrigger {
 
     if (repeat) {
       // when repeat is number, means repeat after startsOn
-      // (now - startsOn) % repeat <= cacheCycle
       if (typeof repeat === 'number') {
         const tsFn = DialectTimestampFnMap[db.options.dialect];
         if (repeat > range && tsFn) {
+          const offsetSeconds = Math.round(((startsOn.offset || 0) * (startsOn.unit || 1000)) / 1000);
+          const repeatSeconds = Math.round(repeat / 1000);
+          const nowSeconds = Math.round(timestamp / 1000);
           const { field } = model.getAttributes()[startsOn.field];
-          const modExp = fn(
-            'MOD',
-            literal(
-              `${Math.round(timestamp / 1000)} - ${tsFn(db.sequelize.getQueryInterface().quoteIdentifiers(field))}`,
-            ),
-            Math.round(repeat / 1000),
+          const modExp = literal(
+            `MOD(MOD(${tsFn(
+              db.sequelize.getQueryInterface().quoteIdentifiers(field),
+            )} + ${offsetSeconds} - ${nowSeconds}, ${repeatSeconds}) + ${repeatSeconds}, ${repeatSeconds})`,
           );
           conditions.push(where(modExp, { [Op.lt]: Math.round(range / 1000) }));
         }
@@ -233,8 +239,6 @@ export default class DateFieldScheduleTrigger {
                 [Op.gte]: new Date(endTimestamp),
               },
             });
-          } else {
-            this.workflow.getLogger(id).warn(`[Schedule on date field] "endsOn.field" is not configured`);
           }
         }
       }
@@ -246,6 +250,7 @@ export default class DateFieldScheduleTrigger {
       });
     }
     this.workflow.getLogger(id).debug(`[Schedule on date field] conditions: `, { conditions });
+
     return model.findAll({
       where: {
         [Op.and]: conditions,
@@ -253,14 +258,15 @@ export default class DateFieldScheduleTrigger {
     });
   }
 
-  getRecordNextTime(workflow: WorkflowModel, record, nextSecond = false) {
+  getRecordNextTime(workflow: WorkflowModel, record: Model, nextSecond = false) {
     const {
       config: { startsOn, endsOn, repeat, limit },
-      allExecuted,
+      stats,
     } = workflow;
-    if (limit && allExecuted >= limit) {
+    if (limit && stats.executed >= limit) {
       return null;
     }
+    const logger = this.workflow.getLogger(workflow.id);
     const range = this.cacheCycle;
     const now = new Date();
     now.setMilliseconds(nextSecond ? 1000 : 0);
@@ -269,43 +275,56 @@ export default class DateFieldScheduleTrigger {
     const endTime = getDataOptionTime(record, endsOn);
     let nextTime = null;
     if (!startTime) {
+      logger.debug(`[Schedule on date field] getNextTime: startsOn not configured`);
       return null;
     }
     if (startTime > timestamp + range) {
+      logger.debug(`[Schedule on date field] getNextTime: startsOn is out of caching window`);
       return null;
     }
     if (startTime >= timestamp) {
-      return !endTime || (endTime >= startTime && endTime < timestamp + range) ? startTime : null;
+      if (!endTime || startTime <= endTime) {
+        return startTime;
+      }
+      logger.debug(`[Schedule on date field] getNextTime: endsOn is before startsOn or out of caching window`);
+      return null;
     } else {
       if (!repeat) {
+        logger.debug(
+          `[Schedule on date field] getNextTime: startsOn is before current time and repeat is not configured`,
+        );
         return null;
       }
     }
     if (typeof repeat === 'number') {
-      const nextRepeatTime = ((startTime - timestamp) % repeat) + repeat;
-      if (nextRepeatTime > range) {
-        return null;
-      }
-      if (endTime && endTime < timestamp + nextRepeatTime) {
-        return null;
-      }
-      nextTime = timestamp + nextRepeatTime;
-    } else if (typeof repeat === 'string') {
-      nextTime = getCronNextTime(repeat, now);
+      nextTime = timestamp + repeat - ((timestamp - startTime) % repeat);
       if (nextTime - timestamp > range) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime (${nextTime}) is out of caching window`);
         return null;
       }
       if (endTime && endTime < nextTime) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
+        return null;
+      }
+    } else if (typeof repeat === 'string') {
+      nextTime = getCronNextTime(repeat, now);
+      if (nextTime - timestamp > range) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime (${nextTime}) is out of caching window`);
+        return null;
+      }
+      if (endTime && endTime < nextTime) {
+        logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
         return null;
       }
     }
     if (endTime && endTime <= timestamp) {
+      logger.debug(`[Schedule on date field] getNextTime: nextTime is after endsOn`);
       return null;
     }
     return nextTime;
   }
 
-  schedule(workflow: WorkflowModel, record, nextTime, toggle = true, options = {}) {
+  schedule(workflow: WorkflowModel, record: Model, nextTime: number, toggle = true, options = {}) {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
@@ -332,31 +351,47 @@ export default class DateFieldScheduleTrigger {
     }
   }
 
-  async trigger(workflow: WorkflowModel, record, nextTime, { transaction }: Transactionable = {}) {
+  async trigger(workflow: WorkflowModel, record: Model, nextTime: number, { transaction }: Transactionable = {}) {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { repository, filterTargetKey } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
     const recordPk = record.get(filterTargetKey);
-    const data = await repository.findOne({
+    const data = (await repository.findOne({
       filterByTk: recordPk,
       appends: workflow.config.appends,
       transaction,
-    });
+    })) as Model;
+    if (!data) {
+      this.workflow
+        .getLogger(workflow.id)
+        .warn(`[Schedule on date field] record (${recordPk}) not exists, will not trigger`);
+      return;
+    }
     const eventKey = `${workflow.id}:${recordPk}@${nextTime}`;
     this.cache.delete(eventKey);
-    this.workflow.trigger(
+    // NOTE: data.toJSON() will cause erorr
+
+    const json = toJSON(data);
+    const args: [WorkflowModel, object, EventOptions] = [
       workflow,
       {
-        data: data.toJSON(),
+        data: json,
         date: new Date(nextTime),
       },
       {
         eventKey,
       },
-    );
+    ];
+    if (transaction) {
+      transaction.afterCommit(() => {
+        this.workflow.trigger(...args);
+      });
+    } else {
+      this.workflow.trigger(...args);
+    }
 
-    if (!workflow.config.repeat || (workflow.config.limit && workflow.allExecuted >= workflow.config.limit - 1)) {
+    if (!workflow.config.repeat || (workflow.config.limit && workflow.stats.executed >= workflow.config.limit - 1)) {
       return;
     }
 
@@ -367,7 +402,7 @@ export default class DateFieldScheduleTrigger {
   }
 
   on(workflow: WorkflowModel) {
-    this.inspect([workflow]);
+    this.inspect(workflow);
 
     const { collection } = workflow.config;
     const [dataSourceName, collectionName] = parseCollectionName(collection);
@@ -377,13 +412,18 @@ export default class DateFieldScheduleTrigger {
       return;
     }
 
-    const listener = async (data, { transaction }) => {
+    const listener = async (data: Model, { transaction }) => {
       const nextTime = this.getRecordNextTime(workflow, data);
+      this.workflow.getLogger().debug(`[Schedule on date field] record saved, nextTime: ${nextTime}`);
       return this.schedule(workflow, data, nextTime, Boolean(nextTime), { transaction });
     };
 
     this.events.set(name, listener);
     const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[Schedule on date field] data source not exists: ${dataSourceName}`);
+      return;
+    }
     const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     db.on(event, listener);
   }
@@ -403,6 +443,10 @@ export default class DateFieldScheduleTrigger {
     const listener = this.events.get(name);
     if (listener) {
       const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+      if (!dataSource) {
+        this.workflow.getLogger().warn(`[Schedule on date field] data source not exists: ${dataSourceName}`);
+        return;
+      }
       const { db } = dataSource.collectionManager as SequelizeCollectionManager;
       db.off(event, listener);
       this.events.delete(name);

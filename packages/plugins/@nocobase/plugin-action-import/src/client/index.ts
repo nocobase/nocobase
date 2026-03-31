@@ -18,6 +18,9 @@ export * from './useImportAction';
 import { Plugin, useActionAvailable } from '@nocobase/client';
 import { ImportPluginProvider } from './ImportPluginProvider';
 import { importActionSchemaSettings } from './schemaSettings';
+import { ImportActionModel } from './models/ImportActionModel';
+
+export { buildImportFieldOptions } from './buildImportFieldOptions';
 
 export class PluginActionImportClient extends Plugin {
   async load() {
@@ -34,13 +37,15 @@ export class PluginActionImportClient extends Plugin {
           skipScopeCheck: true,
         },
       },
-      useVisible: () => useActionAvailable('import'),
+      useVisible: () => useActionAvailable('importXlsx'),
     };
 
     const tableActionInitializers = this.app.schemaInitializerManager.get('table:configureActions');
     tableActionInitializers?.add('enableActions.import', initializerData);
     this.app.schemaInitializerManager.addItem('gantt:configureActions', 'enableActions.import', initializerData);
     this.app.schemaSettingsManager.add(importActionSchemaSettings);
+
+    this.app.flowEngine.registerModels({ ImportActionModel });
   }
 }
 

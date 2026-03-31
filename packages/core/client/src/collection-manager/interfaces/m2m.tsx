@@ -55,6 +55,7 @@ export class M2MFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['belongsToMany'];
+  validationType = 'object';
   schemaInitialize(schema: ISchema, { field, readPretty, block, targetCollection }) {
     // schema['type'] = 'array';
     schema['x-component-props'] = schema['x-component-props'] || {};

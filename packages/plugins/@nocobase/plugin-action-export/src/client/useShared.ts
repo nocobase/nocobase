@@ -6,12 +6,12 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-import { Cascader, css, useCollection_deprecated } from '@nocobase/client';
+import { useCompile, css, useCollection_deprecated } from '@nocobase/client';
 import { useFields } from './useFields';
 
 export const useShared = () => {
   const { name } = useCollection_deprecated();
+  const compile = useCompile();
   const fields = useFields(name);
   return {
     schema: {
@@ -46,9 +46,8 @@ export const useShared = () => {
                   dataIndex: {
                     type: 'array',
                     'x-decorator': 'FormItem',
-                    'x-component': Cascader,
+                    'x-component': 'Cascader',
                     required: true,
-                    enum: fields,
                     'x-component-props': {
                       fieldNames: {
                         label: 'title',
@@ -57,6 +56,11 @@ export const useShared = () => {
                       },
                       // labelInValue: true,
                       changeOnSelect: false,
+                    },
+                    'x-use-component-props': () => {
+                      return {
+                        options: compile(fields),
+                      };
                     },
                   },
                   title: {

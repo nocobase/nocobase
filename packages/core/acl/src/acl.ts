@@ -16,11 +16,13 @@ import { ACLAvailableAction, AvailableActionOptions } from './acl-available-acti
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
-import FixedParamsManager, { Merger } from './fixed-params-manager';
-import SnippetManager, { SnippetOptions } from './snippet-manager';
 import { NoPermissionError } from './errors/no-permission-error';
+import FixedParamsManager, { Merger, GeneralMerger } from './fixed-params-manager';
+import SnippetManager, { SnippetOptions } from './snippet-manager';
+import { mergeAclActionParams, removeEmptyParams } from './utils';
+import Database from '@nocobase/database';
 
-interface CanResult {
+export interface CanResult {
   role: string;
   resource: string;
   action: string;
@@ -53,12 +55,21 @@ export interface ListenerContext {
 
 type Listener = (ctx: ListenerContext) => void;
 
+export type UserProvider = (args: { fields: string[] }) => Promise<any>;
+
+export interface ParseJsonTemplateOptions {
+  timezone?: string;
+  state?: any;
+  userProvider?: UserProvider;
+}
+
 interface CanArgs {
-  role: string;
+  role?: string;
   resource: string;
   action: string;
   rawResourceName?: string;
   ctx?: any;
+  roles?: string[];
 }
 
 export class ACL extends EventEmitter {
@@ -169,6 +180,10 @@ export class ACL extends EventEmitter {
     return this.roles.get(name);
   }
 
+  getRoles(names: string[]): ACLRole[] {
+    return names.map((name) => this.getRole(name)).filter((x) => Boolean(x));
+  }
+
   removeRole(name: string) {
     return this.roles.delete(name);
   }
@@ -202,11 +217,52 @@ export class ACL extends EventEmitter {
   }
 
   can(options: CanArgs): CanResult | null {
+    if (options.role) {
+      return lodash.cloneDeep(this.getCanByRole(options));
+    }
+    if (options.roles?.length) {
+      if (options.roles.includes('root')) {
+        options.roles = ['root'];
+      }
+      return lodash.cloneDeep(this.getCanByRoles(options));
+    }
+
+    return null;
+  }
+
+  private getCanByRoles(options: CanArgs) {
+    let canResult: CanResult | null = null;
+
+    for (const role of options.roles) {
+      const result = this.getCanByRole({
+        role,
+        ...options,
+      });
+      if (!canResult) {
+        canResult = result;
+        canResult && removeEmptyParams(canResult.params);
+      } else if (canResult && result) {
+        canResult.params = mergeAclActionParams(canResult.params, result.params);
+      }
+    }
+
+    return canResult;
+  }
+
+  private getCanByRole(options: CanArgs) {
     const { role, resource, action, rawResourceName } = options;
     const aclRole = this.roles.get(role);
 
     if (!aclRole) {
       return null;
+    }
+
+    if (role === 'root') {
+      return {
+        resource,
+        action,
+        role,
+      };
     }
 
     const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
@@ -297,6 +353,10 @@ export class ACL extends EventEmitter {
    * @deprecated
    */
   skip(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
+    if (!condition) {
+      condition = 'public';
+    }
+
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }
@@ -306,35 +366,12 @@ export class ACL extends EventEmitter {
     }
   }
 
-  /**
-   * @internal
-   */
-  async parseJsonTemplate(json: any, ctx: any) {
-    if (json.filter) {
-      ctx.logger?.info?.('parseJsonTemplate.raw', JSON.parse(JSON.stringify(json.filter)));
-      const timezone = ctx?.get?.('x-timezone');
-      const state = JSON.parse(JSON.stringify(ctx.state));
-      const filter = await parseFilter(json.filter, {
-        timezone,
-        now: new Date().toISOString(),
-        vars: {
-          ctx: {
-            state,
-          },
-          $user: getUser(ctx),
-          $nRole: () => state.currentRole,
-        },
-      });
-      json.filter = filter;
-      ctx.logger?.info?.('parseJsonTemplate.parsed', filter);
-    }
-    return json;
-  }
-
   middleware() {
     const acl = this;
 
     return async function ACLMiddleware(ctx, next) {
+      ctx.acl = acl;
+
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
 
@@ -351,9 +388,12 @@ export class ACL extends EventEmitter {
       }
 
       ctx.can = (options: Omit<CanArgs, 'role'>) => {
-        const canResult = acl.can({ role: roleName, ...options });
-
-        return canResult;
+        const roles = ctx.state.currentRoles || [roleName];
+        const can = acl.can({ roles, ...options });
+        if (!can) {
+          return null;
+        }
+        return can;
       };
 
       ctx.permission = {
@@ -370,7 +410,7 @@ export class ACL extends EventEmitter {
    * @internal
    */
   async getActionParams(ctx) {
-    const roleName = ctx.state.currentRole || 'anonymous';
+    const roleNames = ctx.state.currentRoles?.length ? ctx.state.currentRoles : 'anonymous';
     const { resourceName: rawResourceName, actionName } = ctx.action;
 
     let resourceName = rawResourceName;
@@ -386,11 +426,11 @@ export class ACL extends EventEmitter {
     }
 
     ctx.can = (options: Omit<CanArgs, 'role'>) => {
-      const can = this.can({ role: roleName, ...options });
-      if (!can) {
-        return null;
+      const can = this.can({ roles: roleNames, ...options });
+      if (can) {
+        return lodash.cloneDeep(can);
       }
-      return lodash.cloneDeep(can);
+      return null;
     };
 
     ctx.permission = {
@@ -402,26 +442,16 @@ export class ACL extends EventEmitter {
     await compose(this.middlewares.nodes)(ctx, async () => {});
   }
 
+  addGeneralFixedParams(merger: GeneralMerger) {
+    this.fixedParamsManager.addGeneralParams(merger);
+  }
+
   addFixedParams(resource: string, action: string, merger: Merger) {
     this.fixedParamsManager.addParams(resource, action, merger);
   }
 
   registerSnippet(snippet: SnippetOptions) {
     this.snippetManager.register(snippet);
-  }
-
-  /**
-   * @internal
-   */
-  filterParams(ctx, resourceName, params) {
-    if (params?.filter?.createdById) {
-      const collection = ctx.db.getCollection(resourceName);
-      if (!collection || !collection.getField('createdById')) {
-        throw new NoPermissionError('createdById field not found');
-      }
-    }
-
-    return params;
   }
 
   protected addCoreMiddleware() {
@@ -447,8 +477,18 @@ export class ACL extends EventEmitter {
 
         try {
           if (params && resourcerAction.mergeParams) {
-            const filteredParams = acl.filterParams(ctx, resourceName, params);
-            const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
+            const db = ctx.database ?? ctx.db;
+            const collection = db?.getCollection?.(resourceName);
+            checkFilterParams(collection, params?.filter);
+            const parsedFilter = await parseJsonTemplate(params.filter, {
+              state: ctx.state,
+              timezone: getTimezone(ctx),
+              userProvider: createUserProvider({
+                db: ctx.db,
+                currentUser: ctx.state?.currentUser,
+              }),
+            });
+            const parsedParams = params.filter ? { ...params, filter: parsedFilter ?? params.filter } : params;
 
             ctx.permission.parsedParams = parsedParams;
             ctx.log?.debug && ctx.log.debug('acl parsedParams', parsedParams);
@@ -510,23 +550,108 @@ export class ACL extends EventEmitter {
   }
 }
 
-function getUser(ctx) {
+function getTimezone(ctx: any) {
+  return ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
+}
+
+export function createUserProvider(options: {
+  db?: Database;
+  dataSourceManager?: any;
+  currentUser?: any;
+}): UserProvider {
+  const db = options.db ?? options.dataSourceManager?.dataSources?.get?.('main')?.collectionManager?.db;
+  const currentUser = options.currentUser;
   return async ({ fields }) => {
-    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
-    ctx.logger?.info('filter-parse: ', { userFields });
-    if (!ctx.state.currentUser) {
+    if (!db) {
       return;
     }
+    if (!currentUser) {
+      return;
+    }
+    const userFields = fields.filter((f) => f && db.getFieldByPath('users.' + f));
     if (!userFields.length) {
       return;
     }
-    const user = await ctx.db.getRepository('users').findOne({
-      filterByTk: ctx.state.currentUser.id,
+    const user = await db.getRepository('users').findOne({
+      filterByTk: currentUser.id,
       fields: userFields,
-    });
-    ctx.logger?.info('filter-parse: ', {
-      $user: user?.toJSON(),
     });
     return user;
   };
+}
+
+function containsCreatedByIdFilter(input: any, seen = new Set<any>()): boolean {
+  if (!input) {
+    return false;
+  }
+
+  if (Array.isArray(input)) {
+    return input.some((item) => containsCreatedByIdFilter(item, seen));
+  }
+
+  if (!lodash.isPlainObject(input)) {
+    return false;
+  }
+
+  if (seen.has(input)) {
+    return false;
+  }
+  seen.add(input);
+
+  for (const [key, value] of Object.entries(input)) {
+    if (isCreatedByIdKey(key)) {
+      return true;
+    }
+
+    if (containsCreatedByIdFilter(value, seen)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isCreatedByIdKey(key: string): boolean {
+  return key === 'createdById' || key.startsWith('createdById.') || key.startsWith('createdById$');
+}
+
+/**
+ * @internal
+ */
+export async function parseJsonTemplate(filter: any, options: ParseJsonTemplateOptions) {
+  if (!filter) {
+    return filter;
+  }
+
+  const timezone = options?.timezone;
+  const state = JSON.parse(JSON.stringify(options?.state || {}));
+  const parsedFilter = await parseFilter(filter, {
+    timezone,
+    now: new Date().toISOString(),
+    vars: {
+      ctx: {
+        state,
+      },
+      $user: options?.userProvider || (async () => undefined),
+      $nRole: () => state.currentRole,
+    },
+  });
+  return parsedFilter;
+}
+
+/**
+ * @internal
+ */
+export function checkFilterParams(collection, filter) {
+  if (!filter) {
+    return;
+  }
+
+  if (!containsCreatedByIdFilter(filter)) {
+    return;
+  }
+
+  if (!collection || !collection.getField('createdById')) {
+    throw new NoPermissionError('createdById field not found');
+  }
 }

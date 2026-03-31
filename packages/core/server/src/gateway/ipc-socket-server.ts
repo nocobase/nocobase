@@ -88,7 +88,7 @@ export class IPCSocketServer {
         const max = 300;
         let count = 0;
         const timer = setInterval(async () => {
-          status = AppSupervisor.getInstance().getAppStatus('main');
+          status = await AppSupervisor.getInstance().getAppStatus('main');
           if (status === 'running') {
             clearInterval(timer);
             resolve(status);

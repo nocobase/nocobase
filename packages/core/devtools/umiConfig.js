@@ -42,6 +42,7 @@ function getUmiConfig() {
       'process.env.API_BASE_URL': API_BASE_URL || API_BASE_PATH,
       'process.env.API_CLIENT_STORAGE_PREFIX': API_CLIENT_STORAGE_PREFIX,
       'process.env.API_CLIENT_STORAGE_TYPE': API_CLIENT_STORAGE_TYPE,
+      'process.env.API_CLIENT_SHARE_TOKEN': process.env.API_CLIENT_SHARE_TOKEN || 'false',
       'process.env.APP_ENV': process.env.APP_ENV,
       'process.env.VERSION': packageJson.version,
       'process.env.WEBSOCKET_URL': process.env.WEBSOCKET_URL,

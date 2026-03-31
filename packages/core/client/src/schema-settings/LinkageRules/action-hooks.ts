@@ -23,7 +23,7 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
     { label: t('Disabled'), value: ActionType.ReadOnly, selected: false, schema: {} },
     { label: t('Easy reading'), value: ActionType.ReadPretty, selected: false, schema: {} },
     { label: t('Hidden'), value: ActionType.None, selected: false, schema: {} },
-    { label: t('Hidden(reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
+    { label: t('Hidden (reserved value)'), value: ActionType.Hidden, selected: false, schema: {} },
     { label: t('Required'), value: ActionType.Required, selected: false, schema: {} },
     { label: t('Not required'), value: ActionType.InRequired, selected: false, schema: {} },
     { label: t('Value'), value: ActionType.Value, selected: false, schema: {} },
@@ -56,16 +56,6 @@ export const useLinkageCollectionFieldOptions = (collectionName: string, readPre
         operators?.filter?.((operator) => {
           if (nested || children || ['formula', 'richText', 'sequence'].includes(fieldInterface.name)) {
             return operator?.value !== ActionType.Value && operator?.value !== ActionType.Options;
-          }
-          if (!['select', 'radioGroup', 'multipleSelect', 'checkboxGroup'].includes(fieldInterface.name)) {
-            return operator?.value !== ActionType.Options;
-          }
-          if (
-            !['date', 'datetime', 'dateOnly', 'datetimeNoTz', 'unixTimestamp', 'createdAt', 'updatedAt'].includes(
-              fieldInterface.name,
-            )
-          ) {
-            return operator?.value !== ActionType.DateScope;
           }
           return true;
         }) || [],

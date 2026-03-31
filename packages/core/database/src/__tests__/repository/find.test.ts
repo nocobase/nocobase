@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import Database from '@nocobase/database';
-import { Collection } from '../../collection';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import qs from 'qs';
 
 describe('find with associations', () => {
   let db: Database;
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
 
     await db.clean({ drop: true });
   });
@@ -573,7 +571,7 @@ describe('repository find', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     User = db.collection<{ id: number; name: string }, { name: string }>({
       name: 'users',

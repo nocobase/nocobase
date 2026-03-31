@@ -25,7 +25,7 @@ export default abstract class QueryInterface {
 
   abstract collectionTableExists(collection: Collection, options?: Transactionable): Promise<boolean>;
 
-  abstract listViews();
+  abstract listViews(options?: { schema?: string });
 
   abstract viewDef(viewName: string): Promise<string>;
 
@@ -82,5 +82,10 @@ export default abstract class QueryInterface {
   public quoteIdentifier(identifier: string) {
     // @ts-ignore
     return this.db.sequelize.getQueryInterface().queryGenerator.quoteIdentifier(identifier);
+  }
+
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    const dialect = this.db.sequelize.getDialect();
+    throw new Error(`Filtering by many to many (array) associations is not supported on ${dialect}`);
   }
 }

@@ -62,8 +62,13 @@ export const TabsDesigner = () => {
           });
         }}
       />
-      <SchemaSettingsDivider />
-      <SchemaSettingsRemove />
+      {/* if it is created by template, do not show remove button */}
+      {fieldSchema['x-template-uid'] ? null : (
+        <>
+          <SchemaSettingsDivider />
+          <SchemaSettingsRemove />
+        </>
+      )}
     </GeneralSchemaDesigner>
   );
 };

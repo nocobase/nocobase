@@ -1,18 +1,20 @@
 {
   "name": "@nocobase/plugin-kanban",
-  "version": "1.7.0-beta.1",
+  "version": "2.1.0-beta.11",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-kanban",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",
-  "license": "AGPL-3.0",
+  "license": "Apache-2.0",
   "displayName": "Block: Kanban",
+  "displayName.ru-RU": "Блок: Канбан",
   "displayName.zh-CN": "区块：看板",
   "description": "Provides kanban block.",
+  "description.ru-RU": "Предоставляет блок канбан.",
   "description.zh-CN": "提供看板区块。",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "devDependencies": {
     "react-intersection-observer": "^9.8.1"

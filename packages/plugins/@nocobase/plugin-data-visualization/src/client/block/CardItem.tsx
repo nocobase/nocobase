@@ -7,12 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { CardItem, useToken, withDynamicSchemaProps } from '@nocobase/client';
+import { useFieldSchema } from '@formily/react';
+import { CardItem, NocoBaseRecursionField, useMobileLayout, useToken, withDynamicSchemaProps } from '@nocobase/client';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
+import React, { useMemo } from 'react';
 
 export const ChartCardItem = withDynamicSchemaProps(
   (props) => {
     const { token } = useToken();
+    const filedSchema = useFieldSchema();
+    const { isMobileLayout } = useMobileLayout();
+    const schema = useMemo(
+      () => (isMobileLayout ? transformMultiColumnToSingleColumn(filedSchema, isAntdStatistic) : filedSchema),
+      [isMobileLayout, filedSchema],
+    );
     return (
       <CardItem
         className="nb-chart-block"
@@ -22,7 +30,7 @@ export const ChartCardItem = withDynamicSchemaProps(
         }}
         {...props}
       >
-        {props.children}
+        <NocoBaseRecursionField schema={schema} onlyRenderProperties />
       </CardItem>
     );
   },
@@ -30,3 +38,16 @@ export const ChartCardItem = withDynamicSchemaProps(
     displayName: 'ChartCardItem',
   },
 );
+
+function isAntdStatistic(columnSchema: any) {
+  const chartBlock = Object.values(columnSchema.properties || {})[0];
+
+  if (
+    chartBlock?.['x-decorator'] === 'ChartRendererProvider' &&
+    chartBlock?.['x-decorator-props']?.config?.chartType === 'antd.statistic'
+  ) {
+    return true;
+  }
+
+  return false;
+}

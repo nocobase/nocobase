@@ -50,26 +50,12 @@ export function SchemaSettingsConnectDataBlocks(props) {
   }
 
   const Content = dataBlocks.map((block) => {
-    const title = `${compile(block.collection.title)} #${block.uid.slice(0, 4)}`;
+    const title = `${compile(block.collection.title)} ${block.uid ? `#${block.uid.slice(0, 4)}` : ''}`;
     const onHover = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = 'block';
-      }
-      dom.style.boxShadow = '0 0 10px rgba(0, 0, 0, 0.2)';
-      dom.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+      block.highlightBlock();
     };
     const onLeave = () => {
-      const dom = block.dom;
-      const designer = dom.querySelector('.general-schema-designer') as HTMLElement;
-      if (designer) {
-        designer.style.display = null;
-      }
-      dom.style.boxShadow = 'none';
+      block.unhighlightBlock();
     };
     if (isSameCollection(block.collection, collection)) {
       return (
@@ -108,7 +94,10 @@ export function SchemaSettingsConnectDataBlocks(props) {
         title={title}
         value={target?.field || ''}
         options={[
-          ...getSupportFieldsByAssociation(getAllCollectionsInheritChain(collection.name), block).map((field) => {
+          ...getSupportFieldsByAssociation(
+            getAllCollectionsInheritChain(collection.name, collection.dataSource),
+            block,
+          ).map((field) => {
             return {
               label: compile(field.uiSchema.title) || field.name,
               value: `${field.name}.${getTargetKey(field)}`,

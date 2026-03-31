@@ -7,15 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaComponentOptions } from '@nocobase/client';
+import { ExtendCollectionsProvider, SchemaComponentOptions } from '@nocobase/client';
 import React, { FC } from 'react';
 import * as hooks from './hooks';
 import { UploadActionInitializer } from './initializers';
+import attachmentsCollection from '../common/collections/attachments';
+import storagesCollection from '../common/collections/storages';
 
 export const FileManagerProvider: FC = (props) => {
   return (
-    <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
-      {props.children}
-    </SchemaComponentOptions>
+    <ExtendCollectionsProvider collections={[attachmentsCollection, storagesCollection]}>
+      <SchemaComponentOptions scope={hooks} components={{ UploadActionInitializer }}>
+        {props.children}
+      </SchemaComponentOptions>
+    </ExtendCollectionsProvider>
   );
 };

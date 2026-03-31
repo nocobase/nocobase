@@ -12,6 +12,7 @@ import { Tooltip } from 'antd';
 import React, { useContext, useMemo } from 'react';
 import { CollectionFieldOptions_deprecated } from '../../../collection-manager';
 import { useCollectionManager } from '../../../data-source/collection/CollectionManagerProvider';
+import { FlagContext } from '../../../flag-provider';
 import { useCompile, useGetFilterOptions } from '../../../schema-component';
 import { isSpecialCaseField } from '../../../schema-component/antd/form-item/hooks/useSpecialCase';
 import { FieldOption, Option } from '../type';
@@ -87,6 +88,8 @@ interface BaseProps {
    */
   deprecated?: boolean;
   tooltip?: string;
+  /**支持的操作符 */
+  operators?: any[];
 }
 
 interface BaseVariableProviderProps {
@@ -121,7 +124,7 @@ const getChildren = (
 ): Option[] => {
   const result = options
     .map((option): Option => {
-      if (!option.target || option.target === 'chinaRegions') {
+      if (!option.target || option.target === 'chinaRegions' || option.interface === 'attachmentURL') {
         return {
           key: option.name,
           value: option.name,
@@ -133,6 +136,8 @@ const getChildren = (
               : isDisabled({ option, collectionField, uiSchema, targetFieldSchema, getCollectionField })),
           isLeaf: true,
           depth,
+          operators: option?.operators,
+          schema: option?.schema,
         };
       }
 
@@ -197,22 +202,23 @@ export const useBaseVariable = ({
   returnFields = (fields) => fields,
   deprecated,
   tooltip,
+  operators = [],
 }: BaseProps) => {
   const compile = useCompile();
   const getFilterOptions = useGetFilterOptions();
   const { isDisabled } = useContext(BaseVariableContext) || {};
+  const { isLeftVariable } = useContext(FlagContext) || {};
   const cm = useCollectionManager();
-
   const loadChildren = (option: Option): Promise<void> => {
     if (!option.field?.target) {
       return Promise.resolve(void 0);
     }
-
     const target = option.field.target;
     return new Promise((resolve) => {
       setTimeout(() => {
         const usedInVariable = true;
         const children = (
+          (isLeftVariable && target === 'attachments' && compile(option.field?.children)) ||
           getChildren(returnFields(getFilterOptions(target, dataSource, usedInVariable), option), {
             collectionField,
             uiSchema,
@@ -225,7 +231,8 @@ export const useBaseVariable = ({
             isDisabled: isDisabled || isDisabledDefault,
             getCollectionField: cm.getCollectionField,
             deprecated,
-          }) || []
+          }) ||
+          []
         )
           // 将叶子节点排列在上面，方便用户选择
           .sort((a, b) => {
@@ -247,7 +254,6 @@ export const useBaseVariable = ({
             }
             return 0;
           });
-
         if (children.length === 0) {
           option.disabled = true;
           option.isLeaf = true;
@@ -276,6 +282,7 @@ export const useBaseVariable = ({
       children: [],
       disabled: !!deprecated,
       deprecated,
+      operators,
     } as Option;
   }, [uiSchema?.['x-component']]);
 

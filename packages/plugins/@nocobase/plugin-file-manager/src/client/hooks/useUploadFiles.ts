@@ -20,7 +20,7 @@ import { useStorageUploadProps } from './useStorageUploadProps';
 
 export const useUploadFiles = () => {
   const { getDataBlockRequest } = useDataBlockRequestGetter();
-  const { association } = useDataBlockProps();
+  const { association } = useDataBlockProps() || {};
   const { setVisible } = useActionContext();
   const collection = useCollection();
   const sourceId = useSourceId();

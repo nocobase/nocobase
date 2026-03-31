@@ -11,22 +11,48 @@ import { LoadingOutlined } from '@ant-design/icons';
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import { Input as AntdInput } from 'antd';
 import { InputProps, TextAreaProps } from 'antd/es/input';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { JSONTextAreaProps, Json } from './Json';
 import { InputReadPrettyComposed, ReadPretty } from './ReadPretty';
-
+import { ScanInput } from './ScanInput';
 export { ReadPretty as InputReadPretty } from './ReadPretty';
 
-type ComposedInput = React.FC<InputProps> & {
+type ComposedInput = React.FC<NocoBaseInputProps> & {
   ReadPretty: InputReadPrettyComposed['Input'];
   TextArea: React.FC<TextAreaProps> & { ReadPretty: InputReadPrettyComposed['TextArea'] };
   URL: React.FC<InputProps> & { ReadPretty: InputReadPrettyComposed['URL'] };
   JSON: React.FC<JSONTextAreaProps> & { ReadPretty: InputReadPrettyComposed['JSON'] };
 };
 
+export type NocoBaseInputProps = InputProps & {
+  trim?: boolean;
+  disableManualInput?: boolean;
+  enableScan?: boolean;
+};
+
+function InputInner(props: NocoBaseInputProps) {
+  const { onChange, trim, enableScan, ...others } = props;
+
+  const handleChange = useCallback(
+    (ev: React.ChangeEvent<HTMLInputElement>) => {
+      if (trim) {
+        ev.target.value = ev.target.value.trim();
+      }
+      onChange?.(ev);
+    },
+    [onChange, trim],
+  );
+  if (enableScan) {
+    return <ScanInput {...others} onChange={handleChange} />;
+  }
+  return <AntdInput {...others} onChange={handleChange} />;
+}
+
+InputInner.Password = AntdInput.Password;
+
 export const Input: ComposedInput = Object.assign(
   connect(
-    AntdInput,
+    InputInner,
     mapProps((props, field) => {
       return {
         ...props,

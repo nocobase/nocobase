@@ -1,0 +1,206 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Início rápido",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão geral do desenvolvimento de plugins",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "Escrever o primeiro plugin",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Estrutura de diretórios do projeto",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Desenvolvimento do lado do servidor",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão Geral",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections (Tabelas de dados)",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database (Operações de banco de dados)",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager (Gerenciamento de fontes de dados)",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager (Gerenciamento de recursos)",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL (Controle de acesso)",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cache",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event (Evento)",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context (Contexto da requisição)",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration (Script de atualização)",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger (Log)",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n (Internacionalização)",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command (Linha de comando)",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager (Gerenciamento de tarefas agendadas)",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test (Teste)",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Desenvolvimento do lado do cliente",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão Geral",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context (Contexto)",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router (Rotas)",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL (Controle de acesso)",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager (Gerenciamento de fontes de dados)",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resource (Recurso)",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Request (Requisição)",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "Estilos e temas",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger (Log)",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n (Internacionalização)",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test (Teste)",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Outros",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Guia de atualização de plugins",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lista de idiomas",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gerenciamento de dependências",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Build",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

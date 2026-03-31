@@ -10,13 +10,14 @@
 import { PlusOutlined, DownOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
 import { ActionContext, i18n, SchemaComponent, useCompile, usePlugin, useRecord } from '@nocobase/client';
-import { Button, Card, Dropdown } from 'antd';
+import { Button, Card, Dropdown, message } from 'antd';
 import _ from 'lodash';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import FileManagerPlugin from '.';
 import { storageSchema } from './schemas/storage';
 import { storageTypes } from './schemas/storageTypes';
+import { NAMESPACE, useFmTranslation } from './locale';
 
 export const CreateStorage = () => {
   const [schema, setSchema] = useState({});
@@ -98,66 +99,75 @@ export const EditStorage = () => {
   const compile = useCompile();
   const [visible, setVisible] = useState(false);
   const { t } = useTranslation();
-  return (
-    <div>
-      <ActionContext.Provider value={{ visible, setVisible }}>
-        <a
-          onClick={() => {
-            setVisible(true);
-            const storageType = plugin.storageTypes.get(record.type);
-            if (storageType.fieldset['default']) {
-              storageType.fieldset['default']['x-reactions'] = (field) => {
-                if (field.initialValue) {
-                  field.disabled = true;
-                } else {
-                  field.disabled = false;
-                }
-              };
-            }
-            setSchema({
-              type: 'object',
+  const [messageApi, contextHolder] = message.useMessage();
+
+  const onEdit = useCallback(() => {
+    const storageType = plugin.storageTypes.get(record.type);
+    if (!storageType) {
+      messageApi.error(
+        t('Storage type {{type}} is not registered, please check if related plugin is enabled.', {
+          ns: NAMESPACE,
+          type: record.type,
+        }),
+      );
+      return;
+    }
+    setVisible(true);
+    if (storageType.fieldset['default']) {
+      storageType.fieldset['default']['x-reactions'] = (field) => {
+        if (field.initialValue) {
+          field.disabled = true;
+        } else {
+          field.disabled = false;
+        }
+      };
+    }
+    setSchema({
+      type: 'object',
+      properties: {
+        [uid()]: {
+          type: 'void',
+          'x-component': 'Action.Drawer',
+          'x-decorator': 'Form',
+          'x-decorator-props': {
+            initialValue: {
+              ...record,
+            },
+          },
+          title: compile("{{t('Edit')}}") + ' - ' + compile(storageType.title),
+          properties: {
+            ..._.cloneDeep(storageType.fieldset),
+            footer: {
+              type: 'void',
+              'x-component': 'Action.Drawer.Footer',
               properties: {
-                [uid()]: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    initialValue: {
-                      ...record,
-                    },
+                cancel: {
+                  title: '{{t("Cancel")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    useAction: '{{ cm.useCancelAction }}',
                   },
-                  title: compile("{{t('Edit')}}") + ' - ' + compile(storageType.title),
-                  properties: {
-                    ..._.cloneDeep(storageType.fieldset),
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
-                          },
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useUpdateAction }}',
-                          },
-                        },
-                      },
-                    },
+                },
+                submit: {
+                  title: '{{t("Submit")}}',
+                  'x-component': 'Action',
+                  'x-component-props': {
+                    type: 'primary',
+                    useAction: '{{ cm.useUpdateAction }}',
                   },
                 },
               },
-            });
-          }}
-        >
-          {t('Edit')}
-        </a>
+            },
+          },
+        },
+      },
+    });
+  }, [compile, plugin.storageTypes, record]);
+  return (
+    <div>
+      {contextHolder}
+      <ActionContext.Provider value={{ visible, setVisible }}>
+        <a onClick={onEdit}>{t('Edit')}</a>
         <SchemaComponent scope={{ createOnly: false }} schema={schema} />
       </ActionContext.Provider>
     </div>

@@ -85,7 +85,7 @@ export class WSServer extends EventEmitter {
 
         client.tags.add(`app#${handleAppName}`);
 
-        AppSupervisor.getInstance().bootStrapApp(handleAppName);
+        AppSupervisor.getInstance().bootstrapApp(handleAppName);
       });
     });
 
@@ -112,6 +112,7 @@ export class WSServer extends EventEmitter {
 
       const payload = getPayloadByErrorCode(status, {
         app,
+        appName,
         message,
         command,
       });
@@ -187,6 +188,21 @@ export class WSServer extends EventEmitter {
       );
     });
 
+    app.on('ws:sendToUser', ({ userId, message }) => {
+      this.sendToAppUser(app.name, userId, message);
+      app.logger.trace(`[broadcasting message] ws:sendToUser for user ${userId}`, { message });
+      app.pubSubManager.publish(
+        'ws:sendToUser',
+        {
+          userId,
+          message,
+        },
+        {
+          skipSelf: true,
+        },
+      );
+    });
+
     app.on('ws:sendToClient', ({ clientId, message }) => {
       this.sendToClient(clientId, message);
     });
@@ -201,6 +217,13 @@ export class WSServer extends EventEmitter {
 
     app.on('ws:authorized', ({ clientId, userId }) => {
       this.sendToClient(clientId, { type: 'authorized' });
+    });
+
+    app.on('afterLoad', () => {
+      app.pubSubManager.subscribe('ws:sendToUser', ({ userId, message }) => {
+        app.logger.debug(`[receive broadcasting message] ws:sendToUser for user ${userId}`, { message });
+        this.sendToAppUser(app.name, userId, message);
+      });
     });
   }
 
@@ -231,6 +254,9 @@ export class WSServer extends EventEmitter {
 
   removeClientTag(clientId: string, tagKey: string) {
     const client = this.webSocketClients.get(clientId);
+    if (!client) {
+      return;
+    }
     // remove all tags with the given tagKey
     client.tags.forEach((tag) => {
       if (tag.startsWith(`${tagKey}#`)) {
@@ -254,7 +280,7 @@ export class WSServer extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleAppName);
+      AppSupervisor.getInstance().bootstrapApp(handleAppName);
     }
   }
 

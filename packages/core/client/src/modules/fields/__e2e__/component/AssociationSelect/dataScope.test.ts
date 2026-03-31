@@ -53,7 +53,7 @@ test.describe('AssociationSelect ', () => {
       .getByLabel('block-item-CollectionField-test-form-test.b-b')
       .getByTestId('select-object-multiple')
       .click();
-    await expect(page.getByText('No data')).toBeVisible();
+    await expect(page.getByText('No data').last()).toBeVisible();
 
     // 2. 当给字段 a 选择一个值后，字段 b 的下拉列表中会显示符合条件的值
     await page
@@ -87,7 +87,7 @@ test.describe('AssociationSelect ', () => {
       .getByLabel('block-item-CollectionField-test-form-test.a-a')
       .getByTestId('select-object-multiple')
       .click();
-    await page.getByRole('option', { name: record.a[1].id }).click();
+    await page.getByRole('option', { name: record.a[1].id, exact: true }).click();
     await page.click('body', {
       position: {
         x: 0,

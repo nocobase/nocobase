@@ -269,6 +269,7 @@ export function buildLocale(cwd: string, userConfig: UserConfig, log: PkgLog) {
       outDir,
       format: 'cjs',
       skipNodeModulesBundle: true,
+      loader: { '.json': 'copy' },
     }),
   );
 }

@@ -107,20 +107,30 @@ export const SchemaSettingsLayoutItem = function LayoutItem() {
                 },
               },
             },
+            colon: {
+              type: 'boolean',
+              'x-content': t('Colon'),
+              required: true,
+              default: fieldSchema?.['x-component-props']?.colon !== false,
+              'x-decorator': 'FormItem',
+              'x-component': 'Checkbox',
+            },
           },
         } as ISchema
       }
-      onSubmit={({ layout, labelAlign, labelWidth, labelWrap }) => {
+      onSubmit={({ layout, labelAlign, labelWidth, labelWrap, colon }) => {
         const componentProps = fieldSchema['x-component-props'] || {};
         componentProps.layout = layout;
         componentProps.labelAlign = labelAlign;
         componentProps.labelWidth = layout === 'horizontal' ? labelWidth : null;
         componentProps.labelWrap = labelWrap;
+        componentProps.colon = colon;
         fieldSchema['x-component-props'] = componentProps;
         field.componentProps.layout = layout;
         field.componentProps.labelAlign = labelAlign;
         field.componentProps.labelWidth = labelWidth;
         field.componentProps.labelWrap = labelWrap;
+        field.componentProps.colon = colon;
         dn.emit('patch', {
           schema: {
             ['x-uid']: fieldSchema['x-uid'],

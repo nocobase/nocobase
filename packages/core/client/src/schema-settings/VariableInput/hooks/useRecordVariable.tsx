@@ -90,7 +90,10 @@ export const useCurrentRecordContext = () => {
     /** 变量值 */
     currentRecordCtx: ctx?.recordData || formRecord?.data || recordData,
     /** 用于判断是否需要显示配置项 */
-    shouldDisplayCurrentRecord: !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) || !!formRecord?.data,
+    shouldDisplayCurrentRecord:
+      !_.isEmpty(_.omit(recordData, ['__collectionName', '__parent'])) ||
+      !!formRecord?.data ||
+      blockType === 'taleColumn',
     /** 当前记录对应的 collection name */
     collectionName: realCollectionName,
     /** 块类型 */
@@ -116,7 +119,7 @@ export const useCurrentRecordVariable = (props: Props = {}) => {
     collectionName,
     noDisabled: props.noDisabled,
     targetFieldSchema: props.targetFieldSchema,
-    deprecated: blockType === 'form',
+    deprecated: blockType === 'form' && !shouldDisplayCurrentRecord,
     tooltip: blockType === 'form' ? t('This variable has been deprecated and can be replaced with "Current form"') : '',
     dataSource,
   });

@@ -9,22 +9,11 @@
 
 import { ExtendCollectionsProvider, storePopupContext } from '@nocobase/client';
 import React, { FC } from 'react';
-import { getWorkflowTodoViewActionSchema } from './WorkflowTodo';
 import { TaskStatusOptions } from '../common/constants';
 import { NAMESPACE } from '../locale';
+import { getWorkflowTodoViewActionSchema } from './WorkflowTodo';
 
-const workflowCollection = {
-  title: `{{t("Workflow", { ns: "workflow" })}}`,
-  name: 'workflows',
-  fields: [
-    {
-      type: 'string',
-      name: 'title',
-    },
-  ],
-};
-
-const todoCollection = {
+export const todoCollection = {
   title: `{{t("Workflow todos", { ns: "${NAMESPACE}" })}}`,
   name: 'workflowManualTasks',
   fields: [
@@ -122,11 +111,7 @@ const todoCollection = {
  * @returns
  */
 export const WorkflowManualProvider: FC = (props) => {
-  return (
-    <ExtendCollectionsProvider collections={[workflowCollection, todoCollection]}>
-      {props.children}
-    </ExtendCollectionsProvider>
-  );
+  return <ExtendCollectionsProvider collections={[todoCollection]}>{props.children}</ExtendCollectionsProvider>;
 };
 
 /**
@@ -137,10 +122,14 @@ function cacheSchema(collectionNameList: string[]) {
     const defaultOpenMode = isMobile() ? 'page' : 'modal';
     const workflowTodoViewActionSchema = getWorkflowTodoViewActionSchema({ defaultOpenMode, collectionName });
 
-    storePopupContext(workflowTodoViewActionSchema['x-uid'], {
-      schema: workflowTodoViewActionSchema,
-      ...workflowTodoViewActionSchema['x-action-context'],
-    });
+    storePopupContext(
+      workflowTodoViewActionSchema['x-uid'],
+      {
+        schema: workflowTodoViewActionSchema,
+        ...workflowTodoViewActionSchema['x-action-context'],
+      },
+      true,
+    );
   });
 }
 

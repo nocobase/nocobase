@@ -7,36 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { observer } from '@formily/reactive-react';
-import { Schema } from '@formily/react';
-import { Layout, List, Badge, Button, Flex, Tabs, ConfigProvider, theme } from 'antd';
 import { css } from '@emotion/css';
+import { Schema } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
+import { useApp } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
+import { Badge, Button, Flex, Layout, List, theme } from 'antd';
+import React, { useCallback, useEffect } from 'react';
 import { useLocalTranslation } from '../../locale';
 import {
-  fetchChannels,
-  selectedChannelNameObs,
   channelListObs,
-  isFetchingChannelsObs,
-  showChannelLoadingMoreObs,
-  selectedMessageListObs,
   channelStatusFilterObs,
-  ChannelStatus,
+  fetchChannels,
+  inboxVisible,
+  isFetchingChannelsObs,
+  selectedChannelNameObs,
+  showChannelLoadingMoreObs,
 } from '../observables';
-import MessageList from './MessageList';
 import FilterTab from './FilterTab';
-import { useApp } from '@nocobase/client';
+import MessageList from './MessageList';
 
 const InnerInboxContent = () => {
   const app = useApp();
   const { token } = theme.useToken();
   const { t } = useLocalTranslation();
   const channels = channelListObs.value;
-  const messages = selectedMessageListObs.value;
   const selectedChannelName = selectedChannelNameObs.value;
 
-  const onLoadChannelsMore = () => {
+  const onLoadChannelsMore = useCallback(() => {
     const filter: Record<string, any> = {};
     const lastChannel = channels[channels.length - 1];
     if (lastChannel?.latestMsgReceiveTimestamp) {
@@ -45,7 +43,13 @@ const InnerInboxContent = () => {
       };
     }
     fetchChannels({ filter, limit: 30 });
-  };
+  }, [channels]);
+
+  useEffect(() => {
+    if (inboxVisible.value) {
+      fetchChannels({ limit: 30 });
+    }
+  }, [inboxVisible.value]);
 
   const loadChannelsMore = showChannelLoadingMoreObs.value ? (
     <div
@@ -130,7 +134,7 @@ const InnerInboxContent = () => {
                       color: textColor,
                     }}
                   >
-                    {dayjs(item.latestMsgReceiveTimestamp).fromNow()}
+                    {dayjs(Number.parseInt(item.latestMsgReceiveTimestamp.toString(), 10)).fromNow()}
                   </div>
                 </Flex>
                 <Flex justify="space-between" style={{ width: '100%', marginTop: token.margin }}>

@@ -39,6 +39,7 @@ export default {
     {
       type: 'belongsToMany',
       name: 'tags',
+      through: 'postsTags',
     },
     {
       type: 'integer',

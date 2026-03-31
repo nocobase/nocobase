@@ -14,14 +14,24 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Router } from 'react-router-dom';
 import { SchemaInitializerItem } from '../../application';
+import {
+  CollectionManagerProvider,
+  useCollectionManager,
+} from '../../data-source/collection/CollectionManagerProvider';
+import {
+  DataSourceManagerProvider,
+  useDataSourceManager,
+} from '../../data-source/data-source/DataSourceManagerProvider';
 import { useGlobalTheme } from '../../global-theme';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,
+  ICON_POPUP_Z_INDEX,
   SchemaComponent,
   SchemaComponentOptions,
   useNocoBaseRoutes,
   useParentRoute,
+  zIndexContext,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 import { useURLAndHTMLSchema } from '../actions/link/useURLAndHTMLSchema';
@@ -31,9 +41,11 @@ export const LinkMenuItem = () => {
   const options = useContext(SchemaOptionsContext);
   const { theme } = useGlobalTheme();
   const { componentCls, hashId } = useStyles();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const parentRoute = useParentRoute();
   const { createRoute } = useNocoBaseRoutes();
+  const dm = useDataSourceManager();
+  const cm = useCollectionManager();
 
   const handleClick = useCallback(async () => {
     const values = await FormDialog(
@@ -41,38 +53,46 @@ export const LinkMenuItem = () => {
       () => {
         const history = createMemoryHistory();
         return (
-          <Router location={history.location} navigator={history}>
-            <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
-              <FormLayout layout={'vertical'}>
-                <SchemaComponent
-                  schema={{
-                    properties: {
-                      title: {
-                        title: t('Menu item title'),
-                        required: true,
-                        'x-component': 'Input',
-                        'x-decorator': 'FormItem',
-                      },
-                      icon: {
-                        title: t('Icon'),
-                        'x-component': 'IconPicker',
-                        'x-decorator': 'FormItem',
-                      },
-                      href: urlSchema,
-                      params: paramsSchema,
-                    },
-                  }}
-                />
-              </FormLayout>
-            </SchemaComponentOptions>
-          </Router>
+          <DataSourceManagerProvider dataSourceManager={dm}>
+            <CollectionManagerProvider instance={cm} dataSource={cm?.dataSource?.key}>
+              <Router location={history.location} navigator={history}>
+                <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
+                  <FormLayout layout={'vertical'}>
+                    {/* 防止图标弹窗被遮挡 */}
+                    <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                      <SchemaComponent
+                        schema={{
+                          properties: {
+                            title: {
+                              title: t('Menu item title'),
+                              required: true,
+                              'x-component': 'Input',
+                              'x-decorator': 'FormItem',
+                            },
+                            icon: {
+                              title: t('Icon'),
+                              'x-component': 'IconPicker',
+                              'x-decorator': 'FormItem',
+                            },
+                            href: urlSchema,
+                            params: paramsSchema,
+                            openInNewWindow: openInNewWindowSchema,
+                          },
+                        }}
+                      />
+                    </zIndexContext.Provider>
+                  </FormLayout>
+                </SchemaComponentOptions>
+              </Router>
+            </CollectionManagerProvider>
+          </DataSourceManagerProvider>
         );
       },
       theme,
     ).open({
-      initialValues: {},
+      initialValues: { openInNewWindow: true },
     });
-    const { title, href, params, icon } = values;
+    const { title, href, params, icon, openInNewWindow } = values;
 
     // 创建一个路由到 desktopRoutes 表中
     await createRoute({
@@ -83,6 +103,7 @@ export const LinkMenuItem = () => {
       options: {
         href,
         params,
+        openInNewWindow,
       },
     });
   }, [options.components, options.scope, t, theme]);

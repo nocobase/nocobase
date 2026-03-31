@@ -1,0 +1,61 @@
+FROM node:20-bookworm-slim as builder
+
+ARG CNA_VERSION=latest
+
+WORKDIR /app
+
+RUN cd /app \
+  && yarn config set network-timeout 600000 -g \
+  && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
+  && cd /app/my-nocobase-app \
+  && yarn install --production \
+  && rm -rf yarn.lock \
+  && find node_modules -type f -name "yarn.lock" -delete \
+  && find node_modules -type f -name "bower.json" -delete \
+  && find node_modules -type f -name "composer.json" -delete
+
+RUN cd /app \
+  && rm -rf nocobase.tar.gz \
+  && tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+
+FROM node:20-bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  nginx \
+  libaio1 \
+  postgresql-client-16 \
+  postgresql-client-17 \
+  libfreetype6 \
+  fontconfig \
+  libgssapi-krb5-2 \
+  fonts-liberation \
+  fonts-noto-cjk \
+  unzip \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN rm -rf /etc/nginx/sites-enabled/default
+COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
+
+RUN wget --no-check-certificate -O /opt/libreoffice24.8.zip https://static-docs.nocobase.com/libreoffice24.8.zip
+RUN wget --no-check-certificate -O /opt/instantclient_19_25.zip https://download.oracle.com/otn_software/linux/instantclient/1925000/instantclient-basic-linux.x64-19.25.0.0.0dbru.zip
+RUN wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+  dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+  cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+  cp /tmp/mysql-client/usr/bin/mysql /usr/bin/ && \
+  rm mysql-community-client-core_8.0.39-1debian12_amd64.deb
+
+WORKDIR /app/nocobase
+
+COPY docker-entrypoint.sh /app/
+# COPY docker-entrypoint.sh /usr/local/bin/
+# ENTRYPOINT ["docker-entrypoint.sh"]
+
+EXPOSE 80/tcp
+
+CMD ["/app/docker-entrypoint.sh"]

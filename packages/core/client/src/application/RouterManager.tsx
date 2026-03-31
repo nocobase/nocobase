@@ -9,6 +9,7 @@
 
 import { get, set } from 'lodash';
 import React, { ComponentType, createContext, useContext } from 'react';
+import { matchRoutes, useParams } from 'react-router';
 import {
   BrowserRouterProps,
   createBrowserRouter,
@@ -25,6 +26,7 @@ import VariablesProvider from '../variables/VariablesProvider';
 import { Application } from './Application';
 import { CustomRouterContextProvider } from './CustomRouterContextProvider';
 import { BlankComponent, RouterContextCleaner } from './components';
+import { RouterBridge } from './components/RouterBridge';
 
 export interface BrowserRouterOptions extends Omit<BrowserRouterProps, 'children'> {
   type?: 'browser';
@@ -42,6 +44,7 @@ export type RouterOptions = (HashRouterOptions | BrowserRouterOptions | MemoryRo
 export type ComponentTypeAndString<T = any> = ComponentType<T> | string;
 export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
   Component?: ComponentTypeAndString;
+  skipAuthCheck?: boolean;
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
@@ -49,7 +52,7 @@ export class RouterManager {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: Application;
-  private router;
+  public router;
   get basename() {
     return this.router.basename;
   }
@@ -134,6 +137,18 @@ export class RouterManager {
     this.options.basename = basename;
   }
 
+  matchRoutes(pathname: string) {
+    const routes = Object.values(this.routes);
+    // @ts-ignore
+    return matchRoutes<RouteType>(routes, pathname, this.basename);
+  }
+
+  isSkippedAuthCheckRoute(pathname: string) {
+    const matchedRoutes = this.matchRoutes(pathname);
+    return matchedRoutes.some((match) => {
+      return match?.route?.skipAuthCheck === true;
+    });
+  }
   /**
    * @internal
    */
@@ -153,14 +168,17 @@ export class RouterManager {
     const Provider = () => {
       const BaseLayout = useContext(BaseLayoutContext);
       return (
-        <CustomRouterContextProvider>
-          <BaseLayout>
-            <VariablesProvider>
-              <Outlet />
-              {children}
-            </VariablesProvider>
-          </BaseLayout>
-        </CustomRouterContextProvider>
+        <>
+          <RouterBridge app={this.app} />
+          <CustomRouterContextProvider>
+            <BaseLayout>
+              <VariablesProvider>
+                <Outlet />
+                {children}
+              </VariablesProvider>
+            </BaseLayout>
+          </CustomRouterContextProvider>
+        </>
       );
     };
 
@@ -185,7 +203,12 @@ export class RouterManager {
       return (
         <BaseLayoutContext.Provider value={BaseLayout}>
           <RouterContextCleaner>
-            <RouterProvider router={this.router} />
+            <RouterProvider
+              future={{
+                v7_startTransition: true,
+              }}
+              router={this.router}
+            />
           </RouterContextCleaner>
         </BaseLayoutContext.Provider>
       );
@@ -195,7 +218,13 @@ export class RouterManager {
   }
 
   add(name: string, route: RouteType) {
-    this.routes[name] = route;
+    this.routes[name] = {
+      id: name,
+      ...route,
+      handle: {
+        path: route.path,
+      },
+    };
   }
 
   get(name: string) {

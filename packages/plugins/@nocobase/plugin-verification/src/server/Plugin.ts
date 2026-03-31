@@ -7,86 +7,90 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import path from 'path';
-
-import { Context } from '@nocobase/actions';
-import { Op } from '@nocobase/database';
-import { HandlerType } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
-import { Registry } from '@nocobase/utils';
-
-import { Provider, namespace } from '.';
-import initActions from './actions';
-import { CODE_STATUS_UNUSED, CODE_STATUS_USED, PROVIDER_TYPE_SMS_ALIYUN } from './constants';
-import initProviders from './providers';
-
-export interface Interceptor {
-  manual?: boolean;
-  expiresIn?: number;
-
-  getReceiver(ctx): string;
-
-  getCode?(ctx): string;
-
-  validate?(ctx: Context, receiver: string): boolean | Promise<boolean>;
-}
+import { tval } from '@nocobase/utils';
+import { namespace } from '.';
+import { PROVIDER_TYPE_SMS_ALIYUN, PROVIDER_TYPE_SMS_TENCENT } from '../constants';
+import { VerificationManager } from './verification-manager';
+import { SMSOTPProviderManager, SMSOTPVerification } from './otp-verification/sms';
+import { SMS_OTP_VERIFICATION_TYPE } from '../constants';
+import verifiersActions from './actions/verifiers';
+import smsAliyun from './otp-verification/sms/providers/sms-aliyun';
+import smsTencent from './otp-verification/sms/providers/sms-tencent';
+import smsOTPProviders from './otp-verification/sms/resource/sms-otp-providers';
+import smsOTP from './otp-verification/sms/resource/sms-otp';
+import { Counter } from '@nocobase/cache';
 
 export default class PluginVerficationServer extends Plugin {
-  providers: Registry<typeof Provider> = new Registry();
-  interceptors: Registry<Interceptor> = new Registry();
+  verificationManager = new VerificationManager({ db: this.db });
+  smsOTPProviderManager = new SMSOTPProviderManager();
+  smsOTPCounter: Counter;
 
-  intercept: HandlerType = async (context, next) => {
-    const { resourceName, actionName, values } = context.action.params;
-    const key = `${resourceName}:${actionName}`;
-    const interceptor = this.interceptors.get(key);
-
-    if (!interceptor) {
-      return context.throw(400);
-    }
-
-    const receiver = interceptor.getReceiver(context);
-    const content = interceptor.getCode ? interceptor.getCode(context) : values.code;
-    if (!receiver || !content) {
-      return context.throw(400);
-    }
-
-    // check if code match, then call next
-    // find the code based on action params
-    const VerificationRepo = this.db.getRepository('verifications');
-    const item = await VerificationRepo.findOne({
-      filter: {
-        receiver,
-        type: key,
-        content,
-        expiresAt: {
-          [Op.gt]: new Date(),
+  async afterAdd() {
+    this.app.on('afterLoad', async () => {
+      this.smsOTPCounter = await this.app.cacheManager.createCounter(
+        {
+          name: 'smsOTPCounter',
+          prefix: 'sms-otp:attempts',
         },
-        status: CODE_STATUS_UNUSED,
-      },
+        this.app.lockManager,
+      );
+    });
+  }
+
+  async load() {
+    // add middleware to action
+    this.app.dataSourceManager.use(this.verificationManager.middleware());
+    this.app.resourceManager.define(smsOTPProviders);
+    this.app.resourceManager.define(smsOTP);
+
+    Object.entries(verifiersActions).forEach(([action, handler]) =>
+      this.app.resourceManager.registerActionHandler(`verifiers:${action}`, handler),
+    );
+
+    this.app.acl.allow('verifiers', 'listByUser', 'loggedIn');
+    this.app.acl.allow('verifiers', 'listForVerify', 'loggedIn');
+    this.app.acl.allow('verifiers', 'bind', 'loggedIn');
+    this.app.acl.allow('verifiers', 'unbind', 'loggedIn');
+    this.app.acl.allow('smsOTP', 'create', 'loggedIn');
+    this.app.acl.allow('smsOTP', 'publicCreate');
+    this.app.acl.registerSnippet({
+      name: `pm.${this.name}.verifiers`,
+      actions: ['verifiers:*', 'smsOTPProviders:*'],
     });
 
-    if (!item) {
-      return context.throw(400, {
-        code: 'InvalidVerificationCode',
-        message: context.t('Verification code is invalid', { ns: namespace }),
-      });
-    }
-
-    // TODO: code should be removed if exists in values
-    // context.action.mergeParams({
-    //   values: {
-
-    //   }
-    // });
-    try {
-      await next();
-    } finally {
-      // or delete
-      await item.update({
-        status: CODE_STATUS_USED,
-      });
-    }
-  };
+    this.verificationManager.registerVerificationType(SMS_OTP_VERIFICATION_TYPE, {
+      title: tval('SMS OTP', { ns: namespace }),
+      description: tval('Get one-time codes sent to your phone via SMS to complete authentication requests.', {
+        ns: namespace,
+      }),
+      bindingRequired: true,
+      verification: SMSOTPVerification,
+    });
+    this.verificationManager.addSceneRule(
+      (scene, verificationType) =>
+        ['auth-sms', 'unbind-verifier'].includes(scene) && verificationType === SMS_OTP_VERIFICATION_TYPE,
+    );
+    this.verificationManager.registerAction('verifiers:bind', {
+      manual: true,
+      getBoundInfoFromCtx: (ctx) => {
+        return ctx.action.params.values || {};
+      },
+    });
+    this.verificationManager.registerScene('unbind-verifier', {
+      actions: {
+        'verifiers:unbind': {},
+      },
+    });
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_ALIYUN, {
+      title: tval('Aliyun SMS', { ns: namespace }),
+      provider: smsAliyun,
+    });
+    this.smsOTPProviderManager.registerProvider(PROVIDER_TYPE_SMS_TENCENT, {
+      title: tval('Tencent SMS', { ns: namespace }),
+      provider: smsTencent,
+    });
+  }
 
   async install() {
     const {
@@ -128,42 +132,5 @@ export default class PluginVerficationServer extends Plugin {
         },
       });
     }
-  }
-
-  async load() {
-    const { app, db, options } = this;
-
-    await this.importCollections(path.resolve(__dirname, 'collections'));
-
-    await initProviders(this);
-    initActions(this);
-
-    const self = this;
-    // add middleware to action
-    app.resourceManager.use(async function verificationIntercept(context, next) {
-      const { resourceName, actionName, values } = context.action.params;
-      const key = `${resourceName}:${actionName}`;
-      const interceptor = self.interceptors.get(key);
-      if (!interceptor || interceptor.manual) {
-        return next();
-      }
-
-      return self.intercept(context, next);
-    });
-
-    app.acl.allow('verifications', 'create', 'public');
-    this.app.acl.registerSnippet({
-      name: `pm.${this.name}.providers`,
-      actions: ['verifications_providers:*'],
-    });
-  }
-
-  async getDefault() {
-    const providerRepo = this.db.getRepository('verifications_providers');
-    return providerRepo.findOne({
-      filter: {
-        default: true,
-      },
-    });
   }
 }

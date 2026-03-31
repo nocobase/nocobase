@@ -29,6 +29,10 @@ export const useStyles = genStyleHook('nb-mobile-navigation-bar-action', (token)
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+
+        '& > span': {
+          position: 'relative',
+        },
       },
       '.nb-navigation-bar-action-title': {
         fontSize: 17,

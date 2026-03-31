@@ -15,9 +15,6 @@ export const mobileAddBlockInitializer = new SchemaInitializer({
   name: 'mobile:addBlock',
   icon: 'PlusOutlined',
   wrap: gridRowColWrap,
-  style: {
-    margin: 20,
-  },
   items: [
     {
       name: 'dataBlocks',

@@ -24,7 +24,7 @@ test.describe('single details block schema settings', () => {
         await page.getByLabel('block-item-CardItem-general-form').hover();
         await page.getByLabel('designer-schema-settings-CardItem-FormV2.ReadPrettyDesigner-general').hover();
       },
-      supportedOptions: ['Edit block title', 'Linkage rules', 'Save as block template', 'Delete'],
+      supportedOptions: ['Edit block title', 'Linkage rules', 'Delete'],
     });
   });
 });

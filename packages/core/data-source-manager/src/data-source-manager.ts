@@ -11,6 +11,8 @@ import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocob
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
+import { DataSourceConstructor } from './types';
+import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
@@ -67,9 +69,12 @@ export class DataSourceManager {
     }
 
     const oldDataSource = this.dataSources.get(dataSource.name);
-
     if (oldDataSource) {
-      await oldDataSource.close();
+      if (options.reuseDB === true) {
+        await oldDataSource.cleanCache();
+      } else {
+        await oldDataSource.close();
+      }
     }
 
     await dataSource.load(options);
@@ -96,17 +101,18 @@ export class DataSourceManager {
 
       const ds = self.dataSources.get(name);
       ctx.dataSource = ds;
+      ctx.database = (ds.collectionManager as SequelizeCollectionManager).db;
 
       const composedFn = ds.middleware(self.middlewares);
       return composedFn(ctx, next);
     };
   }
 
-  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
+  registerDataSourceType(type: string, DataSourceClass: DataSourceConstructor) {
     this.factory.register(type, DataSourceClass);
   }
 
-  getDataSourceType(type: string): typeof DataSource | undefined {
+  getDataSourceType(type: string): DataSourceConstructor | undefined {
     return this.factory.getClass(type);
   }
 

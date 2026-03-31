@@ -9,12 +9,12 @@
 
 export const NAMESPACE = 'workflow-manual';
 
-export const MANUAL_TASK_TYPE = 'manual';
+export const TASK_TYPE_MANUAL = 'manual';
 
 export const TASK_STATUS = {
   PENDING: 0,
   RESOLVED: 1,
-  REJECTED: -1,
+  REJECTED: -5,
 };
 
 export const TaskStatusOptions = [

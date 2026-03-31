@@ -28,7 +28,6 @@ export const NewRole: React.FC = () => {
               type: 'text',
               icon: 'PlusOutlined',
               style: {
-                width: '100%',
                 textAlign: 'left',
               },
             },

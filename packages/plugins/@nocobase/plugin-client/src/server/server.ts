@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction } from '@nocobase/database';
+import { Model, MultipleRelationRepository, Transaction } from '@nocobase/database';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
 import { Plugin } from '@nocobase/server';
 import { tval } from '@nocobase/utils';
@@ -37,22 +37,22 @@ export class PluginClientServer extends Plugin {
   async beforeLoad() {}
 
   async install() {
-    const uiSchemas = this.db.getRepository<any>('uiSchemas');
-    await uiSchemas.insert({
-      type: 'void',
-      'x-uid': 'nocobase-admin-menu',
-      'x-component': 'Menu',
-      'x-designer': 'Menu.Designer',
-      'x-initializer': 'MenuItemInitializers',
-      'x-component-props': {
-        mode: 'mix',
-        theme: 'dark',
-        // defaultSelectedUid: 'u8',
-        onSelect: '{{ onSelect }}',
-        sideMenuRefScopeKey: 'sideMenuRef',
-      },
-      properties: {},
-    });
+    // const uiSchemas = this.db.getRepository<any>('uiSchemas');
+    // await uiSchemas.insert({
+    //   type: 'void',
+    //   'x-uid': 'nocobase-admin-menu',
+    //   'x-component': 'Menu',
+    //   'x-designer': 'Menu.Designer',
+    //   'x-initializer': 'MenuItemInitializers',
+    //   'x-component-props': {
+    //     mode: 'mix',
+    //     theme: 'dark',
+    //     // defaultSelectedUid: 'u8',
+    //     onSelect: '{{ onSelect }}',
+    //     sideMenuRefScopeKey: 'sideMenuRef',
+    //   },
+    //   properties: {},
+    // });
   }
 
   async load() {
@@ -162,7 +162,13 @@ export class PluginClientServer extends Plugin {
   setACL() {
     this.app.acl.registerSnippet({
       name: `ui.desktopRoutes`,
-      actions: ['desktopRoutes:create', 'desktopRoutes:update', 'desktopRoutes:move', 'desktopRoutes:destroy'],
+      actions: [
+        'desktopRoutes:create',
+        'desktopRoutes:update',
+        'desktopRoutes:move',
+        'desktopRoutes:destroy',
+        'desktopRoutes:updateOrCreate',
+      ],
     });
 
     this.app.acl.registerSnippet({
@@ -170,7 +176,7 @@ export class PluginClientServer extends Plugin {
       actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
     });
 
-    this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
+    this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');
   }
 
   /**
@@ -183,7 +189,31 @@ export class PluginClientServer extends Plugin {
         instance.allowNewMenu === undefined ? ['admin', 'member'].includes(instance.name) : !!instance.allowNewMenu,
       );
     });
-    this.app.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+    this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      if (r) {
+        await r.destroy({
+          filter: {
+            uid: instance.get('schemaUid'),
+          },
+          transaction,
+        });
+      }
+    });
+    this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
+      const r = this.db.getRepository('flowModels');
+      if (r) {
+        await r.create({
+          transaction,
+          values: {
+            uid: instance.get('schemaUid'),
+            name: instance.get('schemaUid'),
+            schema: {
+              use: 'RouteModel',
+            },
+          },
+        });
+      }
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
           allowNewMenu: true,
@@ -216,7 +246,7 @@ export class PluginClientServer extends Plugin {
       const tabIds = tabs.map((x) => x.get('id'));
       const where = { desktopRouteId: tabIds, roleName };
       if (action === 'create') {
-        const exists = await repository.find({ where });
+        const exists = await repository.find({ where, transaction });
         const modelsByRouteId = _.keyBy(exists, (x) => x.get('desktopRouteId'));
         const createModels = tabs
           .map((x) => !modelsByRouteId[x.get('id')] && { desktopRouteId: x.get('id'), roleName })
@@ -251,42 +281,31 @@ export class PluginClientServer extends Plugin {
     this.app.resourceManager.registerActionHandler('desktopRoutes:listAccessible', async (ctx, next) => {
       const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
+          filter,
         });
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['desktopRoutes'],
       });
 
-      // 1. 如果 page 的 children 为空，那么需要把 page 的 children 全部找出来，然后返回。否则前端会因为缺少 tab 路由的数据而导致页面空白
-      // 2. 如果 page 的 children 不为空，不需要做特殊处理
-      const desktopRoutesId = role.get('desktopRoutes').map(async (item, index, items) => {
-        if (item.type === 'page' && !items.some((tab) => tab.parentId === item.id)) {
-          const children = await desktopRoutesRepository.find({
-            filter: {
-              parentId: item.id,
-            },
-          });
-
-          return [item.id, ...(children || []).map((child) => child.id)];
-        }
-
-        return item.id;
-      });
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
 
       if (desktopRoutesId) {
         const ids = (await Promise.all(desktopRoutesId)).flat();
         const result = await desktopRoutesRepository.find({
           tree: true,
-          ...ctx.query,
+          sort: 'sort',
           filter: {
+            ...filter,
             id: ids,
           },
         });
@@ -294,6 +313,64 @@ export class PluginClientServer extends Plugin {
         ctx.body = result;
       }
 
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('desktopRoutes:getAccessible', async (ctx, next) => {
+      const desktopRoutesRepository = ctx.db.getRepository('desktopRoutes');
+      const rolesRepository = ctx.db.getRepository('roles');
+      const { filter } = ctx.action.params;
+
+      if (ctx.state.currentRoles.includes('root')) {
+        ctx.body = await desktopRoutesRepository.findOne({
+          sort: 'sort',
+          ...ctx.action.params,
+        });
+        return await next();
+      }
+
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
+        appends: ['desktopRoutes'],
+      });
+
+      const desktopRoutesId = roles.flatMap((x) => x.get('desktopRoutes')).map((item) => item.id);
+
+      if (desktopRoutesId && desktopRoutesId.length > 0) {
+        const ids = (await Promise.all(desktopRoutesId)).flat();
+
+        // 将权限检查与用户提供的 filter 合并
+        const result = await desktopRoutesRepository.findOne({
+          filter: {
+            ...filter,
+            id: ids,
+          },
+          ...ctx.action.params,
+        });
+
+        ctx.body = result;
+      } else {
+        ctx.body = null;
+      }
+
+      await next();
+    });
+
+    this.app.resourceManager.registerActionHandler('roles.desktopRoutes:set', async (ctx, next) => {
+      let { values } = ctx.action.params;
+      if (values.length) {
+        const instances = await this.app.db.getRepository('desktopRoutes').find({
+          filter: {
+            $or: [{ id: { $in: values } }, { parentId: { $in: values } }],
+          },
+        });
+        values = instances.map((instance) => instance.get('id'));
+      }
+      const { resourceName, sourceId } = ctx.action;
+      const repository = this.app.db.getRepository<MultipleRelationRepository>(resourceName, sourceId);
+      await repository['set'](values);
+
+      ctx.status = 200;
       await next();
     });
   }

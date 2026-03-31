@@ -16,10 +16,11 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../../api-client';
 import { findFormBlock, useFormBlockContext } from '../../../block-provider/FormBlockProvider';
 import { useCollectionManager_deprecated } from '../../../collection-manager';
+import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source';
+import { useFlag } from '../../../flag-provider';
 import { compatibleDataId } from '../../../schema-settings/DataTemplates/FormDataTemplates';
 import { useToken } from '../__builtins__';
 import { RemoteSelect } from '../remote-select';
-import { useDataSourceHeaders, useDataSourceKey } from '../../../data-source';
 
 export interface ITemplate {
   config?: {
@@ -104,8 +105,9 @@ export const Templates = React.memo(({ style = {}, form }: { style?: React.CSSPr
   const { t } = useTranslation();
   const dataSource = useDataSourceKey();
   const headers = useDataSourceHeaders(dataSource);
+  const { isInFilterFormBlock } = useFlag();
   useEffect(() => {
-    if (enabled && defaultTemplate && form) {
+    if (enabled && defaultTemplate && form && !isInFilterFormBlock) {
       form.__template = true;
       if (defaultTemplate.key === 'duplicate') {
         handleTemplateDataChange(defaultTemplate.dataId, defaultTemplate, headers);

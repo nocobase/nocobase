@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import { observer } from '@formily/reactive-react';
 import { renderAppOptions } from '@nocobase/test/client';
 import {
   SchemaComponent,
@@ -18,6 +17,7 @@ import {
   SchemaInitializerItem,
   useSchemaInitializerRender,
 } from '@nocobase/client';
+import { observer } from '@nocobase/flow-engine';
 
 export async function createApp(options = {}, appOptions = {}) {
   const testInitializers = new SchemaInitializer({

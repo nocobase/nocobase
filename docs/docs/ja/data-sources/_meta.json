@@ -1,0 +1,460 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "データソース",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "データソース管理",
+        "link": "/data-sources/data-source-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "メインデータソース",
+        "link": "/data-sources/data-source-main/"
+      },
+      {
+        "type": "custom-link",
+        "label": "外部データソース（データベース）",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "紹介",
+            "link": "/data-sources/data-source-manager/external-database"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 PostgreSQL",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 MSSQL",
+            "link": "/data-sources/data-source-external-mssql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "外部 Oracle",
+            "link": "/data-sources/data-source-external-oracle/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "メインDB・外部DB比較",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "REST API データソース",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "KingbaseES データソース",
+        "link": "/data-sources/data-source-kingbase/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "データテーブル",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/data-sources/data-modeling/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "標準テーブル",
+        "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "継承テーブル",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "ファイルテーブル",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "ツリーテーブル",
+        "link": "/data-sources/collection-tree/"
+      },
+      {
+        "type": "custom-link",
+        "label": "カレンダーテーブル",
+        "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "コメントテーブル",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "式テーブル",
+        "link": "/data-sources/collection-expression/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "SQL テーブル",
+        "link": "/data-sources/collection-sql/"
+      },
+      {
+        "type": "custom-link",
+        "label": "データベースビュー",
+        "link": "/data-sources/collection-view/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "テーブルフィールド",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/data-sources/data-modeling/collection-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "フィールド検証",
+        "link": "/data-sources/data-modeling/collection-fields/validation"
+      },
+      {
+        "type": "custom-link",
+        "label": "基本タイプ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "一行テキスト",
+            "link": "/data-sources/data-modeling/collection-fields/basic/input"
+          },
+          {
+            "type": "custom-link",
+            "label": "複数行テキスト",
+            "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
+          },
+          {
+            "type": "custom-link",
+            "label": "携帯電話番号",
+            "link": "/data-sources/data-modeling/collection-fields/basic/phone"
+          },
+          {
+            "type": "custom-link",
+            "label": "メールアドレス",
+            "link": "/data-sources/data-modeling/collection-fields/basic/email"
+          },
+          {
+            "type": "custom-link",
+            "label": "URL",
+            "link": "/data-sources/data-modeling/collection-fields/basic/url"
+          },
+          {
+            "type": "custom-link",
+            "label": "整数",
+            "link": "/data-sources/data-modeling/collection-fields/basic/integer"
+          },
+          {
+            "type": "custom-link",
+            "label": "数値",
+            "link": "/data-sources/data-modeling/collection-fields/basic/number"
+          },
+          {
+            "type": "custom-link",
+            "label": "パーセンテージ",
+            "link": "/data-sources/data-modeling/collection-fields/basic/percent"
+          },
+          {
+            "type": "custom-link",
+            "label": "パスワード",
+            "link": "/data-sources/data-modeling/collection-fields/basic/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "カラー",
+            "link": "/data-sources/data-modeling/collection-fields/basic/color"
+          },
+          {
+            "type": "custom-link",
+            "label": "アイコン",
+            "link": "/data-sources/data-modeling/collection-fields/basic/icon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "選択タイプ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "チェック",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
+          },
+          {
+            "type": "custom-link",
+            "label": "ドロップダウン（単一選択）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "ドロップダウン（複数選択）",
+            "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "ラジオボタン",
+            "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "チェックボックス",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "マルチメディア",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/data-sources/data-modeling/collection-fields/media/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown (Vditor)",
+            "link": "/data-sources/field-markdown-vditor/"
+          },
+          {
+            "type": "custom-link",
+            "label": "リッチテキスト",
+            "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "添付ファイル（リレーション）",
+            "link": "/data-sources/file-manager/field-attachment"
+          },
+          {
+            "type": "custom-link",
+            "label": "添付ファイル（URL）",
+            "link": "/data-sources/field-attachment-url/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "日付 & 時刻",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/data-sources/data-modeling/collection-fields/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "日時（タイムゾーン付き）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "日時（タイムゾーンなし）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
+          },
+          {
+            "type": "custom-link",
+            "label": "Unix タイムスタンプ",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
+          },
+          {
+            "type": "custom-link",
+            "label": "日付（時刻なし）",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/date"
+          },
+          {
+            "type": "custom-link",
+            "label": "時刻",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/time"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "ジオメトリ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ポイント",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
+          },
+          {
+            "type": "custom-link",
+            "label": "ライン",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
+          },
+          {
+            "type": "custom-link",
+            "label": "円",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
+          },
+          {
+            "type": "custom-link",
+            "label": "ポリゴン",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "高度なタイプ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "UUID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nano ID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "並び順",
+            "link": "/data-sources/field-sort/"
+          },
+          {
+            "type": "custom-link",
+            "label": "計算式",
+            "link": "/data-sources/field-formula/"
+          },
+          {
+            "type": "custom-link",
+            "label": "自動採番",
+            "link": "/data-sources/field-sequence/"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "データテーブル選択",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "暗号化",
+            "link": "/data-sources/field-encryption/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "システム情報",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "作成日時",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "最終更新日時",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "作成者",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "最終更新者",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "スペース",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "テーブルOID",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "リレーションタイプ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概要",
+            "link": "/data-sources/data-modeling/collection-fields/associations"
+          },
+          {
+            "type": "custom-link",
+            "label": "1対1",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "1対多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対1",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対多",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "多対多（配列）",
+            "link": "/data-sources/field-m2m-array/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "開発",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/data-sources/development"
+      }
+    ]
+  }
+]

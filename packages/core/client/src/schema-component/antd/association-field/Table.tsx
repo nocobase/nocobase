@@ -17,7 +17,7 @@ import { RecursionField, Schema, SchemaOptionsContext, observer, useField, useFi
 import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
-import { useCreation, useDeepCompareEffect, useMemoizedFn } from 'ahooks';
+import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
 import { Table as AntdTable, Spin, TableColumnProps } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
@@ -40,12 +40,13 @@ import { useACLFieldWhitelist } from '../../../acl/ACLProvider';
 import { useTableBlockContext } from '../../../block-provider/TableBlockProvider';
 import { isNewRecord } from '../../../data-source/collection-record/isNewRecord';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { useSatisfiedActionValues } from '../../../schema-settings/LinkageRules/useActionValues';
 import { useToken } from '../__builtins__';
 import { SubFormProvider, useAssociationFieldContext } from '../association-field/hooks';
 import { ColumnFieldProvider } from '../table-v2/components/ColumnFieldProvider';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from '../table-v2/utils';
-import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
 
 const InViewContext = React.createContext(false);
 
@@ -54,9 +55,6 @@ const useArrayField = (props) => {
   return (props.field || field) as ArrayField;
 };
 
-function getSchemaArrJSON(schemaArr: Schema[]) {
-  return schemaArr.map((item) => (item.name === 'actions' ? omit(item.toJSON(), 'properties') : item.toJSON()));
-}
 function adjustColumnOrder(columns) {
   const leftFixedColumns = [];
   const normalColumns = [];
@@ -75,21 +73,11 @@ function adjustColumnOrder(columns) {
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
 
-export const useColumnsDeepMemoized = (columns: any[]) => {
-  const columnsJSON = getSchemaArrJSON(columns);
-  const oldObj = useCreation(() => ({ value: _.cloneDeep(columnsJSON) }), []);
-
-  if (!_.isEqual(columnsJSON, oldObj.value)) {
-    oldObj.value = _.cloneDeep(columnsJSON);
-  }
-
-  return oldObj.value;
-};
-
 const TableColumnTitle = withTooltipComponent(RecursionField);
 
 const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginationProps) => {
   const { token } = useToken();
+  const { t } = useTranslation();
   const field = useArrayField(props);
   const schema = useFieldSchema();
   const { schemaInWhitelist } = useACLFieldWhitelist();
@@ -103,8 +91,6 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
     return buf;
   }, []);
   const { current, pageSize } = paginationProps;
-  const hasChangedColumns = useColumnsDeepMemoized(columnsSchema);
-
   const schemaToolbarBigger = useMemo(() => {
     return css`
       .nb-action-link {
@@ -125,8 +111,16 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : s.name;
         const columnHidden = !!s['x-component-props']?.['columnHidden'];
+        const translatedTitle = t(s?.title, { ns: NAMESPACE_UI_SCHEMA });
         return {
-          title: <TableColumnTitle name={s.name} schema={s} onlyRenderSelf tooltip={s['x-component-props']?.tooltip} />,
+          title: (
+            <TableColumnTitle
+              name={s.name}
+              schema={{ ...s, title: translatedTitle }}
+              onlyRenderSelf
+              tooltip={s['x-component-props']?.tooltip}
+            />
+          ),
           dataIndex,
           key: s.name,
           sorter: s['x-component-props']?.['sorter'],
@@ -170,9 +164,9 @@ const useTableColumns = (props: { showDel?: any; isSubTable?: boolean }, paginat
         } as TableColumnProps<any>;
       }),
 
-    // 这里不能把 columnsSchema 作为依赖，因为其每次都会变化，这里使用 hasChangedColumns 作为依赖
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hasChangedColumns, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable],
+    // 子表格列配置（隐藏/删除）在设计器中会原地修改 schema，
+    // 这里要直接依赖 columnsSchema，确保每次修改都能触发列重算。
+    [columnsSchema, field.value, field.address, collection, parentRecordData, schemaToolbarBigger, designable, t],
   );
 
   const tableColumns = useMemo(() => {
@@ -371,7 +365,7 @@ const usePaginationProps = (pagination1, pagination2) => {
                   }
                 `}
               >
-                {originalElement} <div style={{ marginLeft: '7px' }}>{current}</div>
+                {originalElement} <div>{current}</div>
               </div>
             );
           } else {
@@ -413,7 +407,7 @@ const rowSelectCheckboxWrapperClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   padding-right: 8px;
   .nb-table-index {
     opacity: 0;
@@ -440,7 +434,8 @@ const rowSelectCheckboxContentClass = css`
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-evenly;
+  justify-content: flex-start;
+  gap: 0;
 `;
 
 const rowSelectCheckboxCheckedClassHover = css`
@@ -515,6 +510,7 @@ const InternalBodyCellComponent = (props) => {
 const displayNone = { display: 'none' };
 const BodyCellComponent = ({ columnHidden, ...props }) => {
   const { designable } = useDesignable();
+  const collection = useCollection();
 
   if (columnHidden) {
     return (
@@ -524,7 +520,11 @@ const BodyCellComponent = ({ columnHidden, ...props }) => {
     );
   }
 
-  return <InternalBodyCellComponent {...props} />;
+  return (
+    <SubFormProvider value={{ value: props?.record, collection, fieldSchema: props.schema }}>
+      <InternalBodyCellComponent {...props} />{' '}
+    </SubFormProvider>
+  );
 };
 
 interface TableProps {
@@ -602,12 +602,6 @@ const InternalNocoBaseTable = React.memo(
                   height: 100%;
                   display: flex;
                   flex-direction: column;
-                  .ant-table-expanded-row-fixed {
-                    min-height: ${tableHeight}px;
-                  }
-                  .ant-table-body {
-                    min-height: ${tableHeight}px;
-                  }
                   .ant-table-cell {
                     padding: 16px 8px;
                   }
@@ -679,6 +673,7 @@ export const Table: any = withDynamicSchemaProps(
       onExpand,
       loading,
       onClickRow,
+      enableIndexColumn,
       ...others
     } = { ...others1, ...others2 } as any;
     const field = useArrayField(others);
@@ -831,65 +826,67 @@ export const Table: any = withDynamicSchemaProps(
 
     const restProps = useMemo(
       () => ({
-        rowSelection: memoizedRowSelection
-          ? {
-              type: 'checkbox',
-              selectedRowKeys: selectedRowKeys,
-              onChange(selectedRowKeys: any[], selectedRows: any[]) {
-                field.data = field.data || {};
-                field.data.selectedRowKeys = selectedRowKeys;
-                field.data.selectedRowData = selectedRows;
-                setSelectedRowKeys(selectedRowKeys);
-                onRowSelectionChange?.(selectedRowKeys, selectedRows);
-              },
-              getCheckboxProps(record) {
-                return {
-                  'aria-label': `checkbox`,
-                };
-              },
-              renderCell: (checked, record, index, originNode) => {
-                if (!dragSort && !showIndex) {
-                  return originNode;
-                }
-                const current = paginationProps?.current;
+        rowSelection: enableIndexColumn
+          ? memoizedRowSelection
+            ? {
+                type: 'checkbox',
+                selectedRowKeys: selectedRowKeys,
+                onChange(selectedRowKeys: any[], selectedRows: any[]) {
+                  field.data = field.data || {};
+                  field.data.selectedRowKeys = selectedRowKeys;
+                  field.data.selectedRowData = selectedRows;
+                  setSelectedRowKeys(selectedRowKeys);
+                  onRowSelectionChange?.(selectedRowKeys, selectedRows);
+                },
+                getCheckboxProps(record) {
+                  return {
+                    'aria-label': `checkbox`,
+                  };
+                },
+                renderCell: (checked, record, index, originNode) => {
+                  if (!dragSort && !showIndex) {
+                    return originNode;
+                  }
+                  const current = paginationProps?.current;
 
-                const pageSize = paginationProps?.pageSize || 20;
-                if (current) {
-                  index = index + (current - 1) * pageSize + 1;
-                } else {
-                  index = index + 1;
-                }
-                if (record.__index) {
-                  index = extractIndex(record.__index);
-                }
-                return (
-                  <div
-                    role="button"
-                    aria-label={`table-index-${index}`}
-                    className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
-                      [rowSelectCheckboxWrapperClassHover]: isRowSelect,
-                    })}
-                  >
-                    <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
-                      {dragSort && <SortHandle id={getRowKey(record)} />}
-                      {showIndex && <TableIndex index={index} />}
-                    </div>
-                    {isRowSelect && (
-                      <div
-                        className={classNames(
-                          'nb-origin-node',
-                          checked ? 'checked' : null,
-                          rowSelectCheckboxCheckedClassHover,
-                        )}
-                      >
-                        {originNode}
+                  const pageSize = paginationProps?.pageSize || 20;
+                  if (current) {
+                    index = index + (current - 1) * pageSize + 1;
+                  } else {
+                    index = index + 1;
+                  }
+                  if (record.__index) {
+                    index = extractIndex(record.__index);
+                  }
+                  return (
+                    <div
+                      role="button"
+                      aria-label={`table-index-${index}`}
+                      className={classNames(checked ? 'checked' : null, rowSelectCheckboxWrapperClass, {
+                        [rowSelectCheckboxWrapperClassHover]: isRowSelect,
+                      })}
+                    >
+                      <div className={classNames(checked ? 'checked' : null, rowSelectCheckboxContentClass)}>
+                        {dragSort && <SortHandle id={getRowKey(record)} />}
+                        {showIndex && <TableIndex index={index} />}
                       </div>
-                    )}
-                  </div>
-                );
-              },
-              ...memoizedRowSelection,
-            }
+                      {isRowSelect && (
+                        <div
+                          className={classNames(
+                            'nb-origin-node',
+                            checked ? 'checked' : null,
+                            rowSelectCheckboxCheckedClassHover,
+                          )}
+                        >
+                          {originNode}
+                        </div>
+                      )}
+                    </div>
+                  );
+                },
+                ...memoizedRowSelection,
+              }
+            : undefined
           : undefined,
       }),
       [
@@ -903,6 +900,7 @@ export const Table: any = withDynamicSchemaProps(
         isRowSelect,
         memoizedRowSelection,
         paginationProps,
+        enableIndexColumn,
       ],
     );
 

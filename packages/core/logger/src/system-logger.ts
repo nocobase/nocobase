@@ -7,11 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import winston, { format } from 'winston';
-import { createLogger, levels, Logger, LoggerOptions } from './logger';
-import Transport from 'winston-transport';
 import { SPLAT } from 'triple-beam';
+import winston, { format } from 'winston';
+import Transport from 'winston-transport';
+import { getLoggerFilePath } from './config';
 import { getFormat } from './format';
+import { createLogger, levels, Logger, LoggerOptions } from './logger';
 
 export interface SystemLoggerOptions extends LoggerOptions {
   seperateError?: boolean; // print error seperately, default true
@@ -59,17 +60,30 @@ class SystemLoggerTransport extends Transport {
   }
 
   log(info: any, callback: any) {
-    const { level, message, reqId, app, dataSourceKey, stack, cause, [SPLAT]: args } = info;
+    const {
+      level,
+      message,
+      reqId,
+      app,
+      dataSourceKey,
+      stack,
+      cause,
+      [SPLAT]: args,
+      module: moduleFormInfo,
+      submodule: submoduleFormInfo,
+      ...extra
+    } = info;
     const logger = level === 'error' && this.errorLogger ? this.errorLogger : this.logger;
     const { module, submodule, method, ...meta } = args?.[0] || {};
     if (!cause?.onlyLogCause) {
       logger.log({
         level,
         message,
+        extra,
         stack,
         meta,
-        module: module || info['module'] || '',
-        submodule: submodule || info['submodule'] || '',
+        module: module || moduleFormInfo || '',
+        submodule: submodule || submoduleFormInfo || '',
         method: method || '',
         app,
         reqId,
@@ -138,3 +152,12 @@ export const createSystemLogger = (options: SystemLoggerOptions): SystemLogger =
     },
   });
 };
+
+export const logger = createSystemLogger({
+  dirname: getLoggerFilePath('main'),
+  filename: 'system',
+  defaultMeta: {
+    app: 'main',
+    module: 'cli',
+  },
+});

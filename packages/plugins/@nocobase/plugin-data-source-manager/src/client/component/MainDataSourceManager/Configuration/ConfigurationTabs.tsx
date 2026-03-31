@@ -20,20 +20,22 @@ import {
 } from '@dnd-kit/core';
 import { RecursionField, observer } from '@formily/react';
 import { uid } from '@formily/shared';
+import {
+  CollectionCategoriesContext,
+  SchemaComponent,
+  SchemaComponentOptions,
+  useAPIClient,
+  useCompile,
+  usePlugin,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { App, Badge, Card, Dropdown, Space, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  useAPIClient,
-  SchemaComponent,
-  SchemaComponentOptions,
-  useCompile,
-  useResourceActionContext,
-  CollectionCategoriesContext,
-} from '@nocobase/client';
 import { CollectionFields } from './CollectionFields';
 import { collectionTableSchema } from './schemas/collections';
+import PluginDatabaseConnectionsClient from '../../../';
 
 function Draggable(props) {
   const { attributes, listeners, setNodeRef } = useDraggable({
@@ -284,7 +286,7 @@ export const ConfigurationTabs = () => {
             children: (
               <Card bordered={false}>
                 <SchemaComponentOptions
-                  components={{ CollectionFields }}
+                  components={{ CollectionFields, ExtendableActions }}
                   inherit
                   scope={{ loadCategories, categoryVisible: item.id === 'all', categoryId: item.id }}
                 >
@@ -296,5 +298,19 @@ export const ConfigurationTabs = () => {
         })}
       />
     </DndProvider>
+  );
+};
+
+const ExtendableActions: React.FC = () => {
+  const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const managerActions = plugin.extensionManager.getManagerActions();
+  return managerActions?.length ? (
+    <div style={{ margin: '0px 8px' }}>
+      {_.sortBy(managerActions, 'order').map((action, index) => (
+        <action.component key={index} />
+      ))}
+    </div>
+  ) : (
+    <></>
   );
 };

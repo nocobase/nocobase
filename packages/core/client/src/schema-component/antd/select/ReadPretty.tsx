@@ -16,6 +16,7 @@ import { useCollectionField } from '../../../data-source/collection-field/Collec
 import { EllipsisWithTooltip } from '../input/EllipsisWithTooltip';
 import { FieldNames, defaultFieldNames, getCurrentOptions } from './utils';
 import { withPopupWrapper } from '../../common/withPopupWrapper';
+import { Icon } from '../../../icon';
 
 export interface SelectReadPrettyProps {
   value: any;
@@ -54,7 +55,11 @@ const ReadPrettyInternal = observer(
       const content =
         field.value !== null &&
         currentOptions.map((option, index) => (
-          <Tag key={index} color={option[fieldNames.color]} icon={option.icon}>
+          <Tag
+            key={index}
+            color={option[fieldNames.color]}
+            icon={typeof option.icon === 'string' ? <Icon type={option.icon} /> : option.icon}
+          >
             {option[fieldNames.label]}
           </Tag>
         ));

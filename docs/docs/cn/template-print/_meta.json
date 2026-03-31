@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "配置说明",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "模板语法"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "高级功能"
+  },
+  {
+    "type": "custom-link",
+    "label": "常见问题",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "应用场景",
+    "link": "/template-print/scenes"
+  }
+]

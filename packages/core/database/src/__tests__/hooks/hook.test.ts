@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
-import { mockDatabase } from '../';
+import { Database, createMockDatabase } from '@nocobase/database';
 
 describe('hook', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

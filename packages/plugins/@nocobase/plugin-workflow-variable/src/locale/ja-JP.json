@@ -1,0 +1,9 @@
+{
+  "Assign value to a variable, for later use.": "後続ノードで使用するための変数への値割り当て",
+  "Assign value to an existing variable": "既存変数への値割り当て",
+  "Declare a new variable": "新規変数の宣言",
+  "Mode": "モード",
+  "Properties mapping": "プロパティマッピング",
+  "Value": "値",
+  "Variable": "変数"
+}

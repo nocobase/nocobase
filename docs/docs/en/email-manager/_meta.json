@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Administrator Configuration",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Configuration Guide",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gmail Configuration",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Outlook Configuration",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "FAQ",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Feature Guide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Email Management Center",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email Block",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email Signature",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email Template",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Advanced",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Email Notes",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email To-do",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email Labels",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Batch Send",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Auto-save Draft",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

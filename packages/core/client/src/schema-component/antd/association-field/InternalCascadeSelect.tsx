@@ -9,10 +9,12 @@
 
 import { ArrayItems, FormItem } from '@formily/antd-v5';
 import { createForm, onFormValuesChange } from '@formily/core';
-import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema } from '@formily/react';
+import { FormProvider, connect, createSchemaField, observer, useField, useFieldSchema, useForm } from '@formily/react';
 import { uid } from '@formily/shared';
 import { Select as AntdSelect, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
+import { css } from '@emotion/css';
+import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient, useCollectionManager_deprecated } from '../../../';
@@ -36,6 +38,7 @@ const CascadeSelect = connect((props) => {
   const [selectedOptions, setSelectedOptions] = useState<{ key: string; children: any; value?: any }[]>([
     { key: undefined, children: [], value: null },
   ]);
+
   const [options, setOptions] = useState(data);
   const [loading, setLoading] = useState(false);
   const compile = useCompile();
@@ -56,6 +59,7 @@ const CascadeSelect = connect((props) => {
     return '$includes';
   }, [targetField]);
   const field: any = useField();
+
   useEffect(() => {
     if (value) {
       const values = Array.isArray(value)
@@ -71,6 +75,11 @@ const CascadeSelect = connect((props) => {
       setSelectedOptions(options);
     }
   }, []);
+  useEffect(() => {
+    if (!value) {
+      setSelectedOptions([{ key: undefined, children: [], value: null }]);
+    }
+  }, [value]);
   const mapOptionsToTags = useCallback(
     (options) => {
       try {
@@ -130,7 +139,7 @@ const CascadeSelect = connect((props) => {
     const response = await resource.list({
       pageSize: 200,
       params: service?.params,
-      filter: mergeFilter([filter]),
+      filter: mergeFilter([filter, service?.params?.filter]),
       tree: !filter.parentId ? true : undefined,
     });
     return response?.data?.data;
@@ -152,7 +161,11 @@ const CascadeSelect = connect((props) => {
     } else {
       associationField.value = option;
     }
-    onChange?.(options);
+    if (options.length === 1 && !options[0].value) {
+      onChange?.(null);
+    } else {
+      onChange?.(options);
+    }
   };
 
   const onDropdownVisibleChange = async (visible, selectedValue, index) => {
@@ -235,33 +248,57 @@ export const InternalCascadeSelect = observer(
     const selectForm = useMemo(() => createForm(), []);
     const { t } = useTranslation();
     const field: any = useField();
+    const form = useForm();
     const fieldSchema = useFieldSchema();
     const { loading, data: formData } = useDataBlockRequest() || {};
-    const initialValue = formData?.data?.[fieldSchema.name];
+    const initialValue = useMemo(() => formData?.data?.[fieldSchema.name], [loading]);
+    const associationDataFlag = !formData || fieldSchema.name in (formData?.data || {});
+    const handleFormValuesChange = debounce((form) => {
+      if (collectionField.interface === 'm2o') {
+        // 对 m2o 类型字段，提取最后一个非 null 值
+        const value = extractLastNonNullValueObjects(form.values?.[fieldSchema.name]);
+        setTimeout(() => {
+          form.setValuesIn(fieldSchema.name, value);
+          field.value = value;
+        });
+      } else {
+        // 对 select_array 类型字段，过滤掉空对象
+        const value = extractLastNonNullValueObjects(form.values?.select_array || []).filter(
+          (v) => v && Object.keys(v).length > 0,
+        );
+        setTimeout(() => {
+          field.value = value;
+        });
+      }
+    }, 300);
+
     useEffect(() => {
       const id = uid();
       selectForm.addEffects(id, () => {
         onFormValuesChange((form) => {
-          if (collectionField.interface === 'm2o') {
-            const value = extractLastNonNullValueObjects(form.values?.[fieldSchema.name]);
-            setTimeout(() => {
-              form.setValuesIn(fieldSchema.name, value);
-              field.value = value;
-            });
-          } else {
-            const value = extractLastNonNullValueObjects(form.values?.select_array).filter(
-              (v) => v && Object.keys(v).length > 0,
-            );
-            setTimeout(() => {
-              field.value = value;
-            });
-          }
+          handleFormValuesChange(form);
         });
       });
+
       return () => {
         selectForm.removeEffects(id);
+        // 清除防抖定时器
+        handleFormValuesChange.cancel();
       };
     }, []);
+
+    useEffect(() => {
+      if (!form.values?.[fieldSchema.name]) {
+        if (selectForm && selectForm.values.select_array && !form.values?.[fieldSchema.name]) {
+          selectForm.setValuesIn('select_array', undefined);
+          setTimeout(() => {
+            selectForm.setValuesIn('select_array', [{}]);
+          });
+        } else {
+          selectForm.setValuesIn(fieldSchema.name, null);
+        }
+      }
+    }, [form.values?.[fieldSchema.name]]);
 
     const toValue = () => {
       if (Array.isArray(initialValue) && initialValue.length > 0) {
@@ -282,6 +319,24 @@ export const InternalCascadeSelect = observer(
           items: {
             type: 'void',
             'x-component': 'Space',
+            'x-component-props': {
+              style: {
+                width: '100%',
+                display: 'flex',
+              },
+              className: css`
+                .ant-formily-item-control {
+                  max-width: 100% !important;
+                }
+                .ant-space-item:nth-child(1) {
+                  flex: 0.1;
+                }
+
+                .ant-space-item:nth-child(2) {
+                  flex: 3;
+                }
+              `,
+            },
             properties: {
               sort: {
                 type: 'void',
@@ -313,9 +368,9 @@ export const InternalCascadeSelect = observer(
         },
       },
     };
-
     return (
-      !loading && (
+      !loading &&
+      associationDataFlag && (
         <FormProvider form={selectForm}>
           {collectionField.interface === 'm2o' ? (
             <SchemaComponent
@@ -324,6 +379,9 @@ export const InternalCascadeSelect = observer(
                 ...fieldSchema,
                 default: initialValue,
                 title: '',
+                'x-decorator-props': {
+                  feedbackLayout: 'none',
+                },
                 'x-component': AssociationCascadeSelect,
                 'x-component-props': {
                   ...props,

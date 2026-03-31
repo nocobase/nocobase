@@ -17,16 +17,16 @@ test('BlockInitializers should add gantt block', async ({ page, mockPage, mockCo
   await page.getByRole('menuitem', { name: 'Gantt right' }).click();
   await page.getByRole('menuitem', { name: 'General' }).click();
   await page.getByLabel('block-item-Select-Title field').click();
-  await page.getByRole('option', { name: 'Single line text2' }).click();
+  await page.getByRole('option', { name: 'Single line text2' }).last().click();
   await page.getByLabel('block-item-Select-Start date field').click();
   await page.getByRole('option', { name: 'Start date time2' }).click();
   await page.getByLabel('block-item-Select-End date field').click();
-  await page.getByRole('option', { name: 'End date time2' }).click();
+  await page.getByRole('option', { name: 'End date time2' }).last().click();
   await page.getByLabel('block-item-Select-Progress field').click();
-  await page.getByRole('option', { name: 'Percent2' }).click();
+  await page.getByRole('option', { name: 'Percent2' }).last().click();
   await page.getByLabel('block-item-Select-Time scale').click();
-  await page.getByRole('option', { name: 'Day', exact: true }).click();
-  await page.getByRole('button', { name: 'OK', exact: true }).click();
+  await page.getByRole('option', { name: 'Day', exact: true }).last().click();
+  await page.getByRole('button', { name: 'OK', exact: true }).last().click();
   await expect(page.getByLabel('block-item-gantt')).toBeVisible();
 });
 

@@ -56,16 +56,19 @@ export class PasswordField extends Field {
 
   init() {
     const { name } = this.options;
-    this.listener = async (model: Model) => {
-      if (!model.changed(name as any)) {
-        return;
-      }
-      const value = model.get(name) as string;
-      if (value) {
-        const hash = await this.hash(value);
-        model.set(name, hash);
-      } else {
-        model.set(name, model.previous(name));
+    this.listener = async (instances: Model[]) => {
+      instances = Array.isArray(instances) ? instances : [instances];
+      for (const instance of instances) {
+        if (!instance.changed(name as any)) {
+          continue;
+        }
+        const value = instance.get(name) as string;
+        if (value) {
+          const hash = await this.hash(value);
+          instance.set(name, hash);
+        } else {
+          instance.set(name, instance.previous(name));
+        }
       }
     };
   }
@@ -73,12 +76,14 @@ export class PasswordField extends Field {
   bind() {
     super.bind();
     this.on('beforeCreate', this.listener);
+    this.on('beforeBulkCreate', this.listener);
     this.on('beforeUpdate', this.listener);
   }
 
   unbind() {
     super.unbind();
     this.off('beforeCreate', this.listener);
+    this.off('beforeBulkCreate', this.listener);
     this.off('beforeUpdate', this.listener);
   }
 }

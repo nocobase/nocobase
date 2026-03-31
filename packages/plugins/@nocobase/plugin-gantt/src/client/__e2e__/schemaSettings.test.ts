@@ -99,6 +99,6 @@ test.describe('configure params in gantt block', () => {
     await page.mouse.move(300, 0);
     await page.getByRole('button', { name: 'Actions', exact: true }).click();
     await page.locator('.bar').hover({ position: { x: 20, y: 10 } });
-    await expect(page.locator('.calendarBottomText').first()).toHaveText(/W/);
+    await expect(page.getByText('within apropos leaker whoever how: 2023')).toBeVisible();
   });
 });

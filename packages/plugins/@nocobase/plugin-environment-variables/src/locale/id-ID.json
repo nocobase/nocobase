@@ -1,0 +1,16 @@
+{
+  "Add variable": "Tambah variabel",
+  "Bulk import": "Impor massal",
+  "Delete variable": "Hapus variabel",
+  "Encrypted": "Terenkripsi",
+  "Environment": "Lingkungan",
+  "Name": "Nama",
+  "Plain text": "Teks biasa",
+  "Restart now": "Mulai ulang sekarang",
+  "Secrets": "Rahasia",
+  "Type": "Tipe",
+  "Value": "Nilai",
+  "Variables": "Variabel",
+  "Variables and secrets": "Variabel dan rahasia",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variabel dan rahasia telah diperbarui. Perlu dimulai ulang agar perubahan berlaku."
+}

@@ -5,6 +5,18 @@ echo "COMMIT_HASH: $(cat /app/commit_hash.txt)"
 
 export NOCOBASE_RUNNING_IN_DOCKER=true
 
+if [ -f /opt/libreoffice24.8.zip ] && [ ! -d /opt/libreoffice24.8 ]; then
+  echo "Unzipping /opt/libreoffice24.8.zip..."
+  unzip -q /opt/libreoffice24.8.zip -d /opt/
+fi
+
+if [ -f /opt/instantclient_19_25.zip ] && [ ! -d /opt/instantclient_19_25 ]; then
+  echo "Unzipping /opt/instantclient_19_25.zip..."
+  unzip -q /opt/instantclient_19_25.zip -d /opt/
+  echo "/opt/instantclient_19_25" > /etc/ld.so.conf.d/oracle-instantclient.conf
+  ldconfig
+fi
+
 if [ ! -d "/app/nocobase" ]; then
   mkdir nocobase
 fi
@@ -15,7 +27,10 @@ if [ ! -f "/app/nocobase/package.json" ]; then
   touch /app/nocobase/node_modules/@nocobase/app/dist/client/index.html
 fi
 
+cd /app/nocobase && yarn nocobase postinstall
+cd /app/nocobase && yarn nocobase db:auth
 cd /app/nocobase && yarn nocobase create-nginx-conf
+cd /app/nocobase && yarn nocobase generate-instance-id
 rm -rf /etc/nginx/sites-enabled/nocobase.conf
 ln -s /app/nocobase/storage/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
 
@@ -25,6 +40,7 @@ echo 'nginx started';
 # run scripts in storage/scripts
 if [ -d "/app/nocobase/storage/scripts" ]; then
   for f in /app/nocobase/storage/scripts/*.sh; do
+    [ -e "$f" ] || continue
     echo "Running $f"
     sh "$f"
   done

@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Руководство по безопасности",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Политика токенов",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Политика паролей",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Политика паролей",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блокировка пользователя",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Ограничение по IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Журнал аудита",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Двухфакторная аутентификация (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Шифрование полей",
+    "link": "/data-sources/field-encryption"
+  }
+]

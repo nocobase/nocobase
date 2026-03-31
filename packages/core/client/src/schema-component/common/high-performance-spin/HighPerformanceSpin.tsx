@@ -44,3 +44,5 @@ export const HighPerformanceSpin = React.memo((props: SpinProps) => {
     </div>
   );
 });
+
+HighPerformanceSpin.displayName = 'HighPerformanceSpin';

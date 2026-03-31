@@ -17,6 +17,11 @@ import { mockAPIClient } from '../../testUtils';
 import { CurrentUserProvider } from '../../user';
 import VariablesProvider from '../VariablesProvider';
 import useVariables from '../hooks/useVariables';
+import { Application } from '../../application/Application';
+
+const app = new Application();
+
+const Root = app.getRootComponent();
 
 vi.mock('../../collection-manager', async () => {
   return {
@@ -129,7 +134,7 @@ mockRequest.onGet('/users/0/belongsToField:get').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -142,7 +147,7 @@ mockRequest.onGet('/users/0/hasManyField:list?pageSize=9999').reply(() => {
     },
   ];
 });
-mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/users/0/belongsToManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -156,7 +161,7 @@ mockRequest.onGet('/users/0/belongsToManyField:list?pageSize=9999').reply(() => 
     },
   ];
 });
-mockRequest.onGet('/test/0/hasManyField:list?pageSize=9999').reply(() => {
+mockRequest.onGet('/test/0/hasManyField:list?paginate=false').reply(() => {
   return [
     200,
     {
@@ -185,7 +190,7 @@ mockRequest.onGet('/someBelongsToField/0/belongsToField:get').reply(() => {
 const Providers = ({ children }) => {
   const history = createMemoryHistory();
   return (
-    <Router location={history.location} navigator={history}>
+    <Root>
       <APIClientProvider apiClient={apiClient}>
         <CurrentUserProvider>
           <SchemaOptionsContext.Provider value={{}}>
@@ -195,7 +200,7 @@ const Providers = ({ children }) => {
           </SchemaOptionsContext.Provider>
         </CurrentUserProvider>
       </APIClientProvider>
-    </Router>
+    </Root>
   );
 };
 
@@ -210,6 +215,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -237,6 +243,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -262,6 +269,19 @@ describe('useVariables', () => {
             "today": [Function],
             "tomorrow": [Function],
             "yesterday": [Function],
+          },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
           },
           "$nRole": "root",
           "$nToken": "token",
@@ -516,6 +536,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -543,6 +564,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -568,6 +590,19 @@ describe('useVariables', () => {
             "today": [Function],
             "tomorrow": [Function],
             "yesterday": [Function],
+          },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
           },
           "$nRole": "root",
           "$nToken": "token",
@@ -602,6 +637,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -629,6 +665,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -654,6 +691,19 @@ describe('useVariables', () => {
             "today": [Function],
             "tomorrow": [Function],
             "yesterday": [Function],
+          },
+          "$nExactDate": {
+            "nowLocal": [Function],
+            "nowUtc": [Function],
+            "todayDate": [Function],
+            "todayLocal": [Function],
+            "todayUtc": [Function],
+            "tomorrowDate": [Function],
+            "tomorrowLocal": [Function],
+            "tomorrowUtc": [Function],
+            "yesterdayDate": [Function],
+            "yesterdayLocal": [Function],
+            "yesterdayUtc": [Function],
           },
           "$nRole": "root",
           "$nToken": "token",
@@ -989,6 +1039,114 @@ describe('useVariables', () => {
           "type": "belongsTo",
         }
       `);
+    });
+  });
+
+  it('should handle function values with correct parameters', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$func',
+        ctx: ({ fieldOperator, isParsingVariable, variableName }) => {
+          // 函数应该接收到两个参数：fieldOperator 和 isParsingVariable
+          return {
+            fieldOperator,
+            isParsingVariable,
+            variableName,
+            value: 'function result',
+          };
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $func }}');
+      expect(value).toEqual({
+        fieldOperator: undefined,
+        isParsingVariable: true,
+        variableName: '$func',
+        value: 'function result',
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $func }}', [], { fieldOperator: '$contains' });
+      expect(value).toEqual({
+        fieldOperator: '$contains',
+        isParsingVariable: true,
+        variableName: '$func',
+        value: 'function result',
+      });
+    });
+  });
+
+  it('should handle nested function values', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$nestedFunc',
+        ctx: ({ fieldOperator, variableName }) => {
+          return {
+            fromLevel1: true,
+            fieldOperator,
+            variableName,
+          };
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $nestedFunc.level1 }}');
+      expect(value).toEqual({
+        fromLevel1: true,
+        fieldOperator: undefined,
+        variableName: '$nestedFunc.level1',
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $nestedFunc.level1 }}', [], { fieldOperator: '$eq' });
+      expect(value).toEqual({
+        fromLevel1: true,
+        fieldOperator: '$eq',
+        variableName: '$nestedFunc.level1',
+      });
+    });
+  });
+
+  it('should handle function that returns a promise', async () => {
+    const { result } = renderHook(() => useVariables(), {
+      wrapper: Providers,
+    });
+
+    await waitFor(() => {
+      result.current.registerVariable({
+        name: '$asyncFunc',
+        ctx: async ({ fieldOperator, variableName }) => {
+          // 模拟异步操作
+          await sleep(10);
+          return {
+            asyncResult: true,
+            fieldOperator,
+            variableName,
+          };
+        },
+      });
+    });
+
+    await waitFor(async () => {
+      const { value } = await result.current.parseVariable('{{ $asyncFunc }}');
+      expect(value).toEqual({
+        asyncResult: true,
+        fieldOperator: undefined,
+        variableName: '$asyncFunc',
+      });
     });
   });
 });

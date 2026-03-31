@@ -131,7 +131,6 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
         </Card>
       );
     };
-
     const renderItems = () => {
       return (
         <Collapse
@@ -168,6 +167,8 @@ export const ArrayCollapse: ComposedArrayCollapse = observer(
                     <Badge size="small" className="errors-badge" count={errors.length}>
                       {header}
                     </Badge>
+                  ) : props.header ? (
+                    props.header
                   ) : (
                     <LinkageRulesTitle item={item.initialValue || item} index={index} />
                   )}

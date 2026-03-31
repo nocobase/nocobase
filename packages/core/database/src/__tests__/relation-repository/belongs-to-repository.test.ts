@@ -1,7 +1,13 @@
-import { Collection } from '@nocobase/database';
-import Database from '../../database';
-import { BelongsToRepository } from '../../relation-repository/belongs-to-repository';
-import { mockDatabase } from '../index';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { BelongsToRepository, Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('belongs to repository', () => {
   let db: Database;
@@ -9,7 +15,7 @@ describe('belongs to repository', () => {
   let Post: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({
@@ -134,5 +140,46 @@ describe('belongs to repository', () => {
     // 验证关联是否更新
     await p1.reload();
     expect(p1.userId).toEqual(user3.id);
+  });
+
+  test('should find belongsTo target by source filterTargetKey', async () => {
+    const Account = db.collection({
+      name: 'accounts',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'hasMany', name: 'articles' },
+      ],
+    });
+
+    const Article = db.collection({
+      name: 'articles',
+      filterTargetKey: 'slug',
+      fields: [
+        { type: 'string', name: 'slug', unique: true },
+        {
+          type: 'belongsTo',
+          name: 'account',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Account.repository.create({
+      values: {
+        name: 'u1',
+        articles: [
+          {
+            slug: 'a-1',
+          },
+        ],
+      },
+    });
+
+    const ArticleAccountRepository = db.getRepository<BelongsToRepository>('articles.account', 'a-1');
+    const account = await ArticleAccountRepository.findOne();
+
+    expect(account).not.toBeNull();
+    expect(account.get('name')).toBe('u1');
   });
 });

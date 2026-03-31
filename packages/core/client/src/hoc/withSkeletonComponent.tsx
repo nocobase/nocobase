@@ -10,7 +10,7 @@
 import { Skeleton } from 'antd';
 import { useDataBlockRequest } from '../data-source/data-block/DataBlockRequestProvider';
 
-import React, { useRef } from 'react';
+import React, { useDeferredValue, useRef } from 'react';
 
 interface Options {
   displayName?: string;
@@ -39,8 +39,9 @@ export const withSkeletonComponent = (Component: React.ComponentType<any>, optio
   const Result = React.memo((props: any) => {
     const loading = useLoading();
     const mountedRef = useRef(false);
+    const deferredLoading = useDeferredValue(loading);
 
-    if (!mountedRef.current && loading) {
+    if (!mountedRef.current && deferredLoading) {
       return <SkeletonComponent />;
     }
 

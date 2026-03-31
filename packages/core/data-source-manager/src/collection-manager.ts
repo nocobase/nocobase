@@ -14,10 +14,12 @@ import {
   CollectionOptions,
   ICollection,
   ICollectionManager,
+  IField,
   IFieldInterface,
   IRepository,
   MergeOptions,
 } from './types';
+import { isNumericField } from './utils';
 
 export class CollectionManager implements ICollectionManager {
   public dataSource: DataSource;
@@ -70,6 +72,10 @@ export class CollectionManager implements ICollectionManager {
 
   getFieldInterface(name: string): { new (options: any): IFieldInterface | undefined } {
     return;
+  }
+
+  isNumericField(field?: IField): boolean {
+    return isNumericField(field);
   }
 
   /* istanbul ignore next -- @preserve */

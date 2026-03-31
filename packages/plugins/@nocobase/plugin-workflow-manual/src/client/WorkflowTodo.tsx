@@ -8,6 +8,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useField, useFieldSchema, useForm } from '@formily/react';
 import { FormLayout } from '@formily/antd-v5';
 import { Button, Card, ConfigProvider, Descriptions, Space, Spin, Tag } from 'antd';
@@ -33,9 +34,13 @@ import {
   useActionContext,
   useCurrentUserContext,
   useFormBlockContext,
-  useTableBlockContext,
+  useListBlockContext,
   List,
   OpenModeProvider,
+  ActionContextProvider,
+  useRequest,
+  CollectionRecordProvider,
+  useMobileLayout,
 } from '@nocobase/client';
 import WorkflowPlugin, {
   DetailsBlockProvider,
@@ -44,14 +49,15 @@ import WorkflowPlugin, {
   useAvailableUpstreams,
   useFlowContext,
   EXECUTION_STATUS,
-  JOB_STATUS,
   WorkflowTitle,
+  usePopupRecordContext,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap } from '../common/constants';
+import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
+import { useMobilePage } from '@nocobase/plugin-mobile/client';
 
 function TaskStatusColumn(props) {
   const recordData = useCollectionRecordData();
@@ -117,6 +123,7 @@ export const WorkflowTodo: React.FC & {
                   'x-use-component-props': 'useFilterActionProps',
                   'x-component-props': {
                     icon: 'FilterOutlined',
+                    nonfilterable: ['workflow.type', 'workflow.mode', 'workflow.description', 'workflow.categories'],
                   },
                   default: {
                     $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
@@ -268,7 +275,7 @@ function ManualActionStatusProvider({ value, children }) {
   useEffect(() => {
     if (execution.status || userJob.status) {
       button.disabled = true;
-      button.visible = userJob.status === value && userJob.result._ === buttonSchema.name;
+      button.visible = userJob.status === value && userJob.result?._ === buttonSchema.name;
     }
   }, [execution, userJob, value, button, buttonSchema.name]);
 
@@ -291,11 +298,12 @@ function useSubmit() {
   const { values, submit } = useForm();
   const field = useField();
   const buttonSchema = useFieldSchema();
-  const { service } = useTableBlockContext();
+  const { service } = useListBlockContext();
   const { userJob, execution } = useFlowContext();
   const { name: actionKey } = buttonSchema;
   const { name: formKey } = buttonSchema.parent.parent;
   const { assignedValues = {} } = buttonSchema?.['x-action-settings'] ?? {};
+
   return {
     async run() {
       if (execution.status || userJob.status) {
@@ -353,7 +361,7 @@ function FlowContextProvider(props) {
 
   const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
   const nodeComponents = upstreams.reduce(
-    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
+    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type)?.components),
     {},
   );
 
@@ -384,7 +392,7 @@ function FlowContextProvider(props) {
         }}
         schema={{
           type: 'void',
-          name: 'tabs',
+          name: `manual-${id}}`,
           'x-component': 'Tabs',
           properties: node.config?.schema,
         }}
@@ -423,15 +431,22 @@ function useDetailsBlockProps() {
 }
 
 function FooterStatus() {
+  const { isMobileLayout } = useMobileLayout();
+  const mobilePage = useMobilePage();
   const compile = useCompile();
   const { status, updatedAt } = useCollectionRecordData() || {};
   const statusOption = TaskStatusOptionsMap[status];
+  const isMobile = Boolean(mobilePage || isMobileLayout);
   return status ? (
     <Space
       className={css`
-        margin-bottom: 1em;
+        padding: ${isMobileLayout ? '0 1em' : '0'};
+        margin-bottom: ${isMobile ? '0' : '1em'};
         time {
           margin-right: 0.5em;
+        }
+        .ant-tag {
+          margin-right: 0;
         }
       `}
     >
@@ -443,9 +458,10 @@ function FooterStatus() {
 
 function Drawer() {
   const ctx = useContext(SchemaComponentContext);
-  const { id, node, workflow, status } = useCollectionRecordData() || {};
+  const record = useCollectionRecordData();
+  const { id, node, workflow, status } = record || {};
 
-  return (
+  return record ? (
     <SchemaComponentContext.Provider value={{ ...ctx, reset() {}, designable: false }}>
       <SchemaComponent
         components={{
@@ -454,7 +470,7 @@ function Drawer() {
         }}
         schema={{
           type: 'void',
-          name: `drawer-${id}-${status}`,
+          name: `manual-detail-drawer-${id}-${status}`,
           'x-component': 'Action.Container',
           'x-component-props': {
             className: 'nb-action-popup',
@@ -479,7 +495,7 @@ function Drawer() {
         }}
       />
     </SchemaComponentContext.Provider>
-  );
+  ) : null;
 }
 
 function Decorator(props) {
@@ -487,7 +503,7 @@ function Decorator(props) {
   const blockProps = {
     collection: 'workflowManualTasks',
     resource: 'workflowManualTasks',
-    action: 'list',
+    action: 'listMine',
     params: {
       pageSize: 20,
       sort: ['-createdAt'],
@@ -611,67 +627,47 @@ function ContentDetailWithTitle(props) {
 
 function TaskItem() {
   const token = useAntdToken();
-  const [visible, setVisible] = useState(false);
   const record = useCollectionRecordData();
-  const { t } = useTranslation();
-  // const { defaultOpenMode } = useOpenModeContext();
-  // const { openPopup } = usePopupUtils();
-  // const { isPopupVisibleControlledByURL } = usePopupSettings();
-  const onOpen = useCallback((e: React.MouseEvent) => {
-    const targetElement = e.target as Element; // 将事件目标转换为Element类型
-    const currentTargetElement = e.currentTarget as Element;
-    if (currentTargetElement.contains(targetElement)) {
-      setVisible(true);
-      // if (!isPopupVisibleControlledByURL()) {
-      // } else {
-      //   openPopup({
-      //     // popupUidUsedInURL: 'job',
-      //     customActionSchema: {
-      //       type: 'void',
-      //       'x-uid': 'job-view',
-      //       'x-action-context': {
-      //         dataSource: 'main',
-      //         collection: 'workflowManualTasks',
-      //         doNotUpdateContext: true,
-      //       },
-      //       properties: {},
-      //     },
-      //   });
-      // }
-    }
-    e.stopPropagation();
-  }, []);
+  const navigate = useNavigate();
+  const { setRecord } = usePopupRecordContext();
+  const onOpen = useCallback(
+    (e: React.MouseEvent) => {
+      const targetElement = e.target as Element; // 将事件目标转换为Element类型
+      const currentTargetElement = e.currentTarget as Element;
+      if (currentTargetElement.contains(targetElement)) {
+        setRecord(record);
+        navigate(`./${record.id}`);
+      }
+      e.stopPropagation();
+    },
+    [navigate, record.id],
+  );
 
   return (
-    <>
-      <Card
-        onClick={onOpen}
-        hoverable
-        size="small"
-        title={record.title}
-        extra={<WorkflowTitle {...record.workflow} />}
-        className={css`
-          .ant-card-extra {
-            color: ${token.colorTextDescription};
-          }
-        `}
-      >
-        <ContentDetail />
-      </Card>
-      <PopupContextProvider visible={visible} setVisible={setVisible} openMode="modal">
-        <Drawer />
-      </PopupContextProvider>
-    </>
+    <Card
+      onClick={onOpen}
+      hoverable
+      size="small"
+      title={record.title}
+      extra={<WorkflowTitle {...record.workflow} />}
+      className={css`
+        .ant-card-extra {
+          color: ${token.colorTextDescription};
+        }
+      `}
+    >
+      <ContentDetail />
+    </Card>
   );
 }
 
 const StatusFilterMap = {
   pending: {
-    status: JOB_STATUS.PENDING,
+    status: TASK_STATUS.PENDING,
     'execution.status': EXECUTION_STATUS.STARTED,
   },
   completed: {
-    status: JOB_STATUS.RESOLVED,
+    status: [TASK_STATUS.RESOLVED, TASK_STATUS.REJECTED],
   },
 };
 
@@ -679,11 +675,10 @@ function useTodoActionParams(status) {
   const { data: user } = useCurrentUserContext();
   const filter = StatusFilterMap[status] ?? {};
   return {
-    filter: {
-      ...filter,
-      userId: user?.data?.id,
-    },
+    filter,
     appends: [
+      'node.id',
+      'node.title',
       'job.id',
       'job.status',
       'job.result',
@@ -693,10 +688,11 @@ function useTodoActionParams(status) {
       'execution.id',
       'execution.status',
     ],
+    except: ['node.config', 'workflow.config', 'workflow.options'],
   };
 }
 
-function TodoExtraActions() {
+function TodoExtraActions(props) {
   return (
     <SchemaComponent
       schema={{
@@ -711,6 +707,7 @@ function TodoExtraActions() {
             'x-use-component-props': 'useRefreshActionProps',
             'x-component-props': {
               icon: 'ReloadOutlined',
+              ...props,
             },
           },
           filter: {
@@ -720,6 +717,7 @@ function TodoExtraActions() {
             'x-use-component-props': 'useFilterActionProps',
             'x-component-props': {
               icon: 'FilterOutlined',
+              ...props,
             },
             default: {
               $and: [{ title: { $includes: '' } }, { 'workflow.title': { $includes: '' } }],
@@ -732,9 +730,12 @@ function TodoExtraActions() {
 }
 
 export const manualTodo = {
+  key: TASK_TYPE_MANUAL,
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
+  action: 'listMine',
   useActionParams: useTodoActionParams,
-  component: TaskItem,
-  extraActions: TodoExtraActions,
+  Actions: TodoExtraActions,
+  Item: TaskItem,
+  Detail: Drawer,
 };

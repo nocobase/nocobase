@@ -9,11 +9,8 @@
 
 import * as antdCssinjs from '@ant-design/cssinjs';
 import * as antdIcons from '@ant-design/icons';
-import * as dndKitAccessibility from '@dnd-kit/accessibility';
 import * as dndKitCore from '@dnd-kit/core';
-import * as dndKitModifiers from '@dnd-kit/modifiers';
 import * as dndKitSortable from '@dnd-kit/sortable';
-import * as dndKitUtilities from '@dnd-kit/utilities';
 import * as emotionCss from '@emotion/css';
 import * as formilyAntdV5 from '@formily/antd-v5';
 import * as formilyCore from '@formily/core';
@@ -28,6 +25,7 @@ import * as nocobaseEvaluators from '@nocobase/evaluators/client';
 import * as nocobaseSDK from '@nocobase/sdk';
 import * as nocobaseClientUtils from '@nocobase/utils/client';
 import { dayjs } from '@nocobase/utils/client';
+import * as nocobaseFlowEngine from '@nocobase/flow-engine';
 import * as ahooks from 'ahooks';
 import * as antd from 'antd';
 import * as antdStyle from 'antd-style';
@@ -87,13 +85,10 @@ export function defineGlobalDeps(requirejs: RequireJS) {
   requirejs.define('@nocobase/evaluators', () => nocobaseEvaluators);
   requirejs.define('@nocobase/evaluators/client', () => nocobaseEvaluators);
   requirejs.define('@nocobase/sdk', () => nocobaseSDK);
+  requirejs.define('@nocobase/flow-engine', () => nocobaseFlowEngine);
 
-  // dnd-kit 相关
-  requirejs.define('@dnd-kit/accessibility', () => dndKitAccessibility);
   requirejs.define('@dnd-kit/core', () => dndKitCore);
-  requirejs.define('@dnd-kit/modifiers', () => dndKitModifiers);
   requirejs.define('@dnd-kit/sortable', () => dndKitSortable);
-  requirejs.define('@dnd-kit/utilities', () => dndKitUtilities);
 
   // utils
   requirejs.define('axios', () => axios);

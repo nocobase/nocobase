@@ -41,27 +41,19 @@ describe('workflow > Processor', () => {
   afterEach(() => app.destroy());
 
   describe('base', () => {
-    it.skip('saveJob', async () => {
-      const execution = await workflow.createExecution({
-        key: workflow.key,
-        context: {},
-        status: EXECUTION_STATUS.STARTED,
-        eventKey: '123',
-      });
+    it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('job id out of max safe integer', async () => {
+      const JobModel = db.getModel('jobs');
 
-      const processor = plugin.createProcessor(execution);
+      const records = await JobModel.bulkCreate([
+        {
+          id: '10267424896650240',
+        },
+        {
+          id: '10267424930204672',
+        },
+      ]);
 
-      const job1 = await processor.saveJob({
-        status: JOB_STATUS.RESOLVED,
-        result: null,
-      });
-
-      const job2 = await processor.saveJob({
-        status: JOB_STATUS.RESOLVED,
-        result: 'abc',
-      });
-
-      expect(job2).toBeDefined();
+      expect(records.length).toBe(2);
     });
 
     it('empty workflow without any nodes', async () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export const REGEX_OF_VARIABLE = /^\s*\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}\s*$/g;
+export const REGEX_OF_VARIABLE = /^\s*\{\{\s*([\p{L}0-9_$-.]+?)\s*\}\}\s*$/u;
 export const REGEX_OF_VARIABLE_IN_EXPRESSION = /\{\{\s*([a-zA-Z0-9_$-.]+?)\s*\}\}/g;
 
 export const isVariable = (str: unknown) => {

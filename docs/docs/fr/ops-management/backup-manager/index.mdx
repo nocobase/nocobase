@@ -1,0 +1,211 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
+```yaml
+pkg: '@nocobase/plugin-backups'
+---
+
+# Gestion des sauvegardes
+
+## Introduction
+
+Le plugin de gestion des sauvegardes NocoBase offre des fonctionnalités pour la sauvegarde complète de la base de données NocoBase et des fichiers téléchargés par les utilisateurs, y compris la planification, le téléchargement, la suppression et la restauration des sauvegardes.
+
+:::warning
+Le plugin Gestionnaire de sauvegardes est inclus dans les éditions Professionnelle et Entreprise. Pour les utilisateurs des éditions Communauté et Standard, vous pouvez sauvegarder directement la base de données ; consultez les détails ici : [`Comment sauvegarder et restaurer NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## Installation du client de base de données
+
+Le Gestionnaire de sauvegardes dépend du client de la base de données correspondante. Avant de l'utiliser, veuillez visiter le site officiel pour télécharger le client correspondant à la version de votre base de données :
+
+- MySQL : https://dev.mysql.com/downloads/
+- PostgreSQL : https://www.postgresql.org/download/
+
+Pour les versions Docker, vous pouvez directement écrire un script dans le répertoire `./storage/scripts` :
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+Le contenu de `install-database-client.sh` est le suivant :
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Vérifier si pg_dump est installé
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump n'est pas installé, début de l'installation du client PostgreSQL..."
+
+    # Configurer les miroirs Aliyun
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Installer les outils nécessaires et nettoyer le cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configurer la source PostgreSQL
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Installer le client PostgreSQL
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "Installation du client PostgreSQL terminée."
+else
+    echo "pg_dump est déjà installé, l'installation du client PostgreSQL est ignorée."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "Le client MySQL n'est pas installé, début de l'installation du client MySQL..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Mise à jour de la liste des paquets et installation des outils nécessaires..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "Installation du client MySQL terminée."
+else
+    echo "Le client MySQL est déjà installé, l'installation est ignorée."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+Redémarrez ensuite le conteneur de l'application
+
+```bash
+docker compose restart app
+# Afficher les journaux
+docker compose logs app
+```
+
+Vérifiez le numéro de version du client de base de données, qui doit correspondre au numéro de version du serveur de base de données.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## Instructions d'utilisation
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### Créer une nouvelle sauvegarde
+
+Cliquez sur le bouton « Nouvelle sauvegarde » pour créer une nouvelle sauvegarde basée sur la configuration de sauvegarde et afficher son statut dans la liste des sauvegardes.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### Restaurer une sauvegarde
+
+Vous pouvez restaurer des sauvegardes à partir de la liste des sauvegardes ou en téléchargeant des fichiers de sauvegarde locaux.
+Les opérations de restauration ne sont pas autorisées dans les scénarios suivants :
+
+- Lorsque la version actuelle de NocoBase est inférieure à celle contenue dans le fichier de sauvegarde.
+- Lorsque la base de données NocoBase actuelle est incompatible avec les configurations suivantes du fichier de sauvegarde :
+  - dialect (type de base de données)
+  - underscored (configuration des champs)
+  - table prefix (préfixe de table)
+  - schema (structure de table)
+- Lorsque le `mode tolérant` n'est pas activé et que la version de la base de données lors de la création de la sauvegarde est supérieure à la version actuelle de la base de données de l'application.
+
+> **La restauration est une opération complète de la base de données. Il est recommandé de sauvegarder la base de données actuelle avant de procéder à une restauration.**
+
+#### Restaurer depuis la liste des sauvegardes
+
+Cliquez sur le bouton `Restaurer` de l'élément de sauvegarde dans la liste des sauvegardes, saisissez le mot de passe de chiffrement du fichier de sauvegarde dans la fenêtre contextuelle, puis cliquez sur « Confirmer » pour restaurer la sauvegarde.
+
+> Laissez le champ du mot de passe vide pour les sauvegardes non chiffrées.
+
+> Si vous devez restaurer la sauvegarde vers une version antérieure de la base de données, vous devez activer le mode tolérant.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### Restaurer à partir d'un fichier de sauvegarde local
+
+Cliquez sur le bouton `Restaurer à partir d'une sauvegarde locale`, sélectionnez le fichier de sauvegarde local dans la fenêtre contextuelle, saisissez le mot de passe de chiffrement du fichier de sauvegarde, puis cliquez sur « Confirmer » pour restaurer la sauvegarde.
+
+> Laissez le champ du mot de passe vide pour les sauvegardes non chiffrées.
+
+> Si vous devez restaurer la sauvegarde vers une version antérieure de la base de données, vous devez activer le mode tolérant.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### Télécharger un fichier de sauvegarde
+
+Cliquez sur le bouton `Télécharger` de l'élément de sauvegarde dans la liste des sauvegardes pour télécharger le fichier de sauvegarde.
+
+#### Supprimer une sauvegarde
+
+Cliquez sur le bouton `Supprimer` de l'élément de sauvegarde dans la liste des sauvegardes pour supprimer le fichier de sauvegarde.
+
+## Paramètres de sauvegarde
+
+Basculez vers l'onglet « Paramètres », modifiez les paramètres de sauvegarde, puis cliquez sur `Enregistrer` pour appliquer les modifications.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### Description des paramètres de sauvegarde
+
+- `Sauvegarde automatique` : Après avoir activé `Exécuter la sauvegarde automatique selon la planification Cron`, vous pouvez configurer des sauvegardes automatiques à des heures spécifiées.
+- `Nombre maximal de sauvegardes` : Définissez le nombre maximal de fichiers de sauvegarde enregistrés localement. Une fois ce nombre dépassé, les fichiers de sauvegarde locaux les plus anciens seront automatiquement supprimés.
+- `Synchroniser la sauvegarde vers le stockage cloud` : Configurez le stockage cloud vers lequel les fichiers de sauvegarde sont automatiquement téléchargés après une sauvegarde réussie.
+- `Sauvegarder les fichiers de stockage local` : Indique si les fichiers téléchargés par les utilisateurs vers le stockage local du serveur (storage/uploads) doivent être inclus dans la sauvegarde.
+- `Mot de passe de restauration` : Si un mot de passe de restauration est défini, il devra être saisi lors de la restauration de la sauvegarde.
+
+> **Veuillez conserver le mot de passe de restauration en lieu sûr. L'oubli de ce mot de passe rendra la restauration du fichier de sauvegarde impossible.**

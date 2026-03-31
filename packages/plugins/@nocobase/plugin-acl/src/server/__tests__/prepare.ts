@@ -23,7 +23,16 @@ export async function prepareApp(): Promise<MockServer> {
       'auth',
       'data-source-manager',
       'collection-tree',
+      'system-settings',
     ],
+    logger: {
+      system: {
+        level: 'debug',
+      },
+      request: {
+        level: 'info',
+      },
+    },
   });
 
   return app;

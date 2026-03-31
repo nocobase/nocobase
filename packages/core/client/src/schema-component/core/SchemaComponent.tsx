@@ -28,6 +28,7 @@ function toSchema(schema?: any) {
       properties: {
         [schema.name]: schema,
       },
+      name: `p_${schema.name}`,
     });
   }
   return new Schema(schema);
@@ -52,58 +53,65 @@ interface DistributedProps {
  */
 export const SchemaComponentOnChangeContext = createContext<SchemaComponentOnChange>({ onChange: _.noop });
 
-const RecursionSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
-  const { components, scope, schema: _schema, distributed, onChange: _onChange, ...others } = props;
-  const ctx = useContext(SchemaComponentContext);
-  const schema = useMemo(() => toSchema(_schema), [_schema]);
-  const value = useMemo(
-    () => ({
-      ...ctx,
-      distributed: ctx.distributed == false ? false : distributed,
-      /**
-       * @deprecated
-       */
-      refresh: ctx.refresh || _.noop,
-    }),
-    [ctx, distributed],
-  );
+const RecursionSchemaComponent = memo(
+  (props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps & { parentSchema?: Schema }) => {
+    const { components, scope, schema: _schema, distributed, onChange: _onChange, parentSchema, ...others } = props;
+    const ctx = useContext(SchemaComponentContext);
+    const schema = useMemo(() => toSchema(_schema), [_schema]);
+    const value = useMemo(
+      () => ({
+        ...ctx,
+        distributed: ctx.distributed == false ? false : distributed,
+        /**
+         * @deprecated
+         */
+        refresh: ctx.refresh || _.noop,
+      }),
+      [ctx, distributed],
+    );
 
-  const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
+    const { onChange: onChangeFromContext } = useContext(SchemaComponentOnChangeContext);
 
-  const onChangeValue = useMemo(
-    () => ({
-      onChange: () => {
-        _onChange?.(schema);
-        onChangeFromContext?.();
-      },
-    }),
-    [_onChange, onChangeFromContext, schema],
-  );
+    const onChangeValue = useMemo(
+      () => ({
+        onChange: () => {
+          _onChange?.(schema);
+          onChangeFromContext?.();
+        },
+      }),
+      [_onChange, onChangeFromContext, schema],
+    );
 
-  return (
-    <SchemaComponentOnChangeContext.Provider value={onChangeValue}>
-      <SchemaComponentContext.Provider value={value}>
-        <SchemaComponentOptions inherit components={components} scope={scope}>
-          <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField />
-        </SchemaComponentOptions>
-      </SchemaComponentContext.Provider>
-    </SchemaComponentOnChangeContext.Provider>
-  );
-});
+    return (
+      <SchemaComponentOnChangeContext.Provider value={onChangeValue}>
+        <SchemaComponentContext.Provider value={value}>
+          <SchemaComponentOptions inherit components={components} scope={scope}>
+            <NocoBaseRecursionField {...others} schema={schema} isUseFormilyField parentSchema={parentSchema} />
+          </SchemaComponentOptions>
+        </SchemaComponentContext.Provider>
+      </SchemaComponentOnChangeContext.Provider>
+    );
+  },
+);
 
 RecursionSchemaComponent.displayName = 'RecursionSchemaComponent';
 
-const MemoizedSchemaComponent = memo((props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps) => {
-  const { schema, ...others } = props;
-  const s = useMemoizedSchema(schema);
-  return <RecursionSchemaComponent {...others} schema={s} />;
-});
+const MemoizedSchemaComponent = memo(
+  (props: ISchemaFieldProps & SchemaComponentOnChange & DistributedProps & { parentSchema?: Schema }) => {
+    const { schema, parentSchema, ...others } = props;
+    const s = useMemoizedSchema(schema);
+    return <RecursionSchemaComponent {...others} schema={s} parentSchema={parentSchema} />;
+  },
+);
 
 MemoizedSchemaComponent.displayName = 'MemoizedSchemaComponent';
 
 export const SchemaComponent = memo(
   (
-    props: (ISchemaFieldProps | IRecursionFieldProps) & { memoized?: boolean } & SchemaComponentOnChange &
+    props: (ISchemaFieldProps | IRecursionFieldProps) & {
+      memoized?: boolean;
+      parentSchema?: Schema;
+    } & SchemaComponentOnChange &
       DistributedProps,
   ) => {
     const { memoized, ...others } = props;

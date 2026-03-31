@@ -89,6 +89,7 @@ const InternalCreateRecordAction = (props: any, ref) => {
               condition: v.condition,
               variables,
               localVariables,
+              conditionType: v.conditionType,
             },
             app.jsonLogic,
           );
@@ -208,6 +209,7 @@ export const CreateAction = observer(
                 condition: v.condition,
                 variables,
                 localVariables,
+                conditionType: v.conditionType,
               },
               app.jsonLogic,
             );
@@ -242,7 +244,7 @@ function FinallyButton({
   inheritsCollections,
   linkageFromForm,
   allowAddToCurrent,
-  props,
+  props: { onlyIcon, ...props },
   componentType,
   menu,
   onClick,
@@ -267,17 +269,21 @@ function FinallyButton({
 }) {
   const { getCollection } = useCollectionManager_deprecated();
   const aclCtx = useACLActionParamsContext();
+  const disabled = form?.disabled || field?.data?.disabled || field?.componentProps?.disabled || props?.disabled;
   const buttonStyle = useMemo(() => {
+    const shouldApplyOpacity = designable && (field?.data?.hidden || !aclCtx);
+    const opacityValue = componentType !== 'link' ? (shouldApplyOpacity ? 0.1 : 1) : 1;
     return {
-      opacity: designable && (field?.data?.hidden || !aclCtx) && 0.1,
+      opacity: opacityValue,
     };
-  }, [designable, field?.data?.hidden]);
+  }, [designable, field?.data?.hidden, aclCtx, componentType]);
 
   if (inheritsCollections?.length > 0) {
     if (!linkageFromForm) {
       return allowAddToCurrent === undefined || allowAddToCurrent ? (
         <Dropdown.Button
           aria-label={props['aria-label']}
+          disabled={disabled}
           danger={props.danger}
           type={componentType}
           icon={<DownOutlined />}
@@ -300,10 +306,11 @@ function FinallyButton({
           {props.children}
         </Dropdown.Button>
       ) : (
-        <Dropdown menu={menu}>
+        <Dropdown menu={menu} disabled={disabled}>
           {
             <Button
               aria-label={props['aria-label']}
+              disabled={disabled}
               icon={icon}
               type={componentType}
               danger={props.danger}
@@ -319,7 +326,7 @@ function FinallyButton({
       <Button
         aria-label={props['aria-label']}
         type={componentType}
-        disabled={field.disabled}
+        disabled={disabled}
         danger={props.danger}
         icon={icon}
         onClick={(info) => {
@@ -345,7 +352,7 @@ function FinallyButton({
       {...props}
       aria-label={props['aria-label']}
       type={componentType}
-      disabled={field.disabled}
+      disabled={disabled}
       danger={props.danger}
       icon={icon}
       onClick={(info) => {
@@ -353,12 +360,12 @@ function FinallyButton({
       }}
       style={{
         ...props?.style,
-        display: !designable && field?.data?.hidden && 'none',
+        display: !designable && field?.data?.hidden ? 'none' : 'inline-block',
         opacity: designable && field?.data?.hidden && 0.1,
         ...buttonStyle,
       }}
     >
-      {props.children}
+      {onlyIcon ? props?.children?.[1] : props?.children}
     </Button>
   );
 }

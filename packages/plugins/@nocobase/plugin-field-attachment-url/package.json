@@ -1,0 +1,21 @@
+{
+  "name": "@nocobase/plugin-field-attachment-url",
+  "version": "2.1.0-beta.11",
+  "main": "dist/server/index.js",
+  "displayName": "Collection field: Attachment(URL)",
+  "displayName.ru-RU": "Поле коллекции: Вложение (URL)",
+  "displayName.zh-CN": "数据表字段：附件（URL）",
+  "description": "Supports attachments in URL format.",
+  "description.ru-RU": "Поддержка вложений в формате URL.",
+  "description.zh-CN": "支持 URL 格式的附件。",
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-file-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "Collection fields"
+  ],
+  "license": "Apache-2.0"
+}

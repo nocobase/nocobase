@@ -8,13 +8,24 @@
  */
 
 import { Registry } from '@nocobase/utils';
-import { Mutex, MutexInterface, E_CANCELED } from 'async-mutex';
+import { Mutex, MutexInterface, E_CANCELED, withTimeout } from 'async-mutex';
 
 export type Releaser = () => void | Promise<void>;
 
+/**
+ * A lock handle returned by {@link ILockAdapter.tryAcquire}.
+ *
+ * **Important**: the underlying mutex is already held when this object is
+ * returned.  The caller MUST invoke one of `acquire()`, `runExclusive()`, or
+ * `release()` promptly; if none is called the lock will be held indefinitely.
+ *
+ * Use `release()` to abandon the lock without executing any work (e.g. when an
+ * early-return or error prevents the caller from proceeding).
+ */
 export interface ILock {
   acquire(ttl: number): Releaser | Promise<Releaser>;
   runExclusive<T>(fn: () => Promise<T>, ttl: number): Promise<T>;
+  release(): void | Promise<void>;
 }
 
 export interface ILockAdapter {
@@ -87,17 +98,85 @@ class LocalLockAdapter implements ILockAdapter {
     }
   }
 
-  async tryAcquire(key: string) {
-    const lock = this.getLock(key);
-    if (lock.isLocked()) {
-      throw new LockAcquireError('lock is locked');
+  async tryAcquire(key: string, timeout = 0) {
+    const mutex = this.getLock(key);
+    let preAcquiredRelease: Releaser;
+
+    if (timeout === 0) {
+      // Non-blocking: throw immediately if the lock is already held.
+      // mutex.acquire() is called synchronously (before any await boundary) so
+      // that _locked=true is set atomically within the current JS execution
+      // slice, preventing TOCTOU races in single-process cluster simulations
+      // (e.g. tests using createMockCluster).
+      if (mutex.isLocked()) {
+        throw new LockAcquireError('lock is locked');
+      }
+      preAcquiredRelease = (await mutex.acquire()) as Releaser;
+    } else {
+      // Blocking with timeout: wait up to `timeout` ms for the lock, then
+      // throw. withTimeout() from async-mutex handles queue cleanup properly
+      // when the timeout fires before the lock is acquired.
+      try {
+        preAcquiredRelease = (await withTimeout(mutex, timeout).acquire()) as Releaser;
+      } catch (e) {
+        throw new LockAcquireError('lock acquire timed out', { cause: e });
+      }
     }
+
+    let preAcquiredConsumed = false;
+
+    const getRelease = async (): Promise<Releaser> => {
+      const rawRelease: Releaser = !preAcquiredConsumed
+        ? ((preAcquiredConsumed = true), preAcquiredRelease)
+        : ((await mutex.acquire()) as Releaser);
+      // Idempotency guard: prevents double-release when both the TTL auto-
+      // release timer and the caller-facing releaser (or finally block) fire.
+      let released = false;
+      return () => {
+        if (!released) {
+          released = true;
+          return (rawRelease as () => void | Promise<void>)();
+        }
+      };
+    };
+
     return {
-      acquire: async (ttl) => {
-        return this.acquire(key, ttl);
+      release: async (): Promise<void> => {
+        const release = await getRelease();
+        await release();
       },
-      runExclusive: async (fn: () => Promise<any>, ttl) => {
-        return this.runExclusive(key, fn, ttl);
+      acquire: async (ttl: number): Promise<Releaser> => {
+        const release = await getRelease();
+        const timer: ReturnType<typeof setTimeout> = setTimeout(() => {
+          if (mutex.isLocked()) {
+            release();
+          }
+        }, ttl);
+        return () => {
+          release();
+          clearTimeout(timer);
+        };
+      },
+      runExclusive: async <T>(fn: () => Promise<T>, ttl: number): Promise<T> => {
+        const release = await getRelease();
+        let timer: ReturnType<typeof setTimeout>;
+        try {
+          timer = setTimeout(() => {
+            if (mutex.isLocked()) {
+              release();
+            }
+          }, ttl);
+          return await fn();
+        } catch (e) {
+          if (e === E_CANCELED) {
+            throw new LockAbortError('Lock aborted', { cause: E_CANCELED });
+          } else {
+            throw e;
+          }
+        } finally {
+          clearTimeout(timer);
+          release();
+        }
       },
     };
   }
@@ -160,9 +239,9 @@ export class LockManager {
     return client.runExclusive(key, fn, ttl);
   }
 
-  public async tryAcquire(key: string) {
+  public async tryAcquire(key: string, timeout = 0) {
     const client = await this.getAdapter();
-    return client.tryAcquire(key);
+    return client.tryAcquire(key, timeout);
   }
 }
 

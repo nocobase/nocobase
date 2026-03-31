@@ -365,7 +365,7 @@ export const TableTransfer = connect((props) => {
             dataSource={addedDataSource.dataSource}
             // dataSource={collections.filter((collection) => !selected.includes(collection.name))}
             scroll={{ y: 'calc(100vh - 260px)' }}
-            onRow={({ name }) => ({
+            onRow={({ name }: { name: string }) => ({
               onClick: () => {
                 const removing = findRemovable(name);
                 const change = () => {

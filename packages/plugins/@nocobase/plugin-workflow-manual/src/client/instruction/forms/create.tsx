@@ -117,6 +117,7 @@ export default {
               key: item.name,
             }),
           ),
+          dataSource: formBlock['x-decorator-props'].dataSource,
           collection: formBlock['x-decorator-props'].collection,
         };
       });

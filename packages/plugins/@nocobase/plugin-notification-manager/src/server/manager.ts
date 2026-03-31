@@ -39,12 +39,16 @@ export class NotificationManager implements NotificationManager {
   async findChannel(name: string) {
     const repository = this.plugin.app.db.getRepository(COLLECTION_NAME.channels);
     const instance = await repository.findOne({ filterByTk: name });
+
+    if (!instance) {
+      return null;
+    }
+
     return this.plugin.app.environment.renderJsonTemplate(instance.toJSON());
   }
 
   async send(params: SendOptions) {
     this.plugin.logger.info('receive sending message request', params);
-    console.log('receive sending message request', params);
     const message = compile(params.message ?? {}, params.data ?? {});
     const messageData = { ...(params.receivers ? { receivers: params.receivers } : {}), ...message };
     const logData: any = {

@@ -67,7 +67,7 @@ export const useChartData = () => {
   const chartCollections: {
     [dataSource: string]: string[];
   } = useMemo(() => {
-    return Object.values(charts)
+    return Object.values(charts || {})
       .filter((chart) => chart)
       .reduce((mp, chart) => {
         const { dataSource, collection } = chart;
@@ -129,18 +129,20 @@ export const useChartFilter = () => {
         title,
         name: `${name}.${field.name}`,
         required: false,
-        'x-designer': 'ChartFilterItemDesigner',
+        'x-toolbar': 'ChartFilterItemToolbar',
+        'x-settings': 'chart:filterForm:item',
         'x-component': 'CollectionField',
         'x-decorator': 'ChartFilterFormItem',
         'x-data-source': dataSource,
         'x-collection-field': `${fieldName}.${field.name}`,
         'x-component-props': {
-          ...field.uiSchema?.['x-component-props'],
+          utc: false,
+          underFilter: true,
+          component: defaultOperator?.schema?.['x-component'],
           'filter-operator': defaultOperator,
           'data-source': dataSource,
           'collection-field': `${fieldName}.${field.name}`,
         },
-        'x-filter-operators': defaultOperator?.value,
       };
       if (field.interface === 'formula') {
         const component = getFormulaComponent(field.dataType) || 'Input';
@@ -189,18 +191,22 @@ export const useChartFilter = () => {
         type: 'string',
         name: `${name}.${child.name}`,
         required: false,
-        'x-designer': 'ChartFilterItemDesigner',
+        'x-settings': 'chart:filterForm:item',
+        'x-toolbar': 'ChartFilterItemToolbar',
         'x-decorator': 'ChartFilterFormItem',
+        'x-component': 'CollectionField',
         'x-data-source': dataSource,
         'x-collection-field': `${fieldName}.${child.name}`,
         ...child.schema,
         title,
         'x-component-props': {
+          utc: false,
+          underFilter: true,
+          component: defaultOperator?.schema?.['x-component'],
           'filter-operator': defaultOperator,
           'data-source': dataSource,
           'collection-field': `${fieldName}.${child.name}`,
         },
-        'x-filter-operators': defaultOperator?.value,
       };
       if (defaultOperator?.noValue) {
         schema = {

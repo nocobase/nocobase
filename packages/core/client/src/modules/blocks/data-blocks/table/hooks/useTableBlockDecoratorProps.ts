@@ -11,15 +11,19 @@ import { useFieldSchema } from '@formily/react';
 import { useMemo } from 'react';
 import { useParsedFilter } from '../../../../../block-provider/hooks/useParsedFilter';
 import { useParentRecordCommon } from '../../../useParentRecordCommon';
+import { useDataSourceManager } from '../../../../../data-source';
 
 export const useTableBlockDecoratorProps = (props) => {
   const { params, parseVariableLoading } = useTableBlockParams(props);
   const parentRecord = useParentRecordCommon(props.association);
+  const dm = useDataSourceManager();
+  const collection = dm.getDataSource(props.dataSource)?.collectionManager.getCollection(props.collection);
 
   return {
     params,
     parentRecord,
     parseVariableLoading,
+    rowKey: collection?.filterTargetKey || 'id',
   };
 };
 

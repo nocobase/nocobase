@@ -27,12 +27,8 @@ describe('createGridCardBlockSchema', () => {
           "actionBar": {
             "type": "void",
             "x-component": "ActionBar",
-            "x-component-props": {
-              "style": {
-                "marginBottom": "var(--nb-spacing)",
-              },
-            },
             "x-initializer": "gridCard:configureActions",
+            "x-use-component-props": "useGridCardActionBarProps",
           },
           "list": {
             "properties": {
@@ -103,12 +99,8 @@ describe('createGridCardBlockSchema', () => {
           "actionBar": {
             "type": "void",
             "x-component": "ActionBar",
-            "x-component-props": {
-              "style": {
-                "marginBottom": "var(--nb-spacing)",
-              },
-            },
             "x-initializer": "gridCard:configureActions",
+            "x-use-component-props": "useGridCardActionBarProps",
           },
           "list": {
             "properties": {

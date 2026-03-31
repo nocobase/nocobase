@@ -73,7 +73,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('@')?.[0]}}",
+            value: "{{$deps[0] && $deps[0].split('@')?.[0]}}",
           },
         },
         otherwise: {
@@ -91,12 +91,12 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         when: '{{isPG}}',
         fulfill: {
           state: {
-            value: "{{$deps[0].split('@')?.[1]}}",
+            value: "{{$deps[0] && $deps[0].split('@')?.[1]}}",
           },
         },
         otherwise: {
           state: {
-            value: '{{$deps[0]}}',
+            value: '{{$deps[0] || null}}',
           },
         },
       },
@@ -149,6 +149,7 @@ export class ViewCollectionTemplate extends CollectionTemplate {
         },
       },
     },
+    ...getConfigurableProperties('category', 'description', 'simplePaginate'),
     filterTargetKey: {
       title: `{{ t("Record unique key")}}`,
       type: 'single',
@@ -160,6 +161,5 @@ export class ViewCollectionTemplate extends CollectionTemplate {
       },
       'x-reactions': ['{{useAsyncDataSource(loadFilterTargetKeys)}}'],
     },
-    ...getConfigurableProperties('category', 'description'),
   };
 }

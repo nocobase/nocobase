@@ -13,6 +13,7 @@ export const PARALLEL_MODE = {
   ALL: 'all',
   ANY: 'any',
   RACE: 'race',
+  ALL_SETTLED: 'allSettled',
 } as const;
 
 const Modes = {
@@ -60,13 +61,24 @@ const Modes = {
       return JOB_STATUS.PENDING;
     },
   },
+  [PARALLEL_MODE.ALL_SETTLED]: {
+    next() {
+      return true;
+    },
+    getStatus(result) {
+      if (result.some((status) => !status)) {
+        return JOB_STATUS.PENDING;
+      }
+      return JOB_STATUS.RESOLVED;
+    },
+  },
 };
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob: JobModel, processor: Processor) {
     const branches = processor.getBranches(node);
 
-    const job = await processor.saveJob({
+    const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
       result: Array(branches.length).fill(null),
       nodeId: node.id,
@@ -93,8 +105,6 @@ export default class extends Instruction {
         }),
       Promise.resolve(),
     );
-
-    return null;
   }
 
   async resume(node: FlowNodeModel, branchJob, processor: Processor) {
@@ -103,7 +113,8 @@ export default class extends Instruction {
     const { result, status } = job;
     // if parallel has been done (resolved / rejected), do not care newly executed branch jobs.
     if (status !== JOB_STATUS.PENDING) {
-      return processor.exit();
+      processor.logger.warn(`parallel (${job.nodeId}) has been done, ignore newly resumed event`);
+      return null;
     }
 
     // find the index of the node which start the branch
@@ -120,8 +131,8 @@ export default class extends Instruction {
     });
 
     if (job.status === JOB_STATUS.PENDING) {
-      await job.save({ transaction: processor.transaction });
-      return processor.exit();
+      processor.saveJob(job);
+      return null;
     }
 
     return job;

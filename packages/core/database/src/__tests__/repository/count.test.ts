@@ -7,9 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../index';
-import { HasManyRepository } from '../../relation-repository/hasmany-repository';
-import { Collection } from '../../collection';
+import { Collection, HasManyRepository, createMockDatabase } from '@nocobase/database';
 
 describe('count', () => {
   let db;
@@ -22,7 +20,7 @@ describe('count', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({

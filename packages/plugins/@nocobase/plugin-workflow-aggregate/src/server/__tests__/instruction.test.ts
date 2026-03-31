@@ -36,6 +36,7 @@ describe('workflow > instructions > aggregate', () => {
     TagRepo = db.getCollection('tags').repository;
 
     workflow = await WorkflowModel.create({
+      sync: true,
       enabled: true,
       type: 'collection',
       config: {
@@ -62,8 +63,6 @@ describe('workflow > instructions > aggregate', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(1);
@@ -86,8 +85,6 @@ describe('workflow > instructions > aggregate', () => {
 
       const post = await PostRepo.create({ values: { title: 't1' } });
 
-      await sleep(500);
-
       const [execution] = await workflow.getExecutions();
       const [job] = await execution.getJobs();
       expect(job.result).toBe(0);
@@ -107,15 +104,11 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', read: 1 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
-
-      await sleep(500);
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
@@ -136,22 +129,18 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', score: 0.1 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(0.1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.2 } });
 
-      await sleep(500);
-
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(0.3);
     });
 
-    it('sum number will be rounded', async () => {
+    it('sum number will be rounded to 2 decimal places by default', async () => {
       const n1 = await workflow.createNode({
         type: 'aggregate',
         config: {
@@ -163,9 +152,59 @@ describe('workflow > instructions > aggregate', () => {
         },
       });
 
-      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.100000000000001 } });
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.123 } });
 
-      await sleep(500);
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0.12);
+
+      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.456 } });
+
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
+      const [j2] = await e2.getJobs();
+      expect(j2.result).toBe(0.58);
+    });
+
+    it('sum precision configured -1 as 0', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'score',
+          },
+          precision: -1,
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.123 } });
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0);
+
+      const p2 = await PostRepo.create({ values: { title: 't2', score: 0.456 } });
+
+      const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
+      const [j2] = await e2.getJobs();
+      expect(j2.result).toBe(1);
+    });
+
+    it('sum precision configured over 14 as 14', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'score',
+          },
+          precision: 15,
+        },
+      });
+
+      const p1 = await PostRepo.create({ values: { title: 't1', score: 0.100000000000001 } });
 
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
@@ -173,11 +212,28 @@ describe('workflow > instructions > aggregate', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2', score: 0.200000000000001 } });
 
-      await sleep(500);
-
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
       expect(j2.result).toBe(0.3);
+    });
+
+    it('sum null will be 0', async () => {
+      const n1 = await workflow.createNode({
+        type: 'aggregate',
+        config: {
+          aggregator: 'sum',
+          collection: 'posts',
+          params: {
+            field: 'read',
+          },
+        },
+      });
+
+      const p2 = await PostRepo.create({ values: { title: 't2' } });
+
+      const [e1] = await workflow.getExecutions();
+      const [j1] = await e1.getJobs();
+      expect(j1.result).toBe(0);
     });
 
     it('avg', async () => {
@@ -194,15 +250,11 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', read: 1 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
-
-      await sleep(500);
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
@@ -223,15 +275,11 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', read: 1 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
-
-      await sleep(500);
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
@@ -252,15 +300,11 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', read: 1 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1] = await e1.getJobs();
       expect(j1.result).toBe(1);
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
-
-      await sleep(500);
 
       const [e2] = await workflow.getExecutions({ order: [['id', 'desc']] });
       const [j2] = await e2.getJobs();
@@ -312,8 +356,6 @@ describe('workflow > instructions > aggregate', () => {
 
       const p1 = await PostRepo.create({ values: { title: 't1', comments: [{}, { status: 1 }] } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1, j2] = await e1.getJobs({ order: [['id', 'ASC']] });
       expect(j1.result).toBe(2);
@@ -322,7 +364,7 @@ describe('workflow > instructions > aggregate', () => {
 
     it('sum', async () => {
       const PostModel = db.getCollection('posts').model;
-      const p1 = await PostModel.create({ title: 't1', read: 1 });
+      const p1 = await PostModel.create({ title: 't1', read: 1 }, { hooks: false });
 
       const n1 = await workflow.createNode({
         type: 'create',
@@ -379,8 +421,6 @@ describe('workflow > instructions > aggregate', () => {
 
       const p2 = await PostRepo.create({ values: { title: 't2', read: 2 } });
 
-      await sleep(500);
-
       const [e1] = await workflow.getExecutions();
       const [j1, j2, j3] = await e1.getJobs({ order: [['id', 'ASC']] });
       expect(j2.result).toBe(3);
@@ -407,8 +447,6 @@ describe('workflow > instructions > aggregate', () => {
       });
 
       await PostRepo.create({ values: { title: 't1' } });
-
-      await sleep(500);
 
       const [execution] = await workflow.getExecutions();
       expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);

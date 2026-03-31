@@ -13,7 +13,10 @@ import {
   PeriodicExportingMetricReader,
   ConsoleMetricExporter,
   MeterProvider,
-  View,
+  type MeterProviderOptions,
+  ViewOptions,
+  AggregationType,
+  AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 import opentelemetry from '@opentelemetry/api';
@@ -31,26 +34,29 @@ export class Metric {
   version: string;
   readerName: string | string[];
   readers = new Registry<GetMetricReader>();
-  provider: MeterProvider;
-  views: View[] = [];
+  provider?: MeterProvider;
+  resource?: Resource;
+  activeReaders: MetricReader[] = [];
 
   constructor(options?: MetricOptions) {
     const { meterName, readerName, version } = options || {};
     this.readerName = readerName || 'console';
     this.meterName = meterName || 'nocobase-meter';
     this.version = version || '';
+
     this.registerReader(
       'console',
       () =>
         new PeriodicExportingMetricReader({
-          exporter: new ConsoleMetricExporter(),
+          exporter: new ConsoleMetricExporter({
+            temporalitySelector: () => AggregationTemporality.DELTA,
+          }),
         }),
     );
   }
 
   init(resource: Resource) {
-    this.provider = new MeterProvider({ resource, views: this.views });
-    opentelemetry.metrics.setGlobalMeterProvider(this.provider);
+    this.resource = resource;
   }
 
   registerReader(name: string, reader: GetMetricReader) {
@@ -61,26 +67,75 @@ export class Metric {
     return this.readers.get(name);
   }
 
-  addView(...view: View[]) {
-    this.views.push(...view);
+  start() {
+    if (!this.resource) {
+      throw new Error('Metric.init(resource) must be called before start()');
+    }
+
+    const metricNames = new Set(
+      (process.env.TELEMETRY_METRICS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
+
+    const views: ViewOptions[] = [];
+
+    if (metricNames.size > 0) {
+      for (const metricName of metricNames) {
+        views.push({
+          instrumentName: metricName,
+        });
+      }
+      views.push({
+        instrumentName: '*',
+        aggregation: { type: AggregationType.DROP },
+      });
+    }
+
+    let readerNames = this.readerName;
+    if (typeof readerNames === 'string') {
+      readerNames = readerNames
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
+    }
+
+    const readers: MetricReader[] = [];
+
+    for (const name of readerNames) {
+      const reader = this.readers.get(name);
+
+      if (!reader) {
+        continue;
+      }
+
+      readers.push(reader());
+    }
+
+    this.activeReaders = readers;
+
+    const providerOptions: MeterProviderOptions = {
+      resource: this.resource,
+      readers,
+    };
+    if (views.length > 0) {
+      providerOptions.views = views;
+    }
+
+    this.provider = new MeterProvider(providerOptions);
+    opentelemetry.metrics.setGlobalMeterProvider(this.provider);
   }
 
   getMeter(name?: string, version?: string) {
+    if (!this.provider) {
+      return null;
+    }
     return this.provider.getMeter(name || this.meterName, version || this.version);
   }
 
-  start() {
-    let readerName = this.readerName;
-    if (typeof readerName === 'string') {
-      readerName = readerName.split(',');
-    }
-    readerName.forEach((name) => {
-      const reader = this.getReader(name)();
-      this.provider.addMetricReader(reader);
-    });
-  }
-
-  shutdown() {
-    return this.provider.shutdown();
+  async shutdown() {
+    await Promise.all(this.activeReaders.map((r) => r.shutdown()));
+    await this.provider?.shutdown();
   }
 }

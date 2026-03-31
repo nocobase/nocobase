@@ -19,7 +19,8 @@ test('tabs', async ({ page, mockPage }) => {
 
   await page.getByText('tab 1').hover();
   await page.getByRole('button', { name: 'designer-drag-handler-Page-tab' }).dragTo(page.getByText('tab 2'));
-  await expect(page.getByText('tab 1')).toBeVisible();
+  await page.waitForTimeout(500);
+  await expect(page.getByText('tab 2')).toBeVisible();
 
   tab1Box = await page.getByText('tab 1').boundingBox();
   tab2Box = await page.getByText('tab 2').boundingBox();

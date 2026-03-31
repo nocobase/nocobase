@@ -38,6 +38,7 @@ interface Props {
    */
   variableNameOfLeftCondition?: string;
   action?: any;
+  conditionType?: 'advanced' | 'basic';
 }
 
 export function bindLinkageRulesToFiled(
@@ -83,7 +84,6 @@ export function bindLinkageRulesToFiled(
     () => {
       // 获取条件中的字段值
       const fieldValuesInCondition = getFieldValuesInCondition({ linkageRules, formValues });
-
       // 获取条件中的变量值
       const variableValuesInCondition = getVariableValuesInCondition({ linkageRules, localVariables });
 
@@ -104,9 +104,10 @@ function getFieldValuesInCondition({ linkageRules, formValues }) {
   return linkageRules.map((rule) => {
     const run = (condition) => {
       const type = Object.keys(condition)[0] || '$and';
-      const conditions = condition[type];
+      const conditions = condition[type] || [];
 
       return conditions
+        .filter(Boolean)
         .map((condition) => {
           if ('$and' in condition || '$or' in condition) {
             return run(condition);
@@ -122,7 +123,7 @@ function getFieldValuesInCondition({ linkageRules, formValues }) {
   });
 }
 
-function getVariableValuesInCondition({
+export function getVariableValuesInCondition({
   linkageRules,
   localVariables,
 }: {
@@ -132,24 +133,46 @@ function getVariableValuesInCondition({
   return linkageRules.map((rule) => {
     const type = Object.keys(rule.condition)[0] || '$and';
     const conditions = rule.condition[type];
+    if (rule.conditionType === 'advanced') {
+      return conditions
+        .map((condition) => {
+          if (!condition) {
+            return null;
+          }
+          // 支持嵌套的条件
+          if (condition.$and || condition.$or) {
+            return getVariableValuesInCondition({
+              linkageRules: [{ conditionType: 'advanced', condition }],
+              localVariables,
+            });
+          }
+          const resolveVariable = (varName) =>
+            isVariable(varName) ? getVariableValue(varName, localVariables) : varName;
+          return {
+            leftVar: resolveVariable(condition.leftVar),
+            rightVar: resolveVariable(condition.rightVar),
+          };
+        })
+        .filter(Boolean);
+    } else {
+      return conditions
+        .map((condition) => {
+          const jsonlogic = getInnermostKeyAndValue(condition);
+          if (!jsonlogic) {
+            return null;
+          }
+          if (isVariable(jsonlogic.value)) {
+            return getVariableValue(jsonlogic.value, localVariables);
+          }
 
-    return conditions
-      .map((condition) => {
-        const jsonlogic = getInnermostKeyAndValue(condition);
-        if (!jsonlogic) {
-          return null;
-        }
-        if (isVariable(jsonlogic.value)) {
-          return getVariableValue(jsonlogic.value, localVariables);
-        }
-
-        return jsonlogic.value;
-      })
-      .filter(Boolean);
+          return jsonlogic.value;
+        })
+        .filter(Boolean);
+    }
   });
 }
 
-function getVariableValuesInExpression({ action, localVariables }) {
+export function getVariableValuesInExpression({ action, localVariables }) {
   const actionValue = action.value;
   const mode = actionValue?.mode;
   const value = actionValue?.value || actionValue?.result;
@@ -216,6 +239,7 @@ function getSubscriber(
         localVariables,
         variableNameOfLeftCondition,
         action,
+        conditionType: rule.conditionType,
       },
       jsonLogic,
     );
@@ -244,7 +268,6 @@ function getSubscriber(
           field.value = lastState.value;
         }
       } else if (fieldName === 'dateScope') {
-        console.log(lastState.value);
         field.setComponentProps({
           _maxDate: lastState.value?._maxDate?.value || lastState.value?._maxDate,
           _minDate: lastState.value?._minDate?.value || lastState.value?._minDate,
@@ -257,13 +280,24 @@ function getSubscriber(
           // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
           field.data.hidden = true;
 
+          // 如果字段是必填的，并且被隐藏（保留值）了，那么就需要把 required 设置为 false，否则有可能会导致表单验证失败；
+          // 进而导致点击提交按钮无效的问题。
+          if (field.required) {
+            field.required = false;
+            field.data.prevRequired = true;
+          }
+
           requestAnimationFrame(() => {
             field.setState((state) => {
               state.display = 'visible';
             });
           });
         } else if (fieldName === 'dataSource') {
-          if (_.every(lastState?.value, (v) => v.value !== field.value)) {
+          const lastValues = lastState?.value?.map((v) => v.value) || [];
+          if (
+            (field.value && !Array.isArray(field.value) && !lastValues.includes(field.value)) ||
+            (Array.isArray(field.value) && _.difference(field.value, lastValues).length > 0)
+          ) {
             field.value = field.initialValue;
           }
           field[fieldName] = lastState?.value;
@@ -273,11 +307,28 @@ function getSubscriber(
               state[fieldName] = lastState?.value;
             });
           });
+        } else if (fieldName === 'display' && lastState?.value === 'visible') {
+          field[fieldName] = lastState?.value;
+
+          if (fieldName === 'display' && lastState?.value === 'visible') {
+            field.data = field.data || {};
+            // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
+            field.data.hidden = false;
+
+            // 当“隐藏（保留值）”的字段再次显示时，恢复“必填”的状态
+            if (field.data.prevRequired) {
+              delete field.data.prevRequired;
+              field.required = true;
+            }
+          }
+
+          requestAnimationFrame(() => {
+            field.setState((state) => {
+              state[fieldName] = lastState?.value;
+            });
+          });
         } else {
           field[fieldName] = lastState?.value;
-          field.data = field.data || {};
-          // 在 FormItem 中有使用这个属性来判断字段是否被隐藏
-          field.data.hidden = false;
           requestAnimationFrame(() => {
             field.setState((state) => {
               state[fieldName] = lastState?.value;
@@ -321,7 +372,17 @@ function getFieldNameByOperator(operator: ActionType) {
 }
 
 export const collectFieldStateOfLinkageRules = (
-  { operator, value, field, condition, variables, localVariables, variableNameOfLeftCondition, action }: Props,
+  {
+    operator,
+    value,
+    field,
+    condition,
+    variables,
+    localVariables,
+    variableNameOfLeftCondition,
+    action,
+    conditionType,
+  }: Props,
   jsonLogic: any,
 ) => {
   const requiredResult = field?.stateOfLinkageRules?.required || [field?.initStateOfLinkageRules?.required];
@@ -330,7 +391,13 @@ export const collectFieldStateOfLinkageRules = (
   const valueResult = field?.stateOfLinkageRules?.value || [field?.initStateOfLinkageRules?.value];
   const optionsResult = field?.stateOfLinkageRules?.dataSource || [field?.initStateOfLinkageRules?.dataSource];
   const { evaluate } = evaluators.get('formula.js');
-  const paramsToGetConditionResult = { ruleGroup: condition, variables, localVariables, variableNameOfLeftCondition };
+  const paramsToGetConditionResult = {
+    ruleGroup: condition,
+    variables,
+    localVariables,
+    variableNameOfLeftCondition,
+    conditionType,
+  };
   const dateScopeResult = field?.stateOfLinkageRules?.dateScope || [field?.initStateOfLinkageRules?.dateScope];
 
   switch (operator) {
@@ -462,13 +529,11 @@ export async function replaceVariables(
   const scope = {};
 
   if (value == null) {
-    return;
+    return {};
   }
 
   const waitForParsing = value.match(REGEX_OF_VARIABLE_IN_EXPRESSION)?.map(async (item) => {
-    const { value: parsedValue } = await variables.parseVariable(item, localVariables, {
-      doNotRequest: item.includes('$nForm'),
-    });
+    const { value: parsedValue } = await variables.parseVariable(item, localVariables);
 
     // 在开头加 `_` 是为了保证 id 不能以数字开头，否则在解析表达式的时候（不是解析变量）会报错
     const id = `_${uid()}`;

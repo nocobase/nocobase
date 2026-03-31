@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useFieldSchema } from '@formily/react';
 import { Popover } from 'antd';
 import React, { CSSProperties, forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
@@ -17,13 +18,6 @@ const getContentWidth = (el: HTMLElement) => {
     const contentWidth = range.getBoundingClientRect().width;
     return contentWidth;
   }
-};
-const ellipsisDefaultStyle: CSSProperties = {
-  overflow: 'hidden',
-  overflowWrap: 'break-word',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-  wordBreak: 'break-all',
 };
 
 const isOverflowTooltip = (el: HTMLElement) => {
@@ -38,6 +32,7 @@ interface IEllipsisWithTooltipProps {
   popoverContent: unknown;
   children: any;
   role?: string;
+  style?: any;
 }
 
 const popoverStyle = {
@@ -45,7 +40,16 @@ const popoverStyle = {
   overflow: 'auto',
   maxHeight: 400,
 };
+
 export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithTooltipProps>, ref: any) => {
+  const ellipsisDefaultStyle: CSSProperties = {
+    overflow: 'hidden',
+    overflowWrap: 'break-word',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    wordBreak: 'break-all',
+  };
+
   const [ellipsis, setEllipsis] = useState(false);
   const [visible, setVisible] = useState(false);
   const elRef: any = useRef();
@@ -58,6 +62,11 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
     },
     [],
   );
+
+  const fieldSchema = useFieldSchema();
+  if (fieldSchema?.parent?.['x-component'] === 'TableV2.Column' && fieldSchema?.parent?.['x-component-props']?.width) {
+    ellipsisDefaultStyle.width = fieldSchema.parent['x-component-props'].width;
+  }
 
   const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement, MouseEvent>): void => {
     const el = e.target as any;
@@ -76,7 +85,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       ) : (
         props.children
       ),
-    [handleMouseEnter, props.children, props.ellipsis, props.role],
+    [handleMouseEnter, props.children, props.ellipsis, props.role, ellipsisDefaultStyle.width],
   );
 
   if (!props.ellipsis || !ellipsis) {
@@ -89,7 +98,7 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
       onOpenChange={(visible) => {
         setVisible(ellipsis && visible);
       }}
-      content={<div style={popoverStyle}>{props.popoverContent || props.children}</div>}
+      content={<div style={{ ...popoverStyle, ...(props?.style || {}) }}>{props.popoverContent || props.children}</div>}
     >
       {divContent}
     </Popover>

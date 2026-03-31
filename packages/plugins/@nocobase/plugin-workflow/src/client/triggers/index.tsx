@@ -28,7 +28,7 @@ import {
   useResourceActionContext,
 } from '@nocobase/client';
 
-import WorkflowPlugin from '..';
+import WorkflowPlugin, { useWorkflowExecuted } from '..';
 import { useFlowContext } from '../FlowContext';
 import { DrawerDescription } from '../components/DrawerDescription';
 import { NAMESPACE, lang } from '../locale';
@@ -39,11 +39,12 @@ function useUpdateConfigAction() {
   const form = useForm();
   const api = useAPIClient();
   const { workflow } = useFlowContext() ?? {};
+  const executed = useWorkflowExecuted();
   const ctx = useActionContext();
   const { refresh } = useResourceActionContext();
   return {
     async run() {
-      if (workflow.executed) {
+      if (executed) {
         message.error(lang('Trigger in executed workflow cannot be modified'));
         return;
       }
@@ -77,8 +78,19 @@ export abstract class Trigger {
   components?: { [key: string]: any };
   useInitializers?(config): SchemaInitializerItemType | null;
   initializers?: any;
-  isActionTriggerable?: boolean | ((config: object, context?: object) => boolean);
+  isActionTriggerable_deprecated?: boolean | ((config: object, context?: object) => boolean);
+  /**
+   * @experimental
+   */
+  useTempAssociationSource?(config, workflow): TriggerTempAssociationSource | null;
 }
+
+export type TriggerTempAssociationSource = {
+  collection: string;
+  nodeId: string | number;
+  nodeKey: string;
+  nodeType: 'workflow';
+};
 
 function TriggerExecution() {
   const compile = useCompile();
@@ -171,6 +183,7 @@ export const TriggerConfig = () => {
   const { styles } = useStyles();
   const compile = useCompile();
   const trigger = useTrigger();
+  const executed = useWorkflowExecuted();
 
   useEffect(() => {
     if (workflow) {
@@ -182,7 +195,7 @@ export const TriggerConfig = () => {
     const values = cloneDeep(workflow.config);
     return createForm({
       initialValues: values,
-      disabled: workflow.executed,
+      disabled: Boolean(executed),
     });
   }, [workflow]);
 
@@ -229,7 +242,6 @@ export const TriggerConfig = () => {
     }
   }, []);
 
-  const detailText = workflow.executed ? '{{t("View")}}' : '{{t("Configure")}}';
   const titleText = lang('Trigger');
 
   if (!trigger) {
@@ -284,7 +296,7 @@ export const TriggerConfig = () => {
           onChange={(ev) => setEditingTitle(ev.target.value)}
           onBlur={(ev) => onChangeTitle(ev.target.value)}
           autoSize
-          disabled={workflow.executed}
+          disabled={Boolean(executed)}
         />
       </div>
       <ActionContextProvider
@@ -349,7 +361,7 @@ export const TriggerConfig = () => {
                       properties: fieldset,
                     },
                     actions: {
-                      ...(workflow.executed
+                      ...(executed
                         ? {}
                         : {
                             type: 'void',
@@ -390,5 +402,10 @@ export const TriggerConfig = () => {
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
+
+  if (!workflow?.type) {
+    return null;
+  }
+
   return workflowPlugin.triggers.get(workflow.type);
 }

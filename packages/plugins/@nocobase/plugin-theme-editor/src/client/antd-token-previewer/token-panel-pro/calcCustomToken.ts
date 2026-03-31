@@ -15,6 +15,7 @@ const calcCustomToken = (name: string, value: any) => {
     return {
       colorSettings: value,
       colorBgSettingsHover: color.setAlpha(0.06).toHex8String(),
+      colorTemplateBgSettingsHover: color.complement().setAlpha(0.06).toHex8String(),
       colorBorderSettingsHover: color.setAlpha(0.3).toHex8String(),
     };
   }

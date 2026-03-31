@@ -1,11 +1,14 @@
 {
-    "Dynamic Calculation": "Dynamic Calculation",
-    "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.",
-    "Select dynamic expression": "Select dynamic expression",
-    "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.",
-    "Variable datasource": "Variable datasource",
-    "Dynamic expression": "Dynamic expression",
-    "An expression for calculation in each rows": "An expression for calculation in each rows",
-    "Unconfigured": "Unconfigured",
-    "Calculation result": "Calculation result"
+  "An expression for calculation in each rows": "An expression for calculation in each rows",
+  "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.": "Calculate an expression based on a calculation engine and obtain a value as the result. Variables in the upstream nodes can be used in the expression. The expression is dynamic one from an expression collections.",
+  "Calculation result": "Calculation result",
+  "Dynamic Calculation": "Dynamic Calculation",
+  "Dynamic expression": "Dynamic expression",
+  "Dynamic expression calculation": "Dynamic expression calculation",
+  "Expression": "Expression",
+  "Select dynamic expression": "Select dynamic expression",
+  "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.": "Select the dynamic expression queried from the upstream node. You need to query it from an expression collection.",
+  "Unconfigured": "Unconfigured",
+  "Used to store expressions for use in workflows so that different expressions can be called for different data.": "Used to store expressions for use in workflows so that different expressions can be called for different data.",
+  "Variable datasource": "Variable datasource"
 }

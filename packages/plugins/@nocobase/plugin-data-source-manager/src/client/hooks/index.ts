@@ -7,6 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './useDataSourceRefresh';
+export * from './useResourceData';
+export * from './useDataSourceActions';
+
 import { useForm, useField } from '@formily/react';
 import { message } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -66,5 +70,18 @@ export const useTestConnectionAction = () => {
         console.log(error);
       }
     },
+  };
+};
+
+export const useLoadCollections = () => {
+  const api = useAPIClient();
+  return async (key) => {
+    const { data } = await api.resource('dataSources').readTables({
+      values: {
+        dataSourceKey: key,
+      },
+    });
+
+    return data;
   };
 };

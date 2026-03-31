@@ -7,17 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { GeneralField } from '@formily/core';
+import { Field, GeneralField } from '@formily/core';
 import { Schema, useField, useFieldSchema } from '@formily/react';
 import _, { isString } from 'lodash';
 import cloneDeep from 'lodash/cloneDeep';
 import React, { createContext, FC, useCallback, useContext, useMemo } from 'react';
 import { useParsedFilter } from '../../../block-provider/hooks/useParsedFilter';
 import { useCollection_deprecated, useCollectionManager_deprecated } from '../../../collection-manager';
-import { Collection } from '../../../data-source';
+import { Collection, useCollectionRecord } from '../../../data-source';
 import { isInFilterFormBlock } from '../../../filter-provider';
 import { mergeFilter } from '../../../filter-provider/utils';
 import { useRecord } from '../../../record-provider';
+import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { useDesignable } from '../../hooks';
 import { AssociationFieldMode } from './AssociationFieldModeProvider';
 import { AssociationFieldContext } from './context';
@@ -25,8 +26,14 @@ import { AssociationFieldContext } from './context';
 export const useInsertSchema = (component) => {
   const fieldSchema = useFieldSchema();
   const { insertAfterBegin } = useDesignable();
+  const { isMobileLayout } = useMobileLayout();
   const insert = useCallback(
     (ss) => {
+      // 移动端的布局更改了本地的 schema 的结构（数据库里的没改），所以不能插入新的 schema，否则可能会导致 schema 的结构出问题
+      if (isMobileLayout) {
+        return;
+      }
+
       const schema = fieldSchema.reduceProperties((buf, s) => {
         if (s['x-component'] === 'AssociationField.' + component) {
           return s;
@@ -37,7 +44,7 @@ export const useInsertSchema = (component) => {
         insertAfterBegin(cloneDeep(ss));
       }
     },
-    [component, fieldSchema, insertAfterBegin],
+    [component, fieldSchema, insertAfterBegin, isMobileLayout],
   );
   return insert;
 };
@@ -53,19 +60,28 @@ export function useAssociationFieldContext<F extends GeneralField>() {
   };
 }
 
+// 用于获取关系字段请求数据时所需的一些参数
 export default function useServiceOptions(props) {
   const { action = 'list', service, useOriginalFilter } = props;
   const fieldSchema = useFieldSchema();
-  const field = useField();
+  const field = useField<Field>();
   const { getField } = useCollection_deprecated();
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const record = useRecord();
+  const { isNew } = useCollectionRecord() || {};
   const filterParams =
     (isString(fieldSchema?.['x-component-props']?.service?.params?.filter)
       ? field.componentProps?.service?.params?.filter
       : fieldSchema?.['x-component-props']?.service?.params?.filter) || service?.params?.filter;
 
-  const { filter: parsedFilterParams } = useParsedFilter({ filterOption: filterParams });
+  const { filter: parsedFilterParams } = useParsedFilter({
+    filterOption: filterParams,
+    onFilterChange: () => {
+      if (isNew) {
+        field.reset();
+      }
+    },
+  });
 
   const collectionField = useMemo(() => {
     return getField(fieldSchema.name) || getCollectionJoinField(fieldSchema?.['x-collection-field']);

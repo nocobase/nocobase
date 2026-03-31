@@ -15,3 +15,5 @@ export * from './datetime-interface';
 export * from './datetime-no-tz-interface';
 export * from './boolean-interface';
 export * from './date-interface';
+export * from './time-interface';
+export * from './textarea-interface';

@@ -45,9 +45,10 @@ export const Sortable = (props: any) => {
   const { draggable, droppable } = useContext(SortableContext);
   const { isOver, setNodeRef } = droppable;
   const droppableStyle = { ...style };
-
+  const fieldSchema = useFieldSchema();
+  const isLinkBtn = fieldSchema?.['x-component'] === 'Action.Link' || component === 'a';
   if (isOver && draggable?.active?.id !== droppable?.over?.id) {
-    droppableStyle[component === 'a' ? 'color' : 'background'] = getComputedColor(token.colorSettings);
+    droppableStyle[isLinkBtn ? 'color' : 'background'] = getComputedColor(token.colorSettings);
     Object.assign(droppableStyle, overStyle);
   }
 
@@ -95,7 +96,7 @@ const InternalSortableItem = observer(
     const data = useMemo(() => {
       return {
         insertAdjacent: 'afterEnd',
-        schema,
+        schema: schema.parent?.parent?.['x-component'] === 'BlockTemplate' ? schema.parent?.parent : schema,
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
     }, [schema, removeParentsIfNoChildren]);
@@ -118,7 +119,6 @@ export const SortableItem: React.FC<SortableItemProps> = React.memo((props) => {
   if (designable) {
     return <InternalSortableItem {...props} />;
   }
-
   return React.createElement(
     component || 'div',
     _.omit(others, ['children', 'schema', 'overStyle', 'openMode', 'id', 'eid', 'removeParentsIfNoChildren']),

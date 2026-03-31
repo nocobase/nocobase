@@ -107,8 +107,17 @@ export default class PostgresQueryInterface extends QueryInterface {
     return results[0]['exists'];
   }
 
-  async listViews() {
-    const sql = `
+  async listViews(options?: { schema?: string }) {
+    const targetSchema = options?.schema || this.db.options?.schema || 'public';
+
+    const sql = targetSchema
+      ? `
+      SELECT viewname as name, definition, schemaname as schema
+      FROM pg_views
+      WHERE schemaname = '${targetSchema}'
+      ORDER BY viewname;
+    `
+      : `
       SELECT viewname as name, definition, schemaname as schema
       FROM pg_views
       WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
@@ -231,5 +240,9 @@ $BODY$
     );
 
     return res[0]['show_create_table'];
+  }
+
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    return this.db.sequelize.literal(`${left}=any(${right})`);
   }
 }

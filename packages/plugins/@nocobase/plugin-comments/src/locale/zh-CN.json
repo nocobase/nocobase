@@ -1,0 +1,17 @@
+{
+  "Cancel": "取消",
+  "Comment": "评论",
+  "Comment Collection": "评论表",
+  "Comment Content": "评论内容",
+  "Comment action": "评论操作",
+  "Comments": "评论",
+  "Delete": "删除",
+  "Edit": "编辑",
+  "Enable Create": "允许增加评论",
+  "Quote Reply": "引用并回复",
+  "Quote reply": "引用并回复",
+  "Update Comment": "更新评论",
+  "commented": "评论于",
+  "The current collection is not a comment collection, so the comment block cannot be used.": "当前表不是评论表，无法使用评论区块。",
+  "Comments settings":"评论区块设置"
+}

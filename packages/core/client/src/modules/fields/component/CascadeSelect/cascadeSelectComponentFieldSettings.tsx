@@ -17,6 +17,7 @@ import { useDesignable, useFieldModeOptions, useIsAddNewForm } from '../../../..
 import { isSubMode } from '../../../../schema-component/antd/association-field/util';
 import { useTitleFieldOptions } from '../../../../schema-component/antd/form-item/FormItem.Settings';
 import { ellipsisSettingsItem } from '../Input/inputComponentSettings';
+import { setTheDataScope } from '../Select/selectComponentFieldSettings';
 
 const fieldComponent: any = {
   name: 'fieldComponent',
@@ -100,5 +101,5 @@ const titleField: any = {
 
 export const cascadeSelectComponentFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:CascadeSelect',
-  items: [fieldComponent, titleField, ellipsisSettingsItem],
+  items: [fieldComponent, titleField, ellipsisSettingsItem, setTheDataScope],
 });

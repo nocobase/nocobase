@@ -9,22 +9,19 @@
 
 import jwt, { JwtPayload, SignOptions } from 'jsonwebtoken';
 import { ITokenBlacklistService } from './token-blacklist-service';
+
 export interface JwtOptions {
-  secret: string;
+  secret: Buffer | string;
   expiresIn?: string;
 }
 
 export type SignPayload = Parameters<typeof jwt.sign>[0];
 
 export class JwtService {
-  constructor(
-    protected options: JwtOptions = {
-      secret: process.env.APP_KEY,
-    },
-  ) {
+  constructor(protected options: JwtOptions) {
     const { secret, expiresIn } = options;
     this.options = {
-      secret: secret,
+      secret,
       expiresIn: expiresIn || process.env.JWT_EXPIRES_IN || '7d',
     };
   }

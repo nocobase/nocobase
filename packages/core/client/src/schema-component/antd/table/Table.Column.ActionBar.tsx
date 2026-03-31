@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
+import { observer } from '@nocobase/flow-engine';
 import React from 'react';
 import { SortableItem, useDesigner } from '../..';
 

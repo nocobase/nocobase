@@ -8,10 +8,19 @@
  */
 
 import { css } from '@emotion/css';
-import { PoweredBy, ReadPretty, SwitchLanguage, useAPIClient, useRequest, useSystemSettings } from '@nocobase/client';
+import {
+  PoweredBy,
+  ReadPretty,
+  SwitchLanguage,
+  useAPIClient,
+  useRequest,
+  useSystemSettings,
+  useToken,
+} from '@nocobase/client';
 import { Spin } from 'antd';
 import React, { FC } from 'react';
 import { Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { AuthenticatorsContext } from '../authenticator';
 
 export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -46,19 +55,22 @@ export const AuthenticatorsContextProvider: FC<{ children: React.ReactNode }> = 
 
 export function AuthLayout() {
   const { data } = useSystemSettings() || {};
+  const { token } = useToken();
+  const { t } = useTranslation('lm-collections');
   return (
     <div
       style={{
         maxWidth: 320,
         margin: '0 auto',
         paddingTop: '20vh',
+        paddingBottom: '20vh',
       }}
     >
       <div style={{ position: 'fixed', top: '2em', right: '2em' }}>
         <SwitchLanguage />
       </div>
       <h1 style={{ textAlign: 'center' }}>
-        <ReadPretty.TextArea value={data?.data?.title} />
+        <ReadPretty.TextArea value={t(data?.data?.title)} />
       </h1>
       <AuthenticatorsContextProvider>
         <Outlet />
@@ -66,10 +78,12 @@ export function AuthLayout() {
       <div
         className={css`
           position: absolute;
-          bottom: 24px;
+          bottom: 0;
           width: 100%;
           left: 0;
           text-align: center;
+          padding-bottom: 24px;
+          background-color: ${token.colorBgContainer};
         `}
       >
         <PoweredBy />

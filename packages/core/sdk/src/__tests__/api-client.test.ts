@@ -9,8 +9,8 @@
 
 import { AxiosResponse } from 'axios';
 import MockAdapter from 'axios-mock-adapter';
-import { APIClient, Storage } from '../';
-import { Auth } from '../APIClient';
+import { APIClient } from '../APIClient';
+import { Auth } from '../Auth';
 
 describe('api-client', () => {
   test('instance', async () => {
@@ -31,18 +31,51 @@ describe('api-client', () => {
   test('signIn', async () => {
     const api = new APIClient({
       baseURL: 'https://localhost:8000/api',
+      storagePrefix: 'N1_',
     });
     const mock = new MockAdapter(api.axios);
     mock.onPost('auth:signIn').reply(200, {
       data: { id: 1, name: 'John Smith', token: '123' },
     });
+
+    const token1 = localStorage.getItem('N1_TOKEN');
+    expect(token1).toBe(null);
+    const auth1 = localStorage.getItem('N1_AUTH');
+    expect(auth1).toBe(null);
+
     const response = await api.auth.signIn({}, 'basic');
     expect(response.status).toBe(200);
     expect(api.auth.getToken()).toBe('123');
-    const token = localStorage.getItem('NOCOBASE_TOKEN');
+    const token = localStorage.getItem('N1_TOKEN');
     expect(token).toBe('123');
-    const auth = localStorage.getItem('NOCOBASE_AUTH');
+    const auth = localStorage.getItem('N1_AUTH');
     expect(auth).toBe('basic');
+  });
+
+  test('set token', async () => {
+    const api = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+      appName: 'myApp',
+      storagePrefix: 'N2_',
+    });
+    api.auth.setToken('123');
+    expect(api.auth.getToken()).toBe('123');
+    const token = localStorage.getItem('N2_MYAPP_TOKEN');
+    expect(token).toBe('123');
+  });
+
+  test('set token with base storage prefix', async () => {
+    const api1 = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+      storagePrefix: 'N2_',
+    });
+    api1.auth.setToken('123');
+    const api = new APIClient({
+      baseURL: 'https://localhost:8000/api',
+      appName: 'myApp',
+      storagePrefix: 'N2_',
+    });
+    expect(api.auth.getToken()).toBe('123');
   });
 
   test('resource action', async () => {
@@ -58,41 +91,6 @@ describe('api-client', () => {
     expect(response.data).toMatchObject({
       data: { id: 1, name: 'John Smith', token: '123' },
     });
-  });
-
-  test('custom storage', async () => {
-    const items = new Map();
-
-    class TestStorage extends Storage {
-      clear() {
-        items.clear();
-      }
-      getItem(key: string) {
-        return items.get(key);
-      }
-      setItem(key: string, value: string) {
-        return items.set(key, value);
-      }
-      removeItem(key: string) {
-        return items.delete(key);
-      }
-    }
-
-    const api = new APIClient({
-      baseURL: 'https://localhost:8000/api',
-      storageClass: TestStorage,
-    });
-
-    const mock = new MockAdapter(api.axios);
-    mock.onPost('auth:signIn').reply(200, {
-      data: { id: 1, name: 'John Smith', token: '123' },
-    });
-
-    const response = await api.auth.signIn({});
-    expect(response.status).toBe(200);
-    expect(api.auth.getToken()).toBe('123');
-    const token = items.get('NOCOBASE_TOKEN');
-    expect(token).toBe('123');
   });
 
   test('custom auth', async () => {

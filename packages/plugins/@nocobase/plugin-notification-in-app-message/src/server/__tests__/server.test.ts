@@ -58,8 +58,8 @@ describe('inapp message channels', () => {
       await messagesRepo.destroy({ truncate: true });
     });
     test('user can get own channels and messages', async () => {
-      defineMyInAppChannels({ app });
-      defineMyInAppMessages({ app, addClient: () => null, removeClient: () => null });
+      defineMyInAppChannels(app);
+      defineMyInAppMessages(app);
       const channelsRes = await channelsRepo.create({
         values: [
           {
@@ -87,8 +87,8 @@ describe('inapp message channels', () => {
     });
 
     test('user can get own channel latestMesageTitle and latestMesageTimestamp', async () => {
-      defineMyInAppChannels({ app });
-      defineMyInAppMessages({ app, addClient: () => null, removeClient: () => null });
+      defineMyInAppChannels(app);
+      defineMyInAppMessages(app);
       const channelsRes = await channelsRepo.create({
         values: [
           {

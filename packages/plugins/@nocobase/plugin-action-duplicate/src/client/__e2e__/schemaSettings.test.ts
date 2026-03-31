@@ -55,6 +55,7 @@ test.describe('direct duplicate & copy into the form and continue to fill in', (
     await page.getByRole('menuitem', { name: 'oneToMany' }).click();
     await page.getByRole('menuitem', { name: 'manyToOne', exact: true }).click();
     await page.getByRole('menuitem', { name: 'manyToMany' }).click();
+    await page.mouse.move(300, 0);
     await page.getByLabel('schema-initializer-ActionBar-createForm:configureActions-general').click();
     await page.getByRole('menuitem', { name: 'Submit' }).click();
     await page.getByLabel('drawer-Action.Container-general-Duplicate-mask').click();

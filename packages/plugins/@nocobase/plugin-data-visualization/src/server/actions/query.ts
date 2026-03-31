@@ -14,10 +14,45 @@ import { Cache } from '@nocobase/cache';
 import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { createQueryParser } from '../query-parser';
+import { assign } from '@nocobase/utils';
+import { checkFilterParams, NoPermissionError } from '@nocobase/acl';
+import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
   return ds?.collectionManager.db;
+};
+
+const getChartQueryPermission = async (ctx: Context, collection: string, acl: any) => {
+  const actionCtx: any = {
+    app: ctx.app,
+    db: ctx.db,
+    database: ctx.database ?? ctx.db,
+    getCurrentRepository: ctx.getCurrentRepository,
+    request: ctx.request,
+    req: ctx.req,
+    action: {
+      actionName: 'list',
+      name: 'list',
+      params: {},
+      resourceName: collection,
+      mergeParams() {},
+    },
+    state: {
+      ...ctx.state,
+      currentRole: ctx.state.currentRole,
+      currentRoles: ctx.state.currentRoles,
+      currentUser: ctx.state.currentUser?.toJSON ? ctx.state.currentUser.toJSON() : ctx.state.currentUser,
+    },
+    permission: {},
+    throw(...args) {
+      ctx.throw(...args);
+    },
+  };
+
+  await acl.getActionParams(actionCtx);
+
+  return actionCtx.permission;
 };
 
 export const postProcess = async (ctx: Context, next: Next) => {
@@ -154,11 +189,17 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
     const stack = [...filterInclude];
     while (stack.length) {
       const item = stack.pop();
-      if (fields.get(item.association)?.type === 'belongsToMany') {
+
+      const parentCollection = db.getCollection(item.parentCollection || collectionName);
+      const field = parentCollection.fields.get(item.association);
+      if (field?.type === 'belongsToMany') {
         item.through = { attributes: [] };
       }
-      if (item.include) {
-        stack.push(...item.include);
+      if (field?.target && item.include?.length) {
+        for (const child of item.include) {
+          child.parentCollection = field.target;
+          stack.push(child);
+        }
       }
     }
   }
@@ -174,6 +215,15 @@ export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
 };
 
 export const parseVariables = async (ctx: Context, next: Next) => {
+  const { mode, contextParams, ...values } = ctx.action.params.values as QueryParams;
+  if (mode !== 'sql') {
+    const resolvedValues = await resolveVariablesTemplate(ctx as any, values as any, contextParams || {});
+    ctx.action.params.values = {
+      ...ctx.action.params.values,
+      ...(resolvedValues as Record<string, any>),
+    };
+  }
+
   const { filter } = ctx.action.params.values;
   ctx.action.params.filter = filter;
   await middlewares.parseVariables(ctx, async () => {
@@ -200,13 +250,27 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-export const checkPermission = (ctx: Context, next: Next) => {
+export const checkPermission = async (ctx: Context, next: Next) => {
   const { collection, dataSource } = ctx.action.params.values as QueryParams;
-  const roleName = ctx.state.currentRole || 'anonymous';
   const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const can = acl.can({ role: roleName, resource: collection, action: 'list' });
-  if (!can && roleName !== 'root') {
-    ctx.throw(403, 'No permissions');
+  const permission = await getChartQueryPermission(ctx, collection, acl);
+  const filterParams = permission?.parsedParams?.filter;
+
+  if (filterParams) {
+    try {
+      checkFilterParams(ctx.database.getCollection(collection), filterParams);
+    } catch (e) {
+      if (e instanceof NoPermissionError) {
+        ctx.throw(403, 'No permissions');
+      }
+    }
+    const filter = ctx.action.params.values.filter || {};
+    ctx.action.params.values = {
+      ...ctx.action.params.values,
+      filter: assign(filter, filterParams, {
+        filter: 'andMerge',
+      }),
+    };
   }
   return next();
 };

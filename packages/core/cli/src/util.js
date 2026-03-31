@@ -114,7 +114,7 @@ exports.postCheck = async (opts) => {
   const port = opts.port || process.env.APP_PORT;
   const result = await exports.isPortReachable(port);
   if (result) {
-    console.error(chalk.red(`post already in use ${port}`));
+    console.error(chalk.red(`Port ${port} already in use`));
     process.exit(1);
   }
 };
@@ -165,10 +165,11 @@ exports.promptForTs = () => {
 };
 
 exports.downloadPro = async () => {
-  const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
-  if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
-    return;
-  }
+  // 此处不再判定，由pkgg命令处理
+  // const { NOCOBASE_PKG_USERNAME, NOCOBASE_PKG_PASSWORD } = process.env;
+  // if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD)) {
+  //   return;
+  // }
   await exports.run('yarn', ['nocobase', 'pkg', 'download-pro']);
 };
 
@@ -294,14 +295,26 @@ function buildIndexHtml(force = false) {
     fs.copyFileSync(file, tpl);
   }
   const data = fs.readFileSync(tpl, 'utf-8');
-  const replacedData = data
+  let replacedData = data
+    .replace(/\{\{env.CDN_BASE_URL\}\}/g, process.env.CDN_BASE_URL)
     .replace(/\{\{env.APP_PUBLIC_PATH\}\}/g, process.env.APP_PUBLIC_PATH)
+    .replace(/\{\{env.API_CLIENT_SHARE_TOKEN\}\}/g, process.env.API_CLIENT_SHARE_TOKEN || 'false')
     .replace(/\{\{env.API_CLIENT_STORAGE_TYPE\}\}/g, process.env.API_CLIENT_STORAGE_TYPE)
     .replace(/\{\{env.API_CLIENT_STORAGE_PREFIX\}\}/g, process.env.API_CLIENT_STORAGE_PREFIX)
     .replace(/\{\{env.API_BASE_URL\}\}/g, process.env.API_BASE_URL || process.env.API_BASE_PATH)
     .replace(/\{\{env.WS_URL\}\}/g, process.env.WEBSOCKET_URL || '')
     .replace(/\{\{env.WS_PATH\}\}/g, process.env.WS_PATH)
+    .replace(/\{\{env.ESM_CDN_BASE_URL\}\}/g, process.env.ESM_CDN_BASE_URL || '')
+    .replace(/\{\{env.ESM_CDN_SUFFIX\}\}/g, process.env.ESM_CDN_SUFFIX || '')
     .replace('src="/umi.', `src="${process.env.APP_PUBLIC_PATH}umi.`);
+
+  if (process.env.CDN_BASE_URL) {
+    const appBaseUrl = process.env.CDN_BASE_URL.replace(/\/+$/, '');
+    const appPublicPath = process.env.APP_PUBLIC_PATH.replace(/\/+$/, '');
+    const re1 = new RegExp(`src="${appPublicPath}/`, 'g');
+    const re2 = new RegExp(`href="${appPublicPath}/`, 'g');
+    replacedData = replacedData.replace(re1, `src="${appBaseUrl}/`).replace(re2, `href="${appBaseUrl}/`);
+  }
   fs.writeFileSync(file, replacedData, 'utf-8');
 }
 
@@ -359,8 +372,9 @@ exports.initEnv = function initEnv() {
     APP_PORT: 13000,
     API_BASE_PATH: '/api/',
     API_CLIENT_STORAGE_PREFIX: 'NOCOBASE_',
+    API_CLIENT_SHARE_TOKEN: 'false',
     API_CLIENT_STORAGE_TYPE: 'localStorage',
-    DB_DIALECT: 'sqlite',
+    // DB_DIALECT: 'sqlite',
     DB_STORAGE: 'storage/db/nocobase.sqlite',
     // DB_TIMEZONE: '+00:00',
     DB_UNDERSCORED: parseEnv('DB_UNDERSCORED'),
@@ -382,14 +396,18 @@ exports.initEnv = function initEnv() {
     PLUGIN_STATICS_PATH: '/static/plugins/',
     LOGGER_BASE_PATH: 'storage/logs',
     APP_SERVER_BASE_URL: '',
+    APP_BASE_URL: '',
+    CDN_BASE_URL: '',
     APP_PUBLIC_PATH: '/',
     WATCH_FILE: resolve(process.cwd(), 'storage/app.watch.ts'),
+    ESM_CDN_BASE_URL: 'https://esm.sh',
+    ESM_CDN_SUFFIX: '',
   };
 
   if (
     !process.env.APP_ENV_PATH &&
     process.argv[2] &&
-    ['test', 'test:client', 'test:server'].includes(process.argv[2])
+    ['test', 'test:client', 'test:server', 'benchmark', 'perf'].includes(process.argv[2])
   ) {
     if (fs.existsSync(resolve(process.cwd(), '.env.test'))) {
       process.env.APP_ENV_PATH = '.env.test';
@@ -437,6 +455,16 @@ exports.initEnv = function initEnv() {
     process.env.__env_modified__ = true;
   }
 
+  if (!process.env.CDN_BASE_URL && process.env.APP_PUBLIC_PATH !== '/') {
+    process.env.CDN_BASE_URL = process.env.APP_PUBLIC_PATH;
+  }
+
+  if (process.env.CDN_BASE_URL.includes('http') && process.env.CDN_VERSION === 'auto') {
+    const version = require('../package.json').version;
+    process.env.CDN_BASE_URL = process.env.CDN_BASE_URL.replace(/\/+$/, '') + '/' + version + '/';
+    process.env.CDN_VERSION = '';
+  }
+
   if (!process.env.TZ) {
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     process.env.TZ = getTimezonesByOffset(process.env.DB_TIMEZONE || timeZone);
@@ -460,6 +488,22 @@ exports.initEnv = function initEnv() {
   process.env.SOCKET_PATH = generateGatewayPath();
   fs.mkdirpSync(dirname(process.env.SOCKET_PATH), { force: true, recursive: true });
   fs.mkdirpSync(process.env.PM2_HOME, { force: true, recursive: true });
+  const pkgs = [
+    '@nocobase/plugin-multi-app-manager',
+    '@nocobase/plugin-departments',
+    '@nocobase/plugin-field-attachment-url',
+    '@nocobase/plugin-workflow-response-message',
+  ];
+  for (const pkg of pkgs) {
+    const pkgDir = resolve(process.cwd(), 'storage/plugins', pkg);
+    fs.existsSync(pkgDir) && fs.rmdirSync(pkgDir, { recursive: true, force: true });
+  }
+};
+
+exports.checkDBDialect = function () {
+  if (!process.env.DB_DIALECT) {
+    throw new Error('DB_DIALECT is required.');
+  }
 };
 
 exports.generatePlugins = function () {

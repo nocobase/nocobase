@@ -324,4 +324,648 @@ describe('issues', () => {
     }
     expect(res.status).toBe(200);
   });
+
+  test('update m2m array field`s associate data', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('tags').create({
+      values: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+    });
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    let user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(user.tag_ids).toEqual(null);
+    const res = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [
+          { id: 1, title: 'a' },
+          { id: 2, title: 'b' },
+        ],
+      },
+    });
+    user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user.tag_ids).toMatchObject(['1', '2']);
+    } else {
+      expect(user.tag_ids).toMatchObject([1, 2]);
+    }
+    expect(res.status).toBe(200);
+
+    const res2 = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [
+          { id: 1, title: 'a1' },
+          { id: 2, title: 'b2' },
+        ],
+      },
+    });
+    expect(res2.status).toBe(200);
+    const tags1 = await db.getRepository('tags').findOne({
+      filterByTk: 1,
+    });
+    expect(tags1.title).toEqual('a1');
+    const tags2 = await db.getRepository('tags').findOne({
+      filterByTk: 2,
+    });
+    expect(tags2.title).toEqual('b2');
+  });
+
+  test('update associate data`s m2m array field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'staffs',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'name',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'orgs',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'name',
+            type: 'string',
+          },
+          {
+            name: 'staffs',
+            type: 'belongsToArray',
+            foreignKey: 'staff_ids',
+            target: 'staffs',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'members',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'name',
+            type: 'string',
+          },
+          {
+            name: 'orgs',
+            type: 'hasMany',
+            foreignKey: 'org_ids',
+            target: 'orgs',
+            sourceKey: 'id',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    //@ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+
+    await db.getRepository('staffs').create({
+      values: { id: 1, name: 'a' },
+    });
+    await db.getRepository('orgs').create({
+      values: { id: 1, name: 'a' },
+    });
+    await db.getRepository('members').create({
+      values: { id: 1, name: 'a' },
+    });
+
+    const res = await agent.resource('members').update({
+      filterByTk: 1,
+      'updateAssociationValues[]': 'orgs',
+      values: {
+        orgs: [{ id: 1, staffs: [{ id: 1 }] }],
+      },
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await agent.resource('orgs').get({
+      filterByTk: 1,
+    });
+    expect(res2.status).toBe(200);
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(res2.body.data.staff_ids).toMatchObject(['1']);
+    } else {
+      expect(res2.body.data.staff_ids).toMatchObject([1]);
+    }
+  });
+
+  test('should not produce duplicate record when add associate data by m2m array field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    let user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(user.tag_ids).toEqual(null);
+    const res = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [{ __isNewRecord__: true }],
+      },
+    });
+    user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(res.status).toBe(200);
+
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user.tag_ids).toMatchObject(['1']);
+    } else {
+      expect(user.tag_ids).toMatchObject([1]);
+    }
+
+    const tagsCount = await db.getRepository('tags').count();
+    expect(tagsCount).toEqual(1);
+  });
+
+  test('filtering by fields of a relation collection with m2m array field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'projects',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'users',
+            type: 'belongsTo',
+            foreignKey: 'user_id',
+            target: 'users',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('tags').create({
+      values: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+    });
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    await db.getRepository('projects').create({
+      values: { id: 1, title: 'p1', user_id: 1 },
+    });
+    await expect(
+      db.getRepository('projects').findOne({
+        appends: ['users', 'users.tags'],
+        filter: {
+          $and: [
+            {
+              users: {
+                username: 'a',
+              },
+            },
+          ],
+        },
+      }),
+    ).resolves.toBeTruthy();
+  });
+
+  test('filtering by m2m array fields in a relation collection', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'projects',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'users',
+            type: 'belongsTo',
+            foreignKey: 'user_id',
+            target: 'users',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('tags').create({
+      values: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+    });
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    await db.getRepository('projects').create({
+      values: { id: 1, title: 'p1', user_id: 1 },
+    });
+    await expect(
+      db.getRepository('projects').count({
+        filter: {
+          $and: [
+            {
+              users: {
+                tags: {
+                  title: 'a',
+                },
+              },
+            },
+          ],
+        },
+      }),
+    ).resolves.not.toThrow();
+  });
+
+  test('appending second-level m2m(array) relations in association queries', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'members',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_bill',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'ref_sps',
+            type: 'belongsToArray',
+            foreignKey: 'sp_ids',
+            target: 'members',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_pay_app',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'ref_pay_app_rows',
+            type: 'hasMany',
+            target: 'fin_pay_app_rows',
+            onDelete: 'CASCADE',
+            sourceKey: 'id',
+            foreignKey: 'app_id',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    await db.getRepository('collections').create({
+      values: {
+        name: 'fin_pay_app_rows',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'app_id',
+            type: 'bigInt',
+            isForeignKey: true,
+          },
+          {
+            name: 'bill_id',
+            type: 'bigInt',
+            isForeignKey: true,
+          },
+          {
+            name: 'ref_pay_app',
+            type: 'belongsTo',
+            foreignKey: 'app_id',
+            onDelete: 'CASCADE',
+            target: 'fin_pay_app',
+            targetKey: 'id',
+          },
+          {
+            name: 'ref_bill',
+            type: 'belongsTo',
+            foreignKey: 'bill_id',
+            onDelete: 'RESTRICT',
+            target: 'fin_bill',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+
+    //@ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+
+    const res1 = await agent.resource('fin_pay_app').create({
+      values: {},
+    });
+    expect(res1.status).toBe(200);
+
+    const res2 = await agent.resource(`fin_pay_app/${res1.body.data.id}/ref_pay_app_rows`).list({
+      appends: ['ref_bill', 'ref_bill.ref_sps'],
+    });
+    expect(res2.status).toBe(200);
+  });
+});
+
+describe('issues with users', () => {
+  let app: MockServer;
+  let db: MockDatabase;
+  let agent;
+
+  beforeEach(async () => {
+    app = await createMockServer({
+      plugins: ['field-m2m-array', 'data-source-manager', 'data-source-main', 'error-handler', 'field-sort', 'users'],
+    });
+    db = app.db;
+    agent = app.agent();
+  });
+
+  afterEach(async () => {
+    await db.clean({ drop: true });
+    await app.destroy();
+  });
+
+  test('update m2m array field when the updatedBy field is present', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'test',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'users',
+            type: 'belongsToArray',
+            foreignKey: 'user_ids',
+            target: 'users',
+            targetKey: 'username',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    const record = await db.getRepository('test').create({
+      values: [{ users: ['nocobase'] }],
+    });
+    const values = await agent.resource('test').get({
+      filterByTk: record[0].id,
+      appends: ['users'],
+    });
+    const res = await agent.resource('test').update({
+      filterByTk: record[0].id,
+      values: values.body.data,
+    });
+    expect(res.status).toBe(200);
+  });
 });

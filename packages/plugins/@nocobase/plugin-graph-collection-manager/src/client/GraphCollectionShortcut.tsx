@@ -125,6 +125,9 @@ export const GraphCollectionPane = () => {
         overflow: auto;
         margin: calc(var(--nb-spacing) * -1);
         position: relative;
+        .ant-drawer {
+          z-index: 1000 !important;
+        }
       `}
       id="graph_container"
     >

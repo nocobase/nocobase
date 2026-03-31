@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database } from '../../database';
-import { mockDatabase } from '../';
+import { Database, createMockDatabase } from '@nocobase/database';
 
 describe('string field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -105,5 +104,41 @@ describe('string field', () => {
       name: 'n1111',
       name2: 'n2111',
     });
+  });
+
+  it('trim', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: '  n1\n ',
+    });
+    expect(model.get('name')).toBe('n1');
+  });
+
+  it('trim when value is null should be null', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: null,
+    });
+    expect(model.get('name')).toBeFalsy();
+  });
+
+  it('when value is number should be convert to string', async () => {
+    const collection = db.collection({
+      name: 'tests',
+      fields: [{ type: 'string', name: 'name', trim: true }],
+    });
+    await db.sync();
+    const model = await collection.model.create({
+      name: 123,
+    });
+    expect(model.get('name')).toBe('123');
   });
 });

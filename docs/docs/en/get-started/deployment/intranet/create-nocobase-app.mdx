@@ -1,0 +1,380 @@
+# Install and Upgrade NocoBase in Intranet (create-nocobase-app)
+
+Intranet environments cannot directly access the npm registry. You need to create the project and install dependencies in an internet-connected environment, then package the complete project and migrate it to the intranet server for deployment.
+
+**Overall flow**: Create project on internet → Install dependencies and package → Copy to intranet → Extract, configure, and start
+
+:::tip Prerequisites
+
+- Both internet and intranet machines need **Node.js 20+** and **Yarn 1.22.x** installed
+- Database: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+ (can be deployed on intranet or internet)
+- **Node.js version and OS architecture** must match between internet and intranet machines; otherwise some native modules in `node_modules` may be incompatible
+- Project **installation path must be identical** on both sides (e.g., `/app/my-nocobase-app`), otherwise it will not run after migration
+
+:::
+
+## Internet Environment
+
+Create the project and install dependencies in an internet-connected environment.
+
+### First-time Installation
+
+#### 1. Create Project on Internet
+
+Run the following on a machine with npm access. **Important**: First switch to the target parent directory (e.g., `cd /app`) so the project path is `/app/my-nocobase-app`, matching the intranet deployment path.
+
+<Tabs>
+
+<Tab label="Latest version">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+yarn create nocobase-app my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Beta version">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@beta my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+<Tab label="Alpha version">
+
+<Tabs>
+<Tab label="PostgreSQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d postgres \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=5432 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MySQL">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mysql \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+
+<Tab label="MariaDB">
+
+```bash
+npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
+   --skip-dev-dependencies \
+   -e APP_ENV=production \
+   -e DB_HOST=localhost \
+   -e DB_PORT=3306 \
+   -e DB_DATABASE=nocobase \
+   -e DB_USER=nocobase \
+   -e DB_PASSWORD=nocobase \
+   -e TZ=Asia/Shanghai
+```
+
+</Tab>
+</Tabs>
+
+</Tab>
+
+</Tabs>
+
+:::warning Parameter notes
+
+- `--skip-dev-dependencies` skips dev dependencies (for production deployment to reduce size)
+- `APP_ENV=production` sets the app to production mode
+- `TZ` sets the application timezone (defaults to system timezone)
+- `DB_*` are database settings; update them to match your database
+
+:::
+
+#### 2. Change Directory
+
+```bash
+cd my-nocobase-app
+```
+
+#### 3. Install Dependencies
+
+```bash
+yarn install
+```
+
+:::tip Commercial Plugins (Optional)
+
+Steps 4–7 below are only for downloading commercial plugins. If you only use the open-source version, skip steps 4–7 and go directly to step 8 to package.
+
+:::
+
+#### 4. Install NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. Run NocoBase
+
+```bash
+yarn start
+```
+
+#### 6. Enter License Key
+
+Visit:
+
+```
+http://<internet-server-ip>:13000/admin/settings/license-settings
+```
+
+#### 7. Download Commercial Plugins
+
+```bash
+yarn nocobase pkg download-pro
+```
+
+#### 8. Package the Project
+
+```bash
+# Run from inside my-nocobase-app; the archive is created in the parent directory
+# Excludes .env (sensitive); only packages storage/plugins (commercial plugins, etc.)
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+### Application Upgrade
+
+#### 1. Upgrade Application Code and Plugins
+
+```bash
+yarn nocobase upgrade
+```
+
+#### 2. Repackage the Project
+
+```bash
+tar -czf ../nocobase-app.tar.gz \
+  --exclude='./.env' \
+  --exclude='./storage' \
+  . \
+  ./storage/plugins
+```
+
+## Intranet Environment
+
+Migrate the packaged project to the intranet server.
+
+### First-time Installation
+
+#### 1. Upload Application Code and Plugins
+
+Copy `nocobase-app.tar.gz` to the intranet server (e.g., via USB or file share), then extract (use the full path if the tar.gz is not in the current directory):
+
+```bash
+mkdir -p /app/my-nocobase-app
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 2. Change Directory
+
+```bash
+cd /app/my-nocobase-app
+```
+
+#### 3. Configure .env File
+
+Create a `.env` file in the project root. Refer to the internet environment config and **update these**:
+
+- `DB_HOST`: Change to the intranet database address (if the database is on another intranet server)
+- `DB_PORT`, `DB_DATABASE`, `DB_USER`, `DB_PASSWORD`: Match the actual intranet database configuration
+- `APP_KEY`: Keep the same as the internet environment if possible; otherwise existing tokens will be invalidated
+
+You can run `cat .env` in the internet project root to view the full config, then copy and adjust for the intranet.
+
+#### 4. Install NocoBase
+
+```bash
+yarn nocobase install
+```
+
+#### 5. Start NocoBase
+
+```bash
+yarn start -d
+```
+
+#### 6. Log in to NocoBase
+
+Visit `http://<intranet-server-ip>:13000` and log in with the initial account.
+
+#### 7. Enter License Key
+
+Commercial users need to enter the License Key. Visit:
+
+```
+http://<intranet-server-ip>:13000/admin/settings/license-settings
+```
+
+### Upgrade Application
+
+#### 1. Stop the Application
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase pm2-stop
+```
+
+#### 2. Overwrite Application Code and Plugins
+
+Copy `nocobase-app.tar.gz` to the intranet server, then extract:
+
+```bash
+tar -xzf nocobase-app.tar.gz -C /app/my-nocobase-app
+```
+
+#### 3. Upgrade Application
+
+```bash
+cd /app/my-nocobase-app
+yarn nocobase upgrade --skip-code-update
+```
+
+#### 4. Restart Application
+
+```bash
+yarn start -d
+```
+
+#### 5. Enter License Key (if authorization changed)
+
+If the License authorization has changed, enter it again. Visit:
+
+```
+http://<intranet-server-ip>:13000/admin/settings/license-settings
+```
+
+## FAQ
+
+**Q: Intranet startup fails with "module or binary not found"?**
+
+A: Ensure Node.js version and OS architecture match between internet and intranet (e.g., both Linux x64, Node 20.x). If they differ, run `yarn install` again in the same environment and repackage.
+
+**Q: Path-related errors after extraction?**
+
+A: Ensure the intranet extraction path matches the internet creation path (e.g., both `/app/my-nocobase-app`). Use the `-C` option with `tar -xzf` to specify the same path.
+
+**Q: Database connection failed?**
+
+A: Confirm `DB_HOST` in `.env` points to a database address reachable from the intranet, and that the port and firewall rules are correct.

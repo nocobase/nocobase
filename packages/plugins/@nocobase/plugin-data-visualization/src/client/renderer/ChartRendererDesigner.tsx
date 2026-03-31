@@ -25,6 +25,10 @@ import { useChartsTranslation } from '../locale';
 import { createRendererSchema } from '../utils';
 import { ChartRendererContext } from './ChartRendererProvider';
 
+/**
+ * @deprecated
+ * use `chartRendererSettings` instead
+ */
 export function ChartRendererDesigner() {
   const { t } = useChartsTranslation();
   const { setVisible, setCurrent } = useContext(ChartConfigContext);

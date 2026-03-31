@@ -1,0 +1,62 @@
+[
+  {
+    "type": "section-header",
+    "label": "파일 관리자"
+  },
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "스토리지 엔진",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "로컬 스토리지",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "파일 테이블",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "첨부 파일 필드",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "확장 개발",
+    "link": "/file-manager/development/index"
+  }
+]

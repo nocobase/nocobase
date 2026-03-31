@@ -22,7 +22,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
   async aggregate(options: AggregateOptions) {
     const targetRepository = this.targetCollection.repository;
 
-    const sourceModel = await this.getSourceModel();
+    const sourceModel = await this.getSourceModel(await this.getTransaction(options));
 
     const association = this.association as any;
 
@@ -63,6 +63,10 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
       transaction,
     };
 
+    this.collection.validate({
+      values,
+      operation: 'create',
+    });
     const instance = await sourceModel[createAccessor](values, createOptions);
     await updateAssociations(instance, values, { ...options, transaction });
     return instance;
@@ -135,6 +139,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
           [Op.in]: ids,
         },
       },
+      individualHooks: true,
       transaction,
     });
 

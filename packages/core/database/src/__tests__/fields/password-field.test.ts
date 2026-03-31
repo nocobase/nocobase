@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../';
-import { Database, PasswordField } from '../../';
+import { createMockDatabase, Database, PasswordField } from '@nocobase/database';
 
 describe('password field', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -40,5 +39,26 @@ describe('password field', () => {
     await user.save();
     user = await User.model.findOne();
     expect(await pwd.verify('654321', user.password)).toBeTruthy();
+  });
+
+  it('should be encrypted when adding password fields in batches', async () => {
+    const User = db.collection({
+      name: 'users',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'password', name: 'password' },
+      ],
+    });
+    await db.sync();
+    const instances = await User.model.bulkCreate([
+      {
+        password: '123456',
+        name: 'zhangsan',
+      },
+    ]);
+    const pwd = User.getField<PasswordField>('password');
+    expect(await pwd.verify('123456', instances[0].password)).toBeTruthy();
+    const user = await User.model.findOne({ where: { name: 'zhangsan' } });
+    expect(await pwd.verify('123456', user.password)).toBeTruthy();
   });
 });

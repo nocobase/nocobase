@@ -12,6 +12,7 @@ import { oneEmptyTableWithUsers } from './templatesOfBug';
 
 const deleteButton = async (page: Page, name: string) => {
   await page.getByRole('button', { name }).hover();
+  await page.getByRole('menuitem', { name: 'Delete' }).waitFor({ state: 'detached' });
   await page.getByRole('button', { name }).getByLabel('designer-schema-settings-').hover();
   await page.getByRole('menuitem', { name: 'Delete' }).click();
   await page.getByRole('button', { name: 'OK', exact: true }).click();
@@ -31,6 +32,7 @@ test.describe('where multi data details block can be added', () => {
     // 1. 打开弹窗，通过 Associated records 添加一个详情区块
     await page.getByLabel('action-Action.Link-View').click();
     await page.getByLabel('schema-initializer-Grid-popup').hover();
+    await page.getByRole('menuitem', { name: 'Associated records right' }).waitFor({ state: 'detached' });
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Associated records right' }).hover();
     await page.getByRole('menuitem', { name: 'Roles' }).click();
@@ -41,6 +43,7 @@ test.describe('where multi data details block can be added', () => {
     await expect(page.getByLabel('block-item-CollectionField-').getByText('admin')).toBeVisible();
 
     // 2. 打开弹窗，通过 Other records 添加一个详情区块
+    await page.getByRole('menuitem', { name: 'Details right' }).waitFor({ state: 'detached' });
     await page.getByLabel('schema-initializer-Grid-popup').hover();
     await page.getByRole('menuitem', { name: 'Details right' }).hover();
     await page.getByRole('menuitem', { name: 'Other records right' }).hover();
@@ -116,6 +119,7 @@ test.describe('configure actions', () => {
     await page.getByText('Delete').click();
 
     await page.mouse.move(300, 0);
+    await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(1);
     await expect(page.getByRole('button', { name: 'Edit' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete' })).toBeVisible();
 

@@ -58,9 +58,11 @@ const useTableSelectorProps = () => {
     rowKey,
     rowSelection: {
       type: multiple ? 'checkbox' : 'radio',
-      selectedRowKeys: rcSelectRows
-        ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
-        .map((item) => item[rowKey]),
+      selectedRowKeys: multiple
+        ? rcSelectRows
+            ?.filter((item) => options.every((row) => row[rowKey] !== item[rowKey]))
+            .map((item) => item[rowKey])
+        : rcSelectRows?.map((item) => item[rowKey]) || [],
     },
     onRowSelectionChange(selectedRowKeys, selectedRows) {
       if (multiple) {
@@ -140,6 +142,10 @@ export const InputRecordPicker: React.FC<any> = (props: IRecordPickerProps) => {
         };
       });
       setOptions(opts);
+      setSelectedRows(opts);
+    } else {
+      setOptions([]);
+      setSelectedRows([]);
     }
   }, [value, fieldNames?.label]);
 

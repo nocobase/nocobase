@@ -1,4 +1,7 @@
 {
-    "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
-    "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow"
+  "Ignore failed sending and continue workflow": "Ignore failed sending and continue workflow",
+  "Ignore failure and continue workflow": "Ignore failure and continue workflow",
+  "Notification": "Notification",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Send notification. You can use the variables in the upstream nodes as content and ohter config."
 }

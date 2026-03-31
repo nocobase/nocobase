@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Release Management",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variables and Secrets",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Backup Manager",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration Manager",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

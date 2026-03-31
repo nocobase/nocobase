@@ -327,6 +327,41 @@ describe('sequence field', () => {
       const item2 = await TestModel.create();
       expect(item2.get('name')).toBe('11');
     });
+
+    describe.skipIf(process.env['DB_DIALECT'] === 'sqlite')('bigint', () => {
+      it('digits more than 16', async () => {
+        db.collection({
+          name: 'tests',
+          fields: [
+            {
+              type: 'sequence',
+              name: 'no',
+              patterns: [
+                {
+                  type: 'integer',
+                  options: { key: 1, digits: 17 },
+                },
+              ],
+              inputable: true,
+            },
+          ],
+        });
+        await db.sync();
+
+        const TestModel = db.getModel('tests');
+        const item1 = await TestModel.create();
+        expect(item1.get('no')).toBe('00000000000000000');
+
+        await item1.update({ no: '10000000000000000' });
+        expect(item1.get('no')).toBe('10000000000000000');
+
+        const item2 = await TestModel.create({ no: '10000000000000001' });
+        expect(item2.get('no')).toBe('10000000000000001');
+
+        const item3 = await TestModel.create();
+        expect(item3.get('no')).toBe('10000000000000002');
+      });
+    });
   });
 
   describe('date pattern', () => {

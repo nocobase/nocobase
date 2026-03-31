@@ -19,7 +19,7 @@ describe('external data source', () => {
   beforeAll(async () => {
     process.env.INIT_ROOT_USERNAME = 'test';
     app = await createMockServer({
-      plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'auth'],
+      plugins: ['field-sort', 'data-source-manager', 'users', 'acl', 'auth', 'system-settings'],
     });
     db = app.db;
     ctx = {
@@ -54,6 +54,7 @@ describe('external data source', () => {
       ...ctx,
       state: {
         currentRole: 'test',
+        currentRoles: ['test'],
       },
       action: {
         params: {

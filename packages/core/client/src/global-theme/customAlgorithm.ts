@@ -16,24 +16,20 @@ import { ThemeConfig } from './type';
 export const customAlgorithm: MappingAlgorithm = (designToken, derivativeToken) => {
   const result: ThemeConfig['token'] = derivativeToken || theme.defaultAlgorithm(designToken);
 
-  if (result.paddingPageHorizontal === undefined) {
-    result.paddingPageHorizontal = result.sizeLG;
-  }
-  if (result.paddingPageVertical === undefined) {
-    result.paddingPageVertical = result.sizeLG;
-  }
-  if (result.paddingPopupHorizontal === undefined) {
-    result.paddingPopupHorizontal = result.sizeLG;
-  }
-  if (result.paddingPopupVertical === undefined) {
-    result.paddingPopupVertical = result.size;
-  }
-  if (result.marginBlock === undefined) {
-    result.marginBlock = result.sizeLG;
-  }
-  if (result.borderRadiusBlock === undefined) {
-    result.borderRadiusBlock = result.borderRadiusLG;
-  }
+  result.paddingPageHorizontal ??= result.sizeLG;
+  result.paddingPageVertical ??= result.sizeLG;
+  result.paddingPopupHorizontal ??= result.sizeLG;
+  result.paddingPopupVertical ??= result.size;
+  result.marginBlock ??= result.sizeLG;
+  result.borderRadiusBlock ??= result.borderRadiusLG;
+
+  // 侧边菜单栏
+  result.colorBgSider ??= result.colorBgElevated;
+  result.colorBgSiderMenuHover ??= result.colorBgTextHover || result.colorFillSecondary;
+  result.colorBgSiderMenuActive ??= result.colorPrimaryBg;
+  result.colorTextSiderMenu ??= result.colorText;
+  result.colorTextSiderMenuHover ??= result.colorText;
+  result.colorTextSiderMenuActive ??= result.colorPrimary;
 
   return result as any;
 };

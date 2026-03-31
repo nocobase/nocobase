@@ -9,13 +9,57 @@
 
 import { DownOutlined, PlusOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
-import { ActionContext, SchemaComponent, useAPIClient, useCompile, usePlugin } from '@nocobase/client';
+import { useForm, useField } from '@formily/react';
+import {
+  ActionContext,
+  SchemaComponent,
+  useAPIClient,
+  useCompile,
+  usePlugin,
+  useResourceContext,
+  useActionContext,
+  useResourceActionContext,
+} from '@nocobase/client';
 import { Button, Dropdown, Empty } from 'antd';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import PluginDatabaseConnectionsClient from '../';
-import { useTestConnectionAction } from '../hooks';
+import { useLoadCollections, useTestConnectionAction } from '../hooks';
 import { NAMESPACE } from '../locale';
+import { CollectionsTableField } from './CollectionsTableField';
+
+const useCreateAction = (actionCallback?: (values: any) => void) => {
+  const form = useForm();
+  const field = useField();
+  const ctx = useActionContext();
+  const { refresh } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  return {
+    async run() {
+      try {
+        await form.submit();
+        field.data = field.data || {};
+        field.data.loading = true;
+        const collections: { name: string; selected: boolean }[] = form.values.collections || [];
+        const res = await resource.create({
+          values: {
+            ...form.values,
+            collections: collections.filter((c) => c.selected).map((c) => c.name),
+          },
+        });
+        ctx.setVisible(false);
+        actionCallback?.(res?.data?.data);
+        await form.reset();
+        field.data.loading = false;
+        refresh();
+      } catch (error) {
+        if (field.data) {
+          field.data.loading = false;
+        }
+      }
+    },
+  };
+};
 
 export const CreateDatabaseConnectAction = () => {
   const [schema, setSchema] = useState({});
@@ -25,6 +69,8 @@ export const CreateDatabaseConnectAction = () => {
   const { t } = useTranslation();
   const [dialect, setDialect] = useState(null);
   const api = useAPIClient();
+  const loadCollections = useLoadCollections();
+
   const useDialectDataSource = (field) => {
     const options = [...plugin.types.keys()].map((key) => {
       const type = plugin.types.get(key);
@@ -53,6 +99,9 @@ export const CreateDatabaseConnectAction = () => {
                   [uid()]: {
                     type: 'void',
                     'x-component': 'Action.Drawer',
+                    'x-component-props': {
+                      width: 650,
+                    },
                     'x-decorator': 'Form',
                     'x-decorator-props': {
                       initialValue: {
@@ -64,7 +113,11 @@ export const CreateDatabaseConnectAction = () => {
                     properties: {
                       body: {
                         type: 'void',
-                        'x-component': type.DataSourceSettingsForm,
+                        'x-component': type.DataSourceSettingsForm.bind(null, {
+                          CollectionsTableField,
+                          loadCollections,
+                          from: 'create',
+                        }),
                       },
                       footer: {
                         type: 'void',
@@ -90,7 +143,7 @@ export const CreateDatabaseConnectAction = () => {
                             'x-component': 'Action',
                             'x-component-props': {
                               type: 'primary',
-                              useAction: '{{ cm.useCreateAction }}',
+                              useAction: '{{ useCreateAction }}',
                               actionCallback: '{{ dataSourceCreateCallback }}',
                             },
                           },
@@ -147,7 +200,13 @@ export const CreateDatabaseConnectAction = () => {
           </Button>
         </Dropdown>
         <SchemaComponent
-          scope={{ createOnly: false, useTestConnectionAction, dialect, useDialectDataSource }}
+          scope={{
+            createOnly: false,
+            useTestConnectionAction,
+            dialect,
+            useDialectDataSource,
+            useCreateAction,
+          }}
           schema={schema}
         />
       </ActionContext.Provider>

@@ -7,9 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToManyRepository, HasManyRepository, mockDatabase } from '../../index';
-import Database from '../../database';
-import { Collection } from '../../collection';
+import {
+  BelongsToManyRepository,
+  Collection,
+  Database,
+  HasManyRepository,
+  createMockDatabase,
+} from '@nocobase/database';
 
 describe('association aggregation', () => {
   let db: Database;
@@ -23,7 +27,7 @@ describe('association aggregation', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({
@@ -240,7 +244,7 @@ describe('Aggregation', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({

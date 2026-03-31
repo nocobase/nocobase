@@ -16,5 +16,6 @@ export * from './hooks/useGetAriaLabelOfAction';
 export * from './hooks/useGetAriaLabelOfDrawer';
 export * from './hooks/useGetAriaLabelOfModal';
 export * from './hooks/useGetAriaLabelOfPopover';
+export * from './hooks/useGetAfterSuccessVariablesOptions';
 export * from './types';
 export * from './zIndexContext';

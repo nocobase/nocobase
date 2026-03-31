@@ -27,12 +27,14 @@ export function SwitchLanguage() {
           },
           selectable: true,
           defaultSelectedKeys: [api.auth.locale],
-          items: data?.data?.enabledLanguages?.map((code) => {
-            return {
-              key: code,
-              label: languageCodes[code].label,
-            };
-          }),
+          items: data?.data?.enabledLanguages
+            ?.filter((code) => languageCodes[code])
+            .map((code) => {
+              return {
+                key: code,
+                label: languageCodes[code].label,
+              };
+            }),
         }}
       >
         <TranslationOutlined style={{ fontSize: 24 }} />

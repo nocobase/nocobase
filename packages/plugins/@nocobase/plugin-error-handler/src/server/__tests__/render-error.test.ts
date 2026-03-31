@@ -191,4 +191,43 @@ describe('create with exception', () => {
     const body = response.body;
     expect(body['errors'][0]['message']).toBeDefined();
   });
+
+  it('should mask SQL reference errors', async () => {
+    const userCollection = app.collection({
+      name: 'users',
+      autoGenId: false,
+      timestamps: false,
+      fields: [
+        {
+          name: 'id',
+          type: 'integer',
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        {
+          name: 'name',
+          type: 'string',
+        },
+      ],
+    });
+
+    await userCollection.sync();
+
+    app.resourcer.define({
+      name: 'invalid-sql',
+      actions: {
+        async trigger(ctx) {
+          const db: Database = ctx.db;
+          await db.sequelize.query(`SELECT unknown_column FROM ${userCollection.model.tableName}`, {
+            type: 'SELECT',
+          });
+        },
+      },
+    });
+
+    const response = await app.agent().post('/invalid-sql:trigger');
+
+    expect(response.statusCode).toEqual(400);
+    expect(response.body.errors[0].message).toBe('Invalid SQL column or table reference');
+  });
 });

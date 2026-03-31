@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SchemaExpressionScopeContext, useField, useForm, useFieldSchema } from '@formily/react';
+import { SchemaExpressionScopeContext, useField, useFieldSchema, useForm } from '@formily/react';
 import {
   SchemaInitializerItemType,
-  TableFieldResource,
   useActionContext,
   useBlockRequestContext,
   useCollectionManager_deprecated,
@@ -19,6 +18,7 @@ import {
   useNavigateNoUpdate,
   useRemoveGridFormItem,
   useTableBlockContext,
+  useTableSelectorContext,
 } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { App, message } from 'antd';
@@ -87,10 +87,13 @@ export const useCustomizeBulkEditActionProps = () => {
   const compile = useCompile();
   const actionField = useField();
   const tableBlockContext = useTableBlockContext();
+  const tableSelectorContext = useTableSelectorContext();
   const { modal } = App.useApp();
-  const { rowKey } = tableBlockContext;
   const selectedRecordKeys =
-    tableBlockContext.field?.data?.selectedRowKeys ?? expressionScope?.selectedRecordKeys ?? {};
+    tableBlockContext.field?.data?.selectedRowKeys ??
+    expressionScope?.selectedRecordKeys ??
+    tableSelectorContext.field?.data?.selectedRowKeys ??
+    [];
   const { setVisible, fieldSchema: actionSchema, setSubmitted } = actionContext;
   const fieldSchema = useFieldSchema();
   return {
@@ -108,19 +111,29 @@ export const useCustomizeBulkEditActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        const updateData: { filter?: any; values: any; forceUpdate: boolean } = {
+        const updateData: {
+          filter?: any;
+          filterByTk?: any[];
+          values: any;
+          forceUpdate: boolean;
+          triggerWorkflows?: string;
+        } = {
           values: form.values,
-          filter,
           forceUpdate: false,
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         };
         if (updateMode === 'selected') {
           if (!selectedRecordKeys?.length) {
             message.error(t('Please select the records to be updated'));
             return;
           }
-          updateData.filter = { $and: [{ [rowKey || 'id']: { $in: selectedRecordKeys } }] };
+          updateData.filterByTk = selectedRecordKeys;
+        } else {
+          updateData.filter = filter;
         }
-        if (!updateData.filter) {
+        if (!updateData.filter && !updateData.filterByTk) {
           updateData.forceUpdate = true;
         }
         await resource.update(updateData);

@@ -162,7 +162,7 @@ test('Collection event add data trigger, filter dropdown radio fields not null, 
 
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -324,7 +324,7 @@ test('Collection event add data trigger, filter dropdown radio fields not empty,
 
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -489,7 +489,7 @@ test('Collection event add data trigger, filter date field not null, common tabl
 
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -651,7 +651,7 @@ test('Collection event add data trigger, filter date field not empty, common tab
 
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));

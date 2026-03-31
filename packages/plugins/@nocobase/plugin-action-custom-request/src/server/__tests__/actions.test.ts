@@ -17,18 +17,29 @@ describe('actions', () => {
   let repo: Repository;
   let agent: ReturnType<MockServer['agent']>;
   let resource: ReturnType<ReturnType<MockServer['agent']>['resource']>;
+  let user;
 
   beforeAll(async () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['field-sort', 'users', 'auth', 'acl', 'action-custom-request', 'data-source-manager'],
+      plugins: [
+        'field-sort',
+        'users',
+        'auth',
+        'acl',
+        'action-custom-request',
+        'data-source-manager',
+        'ui-schema-storage',
+        'system-settings',
+      ],
     });
     db = app.db;
     repo = db.getRepository('customRequests');
     agent = app.agent();
-    resource = (agent.set('X-Role', 'admin') as any).resource('customRequests');
-    await agent.login(1);
+    resource = ((agent as any).set('X-Role', 'admin') as any).resource('customRequests');
+    user = await db.getRepository('users').findOne();
+    await agent.login(user.id);
   });
 
   describe('send', () => {
@@ -127,7 +138,7 @@ describe('actions', () => {
         },
       });
 
-      const userId = 1;
+      const userId = user.id;
       const res = await resource.send({
         filterByTk: 'test2',
         values: {
@@ -163,7 +174,41 @@ describe('actions', () => {
       expect(res.status).toBe(200);
       expect(expect.arrayContaining(params.a)).toMatchObject(['root', 'member', 'admin']);
       expect(expect.arrayContaining(params.b)).toMatchObject(['{{t("Member")}}', '{{t("Root")}}', '{{t("Admin")}}']);
-      expect(expect.arrayContaining(params.c)).toMatchObject([1, 1, 1]);
+      expect(expect.arrayContaining(params.c)).toMatchObject([user.id, user.id, user.id]);
+    });
+
+    test('vars payload should resolve ctx paths', async () => {
+      await repo.create({
+        values: {
+          key: 'vars-payload',
+          options: {
+            method: 'POST',
+            headers: [],
+            data: {
+              a: '{{ctx.user.name}}',
+              b: '{{ctx.record.id}} + {{ctx.record.name}}',
+            },
+            url: '/customRequests:test',
+          },
+        },
+      });
+
+      const res = await resource.send({
+        filterByTk: 'vars-payload',
+        values: {
+          vars: {
+            'ctx.user.name': 'alice',
+            'ctx.record.id': 100,
+            'ctx.record.name': 'order-100',
+          },
+        },
+      });
+
+      expect(res.status).toBe(200);
+      expect(params).toMatchObject({
+        a: 'alice',
+        b: '100 + order-100',
+      });
     });
   });
 });

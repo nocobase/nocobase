@@ -14,6 +14,10 @@ import {
   SchemaSettingsBlockHeightItem,
   SchemaSettingsModalItem,
   useOpenModeContext,
+  SchemaSettingsItemType,
+  useCollection,
+  SchemaSettingsLinkageRules,
+  LinkageRuleCategory,
 } from '@nocobase/client';
 import { CustomSchemaSettingsBlockTitleItem } from './SchemaSettingsBlockTitleItem';
 import React from 'react';
@@ -55,6 +59,32 @@ const ActionPanelLayout = () => {
   );
 };
 
+export const ellipsisSettingsItem: SchemaSettingsItemType = {
+  name: 'ellipsis',
+  type: 'switch',
+  useComponentProps() {
+    const fieldSchema = useFieldSchema();
+    const { dn } = useDesignable();
+    const { t } = useTranslation();
+    return {
+      title: t('Ellipsis action title', { ns: 'block-workbench' }),
+      checked: fieldSchema['x-component-props']?.ellipsis !== false,
+      onChange: async (checked) => {
+        fieldSchema['x-component-props'] = fieldSchema['x-component-props'] || {};
+        fieldSchema['x-component-props']['ellipsis'] = checked;
+        await dn.emit('patch', {
+          schema: {
+            'x-uid': fieldSchema['x-uid'],
+            'x-component-props': {
+              ...fieldSchema['x-component-props'],
+              ellipsis: checked,
+            },
+          },
+        });
+      },
+    };
+  },
+};
 export function ActionPanelItemsPerRow() {
   const field = useField();
   const fieldSchema = useFieldSchema();
@@ -110,6 +140,17 @@ export const workbenchBlockSettings = new SchemaSettings({
       Component: SchemaSettingsBlockHeightItem,
     },
     {
+      name: 'blockLinkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { t } = useTranslation();
+        return {
+          title: t('Block Linkage rules'),
+          category: LinkageRuleCategory.block,
+        };
+      },
+    },
+    {
       name: 'layout',
       Component: ActionPanelLayout,
     },
@@ -122,6 +163,7 @@ export const workbenchBlockSettings = new SchemaSettings({
         return isMobile && fieldSchema?.['x-component-props']?.layout !== WorkbenchLayout.List;
       },
     },
+    ellipsisSettingsItem,
     {
       type: 'remove',
       name: 'remove',

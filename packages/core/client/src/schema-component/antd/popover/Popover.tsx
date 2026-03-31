@@ -9,6 +9,9 @@
 
 import { Popover as AntdPopover, PopoverProps } from 'antd';
 import React, { useCallback, useRef } from 'react';
+import { getZIndex, useZIndexContext, zIndexContext } from '../action/zIndexContext';
+
+export const ICON_POPUP_Z_INDEX = 2000;
 
 /**
  * 参见：https://github.com/ant-design/ant-design/issues/44119
@@ -17,6 +20,9 @@ import React, { useCallback, useRef } from 'react';
  * @returns
  */
 export const StablePopover = (props: PopoverProps) => {
+  const parentZIndex = useZIndexContext();
+  const zIndex = getZIndex('drawer', parentZIndex, 1);
+
   // 1. 用于记录点击的元素
   const target = useRef(null);
 
@@ -41,7 +47,9 @@ export const StablePopover = (props: PopoverProps) => {
 
   return (
     <div className="popover-with-stop-propagation" onClick={avoidClose}>
-      <AntdPopover {...props} onOpenChange={onOpenChange} />
+      <zIndexContext.Provider value={zIndex}>
+        <AntdPopover {...props} zIndex={zIndex} onOpenChange={onOpenChange} />
+      </zIndexContext.Provider>
     </div>
   );
 };

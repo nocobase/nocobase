@@ -9,6 +9,7 @@
 
 import Trigger from '..';
 import type Plugin from '../../Plugin';
+import { WorkflowModel } from '../../types';
 import DateFieldScheduleTrigger from './DateFieldScheduleTrigger';
 import StaticScheduleTrigger from './StaticScheduleTrigger';
 import { SCHEDULE_MODE } from './utils';
@@ -67,19 +68,15 @@ export default class ScheduleTrigger extends Trigger {
   //   return !existed.length;
   // }
 
-  validateContext(values) {
-    if (!values?.mode) {
-      return {
-        mode: 'Mode is required',
-      };
-    }
-    const trigger = this.getTrigger(values.mode);
+  validateContext(values, workflow: WorkflowModel) {
+    const { mode } = workflow.config;
+    const trigger = this.getTrigger(mode);
     if (!trigger) {
       return {
         mode: 'Mode in invalid',
       };
     }
 
-    return trigger.validateContext?.(values);
+    return trigger.validateContext?.(values, workflow);
   }
 }

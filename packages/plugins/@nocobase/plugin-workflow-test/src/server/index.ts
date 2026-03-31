@@ -10,22 +10,33 @@
 import path from 'path';
 
 import { ApplicationOptions, Plugin } from '@nocobase/server';
-import { MockClusterOptions, MockServer, createMockCluster, createMockServer, mockDatabase } from '@nocobase/test';
+import {
+  MockClusterOptions,
+  MockServer,
+  MockServerOptions,
+  createMockCluster,
+  createMockDatabase,
+  createMockServer,
+  mockDatabase,
+  sleep,
+} from '@nocobase/test';
 
-import functions from './functions';
-import triggers from './triggers';
-import instructions from './instructions';
 import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { uid } from '@nocobase/utils';
+import functions from './functions';
+import instructions from './instructions';
+import triggers from './triggers';
+import { getConfigByEnv } from '@nocobase/database';
 export { sleep } from '@nocobase/test';
 
-interface WorkflowMockServerOptions extends ApplicationOptions {
-  collectionsPath?: string;
-}
+type WorkflowMockServerOptions = ApplicationOptions &
+  MockServerOptions & {
+    collectionsPath?: string;
+  };
 
-interface WorkflowMockClusterOptions extends MockClusterOptions {
+type WorkflowMockClusterOptions = MockClusterOptions & {
   collectionsPath?: string;
-}
+};
 
 class TestCollectionPlugin extends Plugin {
   async load() {
@@ -44,6 +55,12 @@ export async function getApp({
     ...options,
     plugins: [
       'field-sort',
+      'file-manager',
+      'system-settings',
+      'users',
+      'auth',
+      'acl',
+      'data-source-manager',
       [
         'workflow',
         {
@@ -58,18 +75,31 @@ export async function getApp({
     ],
   });
 
-  await app.dataSourceManager.add(
-    new SequelizeDataSource({
-      name: 'another',
-      collectionManager: {
-        database: mockDatabase({
+  app.dataSourceManager.factory.register('sequelize', SequelizeDataSource);
+  const DataSourceRepo = app.db.getRepository('dataSources');
+  await DataSourceRepo.create({
+    values: {
+      key: 'another',
+      name: 'Another Data Source',
+      type: 'sequelize',
+      options: {
+        collectionManager: {
+          ...getConfigByEnv(),
           tablePrefix: `t${uid(5)}`,
-        }),
+        },
       },
-      resourceManager: {},
-    }),
-  );
-  const another = app.dataSourceManager.dataSources.get('another');
+    },
+  });
+  const loadStart = Date.now();
+  let another = app.dataSourceManager.dataSources.get('another');
+  // NOTE: wait for the data source to be loaded asynchronously
+  while (!another?.collectionManager) {
+    if (Date.now() - loadStart >= 5000) {
+      throw new Error('Timed out waiting for the "another" data source to load');
+    }
+    await sleep(1000);
+    another = app.dataSourceManager.dataSources.get('another');
+  }
 
   const anotherDB = (another.collectionManager as SequelizeCollectionManager).db;
 
@@ -78,8 +108,6 @@ export async function getApp({
   });
   await anotherDB.sync();
 
-  another.acl.allow('*', '*', 'loggedIn');
-
   return app;
 }
 
@@ -87,6 +115,7 @@ export async function getCluster({ plugins = [], collectionsPath, ...options }: 
   return createMockCluster({
     ...options,
     plugins: [
+      'field-sort',
       [
         'workflow',
         {

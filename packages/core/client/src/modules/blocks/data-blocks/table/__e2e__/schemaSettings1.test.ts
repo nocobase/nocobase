@@ -34,7 +34,7 @@ test.describe('table block schema settings', () => {
         'Set the data scope',
         'Records per page',
         'Connect data blocks',
-        'Save as template',
+        // 'Save as template',
         'Delete',
       ],
     });

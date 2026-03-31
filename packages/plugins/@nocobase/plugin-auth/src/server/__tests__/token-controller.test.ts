@@ -163,7 +163,8 @@ describe('auth', () => {
   });
 
   it('when call renew token with same jti multiple times within 10s, the result is same', async () => {
-    const tokenInfo = await auth.tokenController.add({ userId: 1 });
+    const user = await db.getRepository('users').findOne();
+    const tokenInfo = await auth.tokenController.add({ userId: user.id });
     const renewTasks = Array(15)
       .fill(null)
       .map(() => auth.tokenController.renew(tokenInfo.jti));
@@ -174,7 +175,8 @@ describe('auth', () => {
   });
 
   it('after JTI is renewed for 10s, any further renewal should fail.', async () => {
-    const tokenInfo = await auth.tokenController.add({ userId: 1 });
+    const user = await db.getRepository('users').findOne();
+    const tokenInfo = await auth.tokenController.add({ userId: user.id });
     await auth.tokenController.renew(tokenInfo.jti);
     const renewedIntervals = [
       RENEWED_JTI_CACHE_MS - 1000,

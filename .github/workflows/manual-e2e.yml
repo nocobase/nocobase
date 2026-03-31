@@ -15,7 +15,7 @@ jobs:
   e2e-test-postgres:
     strategy:
       matrix:
-        node_version: ['18']
+        node_version: ['20']
     runs-on: ubuntu-latest
     container: node:${{ matrix.node_version }}
     services:

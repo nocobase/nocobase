@@ -88,13 +88,12 @@ export default {
     {
       key: '7y601o9bmih',
       name: 'id',
-      type: 'bigInt',
+      type: 'snowflakeId',
       interface: 'integer',
       description: null,
       collectionName: 'desktopRoutes',
       parentKey: null,
       reverseKey: null,
-      autoIncrement: true,
       primaryKey: true,
       allowNull: false,
       uiSchema: {

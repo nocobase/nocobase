@@ -9,8 +9,9 @@
 
 import * as workflows from './workflows';
 import * as nodes from './nodes';
+import * as jobs from './jobs';
 import * as executions from './executions';
-import * as workflowTasks from './workflowTasks';
+import * as userWorkflowTasks from './userWorkflowTasks';
 
 function make(name, mod) {
   return Object.keys(mod).reduce(
@@ -31,9 +32,13 @@ export default function ({ app }) {
     ...make('flow_nodes', {
       update: nodes.update,
       destroy: nodes.destroy,
+      destroyBranch: nodes.destroyBranch,
+      duplicate: nodes.duplicate,
+      move: nodes.move,
       test: nodes.test,
     }),
+    ...make('jobs', jobs),
     ...make('executions', executions),
-    ...make('workflowTasks', workflowTasks),
+    ...make('userWorkflowTasks', userWorkflowTasks),
   });
 }

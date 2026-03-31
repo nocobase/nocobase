@@ -10,12 +10,11 @@
 import { ISchema, Schema } from '@formily/json-schema';
 import { useFieldSchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { Result } from 'antd';
 import _ from 'lodash';
 import { FC, default as React, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { Location, useLocation } from 'react-router-dom';
 import { useAPIClient } from '../../../api-client';
+import { AppNotFound } from '../../../common/AppNotFound';
 import { DataBlockProvider } from '../../../data-source/data-block/DataBlockProvider';
 import { BlockRequestContextProvider } from '../../../data-source/data-block/DataBlockRequestProvider';
 import { useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
@@ -23,8 +22,14 @@ import { SchemaComponent } from '../../core';
 import { TabsContextProvider } from '../tabs/context';
 import { usePopupSettings } from './PopupSettingsProvider';
 import { deleteRandomNestedSchemaKey, getRandomNestedSchemaKey } from './nestedSchemaKeyStorage';
-import { PopupParams, getPopupParamsFromPath, getStoredPopupContext, usePopupUtils } from './pagePopupUtils';
-import { removePopupLayerState, setPopupLayerState } from './popupState';
+import {
+  PopupParams,
+  getBlockService,
+  getPopupParamsFromPath,
+  getStoredPopupContext,
+  usePopupUtils,
+} from './pagePopupUtils';
+import { removePopupLayerState } from './popupState';
 import {
   PopupContext,
   getPopupContextFromActionOrAssociationFieldSchema,
@@ -158,7 +163,6 @@ const PagePopupsItemProvider: FC<{
   const storedContext = { ...getStoredPopupContext(params.popupuid) };
 
   useEffect(() => {
-    setPopupLayerState(currentLevel, true);
     return () => {
       removePopupLayerState(currentLevel);
     };
@@ -178,9 +182,11 @@ const PagePopupsItemProvider: FC<{
   if (_.isEmpty(context)) {
     return (
       <PopupParamsProvider params={params} context={context} currentLevel={currentLevel}>
-        <VisibleProvider popupuid={params.popupuid}>
-          <div style={displayNone}>{children}</div>
-        </VisibleProvider>
+        <PopupTabsPropsProvider>
+          <VisibleProvider popupuid={params.popupuid}>
+            <div style={displayNone}>{children}</div>
+          </VisibleProvider>
+        </PopupTabsPropsProvider>
       </PopupParamsProvider>
     );
   }
@@ -273,31 +279,43 @@ const InternalPagePopups = (props: { paramsList?: PopupParams[] }) => {
         );
       });
       const schemas = await Promise.all(waitList);
-      const clonedSchemas = schemas.map((schema, index) => {
-        if (_.isEmpty(schema)) {
-          return get404Schema();
-        }
-
-        const params = popupParams[index];
-
-        if (params.puid) {
-          const popupSchema = findSchemaByUid(params.puid, fieldSchema?.root);
-          if (popupSchema) {
-            savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
+      const clonedSchemas = await Promise.all(
+        schemas.map(async (schema, index) => {
+          if (_.isEmpty(schema)) {
+            return get404Schema();
           }
-        }
 
-        // Using toJSON for deep clone, faster than lodash's cloneDeep
-        const result = _.cloneDeepWith(_.omit(schema, 'parent'), (value) => {
-          // If we clone the Tabs component, it will cause the configuration to be lost when reopening the popup after modifying its settings
-          if (value?.['x-component'] === 'Tabs') {
-            return value;
+          const params = popupParams[index];
+
+          if (params.puid) {
+            const popupSchema = findSchemaByUid(params.puid, fieldSchema?.root);
+            if (popupSchema) {
+              savePopupSchemaToSchema(_.omit(popupSchema, 'parent'), schema);
+            } else {
+              // 当本地找不到 popupSchema 时，通过接口请求 puid 对应的 schema
+              try {
+                const remoteSchema = await requestSchema(params.puid);
+                if (remoteSchema) {
+                  savePopupSchemaToSchema(remoteSchema, schema);
+                }
+              } catch (error) {
+                console.error('Failed to fetch schema for puid:', params.puid, error);
+              }
+            }
           }
-        });
-        result['x-read-pretty'] = true;
 
-        return result;
-      });
+          // Using toJSON for deep clone, faster than lodash's cloneDeep
+          const result = _.cloneDeepWith(_.omit(schema, 'parent'), (value) => {
+            // If we clone the Tabs component, it will cause the configuration to be lost when reopening the popup after modifying its settings
+            if (value?.['x-component'] === 'Tabs') {
+              return value;
+            }
+          });
+          result['x-read-pretty'] = true;
+
+          return result;
+        }),
+      );
       popupPropsRef.current = clonedSchemas.map((schema, index, items) => {
         const schemaContext = getPopupContextFromActionOrAssociationFieldSchema(schema);
         let hidden = false;
@@ -405,7 +423,29 @@ function isSubPageSchema(schema: ISchema) {
 export const useCurrentPopupContext = (): PopupProps => {
   const { currentLevel } = React.useContext(PopupParamsProviderContext) || ({} as Omit<PopupProps, 'hidden'>);
   const allPopupsProps = React.useContext(AllPopupsPropsProviderContext);
-  return allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
+  const result = allPopupsProps?.[currentLevel - 1] || ({} as PopupProps);
+
+  if (result.context) {
+    Object.setPrototypeOf(result.context, {
+      get blockService() {
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
+      },
+    });
+  } else {
+    result.context = {
+      get blockService() {
+        if (result?.params?.popupuid) {
+          return getBlockService(result.params.popupuid)?.service;
+        }
+        return null;
+      },
+    };
+  }
+
+  return result;
 };
 
 /**
@@ -463,10 +503,7 @@ function get404Schema() {
                     version: '2.0',
                     type: 'void',
                     'x-component': function Com() {
-                      const { t } = useTranslation();
-                      return (
-                        <Result status="404" title="404" subTitle={t('Sorry, the page you visited does not exist.')} />
-                      );
+                      return <AppNotFound />;
                     },
                     'x-uid': uid(),
                     'x-async': false,

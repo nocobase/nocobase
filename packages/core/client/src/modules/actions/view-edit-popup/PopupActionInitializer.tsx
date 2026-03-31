@@ -7,12 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { FC } from 'react';
+import { ACLActionProvider } from '../../../acl/ACLProvider';
 import { useSchemaInitializerItem } from '../../../application';
+import { ClearCollectionFieldContext } from '../../../data-source/collection-field/CollectionFieldProvider';
 import { usePopupUtils } from '../../../schema-component/antd/page/pagePopupUtils';
 import { CONTEXT_SCHEMA_KEY } from '../../../schema-component/antd/page/usePopupContextInActionOrAssociationField';
 import { BlockInitializer } from '../../../schema-initializer/items';
 import { useOpenModeContext } from '../../popup/OpenModeProvider';
+
+export const PopupActionDecorator: FC = (props) => {
+  return (
+    <ClearCollectionFieldContext>
+      <ACLActionProvider>{props.children}</ACLActionProvider>
+    </ClearCollectionFieldContext>
+  );
+};
 
 export const PopupActionInitializer = (props) => {
   const { defaultOpenMode } = useOpenModeContext();
@@ -28,7 +38,7 @@ export const PopupActionInitializer = (props) => {
       openMode: defaultOpenMode,
       refreshDataBlockRequest: true,
     },
-    'x-decorator': 'ACLActionProvider',
+    'x-decorator': 'PopupActionDecorator',
     properties: {
       drawer: {
         type: 'void',

@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import {
   FindOptions,
   ICollection,
@@ -5,20 +14,26 @@ import {
   IField,
   IModel,
   IRelationField,
+  IRepository,
 } from '@nocobase/data-source-manager';
 import EventEmitter from 'events';
 import { deepGet } from '../utils/deep-get';
 import path from 'path';
 import os from 'os';
+import { Logger } from '@nocobase/logger';
+import _ from 'lodash';
+import { Field, RelationField } from '@nocobase/database';
 
 export type ExportOptions = {
   collectionManager: ICollectionManager;
   collection: ICollection;
-  repository?: any;
+  repository?: IRepository;
   fields: Array<Array<string>>;
   findOptions?: FindOptions;
   chunkSize?: number;
   limit?: number;
+  logger?: Logger;
+  outputPath?: string;
 };
 
 abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends EventEmitter {
@@ -35,9 +50,14 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
    */
   protected limit: number;
 
+  protected logger: Logger;
+
+  protected _batchQueryStartTime: [number, number] | null = null;
+
   protected constructor(protected options: T) {
     super();
     this.limit = options.limit ?? (process.env['EXPORT_LIMIT'] ? parseInt(process.env['EXPORT_LIMIT']) : 2000);
+    this.logger = options.logger;
   }
 
   abstract init(ctx?): Promise<void>;
@@ -45,57 +65,127 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
   abstract handleRow(row: any, ctx?): Promise<void>;
 
   async run(ctx?): Promise<any> {
-    await this.init(ctx);
+    try {
+      this.logger?.info('Export started......');
+      await this.init(ctx);
 
-    const { collection, chunkSize, repository } = this.options;
+      const { collection, chunkSize, repository } = this.options;
+      const repo = repository || collection.repository;
+      const total = (await repo.count(this.getFindOptions(ctx))) as number;
+      this.logger?.info(`Found ${total} records to export from collection [${collection.name}]`);
+      const totalCountStartTime = process.hrtime();
+      let current = 0;
 
-    const total = await (repository || collection.repository).count(this.getFindOptions());
-    let current = 0;
-
-    await (repository || collection.repository).chunk({
-      ...this.getFindOptions(),
-      chunkSize: chunkSize || 200,
-      callback: async (rows, options) => {
-        for (const row of rows) {
-          await this.handleRow(row, ctx);
-          current += 1;
-
+      // gt 200000, offset + limit will be slow,so use cursor
+      const chunkHandle = (total > 200000 ? repo.chunkWithCursor : repo.chunk).bind(repo);
+      const findOptions = {
+        ...this.getFindOptions(ctx),
+        chunkSize: chunkSize || 200,
+        beforeFind: async (options) => {
+          this._batchQueryStartTime = process.hrtime();
+        },
+        afterFind: async (rows, options) => {
+          if (this._batchQueryStartTime) {
+            const diff = process.hrtime(this._batchQueryStartTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 1200) {
+              this.logger?.warn(
+                `Query took too long: ${executionTime}ms, fetched ${rows.length} records, options: ${JSON.stringify(
+                  options,
+                )}`,
+              );
+            } else {
+              this.logger?.trace(`Query completed in ${executionTime}ms, fetched ${rows.length} records`);
+            }
+            this._batchQueryStartTime = null;
+          }
+        },
+        callback: async (rows, options) => {
+          for (const row of rows) {
+            const startTime = process.hrtime();
+            await this.handleRow(row, ctx);
+            const diff = process.hrtime(startTime);
+            const executionTime = (diff[0] * 1000 + diff[1] / 1000000).toFixed(2);
+            if (Number(executionTime) > 500) {
+              this.logger?.debug(`HandleRow took too long, completed in ${executionTime}ms`);
+            } else {
+              this.logger?.trace(`HandleRow completed, ${executionTime}ms`);
+            }
+          }
           this.emit('progress', {
             total,
-            current,
+            current: (current += rows.length),
           });
-        }
-      },
-    });
+          const totalDiff = process.hrtime(totalCountStartTime);
+          const elapsedSeconds = totalDiff[0] + totalDiff[1] / 1e9;
+          const estimatedTimeRemaining = (elapsedSeconds * (total - current)) / current;
 
-    return this.finalize();
+          this.logger?.trace(
+            `Processed ${current}/${total} records (${Math.round((current / total) * 100)}%), ` +
+              `elapsed time: ${elapsedSeconds.toFixed(2)}s, ` +
+              `estimated remaining: ${estimatedTimeRemaining.toFixed(2)}s`,
+          );
+        },
+      };
+      await chunkHandle(findOptions);
+      this.logger?.info(`Export completed...... processed ${current} records in total`);
+      return this.finalize();
+    } catch (error) {
+      this.logger?.error(`Export failed: ${error.message}`, { error });
+      throw error;
+    }
   }
 
-  protected getAppendOptionsFromFields() {
+  private removePathAfterFileField(fieldPath: string[]): string[] {
+    let currentCollection = this.options.collection;
+
+    for (let i = 0; i < fieldPath.length; i++) {
+      const fieldInstance = currentCollection.getField(fieldPath[i]);
+
+      if (_.get(fieldInstance, 'collection.options.template') === 'file') {
+        return fieldPath.slice(0, i);
+      }
+
+      if (fieldInstance?.isRelationField() && i < fieldPath.length - 1) {
+        currentCollection = (fieldInstance as IRelationField).targetCollection();
+      }
+    }
+
+    return fieldPath;
+  }
+
+  protected getAppendOptionsFromFields(ctx?) {
     return this.options.fields
-      .map((field) => {
-        const fieldInstance = this.options.collection.getField(field[0]);
+      .filter((fieldPath) => {
+        const field = fieldPath[0];
+        const hasPermission =
+          _.isEmpty(ctx?.permission?.can?.params) || (ctx?.permission?.can?.params?.appends || []).includes(field);
+        return hasPermission;
+      })
+      .map((fieldPath) => {
+        const fieldInstance = this.options.collection.getField(fieldPath[0]);
         if (!fieldInstance) {
-          throw new Error(`Field "${field[0]}" not found: , please check the fields configuration.`);
+          throw new Error(`Field "${fieldPath[0]}" not found: , please check the fields configuration.`);
         }
 
+        const cleanedPath = this.removePathAfterFileField([...fieldPath]);
+
         if (fieldInstance.isRelationField()) {
-          return field.join('.');
+          return cleanedPath.join('.');
         }
 
         return null;
       })
       .filter(Boolean);
   }
-
-  protected getFindOptions() {
+  protected getFindOptions(ctx?) {
     const { findOptions = {} } = this.options;
 
     if (this.limit) {
       findOptions.limit = this.limit;
     }
 
-    const appendOptions = this.getAppendOptionsFromFields();
+    const appendOptions = this.getAppendOptionsFromFields(ctx);
 
     if (appendOptions.length) {
       return {
@@ -109,22 +199,19 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
 
   protected findFieldByDataIndex(dataIndex: Array<string>): IField {
     const { collection } = this.options;
-    const currentField = collection.getField(dataIndex[0]);
-
-    if (dataIndex.length > 1) {
-      let targetCollection: ICollection;
-
-      for (let i = 0; i < dataIndex.length; i++) {
-        const isLast = i === dataIndex.length - 1;
-
-        if (isLast) {
-          return targetCollection.getField(dataIndex[i]);
-        }
-
-        targetCollection = (currentField as IRelationField).targetCollection();
-      }
+    let currentField = collection.getField(dataIndex[0]);
+    if (dataIndex.length === 1) {
+      return currentField;
     }
 
+    let targetCollection = (currentField as RelationField).targetCollection();
+    for (let i = 1; i < dataIndex.length; i++) {
+      currentField = targetCollection.getField(dataIndex[i]);
+      const isLast = i === dataIndex.length - 1;
+      if (!isLast && currentField instanceof RelationField) {
+        targetCollection = currentField.targetCollection();
+      }
+    }
     return currentField;
   }
 
@@ -142,7 +229,10 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
       return this.renderRawValue;
     }
     const fieldInterface = new InterfaceClass(field?.options);
-    return (value) => fieldInterface.toString(value, ctx);
+    return (value) => {
+      const renderedValue = fieldInterface.toString(value, ctx);
+      return this.normalizeRenderedValue(renderedValue, field);
+    };
   }
 
   protected formatValue(rowData: IModel, dataIndex: Array<string>, ctx?) {
@@ -163,7 +253,35 @@ abstract class BaseExporter<T extends ExportOptions = ExportOptions> extends Eve
     return render(value);
   }
 
-  public generateOutputPath(prefix = 'export', ext = '', destination = os.tmpdir()): string {
+  protected normalizeRenderedValue(value: any, field?: IField) {
+    if (!this.options.collectionManager.isNumericField(field)) {
+      return value;
+    }
+
+    if (value == null || value === '') {
+      return value;
+    }
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value.replace(/,/g, '');
+      const parsed = Number(normalized);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+
+    return value;
+  }
+
+  public generateOutputPath(
+    prefix = 'export',
+    ext = '',
+    destination = path.join(process.cwd(), 'storage', 'tmp'),
+  ): string {
     const fileName = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
     return path.join(destination, fileName);
   }

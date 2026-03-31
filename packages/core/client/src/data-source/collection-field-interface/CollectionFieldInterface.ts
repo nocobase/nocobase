@@ -8,7 +8,7 @@
  */
 
 import type { ISchema } from '@formily/react';
-import { cloneDeep, capitalize } from 'lodash';
+import { cloneDeep, capitalize, set } from 'lodash';
 import type { CollectionFieldOptions } from '../collection';
 import { CollectionFieldInterfaceManager } from './CollectionFieldInterfaceManager';
 import { defaultProps } from '../../collection-manager/interfaces/properties';
@@ -30,6 +30,7 @@ export abstract class CollectionFieldInterface {
   group: string;
   title?: string;
   description?: string;
+  primaryKeyDescription?: string;
   order?: number;
   default?: {
     type: string;
@@ -45,6 +46,9 @@ export abstract class CollectionFieldInterface {
   isAssociation?: boolean;
   operators?: any[];
   properties?: any;
+  validationType?: string;
+  availableValidationOptions: string[] = [];
+  excludeValidationOptions?: string[];
   /**
    * - 如果该值为空，则在 Filter 组件中该字段会被过滤掉
    * - 如果该值为空，则不会在变量列表中看到该字段
@@ -87,11 +91,32 @@ export abstract class CollectionFieldInterface {
     }
     this.componentOptions.push(componentOption);
   }
-  getConfigureFormProperties() {
+  getConfigureFormProperties(collectionInfo?: any): Record<string, ISchema> {
     const defaultValueProps = this.hasDefaultValue ? this.getDefaultValueProperty() : {};
+    this.availableValidationOptions.push('required');
+    const isViewCollection = collectionInfo?.view;
+    const isSqlCollection = collectionInfo?.template === 'sql' || collectionInfo?.sql;
+    const validationProps =
+      !isViewCollection && !isSqlCollection && this.validationType
+        ? {
+            validation: {
+              title: '{{ t("Validation") }}',
+              required: false,
+              'x-decorator': 'FormItem',
+              'x-component': 'FieldValidation',
+              'x-component-props': {
+                type: this.validationType,
+                availableValidationOptions: [...new Set(this.availableValidationOptions)],
+                excludeValidationOptions: [...new Set(this.excludeValidationOptions)],
+                isAssociation: this.isAssociation,
+              },
+            },
+          }
+        : {};
     return {
       ...cloneDeep({ ...defaultProps, ...this?.properties }),
       ...defaultValueProps,
+      ...validationProps,
     };
   }
   getDefaultValueProperty() {
@@ -160,5 +185,15 @@ export abstract class CollectionFieldInterface {
         ],
       },
     };
+  }
+
+  addOperator(operatorOption: any) {
+    set(this, 'filterable.operators', [...(this.filterable.operators || [])]);
+
+    if (this.filterable.operators.find((item) => item.value === operatorOption.value)) {
+      return;
+    }
+
+    this.filterable.operators.push(operatorOption);
   }
 }

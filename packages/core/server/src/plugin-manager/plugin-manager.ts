@@ -34,6 +34,13 @@ import {
   updatePluginByCompressedFileUrl,
 } from './utils';
 
+class PluginLoadError extends Error {
+  constructor(pluginName: string) {
+    super(`${pluginName} plugin load error`);
+    this.name = 'PluginLoadError';
+  }
+}
+
 export const sleep = async (timeout = 0) => {
   return new Promise((resolve) => {
     setTimeout(resolve, timeout);
@@ -107,7 +114,7 @@ export class PluginManager {
       directory: resolve(__dirname, '../migrations'),
     });
 
-    this.app.resourcer.use(uploadMiddleware);
+    this.app.resourceManager.use(uploadMiddleware, { tag: 'upload', after: 'acl' });
   }
 
   /**
@@ -314,45 +321,30 @@ export class PluginManager {
     await tsxRerunning();
   }
 
-  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
+  async addOrThrow(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
     if (!isUpgrade && this.has(plugin)) {
       const name = typeof plugin === 'string' ? plugin : plugin.name;
-      this.app.log.warn(`plugin [${name}] added`);
-      return;
+      throw new Error(`plugin [${name}] already added`);
     }
     if (!options.name && typeof plugin === 'string') {
       options.name = plugin;
     }
-    try {
-      if (typeof plugin === 'string' && options.name && !options.packageName) {
-        const packageName = await PluginManager.getPackageName(options.name);
-        if (packageName) {
-          options['packageName'] = packageName;
-        }
+    if (typeof plugin === 'string' && options.name && !options.packageName) {
+      const packageName = await PluginManager.getPackageName(options.name);
+      if (packageName) {
+        options['packageName'] = packageName;
       }
-
-      if (options.packageName) {
-        const packageJson = await PluginManager.getPackageJson(options.packageName);
-        options['packageJson'] = packageJson;
-        options['version'] = packageJson.version;
-      }
-    } catch (error) {
-      this.app.log.error(error);
-      console.error(error);
-      // empty
     }
-    this.app.log.trace(`adding plugin [${options.name}]`, {
-      method: 'add',
-      submodule: 'plugin-manager',
-      name: options.name,
-      options,
-    });
-    let P: any;
-    try {
-      P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
-    } catch (error) {
-      this.app.log.warn('plugin not found', error);
-      return;
+    if (options.packageName) {
+      const packageJson = await PluginManager.getPackageJson(options.packageName);
+      options['packageJson'] = packageJson;
+      options['version'] = packageJson.version;
+    }
+
+    const P = await PluginManager.resolvePlugin(options.packageName || plugin, isUpgrade, !!options.packageName);
+
+    if (!P) {
+      throw new Error(`plugin [${options?.name || 'unknown'}] load error`);
     }
 
     const instance: Plugin = new P(createAppProxy(this.app), options);
@@ -365,12 +357,14 @@ export class PluginManager {
       this.pluginAliases.set(options.packageName, instance);
     }
     await instance.afterAdd();
-    this.app.log.trace(`added plugin [${options.name}]`, {
-      method: 'add',
-      submodule: 'plugin-manager',
-      name: instance.name,
-      options: instance.options,
-    });
+  }
+
+  async add(plugin?: string | typeof Plugin, options: any = {}, insert = false, isUpgrade = false) {
+    try {
+      await this.addOrThrow(plugin, options, insert, isUpgrade);
+    } catch (error) {
+      this.app.log.error(error);
+    }
   }
 
   /**
@@ -463,6 +457,7 @@ export class PluginManager {
       await this.app.emitAsync('beforeLoadPlugin', plugin, options);
       this.app.logger.trace(`load plugin [${name}] `, { submodule: 'plugin-manager', method: 'load', name });
       await plugin.loadCollections();
+      await plugin.loadAI();
       await plugin.load();
       plugin.state.loaded = true;
       await this.app.emitAsync('afterLoadPlugin', plugin, options);
@@ -565,13 +560,13 @@ export class PluginManager {
           added[pluginName] = true;
           continue;
         }
-        await this.add(pluginName);
+        await this.addOrThrow(pluginName);
       }
       for (const name of pluginNames) {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
         if (!plugin) {
-          throw new Error(`${pluginName} plugin does not exist`);
+          throw new PluginLoadError(pluginName);
         }
         if (added[pluginName]) {
           continue;
@@ -594,7 +589,7 @@ export class PluginManager {
         const { name: pluginName } = await PluginManager.parseName(name);
         const plugin = this.get(pluginName);
         if (!plugin) {
-          throw new Error(`${pluginName} plugin does not exist`);
+          throw new PluginLoadError(pluginName);
         }
         if (added[pluginName]) {
           continue;
@@ -603,6 +598,7 @@ export class PluginManager {
           continue;
         }
         await plugin.loadCollections();
+        await plugin.loadAI();
         await plugin.load();
       }
     } catch (error) {
@@ -618,7 +614,7 @@ export class PluginManager {
       const { name: pluginName } = await PluginManager.parseName(name);
       const plugin = this.get(pluginName);
       if (!plugin) {
-        throw new Error(`${pluginName} plugin does not exist`);
+        throw new PluginLoadError(pluginName);
       }
       if (plugin.enabled) {
         continue;
@@ -692,7 +688,7 @@ export class PluginManager {
       const { name: pluginName } = await PluginManager.parseName(name);
       const plugin = this.get(pluginName);
       if (!plugin) {
-        throw new Error(`${pluginName} plugin does not exist`);
+        throw new PluginLoadError(pluginName);
       }
       if (!plugin.enabled) {
         continue;
@@ -764,6 +760,42 @@ export class PluginManager {
     });
     if (!this.app.db.getCollection('applications')) {
       await removeDir();
+    }
+  }
+
+  async pull(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
+    if (Array.isArray(urlOrName)) {
+      for (const packageName of urlOrName) {
+        await this.addViaCLI(packageName, _.omit(options, 'name'), false);
+      }
+      return;
+    }
+    if (isURL(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...options,
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (await fs.exists(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...(options as any),
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (options?.registry) {
+      const { name, packageName } = await PluginManager.parseName(urlOrName);
+      options['name'] = name;
+      await this.addByNpm(
+        {
+          ...(options as any),
+          packageName,
+        },
+        emitStartedEvent,
+      );
     }
   }
 

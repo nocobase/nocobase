@@ -146,4 +146,8 @@ export default class SqliteQueryInterface extends QueryInterface {
                  WHERE name = '${tableName}';`;
     await this.db.sequelize.query(sql, { transaction });
   }
+
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    return this.db.sequelize.literal(`${left} in (SELECT value from json_each(${right}))`);
+  }
 }

@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
+import { ArrayFieldRepository, createMockDatabase, Database, Model } from '@nocobase/database';
 import path from 'path';
-import { Database, Model } from '..';
-import { ArrayFieldRepository } from '../field-repository/array-field-repository';
-import { mockDatabase } from './index';
+import { vi } from 'vitest';
 
 describe('database', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

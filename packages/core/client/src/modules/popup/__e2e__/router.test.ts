@@ -36,7 +36,7 @@ test.describe('popup router', () => {
     await page.locator('.ant-drawer-mask').click();
 
     // expect to be back to the first page
-    await page.getByText('Users单层子页面Configure').hover();
+    await page.getByText('单层子页面').hover();
     await expect(
       page.getByRole('button', { name: 'designer-schema-settings-CardItem-blockSettings:table-users' }),
     ).toBeVisible();
@@ -60,7 +60,7 @@ test.describe('popup router', () => {
     await page.locator('.ant-drawer-mask').click();
 
     // expect to be back to the first page
-    await page.getByText('Users单层子页面Configure').hover();
+    await page.getByText('单层子页面').hover();
     await expect(
       page.getByRole('button', { name: 'designer-schema-settings-CardItem-blockSettings:table-users' }),
     ).toBeVisible();

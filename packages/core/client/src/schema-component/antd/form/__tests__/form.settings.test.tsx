@@ -152,73 +152,73 @@ describe('form.settings', () => {
         title: 'Edit block title',
         type: 'modal',
       },
-      {
-        title: 'Linkage rules',
-        type: 'modal',
-        modalChecker: {
-          modalTitle: 'Linkage rules',
-          contentText: 'Add linkage rule',
-          async customCheck() {
-            // await userEvent.click(screen.getByText('Add linkage rule'));
-            // await waitFor(() => {
-            //   expect(screen.queryByText('Add condition')).toBeInTheDocument();
-            // })
-            // await userEvent.click(screen.getByText('Add condition'));
-            // await waitFor(() => {
-            //   expect(screen.queryByText('Select field')).toBeInTheDocument();
-            // })
-            // await userEvent.click(screen.getByText('Select field'));
-            // await waitFor(() => {
-            //   expect(screen.queryByTitle('Username')).toBeInTheDocument();
-            // })
-            // await userEvent.click(screen.getByTitle('Username'));
-            // const dialog = screen.queryByRole('dialog');
-            // await userEvent.type(dialog.querySelectorAll('.ant-input')[1], '1');
-            // const properties = screen.queryByTestId('select-linkage-property-field');
-            // await userEvent.click(screen.getByText('Select field'));
-            // await waitFor(() => {
-            //   expect(properties.querySelector(`[title=Nickname]`)).toBeInTheDocument();
-            // })
-            // await userEvent.click(properties.querySelector(`[title=Nickname]`));
-            // await userEvent.click(screen.getByText('action'));
-            // await waitFor(() => {
-            //   expect(screen.queryByText('Hidden')).toBeInTheDocument();
-            // })
-            // await userEvent.click(screen.getByText('Hidden'));
-          },
-          // async afterSubmit() {
-          //   await checkSchema({
-          //     "x-linkage-rules": [
-          //       {
-          //         "condition": {
-          //           "$and": [
-          //             {
-          //               "username": {}
-          //             }
-          //           ]
-          //         },
-          //         "actions": [
-          //           {
-          //             "targetFields": [
-          //               "nickname"
-          //             ],
-          //             "operator": "none"
-          //           }
-          //         ]
-          //       }
-          //     ]
-          //   })
-          // },
-        },
-      },
+      // {
+      //   title: 'Linkage rules',
+      //   type: 'modal',
+      //   modalChecker: {
+      //     modalTitle: 'Linkage rules',
+      //     contentText: 'Add linkage rule',
+      //     async customCheck() {
+      //       // await userEvent.click(screen.getByText('Add linkage rule'));
+      //       // await waitFor(() => {
+      //       //   expect(screen.queryByText('Add condition')).toBeInTheDocument();
+      //       // })
+      //       // await userEvent.click(screen.getByText('Add condition'));
+      //       // await waitFor(() => {
+      //       //   expect(screen.queryByText('Select field')).toBeInTheDocument();
+      //       // })
+      //       // await userEvent.click(screen.getByText('Select field'));
+      //       // await waitFor(() => {
+      //       //   expect(screen.queryByTitle('Username')).toBeInTheDocument();
+      //       // })
+      //       // await userEvent.click(screen.getByTitle('Username'));
+      //       // const dialog = screen.queryByRole('dialog');
+      //       // await userEvent.type(dialog.querySelectorAll('.ant-input')[1], '1');
+      //       // const properties = screen.queryByTestId('select-linkage-property-field');
+      //       // await userEvent.click(screen.getByText('Select field'));
+      //       // await waitFor(() => {
+      //       //   expect(properties.querySelector(`[title=Nickname]`)).toBeInTheDocument();
+      //       // })
+      //       // await userEvent.click(properties.querySelector(`[title=Nickname]`));
+      //       // await userEvent.click(screen.getByText('action'));
+      //       // await waitFor(() => {
+      //       //   expect(screen.queryByText('Hidden')).toBeInTheDocument();
+      //       // })
+      //       // await userEvent.click(screen.getByText('Hidden'));
+      //     },
+      //     // async afterSubmit() {
+      //     //   await checkSchema({
+      //     //     "x-linkage-rules": [
+      //     //       {
+      //     //         "condition": {
+      //     //           "$and": [
+      //     //             {
+      //     //               "username": {}
+      //     //             }
+      //     //           ]
+      //     //         },
+      //     //         "actions": [
+      //     //           {
+      //     //             "targetFields": [
+      //     //               "nickname"
+      //     //             ],
+      //     //             "operator": "none"
+      //     //           }
+      //     //         ]
+      //     //       }
+      //     //     ]
+      //     //   })
+      //     // },
+      //   },
+      // },
       {
         title: 'Form data templates',
         type: 'modal',
       },
-      {
-        title: 'Save as block template',
-        type: 'modal',
-      },
+      // {
+      //   title: 'Save as block template',
+      //   type: 'modal',
+      // },
       {
         title: 'Delete',
         type: 'delete',

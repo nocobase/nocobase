@@ -7,10 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '../../database';
-import { Collection } from '../../collection';
-
-import { mockDatabase } from '../index';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 
 describe('empty operator', () => {
   let db: Database;
@@ -22,7 +19,7 @@ describe('empty operator', () => {
   });
 
   beforeEach(async () => {
-    db = mockDatabase({});
+    db = await createMockDatabase({});
     User = db.collection({
       name: 'users',
       fields: [

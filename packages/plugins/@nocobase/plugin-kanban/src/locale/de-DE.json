@@ -1,9 +1,10 @@
 {
-  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Wird zum Sortieren von Kanban-Karten verwendet, es können nur Sortierfelder ausgewählt werden, die den Gruppierungsfeldern entsprechen",
-  "Global sorting": "Globale Sortierung",
-  "Create sort field": "Sortierfeld erstellen",
   "Convert the following integer fields to sorting fields": "Die folgenden Ganzzahlfelder in Sortierfelder umwandeln",
-  "Sorting field": "Sortierfeld",
+  "Create sort field": "Sortierfeld erstellen",
+  "Enable drag and drop sorting": "Drag-and-Drop-Sortierung aktivieren",
+  "Global sorting": "Globale Sortierung",
   "Grouped sorting based on": "Gruppierte Sortierung basierend auf",
-  "Enable drag and drop sorting": "Drag-and-Drop-Sortierung aktivieren"
+  "Set column width": "Set column width",
+  "Sorting field": "Sortierfeld",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Wird zum Sortieren von Kanban-Karten verwendet, es können nur Sortierfelder ausgewählt werden, die den Gruppierungsfeldern entsprechen"
 }

@@ -11,6 +11,7 @@ import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
 import { useCallback } from 'react';
 import { useDesignable } from '../../hooks/useDesignable';
+import { UseRequestResult } from '../../../api-client/hooks/useRequest';
 
 export interface PopupContext {
   dataSource?: string;
@@ -20,6 +21,7 @@ export interface PopupContext {
    * if true, the context will never be updated
    */
   doNotUpdateContext?: boolean;
+  readonly blockService?: UseRequestResult<any>;
 }
 
 export const CONTEXT_SCHEMA_KEY = 'x-action-context';

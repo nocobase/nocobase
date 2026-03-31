@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context, utils } from '@nocobase/actions';
+import actions, { Context, utils } from '@nocobase/actions';
 import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
 
 import ManualInstruction from './ManualInstruction';
@@ -47,7 +47,7 @@ export async function submit(context: Context, next) {
     task.status !== JOB_STATUS.PENDING ||
     task.job.status !== JOB_STATUS.PENDING ||
     task.execution.status !== EXECUTION_STATUS.STARTED ||
-    !task.workflow.enabled ||
+    // !task.workflow.enabled ||
     !actionKey ||
     actionItem?.status == null
   ) {
@@ -110,4 +110,29 @@ export async function submit(context: Context, next) {
   processor.logger.info(`manual node (${task.nodeId}) action trigger execution (${task.execution.id}) to resume`);
 
   plugin.resume(task.job);
+}
+
+export async function listMine(context: Context, next) {
+  context.action.mergeParams({
+    filter: {
+      $and: [
+        { userId: context.state.currentUser.id },
+        // {
+        //   $or: [
+        //     {
+        //       'workflow.enabled': true,
+        //     },
+        //     {
+        //       'workflow.enabled': false,
+        //       status: {
+        //         $ne: JOB_STATUS.PENDING,
+        //       },
+        //     },
+        //   ],
+        // },
+      ],
+    },
+  });
+
+  return actions.list(context, next);
 }

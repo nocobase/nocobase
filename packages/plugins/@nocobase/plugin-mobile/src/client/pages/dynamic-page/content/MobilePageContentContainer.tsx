@@ -10,9 +10,14 @@
 import { useToken } from '@nocobase/client';
 import _ from 'lodash';
 import React, { FC, useEffect } from 'react';
+import classnames from 'classnames';
 import { PageBackgroundColor } from '../../../constants';
 
-export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ children, hideTabBar }) => {
+export const MobilePageContentContainer: FC<{
+  hideTabBar?: boolean;
+  displayPageHeader?: boolean;
+  className?: string;
+}> = ({ children, hideTabBar, displayPageHeader = true, className }) => {
   const [mobileTabBarHeight, setMobileTabBarHeight] = React.useState(0);
   const [mobilePageHeader, setMobilePageHeader] = React.useState(0);
   const { token } = useToken();
@@ -29,9 +34,9 @@ export const MobilePageContentContainer: FC<{ hideTabBar?: boolean }> = ({ child
   });
   return (
     <>
-      {mobilePageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
+      {mobilePageHeader && displayPageHeader ? <div style={{ height: mobilePageHeader }}></div> : null}
       <div
-        className="mobile-page-content"
+        className={classnames('mobile-page-content', className)}
         data-testid="mobile-page-content"
         style={{
           height: `calc(100% - ${(mobileTabBarHeight || 0) + (mobilePageHeader || 0)}px)`,

@@ -9,15 +9,16 @@
 
 import NotificationsServerPlugin from '@nocobase/plugin-notification-manager';
 
-import { Processor, Instruction, JOB_STATUS, FlowNodeModel } from '@nocobase/plugin-workflow';
+import { Processor, Instruction, JOB_STATUS, FlowNodeModel, IJob } from '@nocobase/plugin-workflow';
 
 export default class extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
-    const options = processor.getParsedValue(node.config, node.id);
+    const { ignoreFail, ...config } = node.config;
+    const options = processor.getParsedValue(config, node.id);
     const scope = processor.getScope(node.id);
     const sendParams = {
       channelName: options.channelName,
-      message: { ...options, content: node.config.content },
+      message: { ...options, content: config.content },
       triggerFrom: 'workflow',
       data: scope,
     };
@@ -35,63 +36,88 @@ export default class extends Instruction {
           };
         } else {
           return {
-            status: JOB_STATUS.FAILED,
+            status: ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED,
             result,
           };
         }
       } catch (error) {
         return {
-          status: JOB_STATUS.FAILED,
+          status: ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.ERROR,
           result: error,
         };
       }
     }
 
-    const job = await processor.saveJob({
+    const { id } = processor.saveJob({
       status: JOB_STATUS.PENDING,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
-    // eslint-disable-next-line promise/catch-or-return
-    notificationServer
-      .send(sendParams)
-      .then((result) => {
-        if (result.status === 'success') {
-          processor.logger.info(`notification (#${node.id}) sent successfully.`);
-          job.set({
-            status: JOB_STATUS.RESOLVED,
-            result,
-          });
-        } else {
-          processor.logger.info(`notification (#${node.id}) sent failed.`);
-          job.set({
-            status: JOB_STATUS.FAILED,
-            result: result,
-          });
-        }
-      })
-      .catch((error) => {
-        processor.logger.warn(`notification (#${node.id}) sent failed: ${error.message}`);
+    await processor.exit();
 
-        job.set({
-          status: JOB_STATUS.FAILED,
-          result: error,
-        });
-      })
-      .finally(() => {
-        processor.logger.debug(`notification (#${node.id}) sending ended, resume workflow...`);
-        setImmediate(() => {
-          this.workflow.resume(job);
-        });
+    const jobDone: IJob = { status: JOB_STATUS.PENDING };
+
+    try {
+      processor.logger.info(`notification (#${node.id}) sent, waiting for response...`);
+      const result = await notificationServer.send(sendParams);
+      if (result.status === 'success') {
+        processor.logger.info(`notification (#${node.id}) sent successfully.`);
+        jobDone.status = JOB_STATUS.RESOLVED;
+        jobDone.result = result;
+      } else {
+        processor.logger.info(`notification (#${node.id}) sent failed.`);
+        jobDone.status = ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+        jobDone.result = result;
+      }
+    } catch (error) {
+      processor.logger.warn(`notification (#${node.id}) sent failed: ${error.message}`);
+
+      jobDone.status = ignoreFail ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED;
+      jobDone.result = error;
+    } finally {
+      const job = await this.workflow.app.db.getRepository('jobs').findOne({
+        filterByTk: id,
       });
-    processor.logger.info(`notification (#${node.id}) sent, waiting for response...`);
-
-    return processor.exit();
+      job.set(jobDone);
+      processor.logger.debug(`notification (#${node.id}) sending ended, resume workflow...`);
+      setImmediate(() => {
+        this.workflow.resume(job);
+      });
+    }
   }
 
   async resume(node: FlowNodeModel, job, processor: Processor) {
     return job;
+  }
+
+  async test(config) {
+    const sendParams = {
+      channelName: config.channelName,
+      message: config,
+      triggerFrom: 'workflow',
+      data: {},
+    };
+    const notificationServer = this.workflow.pm.get(NotificationsServerPlugin) as NotificationsServerPlugin;
+    try {
+      const result = await notificationServer.send(sendParams);
+      if (result.status === 'success') {
+        return {
+          status: JOB_STATUS.RESOLVED,
+          result,
+        };
+      } else {
+        return {
+          status: JOB_STATUS.FAILED,
+          result,
+        };
+      }
+    } catch (error) {
+      return {
+        status: JOB_STATUS.FAILED,
+        result: error,
+      };
+    }
   }
 }

@@ -191,6 +191,8 @@ test('Collection event add data trigger, filter single line text field is trigge
   await page.getByLabel('variable-button').click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
   await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Trigger variables' }).click();
+  await page.getByRole('menuitemcheckbox', { name: 'Trigger data' }).click();
   await page.getByRole('menuitemcheckbox', { name: triggerNodeFieldDisplayName }).click();
   await expect(page.getByLabel('block-item-Filter-workflows-Filter').getByLabel('variable-tag')).toHaveText(
     `Trigger variables / Trigger data / ${triggerNodeFieldDisplayName}`,

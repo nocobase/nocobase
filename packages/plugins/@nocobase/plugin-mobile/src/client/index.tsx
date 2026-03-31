@@ -53,7 +53,9 @@ import { MobileSettingsBlockInitializer } from './mobile-blocks/settings-block/M
 import { MobileSettingsBlockSchemaSettings } from './mobile-blocks/settings-block/schemaSettings';
 // @ts-ignore
 import pkg from './../../package.json';
+import { MobileComponentsProvider } from './MobileComponentsProvider';
 
+export { MobilePopup } from './adaptor-of-desktop/ActionDrawer';
 export * from './desktop-mode';
 export * from './mobile';
 export * from './mobile-layout';
@@ -104,6 +106,12 @@ export class PluginMobileClient extends Plugin {
   }
 
   async load() {
+    // 弃用警告
+    console.warn(
+      '[NocoBase] @nocobase/plugin-mobile is deprecated and may be removed in future versions. Please migrate to the new mobile solution.',
+    );
+
+    this.app.use(MobileComponentsProvider);
     this.addComponents();
     this.addAppRoutes();
     this.addRoutes();
@@ -112,8 +120,12 @@ export class PluginMobileClient extends Plugin {
     this.addScopes();
     this.addPermissionsSettingsUI();
 
+    if (this.options?.options?.deprecated) {
+      return;
+    }
+
     this.app.pluginSettingsManager.add('mobile', {
-      title: generatePluginTranslationTemplate('Mobile'),
+      title: generatePluginTranslationTemplate('Mobile (deprecated)'),
       icon: 'MobileOutlined',
       link: this.mobileBasename,
     });
@@ -262,6 +274,7 @@ export class PluginMobileClient extends Plugin {
         label: t('Mobile routes', {
           ns: pkg.name,
         }),
+        sort: 25,
         children: (
           <TabLayout>
             <MobileAllRoutesProvider active={activeKey === 'mobile-menu'}>

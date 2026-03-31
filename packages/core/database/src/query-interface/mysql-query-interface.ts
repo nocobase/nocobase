@@ -141,4 +141,8 @@ export default class MysqlQueryInterface extends QueryInterface {
       await this.db.sequelize.query(sql, { transaction });
     }
   }
+
+  public generateJoinOnForJSONArray(left: string, right: string) {
+    return this.db.sequelize.literal(`JSON_CONTAINS(${right}, JSON_ARRAY(${left}))`);
+  }
 }

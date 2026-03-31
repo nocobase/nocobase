@@ -39,8 +39,8 @@ export const MobileTabBar: FC<MobileTabBarProps> & {
   const handleDragEnd: DndContextProps['onDragEnd'] = useCallback(
     async (event) => {
       const { active, over } = event;
-      const activeIdName = active?.id;
-      const overIdName = over?.id;
+      const activeIdName = active?.id as string;
+      const overIdName = over?.id as string;
 
       if (!activeIdName || !overIdName || activeIdName === overIdName) {
         return;

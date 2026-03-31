@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "設定",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "テンプレート構文"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "高度な機能"
+  },
+  {
+    "type": "custom-link",
+    "label": "よくある質問",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "ユースケース",
+    "link": "/template-print/scenes"
+  }
+]

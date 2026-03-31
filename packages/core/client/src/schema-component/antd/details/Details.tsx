@@ -11,7 +11,8 @@ import { useFieldSchema } from '@formily/react';
 import { Empty } from 'antd';
 import _ from 'lodash';
 import React from 'react';
-import { useDataBlockRequestData } from '../../../data-source';
+import { useTemplateBlockContext } from '../../../block-provider/TemplateBlockProvider';
+import { useDataBlockRequest } from '../../../data-source';
 import { NocoBaseRecursionField } from '../../../formily/NocoBaseRecursionField';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
 import { withSkeletonComponent } from '../../../hoc/withSkeletonComponent';
@@ -22,9 +23,11 @@ export type DetailsProps = FormProps;
 
 export const Details = withDynamicSchemaProps(
   withSkeletonComponent((props: DetailsProps) => {
-    const data = useDataBlockRequestData();
+    const { data, loading } = useDataBlockRequest() || {};
     const schema = useFieldSchema();
-    if (_.isEmpty(data?.data)) {
+    const { isBlockTemplate, templateFinished } = useTemplateBlockContext();
+
+    if (isBlockTemplate?.() ? !loading && templateFinished && data && _.isEmpty(data.data) : _.isEmpty(data?.data)) {
       return (
         <>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />

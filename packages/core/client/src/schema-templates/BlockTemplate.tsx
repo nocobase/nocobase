@@ -9,9 +9,16 @@
 
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useMemo } from 'react';
-import { BlockTemplateProvider, CollectionDeletedPlaceholder, RemoteSchemaComponent, useDesignable } from '..';
+import {
+  BlockTemplateProvider,
+  CollectionDeletedPlaceholder,
+  RemoteSchemaComponent,
+  useDesignable,
+  useMobileLayout,
+} from '..';
 import { useTemplateBlockContext } from '../block-provider/TemplateBlockProvider';
 import { useSchemaTemplateManager } from './SchemaTemplateManagerProvider';
+import { transformMultiColumnToSingleColumn } from '@nocobase/utils/client';
 
 export const BlockTemplate = observer(
   (props: any) => {
@@ -22,6 +29,7 @@ export const BlockTemplate = observer(
     const { dn } = useDesignable();
     const template = useMemo(() => getTemplateById(templateId), [templateId]);
     const { onTemplateSuccess } = useTemplateBlockContext();
+    const { isMobileLayout } = useMobileLayout();
 
     const onSuccess = (data) => {
       fieldSchema['x-linkage-rules'] = data?.data?.['x-linkage-rules'] || [];
@@ -30,7 +38,12 @@ export const BlockTemplate = observer(
     };
     return template ? (
       <BlockTemplateProvider {...{ dn, field, fieldSchema, template }}>
-        <RemoteSchemaComponent noForm uid={template?.uid} onSuccess={onSuccess} />
+        <RemoteSchemaComponent
+          noForm
+          uid={template?.uid}
+          onSuccess={onSuccess}
+          schemaTransform={isMobileLayout ? transformMultiColumnToSingleColumn : undefined}
+        />
       </BlockTemplateProvider>
     ) : (
       <CollectionDeletedPlaceholder type="Block template" name={templateId} />

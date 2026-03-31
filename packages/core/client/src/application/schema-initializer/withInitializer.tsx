@@ -100,47 +100,56 @@ export function withInitializer<T>(C: ComponentType<T>) {
 
       return (
         <ErrorBoundary FallbackComponent={ErrorFallback.Modal} onError={console.error}>
-          <SchemaInitializerContext.Provider
-            value={{
-              visible,
-              setVisible,
-              insert: insertSchema,
-              options: props,
+          <ConfigProvider
+            theme={{
+              token: {
+                zIndexPopupBase: 9999,
+              },
             }}
           >
-            {popover === false ? (
-              React.createElement(C, cProps)
-            ) : (
-              <Popover
-                placement={'bottomLeft'}
-                {...popoverProps}
-                arrow={false}
-                overlayClassName={overlayClassName}
-                open={visible}
-                onOpenChange={setVisible}
-                content={wrapSSR(
-                  <div className={`${componentCls} ${hashId}`} style={contentStyle}>
-                    <ConfigProvider
-                      theme={{
-                        components: {
-                          Menu: {
-                            itemHeight: token.marginXL,
-                            borderRadius: token.borderRadiusSM,
-                            itemBorderRadius: token.borderRadiusSM,
-                            subMenuItemBorderRadius: token.borderRadiusSM,
+            <SchemaInitializerContext.Provider
+              value={{
+                visible,
+                setVisible,
+                options: props,
+                insert: insertSchema,
+              }}
+            >
+              {popover === false ? (
+                React.createElement(C, cProps)
+              ) : (
+                <Popover
+                  zIndex={9999}
+                  placement={'bottomLeft'}
+                  {...popoverProps}
+                  arrow={false}
+                  overlayClassName={overlayClassName}
+                  open={visible}
+                  onOpenChange={setVisible}
+                  content={wrapSSR(
+                    <div className={`${componentCls} ${hashId}`} style={contentStyle}>
+                      <ConfigProvider
+                        theme={{
+                          components: {
+                            Menu: {
+                              itemHeight: token.marginXL,
+                              borderRadius: token.borderRadiusSM,
+                              itemBorderRadius: token.borderRadiusSM,
+                              subMenuItemBorderRadius: token.borderRadiusSM,
+                            },
                           },
-                        },
-                      }}
-                    >
-                      {children}
-                    </ConfigProvider>
-                  </div>,
-                )}
-              >
-                {React.createElement(C, cProps)}
-              </Popover>
-            )}
-          </SchemaInitializerContext.Provider>
+                        }}
+                      >
+                        {children}
+                      </ConfigProvider>
+                    </div>,
+                  )}
+                >
+                  {React.createElement(C, cProps)}
+                </Popover>
+              )}
+            </SchemaInitializerContext.Provider>
+          </ConfigProvider>
         </ErrorBoundary>
       );
     },

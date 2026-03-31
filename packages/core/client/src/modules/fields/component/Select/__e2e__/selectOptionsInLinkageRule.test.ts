@@ -23,11 +23,12 @@ test.describe('options of  Select field in linkage rule', () => {
     // 去掉联动规则恢复选项
     await page.getByLabel('block-item-CardItem-general-').hover();
     await page.getByLabel('designer-schema-settings-CardItem-blockSettings:createForm-general').hover();
-    await page.getByRole('menuitem', { name: 'Linkage rules' }).click();
+    await page.getByRole('menuitem', { name: 'Field linkage rules' }).click();
     await page.getByRole('switch', { name: 'On Off' }).click();
     await page.getByRole('button', { name: 'OK' }).click();
     await page.reload();
-    await expect(page.getByRole('option', { name: 'option2' })).toBeVisible();
+    await page.getByLabel('block-item-CollectionField-').click();
+    await expect(page.getByRole('option', { name: 'option2' }).last()).toBeVisible();
     await expect(page.getByRole('option', { name: 'option3' })).toBeVisible();
   });
 });

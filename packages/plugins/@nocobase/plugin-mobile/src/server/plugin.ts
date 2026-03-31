@@ -34,6 +34,32 @@ export class PluginMobileServer extends Plugin {
         });
       }
     });
+
+    this.app.on('afterInstallPlugin', async (plugin) => {
+      if (plugin.name !== 'mobile') {
+        return;
+      }
+      const record = await this.pm.repository.findOne({
+        filter: {
+          name: 'mobile',
+        },
+      });
+      if (!record) {
+        return;
+      }
+      record.options = {
+        ...record.options,
+        deprecated: true,
+      };
+      await this.pm.repository.update({
+        filter: {
+          name: 'mobile',
+        },
+        values: {
+          options: record.options,
+        },
+      });
+    });
   }
 
   setACL() {
@@ -125,7 +151,7 @@ export class PluginMobileServer extends Plugin {
       const mobileRoutesRepository = ctx.db.getRepository('mobileRoutes');
       const rolesRepository = ctx.db.getRepository('roles');
 
-      if (ctx.state.currentRole === 'root') {
+      if (ctx.state.currentRoles.includes('root')) {
         ctx.body = await mobileRoutesRepository.find({
           tree: true,
           ...ctx.query,
@@ -133,12 +159,12 @@ export class PluginMobileServer extends Plugin {
         return await next();
       }
 
-      const role = await rolesRepository.findOne({
-        filterByTk: ctx.state.currentRole,
+      const roles = await rolesRepository.find({
+        filterByTk: ctx.state.currentRoles,
         appends: ['mobileRoutes'],
       });
 
-      const mobileRoutesId = role.get('mobileRoutes').map((item) => item.id);
+      const mobileRoutesId = roles.flatMap((x) => x.get('mobileRoutes').map((x) => x.id));
 
       ctx.body = await mobileRoutesRepository.find({
         tree: true,

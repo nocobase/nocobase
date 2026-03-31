@@ -51,6 +51,13 @@ function parsePRBody(body, language) {
     };
   }
   const docMatch = docLink.match(/\[(.*)\]\((.*)\)/);
+  if (!docMatch) {
+    return {
+      description,
+      docTitle: '',
+      docLink: '',
+    };
+  }
   return {
     description,
     docTitle: docMatch[1],
@@ -377,7 +384,7 @@ async function getVersion() {
     let tagPattern = '';
     switch (ver) {
       case 'rc':
-        tagPattern = '^v[1-9]+.[0-9]+.[0-9]+$';
+        tagPattern = '^v[2-9]+.[0-9]+.[0-9]+$';
         break;
       case 'beta':
         tagPattern = '^v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+$';
@@ -454,8 +461,8 @@ async function writeChangelogAndCreateRelease() {
       return;
     }
   }
-  console.log(en);
-  console.log(cn);
+  // console.log(en);
+  // console.log(cn);
   if (test) {
     return;
   }

@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { vi } from 'vitest';
-import { Database, Migration, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database, Migration } from '@nocobase/database';
 import { resolve } from 'path';
+import { vi } from 'vitest';
 
 const names = (migrations: Array<{ name: string }>) => migrations.map((m) => m.name);
 
@@ -17,7 +17,7 @@ describe('migrator', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: 'test_',
     });
 

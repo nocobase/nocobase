@@ -2,6 +2,7 @@ node_modules/
 lib/
 esm/
 es/
+!docs/docs/es
 .env
 .env.e2e
 .DS_Store
@@ -15,6 +16,7 @@ coverage
 .umi-production
 /uploads
 .env.test
+.env.perf
 docs-dist/
 .npmrc
 dist/
@@ -25,6 +27,7 @@ cache/diskstore-*
 **/.dumi/tmp-production
 packages/core/client/docs/contributing.md
 packages/core/app/client/src/.plugins
+packages/core/app/client-v2/src/.plugins
 tsconfig.paths.json
 /playwright
 .swc
@@ -32,3 +35,12 @@ ncc-cache/
 yarn--**
 v8-compile-cache-**
 vitest.config.mts.timestamp-*
+.github/copilot-instructions.md
+.github/skills
+.claude/
+.claudeignore
+python/
+git-repos.json
+CLAUDE.md
+AGENTS.md
+openspec/

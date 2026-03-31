@@ -31,6 +31,21 @@ function getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
   };
 }
 
+function getPageMenuSchemaWithTabSchema({ tabSchema }) {
+  if (!tabSchema) {
+    return null;
+  }
+
+  return {
+    type: 'void',
+    'x-component': 'Page',
+    properties: {
+      [tabSchema.name]: tabSchema,
+    },
+    'x-uid': uid(),
+  };
+}
+
 export * from '@playwright/test';
 
 export { defineConfig };
@@ -193,10 +208,17 @@ export interface PageConfig {
    */
   collections?: CollectionSetting[];
   /**
+   * @deprecate 在菜单被重构之后，没有办法直接复制完整的页面 Schema 了。所以这个选项不推荐使用了。
+   * 推荐使用 tabSchema，复制一个页面 tab 的 Schema 传给 tabSchema。
+   *
    * 页面整体的 Schema
    * @default undefined
    */
   pageSchema?: any;
+  /**
+   * 页面 Tab 的 Schema。当 pageSchema 和 tabSchema 都存在时，最终显示的会是 tabSchema 的内容
+   */
+  tabSchema?: any;
   /** 如果为 true 则表示不会更改 PageSchema 的 uid */
   keepUid?: boolean;
   /** 在 URL 中的 uid，例如：/admin/0ig6xhe03u2 */
@@ -217,6 +239,7 @@ interface CreatePageOptions {
   url?: PageConfig['url'];
   name?: string;
   pageSchema?: any;
+  tabSchema?: any;
   /** 如果为 true 则表示不会更改 PageSchema 的 uid */
   keepUid?: boolean;
   /** 在 URL 中的 uid，例如：/admin/0ig6xhe03u2 */
@@ -367,6 +390,7 @@ export class NocoPage {
         type: this.options?.type,
         name: this.options?.name,
         pageSchema: this.options?.pageSchema,
+        tabSchema: this.options?.tabSchema,
         url: this.options?.url,
         keepUid: this.options?.keepUid,
         pageUid: this.options?.pageUid,
@@ -737,13 +761,16 @@ const updateUidOfPageSchema = (uiSchema: any) => {
  * 在 NocoBase 中创建一个页面
  */
 const createPage = async (options?: CreatePageOptions) => {
-  const { type = 'page', url, name, pageSchema, keepUid, pageUid: pageUidFromOptions } = options || {};
+  const { type = 'page', url, name, pageSchema, tabSchema, keepUid, pageUid: pageUidFromOptions } = options || {};
   const api = await request.newContext({
     storageState: process.env.PLAYWRIGHT_AUTH_FILE,
   });
+
+  const schema = getPageMenuSchemaWithTabSchema({ tabSchema }) || pageSchema;
+
   const state = await api.storageState();
   const headers = getHeaders(state);
-  const newPageSchema = keepUid ? pageSchema : updateUidOfPageSchema(pageSchema);
+  const newPageSchema = keepUid ? schema : updateUidOfPageSchema(schema);
   const pageSchemaUid = newPageSchema?.['x-uid'] || uid();
   const newTabSchemaUid = uid();
   const newTabSchemaName = uid();
@@ -1395,6 +1422,7 @@ export async function expectSettingsMenu({
 }: ExpectSettingsMenuParams) {
   await page.waitForTimeout(100);
   await showMenu();
+  await page.waitForTimeout(2000);
   for (const option of supportedOptions) {
     await expect(page.getByRole('menuitem', { name: option, exact: option === 'Edit' })).toBeVisible();
   }

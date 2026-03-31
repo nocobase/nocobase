@@ -40,6 +40,7 @@ import { SubFormProvider, useAssociationFieldContext, useFieldNames } from './ho
 import { useTableSelectorProps } from './InternalPicker';
 import { Table } from './Table';
 import { getLabelFormatValue, useLabelUiSchema } from './util';
+import { useUpdate } from 'ahooks';
 
 const subTableContainer = css`
   .ant-table-footer {
@@ -70,6 +71,17 @@ const subTableContainer = css`
   .ant-table-thead .ant-table-cell {
     font-weight: normal;
   }
+  .ant-pagination {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    max-height: 23px;
+  }
+  .ant-table-footer {
+    margin-top: 10px;
+    background: inherit;
+    min-height: 22px;
+  }
 `;
 
 const tableClassName = css`
@@ -97,7 +109,8 @@ export const SubTable: any = observer(
     const labelUiSchema = useLabelUiSchema(collectionField, fieldNames?.label || 'label');
     const recordV2 = useCollectionRecord();
     const collection = useCollection();
-    const { allowSelectExistingRecord, allowAddnew, allowDisassociation } = field.componentProps;
+    const { allowSelectExistingRecord, allowAddnew, allowDisassociation, enableIndexColumn } = field.componentProps;
+    const refresh = useUpdate();
 
     useSubTableSpecialCase({ rootField: field, rootSchema: schema });
 
@@ -176,6 +189,7 @@ export const SubTable: any = observer(
     //分页
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(field.componentProps?.pageSize || 10); // 每页条数
+    const { setFormValueChanged } = useActionContext();
     useEffect(() => {
       setPageSize(field.componentProps?.pageSize);
     }, [field.componentProps?.pageSize]);
@@ -189,7 +203,9 @@ export const SubTable: any = observer(
         onChange: (page, pageSize) => {
           setCurrentPage(page);
           setPageSize(pageSize);
+          field.componentProps.pageSize = pageSize;
           field.onInput(field.value);
+          setFormValueChanged?.(false);
         },
         showSizeChanger: true,
         pageSizeOptions: ['10', '20', '50', '100'],
@@ -206,6 +222,7 @@ export const SubTable: any = observer(
           // 计算总页数，并跳转到最后一页
           const totalPages = Math.ceil(field.value.length / (field.componentProps?.pageSize || 10));
           setCurrentPage(totalPages);
+          refresh(); // 修复添加新增按钮不刷新子表格的问题
           return field.onInput(field.value);
         },
       };
@@ -217,7 +234,6 @@ export const SubTable: any = observer(
         },
       };
     };
-
     return (
       <div className={subTableContainer}>
         <FlagProvider isInSubTable>
@@ -251,38 +267,40 @@ export const SubTable: any = observer(
                   locale={{
                     emptyText: <span> {field.editable ? t('Please add or select record') : t('No data')}</span>,
                   }}
+                  enableIndexColumn={enableIndexColumn !== false}
+                  footer={() => (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      {field.editable && (
+                        <Space
+                          style={{
+                            gap: 15,
+                          }}
+                        >
+                          {allowAddnew !== false && (
+                            <Action.Link
+                              useAction={useSubTableAddNewProps}
+                              title={
+                                <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
+                                  <PlusOutlined /> {t('Add new')}
+                                </Space>
+                              }
+                            />
+                          )}
+                          {allowSelectExistingRecord && (
+                            <Action.Link
+                              useAction={useSubTableSelectProps}
+                              title={
+                                <Space style={{ gap: 2 }}>
+                                  <ZoomInOutlined /> {t('Select record')}
+                                </Space>
+                              }
+                            />
+                          )}
+                        </Space>
+                      )}
+                    </div>
+                  )}
                 />
-                {field.editable && (
-                  <Space
-                    style={{
-                      marginTop: '10px',
-                      position: field.value?.length ? 'absolute' : 'relative',
-                      bottom: '0',
-                      gap: 15,
-                    }}
-                  >
-                    {allowAddnew !== false && (
-                      <Action.Link
-                        useAction={useSubTableAddNewProps}
-                        title={
-                          <Space style={{ gap: 2 }} className="nb-sub-table-addNew">
-                            <PlusOutlined /> {t('Add new')}
-                          </Space>
-                        }
-                      />
-                    )}
-                    {allowSelectExistingRecord && (
-                      <Action.Link
-                        useAction={useSubTableSelectProps}
-                        title={
-                          <Space style={{ gap: 2 }}>
-                            <ZoomInOutlined /> {t('Select record')}
-                          </Space>
-                        }
-                      />
-                    )}
-                  </Space>
-                )}
               </SubFormProvider>
             </FormActiveFieldsProvider>
           </CollectionRecordProvider>

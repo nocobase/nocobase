@@ -31,12 +31,7 @@ export const useFieldModeOptions = (props?) => {
     if (!collectionField || !collectionField?.interface) {
       return;
     }
-    if (
-      !['o2o', 'oho', 'obo', 'o2m', 'linkTo', 'm2o', 'm2m', 'updatedBy', 'createdBy', 'mbm', 'attachmentURL'].includes(
-        collectionField.interface,
-      )
-    )
-      return;
+    if (!['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(collectionField.type)) return;
     const collection = getCollection(collectionField.target);
     if (collection?.template === 'file') {
       return isReadPretty
@@ -64,7 +59,7 @@ export const useFieldModeOptions = (props?) => {
             { label: t('Record picker'), value: 'Picker' },
             !isTableField &&
               ['m2m', 'o2m'].includes(collectionField.interface) && { label: t('Sub-table'), value: 'SubTable' },
-            !isTableField && { label: t('Cascade Select'), value: 'CascadeSelect' },
+            !isTableField && { label: t('Cascader Select'), value: 'CascadeSelect' },
             !isTableField && { label: t('Sub-form'), value: 'Nester' },
             { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
           ];
@@ -130,6 +125,6 @@ export const useFieldModeOptions = (props?) => {
               { label: t('Sub-form(Popover)'), value: 'PopoverNester' },
             ];
     }
-  }, [t, collectionField?.interface, label]);
+  }, [t, collectionField?.interface, label, isReadPretty, isTableField]);
   return (fieldModeOptions || []).filter(Boolean);
 };

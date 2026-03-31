@@ -46,6 +46,7 @@ export function AccessControl() {
           'x-decorator': 'ACLActionProvider',
         },
       });
+      fieldSchema['x-decorator'] = 'ACLActionProvider';
       dn.refresh();
     }
   }, []);

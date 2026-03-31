@@ -19,4 +19,6 @@ export * from './renderEngineReference';
 export * from './Calculation';
 export * from './Fieldset';
 export * from './TriggerCollectionRecordSelect';
+export * from './UsersSelect';
 export * from './WorkflowTitle';
+export * from './TriggerWorkflowSelect';

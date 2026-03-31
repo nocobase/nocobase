@@ -18,7 +18,7 @@ export function useSetAriaLabelForDrawer(visible: boolean) {
     if (visible) {
       // 因为 Action 是点击后渲染内容，所以需要延迟一下
       setTimeout(() => {
-        const wrappers = [...document.querySelectorAll('.ant-drawer-wrapper-body')];
+        const wrappers = [...document.querySelectorAll('.ant-drawer-body')];
         const masks = [...document.querySelectorAll('.ant-drawer-mask')];
         // 如果存在多个 mask，最后一个 mask 为当前打开的 mask；wrapper 也是同理
         const currentMask = masks[masks.length - 1];

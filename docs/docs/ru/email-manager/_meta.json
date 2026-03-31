@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Настройки администратора",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Процесс настройки",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройка Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройка почты Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Часто задаваемые вопросы",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Обзор функций",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Почтовый центр",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блок почты",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Почтовые подписи",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Шаблоны писем",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Продвинутый уровень",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Заметки к письмам",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Задачи по почте",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Метки писем",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Массовая рассылка",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Автосохранение черновиков",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

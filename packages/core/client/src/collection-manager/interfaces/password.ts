@@ -9,7 +9,7 @@
 
 import { CollectionFieldInterface } from '../../data-source/collection-field-interface/CollectionFieldInterface';
 import { i18n } from '../../i18n';
-import { defaultProps, unique } from './properties';
+import { defaultProps, unique, operators } from './properties';
 
 export class PasswordFieldInterface extends CollectionFieldInterface {
   name = 'password';
@@ -27,6 +27,8 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['password', 'string'];
   hasDefaultValue = true;
+  validationType = 'string';
+  availableValidationOptions = ['min', 'max', 'length', 'pattern'];
   properties = {
     ...defaultProps,
     unique,
@@ -71,5 +73,8 @@ export class PasswordFieldInterface extends CollectionFieldInterface {
         },
       },
     };
+  };
+  filterable = {
+    operators: operators.string,
   };
 }

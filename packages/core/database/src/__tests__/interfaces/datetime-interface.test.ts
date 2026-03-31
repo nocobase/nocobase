@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '..';
-import { Database } from '../../database';
-import { Collection } from '../../collection';
-import { DatetimeInterface } from '../../interfaces/datetime-interface';
+import { Collection, Database, createMockDatabase } from '@nocobase/database';
 import dayjs from 'dayjs';
+import { DatetimeInterface } from '../../interfaces/datetime-interface';
 
 describe('Date time interface', () => {
   let db: Database;
   let testCollection: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
     testCollection = db.collection({
       name: 'tests',

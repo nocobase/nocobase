@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Multi-app",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Vue d'ensemble",
+        "link": "/multi-app/multi-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode mémoire partagée",
+        "link": "/multi-app/multi-app/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mode multi-environnement",
+        "link": "/multi-app/multi-app/remote"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-space",
+    "link": "/multi-app/multi-space"
+  }
+]

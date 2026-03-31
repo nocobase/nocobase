@@ -72,7 +72,7 @@ export class APIClient extends APIClientSDK {
     api.notification = this.notification;
     const handlers = [];
     for (const handler of this.axios.interceptors.response['handlers']) {
-      if (handler.rejected['_name'] === 'handleNotificationError') {
+      if (handler?.rejected?.['_name'] === 'handleNotificationError') {
         handlers.push({
           ...handler,
           rejected: api.handleNotificationError.bind(api),
@@ -85,6 +85,20 @@ export class APIClient extends APIClientSDK {
     return api;
   }
 
+  getHostname() {
+    // 优先使用环境变量中的 API_BASE_URL
+    if (process.env.API_BASE_URL) {
+      try {
+        const url = new URL(process.env.API_BASE_URL);
+        return url.hostname;
+      } catch (error) {
+        // URL 解析失败时回退到 window.location.hostname
+      }
+    }
+    // 回退到当前页面的 hostname
+    return window?.location?.hostname;
+  }
+
   getHeaders() {
     const headers = super.getHeaders();
     const appName = this.app?.getName();
@@ -92,7 +106,7 @@ export class APIClient extends APIClientSDK {
       headers['X-App'] = appName;
     }
     headers['X-Timezone'] = getCurrentTimezone();
-    headers['X-Hostname'] = window?.location?.hostname;
+    headers['X-Hostname'] = this.getHostname();
     return headers;
   }
 
@@ -139,7 +153,19 @@ export class APIClient extends APIClientSDK {
     if (typeof error?.response?.data === 'string') {
       const tempElement = document.createElement('div');
       tempElement.innerHTML = error?.response?.data;
-      return [{ message: tempElement.textContent || tempElement.innerText }];
+      let message = tempElement.textContent || tempElement.innerText;
+      if (message.includes('Error occurred while trying')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      if (message.includes('502 Bad Gateway')) {
+        message = 'The application may be starting up. Please try again later.';
+        return [{ code: 'APP_WARNING', message }];
+      }
+      return [{ message }];
+    }
+    if (error?.response?.data?.error) {
+      return [error?.response?.data?.error];
     }
     return (
       error?.response?.data?.errors ||

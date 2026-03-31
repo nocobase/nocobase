@@ -1592,6 +1592,22 @@
     "type": "boolean",
     "source": "seed"
   },
+  "siderWidth": {
+    "name": "侧边栏宽度（px）",
+    "nameEn": "Sider width (px)",
+    "desc": "调整侧边栏展示区域的宽度，宽度单位通常为像素（px）",
+    "descEn": "Adjust the width of the sidebar display area. The width is usually measured in pixels (px).",
+    "type": "number",
+    "source": "map"
+  },
+  "globalStyle": {
+    "name": "全局样式",
+    "nameEn": "Global style",
+    "desc": "用于自定义全局样式",
+    "descEn": "Used to custom global style",
+    "type": "string",
+    "source": "map"
+  },
   "zIndexBase": {
     "name": "基础 zIndex",
     "nameEn": "Base zIndex",
@@ -1664,6 +1680,54 @@
     "type": "string",
     "source": "seed"
   },
+  "colorBgSider": {
+    "name": "侧边菜单背景色",
+    "nameEn": "Background color of sider",
+    "desc": "侧边菜单的背景色",
+    "descEn": "Background color of sider",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSiderMenuHover": {
+    "name": "侧边菜单背景悬浮态",
+    "nameEn": "Background color of sider menu when hover",
+    "desc": "侧边菜单背景悬浮态",
+    "descEn": "Background color of sider menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSiderMenuActive": {
+    "name": "侧边菜单背景激活态",
+    "nameEn": "Background color of sider menu when active",
+    "desc": "侧边菜单背景激活态",
+    "descEn": "Background color of sider menu when active",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenu": {
+    "name": "侧边菜单文本色",
+    "nameEn": "Text color of sider menu",
+    "desc": "侧边菜单文本色",
+    "descEn": "Text color of sider menu",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenuHover": {
+    "name": "侧边菜单文本色悬浮态",
+    "nameEn": "Text color of sider menu when hover",
+    "desc": "侧边菜单文本色悬浮态",
+    "descEn": "Text color of sider menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenuActive": {
+    "name": "侧边菜单文本色激活态",
+    "nameEn": "Text color of sider menu when active",
+    "desc": "侧边菜单文本色激活态",
+    "descEn": "Text color of sider menu when active",
+    "type": "string",
+    "source": "seed"
+  },
   "colorSettings": {
     "name": "UI 配置色",
     "nameEn": "Primary color of settings",
@@ -1685,6 +1749,14 @@
     "nameEn": "Background color of settings when hover",
     "desc": "鼠标悬浮时显示的背景色",
     "descEn": "Background color of settings when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTemplateBgSettingsHover": {
+    "name": "UI 配置模板区块背景色悬浮态",
+    "nameEn": "Background color of template block's settings when hover",
+    "desc": "UI 配置模板区块的背景色悬浮态",
+    "descEn": "Background color of template block's settings when hover",
     "type": "string",
     "source": "seed"
   },

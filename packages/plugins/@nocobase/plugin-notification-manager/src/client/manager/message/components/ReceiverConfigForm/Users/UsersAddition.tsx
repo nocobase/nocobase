@@ -16,7 +16,7 @@ import { useWorkflowExecuted } from '@nocobase/plugin-workflow/client';
 import { useNotificationTranslation } from '../../../../../locale';
 
 export function UsersAddition() {
-  const disabled = useWorkflowExecuted();
+  const executed = useWorkflowExecuted();
   /*
       waiting for improvement
       const array = ArrayItems.useArray();
@@ -39,12 +39,18 @@ export function UsersAddition() {
   }, [receivers]);
 
   const button = (
-    <Button icon={<PlusOutlined />} type="dashed" block disabled={disabled} className="ant-formily-array-base-addition">
+    <Button
+      icon={<PlusOutlined />}
+      type="dashed"
+      block
+      disabled={executed > 0}
+      className="ant-formily-array-base-addition"
+    >
       {t('Add user')}
     </Button>
   );
 
-  return disabled ? (
+  return executed ? (
     button
   ) : (
     <Popover

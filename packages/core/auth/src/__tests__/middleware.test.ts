@@ -22,7 +22,7 @@ describe('middleware', () => {
     app = await createMockServer({
       registerActions: true,
       acl: true,
-      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler'],
+      plugins: ['users', 'auth', 'acl', 'field-sort', 'data-source-manager', 'error-handler', 'system-settings'],
     });
 
     // app.plugin(ApiKeysPlugin);
@@ -38,7 +38,8 @@ describe('middleware', () => {
     const hasFn = vi.fn();
     const addFn = vi.fn();
     beforeEach(async () => {
-      await agent.login(1);
+      const user = await db.getRepository('users').findOne();
+      await agent.login(user.id);
       app.authManager.setTokenBlacklistService({
         has: hasFn,
         add: addFn,

@@ -19,6 +19,7 @@ export default defineCollection({
   title: '{{t("Users")}}',
   sortable: 'sort',
   model: 'UserModel',
+  titleField: 'nickname',
   createdBy: true,
   updatedBy: true,
   logging: true,
@@ -31,7 +32,7 @@ export default defineCollection({
       primaryKey: true,
       allowNull: false,
       uiSchema: { type: 'number', title: '{{t("ID")}}', 'x-component': 'InputNumber', 'x-read-pretty': true },
-      interface: 'id',
+      interface: 'integer',
     },
     {
       interface: 'input',

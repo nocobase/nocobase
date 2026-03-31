@@ -45,11 +45,11 @@ const actions: Actions = {
     method: 'destroy',
   },
   firstOrCreate: {
-    params: ['values', 'filterKeys'],
+    params: ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
     method: 'firstOrCreate',
   },
   updateOrCreate: {
-    params: ['values', 'filterKeys'],
+    params: ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
     method: 'updateOrCreate',
   },
   remove: {

@@ -41,7 +41,7 @@ export default {
       size: {
         type: 'number',
         title: `{{t("File size limit", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Minimum from 1 byte, maximum up to 1GB.", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Minimum from 1 byte.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'FileSizeField',
         required: true,
@@ -49,7 +49,7 @@ export default {
       },
       mimetype: {
         type: 'string',
-        title: `{{t("File type (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
+        title: `{{t("File type allowed (in MIME type format)", { ns: "${NAMESPACE}" })}}`,
         description: `{{t('Multi-types seperated with comma, for example: "image/*", "image/png", "image/*, application/pdf" etc.', { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'Input',
@@ -67,6 +67,43 @@ export default {
   paranoid: {
     'x-component': 'CollectionField',
     'x-decorator': 'FormItem',
-    'x-content': `{{t("Keep file in storage when destroy record", { ns: "${NAMESPACE}" })}}`,
+    'x-content': `{{t("Keep file in storage when destroy the file record", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("Files are only removed when their corresponding records in the file collection are deleted. If a record from another collection includes an associating field referencing the file collection, the file will not be deleted unless cascade deletion is enabled for that association.", { ns: "${NAMESPACE}" })}}`,
+  },
+  renameMode: {
+    title: `{{t("Renaming", { ns: "${NAMESPACE}" })}}`,
+    description: `{{t("Renaming strategy to avoid filename conflicts when uploading files.", { ns: "${NAMESPACE}" })}}`,
+    type: 'string',
+    'x-decorator': 'FormItem',
+    'x-component': 'Radio.Group',
+    enum: [
+      { label: `{{t("Append random ID", { ns: "${NAMESPACE}" })}}`, value: 'appendRandomID' },
+      { label: `{{t("Random string", { ns: "${NAMESPACE}" })}}`, value: 'random' },
+      {
+        label: `{{t("Keep original filename (will be overwrite if filename is existed)", { ns: "${NAMESPACE}" })}}`,
+        value: 'none',
+      },
+    ],
+    default: 'appendRandomID',
+  },
+  settings: {
+    type: 'object',
+    title: `{{t("Advanced Settings", { ns: "${NAMESPACE}" })}}`,
+    'x-component': 'fieldset',
+    properties: {
+      requestOptions: {
+        type: 'object',
+        title: `{{t("Request options", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Additional options for HTTP requests when fetching files from remote storage on server side, such as headers.", { ns: "${NAMESPACE}" })}}`,
+        'x-decorator': 'FormItem',
+        'x-component': 'Input.JSON',
+        'x-component-props': {
+          autoSize: {
+            minRows: 5,
+            // maxRows: 20,
+          },
+        },
+      },
+    },
   },
 };

@@ -7,16 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
+import * as bundleRequire from 'bundle-require';
 import chalk from 'chalk';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-
-import { EsbuildSupportExts, globExcludeFiles } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
+import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
+import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
+import { getPackageJson, PkgLog, UserConfig } from './utils';
 import {
   buildCheck,
   checkRequire,
@@ -26,15 +28,16 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
+import { obfuscate } from './utils/obfuscationResult';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
 const clientGlobalFiles: string[] = ['src/**', '!src/server/**', ...globExcludeFiles];
-const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__'];
+const sourceGlobalFiles: string[] = ['src/**/*.{ts,js,tsx,jsx,mjs}', '!src/**/__tests__', '!src/**/__benchmarks__'];
 
 const external = [
   // nocobase
+  '@nocobase/ai',
   '@nocobase/acl',
   '@nocobase/actions',
   '@nocobase/auth',
@@ -51,7 +54,10 @@ const external = [
   '@nocobase/server',
   '@nocobase/test',
   '@nocobase/utils',
-
+  '@nocobase/license-kit',
+  '@nocobase/flow-engine',
+  '@nocobase/client-v2',
+  '@nocobase/shared',
   // @nocobase/auth
   'jsonwebtoken',
 
@@ -101,11 +107,8 @@ const external = [
   'react-i18next',
 
   // dnd-kit 相关
-  '@dnd-kit/accessibility',
   '@dnd-kit/core',
-  '@dnd-kit/modifiers',
   '@dnd-kit/sortable',
-  '@dnd-kit/utilities',
 
   // formily 相关
   '@formily/antd-v5',
@@ -131,12 +134,123 @@ const external = [
   'lodash',
   'china-division',
   'file-saver',
+
+  // langChain
+  "langchain",
+  "@langchain/core",
+  "@langchain/classic",
+  "@langchain/langgraph",
+  "@langchain/langgraph-checkpoint",
+  "@langchain/community",
+  "@langchain/openai",
+  "@langchain/anthropic",
+  "@langchain/google-genai",
+  "@langchain/deepseek",
+  "@langchain/ollama"
 ];
 const pluginPrefix = (
   process.env.PLUGIN_PACKAGE_PREFIX || '@nocobase/plugin-,@nocobase/preset-,@nocobase/plugin-pro-'
 ).split(',');
 
 const target_dir = 'dist';
+
+function appendAiFiles(cwd: string, files: string[]) {
+  const aiFiles = fg.globSync(['src/ai/**/*.md'], { cwd, absolute: true });
+  if (!aiFiles.length) return files;
+  return Array.from(new Set([...files, ...aiFiles]));
+}
+
+type AiMetaEntry = {
+  module: string;
+  description?: string;
+  source?: string;
+};
+
+function normalizeAiMetaEntries(meta: any, fallbackModule: string): AiMetaEntry[] {
+  if (Array.isArray(meta)) {
+    return meta
+      .filter((item) => item && typeof item.module === 'string')
+      .map((item) => ({
+        module: item.module.trim(),
+        description: typeof item.description === 'string' ? item.description.trim() : '',
+        source: typeof item.source === 'string' ? item.source.trim() : '',
+      }))
+      .filter((item) => item.module);
+  }
+  if (meta && typeof meta.module === 'string') {
+    return [
+      {
+        module: meta.module.trim() || fallbackModule,
+        description: typeof meta.description === 'string' ? meta.description.trim() : '',
+        source: typeof meta.source === 'string' ? meta.source.trim() : '',
+      },
+    ];
+  }
+  return [
+    {
+      module: fallbackModule,
+      description: '',
+      source: '',
+    },
+  ];
+}
+
+async function copyAiDocSources(cwd: string, log: PkgLog) {
+  const metaFiles = fg.globSync(['src/ai/docs/**/meta.json'], { cwd, absolute: true });
+  if (!metaFiles.length) return;
+
+  const rootMetaMap = new Map<string, { module: string; description?: string }>();
+
+  for (const metaFile of metaFiles) {
+    let entries: AiMetaEntry[] = [];
+    try {
+      const meta = await fs.readJson(metaFile);
+      const fallbackModule = path.basename(path.dirname(metaFile));
+      entries = normalizeAiMetaEntries(meta, fallbackModule);
+    } catch (error) {
+      log('failed to read ai docs meta.json', metaFile, error);
+      continue;
+    }
+
+    for (const entry of entries) {
+      const source = entry.source?.trim();
+      if (!source) continue;
+
+      const absoluteSource = path.isAbsolute(source) ? source : path.resolve(process.cwd(), source);
+      const fallbackSource = path.isAbsolute(source) ? '' : path.resolve(cwd, source);
+      const resolvedSource = (await fs.pathExists(absoluteSource))
+        ? absoluteSource
+        : fallbackSource && (await fs.pathExists(fallbackSource))
+          ? fallbackSource
+          : '';
+
+      if (!resolvedSource) {
+        log('ai docs source not found', source, metaFile);
+        continue;
+      }
+
+      const targetRoot = path.join(cwd, target_dir, 'ai', 'docs', entry.module);
+
+      await fs.remove(targetRoot);
+      await fs.ensureDir(targetRoot);
+      await fs.copy(resolvedSource, targetRoot, {
+        overwrite: true,
+        filter: (src) => path.basename(src) !== '_meta.json',
+      });
+
+      rootMetaMap.set(entry.module, {
+        module: entry.module,
+        description: entry.description ?? '',
+      });
+    }
+  }
+
+  if (rootMetaMap.size) {
+    const rootMetaPath = path.join(cwd, target_dir, 'ai', 'docs', 'meta.json');
+    await fs.ensureDir(path.dirname(rootMetaPath));
+    await fs.writeJSON(rootMetaPath, Array.from(rootMetaMap.values()), { spaces: 2 });
+  }
+}
 
 export function deleteServerFiles(cwd: string, log: PkgLog) {
   log('delete server files');
@@ -273,7 +387,8 @@ export async function buildServerDeps(cwd: string, serverFiles: string[], log: P
 export async function buildPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
   log('build plugin server source');
   const packageJson = getPackageJson(cwd);
-  const serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  let serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  serverFiles = appendAiFiles(cwd, serverFiles);
   buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
   const otherExts = Array.from(
     new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
@@ -304,13 +419,139 @@ export async function buildPluginServer(cwd: string, userConfig: UserConfig, sou
     }),
   );
 
+  await copyAiDocSources(cwd, log);
+
   await buildServerDeps(cwd, serverFiles, log);
 }
 
-export async function buildPluginClient(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+export async function buildProPluginServer(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
+  log('build pro plugin server source');
+  const packageJson = getPackageJson(cwd);
+  let serverFiles = fg.globSync(serverGlobalFiles, { cwd, absolute: true });
+  serverFiles = appendAiFiles(cwd, serverFiles);
+  buildCheck({ cwd, packageJson, entry: 'server', files: serverFiles, log });
+  const otherExts = Array.from(
+    new Set(serverFiles.map((item) => path.extname(item)).filter((item) => !EsbuildSupportExts.includes(item))),
+  );
+  if (otherExts.length) {
+    log('%s will not be processed, only be copied to the dist directory.', chalk.yellow(otherExts.join(',')));
+  }
+
+  deleteServerFiles(cwd, log);
+
+  // remove compilerOptions.paths in tsconfig.json
+  let tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
+  fs.writeFileSync(
+    path.join(cwd, 'tsconfig.json'),
+    JSON.stringify(
+      {
+        ...tsconfig.data,
+        compilerOptions: { ...tsconfig.data.compilerOptions, paths: [] },
+      },
+      null,
+      2,
+    ),
+  );
+  tsconfig = bundleRequire.loadTsConfig(path.join(cwd, 'tsconfig.json'));
+
+  // convert all ts to js, some files may not be referenced by the entry file
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: serverFiles,
+      splitting: false,
+      clean: false,
+      bundle: false,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+    }),
+  );
+
+  await copyAiDocSources(cwd, log);
+
+  const entryFile = path.join(cwd, 'src/server/index.ts');
+  if (!fs.existsSync(entryFile)) {
+    log('server entry file not found', entryFile);
+    return;
+  }
+
+  // plugin-commercial build to a bundle
+  const externalOptions = {
+    external: [],
+    noExternal: [],
+    onSuccess: async () => { },
+    esbuildPlugins: [],
+  };
+  // other plugins build to a bundle just include plugin-commercial
+  if (!cwd.includes(PLUGIN_COMMERCIAL)) {
+    externalOptions.external = [/^[./]/];
+    externalOptions.noExternal = [entryFile, /@nocobase\/plugin-commercial\/server/, /dist\/server\/index\.js/];
+    externalOptions.onSuccess = async () => {
+      const serverFiles = [path.join(cwd, target_dir, 'server', 'index.js')];
+      serverFiles.forEach((file) => {
+        obfuscate(file);
+      });
+    };
+    externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
+  }
+  if (cwd.includes(PLUGIN_COMMERCIAL)) {
+    externalOptions.noExternal = [/@nocobase\/plugin-license/, /dist\/server\/index\.js/];
+  }
+
+  // bundle all files、inject commercial code and obfuscate
+  await tsupBuild(
+    userConfig.modifyTsupConfig({
+      entry: [entryFile],
+      // minify: true,
+      splitting: false,
+      clean: false,
+      bundle: true,
+      silent: true,
+      treeshake: false,
+      target: 'node16',
+      sourcemap,
+      outDir: path.join(cwd, target_dir, 'server'),
+      format: 'cjs',
+      skipNodeModulesBundle: true,
+      tsconfig: tsconfig.path,
+      loader: {
+        ...otherExts.reduce((prev, cur) => ({ ...prev, [cur]: 'copy' }), {}),
+        '.json': 'copy',
+      },
+
+      ...externalOptions,
+    }),
+  );
+  fs.removeSync(tsconfig.path);
+
+  await buildServerDeps(cwd, serverFiles, log);
+}
+
+export async function buildPluginClient(
+  cwd: string,
+  userConfig: any,
+  sourcemap: boolean,
+  log: PkgLog,
+  isCommercial = false,
+) {
   log('build plugin client');
   const packageJson = getPackageJson(cwd);
   const clientFiles = fg.globSync(clientGlobalFiles, { cwd, absolute: true });
+  if (isCommercial) {
+    const commercialFiles = fg.globSync(clientGlobalFiles, {
+      cwd: path.join(process.cwd(), 'packages/pro-plugins', PLUGIN_COMMERCIAL),
+      absolute: true,
+    });
+    clientFiles.push(...commercialFiles);
+  }
   const clientFileSource = clientFiles.map((item) => fs.readFileSync(item, 'utf-8'));
   const sourcePackages = getPackagesFromFiles(clientFileSource);
   const excludePackages = getExcludePackages(sourcePackages, external, pluginPrefix);
@@ -347,6 +588,7 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         umdNamedDefine: true,
       },
     },
+    amd: {},
     resolve: {
       tsConfig: path.join(process.cwd(), 'tsconfig.json'),
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json', '.less', '.css'],
@@ -402,7 +644,13 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         },
         {
           test: /\.svg$/i,
+          type: 'asset',
+          resourceQuery: { not: [/react/] }, // exclude react component if *.svg?react
+        },
+        {
+          test: /\.svg$/i,
           issuer: /\.[jt]sx?$/,
+          resourceQuery: /react/, // *.svg?react
           use: ['@svgr/webpack'],
         },
         {
@@ -435,37 +683,66 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
         {
           test: /\.tsx$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
-                tsx: true,
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                    tsx: true,
+                    decorators: true,
+                  },
+                  target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial,
+              },
+            },
+          ],
         },
         {
           test: /\.ts$/,
           exclude: /[\\/]node_modules[\\/]/,
-          loader: 'builtin:swc-loader',
-          options: {
-            sourceMap: true,
-            jsc: {
-              parser: {
-                syntax: 'typescript',
+          use: [
+            {
+              loader: 'builtin:swc-loader',
+              options: {
+                sourceMap: true,
+                jsc: {
+                  parser: {
+                    syntax: 'typescript',
+                    decorators: true,
+                  },
+                  target: 'es5',
+                  transform: {
+                    decoratorMetadata: true,
+                  },
+                },
               },
-              target: 'es5',
             },
-          },
+            {
+              loader: require.resolve('./plugins/pluginRspackCommercialLoader'),
+              options: {
+                isCommercial,
+              },
+            },
+          ],
         },
       ],
     },
     plugins: [
       new rspack.DefinePlugin({
         'process.env.NODE_ENV': JSON.stringify('production'),
+        'process.env.NODE_DEBUG': false,
       }),
       {
         apply(compiler) {
@@ -476,18 +753,18 @@ export async function buildPluginClient(cwd: string, userConfig: UserConfig, sou
                 module.source = {
                   source: `
 __webpack_require__.p = (function() {
-  var publicPath = window['__nocobase_public_path__'] || '/';
+  var publicPath = window['__webpack_public_path__'] || '/';
   // 确保路径以 / 结尾
   if (!publicPath.endsWith('/')) {
     publicPath += '/';
   }
   return publicPath + 'static/plugins/${packageJson.name}/dist/client/';
-})();`
+})();`,
                 };
               }
             });
           });
-        }
+        },
       },
       process.env.BUILD_ANALYZE === 'true' &&
       new RsdoctorRspackPlugin({
@@ -566,7 +843,15 @@ __webpack_require__.p = (function() {
 }
 
 export async function buildPlugin(cwd: string, userConfig: UserConfig, sourcemap: boolean, log: PkgLog) {
-  await buildPluginClient(cwd, userConfig, sourcemap, log);
-  await buildPluginServer(cwd, userConfig, sourcemap, log);
+  if (
+    cwd.includes('/pro-plugins/') &&
+    fs.existsSync(path.join(process.cwd(), 'packages/pro-plugins/', PLUGIN_COMMERCIAL))
+  ) {
+    await buildPluginClient(cwd, userConfig, sourcemap, log, true);
+    await buildProPluginServer(cwd, userConfig, sourcemap, log);
+  } else {
+    await buildPluginClient(cwd, userConfig, sourcemap, log);
+    await buildPluginServer(cwd, userConfig, sourcemap, log);
+  }
   writeExternalPackageVersion(cwd, log);
 }

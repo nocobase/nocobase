@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { mockDatabase } from '../';
-import { Database } from '../../database';
-import { BaseDialect } from '../../dialects/base-dialect';
+import { BaseDialect, Database, createMockDatabase } from '@nocobase/database';
 
 describe('dialect extend', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

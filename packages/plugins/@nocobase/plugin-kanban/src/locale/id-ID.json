@@ -1,0 +1,10 @@
+{
+  "Convert the following integer fields to sorting fields": "Konversi bidang integer berikut menjadi bidang pengurutan",
+  "Create sort field": "Buat bidang pengurutan",
+  "Enable drag and drop sorting": "Aktifkan pengurutan seret dan lepas",
+  "Global sorting": "Pengurutan global",
+  "Grouped sorting based on": "Pengurutan dikelompokkan berdasarkan",
+  "Set column width": "Set column width",
+  "Sorting field": "Bidang pengurutan",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Digunakan untuk mengurutkan kartu kanban, hanya bidang pengurutan yang sesuai dengan bidang pengelompokan yang dapat dipilih"
+}

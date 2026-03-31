@@ -10,6 +10,7 @@
 /* istanbul ignore file -- @preserve */
 
 import Application from '../application';
+import { createDocsIndex } from '../ai/create-docs-index';
 
 /**
  * TODO
@@ -20,6 +21,10 @@ export default (app: Application) => {
     .ipc()
     .auth()
     .action(async (options) => {
+      if (!process.env.VITEST) {
+        await createDocsIndex(app);
+      }
+
       await app.upgrade(options);
       app.log.info(`✨  NocoBase has been upgraded to v${app.getVersion()}`);
     });

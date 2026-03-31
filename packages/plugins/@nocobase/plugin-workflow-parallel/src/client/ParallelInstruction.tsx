@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Tooltip } from 'antd';
+import { Button, Tag, Tooltip } from 'antd';
 import { ApartmentOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { css } from '@nocobase/client';
@@ -21,9 +21,119 @@ import {
   useGetAriaLabelOfAddButton,
   RadioWithTooltip,
   Instruction,
+  useWorkflowExecuted,
 } from '@nocobase/plugin-workflow/client';
 
 import { NAMESPACE, useLang } from '../locale';
+
+function NodeComponent({ data }) {
+  const { styles } = useStyles();
+  const {
+    id,
+    config: { mode },
+  } = data;
+  const { nodes } = useFlowContext();
+  const executed = useWorkflowExecuted();
+  const branches = nodes
+    .reduce((result, node) => {
+      if (node.upstreamId === id && node.branchIndex != null) {
+        return result.concat(node);
+      }
+      return result;
+    }, [])
+    .sort((a, b) => a.branchIndex - b.branchIndex);
+  const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
+  const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
+  const langAddBranch = useLang('Add branch');
+
+  const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
+  const lastBranchHead = branches[branches.length - 1];
+
+  return (
+    <NodeDefaultView data={data}>
+      <div className={styles.nodeSubtreeClass}>
+        <div className={styles.branchBlockClass}>
+          {branches.map((branch, i) => (
+            <Branch
+              key={branch.id}
+              from={data}
+              entry={branch}
+              branchIndex={branch.branchIndex}
+              controller={
+                <Tag
+                  className={css`
+                    position: relative;
+                    margin: 1rem 0 0 0;
+                  `}
+                >
+                  {i + 1}
+                </Tag>
+              }
+            />
+          ))}
+          {tempBranches.map((_, i) => (
+            <Branch
+              key={`temp_${branches.length + i}`}
+              from={data}
+              branchIndex={(lastBranchHead ? lastBranchHead.branchIndex : 0) + i + 1}
+              controller={
+                branches.length + i > 1 ? (
+                  <div
+                    className={css`
+                      padding-top: 2em;
+
+                      > button {
+                        line-height: 1;
+
+                        .anticon {
+                          transform: rotate(45deg);
+                        }
+                      }
+                    `}
+                  >
+                    <Button
+                      shape="circle"
+                      icon={<PlusOutlined />}
+                      onClick={() => setBranchCount(branchCount - 1)}
+                      disabled={executed > 0}
+                      size="small"
+                    />
+                  </div>
+                ) : null
+              }
+            />
+          ))}
+        </div>
+        <Tooltip
+          title={langAddBranch}
+          className={css`
+            visibility: ${executed > 0 ? 'hidden' : 'visible'};
+          `}
+        >
+          <Button
+            aria-label={getAriaLabel('add-branch')}
+            icon={<PlusOutlined />}
+            className={css`
+              position: relative;
+              top: 1em;
+              line-height: 1;
+              transform-origin: center;
+              transform: rotate(45deg);
+
+              .anticon {
+                transform-origin: center;
+                transform: rotate(-45deg);
+              }
+            `}
+            size="small"
+            onClick={() => setBranchCount(branchCount + 1)}
+            disabled={executed > 0}
+          />
+        </Tooltip>
+      </div>
+    </NodeDefaultView>
+  );
+}
 
 export default class extends Instruction {
   title = `{{t("Parallel branch", { ns: "${NAMESPACE}" })}}`;
@@ -38,6 +148,7 @@ export default class extends Instruction {
       'x-decorator': 'FormItem',
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
+        direction: 'vertical',
         options: [
           {
             value: 'all',
@@ -54,6 +165,11 @@ export default class extends Instruction {
             label: `{{t('Any succeeded or failed', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Continue after any branch succeeded, or exit after any branch failed.', { ns: "${NAMESPACE}" })}}`,
           },
+          {
+            value: 'allSettled',
+            label: `{{t('Run all branches (ignore failures)', { ns: "${NAMESPACE}" })}}`,
+            tooltip: `{{t('Always continue after all branches end, regardless of success or failure.', { ns: "${NAMESPACE}" })}}`,
+          },
         ],
       },
       default: 'all',
@@ -63,101 +179,5 @@ export default class extends Instruction {
   components = {
     RadioWithTooltip,
   };
-  Component({ data }) {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { styles } = useStyles();
-    const {
-      id,
-      config: { mode },
-    } = data;
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { workflow, nodes } = useFlowContext();
-    const branches = nodes
-      .reduce((result, node) => {
-        if (node.upstreamId === id && node.branchIndex != null) {
-          return result.concat(node);
-        }
-        return result;
-      }, [])
-      .sort((a, b) => a.branchIndex - b.branchIndex);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [branchCount, setBranchCount] = useState(Math.max(2, branches.length));
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { getAriaLabel } = useGetAriaLabelOfAddButton(data);
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const langAddBranch = useLang('Add branch');
-
-    const tempBranches = Array(Math.max(0, branchCount - branches.length)).fill(null);
-    const lastBranchHead = branches[branches.length - 1];
-
-    return (
-      <NodeDefaultView data={data}>
-        <div className={styles.nodeSubtreeClass}>
-          <div className={styles.branchBlockClass}>
-            {branches.map((branch) => (
-              <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
-            ))}
-            {tempBranches.map((_, i) => (
-              <Branch
-                key={`temp_${branches.length + i}`}
-                from={data}
-                branchIndex={(lastBranchHead ? lastBranchHead.branchIndex : 0) + i + 1}
-                controller={
-                  branches.length + i > 1 ? (
-                    <div
-                      className={css`
-                        padding-top: 2em;
-
-                        > button {
-                          line-height: 1;
-
-                          .anticon {
-                            transform: rotate(45deg);
-                          }
-                        }
-                      `}
-                    >
-                      <Button
-                        shape="circle"
-                        icon={<PlusOutlined />}
-                        onClick={() => setBranchCount(branchCount - 1)}
-                        disabled={workflow.executed}
-                        size="small"
-                      />
-                    </div>
-                  ) : null
-                }
-              />
-            ))}
-          </div>
-          <Tooltip
-            title={langAddBranch}
-            className={css`
-              visibility: ${workflow.executed ? 'hidden' : 'visible'};
-            `}
-          >
-            <Button
-              aria-label={getAriaLabel('add-branch')}
-              icon={<PlusOutlined />}
-              className={css`
-                position: relative;
-                top: 1em;
-                line-height: 1;
-                transform-origin: center;
-                transform: rotate(45deg);
-
-                .anticon {
-                  transform-origin: center;
-                  transform: rotate(-45deg);
-                }
-              `}
-              size="small"
-              onClick={() => setBranchCount(branchCount + 1)}
-              disabled={workflow.executed}
-            />
-          </Tooltip>
-        </div>
-      </NodeDefaultView>
-    );
-  }
+  Component = NodeComponent;
 }

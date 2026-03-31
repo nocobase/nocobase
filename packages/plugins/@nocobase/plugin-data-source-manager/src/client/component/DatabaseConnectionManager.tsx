@@ -10,6 +10,7 @@
 import { uid } from '@formily/shared';
 import {
   SchemaComponent,
+  useAPIClient,
   useDataSourceManager,
   usePlugin,
   useRecord,
@@ -25,10 +26,22 @@ import { ThirdDataSource } from '../ThridDataSource';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
+import _ from 'lodash';
 
 export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
+  const dm = useDataSourceManager();
+  const api = useAPIClient();
+
+  const dataSourceListCallback = useCallback(
+    (data: any) => {
+      dm.setDataSources(data?.data || []);
+      dm.reload();
+    },
+    [dm],
+  );
+
   const types = [...plugin.types.keys()]
     .map((key) => {
       const type = plugin.types.get(key);
@@ -38,7 +51,6 @@ export const DatabaseConnectionManagerPane = () => {
       };
     })
     .concat([{ value: 'main', label: t('Main') }]);
-  const dm = useDataSourceManager();
 
   const reloadKeys = React.useRef<string[]>([]);
 
@@ -59,10 +71,13 @@ export const DatabaseConnectionManagerPane = () => {
     [dm],
   );
 
-  const dataSourceCreateCallback = useCallback((data: any) => {
-    dm.addDataSource(ThirdDataSource, data);
-    reloadKeys.current = [...reloadKeys.current, data.key];
-  }, []);
+  const dataSourceCreateCallback = useCallback(
+    async (data: any) => {
+      dm.addDataSource(ThirdDataSource, data);
+      reloadKeys.current = [...reloadKeys.current, data.key];
+    },
+    [dm],
+  );
 
   const useRefreshActionProps = () => {
     const service = useResourceActionContext();
@@ -95,6 +110,7 @@ export const DatabaseConnectionManagerPane = () => {
     const { key } = useRecord();
     $self.visible = key !== 'main';
   };
+
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -110,6 +126,7 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
+          dataSourceListCallback,
           useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}

@@ -7,17 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BelongsToManyRepository } from '@nocobase/database';
-import Database from '../../database';
-import { InheritedCollection } from '../../inherited-collection';
-import { mockDatabase } from '../index';
+import { BelongsToManyRepository, createMockDatabase, Database } from '@nocobase/database';
 import { isPg } from '@nocobase/test';
+import { InheritedCollection } from '../../inherited-collection';
 
 describe.runIf(isPg())('collection inherits', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 

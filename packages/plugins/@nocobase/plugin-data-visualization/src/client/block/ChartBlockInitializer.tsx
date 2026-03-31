@@ -112,7 +112,7 @@ export const ChartV2BlockInitializer: React.FC = () => {
           type: 'void',
           'x-component': 'ChartCardItem',
           'x-use-component-props': 'useChartBlockCardProps',
-          'x-designer': 'ChartV2BlockDesigner',
+          'x-settings': 'chart:block',
           'x-decorator': 'ChartBlockProvider',
           properties: {
             actions: {

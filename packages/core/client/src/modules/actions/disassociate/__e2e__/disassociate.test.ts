@@ -18,7 +18,7 @@ test('basic', async ({ page, mockPage, mockRecord }) => {
   await page.getByLabel('action-Action.Link-Edit record-update-collection1-table-0').click();
   await page.getByLabel('schema-initializer-Grid-popup').hover();
   await page.getByRole('menuitem', { name: 'Table right' }).hover();
-  await page.getByRole('menuitem', { name: 'Associated records' }).hover();
+  await page.getByRole('menuitem', { name: 'Associated records' }).last().hover();
   await page.getByRole('menuitem', { name: 'manyToMany' }).click();
 
   // 2. Table 中显示 Role UID 字段

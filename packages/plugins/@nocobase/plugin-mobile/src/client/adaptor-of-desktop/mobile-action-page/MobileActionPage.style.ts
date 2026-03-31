@@ -21,10 +21,6 @@ export const useMobileActionPageStyle = genStyleHook('nb-mobile-action-page', (t
       bottom: 0,
       backgroundColor: token.colorBgLayout,
 
-      '.mobile-page-content > .nb-grid-container > .nb-grid > .nb-grid-warp > .ant-btn': {
-        margin: 20,
-      },
-
       '.nb-mobile-action-page-footer': {
         height: 'var(--nb-mobile-page-header-height)',
         paddingRight: 'var(--nb-mobile-page-tabs-content-padding)',

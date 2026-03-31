@@ -10,9 +10,7 @@
 import { createForm } from '@formily/core';
 import { useField, useFieldSchema } from '@formily/react';
 import { useUpdate } from 'ahooks';
-import { Spin } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef } from 'react';
-import { useCollectionManager_deprecated } from '../collection-manager';
 import { useCollection, useCollectionRecordData } from '../data-source';
 import { useCollectionParentRecord } from '../data-source/collection-record/CollectionRecordProvider';
 import { withDynamicSchemaProps } from '../hoc/withDynamicSchemaProps';
@@ -55,9 +53,6 @@ const InternalDetailsBlockProvider = (props) => {
     };
   }, [action, field, form, resource, service]);
 
-  if (service.loading && !field.loaded) {
-    return <Spin />;
-  }
   field.loaded = true;
 
   return (
@@ -103,8 +98,7 @@ const useCompatDetailsBlockParams = (props) => {
 export const DetailsBlockProvider = withDynamicSchemaProps((props) => {
   const { params, parseVariableLoading } = useCompatDetailsBlockParams(props);
   const record = useCollectionRecordData();
-  const { association, dataSource, action } = props;
-  const { getCollection } = useCollectionManager_deprecated(dataSource);
+  const { association, action } = props;
   const { __collection } = record || {};
   const { designable } = useDesignable();
   const collectionName = props.collection;

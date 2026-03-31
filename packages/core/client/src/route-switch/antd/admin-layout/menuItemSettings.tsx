@@ -32,6 +32,7 @@ import {
 } from '../../..';
 import { getPageMenuSchema } from '../../../';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
+import { getFlowPageMenuSchema } from '../../../modules/menu/FlowPageMenuItem';
 import { useInsertPageSchema } from '../../../modules/menu/PageMenuItem';
 import { SchemaToolbar } from '../../../schema-settings/GeneralSchemaDesigner';
 import {
@@ -41,12 +42,18 @@ import {
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
 import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
+import { useDeleteRouteSchema } from './useDeleteRouteSchema';
 
 const components = { TreeSelect };
 
 const toItems = (routes: NocoBaseDesktopRoute[], { t, compile }) => {
   const items = [];
   for (const route of routes) {
+    // filter out the tabs
+    if (route.type === NocoBaseDesktopRouteType.tabs) {
+      continue;
+    }
+
     const item = {
       label: isVariable(route.title) ? compile(route.title) : t(route.title),
       value: `${route.id}||${route.type}`,
@@ -108,6 +115,7 @@ export const RemoveRoute: FC = () => {
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const { deleteRoute } = useNocoBaseRoutes();
+  const { deleteRouteSchema } = useDeleteRouteSchema();
   const currentRoute = useCurrentRoute();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const navigate = useNavigateNoUpdate();
@@ -123,11 +131,14 @@ export const RemoveRoute: FC = () => {
           content: t('Are you sure you want to delete it?'),
           onOk: async () => {
             // 删除对应菜单的路由
-            currentRoute?.id != null && (await deleteRoute(currentRoute.id));
+            if (currentRoute?.id != null) {
+              await Promise.all([deleteRoute(currentRoute.id), deleteRouteSchema(currentRoute.schemaUid)]);
+            }
 
             if (
               currentPageUid !== currentRoute?.schemaUid &&
-              !findRouteBySchemaUid(currentPageUid, currentRoute?.children)
+              !findRouteBySchemaUid(currentPageUid, currentRoute?.children) &&
+              currentRoute?.type !== NocoBaseDesktopRouteType.group
             ) {
               return;
             }
@@ -138,8 +149,10 @@ export const RemoveRoute: FC = () => {
             const nextSibling = findNextSibling(allAccessRoutes, currentRoute);
 
             if (prevSibling || nextSibling) {
+              const sibling = prevSibling || nextSibling;
+
               // 如果删除的是当前打开的页面或分组，需要跳转到上一个页面或分组
-              navigate(`/admin/${prevSibling?.schemaUid || nextSibling?.schemaUid}`);
+              navigate(`/admin/${sibling.type === NocoBaseDesktopRouteType.group ? sibling.id : sibling.schemaUid}`);
             } else {
               navigate(`/`);
             }
@@ -155,7 +168,7 @@ export const RemoveRoute: FC = () => {
 const InsertMenuItems = (props) => {
   const { eventKey, title, insertPosition } = props;
   const { t } = useTranslation();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const currentRoute = useCurrentRoute();
   const isSubMenu = currentRoute?.type === NocoBaseDesktopRouteType.group;
   const { createRoute, moveRoute } = useNocoBaseRoutes();
@@ -218,11 +231,11 @@ const InsertMenuItems = (props) => {
 
       <SchemaSettingsModalItem
         eventKey={`${insertPosition}page`}
-        title={t('Page')}
+        title={t('Classic page (v1)')}
         schema={
           {
             type: 'object',
-            title: t('Add page'),
+            title: t('Add classic page'),
             properties: {
               title: {
                 'x-decorator': 'FormItem',
@@ -281,6 +294,70 @@ const InsertMenuItems = (props) => {
         }}
       />
       <SchemaSettingsModalItem
+        eventKey={`${insertPosition}flowPage`}
+        title={t('Modern page (v2)')}
+        schema={
+          {
+            type: 'object',
+            title: t('Add modern page'),
+            properties: {
+              title: {
+                'x-decorator': 'FormItem',
+                'x-component': 'Input',
+                title: t('Menu item title'),
+                required: true,
+                'x-component-props': {},
+              },
+              icon: {
+                title: t('Icon'),
+                'x-component': 'IconPicker',
+                'x-decorator': 'FormItem',
+              },
+            },
+          } as ISchema
+        }
+        onSubmit={async ({ title, icon }) => {
+          const menuSchemaUid = uid();
+          const pageSchemaUid = uid();
+          const tabSchemaUid = uid();
+          const tabSchemaName = uid();
+          const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
+
+          // 1. 先创建一个路由
+          const { data } = await createRoute({
+            type: NocoBaseDesktopRouteType.flowPage,
+            title,
+            icon,
+            // 'beforeEnd' 表示的是 Insert inner，此时需要把路由插入到当前路由的内部
+            parentId: parentId || undefined,
+            schemaUid: pageSchemaUid,
+            menuSchemaUid,
+            enableTabs: false,
+            children: [
+              {
+                type: NocoBaseDesktopRouteType.tabs,
+                schemaUid: tabSchemaUid,
+                tabSchemaName,
+                hidden: true,
+              },
+            ],
+          });
+
+          if (insertPositionToMethod[insertPosition]) {
+            // 2. 然后再把路由移动到对应的位置
+            await moveRoute({
+              sourceId: data?.data?.id,
+              targetId: currentRoute?.id,
+              sortField: 'sort',
+              method: insertPositionToMethod[insertPosition],
+            });
+          }
+
+          // 3. 插入一个对应的 Schema
+          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid }));
+        }}
+      />
+      <SchemaSettingsModalItem
         eventKey={`${insertPosition}link`}
         title={t('Link')}
         schema={
@@ -301,10 +378,11 @@ const InsertMenuItems = (props) => {
               },
               href: urlSchema,
               params: paramsSchema,
+              openInNewWindow: openInNewWindowSchema,
             },
           } as ISchema
         }
-        onSubmit={async ({ title, icon, href, params }) => {
+        onSubmit={async ({ title, icon, href, params, openInNewWindow }) => {
           const schemaUid = uid();
           const parentId = insertPosition === 'beforeEnd' ? currentRoute?.id : currentRoute?.parentId;
 
@@ -319,6 +397,7 @@ const InsertMenuItems = (props) => {
             options: {
               href,
               params,
+              openInNewWindow,
             },
           });
 
@@ -360,7 +439,7 @@ const EditMenuItem = () => {
     };
   }, [t]);
   const currentRoute = useCurrentRoute();
-  const { urlSchema, paramsSchema } = useURLAndHTMLSchema();
+  const { urlSchema, paramsSchema, openInNewWindowSchema } = useURLAndHTMLSchema();
   const initialValues = useMemo(() => {
     return {
       title: currentRoute.title,
@@ -370,12 +449,14 @@ const EditMenuItem = () => {
   if (currentRoute.type === NocoBaseDesktopRouteType.link) {
     schema.properties['href'] = urlSchema;
     schema.properties['params'] = paramsSchema;
+    schema.properties['openInNewWindow'] = openInNewWindowSchema;
     initialValues['href'] = currentRoute.options.href;
     initialValues['params'] = currentRoute.options.params;
+    initialValues['openInNewWindow'] = currentRoute.options.openInNewWindow !== false;
   }
 
   const { updateRoute } = useNocoBaseRoutes();
-  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params }) => {
+  const onEditSubmit: (values: any) => void = useCallback(({ title, icon, href, params, openInNewWindow }) => {
     // 更新菜单对应的路由
     if (currentRoute.id !== undefined) {
       updateRoute(currentRoute.id, {
@@ -386,6 +467,7 @@ const EditMenuItem = () => {
             ? {
                 href,
                 params,
+                openInNewWindow,
               }
             : undefined,
       });
@@ -435,17 +517,18 @@ const HiddenMenuItem = () => {
 
 const MoveToMenuItem = () => {
   const { t } = useTranslation();
+  const currentRoute = useCurrentRoute();
   const effects = useCallback(
     (form) => {
       onFieldChange('target', (field: Field) => {
-        const [, type] = field?.value?.split?.('||') || [];
+        const [id, type] = field?.value?.split?.('||') || [];
         field.query('position').take((f: Field) => {
           f.dataSource =
             type === NocoBaseDesktopRouteType.group
               ? [
                   { label: t('Before'), value: 'beforeBegin' },
                   { label: t('After'), value: 'afterEnd' },
-                  { label: t('Inner'), value: 'beforeEnd' },
+                  { label: t('Inner'), value: 'beforeEnd', disabled: currentRoute?.id == id },
                 ]
               : [
                   { label: t('Before'), value: 'beforeBegin' },
@@ -458,7 +541,11 @@ const MoveToMenuItem = () => {
   );
   const compile = useCompile();
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
-  const items = useMemo(() => toItems(allAccessRoutes, { t, compile }), []);
+  const items = useMemo(() => {
+    const result = toItems(allAccessRoutes, { t, compile });
+    // The last two empty options are placeholders to prevent the last option from being hidden (a bug in TreeSelect)
+    return [...result, { label: '', value: '', disabled: true }, { label: '', value: '', disabled: true }];
+  }, []);
   const modalSchema = useMemo(() => {
     return {
       type: 'object',
@@ -488,7 +575,6 @@ const MoveToMenuItem = () => {
   }, [items, t]);
 
   const { moveRoute } = useNocoBaseRoutes();
-  const currentRoute = useCurrentRoute();
   const onMoveToSubmit: (values: any) => void = useCallback(
     async ({ target, position }) => {
       const [targetId] = target?.split?.('||') || [];
@@ -592,22 +678,27 @@ export const menuItemSettings = new SchemaSettings({
     {
       name: 'edit',
       Component: EditMenuItem,
+      sort: 100,
     },
     {
       name: 'editTooltip',
       Component: EditTooltip,
+      sort: 200,
     },
     {
       name: 'hidden',
       Component: HiddenMenuItem,
+      sort: 300,
     },
     {
       name: 'moveTo',
       Component: MoveToMenuItem,
+      sort: 400,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 500,
     },
     {
       name: 'insertbeforeBegin',
@@ -617,6 +708,7 @@ export const menuItemSettings = new SchemaSettings({
           <InsertMenuItems eventKey={'insertbeforeBegin'} title={t('Insert before')} insertPosition={'beforeBegin'} />
         );
       },
+      sort: 600,
     },
     {
       name: 'insertafterEnd',
@@ -624,6 +716,7 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertafterEnd'} title={t('Insert after')} insertPosition={'afterEnd'} />;
       },
+      sort: 700,
     },
     {
       name: 'insertbeforeEnd',
@@ -631,14 +724,16 @@ export const menuItemSettings = new SchemaSettings({
         const { t } = useTranslation();
         return <InsertMenuItems eventKey={'insertbeforeEnd'} title={t('Insert inner')} insertPosition={'beforeEnd'} />;
       },
+      sort: 800,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 900,
     },
     {
       name: 'delete',
-      sort: 100,
+      sort: 1000,
       Component: RemoveRoute,
     },
   ],

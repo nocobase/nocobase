@@ -10,7 +10,7 @@
 import { useSchemaToolbar } from '../../../application';
 import { SchemaSettings } from '../../../application/schema-settings/SchemaSettings';
 import { ButtonEditor, RemoveButton, SecondConFirm } from '../../../schema-component/antd/action/Action.Designer';
-
+import { SchemaSettingsLinkageRules } from '../../../schema-settings';
 export const refreshActionSettings = new SchemaSettings({
   name: 'actionSettings:refresh',
   items: [
@@ -20,6 +20,17 @@ export const refreshActionSettings = new SchemaSettings({
       useComponentProps() {
         const { buttonEditorProps } = useSchemaToolbar();
         return buttonEditorProps;
+      },
+    },
+    {
+      name: 'linkageRules',
+      Component: SchemaSettingsLinkageRules,
+      useComponentProps() {
+        const { linkageRulesProps } = useSchemaToolbar();
+
+        return {
+          ...linkageRulesProps,
+        };
       },
     },
     {

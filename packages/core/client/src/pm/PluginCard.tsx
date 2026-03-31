@@ -7,9 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DeleteOutlined, LoadingOutlined, ReadOutlined, ReloadOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  LoadingOutlined,
+  ReadOutlined,
+  ReloadOutlined,
+  SettingOutlined,
+  CloseCircleFilled,
+  WarningFilled,
+} from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { App, Card, Divider, Modal, Popconfirm, Result, Space, Switch, Typography } from 'antd';
+import { App, Card, Divider, Modal, Popconfirm, Result, Space, Switch, Tooltip, Typography } from 'antd';
 import classnames from 'classnames';
 import React, { FC, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -64,16 +72,44 @@ function PluginInfo(props: IPluginInfo) {
         role="button"
         aria-label={title}
         size={'small'}
-        bordered={false}
+        variant="borderless"
         onClick={() => {
           !error && onClick();
         }}
-        headStyle={{ border: 'none', minHeight: 'inherit', paddingTop: 14 }}
-        bodyStyle={{ paddingTop: 10 }}
+        styles={{
+          body: { paddingTop: 10 },
+          header: { border: 'none', minHeight: 'inherit', paddingTop: 14 },
+        }}
         // style={{ marginBottom: theme.marginLG }}
-        title={<div>{title}</div>}
+        title={
+          <Space>
+            {error ? (
+              <Tooltip title={t('Plugin loading failed. Please check the server logs.')}>
+                <Typography.Text type="danger">
+                  <CloseCircleFilled />
+                </Typography.Text>
+              </Tooltip>
+            ) : null}
+
+            {!isCompatible ? (
+              <Tooltip title={t('Plugin dependencies check failed')}>
+                <Typography.Text type="warning">
+                  <WarningFilled />
+                </Typography.Text>
+              </Tooltip>
+            ) : null}
+            <div>{title}</div>
+          </Space>
+        }
         hoverable
         className={css`
+          display: flex;
+          flex-direction: column;
+
+          .ant-card-body {
+            flex-grow: 1;
+          }
+
           .ant-card-actions {
             li .ant-space {
               gap: 2px !important;
@@ -240,19 +276,17 @@ function PluginInfo(props: IPluginInfo) {
       >
         <Card.Meta
           description={
-            !error ? (
-              <Typography.Paragraph
-                style={{ height: theme.fontSize * theme.lineHeight * 3 }}
-                type={isCompatible ? 'secondary' : 'danger'}
-                ellipsis={{ rows: 3 }}
-              >
-                {isCompatible ? description : t('Plugin dependencies check failed')}
-              </Typography.Paragraph>
-            ) : (
-              <Typography.Text type="danger">
-                {t('Plugin loading failed. Please check the server logs.')}
-              </Typography.Text>
-            )
+            <Typography.Paragraph
+              type="secondary"
+              className={css`
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow: hidden;
+              `}
+            >
+              {description}
+            </Typography.Paragraph>
           }
         />
       </Card>

@@ -1,0 +1,16 @@
+{
+  "Alias": "Álnév",
+  "Clear below items": "Alábbi elemek törlése",
+  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "Ha a JSON objektum tömb elemeket tartalmaz, elemezze őket. pl.: { \"arrayKey\": [ \"item1\", \"item2\" ] elemzése \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\" formában történik, ha false értékre van állítva, csak \"arrayKey\" lesz elemezve.",
+  "Include array index in path": "Tömb index hozzáadása az elérési úthoz",
+  "Input example": "Beviteli példa",
+  "JSON Data source": "JSON adatforrás",
+  "JSON data source": "JSON adatforrás",
+  "JSON variable mapping": "JSON változó leképezés",
+  "Key path": "Kulcs útvonal",
+  "Parse": "Elemzés",
+  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "Kérjük, adjon meg JSON példát, mint { \"key1\": \"item1\", \"key2\": \"item2\" }",
+  "Please update other node references to the key after clicking the parse button.": "Kérjük, frissítse a kulcsra mutató egyéb csomópont hivatkozásokat az elemzés gombra kattintás után.",
+  "Transform a JSON object structure": "JSON objektumszerkezet átalakítása",
+  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "Bármilyen JSON adat strukturált változókra történő leképezéséhez használható a következő csomópontokban való felhasználáshoz."
+}

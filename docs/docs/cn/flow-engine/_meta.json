@@ -1,0 +1,115 @@
+[
+  {
+    "type": "custom-link",
+    "label": "简介",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "什么是 FlowEngine？",
+        "link": "/flow-engine/what-is-flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine 与插件的关系",
+        "link": "/flow-engine/flow-engine-and-plugins"
+      },
+      {
+        "type": "custom-link",
+        "label": "快速开始",
+        "link": "/flow-engine/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "学习路线图",
+        "link": "/flow-engine/learning-roadmap"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "指南",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "注册 FlowModel",
+        "link": "/flow-engine/register-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "创建 FlowModel",
+        "link": "/flow-engine/create-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "渲染 FlowModel",
+        "link": "/flow-engine/flow-model-renderer"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel 事件流与配置化",
+        "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel 持久化",
+        "link": "/flow-engine/flow-model-repository"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel 生命周期",
+        "link": "/flow-engine/flow-model-lifecycle"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel 的上下文体系",
+        "link": "/flow-engine/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "响应式机制：Observable",
+        "link": "/flow-engine/observable"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel vs React.Component",
+        "link": "/flow-engine/flow-model-vs-react-component"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS 插件扩展点",
+        "link": "/flow-engine/runjs-extension-points"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Definitions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ModelDefinition",
+        "link": "/flow-engine/definitions/model-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowDefinition",
+        "link": "/flow-engine/definitions/flow-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "EventDefinition",
+        "link": "/flow-engine/definitions/event-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "ActionDefinition",
+        "link": "/flow-engine/definitions/action-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "StepDefinition",
+        "link": "/flow-engine/definitions/step-definition"
+      }
+    ]
+  }
+]

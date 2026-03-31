@@ -114,10 +114,10 @@ export class ApprovalTriggerNode {
     this.collectionDropDown = page
       .getByLabel('block-item-DataSourceCollectionCascader-workflows-Collection')
       .locator('.ant-select-selection-search-input');
-    this.dataBlocksInitiationRadio = page.getByLabel('Initiate and approve in data blocks only');
-    this.dataBlocksAndGlobalApprovalBlocksInitiationRadio = page.getByLabel(
-      'Initiate and approve in both data blocks and global approval blocks',
-    );
+    this.dataBlocksInitiationRadio = page.getByRole('radio', { name: 'Initiate in data blocks only' });
+    this.dataBlocksAndGlobalApprovalBlocksInitiationRadio = page.getByRole('radio', {
+      name: 'Initiate in both data blocks',
+    });
     this.allowedToBeWithdrawnCheckbox = page.getByLabel('Allowed to be withdrawn');
     this.goToconfigureButton = page.getByRole('button', { name: 'Go to configure' });
     this.addBlockButton = page.getByLabel(`schema-initializer-Grid-ApprovalApplyAddBlockButton-${collectionName}`);
@@ -189,7 +189,7 @@ export class ApprovalPassthroughModeNode {
     this.detailsConfigureFieldsButton = page.getByLabel(
       `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
-    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' });
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel(
       'schema-initializer-ActionBar-ApprovalProcessAddActionButton-',
@@ -262,7 +262,7 @@ export class ApprovalBranchModeNode {
     this.detailsConfigureFieldsButton = page.getByLabel(
       `schema-initializer-Grid-details:configureFields-${collectionName}`,
     );
-    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' }).getByRole('switch');
+    this.addActionsMenu = page.getByRole('menuitem', { name: 'Process form' });
     this.actionsConfigureFieldsButton = page.getByLabel('schema-initializer-Grid-FormItemInitializers-approvalRecords');
     this.actionsConfigureActionsButton = page.getByLabel('schema-initializer-ActionBar-');
     this.addApproveButton = page.getByRole('menuitem', { name: 'Approve' }).getByRole('switch');

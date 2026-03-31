@@ -27,12 +27,11 @@ class PluginCollectionTreeServer extends Plugin {
     this.app.dataSourceManager.afterAddDataSource((dataSource: DataSource) => {
       const collectionManager = dataSource.collectionManager;
       if (collectionManager instanceof SequelizeCollectionManager) {
-        collectionManager.db.on('afterDefineCollection', (collection: Collection) => {
+        collectionManager.db.on('afterDefineCollection', (collection: Collection, eventOptions) => {
           if (!condition(collection.options)) {
             return;
           }
           const name = `${dataSource.name}_${collection.name}_path`;
-          const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
 
           //always define tree path collection
           const options = {};
@@ -41,6 +40,10 @@ class PluginCollectionTreeServer extends Plugin {
 
           if (collection.options.schema) {
             options['schema'] = collection.options.schema;
+          }
+
+          if (eventOptions.fieldModels) {
+            options['fieldModels'] = eventOptions.fieldModels;
           }
 
           this.defineTreePathCollection(name, options);
@@ -62,8 +65,28 @@ class PluginCollectionTreeServer extends Plugin {
               values: {
                 nodePk: model.get(tk),
                 path: path,
-                rootPk: rootPk ? Number(rootPk) : null,
+                rootPk: rootPk ? rootPk : null,
               },
+              transaction,
+            });
+          });
+
+          //afterBulkCreate
+          this.db.on(`${collection.name}.afterBulkCreate`, async (instances: Model[], options) => {
+            const { transaction } = options;
+            const tk = collection.filterTargetKey as string;
+            const records = [];
+            for (const model of instances) {
+              let path = `/${model.get(tk)}`;
+              path = await this.getTreePath(model, path, collection, name, transaction);
+              const rootPk = path.split('/')[1] || null;
+              records.push({
+                nodePk: model.get(tk),
+                path,
+                rootPk,
+              });
+            }
+            await this.app.db.getModel(name).bulkCreate(records, {
               transaction,
             });
           });
@@ -71,6 +94,7 @@ class PluginCollectionTreeServer extends Plugin {
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
             const tk = collection.filterTargetKey;
+            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             // only update parentId and filterTargetKey
             if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
               return;
@@ -109,36 +133,52 @@ class PluginCollectionTreeServer extends Plugin {
 
           this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
             const tk = collection.filterTargetKey as string;
-            if (model.get(parentForeignKey) === model.get(tk)) {
+            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
+            if (model.get(tk) && model.get(parentForeignKey) === model.get(tk)) {
               throw new Error('Cannot set itself as the parent node');
+            }
+          });
+
+          this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
+            const name = `main_${collection.get('name')}_path`;
+            if (!condition(collection.options)) {
+              return;
+            }
+
+            const collectionTree = this.db.getCollection(name);
+            if (collectionTree) {
+              await this.db.getCollection(name).removeFromDb({ transaction });
+
+              collectionManager.db.removeAllListeners(`${collection.name}.afterSync`);
+              this.db.removeAllListeners(`${collection.name}.afterCreate`);
+              this.db.removeAllListeners(`${collection.name}.afterUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterBulkUpdate`);
+              this.db.removeAllListeners(`${collection.name}.afterDestroy`);
+              this.db.removeAllListeners(`${collection.name}.beforeSave`);
             }
           });
         });
       }
     });
-
-    this.db.on('collections.afterDestroy', async (collection: Model, { transaction }) => {
-      const name = `main_${collection.get('name')}_path`;
-      if (!condition(collection.options)) {
-        return;
-      }
-
-      const collectionTree = this.db.getCollection(name);
-      if (collectionTree) {
-        await this.db.getCollection(name).removeFromDb({ transaction });
-      }
-    });
   }
 
-  private async defineTreePathCollection(name: string, options: { schema?: string }) {
+  private async defineTreePathCollection(name: string, options: { schema?: string; fieldModels?: Model[] }) {
+    let nodePkType = 'bigInt';
+    if (options.fieldModels) {
+      const pk = options.fieldModels.find((x) => x.options.primaryKey === true);
+      if (pk) {
+        nodePkType = pk.type;
+      }
+    }
+
     this.db.collection({
       name,
       autoGenId: false,
       timestamps: false,
       fields: [
-        { type: 'integer', name: 'nodePk' },
+        { type: nodePkType, name: 'nodePk' },
         { type: 'string', name: 'path', length: 1024 },
-        { type: 'integer', name: 'rootPk' },
+        { type: nodePkType, name: 'rootPk' },
       ],
       indexes: [
         {
@@ -206,11 +246,13 @@ class PluginCollectionTreeServer extends Plugin {
       transaction,
     });
 
+    const basePath = pathData.get('path');
     const relatedNodes = await this.app.db.getRepository(pathCollectionName).find({
       filter: {
-        path: {
-          $startsWith: `${pathData.get('path')}`,
-        },
+        $or: [
+          { path: basePath }, // 自身节点
+          { path: { $startsWith: `${basePath}/` } }, // 确保是子节点（路径段）
+        ],
       },
       transaction,
     });
@@ -220,7 +262,7 @@ class PluginCollectionTreeServer extends Plugin {
       await this.app.db.getRepository(pathCollectionName).update({
         values: {
           path: newPath,
-          rootPk: rootPk ? Number(rootPk) : null,
+          rootPk: rootPk ? rootPk : null,
         },
         filter: {
           [nodePkColumnName]: node.get('nodePk'),

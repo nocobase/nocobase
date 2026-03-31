@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Configurações de Administrador",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Processo de Configuração",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuração do Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuração do E-mail da Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Perguntas Frequentes",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Introdução aos Recursos",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Central de E-mails",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloco de E-mail",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Assinatura de E-mail",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modelo de E-mail",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avançado",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Nota de E-mail",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-mail Pendente",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Etiqueta de E-mail",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Envio em Massa",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Salvar Rascunho Automaticamente",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

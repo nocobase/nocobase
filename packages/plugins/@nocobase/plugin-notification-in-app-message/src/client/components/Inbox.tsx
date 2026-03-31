@@ -16,27 +16,26 @@
  * For more information, please rwefer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useCallback } from 'react';
-import { reaction } from '@formily/reactive';
-import { Badge, Button, ConfigProvider, Drawer, Tooltip, notification } from 'antd';
-import { CloseOutlined } from '@ant-design/icons';
+import { observer } from '@nocobase/flow-engine';
+import { Icon, useApp, useCurrentUserContext, useMobileLayout } from '@nocobase/client';
+import { MobilePopup } from '@nocobase/plugin-mobile/client';
+import { Badge, Button, ConfigProvider, Drawer, notification, theme, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
-import { Icon } from '@nocobase/client';
-import { InboxContent } from './InboxContent';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 import { useLocalTranslation } from '../../locale';
-import { fetchChannels } from '../observables';
-import { observer } from '@formily/reactive-react';
-import { useCurrentUserContext } from '@nocobase/client';
+import { Channel } from '../../types';
 import {
-  updateUnreadMsgsCount,
-  unreadMsgsCountObs,
-  startMsgSSEStreamWithRetry,
+  fetchChannels,
   inboxVisible,
-  userIdObs,
-  liveSSEObs,
   messageMapObs,
   selectedChannelNameObs,
+  unreadMsgsCountObs,
+  updateUnreadMsgsCount,
+  userIdObs,
 } from '../observables';
+import { InboxContent } from './InboxContent';
+import { MobileChannelPage } from './mobile/ChannelPage';
+import { MobileMessagePage } from './mobile/MessagePage';
 const useStyles = createStyles(({ token }) => {
   return {
     button: {
@@ -46,11 +45,82 @@ const useStyles = createStyles(({ token }) => {
   };
 });
 
+const InboxPopup: FC<{ title: string; visible: boolean; onClose: () => void }> = (props) => {
+  const { token } = theme.useToken();
+  const { isMobileLayout } = useMobileLayout();
+  const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
+
+  if (isMobileLayout) {
+    return (
+      <>
+        <MobilePopup title={props.title} visible={props.visible} onClose={props.onClose} minHeight={'60vh'}>
+          <MobileChannelPage displayNavigationBar={false} onClickItem={setSelectedChannel} />
+        </MobilePopup>
+        <MobilePopup
+          title={selectedChannel?.title}
+          visible={props.visible && !!selectedChannel}
+          onClose={() => setSelectedChannel(null)}
+          minHeight={'60vh'}
+        >
+          <MobileMessagePage displayPageHeader={false} />
+        </MobilePopup>
+      </>
+    );
+  }
+
+  return (
+    <Drawer
+      title={<div style={{ padding: '0', paddingLeft: token.padding }}>{props.title}</div>}
+      open={props.visible}
+      width={900}
+      onClose={props.onClose}
+      styles={{
+        header: {
+          paddingLeft: token.paddingMD,
+        },
+      }}
+    >
+      <InboxContent />
+    </Drawer>
+  );
+};
+
 const InnerInbox = (props) => {
+  const app = useApp();
   const { t } = useLocalTranslation();
   const { styles } = useStyles();
   const ctx = useCurrentUserContext();
   const currUserId = ctx.data?.data?.id;
+
+  const onMessageCreated = useCallback(({ detail }: CustomEvent) => {
+    notification.info({
+      message: (
+        <div
+          style={{
+            textOverflow: 'ellipsis',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {detail.title}
+        </div>
+      ),
+      description: detail.content.slice(0, 100) + (detail.content.length > 100 ? '...' : ''),
+      onClick: () => {
+        inboxVisible.value = true;
+        selectedChannelNameObs.value = detail.channelName;
+        notification.destroy();
+      },
+      duration: detail.options.duration,
+    });
+    unreadMsgsCountObs.value = (unreadMsgsCountObs.value ?? 0) + 1;
+  }, []);
+
+  const onMessageUpdated = useCallback(({ detail }: CustomEvent) => {
+    messageMapObs.value[detail.id] = detail;
+    fetchChannels({ filter: { name: detail.channelName } });
+    updateUnreadMsgsCount();
+  }, []);
 
   useEffect(() => {
     updateUnreadMsgsCount();
@@ -65,70 +135,15 @@ const InnerInbox = (props) => {
   }, []);
 
   useEffect(() => {
-    const disposes: Array<() => void> = [];
-    disposes.push(startMsgSSEStreamWithRetry());
-    const disposeAll = () => {
-      while (disposes.length > 0) {
-        const dispose = disposes.pop();
-        dispose && dispose();
-      }
-    };
+    app.eventBus.addEventListener('ws:message:in-app-message:created', onMessageCreated);
+    app.eventBus.addEventListener('ws:message:in-app-message:updated', onMessageUpdated);
 
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        disposes.push(startMsgSSEStreamWithRetry());
-      } else {
-        disposeAll();
-      }
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
     return () => {
-      disposeAll();
-      document.removeEventListener('visibilitychange', onVisibilityChange);
+      app.eventBus.removeEventListener('ws:message:in-app-message:created', onMessageCreated);
+      app.eventBus.removeEventListener('ws:message:in-app-message:updated', onMessageUpdated);
     };
-  }, []);
-  const DrawerTitle = <div style={{ padding: '0' }}>{t('Message')}</div>;
-  const CloseIcon = (
-    <div style={{ marginLeft: '15px' }}>
-      <CloseOutlined />
-    </div>
-  );
-  useEffect(() => {
-    const dispose = reaction(
-      () => liveSSEObs.value,
-      (sseData) => {
-        if (!sseData) return;
+  }, [app.eventBus, onMessageUpdated]);
 
-        if (['message:created', 'message:updated'].includes(sseData.type)) {
-          const { data } = sseData;
-          messageMapObs.value[data.id] = data;
-          if (sseData.type === 'message:created') {
-            notification.info({
-              message: (
-                <div
-                  style={{
-                    textOverflow: 'ellipsis',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {data.title}
-                </div>
-              ),
-              description: data.content.slice(0, 100) + (data.content.length > 100 ? '...' : ''),
-              onClick: () => {
-                inboxVisible.value = true;
-                selectedChannelNameObs.value = data.channelName;
-                notification.destroy();
-              },
-            });
-          }
-        }
-      },
-    );
-    return dispose;
-  }, []);
   return (
     <ConfigProvider
       theme={{
@@ -142,17 +157,13 @@ const InnerInbox = (props) => {
           </Badge>
         </Button>
       </Tooltip>
-      <Drawer
-        title={DrawerTitle}
-        open={inboxVisible.value}
-        closeIcon={CloseIcon}
-        width={900}
+      <InboxPopup
+        title={t('Message')}
+        visible={inboxVisible.value}
         onClose={() => {
           inboxVisible.value = false;
         }}
-      >
-        <InboxContent />
-      </Drawer>
+      />
     </ConfigProvider>
   );
 };

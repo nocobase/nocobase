@@ -20,6 +20,7 @@ import { SchemaSettingsModalItem } from './SchemaSettings';
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { BaseVariableProvider, IsDisabledParams } from './VariableInput/hooks/useBaseVariable';
 import { DataScopeProps } from './types';
+import { BlockContext, useBlockContext } from '../block-provider/BlockProvider';
 
 export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeConfigure(props) {
   const { t } = useTranslation();
@@ -30,6 +31,7 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
   const localVariables = useLocalVariables();
   const { getAllCollectionsInheritChain } = useCollectionManager_deprecated();
   const { isInSubForm, isInSubTable } = useFlag() || {};
+  const blockOptions = useBlockContext?.();
 
   const dynamicComponent = useCallback(
     (props: DynamicComponentProps) => {
@@ -63,7 +65,9 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
           'x-decorator': (props) => (
             <BaseVariableProvider {...props}>
               <FlagProvider isInSubForm={isInSubForm} isInSubTable={isInSubTable}>
-                {props.children}
+                <BlockContext.Provider value={{ name: form ? 'form' : blockOptions?.name }}>
+                  {props.children}
+                </BlockContext.Provider>
               </FlagProvider>
             </BaseVariableProvider>
           ),
@@ -79,7 +83,6 @@ export const SchemaSettingsDataScope: FC<DataScopeProps> = function DataScopeCon
       },
     };
   };
-
   return (
     <SchemaSettingsModalItem
       title={t('Set the data scope')}

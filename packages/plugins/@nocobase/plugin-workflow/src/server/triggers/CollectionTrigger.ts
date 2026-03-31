@@ -9,14 +9,19 @@
 
 import { pick } from 'lodash';
 import { isValidFilter } from '@nocobase/utils';
-import { Collection, Model, Transactionable } from '@nocobase/database';
-import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import { Collection, Model } from '@nocobase/database';
+import {
+  ICollection,
+  parseCollectionName,
+  SequelizeCollectionManager,
+  SequelizeDataSource,
+} from '@nocobase/data-source-manager';
 
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
-import type { EventOptions } from '../Plugin';
-import { Context } from '@nocobase/actions';
+import type { EventOptions } from '../Dispatcher';
+import PluginWorkflowServer from '../Plugin';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -51,15 +56,32 @@ function getFieldRawName(collection: ICollection, name: string) {
 export default class CollectionTrigger extends Trigger {
   events = new Map();
 
+  constructor(public readonly workflow: PluginWorkflowServer) {
+    super(workflow);
+    this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      for (const item of this.workflow.enabledCache.values()) {
+        if (item.type !== 'collection' || !item.config.collection) {
+          continue;
+        }
+        const [dataSourceName] = parseCollectionName(item.config.collection);
+        if (dataSource.name === dataSourceName) {
+          this.off(item);
+          this.on(item);
+        }
+      }
+    });
+  }
+
   // async function, should return promise
-  private static async handler(this: CollectionTrigger, workflow: WorkflowModel, data: Model, options) {
+  private static async handler(this: CollectionTrigger, workflowId: number, eventType: string, data: Model, options) {
+    const workflow = this.workflow.enabledCache.get(workflowId);
     const { skipWorkflow = false, stack } = options.context ?? {};
     if (skipWorkflow) {
       return;
     }
     const [dataSourceName] = parseCollectionName(workflow.config.collection);
     const transaction = this.workflow.useDataSourceTransaction(dataSourceName, options.transaction);
-    const ctx = await this.prepare(workflow, data, { ...options, transaction });
+    const ctx = await this.prepare(workflow, data, { ...options, transaction, eventType });
     if (!ctx) {
       return;
     }
@@ -85,7 +107,7 @@ export default class CollectionTrigger extends Trigger {
     const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
     const { collectionManager } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName);
     const collection: Collection = (collectionManager as SequelizeCollectionManager).getCollection(collectionName);
-    const { transaction, context } = options;
+    const { transaction, context, eventType } = options;
     const { repository, filterTargetKey } = collection;
 
     let target = data;
@@ -104,6 +126,7 @@ export default class CollectionTrigger extends Trigger {
     }
     // NOTE: if no configured fields changed, do not trigger
     if (
+      eventType === MODE_BITMAP_EVENTS.get(MODE_BITMAP.UPDATE) &&
       target instanceof Model &&
       changed &&
       changed.length &&
@@ -158,9 +181,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 
@@ -169,7 +197,7 @@ export default class CollectionTrigger extends Trigger {
       const name = getHookId(workflow, `${collection}.${type}`);
       if (mode & key) {
         if (!this.events.has(name)) {
-          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow);
+          const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow.id, type);
           this.events.set(name, listener);
           db.on(event, listener);
         }
@@ -189,9 +217,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 

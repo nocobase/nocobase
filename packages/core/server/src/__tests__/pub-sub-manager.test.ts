@@ -7,19 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MemoryPubSubAdapter, MockServer, createMockServer, sleep } from '@nocobase/test';
+import { MemoryPubSubAdapter, MockServer, createMockCluster, createMockServer, sleep } from '@nocobase/test';
 import { PubSubManager } from '../pub-sub-manager';
 
 describe('connect', () => {
+  let app: MockServer;
   let pubSubManager: PubSubManager;
 
   beforeEach(async () => {
-    pubSubManager = new PubSubManager({ channelPrefix: 'pubsub1' });
+    app = await createMockServer({
+      pubSubManager: {
+        channelPrefix: 'pubsub1',
+      },
+      skipStart: true,
+    });
+    pubSubManager = app.pubSubManager;
     pubSubManager.setAdapter(new MemoryPubSubAdapter());
   });
 
   afterEach(async () => {
-    await pubSubManager.close();
+    await app.destroy();
   });
 
   test('not connected', async () => {
@@ -31,7 +38,7 @@ describe('connect', () => {
 
   test('closed', async () => {
     const mockListener = vi.fn();
-    await pubSubManager.connect();
+    await app.start();
     await pubSubManager.subscribe('test1', mockListener);
     await pubSubManager.close();
     await pubSubManager.publish('test1', 'message1');
@@ -41,15 +48,45 @@ describe('connect', () => {
   test('subscribe before connect', async () => {
     const mockListener = vi.fn();
     await pubSubManager.subscribe('test1', mockListener);
-    await pubSubManager.connect();
+    await app.start();
     await pubSubManager.publish('test1', 'message1');
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
   });
 
+  test('closed before db close on app stop', async () => {
+    const mockListener = vi.fn();
+    await app.start();
+    await pubSubManager.subscribe('test1', mockListener);
+    // Verify message works before stop
+    await pubSubManager.publish('test1', 'message1');
+    expect(mockListener).toBeCalledTimes(1);
+    mockListener.mockClear();
+    // Track the order of close and db.close
+    const order: string[] = [];
+    const origClose = pubSubManager.close.bind(pubSubManager);
+    vi.spyOn(pubSubManager, 'close').mockImplementation(async () => {
+      order.push('pubsub.close');
+      return origClose();
+    });
+    const origDbClose = app.db.close.bind(app.db);
+    vi.spyOn(app.db, 'close').mockImplementation(async () => {
+      order.push('db.close');
+      return origDbClose();
+    });
+    await app.stop();
+    // pubSub should be closed before db (may appear more than once due to disposeServices)
+    const pubsubFirst = order.indexOf('pubsub.close');
+    const dbFirst = order.indexOf('db.close');
+    expect(pubsubFirst).toBeLessThan(dbFirst);
+    // After stop, publish should not reach subscriber
+    await pubSubManager.publish('test1', 'message2');
+    expect(mockListener).not.toHaveBeenCalled();
+  });
+
   test('subscribe after connect', async () => {
-    await pubSubManager.connect();
+    await app.start();
     const mockListener = vi.fn();
     await pubSubManager.subscribe('test1', mockListener);
     await pubSubManager.publish('test1', 'message1');
@@ -60,16 +97,23 @@ describe('connect', () => {
 });
 
 describe('skipSelf, unsubscribe, debounce', () => {
+  let app: MockServer;
   let pubSubManager: PubSubManager;
 
   beforeEach(async () => {
-    pubSubManager = new PubSubManager({ channelPrefix: 'pubsub1' });
+    app = await createMockServer({
+      pubSubManager: {
+        channelPrefix: 'pubsub1',
+      },
+      skipStart: true,
+    });
+    pubSubManager = app.pubSubManager;
     pubSubManager.setAdapter(new MemoryPubSubAdapter());
-    await pubSubManager.connect();
+    await app.start();
   });
 
   afterEach(async () => {
-    await pubSubManager.close();
+    await app.destroy();
   });
 
   test('skipSelf: false', async () => {
@@ -149,28 +193,30 @@ describe('skipSelf, unsubscribe, debounce', () => {
 });
 
 describe('Pub/Sub', () => {
-  let publisher: PubSubManager;
-  let subscriber: PubSubManager;
+  let publisher: MockServer;
+  let subscriber: MockServer;
+  let cluster;
 
   beforeEach(async () => {
     const pubsub = new MemoryPubSubAdapter();
-    publisher = new PubSubManager({ channelPrefix: 'pubsub1' });
-    publisher.setAdapter(pubsub);
-    await publisher.connect();
-    subscriber = new PubSubManager({ channelPrefix: 'pubsub1' });
-    subscriber.setAdapter(pubsub);
-    await subscriber.connect();
+    cluster = await createMockCluster({
+      skipStart: true,
+    });
+    [publisher, subscriber] = cluster.nodes;
+    for (const app of cluster.nodes) {
+      app.pubSubManager.setAdapter(pubsub);
+      await app.start();
+    }
   });
 
   afterEach(async () => {
-    await publisher.close();
-    await subscriber.close();
+    await cluster.destroy();
   });
 
   test('subscribe publish', async () => {
     const mockListener = vi.fn();
-    await subscriber.subscribe('test1', mockListener);
-    await publisher.publish('test1', 'message1');
+    await subscriber.pubSubManager.subscribe('test1', mockListener);
+    await publisher.pubSubManager.publish('test1', 'message1');
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
@@ -178,9 +224,9 @@ describe('Pub/Sub', () => {
 
   test('subscribe twice', async () => {
     const mockListener = vi.fn();
-    await subscriber.subscribe('test1', mockListener);
-    await subscriber.subscribe('test1', mockListener);
-    await publisher.publish('test1', 'message1');
+    await subscriber.pubSubManager.subscribe('test1', mockListener);
+    await subscriber.pubSubManager.subscribe('test1', mockListener);
+    await publisher.pubSubManager.publish('test1', 'message1');
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');
@@ -188,9 +234,9 @@ describe('Pub/Sub', () => {
 
   test('publish only self', async () => {
     const mockListener = vi.fn();
-    await subscriber.subscribe('test1', mockListener);
-    await publisher.subscribe('test1', mockListener);
-    await publisher.publish('test1', 'message1', { onlySelf: true });
+    await subscriber.pubSubManager.subscribe('test1', mockListener);
+    await publisher.pubSubManager.subscribe('test1', mockListener);
+    await publisher.pubSubManager.publish('test1', 'message1', { onlySelf: true });
     expect(mockListener).toHaveBeenCalled();
     expect(mockListener).toBeCalledTimes(1);
     expect(mockListener).toHaveBeenCalledWith('message1');

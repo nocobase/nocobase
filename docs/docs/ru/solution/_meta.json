@@ -1,0 +1,12 @@
+[
+  {
+    "type": "dir",
+    "name": "ticket-system",
+    "label": "Ticketing Solution"
+  },
+  {
+    "type": "dir",
+    "name": "crm",
+    "label": "CRM"
+  }
+]

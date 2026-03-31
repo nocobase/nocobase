@@ -1,6 +1,15 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { css } from '@emotion/css';
 import { ISchema, useFieldSchema } from '@formily/react';
-import { Action, ActionContextProvider, SchemaComponent, useCompile } from '@nocobase/client';
+import { Action, ActionContextProvider, PopupSettingsProvider, SchemaComponent, useCompile } from '@nocobase/client';
 import React, { useState } from 'react';
 import { NAMESPACE } from './constants';
 import { useTranslation } from 'react-i18next';
@@ -113,7 +122,6 @@ const importFormSchema: ISchema = {
 
 export const ImportAction = (props) => {
   const [visible, setVisible] = useState(false);
-  const { t } = useTranslation(NAMESPACE);
   const compile = useCompile();
 
   const fieldSchema = useFieldSchema();
@@ -121,7 +129,7 @@ export const ImportAction = (props) => {
   return (
     <ActionContextProvider value={{ visible, setVisible, fieldSchema }}>
       <Action
-        icon={props.icon || <UploadOutlined />}
+        icon={props.icon || 'uploadoutlined'}
         title={compile(fieldSchema?.title || "t('Import')")}
         {...props}
         onClick={() => setVisible(true)}

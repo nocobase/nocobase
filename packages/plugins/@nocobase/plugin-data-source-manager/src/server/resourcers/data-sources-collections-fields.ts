@@ -56,7 +56,9 @@ export default {
           dataSourceKey,
         },
       });
-
+      if (values.possibleTypes) {
+        delete values.possibleTypes;
+      }
       if (!fieldRecord) {
         fieldRecord = await mainDb.getRepository('dataSourcesFields').create({
           values: {
@@ -109,7 +111,9 @@ export default {
           `Field name ${name} already exists in collection ${collectionName} of data source ${dataSourceKey}`,
         );
       }
-
+      if (values.possibleTypes) {
+        delete values.possibleTypes;
+      }
       const fieldRecord = await mainDb.getRepository('dataSourcesFields').create({
         values: {
           ...values,

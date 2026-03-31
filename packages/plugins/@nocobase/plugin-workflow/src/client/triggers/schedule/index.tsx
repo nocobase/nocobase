@@ -11,7 +11,7 @@ import { SchemaInitializerItemType, parseCollectionName, useCollectionDataSource
 
 import { CollectionBlockInitializer } from '../../components/CollectionBlockInitializer';
 import { NAMESPACE, lang } from '../../locale';
-import { getCollectionFieldOptions, useGetCollectionFields } from '../../variable';
+import { getCollectionFieldOptions, useGetDataSourceCollectionManager } from '../../variable';
 import { Trigger } from '..';
 import { ScheduleConfig } from './ScheduleConfig';
 import { SCHEDULE_MODE } from './constants';
@@ -19,11 +19,12 @@ import { TriggerScheduleConfig } from './TriggerScheduleConfig';
 import { ScheduleModes } from './ScheduleModes';
 import { WorkflowVariableWrapper } from '../../variable';
 import { TriggerCollectionRecordSelect } from '../../components/TriggerCollectionRecordSelect';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 function useVariables(config, opts) {
   const [dataSourceName, collection] = parseCollectionName(config.collection);
   const compile = useCompile();
-  const getCollectionFields = useGetCollectionFields(dataSourceName);
+  const collectionManager = useGetDataSourceCollectionManager(dataSourceName);
   const options: any[] = [];
   if (!opts?.types || opts.types.includes('date')) {
     options.push({ key: 'date', value: 'date', label: lang('Trigger time') });
@@ -50,7 +51,7 @@ function useVariables(config, opts) {
         },
       ],
       compile,
-      getCollectionFields,
+      collectionManager,
     });
     if (fieldOption) {
       options.push(fieldOption);
@@ -105,6 +106,56 @@ export default class extends Trigger {
       Component: CollectionBlockInitializer,
       collection: config.collection,
       dataPath: '$context.data',
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ config }): SubModelItem | null {
+    // 无上下文数据源时，不提供触发器数据入口
+    if (!config?.collection) {
+      return null;
+    }
+    return {
+      key: 'triggerData',
+      label: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+      useModel: 'NodeDetailsModel',
+      createModelOptions: {
+        use: 'NodeDetailsModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              dataSourceKey: 'main',
+              collectionName: config.collection,
+              dataPath: '$context.data',
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Trigger data", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'NodeDetailsGridModel',
+            subType: 'object',
+          },
+        },
+      },
+    };
+  }
+
+  useTempAssociationSource(config, workflow) {
+    if (!config?.collection || !workflow?.id) {
+      return null;
+    }
+    return {
+      collection: config.collection,
+      nodeId: workflow.id,
+      nodeKey: 'workflow',
+      nodeType: 'workflow' as const,
     };
   }
 }

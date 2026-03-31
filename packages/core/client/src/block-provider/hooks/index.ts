@@ -18,7 +18,7 @@ import _ from 'lodash';
 import get from 'lodash/get';
 import omit from 'lodash/omit';
 import qs from 'qs';
-import { ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef } from 'react';
+import { ChangeEvent, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction } from 'react-router-dom';
 import {
@@ -36,11 +36,13 @@ import { useAPIClient, useRequest } from '../../api-client';
 import { useNavigateNoUpdate } from '../../application/CustomRouterContextProvider';
 import { useFormBlockContext } from '../../block-provider/FormBlockProvider';
 import { CollectionOptions, useCollectionManager_deprecated, useCollection_deprecated } from '../../collection-manager';
+import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
+import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
-import { removeNullCondition, useActionContext, useCompile } from '../../schema-component';
+import { removeNullCondition, useActionContext, useColumnSettings, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
@@ -97,6 +99,38 @@ const filterValue = (value) => {
   return obj;
 };
 
+function getFilteredFormValues(form) {
+  const values = _.cloneDeep(form.values);
+  const allFields = [];
+  form.query('*').forEach((field) => {
+    if (field) {
+      allFields.push(field);
+    }
+  });
+  const readonlyPaths = _.uniq(
+    allFields
+      .filter((field) => {
+        const segments = field.path?.segments || [];
+        const path = segments.length <= 1 ? segments.join('.') : segments.slice(0, -1).join('.');
+        return field?.componentProps?.readOnlySubmit && !get(values, path)[field?.componentProps.filterTargetKey];
+      })
+      .map((field) => {
+        const segments = field.path?.segments || [];
+        if (segments.length <= 1) {
+          return segments.join('.');
+        }
+        return segments.slice(0, -1).join('.');
+      }),
+  );
+  readonlyPaths.forEach((path, index) => {
+    if ((index !== 0 || path.includes('.')) && !values[path]) {
+      // 清空值，但跳过第一层
+      _.unset(values, path);
+    }
+  });
+  return values;
+}
+
 export function getFormValues({
   filterByTk,
   field,
@@ -124,11 +158,12 @@ export function getFormValues({
     }
   }
 
-  return form.values;
+  return getFilteredFormValues(form);
 }
 
-export function useCollectValuesToSubmit() {
-  const form = useForm();
+export function useCollectValuesToSubmit(f?: Form) {
+  const originalForm = useForm();
+  const form = f ?? originalForm;
   const filterByTk = useFilterByTk();
   const { field, resource } = useBlockRequestContext();
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
@@ -164,10 +199,8 @@ export function useCollectValuesToSubmit() {
 
       if (isVariable(value)) {
         const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-        if (parsedValue !== null && parsedValue !== undefined) {
-          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-        }
-      } else if (value != null && value !== '') {
+        assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
+      } else if (value !== '') {
         assignedValues[key] = value;
       }
     });
@@ -219,11 +252,20 @@ export const useCreateActionProps = () => {
   const collectValues = useCollectValuesToSubmit();
   const action = record.isNew ? actionField.componentProps.saveMode || 'create' : 'update';
   const filterKeys = actionField.componentProps.filterKeys?.checked || [];
+  const localVariables = useLocalVariables();
+  const variables = useVariables();
 
   return {
     async onClick() {
       const { onSuccess, skipValidator, triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
+
       if (!skipValidator) {
         await form.submit();
       }
@@ -241,6 +283,14 @@ export const useCreateActionProps = () => {
             : undefined,
           updateAssociationValues,
         });
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(data?.data?.data, {}) }],
+          });
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -335,10 +385,8 @@ export const useAssociationCreateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
-        } else if (value != null && value !== '') {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -442,7 +490,6 @@ const useDoFilter = () => {
   const fieldSchema = useFieldSchema();
   const { name } = useCollection();
   const { targets = [], uid } = useMemo(() => findFilterTargets(fieldSchema), [fieldSchema]);
-
   const getFilterFromCurrentForm = useCallback(() => {
     return removeNullCondition(transformToFilter(form.values, getOperators(), cm.getCollectionField.bind(cm), name));
   }, [form.values, cm, getOperators, name]);
@@ -462,11 +509,14 @@ const useDoFilter = () => {
 
             // 由当前表单转换而来的 filter
             storedFilter[uid] = getFilterFromCurrentForm();
-
             const mergedFilter = mergeFilter([
               ...Object.values(storedFilter).map((filter) => removeNullCondition(filter)),
               block.defaultFilter,
             ]);
+
+            if (_.isEmpty(storedFilter[uid])) {
+              block.clearSelection?.();
+            }
 
             if (doNothingWhenFilterIsEmpty && _.isEmpty(storedFilter[uid])) {
               return;
@@ -476,6 +526,8 @@ const useDoFilter = () => {
               return block.clearData();
             }
 
+            // 存储当前的筛选条件，供其它筛选区块使用
+            _.set(block.service.params, '1.filters', storedFilter);
             return block.doFilter(
               {
                 ...param,
@@ -499,8 +551,8 @@ const useDoFilter = () => {
     // 另外，如果不加 100 毫秒的延迟，会导致数据区块列表更新后，不触发筛选操作的问题。
     setTimeout(() => {
       doFilter({ doNothingWhenFilterIsEmpty: true });
-    }, 100);
-  }, [getDataBlocks().length]);
+    }, 500);
+  }, [doFilter]);
 
   return {
     /**
@@ -564,9 +616,10 @@ export const useResetBlockActionProps = () => {
 };
 
 export const useCustomizeUpdateActionProps = () => {
-  const { resource, __parent, service } = useBlockRequestContext();
+  const { resource, __parent, field, service } = useBlockRequestContext();
   const filterByTk = useFilterByTk();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
   const navigate = useNavigateNoUpdate();
   const compile = useCompile();
   const form = useForm();
@@ -584,7 +637,13 @@ export const useCustomizeUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -598,10 +657,8 @@ export const useCustomizeUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
-        } else if (value != null && value !== '') {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -610,49 +667,72 @@ export const useCustomizeUpdateActionProps = () => {
       if (skipValidator === false) {
         await form.submit();
       }
-      await resource.update({
-        filterByTk,
-        values: { ...assignedValues },
-        // TODO(refactor): should change to inject by plugin
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-      });
-      if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
-        setVisible?.(false);
-      }
-      // service?.refresh?.();
-      if (callBack) {
-        callBack?.();
-      }
-      if (!(resource instanceof TableFieldResource)) {
-        __parent?.service?.refresh?.();
-      }
-      if (!successMessage) {
+
+      actionField.data = actionField.data || {};
+      if (actionField.data.loading) {
         return;
       }
-      if (manualClose) {
-        modal.success({
-          title: compile(successMessage),
-          onOk: async () => {
-            if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-              if (isURL(redirectTo)) {
-                window.location.href = redirectTo;
-              } else {
-                navigate(redirectTo);
-              }
-            }
-          },
+      actionField.data.loading = true;
+
+      try {
+        const result = await resource.update({
+          filterByTk,
+          values: { ...assignedValues },
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
         });
-      } else {
-        message.success(compile(successMessage));
-        if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
-          if (isURL(redirectTo)) {
-            window.location.href = redirectTo;
-          } else {
-            navigate(redirectTo);
+
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
+          });
+        }
+
+        if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
+          setVisible?.(false);
+        }
+        // service?.refresh?.();
+        if (callBack) {
+          callBack?.();
+        }
+        if (!(resource instanceof TableFieldResource)) {
+          __parent?.service?.refresh?.();
+        }
+        if (!successMessage) {
+          return;
+        }
+        if (manualClose) {
+          modal.success({
+            title: compile(successMessage),
+            onOk: async () => {
+              if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+                if (isURL(redirectTo)) {
+                  window.location.href = redirectTo;
+                } else {
+                  navigate(redirectTo);
+                }
+              }
+            },
+          });
+        } else {
+          message.success(compile(successMessage));
+          if (((redirecting && !actionAfterSuccess) || actionAfterSuccess === 'redirect') && redirectTo) {
+            if (isURL(redirectTo)) {
+              window.location.href = redirectTo;
+            } else {
+              navigate(redirectTo);
+            }
           }
         }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        actionField.data.loading = false;
       }
     },
   };
@@ -701,10 +781,8 @@ export const useCustomizeBulkUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
-        } else if (value != null && value !== '') {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -909,7 +987,13 @@ export const useUpdateActionProps = () => {
         skipValidator,
         triggerWorkflows,
       } = actionSchema?.['x-action-settings'] ?? {};
-      const { manualClose, redirecting, redirectTo, successMessage, actionAfterSuccess } = onSuccess || {};
+      const {
+        manualClose,
+        redirecting,
+        redirectTo: rawRedirectTo,
+        successMessage,
+        actionAfterSuccess,
+      } = onSuccess || {};
       const assignedValues = {};
       const waitList = Object.keys(originalAssignedValues).map(async (key) => {
         const value = originalAssignedValues[key];
@@ -923,10 +1007,8 @@ export const useUpdateActionProps = () => {
 
         if (isVariable(value)) {
           const { value: parsedValue } = (await variables?.parseVariable(value, localVariables)) || {};
-          if (parsedValue) {
-            assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
-          }
-        } else if (value != null && value !== '') {
+          assignedValues[key] = transformVariableValue(parsedValue, { targetCollectionField: collectionField });
+        } else if (value !== '') {
           assignedValues[key] = value;
         }
       });
@@ -948,7 +1030,7 @@ export const useUpdateActionProps = () => {
       actionField.data = field.data || {};
       actionField.data.loading = true;
       try {
-        await resource.update({
+        const result = await resource.update({
           filterByTk,
           values: {
             ...values,
@@ -967,6 +1049,15 @@ export const useUpdateActionProps = () => {
         if (callBack) {
           callBack?.();
         }
+        let redirectTo = rawRedirectTo;
+        if (rawRedirectTo) {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          redirectTo = await getVariableValue(rawRedirectTo, {
+            variables,
+            localVariables: [...localVariables, { name: '$record', ctx: new Proxy(result?.data?.data, {}) }],
+          });
+        }
+
         if (actionAfterSuccess === 'previous' || (!actionAfterSuccess && redirecting !== true)) {
           setVisible?.(false);
         }
@@ -1012,40 +1103,49 @@ export const useUpdateActionProps = () => {
 
 export const useDestroyActionProps = () => {
   const filterByTk = useFilterByTk();
-  const { resource, service, block, __parent } = useBlockRequestContext();
+  const { resource, service, block, field, __parent } = useBlockRequestContext();
   const { setVisible, setSubmitted } = useActionContext();
   const data = useParamsFromRecord();
   const actionSchema = useFieldSchema();
+  const actionField = useField();
   return {
     async onClick(e?, callBack?) {
       const { triggerWorkflows } = actionSchema?.['x-action-settings'] ?? {};
-      await resource.destroy({
-        filterByTk,
-        // TODO(refactor): should change to inject by plugin
-        triggerWorkflows: triggerWorkflows?.length
-          ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
-          : undefined,
-        ...data,
-      });
-
-      const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
-      if (count % pageSize === 1 && page !== 1) {
-        service.run({
-          ...service?.params?.[0],
-          page: page - 1,
+      actionField.data = field.data || {};
+      actionField.data.loading = true;
+      try {
+        await resource.destroy({
+          filterByTk,
+          // TODO(refactor): should change to inject by plugin
+          triggerWorkflows: triggerWorkflows?.length
+            ? triggerWorkflows.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+            : undefined,
+          ...data,
         });
-      }
-      if (callBack) {
-        callBack?.();
-      }
-      //  else {
-      //   service?.refresh?.();
-      // }
-      setSubmitted?.(true);
-      if (block && block !== 'TableField') {
-        __parent?.service?.refresh?.();
-        setVisible?.(false);
+
+        const { count = 0, page = 0, pageSize = 0 } = service?.data?.meta || {};
+        if (count % pageSize === 1 && page !== 1) {
+          const currentPage = service.params[0]?.page;
+          const totalPage = service.data?.meta?.totalPage;
+          if (currentPage === totalPage && service.params[0] && currentPage !== 1) {
+            service.params[0].page = currentPage - 1;
+          }
+        }
+        if (callBack) {
+          callBack?.();
+        }
+        //  else {
+        //   service?.refresh?.();
+        // }
         setSubmitted?.(true);
+        if (block && block !== 'TableField') {
+          __parent?.service?.refresh?.();
+          setVisible?.(false);
+          setSubmitted?.(true);
+        }
+      } catch (error) {
+        console.error(error);
+        actionField.data.loading = true;
       }
     },
   };
@@ -1143,16 +1243,284 @@ export const useRefreshActionProps = () => {
   };
 };
 
+export interface ColumnInfo {
+  key: string;
+  title: string;
+  dataIndex: string;
+  visible: boolean;
+  fixed?: 'left' | 'right' | false;
+  width?: number;
+  order?: number;
+}
+
+/**
+ * Get table columns from schema
+ */
+export const useTableColumns = (): ColumnInfo[] => {
+  const fieldSchema = useFieldSchema();
+  const compile = useCompile();
+  const { t } = useTranslation();
+  const collection = useCollection();
+
+  return useMemo(() => {
+    const columns: ColumnInfo[] = [];
+
+    // Find the root schema or table parent schema
+    const findRootOrTableParent = (schema: any): any => {
+      let current = schema;
+
+      // Travel up the schema tree
+      while (current) {
+        if (current?.['x-component'] === 'ActionBar') {
+          break;
+        }
+
+        // If we reached the root, break
+        if (!current.parent) {
+          break;
+        }
+
+        current = current.parent;
+      }
+      const parent = current.parent;
+      if (parent) {
+        const schema = parent?.reduceProperties((buf, s) => {
+          if (s?.['x-component'] === 'TableV2') {
+            return buf.concat([s]);
+          }
+          return buf;
+        }, []);
+        return schema?.[0];
+      }
+      return null;
+    };
+
+    // More comprehensive search for table columns
+    const findColumnsInSchema = (schema: any, depth = 0): void => {
+      if (!schema || depth > 1) return;
+
+      // Direct table column check
+      if (
+        schema?.['x-component']?.includes?.('Table.Column') ||
+        schema?.['x-decorator']?.includes?.('Table.Column') ||
+        schema?.['x-component'] === 'TableV2.Column'
+      ) {
+        // Find collection fields in the column schema (same logic as Table.tsx)
+        const collectionFields = schema.reduceProperties
+          ? schema.reduceProperties((buf, s) => {
+              if (s?.['x-component'] === 'CollectionField') {
+                return buf.concat([s]);
+              }
+              return buf;
+            }, [])
+          : [];
+
+        // Get the real dataIndex from collection field
+        const realDataIndex = collectionFields?.length > 0 ? collectionFields[0].name : schema.name;
+
+        // Get field information from collection (same logic as Table.tsx)
+        const collectionField = collection?.getField?.(realDataIndex);
+
+        // Process title with same logic as Table.tsx
+        let columnTitle = t(schema?.title, { ns: NAMESPACE_UI_SCHEMA }) || schema.title;
+
+        // Special handling for Actions column
+        if (!columnTitle && schema.name === 'actions') {
+          columnTitle = t('Actions');
+        }
+
+        // If no title from schema, try to get from collection field
+        if (!columnTitle && collectionField) {
+          columnTitle =
+            t(collectionField.uiSchema?.title, { ns: NAMESPACE_UI_SCHEMA }) ||
+            collectionField.uiSchema?.title ||
+            collectionField.name;
+        }
+
+        // Fallback to schema name or generated name
+        if (!columnTitle) {
+          columnTitle = schema.name || `Column ${columns.length + 1}`;
+        }
+
+        // Apply compile function for template processing
+        columnTitle = compile(columnTitle) || columnTitle;
+
+        const columnInfo: ColumnInfo = {
+          key: schema['x-uid'] || schema.name || `column-${columns.length}`,
+          title: columnTitle,
+          dataIndex: realDataIndex || `column-${columns.length}`,
+          visible: schema['x-display'] !== 'hidden',
+          fixed: schema['x-component-props']?.fixed || false,
+          width: schema['x-component-props']?.width,
+          order: schema['x-index'] || columns.length,
+        };
+
+        columns.push(columnInfo);
+      }
+
+      // Search in properties
+      if (schema.properties) {
+        Object.keys(schema.properties).forEach((key) => {
+          findColumnsInSchema(schema.properties[key], depth + 1);
+        });
+      }
+
+      // Search in items (for array schemas)
+      if (schema.items) {
+        findColumnsInSchema(schema.items, depth + 1);
+      }
+    };
+
+    // Start searching from root or table parent schema instead of current fieldSchema
+    const searchRoot = findRootOrTableParent(fieldSchema);
+
+    findColumnsInSchema(searchRoot);
+
+    // Sort by order
+    return columns.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [fieldSchema, compile, t, collection]);
+};
+
+export const useEditTableActionProps = () => {
+  const field = useField<Field>();
+  const fieldSchema = useFieldSchema();
+  const columns = useTableColumns();
+
+  // Find the actual TableV2 schema to get consistent tableId
+  const findTableSchema = useCallback(() => {
+    let current = fieldSchema;
+
+    // Travel up and then search down to find TableV2 schema
+    while (current) {
+      // Look for TableV2 in current level and children
+      const findTableV2InProperties = (schema: any): any => {
+        if (!schema?.properties) return null;
+
+        for (const key in schema.properties) {
+          const childSchema = schema.properties[key];
+
+          // Found TableV2!
+          if (childSchema['x-component'] === 'TableV2') {
+            return childSchema;
+          }
+
+          // Recursively search in child properties
+          const found = findTableV2InProperties(childSchema);
+          if (found) return found;
+        }
+
+        return null;
+      };
+
+      const tableV2 = findTableV2InProperties(current);
+      if (tableV2) {
+        return tableV2;
+      }
+
+      // If we reached the root, break
+      if (!current.parent) {
+        break;
+      }
+
+      current = current.parent;
+    }
+
+    return current;
+  }, [fieldSchema]);
+
+  // Get table ID for localStorage using the same logic as useTableColumns
+  const tableSchema = useMemo(() => findTableSchema(), [findTableSchema]);
+  const tableId = useMemo(() => tableSchema?.['x-uid'] || 'default', [tableSchema]);
+  const { getSettings, saveSettings, clearSettings } = useColumnSettings(tableId);
+  const [savedSettings, setSavedSettings] = useState<ColumnInfo[]>(getSettings());
+
+  // Get saved settings and merge with current columns
+  const mergedColumns = useMemo(() => {
+    if (columns.length === 0) return [];
+
+    if (!savedSettings || savedSettings.length === 0) {
+      return columns;
+    }
+
+    // Create a map for quick lookup
+    const savedSettingsMap = new Map();
+    savedSettings.forEach((setting) => {
+      savedSettingsMap.set(setting.key, setting);
+    });
+
+    // Merge saved settings with current columns
+    const merged = columns.map((column) => {
+      const savedSetting = savedSettingsMap.get(column.key);
+      if (savedSetting) {
+        return {
+          ...column,
+          visible: savedSetting.visible,
+          order: savedSetting.order,
+          width: savedSetting.width || column.width,
+          fixed: savedSetting.fixed || column.fixed,
+        };
+      }
+      return column;
+    });
+
+    // Sort by saved order if available
+    return merged.sort((a, b) => (a.order || 0) - (b.order || 0));
+  }, [columns, savedSettings]);
+
+  // Set merged columns to field dataSource for EditTable component to use
+  useEffect(() => {
+    if (mergedColumns.length > 0) {
+      field.dataSource = mergedColumns;
+    }
+  }, [mergedColumns, field]);
+
+  const onSubmit = useCallback(
+    (values) => {
+      if (!values?.columns || !Array.isArray(values.columns)) {
+        return;
+      }
+
+      // Save column settings to localStorage
+      const columnSettings: ColumnInfo[] = values.columns.map((column, index) => ({
+        key: column.key,
+        title: column.title,
+        dataIndex: column.dataIndex,
+        visible: column.visible,
+        fixed: column.fixed,
+        width: column.width,
+        order: index,
+      }));
+
+      saveSettings(columnSettings);
+    },
+    [saveSettings],
+  );
+
+  const onReset = useCallback(() => {
+    // Clear localStorage settings to revert to schema defaults
+    clearSettings();
+    setSavedSettings(getSettings());
+  }, [clearSettings]);
+
+  return {
+    columns: mergedColumns,
+    onSubmit,
+    onReset,
+  };
+};
+
 export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
   const current = ctx.service?.data?.meta?.page;
+  const { hasNext } = ctx.service?.data?.meta || {};
   if (!count && current) {
     return {
       simple: true,
       current: ctx.service?.data?.meta?.page || 1,
       pageSize: 1,
       showSizeChanger: false,
+      align: 'center',
       async onChange(page) {
         const params = ctx.service?.params?.[0];
         ctx.service.run({ ...params, page });
@@ -1163,7 +1531,7 @@ export const useDetailsPaginationProps = () => {
       },
       showTotal: false,
       showTitle: false,
-      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      total: ctx.service?.data?.data?.length < 1 || !hasNext ? 1 * current : 1 * current + 1,
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;
@@ -1178,6 +1546,7 @@ export const useDetailsPaginationProps = () => {
     total: count,
     pageSize: 1,
     showSizeChanger: false,
+    align: 'center',
     async onChange(page) {
       const params = ctx.service?.params?.[0];
       ctx.service.run({ ...params, page });
@@ -1349,6 +1718,7 @@ export const useAssociationFilterBlockProps = () => {
             [filterKey]: value,
           };
         } else {
+          block.clearSelection?.();
           if (block.dataLoadingMode === 'manual') {
             return block.clearData();
           }
@@ -1420,6 +1790,7 @@ export const useAssociationFilterBlockProps = () => {
     run,
     valueKey,
     labelKey,
+    dataScopeFilter: filter,
   };
 };
 async function doReset({
@@ -1441,6 +1812,8 @@ async function doReset({
       getDataBlocks().map(async (block) => {
         const target = targets.find((target) => target.uid === block.uid);
         if (!target) return;
+
+        block.clearSelection?.();
 
         if (block.dataLoadingMode === 'manual') {
           return block.clearData();
@@ -1506,9 +1879,9 @@ export const getAppends = ({
     if (s['x-linkage-rules'] && !isSubMode(s)) {
       const collectAppends = (obj) => {
         const type = Object.keys(obj)[0] || '$and';
-        const list = obj[type];
+        const list = obj[type] || [];
 
-        list.forEach((item) => {
+        list.filter(Boolean).forEach((item) => {
           if ('$and' in item || '$or' in item) {
             return collectAppends(item);
           }
@@ -1516,7 +1889,7 @@ export const getAppends = ({
           const fieldNames = getTargetField(item);
 
           // 只应该收集关系字段，只有大于 1 的时候才是关系字段
-          if (fieldNames.length > 1) {
+          if (fieldNames.length > 1 && !item.op) {
             appends.add(fieldNames.join('.'));
           }
         });
@@ -1669,10 +2042,23 @@ async function resetFormCorrectly(form: Form) {
 }
 
 export function appendQueryStringToUrl(url: string, queryString: string) {
-  if (queryString) {
-    return url + (url.includes('?') ? '&' : '?') + queryString;
+  if (!queryString) {
+    return url;
   }
-  return url;
+
+  const hashIndex = url.indexOf('#');
+  const hasHash = hashIndex >= 0;
+  const path = hasHash ? url.slice(0, hashIndex) : url;
+  const hash = hasHash ? url.slice(hashIndex + 1) : '';
+  const isHashRoute = hash.startsWith('/') || hash.startsWith('!/');
+
+  if (hasHash && isHashRoute) {
+    const hashSeparator = hash.includes('?') ? '&' : '?';
+    return `${path}#${hash}${hashSeparator}${queryString}`;
+  }
+
+  const separator = path.includes('?') ? '&' : '?';
+  return hasHash ? `${path}${separator}${queryString}#${hash}` : `${path}${separator}${queryString}`;
 }
 
 export const useParseURLAndParams = () => {

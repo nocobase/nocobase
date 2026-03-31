@@ -1,0 +1,110 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
+# Plugins installieren und aktualisieren
+
+## Integrierte Plugins
+
+Die integrierten NocoBase-Plugins werden automatisch mit der Kernversion aktualisiert. Sie müssen hierfür keine manuellen Schritte unternehmen.
+
+## Kommerzielle Plugins
+
+Bitte melden Sie sich beim NocoBase Service an und lesen Sie die Dokumentation, um zu erfahren, wie Sie kommerzielle Plugins installieren und aktualisieren können.
+
+## Drittanbieter-Plugins
+
+### Plugins online installieren
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Hinweis
+
+NocoBase unterstützt die Online-Installation von Plugins über die Benutzeroberfläche, die aktuelle Erfahrung ist jedoch nicht optimal. Die Gründe dafür sind:
+
+- Aufgrund von Einschränkungen des Node.js-Prozesslaufzeitmechanismus müssen Sie nach der Installation oder Aktualisierung von Plugins den Prozess stoppen und anschließend den `upgrade`-Befehl ausführen, damit die Änderungen wirksam werden.
+- In Szenarien mit mehreren Anwendungen ist es schwierig, bei der Online-Installation die Pluginsynchronisierung über mehrere Unteranwendungen hinweg gleichzeitig zu handhaben.
+- Stapelweise Plugin-Updates werden nicht unterstützt.
+- Die Online-Installation oder -Aktualisierung von Plugins kann leicht zu einer abnormalen Beendigung des Anwendungsprozesses führen.
+
+Daher wird empfohlen, Plugins über die Befehlszeile oder durch manuelles Hochladen zu installieren und zu aktualisieren. Wir schlagen vor, dies in CI/CD-Workflows zu integrieren, um Plugins über die Befehlszeile herunterzuladen, zu entpacken und zu aktualisieren. Dies gewährleistet Konsistenz und Zuverlässigkeit bei jeder Bereitstellung eines Updates.
+
+:::
+
+### Plugins über die Befehlszeile installieren
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+Wenn das Plugin bereits installiert ist und aktualisiert werden muss, führen Sie den folgenden Befehl aus:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Manuelles Hochladen und Entpacken
+
+Bitte laden Sie das Plugin-Paket zuerst auf Ihr lokales System herunter. Laden Sie es anschließend manuell in das Verzeichnis `./storage/plugins` hoch und entpacken Sie es dort. Wenn das Plugin bereits aktiviert ist, führen Sie nach dem Hochladen und Entpacken den folgenden Befehl aus, um das Plugin-Upgrade abzuschließen.
+
+> ⚠️ **Hinweis**: Um Cache-Probleme zu vermeiden, stellen Sie bitte sicher, dass die NocoBase-Anwendung vor der Ausführung beendet ist.
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Korrekte Methode zum Entpacken eines Plugins
+
+Das folgende Beispiel zeigt, wie Sie ein Plugin-Paket korrekt in das angegebene Verzeichnis entpacken:
+
+```bash
+mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
+  tar -xvzf /downloads/plugin-auth-cas-1.4.0.tgz \
+  -C /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas \
+  --strip-components=1
+```
+
+Dieser Befehl entpackt das Plugin in das angegebene Verzeichnis, ohne eine zusätzliche `package`-Verzeichnisebenen zu erstellen.
+
+```bash
+/my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
+```
+
+### Beispiel einer korrekten Verzeichnisstruktur
+
+```bash
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js
+./plugin-auth-cas/dist/server/auth.js
+./plugin-auth-cas/client.js
+./plugin-auth-cas/dist/constants.js
+./plugin-auth-cas/dist/externalVersion.js
+./plugin-auth-cas/dist/client/index.js
+./plugin-auth-cas/dist/index.js
+./plugin-auth-cas/dist/server/index.js
+./plugin-auth-cas/dist/server/actions/login.js
+./plugin-auth-cas/dist/server/plugin.js
+./plugin-auth-cas/server.js
+./plugin-auth-cas/dist/server/actions/service.js
+./plugin-auth-cas/dist/locale/en-US.json
+./plugin-auth-cas/dist/locale/ko_KR.json
+./plugin-auth-cas/package.json
+./plugin-auth-cas/dist/locale/zh-CN.json
+./plugin-auth-cas/README.md
+./plugin-auth-cas/README.zh-CN.md
+./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.d.ts
+./plugin-auth-cas/dist/server/auth.d.ts
+./plugin-auth-cas/client.d.ts
+./plugin-auth-cas/dist/constants.d.ts
+./plugin-auth-cas/dist/client/index.d.ts
+./plugin-auth-cas/dist/client/locale/index.d.ts
+./plugin-auth-cas/dist/index.d.ts
+./plugin-auth-cas/dist/server/index.d.ts
+./plugin-auth-cas/dist/server/actions/login.d.ts
+./plugin-auth-cas/dist/client/Options.d.ts
+./plugin-auth-cas/dist/server/plugin.d.ts
+./plugin-auth-cas/server.d.ts
+./plugin-auth-cas/dist/server/actions/service.d.ts
+./plugin-auth-cas/dist/client/SigninPage.d.ts
+./plugin-auth-cas/LICENSE.txt

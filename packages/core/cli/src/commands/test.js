@@ -8,7 +8,7 @@
  */
 
 const { Command } = require('commander');
-const { run } = require('../util');
+const { run, checkDBDialect } = require('../util');
 const path = require('path');
 
 /**
@@ -29,6 +29,7 @@ function addTestCommand(name, cli) {
     .arguments('[paths...]')
     .allowUnknownOption()
     .action(async (paths, opts) => {
+      checkDBDialect();
       if (name === 'test:server') {
         process.env.TEST_ENV = 'server-side';
       } else if (name === 'test:client') {
@@ -53,7 +54,7 @@ function addTestCommand(name, cli) {
       const first = paths?.[0];
       if (!process.env.TEST_ENV && first) {
         const key = first.split(path.sep).join('/');
-        if (key.includes('/client/')) {
+        if (key.includes('/client/') || key.includes('/client-v2/') || key.includes('/flow-engine/')) {
           process.env.TEST_ENV = 'client-side';
         } else {
           process.env.TEST_ENV = 'server-side';

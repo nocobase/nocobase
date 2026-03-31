@@ -44,11 +44,34 @@ export interface Pattern {
     instance: Model,
     value: string,
     options,
-    transactionable: Transactionable,
+    transactionable: Transactionable & { overwrite?: boolean },
   ): Promise<void>;
 }
 
 export const sequencePatterns = new Registry<Pattern>();
+
+function parseBigInt(str, radix = 10) {
+  if (typeof str !== 'string') throw new TypeError('Input must be a string');
+  if (typeof radix !== 'number' || radix < 2 || radix > 36) throw new RangeError('Radix must be between 2 and 36');
+
+  let negative = false;
+  if (str.startsWith('-')) {
+    negative = true;
+    str = str.slice(1);
+  }
+
+  const chars = str.toLowerCase();
+  const digits = '0123456789abcdefghijklmnopqrstuvwxyz';
+
+  let result = 0n;
+  for (const ch of chars) {
+    const value = BigInt(digits.indexOf(ch));
+    if (value < 0n || value >= BigInt(radix)) throw new SyntaxError(`Invalid digit "${ch}" for base ${radix}`);
+    result = result * BigInt(radix) + value;
+  }
+
+  return negative ? -result : result;
+}
 
 sequencePatterns.register('string', {
   validate(options) {
@@ -101,8 +124,9 @@ sequencePatterns.register('integer', {
 
     let next = start;
     if (lastSeq.get('current') != null) {
-      next = Math.max(lastSeq.get('current') + 1, start);
-      const max = Math.pow(base, digits) - 1;
+      const bn = BigInt(lastSeq.get('current')) + 1n;
+      next = bn > start ? bn : start;
+      const max = BigInt(base) ** BigInt(digits) - 1n;
       if (next > max) {
         next = start;
       }
@@ -172,7 +196,7 @@ sequencePatterns.register('integer', {
               lastGeneratedAt: recordTime,
             });
           } else {
-            if (number > lastSeq.get('current')) {
+            if (number > BigInt(lastSeq.get('current'))) {
               lastSeq.set({
                 current: number,
                 lastGeneratedAt: recordTime,
@@ -211,7 +235,7 @@ sequencePatterns.register('integer', {
     await lastSeq.save({ transaction });
   },
 
-  async update(instance, value, options, { transaction }) {
+  async update(instance, value, options, { transaction, overwrite }) {
     const recordTime = <Date>instance.get('createdAt') ?? new Date();
     const { digits = 1, start = 0, base = 10, cycle, key } = options;
     const SeqRepo = this.database.getRepository('sequences');
@@ -223,7 +247,7 @@ sequencePatterns.register('integer', {
       },
       transaction,
     });
-    const current = Number.parseInt(value, base);
+    const current = parseBigInt(value, base);
     if (!lastSeq) {
       return SeqRepo.create({
         values: {
@@ -237,6 +261,15 @@ sequencePatterns.register('integer', {
       });
     }
     if (lastSeq.get('current') == null) {
+      return lastSeq.update(
+        {
+          current,
+          lastGeneratedAt: recordTime,
+        },
+        { transaction },
+      );
+    }
+    if (overwrite === true) {
       return lastSeq.update(
         {
           current,

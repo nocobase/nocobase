@@ -1,0 +1,4 @@
+{
+  "Many to many (array)": "다 대 다(배열)",
+  "Many to many (array) description": "대상 모델의 고유 키 배열을 저장하여 두 모델 간의 다대다 관계를 생성할 수 있습니다."
+}

@@ -9,6 +9,7 @@
 
 import { Plugin, useActionAvailable } from '@nocobase/client';
 import { bulkUpdateActionSettings, deprecatedBulkUpdateActionSettings } from './BulkUpdateAction.Settings';
+import { BulkUpdateActionModel } from './BulkUpdateActionModel';
 import { BulkUpdateActionInitializer } from './BulkUpdateActionInitializer';
 import { CustomizeActionInitializer } from './CustomizeActionInitializer';
 import { useCustomizeBulkUpdateActionProps } from './utils';
@@ -16,9 +17,12 @@ export class PluginActionBulkUpdateClient extends Plugin {
   async load() {
     this.app.addComponents({ CustomizeActionInitializer });
     this.app.addScopes({ useCustomizeBulkUpdateActionProps });
-    this.app.addScopes({ useCustomizeBulkUpdateActionProps });
     this.app.schemaSettingsManager.add(deprecatedBulkUpdateActionSettings);
     this.app.schemaSettingsManager.add(bulkUpdateActionSettings);
+    // 注册 Flow 模型以支持新版流程引擎按钮动作
+    this.app.flowEngine.registerModels({
+      BulkUpdateActionModel,
+    });
 
     const initializerData = {
       title: '{{t("Bulk update")}}',
@@ -32,5 +36,5 @@ export class PluginActionBulkUpdateClient extends Plugin {
     this.app.schemaInitializerManager.addItem('map:configureActions', 'customize.bulkUpdate', initializerData);
   }
 }
-
+export { BulkUpdateActionModel } from './BulkUpdateActionModel';
 export default PluginActionBulkUpdateClient;

@@ -9,4 +9,7 @@
 
 import { proxyToRepository } from './proxy-to-repository';
 
-export const firstOrCreate = proxyToRepository(['values', 'filterKeys'], 'firstOrCreate');
+export const firstOrCreate = proxyToRepository(
+  ['values', 'filterKeys', 'whitelist', 'blacklist', 'updateAssociationValues', 'targetCollection'],
+  'firstOrCreate',
+);

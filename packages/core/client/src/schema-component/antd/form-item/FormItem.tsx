@@ -27,7 +27,11 @@ import { useEnsureOperatorsValid } from './SchemaSettingOptions';
 import useLazyLoadDisplayAssociationFieldsOfForm from './hooks/useLazyLoadDisplayAssociationFieldsOfForm';
 import { useLinkageRulesForSubTableOrSubForm } from './hooks/useLinkageRulesForSubTableOrSubForm';
 import useParseDefaultValue from './hooks/useParseDefaultValue';
-
+import { useTranslation } from 'react-i18next';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
+import { VariableScope } from '../../../variables/VariableScope';
+import { useFlag } from '../../../flag-provider';
+import { EllipsisWithTooltip } from '../../../schema-component';
 Item.displayName = 'FormilyFormItem';
 
 const formItemWrapCss = css`
@@ -37,6 +41,30 @@ const formItemWrapCss = css`
   .ant-description-textarea img {
     max-width: 100%;
   }
+  &.ant-formily-item-layout-vertical .ant-formily-item-label {
+    display: inline;
+    .ant-formily-item-label-tooltip-icon {
+      display: inline;
+    }
+    .ant-formily-item-label-content {
+      display: inline;
+    }
+  }
+  .ant-formily-item-label label {
+    word-break: normal;
+  }
+
+  .ant-input,
+  .ant-select,
+  .ant-cascader-picker,
+  .ant-picker,
+  .ant-input-number,
+  .ant-input-affix-wrapper {
+    &.auto-width {
+      width: auto;
+      min-width: 6em;
+    }
+  }
 `;
 
 const formItemLabelCss = css`
@@ -44,7 +72,7 @@ const formItemLabelCss = css`
     padding: 0px !important;
   }
   > .ant-formily-item-label {
-    display: none;
+    display: none !important;
   }
 `;
 
@@ -55,22 +83,25 @@ export const FormItem: any = withDynamicSchemaProps(
     const schema = useFieldSchema();
     const { addActiveFieldName } = useFormActiveFields() || {};
     const { wrapperStyle }: { wrapperStyle: any } = useDataFormItemProps();
-
+    const { t } = useTranslation();
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
+    const { isInSubTable } = useFlag();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
     }, [addActiveFieldName, schema.name]);
-
+    field.title = field.title && t(field.title, { ns: NAMESPACE_UI_SCHEMA });
     const showTitle = schema['x-decorator-props']?.showTitle ?? true;
     const extra = useMemo(() => {
       if (field.description && field.description !== '') {
         return typeof field.description === 'string' ? (
           <div
             dangerouslySetInnerHTML={{
-              __html: HTMLEncode(field.description).split('\n').join('<br/>'),
+              __html: HTMLEncode(t(field.description, { ns: NAMESPACE_UI_SCHEMA }))
+                .split('\n')
+                .join('<br/>'),
             }}
           />
         ) : (
@@ -83,39 +114,56 @@ export const FormItem: any = withDynamicSchemaProps(
         [formItemLabelCss]: showTitle === false,
       });
     }, [showTitle]);
-
     // 联动规则中的“隐藏保留值”的效果
     if (field.data?.hidden) {
       return null;
     }
 
     return (
-      <CollectionFieldProvider allowNull={true}>
-        <BlockItem
-          className={cx(
-            'nb-form-item',
-            css`
-              .ant-formily-item-layout-horizontal .ant-formily-item-control {
-                max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
-                  ? '100% !important'
-                  : null};
-              }
-            `,
-          )}
-        >
-          <ACLCollectionFieldProvider>
-            <Item
-              className={className}
-              {...props}
-              extra={extra}
-              wrapperStyle={{
-                ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
-                ...wrapperStyle,
-              }}
-            />
-          </ACLCollectionFieldProvider>
-        </BlockItem>
-      </CollectionFieldProvider>
+      <VariableScope scopeId={schema?.['x-uid']} type="formItem">
+        <CollectionFieldProvider allowNull={true}>
+          <BlockItem
+            className={cx(
+              'nb-form-item',
+              css`
+                .ant-formily-item-layout-horizontal .ant-formily-item-control {
+                  max-width: ${showTitle === false || schema['x-component'] !== 'CollectionField'
+                    ? '100% !important'
+                    : null};
+                }
+              `,
+            )}
+          >
+            <ACLCollectionFieldProvider>
+              <Item
+                className={className}
+                {...props}
+                extra={extra}
+                wrapperStyle={{
+                  ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
+                  ...wrapperStyle,
+                }}
+                feedbackText={
+                  isInSubTable && field.errors?.length ? (
+                    <EllipsisWithTooltip
+                      ellipsis
+                      style={{
+                        color: 'red',
+                        maxWidth: 300,
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ cursor: 'pointer' }}>{field.errors.map((e) => e.messages).join(', ')}</div>
+                    </EllipsisWithTooltip>
+                  ) : null
+                }
+              />
+            </ACLCollectionFieldProvider>
+          </BlockItem>
+        </CollectionFieldProvider>
+      </VariableScope>
     );
   }),
   { displayName: 'FormItem' },

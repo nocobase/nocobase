@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "管理者設定",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "設定フロー",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Google メール設定",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Microsoft メール設定",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "よくある質問",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "機能紹介",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "メールセンター",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "メールブロック",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "メール署名",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "メールテンプレート",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "詳細設定",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "メールメモ",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "メールToDo",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "メールラベル",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "一括送信",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "下書き自動保存",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

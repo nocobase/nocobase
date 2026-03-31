@@ -11,7 +11,7 @@ import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
 import { useRoleResourceValues } from './useRoleResourceValues';
 import { useSaveRoleResourceAction } from './useSaveRoleResourceAction';
-
+import { PermissionResourceActionProvider } from '../PermissionResourceActionProvider';
 const collection = {
   name: 'dataSourcesCollections',
   targetKey: 'name',
@@ -82,9 +82,9 @@ export const roleCollectionsSchema: ISchema = {
   type: 'void',
   'x-decorator': 'RoleRecordProvider',
   properties: {
-    block: {
+    [uid()]: {
       type: 'void',
-      'x-decorator': 'ResourceActionProvider',
+      'x-decorator': PermissionResourceActionProvider,
       'x-decorator-props': {
         collection,
         association: {

@@ -1,0 +1,13 @@
+{
+  "Add property": "Tulajdonság hozzáadása",
+  "Alias": "Álnév",
+  "Data source": "Adatforrás",
+  "Display label": "Megjelenítési címke",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "Ha a lekérdezés eredményének típusa objektum vagy objektumok tömbje, leképezhetők a tulajdonságok, amelyekhez a következő csomópontokban hozzá lehet férni.",
+  "JSON calculation": "JSON számítás",
+  "Properties mapping": "Tulajdonságok leképezése",
+  "Property key": "Tulajdonság kulcs",
+  "Query engine": "Lekérdező motor",
+  "Query expression": "Lekérdezési kifejezés",
+  "Transforming or calculating values from complex JSON data.": "Komplex JSON adatokból értékek átalakítása vagy számítása."
+}

@@ -92,7 +92,7 @@ test('Collection event add data trigger, get trigger node single line text varia
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -184,7 +184,7 @@ test('Collection event add data triggers, get predecessor Formula engine arithme
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -287,7 +287,7 @@ test('Collection events add data triggers, get single line of text data for fron
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -392,7 +392,7 @@ test('Collection event add data trigger, get front added data node single line t
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -488,7 +488,7 @@ test('Collection event adds data triggers, fetches data from front-end aggregati
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));
@@ -755,7 +755,7 @@ test.skip('Collection event add data trigger, get front manual node add form sin
   // 3、预期结果：工作流成功触发,判断节点true通过
   const getWorkflow = await apiGetWorkflow(workflowId);
   const getWorkflowObj = JSON.parse(JSON.stringify(getWorkflow));
-  const getWorkflowExecuted = getWorkflowObj.executed;
+  const getWorkflowExecuted = getWorkflowObj.versionStats.executed;
   expect(getWorkflowExecuted).toBe(1);
   const getWorkflowNodeExecutions = await apiGetWorkflowNodeExecutions(workflowId);
   const getWorkflowNodeExecutionsObj = JSON.parse(JSON.stringify(getWorkflowNodeExecutions));

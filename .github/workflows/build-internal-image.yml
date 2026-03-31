@@ -1,0 +1,119 @@
+name: Build Image (Internal)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref_name:
+        description: 'Branch or tag name to release'
+
+jobs:
+  get-plugins:
+    uses: nocobase/nocobase/.github/workflows/get-plugins.yml@main
+    secrets: inherit
+  push-docker:
+    runs-on: ubuntu-latest
+    needs: get-plugins
+    services:
+      verdaccio:
+        image: verdaccio/verdaccio:5
+        ports:
+          - 4873:4873
+    steps:
+      - name: Set Node.js 20
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Get info
+        id: get-info
+        shell: bash
+        run: |
+          if [[ "${{ inputs.ref_name || github.ref_name }}" =~ "beta" ]]; then
+            echo "defaultTag=$(echo 'beta')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.beta-plugins }}')" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.ref_name || github.ref_name }}" =~ "alpha" ]]; then
+            echo "defaultTag=$(echo 'alpha')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.alpha-plugins }}')" >> $GITHUB_OUTPUT
+          else
+            # rc
+            echo "defaultTag=$(echo 'latest')" >> $GITHUB_OUTPUT
+            echo "proRepos=$(echo '${{ needs.get-plugins.outputs.rc-plugins }}')" >> $GITHUB_OUTPUT
+          fi
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.NOCOBASE_APP_ID }}
+          private-key: ${{ secrets.NOCOBASE_APP_PRIVATE_KEY }}
+          repositories: nocobase,pro-plugins,${{ join(fromJSON(steps.get-info.outputs.proRepos), ',') }},${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ',') }}
+          skip-token-revoke: true
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.ref_name || github.ref_name }}
+      - name: yarn install
+        run: |
+          yarn install
+      - name: Checkout pro-plugins
+        uses: actions/checkout@v3
+        with:
+          repository: nocobase/pro-plugins
+          path: packages/pro-plugins
+          ref: ${{ inputs.ref_name || github.ref_name }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Clone pro repos
+        shell: bash
+        run: |
+          for repo in ${{ join(fromJSON(steps.get-info.outputs.proRepos), ' ') }} ${{ join(fromJSON(needs.get-plugins.outputs.custom-plugins), ' ') }}
+          do
+          git clone -b ${{ inputs.ref_name || github.ref_name }} https://x-access-token:${{ steps.app-token.outputs.token }}@github.com/nocobase/$repo.git packages/pro-plugins/@nocobase/$repo
+          done
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: network=host
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: |
+            nocobase/nocobase
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ secrets.ALI_DOCKER_REGISTRY }}
+          username: ${{ secrets.ALI_DOCKER_USERNAME }}
+          password: ${{ secrets.ALI_DOCKER_PASSWORD }}
+      - name: Set variables
+        run: |
+          target_directory="./packages/pro-plugins/@nocobase"
+          subdirectories=$(find "$target_directory" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; | tr '\n' ' ')
+          trimmed_variable=$(echo "$subdirectories" | xargs)
+          packageNames="@nocobase/${trimmed_variable// / @nocobase/}"
+          pluginNames="${trimmed_variable//plugin-/}"
+          BEFORE_PACK_NOCOBASE="yarn add @nocobase/plugin-notifications @nocobase/plugin-disable-pm-add $packageNames -W --production"
+          APPEND_PRESET_LOCAL_PLUGINS="notifications,disable-pm-add,${pluginNames// /,}"
+          echo "var1=$BEFORE_PACK_NOCOBASE" >> $GITHUB_OUTPUT
+          echo "var2=$APPEND_PRESET_LOCAL_PLUGINS" >> $GITHUB_OUTPUT
+      - name: Build and push
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: Dockerfile
+          build-args: |
+            VERDACCIO_URL=http://localhost:4873/
+            COMMIT_HASH=${GITHUB_SHA}
+            PLUGINS_DIRS=pro-plugins
+            BEFORE_PACK_NOCOBASE=${{ steps.vars.outputs.var1 }}
+            APPEND_PRESET_LOCAL_PLUGINS=${{ steps.vars.outputs.var2 }}
+          push: true
+          tags: ${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/nocobase/nocobase:${{ steps.get-info.outputs.defaultTag }},${{ secrets.ALI_DOCKER_PUBLIC_REGISTRY }}/${{ steps.meta.outputs.tags }}

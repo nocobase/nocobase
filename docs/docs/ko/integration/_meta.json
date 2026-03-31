@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API 키",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API 문서",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "사용 사례",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "워크플로우",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP 요청",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "외부 데이터 소스",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "임베디드 콘텐츠",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe 블록",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "임베드",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

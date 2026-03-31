@@ -19,10 +19,10 @@ export default defineCollection({
   shared: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       primaryKey: true,
-      autoIncrement: true,
+      allowNull: false,
     },
     {
       type: 'belongsTo',
@@ -51,6 +51,7 @@ export default defineCollection({
     {
       type: 'belongsTo',
       name: 'execution',
+      onDelete: 'CASCADE',
     },
     {
       type: 'belongsTo',
@@ -62,6 +63,7 @@ export default defineCollection({
       name: 'workflow',
       target: 'workflows',
       foreignKey: 'workflowId',
+      onDelete: 'CASCADE',
       interface: 'm2o',
       uiSchema: {
         type: 'object',

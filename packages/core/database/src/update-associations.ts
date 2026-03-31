@@ -40,12 +40,7 @@ export function belongsToManyAssociations(instance: Model): Array<BelongsToMany>
     });
 }
 
-export function modelAssociationByKey(
-  instance: Model,
-  key: string,
-): Association & {
-  update?: (instance: Model, value: any, options: UpdateAssociationOptions) => Promise<any>;
-} {
+export function modelAssociationByKey(instance: Model, key: string): Association {
   return modelAssociations(instance)[key] as Association;
 }
 
@@ -83,7 +78,10 @@ export async function updateModelByValues(instance: Model, values: UpdateValue, 
     guard.setAssociationKeysToBeUpdate(options.updateAssociationValues);
     values = guard.sanitize(values);
   }
-
+  (instance.constructor as typeof Model).collection.validate({
+    values,
+    operation: 'update',
+  });
   await instance.update(values, options);
   await updateAssociations(instance, values, options);
 }
@@ -237,10 +235,6 @@ export async function updateAssociation(
     return false;
   }
 
-  if (association.update) {
-    return association.update(instance, value, options);
-  }
-
   switch (association.associationType) {
     case 'HasOne':
     case 'BelongsTo':
@@ -310,18 +304,6 @@ export async function updateSingleAssociation(
     }
   };
 
-  if (isStringOrNumber(value)) {
-    await model[setAccessor](value, { context, transaction });
-    return true;
-  }
-
-  if (value instanceof Model) {
-    await model[setAccessor](value, { context, transaction });
-    model.setDataValue(key, value);
-    return true;
-  }
-
-  const createAccessor = association.accessors.create;
   let dataKey: string;
   let M: ModelStatic<Model>;
   if (association.associationType === 'BelongsTo') {
@@ -333,6 +315,26 @@ export async function updateSingleAssociation(
     dataKey = M.primaryKeyAttribute;
   }
 
+  if (isStringOrNumber(value)) {
+    const instance = await M.findOne({
+      where: {
+        [dataKey]: value,
+      },
+      transaction,
+    });
+    if (instance) {
+      await model[setAccessor](value, { context, transaction });
+    }
+    return true;
+  }
+
+  if (value instanceof Model) {
+    await model[setAccessor](value, { context, transaction });
+    model.setDataValue(key, value);
+    return true;
+  }
+
+  const createAccessor = association.accessors.create;
   if (isStringOrNumber(value[dataKey])) {
     const instance: any = await M.findOne({
       where: {
@@ -355,7 +357,7 @@ export async function updateSingleAssociation(
           delete updateValues[association.foreignKey];
         }
 
-        await instance.update(updateValues, { ...options, transaction });
+        await instance.update(updateValues, { ...options, transaction, inputValues: updateValues });
       }
 
       await updateAssociations(instance, value, {
@@ -369,7 +371,11 @@ export async function updateSingleAssociation(
     }
   }
 
-  const instance = await model[createAccessor](value, { context, transaction });
+  (association.target as typeof Model).collection.validate({
+    values: value,
+    operation: 'create',
+  });
+  const instance = await model[createAccessor](value, { context, transaction, inputValues: value });
 
   await updateAssociations(instance, value, {
     ...options,
@@ -437,7 +443,7 @@ export async function updateMultipleAssociation(
 
   value = lodash.castArray(value);
 
-  const setItems = []; // to be setted
+  let setItems = []; // to be setted
   const objectItems = []; // to be added
 
   // iterate item in value
@@ -469,6 +475,32 @@ export async function updateMultipleAssociation(
     }
   }
 
+  if (setItems.length > 0) {
+    const TargetModel = association.target;
+    const pk = TargetModel.primaryKeyAttribute;
+    // @ts-ignore
+    const targetKey = (association as any).targetKey || association.options.targetKey || pk;
+
+    const rawKeys = [];
+    const instanceItems = [];
+
+    for (const item of setItems) {
+      if (item instanceof Model) {
+        instanceItems.push(item);
+      } else if (isStringOrNumber(item)) {
+        rawKeys.push(item);
+      }
+    }
+
+    const validInstances = rawKeys.length
+      ? await TargetModel.findAll({
+          where: { [targetKey]: rawKeys },
+          transaction,
+        })
+      : [];
+
+    setItems = [...instanceItems, ...validInstances];
+  }
   // associate targets in lists1
   await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
 
@@ -506,7 +538,11 @@ export async function updateMultipleAssociation(
 
     if (isUndefinedOrNull(item[targetKey])) {
       // create new record
-      const instance = await model[createAccessor](item, accessorOptions);
+      (association.target as typeof Model).collection.validate({
+        values: item,
+        operation: 'create',
+      });
+      const instance = await model[createAccessor](item, { ...accessorOptions, inputValues: item });
 
       await updateAssociations(instance, item, {
         ...options,
@@ -526,7 +562,11 @@ export async function updateMultipleAssociation(
       });
       if (!instance) {
         // create new record
-        instance = await model[createAccessor](item, accessorOptions);
+        (association.target as typeof Model).collection.validate({
+          values: item,
+          operation: 'create',
+        });
+        instance = await model[createAccessor](item, { ...accessorOptions, inputValues: item });
         await updateAssociations(instance, item, {
           ...options,
           transaction,
@@ -547,8 +587,11 @@ export async function updateMultipleAssociation(
         if (association.associationType === 'HasMany') {
           delete item[association.foreignKey];
         }
-
-        await instance.update(item, { ...options, transaction });
+        (association.target as typeof Model).collection.validate({
+          values: item,
+          operation: 'update',
+        });
+        await instance.update(item, { ...options, transaction, inputValues: item });
       }
       await updateAssociations(instance, item, {
         ...options,

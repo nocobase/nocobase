@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Database, mockDatabase } from '@nocobase/database';
+import { createMockDatabase, Database } from '@nocobase/database';
 import { uid } from '@nocobase/utils';
 
 describe('view repository', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase({
+    db = await createMockDatabase({
       tablePrefix: '',
     });
     await db.clean({ drop: true });
@@ -72,5 +72,10 @@ describe('view repository', () => {
 
     expect(results[0].length).toBe(1);
     expect(results[1]).toBe(4);
+
+    const rows = await viewCollection.repository.find({ limit: 4, order: [['aaa', 'ASC']] });
+    expect(rows.length).toBe(4);
+    expect(rows[0].toJSON().aaa).toBe(1);
+    expect(rows[3].toJSON().aaa).toBe(4);
   });
 });

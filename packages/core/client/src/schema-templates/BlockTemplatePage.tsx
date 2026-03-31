@@ -10,7 +10,7 @@
 import { PageHeader as AntdPageHeader } from '@ant-design/pro-layout';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { SchemaComponent } from '../schema-component';
+import { SchemaComponent, SchemaComponentContext, useSchemaComponentContext } from '../schema-component';
 import { uiSchemaTemplatesSchema } from './schemas/uiSchemaTemplates';
 
 export const BlockTemplatePage = () => {
@@ -26,5 +26,10 @@ export const BlockTemplatePage = () => {
 };
 
 export const BlockTemplatesPane = () => {
-  return <SchemaComponent schema={uiSchemaTemplatesSchema} />;
+  const scCtx = useSchemaComponentContext();
+  return (
+    <SchemaComponentContext.Provider value={{ ...scCtx, designable: false }}>
+      <SchemaComponent schema={uiSchemaTemplatesSchema} />
+    </SchemaComponentContext.Provider>
+  );
 };

@@ -7,22 +7,26 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { customAlphabet as Alphabet } from 'nanoid';
-import React, { useEffect } from 'react';
 import { LoadingOutlined } from '@ant-design/icons';
-import { connect, mapProps, mapReadPretty, useForm } from '@formily/react';
+import { connect, mapProps, mapReadPretty, useForm, useFormEffects } from '@formily/react';
 import { Input as AntdInput } from 'antd';
-import { ReadPretty } from '../input';
-import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
+import { customAlphabet as Alphabet } from 'nanoid';
+import { onFormReset } from '@formily/core';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useCollectionField } from '../../../data-source/collection-field/CollectionFieldProvider';
+import { useFlag } from '../../../flag-provider';
+import { ReadPretty } from '../input';
 
 export const NanoIDInput = Object.assign(
   connect(
     AntdInput,
     mapProps((props: any, field: any) => {
-      const { size, customAlphabet } = useCollectionField() || { size: 21 };
+      const { size, customAlphabet, autoFill } = useCollectionField() || { size: 21 };
       const { t } = useTranslation();
       const form = useForm();
+      const { isInFilterFormBlock } = useFlag();
+
       function isValidNanoid(value) {
         if (value?.length !== size) {
           return t('Field value size is') + ` ${size || 21}`;
@@ -35,13 +39,24 @@ export const NanoIDInput = Object.assign(
       }
 
       useEffect(() => {
-        if (!field.initialValue && customAlphabet) {
-          field.setInitialValue(Alphabet(customAlphabet, size)());
+        if (!field?.initialValue && customAlphabet && !isInFilterFormBlock && autoFill !== false) {
+          field?.setInitialValue(Alphabet(customAlphabet, size)());
         }
-        form.setFieldState(field.props.name, (state) => {
+        form?.setFieldState(field?.props?.name, (state) => {
           state.validator = isValidNanoid;
         });
-      }, []);
+      }, [isInFilterFormBlock]);
+
+      // 监听表单 reset
+      useFormEffects(() => {
+        onFormReset(() => {
+          if (!customAlphabet || isInFilterFormBlock || autoFill === false) return;
+          const value = Alphabet(customAlphabet, size)();
+          field.setInitialValue(value);
+          field.setValue(value);
+        });
+      });
+
       return {
         ...props,
         suffix: <span>{field?.['loading'] || field?.['validating'] ? <LoadingOutlined /> : props.suffix}</span>,

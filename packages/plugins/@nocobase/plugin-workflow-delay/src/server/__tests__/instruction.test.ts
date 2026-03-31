@@ -47,7 +47,8 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 2000,
+          duration: 2,
+          unit: 1000,
           endStatus: JOB_STATUS.RESOLVED,
         },
       });
@@ -73,7 +74,8 @@ describe('workflow > instructions > delay', () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 2000,
+          duration: 2,
+          unit: 1000,
           endStatus: JOB_STATUS.FAILED,
         },
       });
@@ -95,11 +97,49 @@ describe('workflow > instructions > delay', () => {
       expect(j2.status).toBe(JOB_STATUS.FAILED);
     });
 
+    it('duration by variable', async () => {
+      const n1 = await workflow.createNode({
+        type: 'echoVariable',
+        config: {
+          variable: 2,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'delay',
+        config: {
+          duration: `{{$jobsMapByNodeKey.${n1.key}}}`,
+          unit: 1000,
+          endStatus: JOB_STATUS.RESOLVED,
+        },
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toEqual(EXECUTION_STATUS.STARTED);
+      const [, j1] = await e1.getJobs({ order: [['id', 'ASC']] });
+      expect(j1.status).toBe(JOB_STATUS.PENDING);
+
+      await sleep(2000);
+
+      const [e2] = await workflow.getExecutions();
+      expect(e2.status).toEqual(EXECUTION_STATUS.RESOLVED);
+      const [, j2] = await e2.getJobs({ order: [['id', 'ASC']] });
+      expect(j2.status).toBe(JOB_STATUS.RESOLVED);
+    });
+
     it('delay to resolve and downstream node error', async () => {
       const n1 = await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 2000,
+          duration: 2,
+          unit: 1000,
           endStatus: JOB_STATUS.RESOLVED,
         },
       });
@@ -139,7 +179,8 @@ describe('workflow > instructions > delay', () => {
       await workflow.createNode({
         type: 'delay',
         config: {
-          duration: 2000,
+          duration: 2,
+          unit: 1000,
           endStatus: JOB_STATUS.RESOLVED,
         },
       });

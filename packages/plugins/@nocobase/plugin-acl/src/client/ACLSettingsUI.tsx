@@ -96,6 +96,6 @@ export class ACLSettingsUI {
         }
         return tab;
       })
-      .sort((a, b) => (a.sort ?? 100) - (b.sort ?? 100));
+      .sort((a, b) => (a?.sort ?? 100) - (b?.sort ?? 100));
   }
 }

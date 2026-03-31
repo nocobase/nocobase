@@ -25,7 +25,9 @@ export class TokenBlacklistService implements ITokenBlacklistService {
     // Try to create a bloom filter and cache blocked tokens in it
     plugin.app.on('beforeStart', async () => {
       try {
-        this.bloomFilter = await plugin.app.cacheManager.createBloomFilter();
+        this.bloomFilter = await plugin.app.cacheManager.createBloomFilter({
+          shouldCloneBeforeSet: false,
+        });
         // https://redis.io/docs/data-types/probabilistic/bloom-filter/#reserving-bloom-filters
         // 0.1% error rate requires 14.4 bits per item
         // 14.4*1000000/8/1024/1024 = 1.72MB

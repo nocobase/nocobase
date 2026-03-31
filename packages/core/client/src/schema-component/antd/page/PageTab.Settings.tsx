@@ -64,6 +64,7 @@ export const pageTabSettings = new SchemaSettings({
           },
         };
       },
+      sort: 100,
     },
     {
       name: 'hidden',
@@ -93,10 +94,12 @@ export const pageTabSettings = new SchemaSettings({
           },
         };
       },
+      sort: 200,
     },
     {
       name: 'divider',
       type: 'divider',
+      sort: 300,
     },
     {
       name: 'delete',
@@ -136,6 +139,7 @@ export const pageTabSettings = new SchemaSettings({
           children: t('Delete'),
         };
       },
+      sort: 400,
     },
   ],
 });

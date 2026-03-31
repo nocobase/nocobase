@@ -11,6 +11,10 @@ import { GeneralSchemaDesigner, SchemaSettingsRemove } from '@nocobase/client';
 import React from 'react';
 import { useChartsTranslation } from '../locale';
 
+/**
+ * @deprecated
+ * use `chartFilterBlockSettings` instead
+ */
 export const ChartFilterBlockDesigner: React.FC = () => {
   const { t } = useChartsTranslation();
   return (

@@ -1,11 +1,25 @@
-import { AsyncTasksManager, TaskStatus, CancelError } from '../interfaces/async-task-manager';
-import { createMockServer } from '@nocobase/test';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { AsyncTasksManager, CancelError } from '../interfaces/async-task-manager';
+import { createMockServer, sleep } from '@nocobase/test';
 import { TaskType } from '../task-type';
+import { TASK_STATUS } from '../../common/constants';
 
 describe('task manager', () => {
   let taskManager: AsyncTasksManager;
 
   let app;
+  let root;
+  let rootAgent;
+  let userContext;
+  let TaskRepo;
 
   beforeEach(async () => {
     app = await createMockServer({
@@ -13,6 +27,15 @@ describe('task manager', () => {
     });
 
     taskManager = app.container.get('AsyncTaskManager');
+    const UserRepo = app.db.getRepository('users');
+    root = await UserRepo.findOne();
+    rootAgent = await app.agent().login(root);
+    userContext = {
+      state: {
+        user: root,
+      },
+    };
+    TaskRepo = app.db.getRepository('asyncTasks');
   });
 
   afterEach(async () => {
@@ -39,212 +62,46 @@ describe('task manager', () => {
 
     taskManager.registerTaskType(TestTaskType);
 
-    const task = await taskManager.createTask({
-      type: 'test',
-      params: {},
-    });
+    const task = await taskManager.createTask(
+      {
+        type: 'test',
+        params: {},
+        createdById: root.id,
+      },
+      {
+        context: userContext,
+      },
+    );
 
     expect(task).toBeTruthy();
 
-    expect(task.status.type).toBe('pending');
     // should get tasks status through task id
-    const getResp = await app.agent().resource('asyncTasks').get({
-      filterByTk: task.taskId,
+    const getResp = await rootAgent.resource('asyncTasks').get({
+      filterByTk: task.record.id,
     });
 
     expect(getResp.status).toBe(200);
 
     const testFn = vi.fn();
 
-    task.on('progress', (progress) => {
+    task.onProgress = (progress) => {
       testFn();
-    });
+    };
 
     await task.run();
 
     expect(testFn).toHaveBeenCalledTimes(10);
 
-    const getResp2 = await app.agent().resource('asyncTasks').get({
-      filterByTk: task.taskId,
+    const getResp2 = await rootAgent.resource('asyncTasks').get({
+      filterByTk: task.record.id,
     });
 
     expect(getResp2.status).toBe(200);
 
-    expect(getResp2.body.data.type).toBe('success');
-    expect(getResp2.body.data.payload).toEqual({
+    expect(getResp2.body.data.type).toBe('test');
+    expect(getResp2.body.data.result).toEqual({
       a: 'b',
     });
-  });
-
-  it('should get tasks by tag', async () => {
-    class TestTaskType extends TaskType {
-      static type = 'test';
-
-      async execute() {
-        return { success: true };
-      }
-    }
-
-    taskManager.registerTaskType(TestTaskType);
-
-    const task1 = await taskManager.createTask({
-      type: 'test',
-      params: {},
-      tags: {
-        category: 'import',
-        source: 'excel',
-      },
-    });
-
-    const task2 = await taskManager.createTask({
-      type: 'test',
-      params: {},
-      tags: {
-        category: 'import',
-        source: 'csv',
-      },
-    });
-
-    const task3 = await taskManager.createTask({
-      type: 'test',
-      params: {},
-      tags: {
-        category: 'export',
-        source: 'excel',
-      },
-    });
-
-    const importTasks = await taskManager.getTasksByTag('category', 'import');
-    expect(importTasks.length).toBe(2);
-
-    const excelTasks = await taskManager.getTasksByTag('source', 'excel');
-    expect(excelTasks.length).toBe(2);
-
-    const csvTasks = await taskManager.getTasksByTag('source', 'csv');
-    expect(csvTasks.length).toBe(1);
-  });
-
-  it('should emit events when task status changes', async () => {
-    class TestTaskType extends TaskType {
-      static type = 'test';
-
-      async execute() {
-        this.reportProgress({ total: 10, current: 5 });
-        return { success: true };
-      }
-    }
-
-    taskManager.registerTaskType(TestTaskType);
-
-    const taskCreatedFn = vi.fn();
-    const taskProgressFn = vi.fn();
-    const taskStatusChangeFn = vi.fn();
-
-    taskManager.on('taskCreated', taskCreatedFn);
-    taskManager.on('taskProgress', taskProgressFn);
-    taskManager.on('taskStatusChange', (event) => {
-      console.log('taskStatusChange', event);
-      taskStatusChangeFn(event);
-    });
-
-    const task = await taskManager.createTask({
-      type: 'test',
-      params: {},
-    });
-
-    // 测试任务创建事件
-    expect(taskCreatedFn).toHaveBeenCalledTimes(1);
-    expect(taskCreatedFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        task: expect.any(TestTaskType),
-      }),
-    );
-
-    await task.run();
-
-    // 测试进度事件
-    expect(taskProgressFn).toHaveBeenCalledTimes(1);
-    expect(taskProgressFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        task,
-        progress: { total: 10, current: 5 },
-      }),
-    );
-
-    // 测试状态变更事件
-    expect(taskStatusChangeFn).toHaveBeenCalledTimes(2); // 初始 running 状态和最终 success 状态
-    expect(taskStatusChangeFn).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        task,
-        status: {
-          type: 'running',
-          indicator: 'progress',
-        },
-      }),
-    );
-    expect(taskStatusChangeFn).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        task,
-        status: {
-          type: 'success',
-          indicator: 'success',
-          payload: { success: true },
-        },
-      }),
-    );
-  });
-
-  it('should emit events when task fails', async () => {
-    class FailingTaskType extends TaskType {
-      static type = 'failing';
-
-      async execute() {
-        throw new Error('Task failed');
-      }
-    }
-
-    taskManager.registerTaskType(FailingTaskType);
-
-    const taskStatusChangeFn = vi.fn();
-    taskManager.on('taskStatusChange', taskStatusChangeFn);
-
-    const task = taskManager.createTask({
-      type: 'failing',
-      params: {},
-    });
-
-    // 使用 try/catch 来处理预期的错误
-    try {
-      await task.run();
-    } catch (error) {
-      console.log('error', error);
-      // 错误已经被 TaskType 的 run 方法处理了，这里不需要做任何事
-    }
-
-    expect(taskStatusChangeFn).toHaveBeenCalledTimes(2); // 一次是 running 状态，一次是 failed 状态
-    expect(taskStatusChangeFn).toHaveBeenNthCalledWith(
-      1,
-      expect.objectContaining({
-        task,
-        status: {
-          type: 'running',
-          indicator: 'progress',
-        },
-      }),
-    );
-    expect(taskStatusChangeFn).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        task,
-        status: {
-          type: 'failed',
-          indicator: 'error',
-          errors: [{ message: 'Task failed' }],
-        },
-      }),
-    );
   });
 
   it('should handle task progress correctly', async () => {
@@ -253,7 +110,7 @@ describe('task manager', () => {
 
       async execute() {
         for (let i = 0; i < 10; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 10));
+          await sleep(10);
           this.reportProgress({
             total: 10,
             current: i + 1,
@@ -270,22 +127,20 @@ describe('task manager', () => {
     taskManager.registerTaskType(TestTaskType);
 
     const progressUpdates = [];
-    const statusChanges = [];
 
-    const task = await taskManager.createTask({
-      type: 'test',
-      params: {},
-    });
+    const task = await taskManager.createTask(
+      {
+        type: 'test',
+        params: {},
+        createdById: root.id,
+      },
+      { context: userContext },
+    );
 
     // 监听进度更新
-    task.on('progress', (progress) => {
-      progressUpdates.push(progress);
-    });
-
-    // 监听状态变化
-    task.on('statusChange', (status) => {
-      statusChanges.push(status);
-    });
+    task.onProgress = (record) => {
+      progressUpdates.push({ current: record.progressCurrent, total: record.progressTotal });
+    };
 
     // 运行任务
     await task.run();
@@ -301,21 +156,12 @@ describe('task manager', () => {
       current: 10,
     });
 
-    // 验证状态变化
-    expect(statusChanges.length).toBe(2); // pending -> running -> success
-    expect(statusChanges[0].type).toBe('running');
-    expect(statusChanges[1].type).toBe('success');
-    expect(statusChanges[1].payload).toEqual({
-      completed: true,
-      processedItems: 10,
-    });
-
     // 验证最终任务状态和进度
-    const finalTask = await app.agent().resource('asyncTasks').get({
-      filterByTk: task.taskId,
+    const finalTask = await rootAgent.resource('asyncTasks').get({
+      filterByTk: task.record.id,
     });
 
-    expect(finalTask.body.data.type).toBe('success');
+    expect(finalTask.body.data.status).toBe(TASK_STATUS.SUCCEEDED);
   });
 
   it('should cancel task correctly', async () => {
@@ -326,10 +172,10 @@ describe('task manager', () => {
 
       async execute() {
         for (let i = 0; i < 10; i++) {
-          if (this.isCancelled) {
+          if (this.isCanceled) {
             throw new CancelError();
           }
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await sleep(1000);
           this.reportProgress({
             total: 10,
             current: i + 1,
@@ -342,44 +188,137 @@ describe('task manager', () => {
 
     taskManager.registerTaskType(LongRunningTaskType);
 
-    const statusChanges: TaskStatus[] = [];
-    const task = await taskManager.createTask({
-      type: 'long-running',
-      params: {},
-    });
-
-    task.on('statusChange', (status) => {
-      statusChanges.push(status);
-    });
+    const task = await taskManager.createTask(
+      {
+        type: 'long-running',
+        params: {},
+      },
+      {
+        context: userContext,
+      },
+    );
 
     // 启动任务
-    const runPromise = task.run();
+    const runPromise = taskManager.runTask(task);
 
     // 等待一小段时间让任务开始执行
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    await sleep(150);
 
     // 取消任务
-    const cancelled = await taskManager.cancelTask(task.taskId);
-    expect(cancelled).toBe(true);
+    await taskManager.cancelTask(task.record.id);
+    expect(task.isCanceled).toBe(true);
 
     // 等待任务完成执行
     await runPromise;
     // 等待状态变更事件被处理
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
-    // 验证状态变化
-    expect(statusChanges.length).toBe(2); // running -> cancelled
-    expect(statusChanges[0].type).toBe('running');
-    expect(statusChanges[1].type).toBe('cancelled');
-
+    await sleep(100);
     // 验证任务状态
-    expect(task.status.type).toBe('cancelled');
+    expect(task.record.status).toBe(TASK_STATUS.CANCELED);
 
     // 验证任务是否正确中断
     expect(executionCompleted).toBe(false);
 
     // 验证无法取消不存在的任务
-    expect(await taskManager.cancelTask('non-existent-id')).toBe(false);
+    expect(await taskManager.cancelTask('c7296efb-8cc8-415d-a153-0ae8a79dd0d5')).toBeUndefined();
+  });
+
+  it('should have forth task waiting when concurrency is 3', async () => {
+    const taskControl = Array(4)
+      .fill(null)
+      .map(() => ({
+        ready: false,
+        resolve: null,
+      }));
+
+    const executionOrder = [];
+    const executionState = { count: 0, max: 0 };
+
+    class ControlledTaskType extends TaskType {
+      static type = 'controlled-test';
+
+      async execute() {
+        const { index } = this.record.params;
+
+        executionState.count++;
+        executionState.max = Math.max(executionState.max, executionState.count);
+        executionOrder.push(index);
+
+        await new Promise<void>((resolve) => {
+          taskControl[index].ready = true;
+          taskControl[index].resolve = resolve;
+        });
+
+        executionState.count--;
+        return { taskIndex: index };
+      }
+    }
+
+    taskManager.registerTaskType(ControlledTaskType);
+
+    for (let i = 0; i <= taskManager.concurrency; i++) {
+      const task = await taskManager.createTask(
+        {
+          type: 'controlled-test',
+          params: {
+            index: i,
+          },
+        },
+        {
+          useQueue: true,
+          context: userContext,
+        },
+      );
+    }
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (taskControl[0].ready && taskControl[1].ready && taskControl[2].ready) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionOrder.length).toBe(3);
+    expect(executionOrder.includes(0)).toBe(true);
+    expect(executionOrder.includes(1)).toBe(true);
+    expect(executionOrder.includes(2)).toBe(true);
+    expect(executionState.max).toBe(3);
+    expect(executionOrder.includes(3)).toBe(false);
+
+    const taskRecords = await TaskRepo.find();
+    expect(taskRecords.filter((item) => item.status === TASK_STATUS.RUNNING).length).toBe(3);
+    expect(taskRecords.filter((item) => item.status === TASK_STATUS.PENDING).length).toBe(1);
+
+    taskControl[0].resolve();
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (taskControl[3].ready) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionOrder.length).toBe(4);
+    expect(executionOrder.includes(3)).toBe(true);
+    expect(executionState.max).toBe(3);
+
+    taskControl[1].resolve();
+    taskControl[2].resolve();
+    taskControl[3].resolve();
+
+    await new Promise<void>((resolve) => {
+      const interval = setInterval(() => {
+        if (executionState.count === 0) {
+          clearInterval(interval);
+          resolve();
+        }
+      }, 50);
+    });
+
+    expect(executionState.count).toBe(0);
   });
 
   describe('task cancellation', () => {
@@ -388,8 +327,8 @@ describe('task manager', () => {
         static type = 'cancellable';
 
         async execute() {
-          while (!this.isCancelled) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
+          while (!this.isCanceled) {
+            await sleep(100);
           }
           throw new CancelError();
         }
@@ -403,25 +342,25 @@ describe('task manager', () => {
       });
 
       // 启动任务
-      const runPromise = task.run();
+      const runPromise = taskManager.runTask(task);
 
       // 等待任务开始执行
-      await new Promise((resolve) => setTimeout(resolve, 150));
+      await sleep(150);
 
       // 取消任务
-      const cancelled = await taskManager.cancelTask(task.taskId);
-      expect(cancelled).toBe(true);
+      await taskManager.cancelTask(task.record.id);
+      expect(task.isCanceled).toBe(true);
 
       // 等待任务结束和状态变更事件被处理
       await runPromise;
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await sleep(100);
 
       // 验证任务已从内存中移除
       const tasks = Array.from(taskManager['tasks'].values()) as TaskType[];
       expect(tasks.length).toBe(0);
 
       // 验证无法获取已删除任务的状态
-      await expect(taskManager.getTaskStatus(task.taskId)).rejects.toThrow();
+      await expect(taskManager.getTaskStatus(task.record.id)).rejects.toThrow();
     });
 
     it('should handle multiple cancellation attempts', async () => {
@@ -429,8 +368,8 @@ describe('task manager', () => {
         static type = 'multi-cancel';
 
         async execute() {
-          while (!this.isCancelled) {
-            await new Promise((resolve) => setTimeout(resolve, 100));
+          while (!this.isCanceled) {
+            await sleep(100);
           }
           throw new CancelError();
         }
@@ -444,19 +383,19 @@ describe('task manager', () => {
       });
 
       // 启动任务
-      const runPromise = task.run();
+      const runPromise = taskManager.runTask(task);
 
       // 第一次取消
-      const firstCancellation = await taskManager.cancelTask(task.taskId);
-      expect(firstCancellation).toBe(true);
+      await taskManager.cancelTask(task.record.id);
+      expect(task.isCanceled).toBe(true);
 
       // 等待任务结束和状态变更事件被处理
       await runPromise;
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await sleep(100);
 
       // 第二次取消应该返回 false，因为任务已经从内存中移除
-      const secondCancellation = await taskManager.cancelTask(task.taskId);
-      expect(secondCancellation).toBe(false);
+      await taskManager.cancelTask(task.record.id);
+      expect(task.isCanceled).toBe(true);
     });
   });
 });

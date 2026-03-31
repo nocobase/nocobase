@@ -14,6 +14,7 @@ export default class JobModel extends Model {
   declare id: number;
   declare status: number;
   declare result: any;
+  declare meta: any;
 
   declare createdAt: Date;
   declare updatedAt: Date;

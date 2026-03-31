@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database, { mockDatabase } from '../../index';
+import Database, { createMockDatabase } from '@nocobase/database';
 
 describe('multi filter target key', () => {
   let db: Database;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
   });
 
@@ -144,6 +144,78 @@ describe('multi filter target key', () => {
         name: 's1',
         classId: 1,
       },
+    });
+
+    expect(await Student.repository.count()).toBe(0);
+  });
+
+  it('should set multi filter target keys', async () => {
+    const Student = db.collection({
+      name: 'students',
+      autoGenId: false,
+      filterTargetKey: ['name', 'classId'],
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          primaryKey: true,
+        },
+        {
+          name: 'classId',
+          type: 'bigInt',
+          primaryKey: true,
+        },
+        {
+          name: 'age',
+          type: 'integer',
+        },
+      ],
+    });
+
+    await db.sync();
+
+    await Student.repository.create({
+      values: {
+        name: 's1',
+        classId: 1,
+        age: 10,
+      },
+    });
+
+    await Student.repository.create({
+      values: {
+        name: 's2',
+        classId: 1,
+        age: 11,
+      },
+    });
+
+    const count = await Student.repository.count({
+      filterByTk: [
+        {
+          name: 's1',
+          classId: 1,
+        },
+        {
+          name: 's2',
+          classId: 1,
+        },
+      ],
+    });
+
+    expect(count).toBe(2);
+
+    await Student.repository.destroy({
+      filterByTk: [
+        {
+          name: 's1',
+          classId: 1,
+        },
+        {
+          name: 's2',
+          classId: 1,
+        },
+      ],
     });
 
     expect(await Student.repository.count()).toBe(0);

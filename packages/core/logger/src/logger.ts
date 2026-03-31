@@ -10,8 +10,8 @@
 import winston, { LeveledLogMethod, Logger as WinstonLogger } from 'winston';
 import 'winston-daily-rotate-file';
 import { getLoggerLevel } from './config';
-import { getTransports } from './transports';
 import { consoleFormat } from './format';
+import { getTransports } from './transports';
 
 interface Logger extends WinstonLogger {
   trace: LeveledLogMethod;

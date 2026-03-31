@@ -212,6 +212,7 @@ export const AddCollectionAction = (props) => {
             showReverseFieldConfig: true,
             presetFieldsDisabled: currentTemplate?.presetFieldsDisabled,
             presetFieldsDisabledIncludes: currentTemplate?.presetFieldsDisabledIncludes,
+            template: currentTemplate?.name,
             ...scope,
           }}
         />

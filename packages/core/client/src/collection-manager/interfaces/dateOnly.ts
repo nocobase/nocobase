@@ -24,11 +24,13 @@ export class DateFieldInterface extends CollectionFieldInterface {
       'x-component': 'DatePicker',
       'x-component-props': {
         dateOnly: true,
+        showTime: false,
       },
     },
   };
   availableTypes = ['dateOnly'];
   hasDefaultValue = true;
+  validationType = 'date';
   properties = {
     ...defaultProps,
     ...dateTimeProps,

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { Alert, App, Breadcrumb, Button, Dropdown, Result, Spin, Switch, Tag, Tooltip } from 'antd';
@@ -28,11 +28,10 @@ import {
   useResourceContext,
   useCompile,
   css,
-  usePlugin,
+  useRequest,
 } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
 
-import PluginWorkflowClient from '.';
 import { CanvasContent } from './CanvasContent';
 import { ExecutionStatusColumn } from './components/ExecutionStatus';
 import { ExecutionLink } from './ExecutionLink';
@@ -40,12 +39,18 @@ import { CurrentWorkflowContext, FlowContext, useFlowContext } from './FlowConte
 import { lang, NAMESPACE } from './locale';
 import { executionSchema } from './schemas/executions';
 import useStyles from './style';
-import { linkNodes, getWorkflowDetailPath } from './utils';
+import { linkNodes, getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { Fieldset } from './components/Fieldset';
 import { useRefreshActionProps } from './hooks/useRefreshActionProps';
 import { useTrigger } from './triggers';
-import { ExecutionStatusOptionsMap } from './constants';
+import { ExecutionStatusOptions, ExecutionStatusOptionsMap } from './constants';
 import { HideVariableContext } from './variable';
+import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
+import { AddNodeContextProvider } from './AddNodeContext';
+import { RemoveNodeContextProvider } from './RemoveNodeContext';
+import { NodeDragContextProvider } from './NodeDragContext';
+import { NodeClipboardContextProvider } from './NodeClipboardContext';
+import { useResourceFilterActionProps } from './hooks/useResourceFilterActionProps';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -73,7 +78,7 @@ function ExecutedStatusMessage({ data, option }) {
     <Trans ns={NAMESPACE} values={{ statusText }}>
       {'Workflow executed, the result status is '}
       <Tag color={option.color}>{'{{statusText}}'}</Tag>
-      <Link to={`/admin/workflow/executions/${data.id}`}>View the execution</Link>
+      <Link to={getWorkflowExecutionsPath(data.id)}>View the execution</Link>
     </Trans>
   );
 }
@@ -96,6 +101,7 @@ function useExecuteConfirmAction() {
   const ctx = useActionContext();
   const navigate = useNavigateNoUpdate();
   const { message: messageApi } = App.useApp();
+  const executed = useWorkflowExecuted();
   return {
     async run() {
       const { autoRevision, ...values } = form.values;
@@ -107,14 +113,14 @@ function useExecuteConfirmAction() {
       } = await resource.execute({
         filterByTk: workflow.id,
         values,
-        ...(!workflow.executed && autoRevision ? { autoRevision: 1 } : {}),
+        ...(!executed && autoRevision ? { autoRevision: 1 } : {}),
       });
       form.reset();
       ctx.setFormValueChanged(false);
       ctx.setVisible(false);
       messageApi?.open(getExecutedStatusMessage(data.execution));
       if (data.newVersionId) {
-        navigate(`/admin/workflow/workflows/${data.newVersionId}`);
+        navigate(getWorkflowDetailPath(data.newVersionId));
       }
     },
   };
@@ -142,6 +148,7 @@ function ActionDisabledProvider({ children }) {
 
 function ExecuteActionButton() {
   const { workflow } = useFlowContext();
+  const executed = useWorkflowExecuted();
   const trigger = useTrigger();
 
   return (
@@ -202,7 +209,7 @@ function ExecuteActionButton() {
                     title: `{{t('Trigger variables', { ns: "${NAMESPACE}" })}}`,
                     properties: trigger.triggerFieldset,
                   },
-                  ...(workflow.executed
+                  ...(executed
                     ? {}
                     : {
                         autoRevision: {
@@ -247,14 +254,16 @@ function ExecuteActionButton() {
 }
 
 function WorkflowMenu() {
-  const { workflow, revisions } = useFlowContext();
+  const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { modal } = App.useApp();
   const app = useApp();
   const { resource } = useResourceContext();
+  const { refresh } = useResourceActionContext();
   const { message } = App.useApp();
+  const allExecuted = useWorkflowAnyExecuted();
 
   const onRevision = useCallback(async () => {
     const {
@@ -267,13 +276,15 @@ function WorkflowMenu() {
     });
     message.success(t('Operation succeeded'));
 
-    navigate(`/admin/workflow/workflows/${revision.id}`);
+    navigate(getWorkflowDetailPath(revision.id));
   }, [resource, workflow.id, workflow.key, message, t, navigate]);
 
   const onDelete = useCallback(async () => {
     const content = workflow.current
-      ? lang('Delete a main version will cause all other revisions to be deleted too.')
-      : '';
+      ? lang(
+          'This is a main version, delete it will cause the whole workflow to be deleted (including all other revisions).',
+        )
+      : lang('Current version will be deleted (without affecting other versions).');
     modal.confirm({
       title: t('Are you sure you want to delete it?'),
       content,
@@ -283,11 +294,30 @@ function WorkflowMenu() {
         });
         message.success(t('Operation succeeded'));
 
-        navigate(
-          workflow.current
-            ? app.pluginSettingsManager.getRoutePath('workflow')
-            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
-        );
+        const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
+        if (workflow.current) {
+          return navigate(workflowHomepage);
+        }
+
+        if (revisions.length) {
+          navigate(getWorkflowDetailPath(revisions.find((item) => item.current)?.id));
+        }
+        const res = await resource.list({
+          filter: {
+            key: workflow.key,
+            current: true,
+          },
+          fields: ['id'],
+          pageSize: 1,
+        });
+        if (res.status !== 200) {
+          return;
+        }
+        const [current] = res.data.data;
+        if (!current) {
+          return navigate(workflowHomepage);
+        }
+        return navigate(getWorkflowDetailPath(current.id));
       },
     });
   }, [workflow, modal, t, resource, message, navigate, app.pluginSettingsManager, revisions]);
@@ -295,6 +325,9 @@ function WorkflowMenu() {
   const onMenuCommand = useCallback(
     ({ key }) => {
       switch (key) {
+        case 'refresh':
+          refresh();
+          return;
         case 'history':
           setHistoryVisible(true);
           return;
@@ -306,12 +339,8 @@ function WorkflowMenu() {
           break;
       }
     },
-    [onDelete, onRevision],
+    [onDelete, onRevision, refresh],
   );
-
-  const revisionable =
-    workflow.executed &&
-    !revisions.find((item) => !item.executed && new Date(item.createdAt) > new Date(workflow.createdAt));
 
   return (
     <>
@@ -328,17 +357,22 @@ function WorkflowMenu() {
             },
             {
               role: 'button',
+              'aria-label': 'refresh',
+              key: 'refresh',
+              label: t('Refresh'),
+            },
+            {
+              role: 'button',
               'aria-label': 'history',
               key: 'history',
               label: lang('Execution history'),
-              disabled: !workflow.allExecuted,
+              disabled: !allExecuted,
             },
             {
               role: 'button',
               'aria-label': 'revision',
               key: 'revision',
               label: lang('Copy to new version'),
-              disabled: !revisionable,
             },
             {
               type: 'divider',
@@ -360,6 +394,8 @@ function WorkflowMenu() {
           }}
           scope={{
             useRefreshActionProps,
+            useResourceFilterActionProps,
+            ExecutionStatusOptions,
           }}
         />
       </ActionContextProvider>
@@ -367,23 +403,10 @@ function WorkflowMenu() {
   );
 }
 
-export function WorkflowCanvas() {
-  const navigate = useNavigate();
-  const app = useApp();
-  const { data, refresh, loading } = useResourceActionContext();
-  const { resource } = useResourceContext();
-  const { setTitle } = useDocumentTitle();
+function RevisionsDropdown() {
   const { styles } = useStyles();
-  const workflowPlugin = usePlugin(PluginWorkflowClient);
-
-  const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
-  linkNodes(nodes);
-
-  useEffect(() => {
-    const { title } = data?.data ?? {};
-    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
-  }, [data?.data, setTitle]);
-
+  const navigate = useNavigate();
+  const { workflow } = useFlowContext();
   const onSwitchVersion = useCallback(
     ({ key }) => {
       if (key != workflow.id) {
@@ -393,17 +416,107 @@ export function WorkflowCanvas() {
     [workflow.id, navigate],
   );
 
+  const { data, run } = useRequest<any>(
+    {
+      resource: 'workflows',
+      action: 'list',
+      params: {
+        filter: { key: workflow.key },
+        fields: ['id', 'createdAt', 'current', 'enabled', 'versionStats.executed'],
+        sort: '-id',
+      },
+    },
+    {
+      refreshDeps: [workflow.id],
+      manual: true,
+    },
+  );
+
+  const loadRevisions = useCallback(
+    (visible) => {
+      if (visible) {
+        run();
+      }
+    },
+    [run],
+  );
+
+  const revisions = data?.data ?? [];
+
+  return (
+    <Dropdown
+      className="workflow-versions"
+      trigger={['click']}
+      onOpenChange={loadRevisions}
+      menu={{
+        onClick: onSwitchVersion,
+        defaultSelectedKeys: [`${workflow.id}`],
+        className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
+        items: revisions
+          .sort((a, b) => b.id - a.id)
+          .map((item, index) => ({
+            role: 'button',
+            'aria-label': `version-${index}`,
+            key: `${item.id}`,
+            icon: item.current ? <RightOutlined /> : null,
+            className: cx({
+              executed: item.versionStats.executed > 0,
+              unexecuted: item.versionStats.executed == 0,
+              enabled: item.enabled,
+            }),
+            label: (
+              <>
+                <strong>{`#${item.id}`}</strong>
+                <time>{dayjs(item.createdAt).fromNow()}</time>
+              </>
+            ),
+          })),
+      }}
+    >
+      <Button type="text" aria-label="version">
+        <label>{lang('Version')}</label>
+        <span>{workflow?.id ? `#${workflow.id}` : null}</span>
+        <DownOutlined />
+      </Button>
+    </Dropdown>
+  );
+}
+
+export function WorkflowCanvas() {
+  const navigate = useNavigate();
+  const app = useApp();
+  const { data, refresh, loading } = useResourceActionContext();
+  const { resource } = useResourceContext();
+  const { setTitle } = useDocumentTitle();
+  const [enabled, setEnabled] = useState(data?.data?.enabled ?? false);
+  const [switchLoading, setSwitchLoading] = useState(false);
+
+  const { nodes = [], ...workflow } = data?.data ?? {};
+  linkNodes(nodes);
+
+  useEffect(() => {
+    const { title, enabled } = data?.data ?? {};
+    setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
+    setEnabled(enabled);
+  }, [data?.data, setTitle]);
+
   const onToggle = useCallback(
     async (value) => {
+      // setEnabled(value);
+      setSwitchLoading(true);
       await resource.update({
         filterByTk: workflow.id,
         values: {
           enabled: value,
         },
       });
-      refresh();
+      setSwitchLoading(false);
+      setEnabled(value);
+      // setTimeout(() => {
+      //   refresh();
+      // });
     },
-    [resource, workflow.id, refresh],
+    [resource, workflow.id],
   );
 
   if (!data?.data) {
@@ -421,7 +534,6 @@ export function WorkflowCanvas() {
     <FlowContext.Provider
       value={{
         workflow,
-        revisions,
         nodes,
         refresh,
       }}
@@ -448,50 +560,26 @@ export function WorkflowCanvas() {
         </header>
         <aside>
           <ExecuteActionButton />
-          <Dropdown
-            className="workflow-versions"
-            trigger={['click']}
-            menu={{
-              onClick: onSwitchVersion,
-              defaultSelectedKeys: [`${workflow.id}`],
-              className: cx(styles.dropdownClass, styles.workflowVersionDropdownClass),
-              items: revisions
-                .sort((a, b) => b.id - a.id)
-                .map((item, index) => ({
-                  role: 'button',
-                  'aria-label': `version-${index}`,
-                  key: `${item.id}`,
-                  icon: item.current ? <RightOutlined /> : null,
-                  className: cx({
-                    executed: item.executed,
-                    unexecuted: !item.executed,
-                    enabled: item.enabled,
-                  }),
-                  label: (
-                    <>
-                      <strong>{`#${item.id}`}</strong>
-                      <time>{dayjs(item.createdAt).fromNow()}</time>
-                    </>
-                  ),
-                })),
-            }}
-          >
-            <Button type="text" aria-label="version">
-              <label>{lang('Version')}</label>
-              <span>{workflow?.id ? `#${workflow.id}` : null}</span>
-              <DownOutlined />
-            </Button>
-          </Dropdown>
+          <RevisionsDropdown />
           <Switch
-            checked={workflow.enabled}
+            checked={enabled}
             onChange={onToggle}
             checkedChildren={lang('On')}
             unCheckedChildren={lang('Off')}
+            loading={switchLoading}
           />
           <WorkflowMenu />
         </aside>
       </div>
-      <CanvasContent entry={entry} />
+      <AddNodeContextProvider>
+        <RemoveNodeContextProvider>
+          <NodeDragContextProvider>
+            <NodeClipboardContextProvider>
+              <CanvasContent entry={entry} />
+            </NodeClipboardContextProvider>
+          </NodeDragContextProvider>
+        </RemoveNodeContextProvider>
+      </AddNodeContextProvider>
     </FlowContext.Provider>
   );
 }

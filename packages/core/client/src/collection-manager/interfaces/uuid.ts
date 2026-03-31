@@ -16,6 +16,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 0;
   title = '{{t("UUID")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier")}}';
   hidden = false;
   sortable = true;
   default = {
@@ -27,6 +28,8 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
     },
   };
   availableTypes = ['uid', 'uuid'];
+  validationType = 'string';
+  availableValidationOptions = ['uuid', 'pattern'];
   properties = {
     'uiSchema.title': {
       type: 'string',

@@ -7,11 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection } from '../collection';
-import { mockDatabase } from './index';
-import { UpdateGuard } from '../update-guard';
+import { Collection, createMockDatabase, Database } from '@nocobase/database';
 import lodash from 'lodash';
-import { Database } from '../database';
+import { UpdateGuard } from '../update-guard';
 
 describe('update-guard', () => {
   let db: Database;
@@ -21,7 +19,7 @@ describe('update-guard', () => {
   let Tag: Collection;
 
   beforeEach(async () => {
-    db = mockDatabase();
+    db = await createMockDatabase();
     await db.clean({ drop: true });
 
     User = db.collection({
@@ -425,7 +423,7 @@ describe('update-guard', () => {
 
 describe('One2One Association', () => {
   test('associationKeysToBeUpdate hasOne & BelongsTo', async () => {
-    const db = mockDatabase();
+    const db = await createMockDatabase();
     await db.clean({ drop: true });
     const Post = db.collection({
       name: 'posts',
@@ -461,5 +459,77 @@ describe('One2One Association', () => {
 
     guard.setAssociationKeysToBeUpdate(['user']);
     expect(guard.sanitize(values)).toEqual(values);
+  });
+});
+
+describe('Deep update nested associations', () => {
+  test('should create and update three-level nested associations when updateAssociationValues is specified', async () => {
+    const db = await createMockDatabase();
+    await db.clean({ drop: true });
+    db.collection({
+      name: 'foo',
+      fields: [
+        { type: 'uid', name: 'uid', unique: true },
+        { type: 'string', name: 'title', allowNull: false },
+        { type: 'string', name: 'bar_uid' },
+        { type: 'belongsTo', name: 'a', target: 'bar', foreignKey: 'bar_uid', targetKey: 'uid' },
+      ],
+    });
+
+    db.collection({
+      name: 'bar',
+      fields: [
+        { type: 'uid', name: 'uid', unique: true },
+        { type: 'string', name: 'bar_uid' },
+        { type: 'string', name: 'title', allowNull: false },
+        { type: 'belongsTo', name: 'b', target: 'baz', foreignKey: 'bar_uid', targetKey: 'uid' },
+      ],
+    });
+
+    db.collection({
+      name: 'baz',
+      fields: [
+        { type: 'uid', name: 'uid', unique: true },
+        { type: 'string', name: 'title', allowNull: false },
+      ],
+    });
+
+    await db.sync();
+
+    const foo = await db.getRepository('foo').create({
+      updateAssociationValues: ['a', 'a.b'],
+      values: {
+        title: 'foo',
+        uid: 'foo1',
+        a: {
+          title: 'a',
+          uid: 'a1',
+          b: {
+            title: 'b',
+            uid: 'b1',
+          },
+        },
+      },
+    });
+
+    expect(foo.toJSON()).toMatchObject({
+      id: 1,
+      title: 'foo',
+      uid: 'foo1',
+      bar_uid: 'a1',
+      a: {
+        id: 1,
+        title: 'a',
+        uid: 'a1',
+        bar_uid: 'b1',
+        b: {
+          id: 1,
+          title: 'b',
+          uid: 'b1',
+        },
+      },
+    });
+
+    await db.close();
   });
 });
