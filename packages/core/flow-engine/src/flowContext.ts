@@ -62,14 +62,8 @@ import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/
 export interface FlowEngineAppLike {
   getApiUrl?: (pathname?: string) => string;
   load?: () => Promise<any>;
-  dataSourceManager?: {
-    collectionFieldInterfaceManager?: {
-      getFieldInterface?: (name?: string) => any;
-    };
-  };
-  requirejs?: {
-    requirejs?: any;
-  };
+  dataSourceManager?: any;
+  requirejs?: any;
   [key: string]: any;
 }
 
