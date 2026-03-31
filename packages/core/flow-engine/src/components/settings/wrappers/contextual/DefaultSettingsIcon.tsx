@@ -242,10 +242,10 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, [onDropdownVisibleChange]);
   const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
     (triggerNode) => {
-      // 优先挂到工具栏自身容器，避免 modal / drawer 中鼠标从图标移动到菜单时先离开工具栏树。
+      // 优先复用外层 contextual toolbar 解析出的 popup host，避免弹窗内容区裁剪 dropdown。
       return (
-        getToolbarPopupContainer(triggerNode) ||
         getPopupContainer?.(triggerNode) ||
+        getToolbarPopupContainer(triggerNode) ||
         triggerNode?.parentElement ||
         document.body
       );

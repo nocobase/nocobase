@@ -416,7 +416,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('prefers the local toolbar container as popup host inside contextual toolbars', async () => {
+  it('prefers the provided popup host inside contextual toolbars', async () => {
     class TestFlowModel extends FlowModel {}
     const engine = new FlowEngine();
     const model = new TestFlowModel({ uid: 'm-toolbar-popup-host', flowEngine: engine });
@@ -460,8 +460,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
 
     const popupContainer = (globalThis as any).__lastDropdownGetPopupContainer?.(getByTestId('dropdown'));
-    expect(popupContainer).toBeTruthy();
-    expect(popupContainer?.className).toContain('nb-toolbar-container-icons');
+    expect(popupContainer).toBe(externalPopupRoot);
 
     unmount();
     externalPopupRoot.remove();
