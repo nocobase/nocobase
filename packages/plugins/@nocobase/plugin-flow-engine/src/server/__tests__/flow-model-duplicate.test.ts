@@ -7,22 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { MockServer, createMockServer } from '@nocobase/test';
 import FlowModelRepository from '../repository';
-import { createFlowEngineTestApp, destroyTestApp } from './test-utils';
 
 describe('flow-model duplicate', () => {
-  let app: any;
+  let app: MockServer;
   let repository: FlowModelRepository;
 
-  const insertModel = (model: Record<string, any>) => repository.insertModel(model as any);
-
   afterEach(async () => {
-    await destroyTestApp(app);
-    app = null;
+    await app.destroy();
   });
 
   beforeEach(async () => {
-    ({ app } = await createFlowEngineTestApp());
+    app = await createMockServer({
+      registerActions: true,
+      plugins: ['flow-engine'],
+    });
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
   });
 
@@ -48,7 +48,7 @@ describe('flow-model duplicate', () => {
       },
     } as any;
 
-    const saved = await insertModel(parent);
+    const saved = await repository.insertModel(parent);
     expect(saved.uid).toBe('parent');
     expect(saved.subModels.items.length).toBe(1);
     expect(saved.subModels.items[0].uid).toBe('root');
@@ -99,7 +99,7 @@ describe('flow-model duplicate', () => {
       },
     } as any;
 
-    await insertModel(tree);
+    await repository.insertModel(tree);
 
     const treePath = app.db.getCollection('flowModelTreePath').repository;
     await treePath.create({
@@ -152,7 +152,7 @@ describe('flow-model duplicate', () => {
       },
     } as any;
 
-    await insertModel(tree);
+    await repository.insertModel(tree);
 
     const duplicated = await repository.duplicate('dup-root');
     expect(duplicated).toBeTruthy();

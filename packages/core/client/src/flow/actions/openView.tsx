@@ -15,6 +15,7 @@ import _ from 'lodash';
 
 type DirtyAwareFlowModel = FlowModel & {
   getUserModifiedFields?: () => Set<string> | undefined;
+  resetUserModifiedFields?: () => void;
 };
 
 type BeforeCloseDirtyState = {
@@ -22,13 +23,14 @@ type BeforeCloseDirtyState = {
   formModelUids: string[];
 };
 
-function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
+function collectDirtyFormModelUids(model?: FlowModel | null, ignoredDirtyFormModelUids: string[] = []): string[] {
   if (!model) {
     return [];
   }
 
   const visited = new Set<string>();
   const dirtyModelUids: string[] = [];
+  const ignoredUidSet = ignoredDirtyFormModelUids.length ? new Set(ignoredDirtyFormModelUids) : null;
 
   const walk = (current?: DirtyAwareFlowModel | null) => {
     if (!current?.uid || visited.has(current.uid)) {
@@ -38,7 +40,7 @@ function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
     visited.add(current.uid);
 
     const userModifiedFields = current.getUserModifiedFields?.();
-    if (userModifiedFields?.size) {
+    if (userModifiedFields?.size && !ignoredUidSet?.has(current.uid)) {
       dirtyModelUids.push(current.uid);
     }
 
@@ -55,21 +57,62 @@ function collectDirtyFormModelUids(model?: FlowModel | null): string[] {
   return dirtyModelUids;
 }
 
-function createBeforeCloseDirtyState(model?: FlowModel | null): BeforeCloseDirtyState {
-  const formModelUids = collectDirtyFormModelUids(model);
+function createBeforeCloseDirtyState(
+  model?: FlowModel | null,
+  ignoredDirtyFormModelUids: string[] = [],
+): BeforeCloseDirtyState {
+  const formModelUids = collectDirtyFormModelUids(model, ignoredDirtyFormModelUids);
   return {
     hasDirtyForms: formModelUids.length > 0,
     formModelUids,
   };
 }
 
+function resetDirtyFormModels(model?: FlowModel | null, formModelUids: string[] = []) {
+  if (!model || !formModelUids.length) {
+    return;
+  }
+
+  const visited = new Set<string>();
+  const targetUids = new Set(formModelUids);
+
+  const walk = (current?: DirtyAwareFlowModel | null) => {
+    if (!current?.uid || visited.has(current.uid)) {
+      return;
+    }
+
+    visited.add(current.uid);
+    if (targetUids.has(current.uid)) {
+      current.resetUserModifiedFields?.();
+    }
+
+    Object.values(current.subModels || {}).forEach((subModelValue) => {
+      _.castArray(subModelValue).forEach((subModel) => {
+        if (subModel && typeof subModel === 'object') {
+          walk(subModel as DirtyAwareFlowModel);
+        }
+      });
+    });
+  };
+
+  walk(model as DirtyAwareFlowModel);
+}
+
 function createViewBeforeCloseHandler(pageModel: FlowModel) {
-  return async ({ result, force }: { result?: any; force?: boolean }) => {
+  return async ({
+    result,
+    force,
+    ignoredDirtyFormModelUids,
+  }: {
+    result?: any;
+    force?: boolean;
+    ignoredDirtyFormModelUids?: string[];
+  }) => {
     if (force) {
       return true;
     }
 
-    const dirty = createBeforeCloseDirtyState(pageModel);
+    const dirty = createBeforeCloseDirtyState(pageModel, ignoredDirtyFormModelUids);
 
     let prevented = false;
     const dispatchResults = await pageModel.dispatchEvent('close', {
@@ -87,7 +130,13 @@ function createViewBeforeCloseHandler(pageModel: FlowModel) {
       (dispatchResults as any)?.__abortedByExitAll === true ||
       (Array.isArray(dispatchResults) ? dispatchResults.some((item) => item instanceof FlowExitAllException) : false);
 
-    return !prevented && !exited;
+    const shouldClose = !prevented && !exited;
+
+    if (shouldClose && dirty.hasDirtyForms) {
+      resetDirtyFormModels(pageModel, dirty.formModelUids);
+    }
+
+    return shouldClose;
   };
 }
 
