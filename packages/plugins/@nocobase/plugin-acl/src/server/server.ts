@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context } from '@nocobase/actions';
+import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Collection, Model, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
