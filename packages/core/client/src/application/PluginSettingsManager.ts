@@ -8,7 +8,7 @@
  */
 
 import { PluginSettingsManager as BasePluginSettingsManager, type PluginSettingOptions } from '@nocobase/client-v2';
-import { createElement } from 'react';
+import { createElement, type ComponentType, type ReactNode } from 'react';
 
 import { Icon } from '../icon';
 import type { Application } from './Application';
@@ -17,7 +17,7 @@ export { ADMIN_SETTINGS_KEY, ADMIN_SETTINGS_PATH, SNIPPET_PREFIX } from '@nocoba
 export type { PluginSettingOptions, PluginSettingsPageType } from '@nocobase/client-v2';
 
 export class PluginSettingsManager extends BasePluginSettingsManager<Application> {
-  protected renderIcon(icon: PluginSettingOptions['icon']) {
-    return typeof icon === 'string' ? createElement(Icon, { type: icon }) : icon;
+  protected renderIcon(icon: PluginSettingOptions['icon']): ReactNode {
+    return typeof icon === 'string' ? createElement(Icon as ComponentType<{ type: string }>, { type: icon }) : icon;
   }
 }
