@@ -266,7 +266,10 @@ export const openView = defineAction({
     };
     const mergedFilterByTk = (() => {
       const value = pickWithDefault('filterByTk');
-      return Array.isArray(ctx.collection?.filterTargetKey) &&
+      // SQL collection keeps single-key filterTargetKey as an array on the server side,
+      // so it still expects filterByTk to be passed as an object like { ID: 1 }.
+      return ctx.collection?.template === 'sql' &&
+        Array.isArray(ctx.collection?.filterTargetKey) &&
         ctx.collection.filterTargetKey.length === 1 &&
         value != null &&
         typeof value !== 'object'
