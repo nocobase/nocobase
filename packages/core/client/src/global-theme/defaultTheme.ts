@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { defaultTheme as default } from '../flow/theme';
+export { defaultTheme as default } from '@nocobase/client-v2';

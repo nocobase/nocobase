@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 import type { Plugin } from './Plugin';
 import { getPlugins } from './utils/remotePlugins';
 
 export type PluginOptions<T = any> = { name?: string; packageName?: string; config?: T };
-export type PluginClass<Opts = any, TApp extends Application = Application> = new (
-  options: Opts,
+export type PluginClass<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> = new (
+  options: PluginOptions<Opts>,
   app: TApp,
-) => Plugin<Opts, TApp>;
-export type PluginType<Opts = any, TApp extends Application = Application> =
+) => Plugin<PluginOptions<Opts>, TApp>;
+export type PluginType<Opts = any, TApp extends BaseApplication<any> = BaseApplication<any>> =
   | PluginClass<Opts, TApp>
   | [PluginClass<Opts, TApp>, PluginOptions<Opts>];
 export type PluginData = {
@@ -27,7 +27,7 @@ export type PluginData = {
   type: 'local' | 'upload' | 'npm';
 };
 
-export class PluginManager<TApp extends Application = Application> {
+export class PluginManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected pluginInstances: Map<PluginClass<any, TApp>, Plugin<any, TApp>> = new Map();
   protected pluginsAliases: Record<string, Plugin<any, TApp>> = {};
   private initPlugins: Promise<void>;
@@ -102,7 +102,7 @@ export class PluginManager<TApp extends Application = Application> {
     return this.pluginInstances.get(nameOrPluginClass.default || nameOrPluginClass);
   }
 
-  protected getInstance<T>(plugin: PluginClass<T, TApp>, opts?: T) {
+  protected getInstance<T>(plugin: PluginClass<T, TApp>, opts?: PluginOptions<T>) {
     return new plugin(opts, this.app);
   }
 

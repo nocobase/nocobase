@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../flow/theme';
-export { default as compatOldTheme } from '../flow/theme/compatOldTheme';
-export { default as AntdAppProvider } from './AntdAppProvider';
+export {
+  GlobalThemeProvider,
+  useGlobalTheme,
+  compatOldTheme,
+  addCustomAlgorithmToTheme,
+  customAlgorithm,
+  defaultTheme,
+  AntdAppProvider,
+} from '@nocobase/client-v2';
+export type { CustomToken, ThemeConfig } from '@nocobase/client-v2';

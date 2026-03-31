@@ -11,7 +11,7 @@ import { set } from 'lodash';
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
-import type { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 import type { RouteType } from './RouterManager';
 
 export const ADMIN_SETTINGS_KEY = 'admin.settings.';
@@ -54,7 +54,7 @@ export interface PluginSettingsPageType {
   [index: string]: any;
 }
 
-export class PluginSettingsManager<TApp extends Application = Application> {
+export class PluginSettingsManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected settings: Record<string, PluginSettingOptions> = {};
   protected aclSnippets: string[] = [];
   public app: TApp;

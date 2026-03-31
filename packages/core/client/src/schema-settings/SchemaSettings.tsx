@@ -87,7 +87,7 @@ import { useDataSourceManager } from '../data-source/data-source/DataSourceManag
 import { useDataSourceKey } from '../data-source/data-source/DataSourceProvider';
 import { useFilterBlock } from '../filter-provider/FilterProvider';
 import { FlagProvider, useFlag } from '../flag-provider';
-import { useGlobalTheme } from '../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { useCollectMenuItem, useCollectMenuItems, useMenuItem } from '../hooks/useMenuItem';
 import {
   VariablePopupRecordProvider,

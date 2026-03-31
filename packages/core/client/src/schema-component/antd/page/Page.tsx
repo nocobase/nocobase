@@ -32,7 +32,7 @@ import {
 } from '../../../application/CustomRouterContextProvider';
 import { AppNotFound } from '../../../common/AppNotFound';
 import { useDocumentTitle } from '../../../document-title';
-import { useGlobalTheme } from '../../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { Icon } from '../../../icon';

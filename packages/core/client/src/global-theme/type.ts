@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type { CustomToken, ThemeConfig } from '../flow/theme';
+export type { CustomToken, ThemeConfig } from '@nocobase/client-v2';

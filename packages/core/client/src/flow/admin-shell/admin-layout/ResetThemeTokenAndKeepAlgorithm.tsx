@@ -9,7 +9,7 @@
 
 import { ConfigProvider } from 'antd';
 import React, { FC } from 'react';
-import { useGlobalTheme } from '../../theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 
 /**
  * 重置主题，避免被 ProLayout 的主题影响，同时保留当前算法配置。

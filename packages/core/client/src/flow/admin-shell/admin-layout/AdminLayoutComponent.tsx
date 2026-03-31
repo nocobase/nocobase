@@ -33,7 +33,7 @@ import { ADMIN_LAYOUT_MODEL_UID } from './constants';
 import { ResetThemeTokenAndKeepAlgorithm } from './ResetThemeTokenAndKeepAlgorithm';
 import { PinnedPluginListLite } from './PinnedPluginListLite';
 import { useApplications } from './useApplications';
-import { useGlobalTheme, type CustomToken } from '../../theme';
+import { useGlobalTheme, type CustomToken } from '@nocobase/client-v2';
 import { useSystemSettings } from '../../system-settings';
 import { NocoBaseDesktopRouteType, type NocoBaseDesktopRoute } from '@nocobase/client-v2/flow-compat';
 

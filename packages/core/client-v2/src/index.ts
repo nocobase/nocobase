@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export * from './BaseApplication';
 export * from './Application';
 export * from './components';
 export * from './context';
+export * from './theme';
 export * from './MockApplication';
 export * from './Plugin';
 export * from './WebSocketClient';
 export * from './RouterManager';
 export * from './PluginManager';
 export * from './PluginSettingsManager';
+export { default as AntdAppProvider } from './theme/AntdAppProvider';

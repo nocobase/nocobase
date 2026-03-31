@@ -9,7 +9,7 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { useEffect } from 'react';
-import { defaultTheme } from '../global-theme';
+import { defaultTheme } from '@nocobase/client-v2';
 import { useToken } from '../style';
 
 export const CSSVariableProvider = ({ children }) => {
@@ -87,13 +87,13 @@ export const CSSVariableProvider = ({ children }) => {
     token.paddingContentVerticalSM,
     token.sizeXXL,
     token.colorTextHeaderMenu,
-    // 侧边菜单栏相关依赖
     token.colorBgSider,
     token.colorBgSiderMenuHover,
     token.colorBgSiderMenuActive,
     token.colorTextSiderMenu,
     token.colorTextSiderMenuHover,
     token.colorTextSiderMenuActive,
+    token.colorBgHeaderMenuActive,
   ]);
 
   return children;

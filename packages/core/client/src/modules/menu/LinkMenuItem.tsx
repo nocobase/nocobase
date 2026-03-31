@@ -22,7 +22,7 @@ import {
   DataSourceManagerProvider,
   useDataSourceManager,
 } from '../../data-source/data-source/DataSourceManagerProvider';
-import { useGlobalTheme } from '../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,

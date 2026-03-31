@@ -14,7 +14,7 @@ import React, { useCallback, useContext } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client/hooks/useAPIClient';
 import { SchemaInitializerItem } from '../../application';
-import { useGlobalTheme } from '../../global-theme';
+import { useGlobalTheme } from '@nocobase/client-v2';
 import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,

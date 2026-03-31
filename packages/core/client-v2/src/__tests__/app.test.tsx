@@ -8,6 +8,7 @@
  */
 
 import { Application, createMockClient, Plugin } from '@nocobase/client-v2';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { act } from 'react-dom/test-utils';
@@ -55,6 +56,31 @@ describe('app', () => {
     const app = createMockClient({ plugins: [PluginHelloClient] });
     await renderApp(app);
     expect(screen.getByText('Hello Provider')).toBeInTheDocument();
+  });
+
+  it('should expose notification and theme globals through flow context', async () => {
+    const GlobalsProbe = () => {
+      const ctx = useFlowEngineContext();
+      return (
+        <div>
+          <div>{`notification:${Boolean(ctx.notification?.open)}`}</div>
+          <div>{`themeToken:${Boolean(ctx.themeToken?.colorBgHeader)}`}</div>
+          <div>{`antdConfig:${Boolean(ctx.antdConfig?.theme)}`}</div>
+        </div>
+      );
+    };
+
+    class PluginHelloClient extends Plugin {
+      async load() {
+        this.router.add('root', { path: '/', Component: GlobalsProbe });
+      }
+    }
+
+    const app = createMockClient({ plugins: [PluginHelloClient] });
+    await renderApp(app);
+    expect(screen.getByText('notification:true')).toBeInTheDocument();
+    expect(screen.getByText('themeToken:true')).toBeInTheDocument();
+    expect(screen.getByText('antdConfig:true')).toBeInTheDocument();
   });
 
   it('should support router functionality', async () => {

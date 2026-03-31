@@ -13,16 +13,14 @@ export interface CollectionFieldOptions {
 }
 
 export interface DataSourceManager {
-  collectionFieldInterfaceManager: {
+  collectionFieldInterfaceManager?: {
     getFieldInterface: (name: string) => { titleUsable?: boolean } | undefined;
   };
-  getDataSource?: (key?: string) => {
-    reload?: () => Promise<any> | any;
-  } | null;
+  getDataSource?: (key?: string) => any;
 }
 
 export const DEFAULT_DATA_SOURCE_KEY = 'main';
 
 export const isTitleField = (dm: DataSourceManager, field: CollectionFieldOptions) => {
-  return dm.collectionFieldInterfaceManager.getFieldInterface(field.interface)?.titleUsable;
+  return dm.collectionFieldInterfaceManager?.getFieldInterface(field.interface)?.titleUsable;
 };

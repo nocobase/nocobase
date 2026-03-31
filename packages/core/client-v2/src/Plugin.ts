@@ -8,9 +8,9 @@
  */
 
 import type { TFuncKey, TOptions } from 'i18next';
-import type { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 
-export class Plugin<T = any, TApp extends Application = Application> {
+export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication<any>> {
   constructor(
     public options: T,
     protected app: TApp,

@@ -8,7 +8,7 @@
  */
 
 import { FlowModel, IFlowModelRepository } from '@nocobase/flow-engine';
-import type { Application } from '@nocobase/client-v2';
+import type { BaseApplication } from '@nocobase/client-v2';
 import _ from 'lodash';
 
 export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> {
@@ -146,7 +146,7 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
 }
 
 export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
-  constructor(private app: Application) {}
+  constructor(private app: BaseApplication) {}
 
   private inFlightFindOne = new Map<string, Promise<any>>();
 

@@ -8,7 +8,8 @@
  */
 
 import { FlowModel } from '@nocobase/flow-engine';
-import { IconPicker, Plugin } from '@nocobase/client-v2/flow-compat';
+import { IconPicker } from '@nocobase/client-v2/flow-compat';
+import { Plugin } from '../application/Plugin';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';

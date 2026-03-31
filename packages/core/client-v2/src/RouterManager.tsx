@@ -22,7 +22,7 @@ import {
   RouterProvider,
   useRouteError,
 } from 'react-router-dom';
-import { Application } from './Application';
+import type { BaseApplication } from './BaseApplication';
 import { BlankComponent, RouterContextCleaner } from './components';
 import { RouterBridge } from './components/RouterBridge';
 
@@ -51,7 +51,7 @@ export interface RouteType extends Omit<RouteObject, 'children' | 'Component'> {
 }
 export type RenderComponentType = (Component: ComponentTypeAndString, props?: any) => React.ReactNode;
 
-export class RouterManager<TApp extends Application = Application> {
+export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<any>> {
   protected routes: Record<string, RouteType> = {};
   protected options: RouterOptions;
   public app: TApp;
@@ -280,6 +280,6 @@ export class RouterManager<TApp extends Application = Application> {
   }
 }
 
-export function createRouterManager(options?: RouterOptions, app?: Application) {
+export function createRouterManager(options?: RouterOptions, app?: BaseApplication<any>) {
   return new RouterManager(options, app);
 }
