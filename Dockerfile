@@ -68,5 +68,6 @@ RUN mkdir -p /app/nocobase/storage/uploads/ && \
   echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
 
 CMD ["/app/docker-entrypoint.sh"]
