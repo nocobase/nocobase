@@ -32,6 +32,9 @@ RUN yarn config set registry $VERDACCIO_URL && \
   tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
   rm -rf /app/my-nocobase-app
 
+FROM scratch as app-artifact
+COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
+
 FROM node:20-bookworm-slim as runtime
 ARG COMMIT_HASH
 
@@ -60,7 +63,9 @@ COPY dist.tar.gz /app/nocobase-docs.tar.gz
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
+RUN mkdir -p /app/nocobase/storage/uploads/ && \
+  echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
+  echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
 
