@@ -66,6 +66,10 @@ export class Plugin<T = any, TApp extends BaseApplication<any> = BaseApplication
     return this.app.dataSourceManager;
   }
 
+  get ai() {
+    return this.app.aiManager;
+  }
+
   async afterAdd() {}
 
   async beforeLoad() {}
