@@ -22,11 +22,11 @@ import { CSSVariableProvider } from '../css-variable';
 import AntdAppProvider from '../global-theme/AntdAppProvider';
 import { GlobalThemeProvider } from '../flow/theme';
 import { i18n } from '../i18n';
-import { WebSocketClient, type WebSocketClientOptions } from '@nocobase/client-v2';
+import { ApplicationModel, WebSocketClient, type WebSocketClientOptions } from '@nocobase/client-v2';
 import { PluginManager, PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
-import { AppComponent, BlankComponent, defaultAppComponents } from './components';
+import { BlankComponent, defaultAppComponents } from './components';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
@@ -46,7 +46,6 @@ import {
   FlowEngine,
   FlowEngineContext,
   FlowEngineGlobalsContextProvider,
-  FlowModel,
   FlowModelRenderer,
   FlowEngineProvider,
 } from '@nocobase/flow-engine';
@@ -589,12 +588,7 @@ export class Application {
   }
 
   getRootComponent() {
-    const Root: FC<{ children?: React.ReactNode }> = ({ children }) => {
-      // 第一阶段仅切换根渲染宿主，保持 AppComponent 现有语义不变。
-      React.useLayoutEffect(() => {
-        this.model.setProps({ children });
-      }, [children]);
-
+    const Root: FC<{ children?: React.ReactNode }> = () => {
       return (
         <FlowEngineProvider engine={this.flowEngine}>
           <FlowModelRenderer model={this.model} fallback={this.renderComponent('AppSpin', { app: this })} />
@@ -698,12 +692,5 @@ export class Application {
 
   setAppsComponent({ Component }: { Component: ComponentType }) {
     this.apps.Component = Component;
-  }
-}
-
-class ApplicationModel extends FlowModel {
-  render() {
-    const app = this.context.app as Application;
-    return <AppComponent app={app}>{this.props.children}</AppComponent>;
   }
 }

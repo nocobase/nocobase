@@ -480,7 +480,7 @@ export class Application {
   }
 }
 
-class ApplicationModel extends FlowModel {
+export class ApplicationModel extends FlowModel {
   #providers: ComponentType;
   #router: any;
 
