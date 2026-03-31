@@ -9,7 +9,7 @@
 
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import React from 'react';
-import { AdminDynamicPage, MobileLayoutProvider } from '../../../admin-shell';
+import { AdminDynamicPage } from '../../../admin-shell';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { AdminLayoutMenuItemModel, getAdminLayoutModel } from '../../../flow/admin-shell/admin-layout';
@@ -60,6 +60,5 @@ export class AdminLayoutPlugin extends Plugin {
     });
     this.app.schemaSettingsManager.add(userCenterSettings);
     this.app.addComponents({ AdminLayout, AdminDynamicPage });
-    this.app.use(MobileLayoutProvider);
   }
 }

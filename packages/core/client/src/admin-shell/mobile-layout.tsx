@@ -7,8 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { FC, useContext, useMemo, useState } from 'react';
+import { useFlowEngine } from '@nocobase/flow-engine';
+import React, { FC, useMemo, useState } from 'react';
+import { ADMIN_LAYOUT_MODEL_UID } from '../flow/admin-shell/admin-layout';
 
+/**
+ * @deprecated
+ */
 const IsMobileLayoutContext = React.createContext<{
   isMobileLayout: boolean;
   setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
@@ -17,6 +22,9 @@ const IsMobileLayoutContext = React.createContext<{
   setIsMobileLayout: () => {},
 });
 
+/**
+ * @deprecated
+ */
 export const MobileLayoutProvider: FC = (props) => {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
@@ -25,6 +33,10 @@ export const MobileLayoutProvider: FC = (props) => {
 };
 
 export const useMobileLayout = () => {
-  const { isMobileLayout, setIsMobileLayout } = useContext(IsMobileLayoutContext);
-  return { isMobileLayout, setIsMobileLayout };
+  const flowEngine = useFlowEngine();
+  const adminLayoutModel = flowEngine.getModel<any>(ADMIN_LAYOUT_MODEL_UID);
+  return {
+    isMobileLayout: adminLayoutModel.isMobileLayout,
+    setIsMobileLayout: adminLayoutModel.setIsMobileLayout.bind(adminLayoutModel),
+  };
 };
