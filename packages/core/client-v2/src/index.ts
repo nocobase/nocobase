@@ -9,6 +9,8 @@
 
 export * from './BaseApplication';
 export * from './Application';
+export * from './HeaderActionsManager';
+export * from './ai';
 export * from './components';
 export * from './context';
 export * from './theme';

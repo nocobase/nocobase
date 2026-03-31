@@ -9,10 +9,12 @@
 
 import { define, observable } from '@formily/reactive';
 import {
+  AIManager,
   BaseApplication,
   type BaseApplicationOptions,
   type ComponentAndProps,
   type DevDynamicImport,
+  HeaderActionsManager,
   type WebSocketClientOptions,
 } from '@nocobase/client-v2';
 import { type FlowEngineContext } from '@nocobase/flow-engine';
@@ -36,7 +38,6 @@ import { i18n } from '../i18n';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
 import { defaultAppComponents } from './components';
-import { HeaderActionsManager } from './HeaderActionsManager';
 import { PluginManager, type PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
@@ -45,7 +46,6 @@ import { SchemaInitializer, SchemaInitializerManager } from './schema-initialize
 import * as schemaInitializerComponents from './schema-initializer/components';
 import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
 
-import { AIManager } from '../flow/ai';
 import { getOperators } from './globalOperators';
 import { useAclSnippets } from './hooks/useAclSnippets';
 

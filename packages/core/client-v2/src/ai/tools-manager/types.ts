@@ -9,7 +9,7 @@
 
 import type { ComponentType } from 'react';
 import { Registry } from '@nocobase/utils/client';
-import type { Application } from '../../../application';
+import type { BaseApplication } from '../../BaseApplication';
 
 export interface ToolsManager extends ToolsRegistration {
   listTools(filter?: ToolsFilter): Promise<ToolsEntry[]>;
@@ -38,7 +38,7 @@ export type ToolsOptions = {
       }>;
     };
   };
-  invoke?: (ctx: Application, params: any) => any | Promise<any>;
+  invoke?: (ctx: BaseApplication<any>, params: any) => any | Promise<any>;
   useHooks?: () => ToolsOptions;
 };
 

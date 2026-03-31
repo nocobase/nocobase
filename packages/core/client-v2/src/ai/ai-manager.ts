@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { Application } from '../../application';
+import type { BaseApplication } from '../BaseApplication';
 import { DefaultToolsManager, ToolsManager } from './tools-manager';
 
 export class AIManager {
   toolsManager: ToolsManager;
 
-  constructor(protected readonly app: Application) {
+  constructor(protected readonly app: BaseApplication<any>) {
     this.toolsManager = new DefaultToolsManager(this.app);
   }
 }

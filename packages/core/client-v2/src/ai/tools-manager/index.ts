@@ -8,12 +8,12 @@
  */
 
 import { Registry } from '@nocobase/utils/client';
+import type { BaseApplication } from '../../BaseApplication';
 import { BackendTools, FrontendTools, ToolsEntry, ToolsFilter, ToolsManager, ToolsOptions } from './types';
-import type { Application } from '../../../application';
 
 export class DefaultToolsManager implements ToolsManager {
   constructor(
-    protected readonly app: Application,
+    protected readonly app: BaseApplication<any>,
     private readonly tools = new Registry<FrontendTools>(),
   ) {}
 

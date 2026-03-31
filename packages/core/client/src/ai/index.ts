@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../flow/ai';
+export { AIManager } from '@nocobase/client-v2';
