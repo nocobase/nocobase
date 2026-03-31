@@ -13,6 +13,14 @@ import { ADMIN_LAYOUT_MODEL_UID } from '.';
 export const useMobileLayout = () => {
   const flowEngine = useFlowEngine();
   const adminLayoutModel = flowEngine.getModel<any>(ADMIN_LAYOUT_MODEL_UID);
+
+  if (!adminLayoutModel) {
+    return {
+      isMobileLayout: false,
+      setIsMobileLayout: () => {},
+    };
+  }
+
   return {
     isMobileLayout: adminLayoutModel.isMobileLayout,
     setIsMobileLayout: adminLayoutModel.setIsMobileLayout.bind(adminLayoutModel),
