@@ -86,15 +86,6 @@ class EditFormModel extends FlowModel {}
 
 const TEST_TIMEOUT = 10_000;
 
-const expectTargetModel = (model: ReferenceBlockModel): FlowModel => {
-  const target = (model as any)._targetModel as FlowModel | undefined;
-  expect(target).toBeTruthy();
-  if (!target) {
-    throw new Error('Expected reference block target model to be initialized');
-  }
-  return target;
-};
-
 describe('ReferenceBlockModel', () => {
   let engine: FlowEngine;
   let gridModel: FlowModel;
@@ -327,83 +318,6 @@ describe('ReferenceBlockModel', () => {
         expect(store['target-block-uid'].parentId).toBe('grid-uid');
         expect(lastSavedSnapshot['reference-block-uid']?.subModels?.target).toBeUndefined();
         expect(lastSavedSnapshot['target-block-uid']).toBeUndefined();
-      },
-      TEST_TIMEOUT,
-    );
-
-    it(
-      'should hydrate reference target before saving template references in preset settings flow',
-      async () => {
-        const templateGet = vi.fn(async () => ({
-          name: 'Template One',
-          description: 'Template description',
-          targetUid: 'target-block-uid',
-          dataSourceKey: 'main',
-          collectionName: 'users',
-          associationName: 'users.roles',
-        }));
-        (engine.context.api as any).resource = vi.fn((name: string) => {
-          if (name !== 'flowModelTemplates') {
-            throw new Error(`Unexpected resource ${name}`);
-          }
-          return { get: templateGet };
-        });
-
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-save-hook',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-          stepParams: {
-            referenceSettings: {
-              useTemplate: {
-                templateUid: 'tpl-1',
-                mode: 'reference',
-              },
-              target: {
-                mode: 'reference',
-              },
-            },
-          },
-        }) as ReferenceBlockModel;
-
-        const useTemplateStep = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings')?.steps
-          ?.useTemplate;
-        await useTemplateStep?.beforeParamsSave?.(
-          {
-            api: engine.context.api,
-            engine,
-            model: referenceBlockModel,
-          },
-          {
-            templateUid: 'tpl-1',
-            mode: 'reference',
-          },
-        );
-        await referenceBlockModel.saveStepParams();
-
-        expect(templateGet).toHaveBeenCalledWith({ filterByTk: 'tpl-1' });
-        expect(referenceBlockModel.getStepParams('referenceSettings', 'useTemplate')).toMatchObject({
-          templateUid: 'tpl-1',
-          templateName: 'Template One',
-          templateDescription: 'Template description',
-          targetUid: 'target-block-uid',
-          mode: 'reference',
-        });
-        expect(referenceBlockModel.getStepParams('referenceSettings', 'target')).toMatchObject({
-          targetUid: 'target-block-uid',
-          mode: 'reference',
-        });
-        expect(referenceBlockModel.getStepParams('resourceSettings', 'init')).toMatchObject({
-          dataSourceKey: 'main',
-          collectionName: 'users',
-          associationName: 'users.roles',
-        });
-        expect(lastSavedSnapshot['reference-block-save-hook']?.stepParams?.referenceSettings?.target).toMatchObject({
-          targetUid: 'target-block-uid',
-          mode: 'reference',
-        });
       },
       TEST_TIMEOUT,
     );
@@ -798,139 +712,6 @@ describe('ReferenceBlockModel', () => {
       },
       TEST_TIMEOUT,
     );
-
-    it(
-      'copy mutate should include parent use in saveParent upsert payload',
-      async () => {
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-mutate-uid',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-        }) as ReferenceBlockModel;
-        gridModel.addSubModel('items', referenceBlockModel);
-
-        const repo = engine.modelRepository as any;
-        repo.mutate = vi.fn(async (payload: any) => {
-          const saveParentOp = payload?.ops?.find((op: any) => op?.opId === 'saveParent');
-          expect(saveParentOp?.params?.values).toMatchObject({
-            uid: 'grid-uid',
-            use: 'GridModel',
-          });
-          throw new Error('STOP');
-        });
-
-        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
-        const step: any = flow?.steps?.target;
-        expect(typeof step?.beforeParamsSave).toBe('function');
-
-        await expect(
-          step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
-            targetUid: 'details-origin-uid',
-            mode: 'copy',
-          }),
-        ).rejects.toThrow('STOP');
-        expect(repo.mutate).toHaveBeenCalledTimes(1);
-      },
-      TEST_TIMEOUT,
-    );
-
-    it(
-      'copy mutate should preserve rowOrder, persist template fallback patch, and emit onSubModelDestroyed',
-      async () => {
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-mutate-uid',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-        }) as ReferenceBlockModel;
-        gridModel.addSubModel('items', referenceBlockModel);
-
-        const rows = {
-          'row-1': [['target-block-uid', 'reference-block-mutate-uid']],
-        };
-        const sizes = { 'row-1': [24] };
-        const rowOrder = ['row-1'];
-        gridModel.setStepParams('gridSettings', 'grid', { rows, sizes, rowOrder });
-        gridModel.setProps({ rows, sizes, rowOrder });
-
-        referenceBlockModel.context.defineProperty('view', {
-          value: { inputArgs: { dataSourceKey: 'main', collectionName: 'B', filterByTk: 1 } },
-        });
-
-        const destroyedSpy = vi.fn();
-        gridModel.emitter.on('onSubModelDestroyed', destroyedSpy);
-
-        const repo = engine.modelRepository as any;
-        let duplicatedUid = '';
-        repo.mutate = vi.fn(async (payload: any) => {
-          duplicatedUid = String(payload?.ops?.[0]?.params?.targetUid || '').trim();
-          const saveParentOp = payload?.ops?.find((op: any) => op?.opId === 'saveParent');
-          expect(saveParentOp?.params?.values?.stepParams?.gridSettings?.grid).toMatchObject({
-            rows: {
-              'row-1': [['target-block-uid', duplicatedUid]],
-            },
-            sizes,
-            rowOrder,
-          });
-          return {
-            models: {
-              [duplicatedUid]: {
-                uid: duplicatedUid,
-                use: 'DetailsBlockModel',
-                stepParams: {
-                  resourceSettings: {
-                    init: {
-                      dataSourceKey: 'main',
-                      collectionName: 'A',
-                      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
-                    },
-                  },
-                },
-              },
-            },
-          };
-        });
-
-        const flow: any = (ReferenceBlockModel as any).globalFlowRegistry.getFlow('referenceSettings');
-        const step: any = flow?.steps?.target;
-
-        await step.beforeParamsSave({ engine, model: referenceBlockModel, exit: vi.fn() } as any, {
-          targetUid: 'details-origin-uid',
-          mode: 'copy',
-          templateUid: 'tpl-1',
-        });
-
-        const items = (((gridModel.subModels as any).items || []) as FlowModel[]).map((model) => model.uid);
-        expect(items).toContain('target-block-uid');
-        expect(items).toContain(duplicatedUid);
-        expect(items).not.toContain('reference-block-mutate-uid');
-        expect(engine.getModel('reference-block-mutate-uid')).toBeUndefined();
-        expect(destroyedSpy).toHaveBeenCalledTimes(1);
-        expect(destroyedSpy).toHaveBeenCalledWith(referenceBlockModel);
-
-        const duplicatedModel = engine.getModel<FlowModel>(duplicatedUid);
-        const init = duplicatedModel?.getStepParams('resourceSettings', 'init') as any;
-        expect(init).toBeDefined();
-        expect(Object.prototype.hasOwnProperty.call(init, 'filterByTk')).toBe(false);
-
-        const saveStepParamsCall = repo.save.mock.calls.find(
-          ([model, options]: [FlowModel, { onlyStepParams?: boolean } | undefined]) =>
-            model?.uid === duplicatedUid && options?.onlyStepParams,
-        );
-        expect(saveStepParamsCall).toBeTruthy();
-        expect(lastSavedSnapshot[duplicatedUid]?.stepParams?.resourceSettings?.init).toBeDefined();
-        expect(
-          Object.prototype.hasOwnProperty.call(
-            lastSavedSnapshot[duplicatedUid]?.stepParams?.resourceSettings?.init || {},
-            'filterByTk',
-          ),
-        ).toBe(false);
-      },
-      TEST_TIMEOUT,
-    );
   });
 
   describe('Reference block basics', () => {
@@ -1101,9 +882,7 @@ describe('ReferenceBlockModel', () => {
                   associationType === 'hasOne' ||
                   associationType === 'belongsTo' ||
                   Object.keys(init).includes('filterByTk');
-                const resource = this.context.createResource(
-                  useSingle ? (SingleRecordResource as any) : (MultiRecordResource as any),
-                ) as any;
+                const resource = this.context.createResource(useSingle ? SingleRecordResource : MultiRecordResource);
                 resource.setDataSourceKey(init.dataSourceKey);
                 resource.setResourceName(init.associationName || init.collectionName);
                 if (Object.keys(init).includes('sourceId')) {
@@ -1241,11 +1020,12 @@ describe('ReferenceBlockModel', () => {
 
         await referenceBlockModel.dispatchEvent('beforeRender');
 
-        const target = expectTargetModel(referenceBlockModel);
-        expect(referenceBlockModel.props).toBe(target.props);
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
+        expect(referenceBlockModel.props).toBe(target!.props);
 
         (referenceBlockModel.props as any).summary = 'x';
-        expect((target.props as any).summary).toBe('x');
+        expect((target!.props as any).summary).toBe('x');
       },
       TEST_TIMEOUT,
     );
@@ -1273,10 +1053,11 @@ describe('ReferenceBlockModel', () => {
 
         await referenceBlockModel.dispatchEvent('beforeRender');
 
-        const target = expectTargetModel(referenceBlockModel);
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
 
         referenceBlockModel.setProps({ summary: 'y' as any });
-        expect((target.props as any).summary).toBe('y');
+        expect((target!.props as any).summary).toBe('y');
         expect((referenceBlockModel.getProps() as any).summary).toBe('y');
       },
       TEST_TIMEOUT,
@@ -1370,11 +1151,12 @@ describe('ReferenceBlockModel', () => {
           },
         });
 
-        const target = expectTargetModel(referenceBlockModel);
+        const target = (referenceBlockModel as any)._targetModel as FlowModel | undefined;
+        expect(target).toBeTruthy();
 
-        await target.dispatchEvent('rowClick', { record: { id: 1 } });
+        await target!.dispatchEvent('rowClick', { record: { id: 1 } });
 
-        expect((target.props as any).highlightedRowKey).toBe(1);
+        expect((target!.props as any).highlightedRowKey).toBe(1);
         expect(flowSpy).toHaveBeenCalledTimes(1);
       },
       TEST_TIMEOUT,

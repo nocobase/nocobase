@@ -122,11 +122,14 @@ export class DeepSeekProvider extends LLMProvider {
   }
 
   async parseAttachment(ctx: Context, attachment: any): Promise<any> {
+    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
     if (!attachment?.mimetype || attachment.mimetype.startsWith('image/')) {
-      return super.parseAttachment(ctx, attachment);
+      return {
+        placement: 'system',
+        content: `The user has uploaded a ${attachment.mimetype} file (filename: ${safeFilename}). Please inform the user directly that you do not support parsing image content.`,
+      };
     }
     const parsed = await this.aiPlugin.documentLoaders.cached.load(attachment);
-    const safeFilename = attachment.filename ? path.basename(attachment.filename) : 'document';
     if (!parsed.supported) {
       return {
         placement: 'system',

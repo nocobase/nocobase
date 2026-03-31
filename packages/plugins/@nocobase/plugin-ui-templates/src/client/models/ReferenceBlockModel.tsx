@@ -19,7 +19,6 @@ import {
 } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
-import { uid } from '@nocobase/utils/client';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
@@ -43,105 +42,6 @@ const TEMPLATE_FALLBACK_PATCH_ORIGINAL_GET_STEP_PARAMS = Symbol.for(
   'nocobase.referenceBlockTemplateFallback.originalGetStepParams',
 );
 const TARGET_OWN_CONTEXT_MISSING = Symbol.for('nocobase.referenceBlockTargetOwnContextMissing');
-
-const fetchFlowModelTemplate = async (ctx: any, templateUid: string) => {
-  const api = (ctx as any)?.api;
-  if (!api?.resource) return null;
-
-  try {
-    const res = await api.resource('flowModelTemplates').get({
-      filterByTk: templateUid,
-    });
-    return res?.data?.data || res;
-  } catch (e) {
-    console.warn('fetch template failed', e);
-    return null;
-  }
-};
-
-const applyReferenceTemplateSelection = (model: FlowModel, params: Record<string, any>, tpl?: Record<string, any>) => {
-  const templateUid = String(params?.templateUid || '').trim();
-  if (!templateUid) return;
-
-  const mode = params?.mode || 'reference';
-  const templateName = tpl?.name || params?.templateName;
-  const templateDescription = tpl?.description || params?.templateDescription;
-  const targetUid = tpl?.targetUid;
-
-  const useTemplateParams = model.getStepParams('referenceSettings', 'useTemplate') || {};
-  model.setStepParams('referenceSettings', 'useTemplate', {
-    ...useTemplateParams,
-    templateUid,
-    templateName,
-    templateDescription,
-    targetUid: targetUid || useTemplateParams?.targetUid,
-    mode,
-  });
-
-  if (targetUid) {
-    const targetParams = model.getStepParams('referenceSettings', 'target') || {};
-    model.setStepParams('referenceSettings', 'target', {
-      ...targetParams,
-      targetUid,
-      mode,
-    });
-  }
-
-  const resourceInit = model.getStepParams('resourceSettings', 'init') || {};
-  const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
-  const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
-  const associationName = tpl?.associationName ?? resourceInit?.associationName;
-  const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
-  const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
-  if (dataSourceKey || collectionName || associationName || filterByTk || sourceId) {
-    model.setStepParams('resourceSettings', 'init', {
-      ...resourceInit,
-      dataSourceKey,
-      collectionName,
-      associationName,
-      filterByTk,
-      sourceId,
-    });
-  }
-};
-
-const patchTemplateCopyFallbackInit = (
-  duplicated: Record<string, any> | undefined,
-  viewArgs?: Record<string, any>,
-): boolean => {
-  const use = String(duplicated?.use || '');
-  const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
-  if (!isSupported) return false;
-
-  const init = duplicated?.stepParams?.resourceSettings?.init as Record<string, any> | undefined;
-  if (!init || typeof init !== 'object' || !Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
-    return false;
-  }
-
-  const filterByTk = viewArgs?.filterByTk;
-  const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
-  const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
-  const viewDataSourceKey = viewArgs?.dataSourceKey;
-  const hasViewDataSourceKey =
-    viewDataSourceKey !== undefined && viewDataSourceKey !== null && String(viewDataSourceKey).trim() !== '';
-  const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
-
-  if (!missingFilterByTk && !collectionMismatch && !dataSourceMismatch) {
-    return false;
-  }
-
-  delete init.filterByTk;
-  return true;
-};
-
-const removeLocalModelAndEmitDestroyed = (engine: FlowEngine, parent: FlowModel | undefined, model?: FlowModel) => {
-  if (!model) return false;
-  const removed = engine.removeModel(model.uid);
-  if (removed) {
-    parent?.emitter?.emit?.('onSubModelDestroyed', model);
-  }
-  return removed;
-};
 
 /**
  * ReferenceBlockModel（插件版）
@@ -935,7 +835,18 @@ ReferenceBlockModel.registerFlow({
         const templateUid = (params?.templateUid || '').trim();
         if (!templateUid) return;
 
-        const tpl = await fetchFlowModelTemplate(ctx, templateUid);
+        const api = (ctx as any)?.api;
+        let tpl: any = null;
+        if (api?.resource) {
+          try {
+            const res = await api.resource('flowModelTemplates').get({
+              filterByTk: templateUid,
+            });
+            tpl = res?.data?.data || res;
+          } catch (e) {
+            console.warn('fetch template failed', e);
+          }
+        }
 
         const targetUid = tpl?.targetUid;
         const mode = params?.mode || 'reference';
@@ -950,7 +861,7 @@ ReferenceBlockModel.registerFlow({
           return;
         }
 
-        applyReferenceTemplateSelection(ctx.model as FlowModel, params, tpl);
+        // 引用模式：不需要特殊处理，handler 会处理
       },
       async handler(ctx, params) {
         const templateUid = (params?.templateUid || '').trim();
@@ -960,8 +871,59 @@ ReferenceBlockModel.registerFlow({
         // 复制模式已在 beforeParamsSave 中处理完毕
         if (mode === 'copy') return;
 
-        const tpl = await fetchFlowModelTemplate(ctx, templateUid);
-        applyReferenceTemplateSelection(ctx.model as FlowModel, params, tpl);
+        const api = (ctx as any)?.api;
+        let tpl: any = null;
+        if (api?.resource) {
+          try {
+            const res = await api.resource('flowModelTemplates').get({
+              filterByTk: templateUid,
+            });
+            tpl = res?.data?.data || res;
+          } catch (e) {
+            console.warn('fetch template failed', e);
+          }
+        }
+
+        const templateName = tpl?.name || params?.templateName;
+        const templateDescription = tpl?.description || params?.templateDescription;
+        const targetUid = tpl?.targetUid;
+
+        // 引用模式：保存参数，ReferenceBlockModel 会在 beforeRender 中加载目标
+        const useTemplateParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'useTemplate') || {};
+        (ctx.model as FlowModel).setStepParams('referenceSettings', 'useTemplate', {
+          ...useTemplateParams,
+          templateUid,
+          templateName,
+          templateDescription,
+          targetUid: targetUid || useTemplateParams?.targetUid,
+          mode,
+        });
+
+        if (targetUid) {
+          const targetParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'target') || {};
+          (ctx.model as FlowModel).setStepParams('referenceSettings', 'target', {
+            ...targetParams,
+            targetUid,
+            mode,
+          });
+        }
+
+        const resourceInit = (ctx.model as FlowModel).getStepParams('resourceSettings', 'init') || {};
+        const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
+        const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
+        const associationName = tpl?.associationName ?? resourceInit?.associationName;
+        const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
+        const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
+        if (dataSourceKey || collectionName || associationName || filterByTk || sourceId) {
+          (ctx.model as FlowModel).setStepParams('resourceSettings', 'init', {
+            ...resourceInit,
+            dataSourceKey,
+            collectionName,
+            associationName,
+            filterByTk,
+            sourceId,
+          });
+        }
       },
     },
     target: {
@@ -1040,6 +1002,33 @@ ReferenceBlockModel.registerFlow({
         if (mode !== 'copy' || !v) return;
         const templateUid = (params?.templateUid || '').trim();
         const engine = ctx.engine;
+        // 1) 先在服务端复制目标模型，得到新的根节点 JSON（含新 uid）
+        const duplicated = await engine.duplicateModel(v);
+        if (!duplicated) return;
+
+        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
+        if (templateUid) {
+          const use = String((duplicated as any)?.use || '');
+          const isSupported = use === 'DetailsBlockModel' || use === 'EditFormModel';
+          if (isSupported) {
+            const init = (duplicated as any)?.stepParams?.resourceSettings?.init;
+            if (init && typeof init === 'object' && Object.prototype.hasOwnProperty.call(init, 'filterByTk')) {
+              const viewArgs = ((ctx.model as any)?.context?.view?.inputArgs || {}) as any;
+              const filterByTk = viewArgs?.filterByTk;
+              const missingFilterByTk = filterByTk === undefined || filterByTk === null || filterByTk === '';
+              const collectionMismatch = viewArgs?.collectionName !== init?.collectionName;
+              const viewDataSourceKey = viewArgs?.dataSourceKey;
+              const hasViewDataSourceKey =
+                viewDataSourceKey !== undefined &&
+                viewDataSourceKey !== null &&
+                String(viewDataSourceKey).trim() !== '';
+              const dataSourceMismatch = hasViewDataSourceKey && viewDataSourceKey !== init?.dataSourceKey;
+              if (missingFilterByTk || collectionMismatch || dataSourceMismatch) {
+                delete (init as any).filterByTk;
+              }
+            }
+          }
+        }
 
         // 2) 计算父模型与原位置
         const oldModel = ctx.model as FlowModel;
@@ -1052,107 +1041,6 @@ ReferenceBlockModel.registerFlow({
           ctx.exit();
           return;
         }
-
-        const repo = engine?.modelRepository as any;
-        const canMutate = typeof repo?.mutate === 'function';
-        const targetUid = `dup_${uid()}`;
-
-        // 1) 服务端复制（优先走 mutate 单次写入链路）
-        let duplicated: any;
-        let usedMutate = false;
-        if (canMutate) {
-          const ops: Array<{ opId: string; type: string; params: any }> = [
-            { opId: 'dup', type: 'duplicate', params: { uid: v, targetUid } },
-          ];
-
-          const isPresetOrNew = !!(oldModel as any).isNew;
-          if (isPresetOrNew) {
-            ops.push({
-              opId: 'attach',
-              type: 'attach',
-              params: { uid: targetUid, parentId: parent.uid, subKey, subType },
-            });
-          } else {
-            ops.push({
-              opId: 'move',
-              type: 'move',
-              params: { sourceId: targetUid, targetId: oldModel.uid, position: 'before' },
-            });
-            ops.push({
-              opId: 'destroyOld',
-              type: 'destroy',
-              params: { uid: oldModel.uid },
-            });
-          }
-
-          const parentStepParamsForUpsert = _.cloneDeep(parent.stepParams || {});
-          const parentPropsForUpsert = _.cloneDeep(parent.props || {});
-          const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-          if (gridParams?.rows && typeof gridParams.rows === 'object') {
-            const newRows = _.cloneDeep(gridParams.rows);
-            for (const rowId of Object.keys(newRows)) {
-              const columns = newRows[rowId];
-              if (Array.isArray(columns)) {
-                for (let ci = 0; ci < columns.length; ci++) {
-                  const col = columns[ci];
-                  if (Array.isArray(col)) {
-                    for (let ii = 0; ii < col.length; ii++) {
-                      if (col[ii] === oldModel.uid) {
-                        col[ii] = targetUid;
-                      }
-                    }
-                  }
-                }
-              }
-            }
-
-            parentStepParamsForUpsert['gridSettings'] = {
-              ...(parentStepParamsForUpsert['gridSettings'] || {}),
-              grid: { rows: newRows, sizes: gridParams.sizes || {}, rowOrder: gridParams.rowOrder },
-            };
-            parentPropsForUpsert['rows'] = newRows;
-          }
-
-          // best-effort: keep old behavior (persist parent stepParams/props)
-          ops.push({
-            opId: 'saveParent',
-            type: 'upsert',
-            params: {
-              values: {
-                uid: parent.uid,
-                use: parent.use,
-                stepParams: parentStepParamsForUpsert,
-                props: parentPropsForUpsert,
-              },
-            },
-          });
-
-          const mutateResult = await repo.mutate(
-            {
-              atomic: true,
-              ops,
-              returnModels: [targetUid],
-            },
-            { includeAsyncNode: true },
-          );
-
-          duplicated =
-            mutateResult?.models?.[targetUid] || mutateResult?.results?.find((r) => r.opId === 'dup')?.output;
-          usedMutate = true;
-        } else {
-          // fallback: legacy multi-call chain
-          duplicated = await engine.duplicateModel(v);
-        }
-
-        if (!duplicated) return;
-
-        // 仅“从模板 copy”时做兼容：当锚点缺失/Collection 不匹配时，删除 filterByTk 使目标区块走 list
-        const patchedTemplateFallback = templateUid
-          ? patchTemplateCopyFallbackInit(
-              duplicated as Record<string, any>,
-              (((ctx.model as any)?.context?.view?.inputArgs || {}) as Record<string, any>) || {},
-            )
-          : false;
 
         let insertIndex = -1;
         if (subType === 'array') {
@@ -1191,29 +1079,6 @@ ReferenceBlockModel.registerFlow({
               arr.push(newModel);
             }
             arr.forEach((m, idx) => (m.sortIndex = idx));
-
-            // 替换 Grid rows 中的 uid（避免 copy 后布局仍引用旧 uid）
-            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-            if (gridParams?.rows && typeof gridParams.rows === 'object') {
-              const newRows = _.cloneDeep(gridParams.rows);
-              for (const rowId of Object.keys(newRows)) {
-                const columns = newRows[rowId];
-                if (Array.isArray(columns)) {
-                  for (let ci = 0; ci < columns.length; ci++) {
-                    const col = columns[ci];
-                    if (Array.isArray(col)) {
-                      for (let ii = 0; ii < col.length; ii++) {
-                        if (col[ii] === oldModel.uid) {
-                          col[ii] = newModel.uid;
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-              parent.setProps('rows', newRows);
-            }
           } else {
             parent.setSubModel(subKey, newModel);
           }
@@ -1225,27 +1090,20 @@ ReferenceBlockModel.registerFlow({
           await (newModel as any).afterAddAsSubModel?.();
 
           // 将服务端 duplicate 出来的完整子树挂载到目标父节点
-          if (!usedMutate) {
-            await ctx.api.request({
-              method: 'POST',
-              url: 'flowModels:attach',
-              params: {
-                uid: newModel.uid,
-                parentId: parent.uid,
-                subKey,
-                subType,
-              },
-            });
-            await newModel.save();
+          await ctx.api.request({
+            method: 'POST',
+            url: 'flowModels:attach',
+            params: {
+              uid: newModel.uid,
+              parentId: parent.uid,
+              subKey,
+              subType,
+            },
+          });
+          await newModel.save();
 
-            (newModel as any).isNew = false;
-            await parent.saveStepParams();
-          } else {
-            (newModel as any).isNew = false;
-            if (patchedTemplateFallback) {
-              await newModel.saveStepParams();
-            }
-          }
+          (newModel as any).isNew = false;
+          await parent.saveStepParams();
           parent.rerender();
         } else {
           // replace：保持当前位置不变——手动插入到与旧实例相同的索引，并更新 rows 将旧 uid 替换为新 uid
@@ -1288,26 +1146,18 @@ ReferenceBlockModel.registerFlow({
           }
 
           // 5) 已持久化场景：先保存新实例、再相对移动并删除旧实例，最后只保存布局参数
-          if (!usedMutate) {
-            await newModel.save();
-            (newModel as any).isNew = false;
-            // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
-            if (subType === 'array' && engine.modelRepository) {
-              const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
-              if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
-                await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
-              }
-            }
-            await engine.destroyModel(oldModel.uid);
-            // 持久化父模型的布局参数
-            await parent.saveStepParams();
-          } else {
-            (newModel as any).isNew = false;
-            removeLocalModelAndEmitDestroyed(engine, parent, oldModel);
-            if (patchedTemplateFallback) {
-              await newModel.saveStepParams();
+          await newModel.save();
+          (newModel as any).isNew = false;
+          // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
+          if (subType === 'array' && engine.modelRepository) {
+            const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
+            if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
+              await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
             }
           }
+          await engine.destroyModel(oldModel.uid);
+          // 持久化父模型的布局参数
+          await parent.saveStepParams();
         }
 
         // 关闭设置视图

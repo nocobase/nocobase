@@ -8,7 +8,7 @@ pkg: '@nocobase/plugin-workflow-javascript'
 
 The JavaScript Script node allows users to execute a custom server-side JavaScript script within a workflow. The script can use variables from upstream in the workflow as parameters, and its return value can be provided to downstream nodes.
 
-The script runs in a worker thread on the NocoBase application's server and supports most Node.js features, but there are some differences from the native execution environment. For details, see [Feature List](#feature-list).
+The script runs in a worker thread on the NocoBase application's server. By default, it uses a secure sandbox (isolated-vm) that does not support `require` or Node.js built-in APIs. For details, see [Execution Engine](#execution-engine) and [Feature List](#feature-list).
 
 ## Create Node
 
@@ -44,15 +44,30 @@ If checked, subsequent nodes will still be executed even if the script encounter
 If the script errors out, it will have no return value, and the node's result will be populated with the error message. If subsequent nodes use the result variable from the script node, it should be handled with caution.
 :::
 
-## Feature List
+## Execution Engine
 
-### Node.js Version
+The JavaScript script node supports two execution engines, automatically selected based on whether the `WORKFLOW_SCRIPT_MODULES` environment variable is configured:
 
-Same as the Node.js version running the main application.
+### Safe Mode (Default)
 
-### Module Support
+When `WORKFLOW_SCRIPT_MODULES` is **not configured**, scripts run using the [isolated-vm](https://github.com/laverdet/isolated-vm) engine. This engine executes code in an isolated V8 environment with the following characteristics:
 
-Modules can be used in the script with limitations, consistent with CommonJS, using the `require()` directive to import modules.
+- **Does not support** `require` — no modules can be imported
+- **Does not support** Node.js built-in APIs (such as `process`, `Buffer`, `global`, etc.)
+- Only ECMAScript standard built-in objects are available (such as `JSON`, `Math`, `Promise`, `Date`, etc.)
+- Supports passing data via parameters, `console` for logging, and `async`/`await`
+
+This is the recommended default mode, suitable for pure computation and data processing logic, providing the highest level of security isolation.
+
+### Unsafe Mode (Module Support)
+
+When `WORKFLOW_SCRIPT_MODULES` **is configured**, scripts switch to the Node.js built-in `vm` engine to enable `require` capability.
+
+:::warning{title="Security Warning"}
+In unsafe mode, although scripts run in a `vm` sandbox with a restricted module whitelist, the Node.js `vm` module is not a secure sandbox mechanism. Enabling this mode implies trusting all users who have permission to edit workflow scripts. Administrators should assess the security risks independently and strictly control the module whitelist and workflow editing permissions.
+:::
+
+Modules can be used in the script consistent with CommonJS, using the `require()` directive to import modules.
 
 Supports native Node.js modules and modules installed in `node_modules` (including dependencies already used by NocoBase). Modules to be made available to the code must be declared in the application's environment variable `WORKFLOW_SCRIPT_MODULES`, with multiple package names separated by commas, for example:
 
@@ -83,6 +98,12 @@ You can then use the `exceljs` package in your script (as the name used in `requ
 const ExcelJS = require('./storage/node_modules/exceljs');
 // ...
 ```
+
+## Feature List
+
+### Node.js Version
+
+Same as the Node.js version running the main application.
 
 ### Global Variables
 
@@ -129,7 +150,7 @@ return value;
 
 ### Timers
 
-To use methods like `setTimeout`, `setInterval`, or `setImmediate`, you need to import them from the Node.js `timers` package.
+To use methods like `setTimeout`, `setInterval`, or `setImmediate`, you need to import them from the Node.js `timers` package (only available in unsafe mode).
 
 ```js
 const { setTimeout, setInterval, setImmediate, clearTimeout, clearInterval, clearImmediate } = require('timers');
