@@ -59,14 +59,23 @@ import dayjs from 'dayjs';
 import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 
+export interface FlowEngineAppLike {
+  getApiUrl?: (pathname?: string) => string;
+  dataSourceManager?: {
+    collectionFieldInterfaceManager?: {
+      getFieldInterface?: (name?: string) => any;
+    };
+  };
+  requirejs?: {
+    requirejs?: any;
+  };
+}
+
 function normalizePathname(pathname: string) {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
 }
 
-function shouldBypassApiClient(
-  url: string,
-  app?: { getApiUrl?: (pathname?: string) => string },
-) {
+function shouldBypassApiClient(url: string, app?: FlowEngineAppLike) {
   try {
     const requestUrl = new URL(url);
     if (!['http:', 'https:'].includes(requestUrl.protocol)) {
@@ -3035,7 +3044,7 @@ class BaseFlowEngineContext extends FlowContext {
     EventDefinition<TModel, TCtx>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
-  declare app?: { getApiUrl?: (pathname?: string) => string };
+  declare app?: FlowEngineAppLike;
   declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
