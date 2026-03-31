@@ -26,6 +26,8 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Link, NavLink, Navigate } from 'react-router-dom';
 import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
+import { AIManager } from './ai';
+import { HeaderActionsManager } from './HeaderActionsManager';
 import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
@@ -82,6 +84,8 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public components: Record<string, ComponentType<any> | any> = {};
   public pluginManager: any;
   public pluginSettingsManager: PluginSettingsManager<any>;
+  public aiManager: AIManager;
+  public headerActionsManager: HeaderActionsManager;
   public devDynamicImport: DevDynamicImport;
   public requirejs: RequireJS;
   public name: string;
@@ -169,9 +173,13 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     });
   }
 
-  protected initializeExtendedState() {}
+  protected initializeExtendedState() {
+    this.headerActionsManager = new HeaderActionsManager(this.eventBus);
+  }
 
-  protected afterManagersInitialized() {}
+  protected afterManagersInitialized() {
+    this.aiManager = new AIManager(this);
+  }
 
   protected configureContext() {}
 

@@ -92,11 +92,9 @@ export class Application extends BaseApplication<ApplicationOptions> {
   public declare router: RouterManager;
   public declare pluginManager: PluginManager;
   public declare pluginSettingsManager: PluginSettingsManager;
-  public declare aiManager: AIManager;
   public declare schemaInitializerManager: SchemaInitializerManager;
   public declare schemaSettingsManager: SchemaSettingsManager;
   public declare dataSourceManager: DataSourceManager;
-  public declare headerActionsManager: HeaderActionsManager;
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public declare jsonLogic: JsonLogic;
@@ -156,8 +154,8 @@ export class Application extends BaseApplication<ApplicationOptions> {
   }
 
   protected initializeExtendedState() {
+    super.initializeExtendedState();
     this.systemSettings = new SystemSettingsSource(this.apiClient as APIClient);
-    this.headerActionsManager = new HeaderActionsManager(this.eventBus);
     this.schemaSettingsManager = new SchemaSettingsManager(this.options.schemaSettings, this);
     this.schemaInitializerManager = new SchemaInitializerManager(this.options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(this.options.dataSourceManager, this);
@@ -167,8 +165,8 @@ export class Application extends BaseApplication<ApplicationOptions> {
   }
 
   protected afterManagersInitialized() {
+    super.afterManagersInitialized();
     this.jsonLogic = getOperators();
-    this.aiManager = new AIManager(this);
   }
 
   protected configureContext() {
