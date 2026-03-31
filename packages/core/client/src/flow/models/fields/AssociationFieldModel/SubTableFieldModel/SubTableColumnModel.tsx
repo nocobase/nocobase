@@ -176,6 +176,22 @@ const MemoFieldRenderer = React.memo(FieldModelRenderer, (prev, next) => {
   return prev.value === next.value && prev.model === next.model;
 });
 
+function shouldCommitImmediately(value: any) {
+  if (Array.isArray(value)) {
+    return true;
+  }
+  if (value && typeof value === 'object') {
+    // Native input events should still defer to blur, but association/select-like
+    // final values need to sync to the row immediately to avoid being overwritten
+    // by stale parent row snapshots during outer form submit.
+    if ('target' in value) {
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
 const FieldModelRendererOptimize = React.memo((props: any) => {
   const { model, onChange, value, ...rest } = props;
   const pendingValueRef = React.useRef<any>(props?.value);
@@ -187,13 +203,17 @@ const FieldModelRendererOptimize = React.memo((props: any) => {
   const handleChange = React.useCallback(
     (value: any) => {
       pendingValueRef.current = value;
+      if (shouldCommitImmediately(value)) {
+        onChange?.(value);
+      }
     },
-    [model],
+    [onChange],
   );
 
   const handleCommit = React.useCallback(() => {
     onChange?.(pendingValueRef.current);
   }, [onChange]);
+
   return (
     <div onBlur={handleCommit}>
       <MemoFieldRenderer
