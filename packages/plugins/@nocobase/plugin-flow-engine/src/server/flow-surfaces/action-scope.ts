@@ -8,6 +8,7 @@
  */
 
 import type { FlowSurfaceActionScope } from './types';
+import { FlowSurfaceBadRequestError } from './errors';
 
 const ACTION_SCOPE_SET = new Set<FlowSurfaceActionScope>(['block', 'record', 'form', 'filterForm', 'actionPanel']);
 
@@ -47,7 +48,7 @@ export function assertKnownActionContainerUse(input: { containerUse?: string; co
     return;
   }
   if (!getActionContainerScope(input.containerUse)) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces ${input.context} container '${input.containerUse}' is not a supported public action container`,
     );
   }
@@ -62,12 +63,12 @@ export function normalizeActionScope(scope: any): FlowSurfaceActionScope | undef
     return undefined;
   }
   if (normalized === 'row') {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces action scope 'row' is no longer supported; use 'record' and place record actions under 'recordActions' or a record action container`,
     );
   }
   if (!ACTION_SCOPE_SET.has(normalized as FlowSurfaceActionScope)) {
-    throw new Error(`flowSurfaces action scope '${normalized}' is not supported`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces action scope '${normalized}' is not supported`);
   }
   return normalized as FlowSurfaceActionScope;
 }
@@ -83,7 +84,7 @@ export function assertActionScopeMatchesContainer(input: {
   });
   const expectedScope = getActionContainerScope(input.containerUse);
   if (expectedScope && input.actionScope !== expectedScope) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces ${input.context} scope '${input.actionScope}' is not allowed under '${input.containerUse}', expected '${expectedScope}'`,
     );
   }
@@ -101,7 +102,7 @@ export function assertRequestedActionScope(input: {
     context: input.context,
   });
   if (input.requestedScope && input.requestedScope !== input.resolvedScope) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces ${input.context} scope '${input.requestedScope}' does not match resolved action scope '${input.resolvedScope}'`,
     );
   }

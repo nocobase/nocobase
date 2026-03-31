@@ -11,12 +11,18 @@ export type FlowSurfaceNodeDomain = 'props' | 'decoratorProps' | 'stepParams' | 
 export type FlowSurfaceMergeStrategy = 'deep' | 'replace';
 export type FlowSurfaceActionScope = 'block' | 'record' | 'form' | 'filterForm' | 'actionPanel';
 
-export type FlowSurfaceTarget = {
+export type FlowSurfaceReadLocator = {
   uid?: string;
   pageSchemaUid?: string;
   tabSchemaUid?: string;
   routeId?: string | number;
 };
+
+export type FlowSurfaceWriteTarget = {
+  uid: string;
+};
+
+export type FlowSurfaceResolveTarget = FlowSurfaceReadLocator | FlowSurfaceWriteTarget;
 
 export type FlowSurfaceConfigureOptionValueType = 'string' | 'number' | 'boolean' | 'object' | 'array';
 
@@ -30,7 +36,7 @@ export type FlowSurfaceConfigureOption = {
 export type FlowSurfaceConfigureOptions = Record<string, FlowSurfaceConfigureOption>;
 
 export type FlowSurfaceReadTarget = {
-  locator: FlowSurfaceTarget;
+  locator: FlowSurfaceReadLocator;
   uid: string;
   kind: FlowSurfaceContainerKind;
 };
@@ -131,26 +137,26 @@ export type FlowSurfaceApplySpec = {
 export type FlowSurfaceAtomicFlag = true;
 
 export type FlowSurfaceMutateValues = {
-  target?: FlowSurfaceTarget;
+  target?: FlowSurfaceWriteTarget;
   ops?: FlowSurfaceMutateOp[];
   atomic?: true;
 };
 
 export type FlowSurfaceApplyValues = {
-  target: FlowSurfaceTarget;
+  target: FlowSurfaceWriteTarget;
   spec: FlowSurfaceApplySpec;
   mode?: 'replace';
 };
 
 export type FlowSurfaceComposeValues = {
-  target: FlowSurfaceTarget;
+  target: FlowSurfaceWriteTarget;
   mode?: FlowSurfaceComposeMode;
   blocks?: Array<Record<string, any>>;
   layout?: Record<string, any>;
 };
 
 export type FlowSurfaceConfigureValues = {
-  target: FlowSurfaceTarget;
+  target: FlowSurfaceWriteTarget;
   changes: Record<string, any>;
 };
 
@@ -172,12 +178,12 @@ export type FlowSurfaceMutateOp = {
     | 'setLayout'
     | 'moveNode'
     | 'removeNode';
-  target?: FlowSurfaceTarget;
+  target?: FlowSurfaceWriteTarget;
   values?: Record<string, any>;
 };
 
 export type FlowSurfaceResolvedTarget = {
-  target: FlowSurfaceTarget;
+  target: FlowSurfaceResolveTarget;
   uid: string;
   kind: FlowSurfaceContainerKind;
   node?: any;

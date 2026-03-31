@@ -20,7 +20,7 @@ import {
   isPopupHostUse,
   isTabsRouteType,
 } from './placement';
-import type { FlowSurfaceTarget } from './types';
+import type { FlowSurfaceWriteTarget } from './types';
 const FILTER_TARGET_BLOCK_USES = new Set([
   'TableBlockModel',
   'DetailsBlockModel',
@@ -103,7 +103,7 @@ export class FlowSurfaceContextResolver {
       .filter(Boolean);
   }
 
-  async resolveBlockParent(target: FlowSurfaceTarget, transaction?: any) {
+  async resolveBlockParent(target: FlowSurfaceWriteTarget, transaction?: any) {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
@@ -264,7 +264,7 @@ export class FlowSurfaceContextResolver {
     throw new Error(`flowSurfaces addField target '${use || uid}' is not a field container`);
   }
 
-  async resolveActionContainer(target: FlowSurfaceTarget, transaction?: any) {
+  async resolveActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));

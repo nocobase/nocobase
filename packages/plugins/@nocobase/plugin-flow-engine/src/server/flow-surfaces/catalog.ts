@@ -31,6 +31,7 @@ import {
   TABLE_BLOCK_ACTION_CONTAINER_USES,
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
+import { FlowSurfaceBadRequestError } from './errors';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -2053,7 +2054,7 @@ function inferFieldUseByContainer(containerUse: string, field: any) {
     case 'table':
       return inferDisplayFieldUse(fieldInterface);
     default:
-      throw new Error(`flowSurfaces field container '${containerUse}' is not supported`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${containerUse}' is not supported`);
   }
 }
 
@@ -2065,9 +2066,9 @@ function inferJsFieldUseByContainer(containerUse?: string) {
     case 'table':
       return 'JSFieldModel';
     case 'filter-form':
-      throw new Error(`flowSurfaces field renderer 'js' is not allowed under '${containerUse}'`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces field renderer 'js' is not allowed under '${containerUse}'`);
     default:
-      throw new Error(`flowSurfaces field container '${containerUse}' is not supported`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${containerUse}' is not supported`);
   }
 }
 
@@ -2078,17 +2079,19 @@ function resolveStandaloneFieldUse(input: { requestedType?: string; containerUse
   }
   if (requestedType === 'jsColumn') {
     if (normalizeFieldContainerUse(input.containerUse) !== 'table') {
-      throw new Error(`flowSurfaces field type 'jsColumn' is only allowed under table containers`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces field type 'jsColumn' is only allowed under table containers`);
     }
     return 'JSColumnModel';
   }
   if (requestedType === 'jsItem') {
     if (normalizeFieldContainerUse(input.containerUse) !== 'form') {
-      throw new Error(`flowSurfaces field type 'jsItem' is only allowed under form containers`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces field type 'jsItem' is only allowed under form containers`);
     }
     return 'JSItemModel';
   }
-  throw new Error(`flowSurfaces field type '${requestedType}' is not a supported public capability`);
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces field type '${requestedType}' is not a supported public capability`,
+  );
 }
 
 export function resolveSupportedFieldCapability(input: {
@@ -2103,7 +2106,7 @@ export function resolveSupportedFieldCapability(input: {
   const requestedRenderer =
     typeof input.requestedRenderer === 'undefined' ? undefined : String(input.requestedRenderer || '').trim();
   if (typeof requestedRenderer !== 'undefined' && requestedRenderer !== 'js') {
-    throw new Error(`flowSurfaces field renderer '${requestedRenderer}' is not supported`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces field renderer '${requestedRenderer}' is not supported`);
   }
 
   const standaloneUse = resolveStandaloneFieldUse({
@@ -2112,12 +2115,12 @@ export function resolveSupportedFieldCapability(input: {
   });
   if (standaloneUse) {
     if (input.requestedWrapperUse && input.requestedWrapperUse !== standaloneUse) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces field wrapper '${input.requestedWrapperUse}' is not allowed for field type '${input.requestedType}', expected '${standaloneUse}'`,
       );
     }
     if (input.requestedFieldUse && input.requestedFieldUse !== standaloneUse) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces fieldUse '${input.requestedFieldUse}' does not match field type '${input.requestedType}', expected '${standaloneUse}'`,
       );
     }
@@ -2132,11 +2135,11 @@ export function resolveSupportedFieldCapability(input: {
 
   const wrapperUse = getFieldWrapperUseForContainer(input.containerUse);
   if (!wrapperUse) {
-    throw new Error(`flowSurfaces field container '${input.containerUse}' is not supported`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${input.containerUse}' is not supported`);
   }
 
   if (input.requestedWrapperUse && input.requestedWrapperUse !== wrapperUse) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces field wrapper '${input.requestedWrapperUse}' is not allowed under '${input.containerUse}', expected '${wrapperUse}'`,
     );
   }
@@ -2158,7 +2161,7 @@ export function resolveSupportedFieldCapability(input: {
         renderer: requestedRenderer,
       };
     }
-    throw new Error(`flowSurfaces field '${input.containerUse}' requires a supported fieldUse`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces field '${input.containerUse}' requires a supported fieldUse`);
   }
 
   if (
@@ -2167,14 +2170,16 @@ export function resolveSupportedFieldCapability(input: {
     input.requestedFieldUse !== inferredFieldUse &&
     KNOWN_FIELD_NODE_USES.has(input.requestedFieldUse)
   ) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces fieldUse '${input.requestedFieldUse}' does not match inferred fieldUse '${inferredFieldUse}' under '${input.containerUse}'`,
     );
   }
 
   const allowedFieldUses = getAllowedFieldUseSet(input.containerUse);
   if (!allowedFieldUses?.has(fieldUse)) {
-    throw new Error(`flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`);
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces fieldUse '${fieldUse}' is not allowed under '${input.containerUse}'`,
+    );
   }
 
   return {
@@ -2686,10 +2691,10 @@ export function resolveSupportedBlockCatalogItem(
     (input.use ? BLOCK_CATALOG_BY_USE.get(String(input.use).trim()) : undefined);
 
   if (!item) {
-    throw new Error(`flowSurfaces addBlock only supports registered block types/uses`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces addBlock only supports registered block types/uses`);
   }
   if (options.requireCreateSupported && item.createSupported === false) {
-    throw new Error(`flowSurfaces addBlock does not support creating '${item.key}' yet`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces addBlock does not support creating '${item.key}' yet`);
   }
   return item;
 }
@@ -2718,10 +2723,12 @@ export function resolveSupportedActionCatalogItem(
     const useCandidates = ACTION_CATALOG_BY_USE.get(normalizedUse) || [];
     const matched = getContainerScopedActionCatalogItems(useCandidates, input.containerUse);
     if (useCandidates.length && input.containerUse && !matched.length) {
-      throw new Error(`flowSurfaces addAction '${normalizedUse}' is not allowed under '${input.containerUse}'`);
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces addAction '${normalizedUse}' is not allowed under '${input.containerUse}'`,
+      );
     }
     if (matched.length > 1 && !input.containerUse) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces addAction use '${normalizedUse}' requires containerUse to resolve a public action capability`,
       );
     }
@@ -2733,10 +2740,12 @@ export function resolveSupportedActionCatalogItem(
     const candidates = (normalizedType ? ACTION_CATALOG_BY_KEY.get(normalizedType) : undefined) || [];
     const matched = getContainerScopedActionCatalogItems(candidates, input.containerUse);
     if (candidates.length && input.containerUse && !matched.length) {
-      throw new Error(`flowSurfaces addAction '${requestedType}' is not allowed under '${input.containerUse}'`);
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces addAction '${requestedType}' is not allowed under '${input.containerUse}'`,
+      );
     }
     if (matched.length > 1 && !input.containerUse) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces addAction type '${requestedType}' requires containerUse to resolve a public action capability`,
       );
     }
@@ -2744,12 +2753,12 @@ export function resolveSupportedActionCatalogItem(
   }
 
   if (!item) {
-    throw new Error(`flowSurfaces addAction only supports registered action types/uses`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces addAction only supports registered action types/uses`);
   }
   if (requestedType) {
     const publicKey = toPublicActionCatalogItem(item).key;
     if (requestedType !== publicKey) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces addAction only supports public action type '${publicKey}' under '${
           input.containerUse || 'unknown'
         }'`,
@@ -2757,12 +2766,12 @@ export function resolveSupportedActionCatalogItem(
     }
   }
   if (input.containerUse && !isActionAllowedInContainer(item, input.containerUse)) {
-    throw new Error(
+    throw new FlowSurfaceBadRequestError(
       `flowSurfaces addAction '${toPublicActionCatalogItem(item).key}' is not allowed under '${input.containerUse}'`,
     );
   }
   if (options.requireCreateSupported && item.createSupported === false) {
-    throw new Error(`flowSurfaces addAction does not support creating '${item.key}' yet`);
+    throw new FlowSurfaceBadRequestError(`flowSurfaces addAction does not support creating '${item.key}' yet`);
   }
   return item;
 }

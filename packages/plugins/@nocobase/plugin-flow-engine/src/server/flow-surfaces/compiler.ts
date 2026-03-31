@@ -27,7 +27,8 @@ import {
   isGridUse,
   isPopupHostUse,
 } from './placement';
-import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceTarget } from './types';
+import { FlowSurfaceBadRequestError } from './errors';
+import type { FlowSurfaceApplySpec, FlowSurfaceMutateOp, FlowSurfaceNodeSpec, FlowSurfaceWriteTarget } from './types';
 
 type CompilerState = {
   seq: number;
@@ -71,7 +72,7 @@ const DETAILS_BLOCK_USES = FLOW_SURFACE_DETAILS_BLOCK_USES;
 const FILTER_FORM_BLOCK_USES = FLOW_SURFACE_FILTER_FORM_BLOCK_USES;
 
 export function compileApplySpec(
-  target: FlowSurfaceTarget,
+  target: FlowSurfaceWriteTarget,
   currentTree: any,
   spec: FlowSurfaceApplySpec,
 ): {
@@ -79,7 +80,7 @@ export function compileApplySpec(
   clientKeyToUid: Record<string, string>;
 } {
   if (!currentTree?.uid || !currentTree?.use) {
-    throw new Error('flowSurfaces apply requires an existing target subtree');
+    throw new FlowSurfaceBadRequestError('flowSurfaces apply requires an existing target subtree');
   }
 
   const ops: FlowSurfaceMutateOp[] = [];
@@ -153,7 +154,7 @@ function syncExistingNode(
   nodeRef: CompiledNodeRef,
   currentNode: any,
   desiredNode: FlowSurfaceNodeSpec,
-  explicitTarget?: FlowSurfaceTarget,
+  explicitTarget?: FlowSurfaceWriteTarget,
 ) {
   emitDomainSettingOps(ops, nodeRef, currentNode, desiredNode, explicitTarget);
   const childSync = syncChildren(ops, state, nodeRef, currentNode, desiredNode);
@@ -174,18 +175,18 @@ function syncCreatedNode(
 function syncRoutePageNode(
   ops: FlowSurfaceMutateOp[],
   state: CompilerState,
-  target: FlowSurfaceTarget,
+  target: FlowSurfaceWriteTarget,
   currentNode: any,
   desiredNode: FlowSurfaceApplySpec,
 ) {
-  const pageTarget = { pageSchemaUid: String(target.pageSchemaUid || '').trim() };
+  const pageTarget = { uid: String(target.uid || currentNode.uid || '').trim() };
   syncPageNode(ops, state, pageTarget, currentNode, desiredNode);
 }
 
 function syncPageNode(
   ops: FlowSurfaceMutateOp[],
   state: CompilerState,
-  pageTarget: FlowSurfaceTarget,
+  pageTarget: FlowSurfaceWriteTarget,
   currentNode: any,
   desiredNode: FlowSurfaceApplySpec,
 ) {
@@ -229,7 +230,7 @@ function syncPageNode(
         uidRef: currentMatch.uid,
         use: currentMatch.use,
       });
-      syncRouteTabNode(ops, state, { tabSchemaUid: currentMatch.uid }, currentMatch, desiredTab);
+      syncRouteTabNode(ops, state, { uid: currentMatch.uid }, currentMatch, desiredTab);
       continue;
     }
 
@@ -264,7 +265,7 @@ function syncPageNode(
       ops.push({
         type: 'removeTab',
         values: {
-          tabSchemaUid: currentTab.uid,
+          uid: currentTab.uid,
         },
       });
     }
@@ -276,18 +277,18 @@ function syncPageNode(
 function syncRouteTabNode(
   ops: FlowSurfaceMutateOp[],
   state: CompilerState,
-  target: FlowSurfaceTarget,
+  target: FlowSurfaceWriteTarget,
   currentNode: any,
   desiredNode: FlowSurfaceApplySpec,
 ) {
-  const tabTarget = { tabSchemaUid: String(target.tabSchemaUid || currentNode.uid || '').trim() };
+  const tabTarget = { uid: String(target.uid || currentNode.uid || '').trim() };
   syncTabNode(ops, state, tabTarget, currentNode, desiredNode);
 }
 
 function syncTabNode(
   ops: FlowSurfaceMutateOp[],
   state: CompilerState,
-  tabTarget: FlowSurfaceTarget,
+  tabTarget: FlowSurfaceWriteTarget,
   currentNode: any,
   desiredNode: FlowSurfaceApplySpec,
 ) {
@@ -502,14 +503,16 @@ function createDesiredChild(
 
   if (subKey === 'actions' && isActionContainer(parentRef.use)) {
     if (!ACTION_USES.has(desiredChild.use)) {
-      throw new Error(`flowSurfaces apply action '${desiredChild.use}' is not a public capability`);
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces apply action '${desiredChild.use}' is not a public capability`,
+      );
     }
     return createActionNode(ops, state, parentRef, desiredChild);
   }
 
   if (isBlockContainer(parentRef.use, subKey)) {
     if (!BLOCK_USES.has(desiredChild.use)) {
-      throw new Error(`flowSurfaces apply block '${desiredChild.use}' is not a public capability`);
+      throw new FlowSurfaceBadRequestError(`flowSurfaces apply block '${desiredChild.use}' is not a public capability`);
     }
     return createBlockNode(ops, state, parentRef, desiredChild);
   }
@@ -519,10 +522,14 @@ function createDesiredChild(
     !FIELD_WRAPPER_USES.has(desiredChild.use) &&
     !STANDALONE_FIELD_USES.has(desiredChild.use)
   ) {
-    throw new Error(`flowSurfaces apply field wrapper '${desiredChild.use}' is not a public capability`);
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces apply field wrapper '${desiredChild.use}' is not a public capability`,
+    );
   }
 
-  throw new Error(`flowSurfaces apply cannot create '${desiredChild.use}' under '${parentRef.use}.${subKey}'`);
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces apply cannot create '${desiredChild.use}' under '${parentRef.use}.${subKey}'`,
+  );
 }
 
 function createBlockNode(
@@ -658,7 +665,9 @@ function createFieldNode(
     _.get(desiredNode, ['stepParams', 'fieldSettings', 'init']);
   const defaultTargetUid = _.get(desiredNode, ['stepParams', 'filterFormItemSettings', 'init', 'defaultTargetUid']);
   if (!fieldInit?.fieldPath) {
-    throw new Error(`flowSurfaces apply field '${desiredNode.use}' requires stepParams.fieldSettings.init.fieldPath`);
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces apply field '${desiredNode.use}' requires stepParams.fieldSettings.init.fieldPath`,
+    );
   }
 
   const opId = nextOpId(state, 'addField');
@@ -701,7 +710,9 @@ function compilePopupPageSpec(
   const gridSpec = normalizeChildren(tabSpec?.subModels?.grid)[0];
   const popupItems = normalizeChildren(gridSpec?.subModels?.items);
   if (!tabSpec || !gridSpec) {
-    throw new Error(`flowSurfaces apply popup page creation under '${hostRef.use}' requires popup page -> tab -> grid`);
+    throw new FlowSurfaceBadRequestError(
+      `flowSurfaces apply popup page creation under '${hostRef.use}' requires popup page -> tab -> grid`,
+    );
   }
 
   const { childRefs, childClientKeyRefs, popupGridUidRef, popupPageRef, popupTabRef, placeholderRef } =
@@ -727,7 +738,9 @@ function compilePopupPageSpec(
       ops.push({
         type: 'removeNode',
         values: {
-          uid: placeholderRef.uidRef,
+          target: {
+            uid: placeholderRef.uidRef,
+          },
         },
       });
     }
@@ -808,7 +821,7 @@ function emitDomainSettingOps(
   nodeRef: CompiledNodeRef,
   currentNode: any,
   desiredNode: FlowSurfaceNodeSpec,
-  explicitTarget?: FlowSurfaceTarget,
+  explicitTarget?: FlowSurfaceWriteTarget,
 ) {
   const props = omitLayoutProps(desiredNode.props);
   const currentProps = omitLayoutProps(currentNode?.props);
@@ -845,7 +858,7 @@ function emitDomainSettingOps(
 
 function emitLayoutOp(
   ops: FlowSurfaceMutateOp[],
-  target: FlowSurfaceTarget,
+  target: FlowSurfaceWriteTarget,
   currentNode: any,
   desiredNode: Pick<FlowSurfaceNodeSpec, 'props' | 'use'>,
   childSync: SyncChildrenResult,
@@ -1026,7 +1039,7 @@ function planArrayChildMatches(
       currentGroup.length !== desiredIndexes.length &&
       shouldReuseByOrder
     ) {
-      throw new Error(
+      throw new FlowSurfaceBadRequestError(
         `flowSurfaces apply cannot safely match duplicate '${use}' nodes under '${parentUse}.${subKey}' without explicit uid or signature`,
       );
     }
@@ -1248,8 +1261,8 @@ function emitMoveTabOps(ops: FlowSurfaceMutateOp[], desiredRefs: CompiledNodeRef
     ops.push({
       type: 'moveTab',
       values: {
-        sourceTabSchemaUid: desiredRefs[index].uidRef,
-        targetTabSchemaUid: desiredRefs[index + 1].uidRef,
+        sourceUid: desiredRefs[index].uidRef,
+        targetUid: desiredRefs[index + 1].uidRef,
         position: 'before',
       },
     });

@@ -157,9 +157,7 @@ describe('flowSurfaces API contract', () => {
 
     const defaultApplyRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         spec: {
           props: {
             title: 'Contract tab default replace',
@@ -198,9 +196,7 @@ describe('flowSurfaces API contract', () => {
 
     const explicitReplaceRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         mode: 'replace',
         spec: {
           props: {
@@ -241,9 +237,7 @@ describe('flowSurfaces API contract', () => {
     for (const invalidMode of ['merge', 'patch', null] as any[]) {
       const invalidRes = await rootAgent.resource('flowSurfaces').apply({
         values: {
-          target: {
-            tabSchemaUid: page.tabSchemaUid,
-          },
+          target: { uid: page.tabSchemaUid },
           mode: invalidMode,
           spec: {
             props: {
@@ -253,7 +247,7 @@ describe('flowSurfaces API contract', () => {
         },
       });
 
-      expect(invalidRes.status).toBe(500);
+      expect(invalidRes.status).toBe(400);
       expect(readErrorMessage(invalidRes)).toContain(`mode='replace'`);
       expect(readErrorMessage(invalidRes)).toContain('v1');
     }
@@ -335,7 +329,7 @@ describe('flowSurfaces API contract', () => {
           ],
         },
       });
-      expect(mutateRes.status).toBe(500);
+      expect(mutateRes.status).toBe(400);
       expect(readErrorMessage(mutateRes)).toContain('atomic=true');
       expect(readErrorMessage(mutateRes)).toContain('v1');
       expect(
@@ -392,9 +386,7 @@ describe('flowSurfaces API contract', () => {
     const addedTab = getData(
       await rootAgent.resource('flowSurfaces').addTab({
         values: {
-          target: {
-            pageSchemaUid: created.pageSchemaUid,
-          },
+          target: { uid: created.pageUid },
           title: 'Secondary tab',
           documentTitle: 'Secondary browser title',
         },
@@ -429,7 +421,7 @@ describe('flowSurfaces API contract', () => {
 
     const removeTabRes = await rootAgent.resource('flowSurfaces').removeTab({
       values: {
-        tabSchemaUid: addedTab.tabSchemaUid,
+        uid: addedTab.tabSchemaUid,
       },
     });
     expect(removeTabRes.status).toBe(200);
@@ -449,7 +441,7 @@ describe('flowSurfaces API contract', () => {
 
     const destroyPageRes = await rootAgent.resource('flowSurfaces').destroyPage({
       values: {
-        pageSchemaUid: created.pageSchemaUid,
+        uid: created.pageUid,
       },
     });
     expect(destroyPageRes.status).toBe(200);
@@ -472,6 +464,165 @@ describe('flowSurfaces API contract', () => {
         includeAsyncNode: true,
       }),
     ).toBeNull();
+  });
+
+  it('should reject legacy write locators and direct callers to flowSurfaces:get first', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Legacy write locator page',
+      tabTitle: 'Legacy write locator tab',
+    });
+
+    const legacyCatalogRes = await rootAgent.resource('flowSurfaces').catalog({
+      values: {
+        pageSchemaUid: page.pageSchemaUid,
+      },
+    });
+    expect(legacyCatalogRes.status).toBe(400);
+    expect(readErrorMessage(legacyCatalogRes)).toContain('target.uid');
+    expect(readErrorMessage(legacyCatalogRes)).toContain('flowSurfaces:get first');
+
+    const legacyAddTabRes = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          pageSchemaUid: page.pageSchemaUid,
+        },
+        title: 'Legacy add tab',
+      },
+    });
+    expect(legacyAddTabRes.status).toBe(400);
+    expect(readErrorMessage(legacyAddTabRes)).toContain('target.uid');
+    expect(readErrorMessage(legacyAddTabRes)).toContain('flowSurfaces:get first');
+
+    const disguisedAddTabRes = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: page.pageSchemaUid,
+        },
+        title: 'Disguised add tab',
+      },
+    });
+    expect(disguisedAddTabRes.status).toBe(400);
+    expect(readErrorMessage(disguisedAddTabRes)).toContain('requires a page uid');
+    expect(readErrorMessage(disguisedAddTabRes)).toContain('flowSurfaces:get first');
+
+    const legacyConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          routeId: String(page.routeId),
+        },
+        changes: {
+          title: 'Legacy route configure',
+        },
+      },
+    });
+    expect(legacyConfigureRes.status).toBe(400);
+    expect(readErrorMessage(legacyConfigureRes)).toContain('target.uid');
+    expect(readErrorMessage(legacyConfigureRes)).toContain('flowSurfaces:get first');
+
+    const legacyDestroyRes = await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        pageSchemaUid: page.pageSchemaUid,
+      },
+    });
+    expect(legacyDestroyRes.status).toBe(400);
+    expect(readErrorMessage(legacyDestroyRes)).toContain('only accepts root uid');
+    expect(readErrorMessage(legacyDestroyRes)).toContain('flowSurfaces:get first');
+
+    const disguisedDestroyRes = await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        uid: page.pageSchemaUid,
+      },
+    });
+    expect(disguisedDestroyRes.status).toBe(400);
+    expect(readErrorMessage(disguisedDestroyRes)).toContain('requires a page uid');
+    expect(readErrorMessage(disguisedDestroyRes)).toContain('flowSurfaces:get first');
+
+    const legacyRemoveTabRes = await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        tabSchemaUid: page.tabSchemaUid,
+      },
+    });
+    expect(legacyRemoveTabRes.status).toBe(400);
+    expect(readErrorMessage(legacyRemoveTabRes)).toContain('only accepts root uid');
+    expect(readErrorMessage(legacyRemoveTabRes)).toContain('flowSurfaces:get first');
+  });
+
+  it('should only allow removeNode on regular node uid targets', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Remove node contract page',
+      tabTitle: 'Remove node contract tab',
+    });
+    const pageReadback = await getSurface(rootAgent, {
+      pageSchemaUid: page.pageSchemaUid,
+    });
+    const tabReadback = await getSurface(rootAgent, {
+      tabSchemaUid: page.tabSchemaUid,
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const removeBlockRes = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+      },
+    });
+    expect(removeBlockRes.status).toBe(200);
+
+    const removeByPageSchemaUid = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: { uid: page.pageUid },
+      },
+    });
+    expect(removeByPageSchemaUid.status).toBe(400);
+    expect(readErrorMessage(removeByPageSchemaUid)).toContain('destroyPage');
+
+    const removeByTabSchemaUid = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: { uid: page.tabSchemaUid },
+      },
+    });
+    expect(removeByTabSchemaUid.status).toBe(400);
+    expect(readErrorMessage(removeByTabSchemaUid)).toContain('removeTab');
+
+    const removeByRouteId = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          routeId: String(page.routeId),
+        },
+      },
+    });
+    expect(removeByRouteId.status).toBe(400);
+    expect(readErrorMessage(removeByRouteId)).toContain('destroyPage');
+
+    const removePageUid = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid: pageReadback.target.uid,
+        },
+      },
+    });
+    expect(removePageUid.status).toBe(400);
+    expect(readErrorMessage(removePageUid)).toContain('destroyPage');
+
+    const removeTabUid = await rootAgent.resource('flowSurfaces').removeNode({
+      values: {
+        target: {
+          uid: tabReadback.target.uid,
+        },
+      },
+    });
+    expect(removeTabUid.status).toBe(400);
+    expect(readErrorMessage(removeTabUid)).toContain('removeTab');
   });
 
   it('should expose readonly contract for unknown use and reject unknown or unsupported public mutations', async () => {
@@ -538,7 +689,7 @@ describe('flowSurfaces API contract', () => {
         type: 'notRegisteredBlock',
       },
     });
-    expect(unknownBlockRes.status).toBe(500);
+    expect(unknownBlockRes.status).toBe(400);
     expect(readErrorMessage(unknownBlockRes)).toContain('registered block types/uses');
 
     const unsupportedBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
@@ -553,7 +704,7 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(unsupportedBlockRes.status).toBe(500);
+    expect(unsupportedBlockRes.status).toBe(400);
     expect(readErrorMessage(unsupportedBlockRes)).toContain(`does not support creating 'map' yet`);
 
     const table = await addBlockData(rootAgent, {
@@ -574,7 +725,7 @@ describe('flowSurfaces API contract', () => {
         type: 'notRegisteredAction',
       },
     });
-    expect(unknownActionRes.status).toBe(500);
+    expect(unknownActionRes.status).toBe(400);
     expect(readErrorMessage(unknownActionRes)).toContain('registered action types/uses');
   });
 
@@ -819,7 +970,7 @@ describe('flowSurfaces API contract', () => {
         type: 'view',
       },
     });
-    expect(rowActionOnTableBlock.status).toBe(500);
+    expect(rowActionOnTableBlock.status).toBe(400);
     expect(readErrorMessage(rowActionOnTableBlock)).toContain(`use addRecordAction`);
 
     const blockActionOnRowContainer = await rootAgent.resource('flowSurfaces').addAction({
@@ -830,7 +981,7 @@ describe('flowSurfaces API contract', () => {
         type: 'refresh',
       },
     });
-    expect(blockActionOnRowContainer.status).toBe(500);
+    expect(blockActionOnRowContainer.status).toBe(400);
     expect(readErrorMessage(blockActionOnRowContainer)).toContain(`record action surface`);
 
     const hiddenDeleteOnForm = await rootAgent.resource('flowSurfaces').addAction({
@@ -841,7 +992,7 @@ describe('flowSurfaces API contract', () => {
         type: 'delete',
       },
     });
-    expect(hiddenDeleteOnForm.status).toBe(500);
+    expect(hiddenDeleteOnForm.status).toBe(400);
     expect(readErrorMessage(hiddenDeleteOnForm)).toContain(`is not allowed under 'CreateFormModel'`);
   });
 
@@ -1211,7 +1362,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(listBlockOnlyRes.status).toBe(500);
+    expect(listBlockOnlyRes.status).toBe(400);
     expect(readErrorMessage(listBlockOnlyRes)).toContain(`must be placed under recordActions`);
 
     const gridCardRecordOnlyRes = await rootAgent.resource('flowSurfaces').compose({
@@ -1232,7 +1383,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(gridCardRecordOnlyRes.status).toBe(500);
+    expect(gridCardRecordOnlyRes.status).toBe(400);
     expect(readErrorMessage(gridCardRecordOnlyRes)).toContain(`must be placed under actions`);
   });
 
@@ -1265,7 +1416,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(legacyScopeOnBlockActionsRes.status).toBe(500);
+    expect(legacyScopeOnBlockActionsRes.status).toBe(400);
     expect(readErrorMessage(legacyScopeOnBlockActionsRes)).toContain(
       'does not support scope, use actions or recordActions',
     );
@@ -1293,7 +1444,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(legacyScopeOnRecordActionsRes.status).toBe(500);
+    expect(legacyScopeOnRecordActionsRes.status).toBe(400);
     expect(readErrorMessage(legacyScopeOnRecordActionsRes)).toContain(
       'does not support scope, use actions or recordActions',
     );
@@ -1364,9 +1515,7 @@ describe('flowSurfaces API contract', () => {
 
     const pageConfigure = await rootAgent.resource('flowSurfaces').configure({
       values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
+        target: { uid: page.pageUid },
         changes: {
           title: 'Users console',
           documentTitle: 'Users browser title',
@@ -1516,7 +1665,7 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(rawPathConfigure.status).toBe(500);
+    expect(rawPathConfigure.status).toBe(400);
     expect(readErrorMessage(rawPathConfigure)).toContain('does not accept raw keys');
     expect(readErrorMessage(rawPathConfigure)).toContain('configureOptions');
 
@@ -1534,7 +1683,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(rawUseCompose.status).toBe(500);
+    expect(rawUseCompose.status).toBe(400);
     expect(readErrorMessage(rawUseCompose)).toContain('public semantic block fields');
 
     const unknownSimpleField = await rootAgent.resource('flowSurfaces').configure({
@@ -2506,7 +2655,7 @@ describe('flowSurfaces API contract', () => {
 
     const destroyRes = await rootAgent.resource('flowSurfaces').destroyPage({
       values: {
-        pageSchemaUid: page.pageSchemaUid,
+        uid: page.pageUid,
       },
     });
     expect(destroyRes.status).toBe(200);

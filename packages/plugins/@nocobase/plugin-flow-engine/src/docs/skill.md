@@ -10,7 +10,7 @@
 4. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
 5. 再用 `flowSurfaces:configure` 修改高频配置。
 6. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
-7. 删除与排序继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`。
+7. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，tab 请用 `removeTab`。
 8. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
 
 ## 读取接口约定
@@ -19,6 +19,7 @@
 - 不要写成 `{ "target": { "uid": "..." } }`
 - 响应里的 `target` 只保留轻量定位信息：`locator`、`uid`、`kind`
 - 真实节点树看 `tree`；页面 route / tabs 信息看顶层 `pageRoute`、`route`、`tabs`、`tabTrees`
+- 公开请求参数错误会返回 `400`，并带可执行的错误 message
 - 最常用的是：
 
 ```text
@@ -33,6 +34,11 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
 - `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
 - `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
+- 除 `get` 外，其它写接口的定位一律收口为 uid-only：
+  - 有 `target` 的一律传 `{ "target": { "uid": "..." } }`
+  - `destroyPage`、`removeTab` 一律传根级 `{ "uid": "..." }`
+- 如果你手上只有 `pageSchemaUid / tabSchemaUid / routeId`，先调用 `flowSurfaces:get` 拿到 canonical uid，再走写接口
+- `removeNode` 只用于 block / field / action / popup subtree 等普通节点；page 请用 `destroyPage`，tab 请用 `removeTab`
 
 例如 `catalog(target=table)` 里可能会看到：
 
@@ -96,7 +102,10 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 }
 ```
 
-创建成功后，把返回的 `tabSchemaUid` 作为后续页面内容编排入口。
+创建成功后：
+- page 级写操作使用返回的 `pageUid`
+- tab 级写操作继续可直接使用返回的 `tabSchemaUid`
+- `pageSchemaUid / routeId` 主要保留给 `flowSurfaces:get`
 
 ## 示例 2：同一行创建 `filterForm + table`，布局 `3:7`
 

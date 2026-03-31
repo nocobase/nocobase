@@ -140,8 +140,12 @@ function responses(schemaName: string, includeValidationError = true) {
     },
     ...(includeValidationError
       ? {
+          400: {
+            description: 'Invalid public request parameters or semantics',
+            content: jsonContent(ref('FlowSurfaceErrorResponse')),
+          },
           500: {
-            description: 'Business validation error',
+            description: 'Unexpected internal server error',
             content: jsonContent(ref('FlowSurfaceErrorResponse')),
           },
         }
@@ -590,7 +594,7 @@ const examples = {
   },
   addTab: {
     target: {
-      pageSchemaUid: 'employees-page-schema',
+      uid: 'employees-page-uid',
     },
     title: 'Details',
     icon: 'TableOutlined',
@@ -598,7 +602,7 @@ const examples = {
   },
   updateTab: {
     target: {
-      tabSchemaUid: 'details-tab-schema',
+      uid: 'details-tab-schema',
     },
     title: 'Details',
     icon: 'TableOutlined',
@@ -1172,33 +1176,39 @@ const actionDocs: Record<string, any> = {
   destroyPage: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Destroy a modern page and its anchors',
-    description: valuesCompatibilityNote('删除 page route、tab route 和对应的 FlowModel subtree。'),
+    description: valuesCompatibilityNote(
+      '删除 page route、tab route 和对应的 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `pageSchemaUid` 或 `routeId`，先调用 `flowSurfaces:get`。',
+    ),
     requestBody: requestBody('FlowSurfaceDestroyPageRequest', {
-      pageSchemaUid: 'employees-page-schema',
+      uid: 'employees-page-uid',
     }),
     responses: responses('FlowSurfaceDestroyPageResult'),
   },
   addTab: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a tab under a page',
-    description: valuesCompatibilityNote('在 page 下新增 route-backed tab，并补齐对应 grid anchor。'),
+    description: valuesCompatibilityNote(
+      '在 page 下新增 route-backed tab，并补齐对应 grid anchor。只接受 `target.uid`，且该 uid 必须是 page 的 canonical uid。',
+    ),
     requestBody: requestBody('FlowSurfaceAddTabRequest', examples.addTab),
     responses: responses('FlowSurfaceAddTabResult'),
   },
   updateTab: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Update tab title, icon, document title and flow registry',
-    description: valuesCompatibilityNote('修改 tab route 与对应 synthetic RootPageTabModel 的 route-backed 字段。'),
+    description: valuesCompatibilityNote(
+      '修改 tab route 与对应 synthetic RootPageTabModel 的 route-backed 字段。只接受 `target.uid`，且该 uid 必须是 tab uid。',
+    ),
     requestBody: requestBody('FlowSurfaceUpdateTabRequest', examples.updateTab),
     responses: responses('FlowSurfaceUpdateTabResult'),
   },
   moveTab: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Reorder sibling tabs under the same page',
-    description: valuesCompatibilityNote('调整同一 page 下 tab 的排序。'),
+    description: valuesCompatibilityNote('调整同一 page 下 tab 的排序。只接受根级 `sourceUid` / `targetUid`。'),
     requestBody: requestBody('FlowSurfaceMoveTabRequest', {
-      sourceTabSchemaUid: 'details-tab',
-      targetTabSchemaUid: 'overview-tab',
+      sourceUid: 'details-tab',
+      targetUid: 'overview-tab',
       position: 'before',
     }),
     responses: responses('FlowSurfaceMoveTabResult'),
@@ -1206,9 +1216,11 @@ const actionDocs: Record<string, any> = {
   removeTab: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a tab route and its anchor tree',
-    description: valuesCompatibilityNote('删除 tab route 及对应 FlowModel subtree。'),
+    description: valuesCompatibilityNote(
+      '删除 tab route 及对应 FlowModel subtree。只接受根级 `uid`；如果你手上只有 `tabSchemaUid`，先调用 `flowSurfaces:get`。',
+    ),
     requestBody: requestBody('FlowSurfaceRemoveTabRequest', {
-      tabSchemaUid: 'details-tab',
+      uid: 'details-tab',
     }),
     responses: responses('FlowSurfaceRemoveTabResult'),
   },
@@ -1399,7 +1411,9 @@ const actionDocs: Record<string, any> = {
   removeNode: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Remove a block, field wrapper, action or nested popup node',
-    description: valuesCompatibilityNote('删除指定节点及其 subtree。'),
+    description: valuesCompatibilityNote(
+      '删除指定普通节点及其 subtree。只接受 `target.uid`；如果你手上只有 `pageSchemaUid / tabSchemaUid / routeId`，先调用 `flowSurfaces:get`。`removeNode` 不用于 page/tab 删除；page 请改用 `destroyPage`，tab 请改用 `removeTab`。',
+    ),
     requestBody: requestBody('FlowSurfaceRemoveNodeRequest', examples.removeNode),
     responses: responses('FlowSurfaceRemoveNodeResult'),
   },
@@ -1491,20 +1505,13 @@ const schemas = {
   FlowSurfaceResolvableIdentifier: {
     oneOf: [{ type: 'string' }, { type: 'integer' }, ref('FlowSurfaceOpReference')],
   },
-  FlowSurfaceTarget: {
+  FlowSurfaceWriteTarget: {
     type: 'object',
-    minProperties: 1,
+    required: ['uid'],
     properties: {
       uid: {
         type: 'string',
       },
-      pageSchemaUid: {
-        type: 'string',
-      },
-      tabSchemaUid: {
-        type: 'string',
-      },
-      routeId: STRING_OR_INTEGER_SCHEMA,
     },
     additionalProperties: false,
   },
@@ -1527,14 +1534,11 @@ const schemas = {
     },
     additionalProperties: false,
   },
-  FlowSurfaceMutateTarget: {
+  FlowSurfaceMutateWriteTarget: {
     type: 'object',
-    minProperties: 1,
+    required: ['uid'],
     properties: {
       uid: ref('FlowSurfaceResolvableString'),
-      pageSchemaUid: ref('FlowSurfaceResolvableString'),
-      tabSchemaUid: ref('FlowSurfaceResolvableString'),
-      routeId: ref('FlowSurfaceResolvableIdentifier'),
     },
     additionalProperties: false,
   },
@@ -2001,7 +2005,7 @@ const schemas = {
   FlowSurfaceCatalogRequest: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
     },
     additionalProperties: false,
   },
@@ -2262,7 +2266,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       mode: {
         type: 'string',
         enum: ['append', 'replace'],
@@ -2407,7 +2411,7 @@ const schemas = {
   FlowSurfaceComposeResult: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       mode: {
         type: 'string',
         enum: ['append', 'replace'],
@@ -2425,7 +2429,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'changes'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       changes: ANY_OBJECT_SCHEMA,
     },
     additionalProperties: false,
@@ -2517,12 +2521,9 @@ const schemas = {
   },
   FlowSurfaceDestroyPageRequest: {
     type: 'object',
-    minProperties: 1,
+    required: ['uid'],
     properties: {
-      pageSchemaUid: {
-        type: 'string',
-      },
-      schemaUid: {
+      uid: {
         type: 'string',
       },
     },
@@ -2531,7 +2532,7 @@ const schemas = {
   FlowSurfaceDestroyPageResult: {
     type: 'object',
     properties: {
-      pageSchemaUid: {
+      uid: {
         type: 'string',
       },
     },
@@ -2539,11 +2540,9 @@ const schemas = {
   },
   FlowSurfaceAddTabRequest: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
-      pageSchemaUid: {
-        type: 'string',
-      },
+      target: ref('FlowSurfaceWriteTarget'),
       tabSchemaUid: {
         type: 'string',
       },
@@ -2584,14 +2583,9 @@ const schemas = {
   },
   FlowSurfaceUpdateTabRequest: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
-      tabSchemaUid: {
-        type: 'string',
-      },
-      uid: {
-        type: 'string',
-      },
+      target: ref('FlowSurfaceWriteTarget'),
       title: {
         type: 'string',
       },
@@ -2623,14 +2617,9 @@ const schemas = {
   },
   FlowSurfaceMoveTabRequest: {
     type: 'object',
+    required: ['sourceUid', 'targetUid'],
     properties: {
-      sourceTabSchemaUid: {
-        type: 'string',
-      },
       sourceUid: {
-        type: 'string',
-      },
-      targetTabSchemaUid: {
         type: 'string',
       },
       targetUid: {
@@ -2661,10 +2650,8 @@ const schemas = {
   },
   FlowSurfaceRemoveTabRequest: {
     type: 'object',
+    required: ['uid'],
     properties: {
-      tabSchemaUid: {
-        type: 'string',
-      },
       uid: {
         type: 'string',
       },
@@ -2674,7 +2661,7 @@ const schemas = {
   FlowSurfaceRemoveTabResult: {
     type: 'object',
     properties: {
-      tabSchemaUid: {
+      uid: {
         type: 'string',
       },
     },
@@ -2684,7 +2671,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       type: {
         type: 'string',
         enum: [
@@ -2762,7 +2749,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       fieldPath: {
         type: 'string',
         description: 'Required for bound fields. Omit when using synthetic standalone types such as jsColumn/jsItem.',
@@ -2858,7 +2845,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       type: {
         type: 'string',
         enum: NON_RECORD_ACTION_TYPE_ENUM,
@@ -2910,7 +2897,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       type: {
         type: 'string',
         enum: RECORD_ACTION_TYPE_ENUM,
@@ -3072,7 +3059,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'blocks'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       blocks: {
         type: 'array',
         items: ref('FlowSurfaceAddBlockItem'),
@@ -3084,7 +3071,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'fields'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       fields: {
         type: 'array',
         items: ref('FlowSurfaceAddFieldItem'),
@@ -3096,7 +3083,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'actions'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       actions: {
         type: 'array',
         items: ref('FlowSurfaceAddActionItem'),
@@ -3108,7 +3095,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'recordActions'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       recordActions: {
         type: 'array',
         items: ref('FlowSurfaceAddRecordActionItem'),
@@ -3256,7 +3243,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -3283,7 +3270,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       flowRegistry: ANY_OBJECT_SCHEMA,
       flows: ANY_OBJECT_SCHEMA,
     },
@@ -3303,7 +3290,7 @@ const schemas = {
     type: 'object',
     required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       rows: ANY_OBJECT_SCHEMA,
       sizes: ANY_OBJECT_SCHEMA,
       rowOrder: {
@@ -3367,10 +3354,17 @@ const schemas = {
   },
   FlowSurfaceRemoveNodeRequest: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
-      uid: {
-        type: 'string',
+      target: {
+        type: 'object',
+        required: ['uid'],
+        properties: {
+          uid: {
+            type: 'string',
+          },
+        },
+        additionalProperties: false,
       },
     },
     additionalProperties: false,
@@ -3386,9 +3380,9 @@ const schemas = {
   },
   FlowSurfaceMutateAddTabValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
-      pageSchemaUid: ref('FlowSurfaceResolvableString'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       tabSchemaUid: ref('FlowSurfaceResolvableString'),
       tabSchemaName: ref('FlowSurfaceResolvableString'),
       title: ref('FlowSurfaceResolvableString'),
@@ -3400,10 +3394,9 @@ const schemas = {
   },
   FlowSurfaceMutateUpdateTabValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
-      tabSchemaUid: ref('FlowSurfaceResolvableString'),
-      uid: ref('FlowSurfaceResolvableString'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       title: ref('FlowSurfaceResolvableString'),
       icon: ref('FlowSurfaceResolvableString'),
       documentTitle: ref('FlowSurfaceResolvableString'),
@@ -3413,10 +3406,9 @@ const schemas = {
   },
   FlowSurfaceMutateMoveTabValues: {
     type: 'object',
+    required: ['sourceUid', 'targetUid'],
     properties: {
-      sourceTabSchemaUid: ref('FlowSurfaceResolvableString'),
       sourceUid: ref('FlowSurfaceResolvableString'),
-      targetTabSchemaUid: ref('FlowSurfaceResolvableString'),
       targetUid: ref('FlowSurfaceResolvableString'),
       position: {
         type: 'string',
@@ -3428,15 +3420,15 @@ const schemas = {
   FlowSurfaceMutateRemoveTabValues: {
     type: 'object',
     properties: {
-      tabSchemaUid: ref('FlowSurfaceResolvableString'),
       uid: ref('FlowSurfaceResolvableString'),
     },
     additionalProperties: false,
   },
   FlowSurfaceMutateAddBlockValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       type: ref('FlowSurfaceResolvableString'),
       use: ref('FlowSurfaceResolvableString'),
       resourceInit: ref('FlowSurfaceMutateResourceInit'),
@@ -3448,8 +3440,9 @@ const schemas = {
   },
   FlowSurfaceMutateAddFieldValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       fieldPath: ref('FlowSurfaceResolvableString'),
       associationPathName: ref('FlowSurfaceResolvableString'),
       dataSourceKey: ref('FlowSurfaceResolvableString'),
@@ -3465,8 +3458,9 @@ const schemas = {
   },
   FlowSurfaceMutateAddActionValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       type: ref('FlowSurfaceResolvableString'),
       use: ref('FlowSurfaceResolvableString'),
       resourceInit: ref('FlowSurfaceMutateResourceInit'),
@@ -3479,8 +3473,9 @@ const schemas = {
   },
   FlowSurfaceMutateAddRecordActionValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       type: ref('FlowSurfaceResolvableString'),
       use: ref('FlowSurfaceResolvableString'),
       resourceInit: ref('FlowSurfaceMutateResourceInit'),
@@ -3493,8 +3488,9 @@ const schemas = {
   },
   FlowSurfaceMutateUpdateSettingsValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       props: ANY_OBJECT_SCHEMA,
       decoratorProps: ANY_OBJECT_SCHEMA,
       stepParams: ANY_OBJECT_SCHEMA,
@@ -3504,8 +3500,9 @@ const schemas = {
   },
   FlowSurfaceMutateSetEventFlowsValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       flowRegistry: ANY_OBJECT_SCHEMA,
       flows: ANY_OBJECT_SCHEMA,
     },
@@ -3513,8 +3510,9 @@ const schemas = {
   },
   FlowSurfaceMutateSetLayoutValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
       rows: ANY_OBJECT_SCHEMA,
       sizes: ANY_OBJECT_SCHEMA,
       rowOrder: {
@@ -3538,9 +3536,16 @@ const schemas = {
   },
   FlowSurfaceMutateRemoveNodeValues: {
     type: 'object',
+    required: ['target'],
     properties: {
-      target: ref('FlowSurfaceMutateTarget'),
-      uid: ref('FlowSurfaceResolvableString'),
+      target: {
+        type: 'object',
+        required: ['uid'],
+        properties: {
+          uid: ref('FlowSurfaceResolvableString'),
+        },
+        additionalProperties: false,
+      },
     },
     additionalProperties: false,
   },
@@ -3550,7 +3555,7 @@ const schemas = {
       opId: {
         type: 'string',
       },
-      target: ref('FlowSurfaceMutateTarget'),
+      target: ref('FlowSurfaceMutateWriteTarget'),
     },
   },
   FlowSurfaceMutateOpCreatePage: {
@@ -3815,7 +3820,7 @@ const schemas = {
   FlowSurfaceMutateRequest: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       atomic: {
         type: 'boolean',
         enum: [true],
@@ -3832,7 +3837,7 @@ const schemas = {
     type: 'object',
     required: ['target', 'spec'],
     properties: {
-      target: ref('FlowSurfaceTarget'),
+      target: ref('FlowSurfaceWriteTarget'),
       mode: {
         type: 'string',
         enum: ['replace'],
@@ -3874,6 +3879,15 @@ const schemas = {
   },
   FlowSurfaceErrorResponse: {
     type: 'object',
+    example: {
+      errors: [
+        {
+          message:
+            'flowSurfaces removeNode only accepts target.uid for regular nodes; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first. Page use destroyPage and tab use removeTab',
+          type: 'bad_request',
+        },
+      ],
+    },
     properties: {
       errors: {
         type: 'array',
@@ -3882,10 +3896,12 @@ const schemas = {
           properties: {
             message: {
               type: 'string',
+              description: 'Human-readable error message for the caller',
             },
             type: {
               type: 'string',
-              enum: ACTION_TYPE_ENUM,
+              description: 'Optional error category such as bad_request or internal_error',
+              example: 'bad_request',
             },
           },
           required: ['message'],

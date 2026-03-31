@@ -9,7 +9,7 @@
 
 import _ from 'lodash';
 import type FlowModelRepository from '../repository';
-import type { FlowSurfaceResolvedTarget, FlowSurfaceTarget } from './types';
+import type { FlowSurfaceReadLocator, FlowSurfaceResolveTarget, FlowSurfaceResolvedTarget } from './types';
 
 export class SurfaceLocator {
   constructor(
@@ -17,7 +17,10 @@ export class SurfaceLocator {
     private readonly repository: FlowModelRepository,
   ) {}
 
-  async resolve(target: FlowSurfaceTarget, options: { transaction?: any } = {}): Promise<FlowSurfaceResolvedTarget> {
+  async resolve(
+    target: FlowSurfaceResolveTarget,
+    options: { transaction?: any } = {},
+  ): Promise<FlowSurfaceResolvedTarget> {
     const transaction = options.transaction;
     if (target.uid) {
       return this.resolveByUid(target.uid, target, transaction);
@@ -101,7 +104,7 @@ export class SurfaceLocator {
 
   private async resolveByUid(
     uid: string,
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceResolveTarget,
     transaction?: any,
   ): Promise<FlowSurfaceResolvedTarget> {
     const node = await this.repository.findModelById(uid, { transaction, includeAsyncNode: true });
@@ -146,7 +149,7 @@ export class SurfaceLocator {
 
   private async resolvePageSchemaUid(
     pageSchemaUid: string,
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceReadLocator,
     transaction?: any,
   ): Promise<FlowSurfaceResolvedTarget> {
     const pageModel = await this.repository.findModelByParentId(pageSchemaUid, {

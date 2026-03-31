@@ -184,7 +184,7 @@ export class FlowSurfaceRouteSync {
       });
     }
 
-    const tabAnchor = await this.findPersistedTabAnchor(target.tabSchemaUid || current?.uid, transaction);
+    const tabAnchor = await this.findPersistedTabAnchor(target.uid || current?.uid, transaction);
     if (!tabAnchor?.uid) {
       return;
     }

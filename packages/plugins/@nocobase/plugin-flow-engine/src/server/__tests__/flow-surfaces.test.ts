@@ -190,9 +190,7 @@ describe('flowSurfaces resource', () => {
     const addedTab = await getData(
       await rootAgent.resource('flowSurfaces').addTab({
         values: {
-          target: {
-            pageSchemaUid: created.pageSchemaUid,
-          },
+          target: { uid: created.pageUid },
           title: 'Secondary tab',
           documentTitle: 'Secondary browser title',
         },
@@ -219,8 +217,8 @@ describe('flowSurfaces resource', () => {
 
     const moveTabRes = await rootAgent.resource('flowSurfaces').moveTab({
       values: {
-        sourceTabSchemaUid: addedTab.tabSchemaUid,
-        targetTabSchemaUid: created.tabSchemaUid,
+        sourceUid: addedTab.tabSchemaUid,
+        targetUid: created.tabSchemaUid,
         position: 'before',
       },
     });
@@ -228,9 +226,7 @@ describe('flowSurfaces resource', () => {
 
     await rootAgent.resource('flowSurfaces').updateTab({
       values: {
-        target: {
-          tabSchemaUid: addedTab.tabSchemaUid,
-        },
+        target: { uid: addedTab.tabSchemaUid },
         title: 'Secondary tab updated',
         icon: 'AppstoreOutlined',
         documentTitle: 'Updated browser title',
@@ -259,9 +255,7 @@ describe('flowSurfaces resource', () => {
 
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
-        target: {
-          tabSchemaUid: addedTab.tabSchemaUid,
-        },
+        target: { uid: addedTab.tabSchemaUid },
         props: {
           title: 'Secondary tab via settings',
           icon: 'SettingOutlined',
@@ -308,7 +302,7 @@ describe('flowSurfaces resource', () => {
 
     await rootAgent.resource('flowSurfaces').removeTab({
       values: {
-        tabSchemaUid: addedTab.tabSchemaUid,
+        uid: addedTab.tabSchemaUid,
       },
     });
 
@@ -327,7 +321,7 @@ describe('flowSurfaces resource', () => {
 
     await rootAgent.resource('flowSurfaces').destroyPage({
       values: {
-        pageSchemaUid: created.pageSchemaUid,
+        uid: created.pageUid,
       },
     });
 
@@ -361,9 +355,7 @@ describe('flowSurfaces resource', () => {
 
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
-        target: {
-          pageSchemaUid: created.pageSchemaUid,
-        },
+        target: { uid: created.pageUid },
         props: {
           title: 'Settings page updated',
           enableTabs: false,
@@ -420,9 +412,7 @@ describe('flowSurfaces resource', () => {
 
     const setFlows = await rootAgent.resource('flowSurfaces').setEventFlows({
       values: {
-        target: {
-          tabSchemaUid: created.tabSchemaUid,
-        },
+        target: { uid: created.tabSchemaUid },
         flowRegistry: {
           tabBeforeRender: {
             key: 'tabBeforeRender',
@@ -537,7 +527,7 @@ describe('flowSurfaces resource', () => {
         ],
       },
     });
-    expect(atomicFalseRes.status).toBe(500);
+    expect(atomicFalseRes.status).toBe(400);
     expect(atomicFalseRes.body.errors?.[0]?.message).toContain('atomic=true');
     expect(atomicFalseRes.body.errors?.[0]?.message).toContain('v1');
     expect(
@@ -555,9 +545,7 @@ describe('flowSurfaces resource', () => {
 
     const defaultApplyRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         spec: {
           props: {
             title: 'Contract tab default replace',
@@ -579,9 +567,7 @@ describe('flowSurfaces resource', () => {
 
     const explicitReplaceRes = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         mode: 'replace',
         spec: {
           props: {
@@ -604,9 +590,7 @@ describe('flowSurfaces resource', () => {
 
     const invalidApplyMode = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         mode: 'merge',
         spec: {
           props: {
@@ -615,7 +599,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidApplyMode.status).toBe(500);
+    expect(invalidApplyMode.status).toBe(400);
     expect(invalidApplyMode.body.errors?.[0]?.message).toContain(`mode='replace'`);
     expect(invalidApplyMode.body.errors?.[0]?.message).toContain('v1');
 
@@ -2390,7 +2374,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidActionCreate.status).toBe(500);
+    expect(invalidActionCreate.status).toBe(400);
   });
 
   it('should support inline settings and popup on singular add APIs', async () => {
@@ -3393,7 +3377,9 @@ describe('flowSurfaces resource', () => {
 
     const removeFilterField = await rootAgent.resource('flowSurfaces').removeNode({
       values: {
-        uid: departmentField.wrapperUid,
+        target: {
+          uid: departmentField.wrapperUid,
+        },
       },
     });
     expect(removeFilterField.status).toBe(200);
@@ -3492,7 +3478,7 @@ describe('flowSurfaces resource', () => {
         fieldUse: tableNicknameField.fieldUse,
       },
     });
-    expect(mismatchedFieldUseRes.status).toBe(500);
+    expect(mismatchedFieldUseRes.status).toBe(400);
     expect(readErrorMessage(mismatchedFieldUseRes)).toContain(`does not match inferred fieldUse`);
 
     const unknownFieldUseRes = await rootAgent.resource('flowSurfaces').addField({
@@ -3504,7 +3490,7 @@ describe('flowSurfaces resource', () => {
         fieldUse: 'UnknownFieldModel',
       },
     });
-    expect(unknownFieldUseRes.status).toBe(500);
+    expect(unknownFieldUseRes.status).toBe(400);
     expect(readErrorMessage(unknownFieldUseRes)).toContain(`is not allowed under`);
 
     const explicitFilterField = await addField(rootAgent, filterFormUid, 'nickname', {
@@ -3701,7 +3687,7 @@ describe('flowSurfaces resource', () => {
         type: 'delete',
       },
     });
-    expect(createFormDeleteRes.status).toBe(500);
+    expect(createFormDeleteRes.status).toBe(400);
     expect(readErrorMessage(createFormDeleteRes)).toContain(`is not allowed under 'CreateFormModel'`);
 
     const filterFormViewRes = await rootAgent.resource('flowSurfaces').addAction({
@@ -3712,7 +3698,7 @@ describe('flowSurfaces resource', () => {
         type: 'view',
       },
     });
-    expect(filterFormViewRes.status).toBe(500);
+    expect(filterFormViewRes.status).toBe(400);
     expect(readErrorMessage(filterFormViewRes)).toContain(`is not allowed under 'FilterFormBlockModel'`);
 
     const tableSubmitRes = await rootAgent.resource('flowSurfaces').addAction({
@@ -3723,7 +3709,7 @@ describe('flowSurfaces resource', () => {
         type: 'submit',
       },
     });
-    expect(tableSubmitRes.status).toBe(500);
+    expect(tableSubmitRes.status).toBe(400);
     expect(readErrorMessage(tableSubmitRes)).toContain(`is not allowed under 'TableBlockModel'`);
   });
 
@@ -3938,7 +3924,7 @@ describe('flowSurfaces resource', () => {
         defaultTargetUid: tableUid,
       },
     });
-    expect(invalidFilterRenderer.status).toBe(500);
+    expect(invalidFilterRenderer.status).toBe(400);
     expect(readErrorMessage(invalidFilterRenderer)).toContain(`renderer 'js' is not allowed`);
 
     const invalidFormJsColumn = await rootAgent.resource('flowSurfaces').addField({
@@ -3949,7 +3935,7 @@ describe('flowSurfaces resource', () => {
         type: 'jsColumn',
       },
     });
-    expect(invalidFormJsColumn.status).toBe(500);
+    expect(invalidFormJsColumn.status).toBe(400);
     expect(readErrorMessage(invalidFormJsColumn)).toContain(`field type 'jsColumn'`);
 
     const invalidTableJsItem = await rootAgent.resource('flowSurfaces').addField({
@@ -3960,7 +3946,7 @@ describe('flowSurfaces resource', () => {
         type: 'jsItem',
       },
     });
-    expect(invalidTableJsItem.status).toBe(500);
+    expect(invalidTableJsItem.status).toBe(400);
     expect(readErrorMessage(invalidTableJsItem)).toContain(`field type 'jsItem'`);
 
     const jsBlockConfigureRes = await rootAgent.resource('flowSurfaces').configure({
@@ -4272,7 +4258,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(unknownBlockApply.status).toBe(500);
+    expect(unknownBlockApply.status).toBe(400);
     expect(readErrorMessage(unknownBlockApply)).toContain(`block 'UnknownBlockModel' is not a public capability`);
 
     const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
@@ -4300,7 +4286,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(unknownActionApply.status).toBe(500);
+    expect(unknownActionApply.status).toBe(400);
     expect(readErrorMessage(unknownActionApply)).toContain(`action 'UnknownActionModel' is not a public capability`);
 
     const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
@@ -4349,7 +4335,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidWrapperApply.status).toBe(500);
+    expect(invalidWrapperApply.status).toBe(400);
     expect(readErrorMessage(invalidWrapperApply)).toContain(`field wrapper 'TableColumnModel'`);
 
     const invalidFieldUseApply = await rootAgent.resource('flowSurfaces').apply({
@@ -4391,7 +4377,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidFieldUseApply.status).toBe(500);
+    expect(invalidFieldUseApply.status).toBe(400);
     expect(readErrorMessage(invalidFieldUseApply)).toContain(`fieldUse 'DisplayTextFieldModel'`);
   });
 
@@ -4516,9 +4502,7 @@ describe('flowSurfaces resource', () => {
 
     const tabApplyTarget = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          tabSchemaUid: page.tabSchemaUid,
-        },
+        target: { uid: page.tabSchemaUid },
         spec: {
           props: {
             title: 'Apply tab updated',
@@ -4593,9 +4577,7 @@ describe('flowSurfaces resource', () => {
     const secondaryTab = await getData(
       await rootAgent.resource('flowSurfaces').addTab({
         values: {
-          target: {
-            pageSchemaUid: page.pageSchemaUid,
-          },
+          target: { uid: page.pageUid },
           title: 'Secondary tab',
           documentTitle: 'Secondary tab document',
         },
@@ -4604,9 +4586,7 @@ describe('flowSurfaces resource', () => {
 
     const pageApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
+        target: { uid: page.pageUid },
         spec: {
           props: {
             title: 'Apply page root updated',
@@ -4695,9 +4675,7 @@ describe('flowSurfaces resource', () => {
 
     const pageApplyWithoutTabs = await rootAgent.resource('flowSurfaces').apply({
       values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
+        target: { uid: page.pageUid },
         spec: {
           props: {
             title: 'Apply page wrapper only',
@@ -5290,7 +5268,7 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(applyRes.status).toBe(500);
+    expect(applyRes.status).toBe(400);
   });
 
   it('should auto-generate deterministic layout for apply replace without explicit grid layout', async () => {
@@ -5667,9 +5645,7 @@ describe('flowSurfaces resource', () => {
 
     const invalidPageType = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
-        target: {
-          pageSchemaUid: page.pageSchemaUid,
-        },
+        target: { uid: page.pageUid },
         stepParams: {
           pageSettings: {
             general: {

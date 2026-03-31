@@ -49,7 +49,12 @@ describe('flowSurfaces swagger', () => {
     const schemas = swaggerDocument.components?.schemas || {};
     const parameters = swaggerDocument.components?.parameters || {};
 
-    expect(schemas.FlowSurfaceTarget).toBeTruthy();
+    expect(schemas.FlowSurfaceWriteTarget).toBeTruthy();
+    expect(schemas.FlowSurfaceWriteTarget.required).toEqual(['uid']);
+    expect(schemas.FlowSurfaceMutateWriteTarget).toBeTruthy();
+    expect(schemas.FlowSurfaceAddTabRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceUpdateTabRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceMoveTabRequest.required).toEqual(['sourceUid', 'targetUid']);
     expect(schemas.FlowSurfaceResolvedTarget).toBeTruthy();
     expect(schemas.FlowSurfaceReadTarget).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureOption).toBeTruthy();
@@ -71,6 +76,19 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceMutateOp).toBeTruthy();
     expect(schemas.FlowSurfaceMutationResponse).toBeTruthy();
     expect(schemas.FlowSurfaceErrorResponse).toBeTruthy();
+    expect(schemas.FlowSurfaceErrorResponse.example).toMatchObject({
+      errors: [
+        {
+          message: expect.any(String),
+          type: 'bad_request',
+        },
+      ],
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.type).toMatchObject({
+      type: 'string',
+      example: 'bad_request',
+    });
+    expect(schemas.FlowSurfaceErrorResponse.properties.errors.items.properties.type.enum).toBeUndefined();
     expect(schemas.FlowSurfaceAddRecordActionRequest).toBeTruthy();
     expect(schemas.FlowSurfaceAddRecordActionResult).toBeTruthy();
     expect(schemas.FlowSurfaceAddBlocksRequest).toBeTruthy();
@@ -425,6 +443,24 @@ describe('flowSurfaces swagger', () => {
     expect(mutateRequest.example.atomic).toBe(true);
     expect(mutateRequest.example.ops[1].values.target.uid.$ref).toBe('page.tabSchemaUid');
 
+    const addTabRequest = swaggerDocument.paths['/flowSurfaces:addTab'].post.requestBody.content['application/json'];
+    expect(addTabRequest.example.target.uid).toBe('employees-page-uid');
+    expect(addTabRequest.example.target.pageSchemaUid).toBeUndefined();
+
+    const removeTabRequest =
+      swaggerDocument.paths['/flowSurfaces:removeTab'].post.requestBody.content['application/json'];
+    expect(removeTabRequest.example.uid).toBe('details-tab');
+    expect(removeTabRequest.example.tabSchemaUid).toBeUndefined();
+
+    const destroyPageRequest =
+      swaggerDocument.paths['/flowSurfaces:destroyPage'].post.requestBody.content['application/json'];
+    expect(destroyPageRequest.example.uid).toBe('employees-page-uid');
+    expect(destroyPageRequest.example.pageSchemaUid).toBeUndefined();
+
+    const removeNodeOperation = swaggerDocument.paths['/flowSurfaces:removeNode'].post;
+    expect(removeNodeOperation.description).toContain('只接受 `target.uid`');
+    expect(removeNodeOperation.description).toContain('flowSurfaces:get');
+
     const applyRequest = swaggerDocument.paths['/flowSurfaces:apply'].post.requestBody.content['application/json'];
     expect(applyRequest.example.mode).toBe('replace');
     expect(applyRequest.example.spec.subModels.items).toHaveLength(2);
@@ -473,9 +509,31 @@ describe('flowSurfaces swagger', () => {
       const operation = swaggerDocument.paths[`/flowSurfaces:${actionName}`].post;
       expect(operation.requestBody?.content?.['application/json']).toBeTruthy();
       expect(operation.responses?.[200]?.content?.['application/json']?.schema?.properties?.data).toBeTruthy();
+      expect(operation.responses?.[400]?.description).toBe('Invalid public request parameters or semantics');
+      expect(operation.responses?.[400]?.content?.['application/json']?.schema?.$ref).toBe(
+        '#/components/schemas/FlowSurfaceErrorResponse',
+      );
+      expect(operation.responses?.[500]?.description).toBe('Unexpected internal server error');
       expect(operation.responses?.[500]?.content?.['application/json']?.schema?.$ref).toBe(
         '#/components/schemas/FlowSurfaceErrorResponse',
       );
     }
+
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceRemoveNodeRequest).toMatchObject({
+      required: ['target'],
+      properties: {
+        target: {
+          required: ['uid'],
+          additionalProperties: false,
+        },
+      },
+      additionalProperties: false,
+    });
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceMutateAddTabValues.required).toEqual(['target']);
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceMutateUpdateTabValues.required).toEqual(['target']);
+    expect(swaggerDocument.components?.schemas?.FlowSurfaceMutateMoveTabValues.required).toEqual([
+      'sourceUid',
+      'targetUid',
+    ]);
   });
 });

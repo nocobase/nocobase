@@ -58,8 +58,10 @@ import type {
   FlowSurfaceNodeDomain,
   FlowSurfaceNodeSpec,
   FlowSurfaceNodeSubModel,
+  FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
-  FlowSurfaceTarget,
+  FlowSurfaceResolvedTarget,
+  FlowSurfaceWriteTarget,
 } from './types';
 
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -198,8 +200,20 @@ export class FlowSurfacesService {
     return Date.now() * 1000 + Math.floor(Math.random() * 1000) + offset;
   }
 
-  async catalog(input: { target?: FlowSurfaceTarget }, options: { transaction?: any } = {}) {
-    const target = input?.target;
+  async catalog(input: { target?: FlowSurfaceWriteTarget }, options: { transaction?: any } = {}) {
+    if (
+      _.isUndefined(input?.target) &&
+      hasLegacyLocatorFields(input || {}, {
+        allowRootUid: true,
+      })
+    ) {
+      throwBadRequest(
+        `flowSurfaces catalog only accepts target.uid; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    const target = _.isUndefined(input?.target)
+      ? undefined
+      : this.normalizeWriteTarget('catalog', input?.target, input);
     const resolved = target ? await this.locator.resolve(target, options) : null;
     const node = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
     const fieldCatalog = target ? await this.buildFieldCatalog(target, options.transaction) : [];
@@ -274,11 +288,12 @@ export class FlowSurfacesService {
   }
 
   async compose(values: FlowSurfaceComposeValues, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('compose', values?.target, values);
     const mode = this.assertComposeMode(values?.mode);
     const normalizedBlocks = _.castArray(values?.blocks || []).map((item, index) =>
       this.normalizeComposeBlock(item, index),
     );
-    const blockParent = await this.surfaceContext.resolveBlockParent(values.target, options.transaction);
+    const blockParent = await this.surfaceContext.resolveBlockParent(target, options.transaction);
     const gridUid = blockParent.parentUid;
     const initialGrid = await this.repository.findModelById(gridUid, {
       transaction: options.transaction,
@@ -472,75 +487,73 @@ export class FlowSurfacesService {
   }
 
   async configure(values: FlowSurfaceConfigureValues, options: { transaction?: any } = {}) {
-    if (!values?.target) {
-      throw new Error('flowSurfaces configure requires target');
-    }
+    const target = this.normalizeWriteTarget('configure', values?.target, values);
     if (!_.isPlainObject(values.changes) || !Object.keys(values.changes).length) {
-      throw new Error('flowSurfaces configure requires a non-empty changes object');
+      throwBadRequest('flowSurfaces configure requires a non-empty changes object');
     }
     ensureNoRawSimpleChangeKeys(values.changes);
 
-    const resolved = await this.locator.resolve(values.target, options);
+    const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
 
     if (resolved.kind === 'page' && resolved.pageRoute) {
-      return this.configurePage(values.target, values.changes, options);
+      return this.configurePage(target, values.changes, options);
     }
     if (resolved.kind === 'tab' && resolved.tabRoute) {
-      return this.configureTab(values.target, values.changes, options);
+      return this.configureTab(target, values.changes, options);
     }
     if (current?.use === 'TableBlockModel') {
-      return this.configureTableBlock(values.target, values.changes, options);
+      return this.configureTableBlock(target, values.changes, options);
     }
     if (SIMPLE_FORM_BLOCK_USES.has(current?.use || '')) {
-      return this.configureFormBlock(values.target, current.use, values.changes, options);
+      return this.configureFormBlock(target, current.use, values.changes, options);
     }
     if (current?.use === 'DetailsBlockModel') {
-      return this.configureDetailsBlock(values.target, values.changes, options);
+      return this.configureDetailsBlock(target, values.changes, options);
     }
     if (current?.use === 'FilterFormBlockModel') {
-      return this.configureFilterFormBlock(values.target, values.changes, options);
+      return this.configureFilterFormBlock(target, values.changes, options);
     }
     if (LIST_BLOCK_USES.has(current?.use || '')) {
-      return this.configureListBlock(values.target, values.changes, options);
+      return this.configureListBlock(target, values.changes, options);
     }
     if (GRID_CARD_BLOCK_USES.has(current?.use || '')) {
-      return this.configureGridCardBlock(values.target, values.changes, options);
+      return this.configureGridCardBlock(target, values.changes, options);
     }
     if (JS_BLOCK_USES.has(current?.use || '')) {
-      return this.configureJSBlock(values.target, values.changes, options);
+      return this.configureJSBlock(target, values.changes, options);
     }
     if (current?.use === 'MarkdownBlockModel') {
-      return this.configureMarkdownBlock(values.target, values.changes, options);
+      return this.configureMarkdownBlock(target, values.changes, options);
     }
     if (current?.use === 'IframeBlockModel') {
-      return this.configureIframeBlock(values.target, values.changes, options);
+      return this.configureIframeBlock(target, values.changes, options);
     }
     if (current?.use === 'ChartBlockModel') {
-      return this.configureChartBlock(values.target, values.changes, options);
+      return this.configureChartBlock(target, values.changes, options);
     }
     if (current?.use === 'ActionPanelBlockModel') {
-      return this.configureActionPanelBlock(values.target, values.changes, options);
+      return this.configureActionPanelBlock(target, values.changes, options);
     }
     if (current?.use === 'TableActionsColumnModel') {
-      return this.configureActionColumn(values.target, values.changes, options);
+      return this.configureActionColumn(target, values.changes, options);
     }
     if (FIELD_WRAPPER_USES.has(current?.use || '')) {
-      return this.configureFieldWrapper(values.target, current, values.changes, options);
+      return this.configureFieldWrapper(target, current, values.changes, options);
     }
     if (STANDALONE_FIELD_NODE_USES.has(current?.use || '')) {
       return current?.use === 'JSColumnModel'
-        ? this.configureJSColumn(values.target, values.changes, options)
-        : this.configureJSItem(values.target, values.changes, options);
+        ? this.configureJSColumn(target, values.changes, options)
+        : this.configureJSItem(target, values.changes, options);
     }
     if (isFieldNodeUse(current?.use)) {
-      return this.configureFieldNode(values.target, values.changes, options);
+      return this.configureFieldNode(target, values.changes, options);
     }
     if (ACTION_BUTTON_USES.has(current?.use || '')) {
-      return this.configureActionNode(values.target, current.use, values.changes, options);
+      return this.configureActionNode(target, current.use, values.changes, options);
     }
 
-    throw new Error(`flowSurfaces configure does not support configureOptions on '${current?.use || resolved.uid}'`);
+    throwBadRequest(`flowSurfaces configure does not support configureOptions on '${current?.use || resolved.uid}'`);
   }
 
   async createPage(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -629,10 +642,9 @@ export class FlowSurfacesService {
   }
 
   async destroyPage(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const pageSchemaUid = String(values.pageSchemaUid || values.schemaUid || '').trim();
-    if (!pageSchemaUid) {
-      throw new Error('flowSurfaces destroyPage requires pageSchemaUid');
-    }
+    const uid = this.normalizeRootUidValue('destroyPage', values);
+    const resolved = await this.locator.resolve({ uid }, options);
+    const { pageSchemaUid } = await this.assertPageRootUidTarget('destroyPage', resolved, options.transaction);
     const pageRoute = await this.db.getRepository('desktopRoutes').findOne({
       filter: {
         schemaUid: pageSchemaUid,
@@ -662,13 +674,13 @@ export class FlowSurfacesService {
       transaction: options.transaction,
     });
     await this.removeFlowRoutePageSchemaShell(pageSchemaUid, options.transaction);
-    return { pageSchemaUid };
+    return { uid: resolved.uid };
   }
 
   async addTab(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const pageTarget = await this.locator.resolve(values.target || { pageSchemaUid: values.pageSchemaUid }, options);
-    const pageRoute =
-      pageTarget.pageRoute || (await this.locator.findRouteBySchemaUid(values.pageSchemaUid, options.transaction));
+    const pageTarget = await this.locator.resolve(this.normalizeWriteTarget('addTab', values?.target, values), options);
+    await this.assertPageRootUidTarget('addTab', pageTarget, options.transaction);
+    const pageRoute = pageTarget.pageRoute;
     if (!pageRoute) {
       throw new Error('flowSurfaces addTab page route not found');
     }
@@ -708,10 +720,12 @@ export class FlowSurfacesService {
   }
 
   async updateTab(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = await this.locator.resolve(
-      values.target || { tabSchemaUid: values.tabSchemaUid || values.uid },
-      options,
-    );
+    const target = await this.locator.resolve(this.normalizeWriteTarget('updateTab', values?.target, values), options);
+    if (target.kind !== 'tab') {
+      throwBadRequest(
+        `flowSurfaces updateTab only accepts target.uid for a tab; if you only have tabSchemaUid, call flowSurfaces:get first`,
+      );
+    }
     const tabUid = target.uid;
     const route = target.tabRoute || (await this.locator.findRouteBySchemaUid(tabUid, options.transaction));
     if (!route) {
@@ -754,11 +768,24 @@ export class FlowSurfacesService {
   }
 
   async moveTab(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const sourceUid = String(values.sourceTabSchemaUid || values.sourceUid || '').trim();
-    const targetUid = String(values.targetTabSchemaUid || values.targetUid || '').trim();
+    if (
+      Object.prototype.hasOwnProperty.call(values || {}, 'sourceTabSchemaUid') ||
+      Object.prototype.hasOwnProperty.call(values || {}, 'targetTabSchemaUid')
+    ) {
+      throwBadRequest(
+        `flowSurfaces moveTab only accepts sourceUid and targetUid; if you only have tabSchemaUid, call flowSurfaces:get first`,
+      );
+    }
+    const sourceUid = String(values.sourceUid || '').trim();
+    const targetUid = String(values.targetUid || '').trim();
     const position = values.position === 'before' ? 'before' : 'after';
     if (!sourceUid || !targetUid) {
-      throw new Error('flowSurfaces moveTab requires source and target');
+      throwBadRequest('flowSurfaces moveTab requires sourceUid and targetUid');
+    }
+    const sourceTarget = await this.locator.resolve({ uid: sourceUid }, options);
+    const targetTarget = await this.locator.resolve({ uid: targetUid }, options);
+    if (sourceTarget.kind !== 'tab' || targetTarget.kind !== 'tab') {
+      throwBadRequest('flowSurfaces moveTab only supports tab uid values');
     }
     const sourceRoute = await this.locator.findRouteBySchemaUid(sourceUid, options.transaction);
     const targetRoute = await this.locator.findRouteBySchemaUid(targetUid, options.transaction);
@@ -811,21 +838,25 @@ export class FlowSurfacesService {
   }
 
   async removeTab(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const tabSchemaUid = String(values.tabSchemaUid || values.uid || '').trim();
-    if (!tabSchemaUid) {
-      throw new Error('flowSurfaces removeTab requires tabSchemaUid');
+    const uid = this.normalizeRootUidValue('removeTab', values);
+    const resolved = await this.locator.resolve({ uid }, options);
+    if (resolved.kind !== 'tab') {
+      throwBadRequest(
+        `flowSurfaces removeTab requires a tab uid; if you only have tabSchemaUid, call flowSurfaces:get first`,
+      );
     }
-    await this.routeSync.removeTabAnchorTree(tabSchemaUid, options.transaction);
+    await this.routeSync.removeTabAnchorTree(resolved.uid, options.transaction);
     await this.db.getRepository('desktopRoutes').destroy({
       filter: {
-        schemaUid: tabSchemaUid,
+        schemaUid: resolved.uid,
       },
       transaction: options.transaction,
     });
-    return { tabSchemaUid };
+    return { uid: resolved.uid };
   }
 
   async addBlock(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
@@ -837,7 +868,7 @@ export class FlowSurfacesService {
       },
     );
     const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
-      values.target,
+      target,
       options.transaction,
     );
     const tree = buildBlockTree({
@@ -891,9 +922,10 @@ export class FlowSurfacesService {
   }
 
   async addField(values: Record<string, any>, options: { transaction?: any } = {}): Promise<FlowSurfaceAddFieldResult> {
+    const target = this.normalizeWriteTarget('addField', values?.target, values);
     const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
-    const target = await this.locator.resolve(values.target, options);
-    const container = await this.surfaceContext.resolveFieldContainer(target.uid, options.transaction);
+    const resolvedTarget = await this.locator.resolve(target, options);
+    const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
     const requestedStandaloneType =
       typeof values.type === 'string' && values.type.trim().length ? values.type.trim() : undefined;
@@ -907,7 +939,7 @@ export class FlowSurfacesService {
 
     if (fieldCapability.standaloneUse) {
       if (isFilterFormItem) {
-        throw new Error(`flowSurfaces addField type '${values.type}' is not allowed under filter-form`);
+        throwBadRequest(`flowSurfaces addField type '${values.type}' is not allowed under filter-form`);
       }
       const node = buildStandaloneFieldNode({
         use: fieldCapability.standaloneUse as 'JSColumnModel' | 'JSItemModel',
@@ -950,7 +982,7 @@ export class FlowSurfacesService {
           )
         : null;
     if (isFilterFormItem && !filterTargets.length && requestedFilterTargetUid) {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces addField filter target '${requestedFilterTargetUid}' is not available on the current surface`,
       );
     }
@@ -959,7 +991,7 @@ export class FlowSurfacesService {
         (await this.locator.resolveCollectionContext(container.ownerUid, options.transaction).catch(() => null))
       : await this.locator.resolveCollectionContext(container.ownerUid, options.transaction);
     if (!resourceContext?.resourceInit) {
-      throw new Error('flowSurfaces addField cannot infer collection context');
+      throwBadRequest('flowSurfaces addField cannot infer collection context');
     }
 
     const resolvedField = await this.resolveFieldDefinition({
@@ -1070,11 +1102,12 @@ export class FlowSurfacesService {
   }
 
   async addAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('addAction', values?.target, values);
     const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
-    const container = await this.surfaceContext.resolveActionContainer(values.target, options.transaction);
+    const container = await this.surfaceContext.resolveActionContainer(target, options.transaction);
     if (getActionContainerScope(container.ownerUse) === 'record') {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
@@ -1089,7 +1122,7 @@ export class FlowSurfacesService {
       throw new Error(`flowSurfaces addAction '${actionCatalogItem.use}' is missing a resolved action scope`);
     }
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
-      throw new Error(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
+      throwBadRequest(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
     }
     assertRequestedActionScope({
       requestedScope,
@@ -1131,9 +1164,10 @@ export class FlowSurfacesService {
   }
 
   async addRecordAction(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('addRecordAction', values?.target, values);
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
-    const container = await this.resolveRecordActionContainer(values.target, options.transaction);
+    const container = await this.resolveRecordActionContainer(target, options.transaction);
     const requestedScope = normalizeActionScope(values.scope);
     const actionCatalogItem = this.resolveAddRecordActionCatalogItem({
       type: values.type,
@@ -1143,7 +1177,7 @@ export class FlowSurfacesService {
     });
     const resolvedScope = actionCatalogItem.scope;
     if (inlinePopup && !POPUP_ACTION_USES.has(actionCatalogItem.use)) {
-      throw new Error(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
+      throwBadRequest(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
     }
     assertRequestedActionScope({
       requestedScope,
@@ -1229,7 +1263,7 @@ export class FlowSurfacesService {
       return undefined;
     }
     if (!_.isPlainObject(settings)) {
-      throw new Error(`flowSurfaces ${actionName} settings must be an object`);
+      throwBadRequest(`flowSurfaces ${actionName} settings must be an object`);
     }
     return settings;
   }
@@ -1239,7 +1273,7 @@ export class FlowSurfacesService {
       return undefined;
     }
     if (!_.isPlainObject(popup)) {
-      throw new Error(`flowSurfaces ${actionName} popup must be an object`);
+      throwBadRequest(`flowSurfaces ${actionName} popup must be an object`);
     }
     return popup;
   }
@@ -1350,7 +1384,8 @@ export class FlowSurfacesService {
   }
 
   async updateSettings(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = await this.locator.resolve(values.target, options);
+    const writeTarget = this.normalizeWriteTarget('updateSettings', values?.target, values);
+    const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current.use);
     const nextPayload: Record<string, any> = { uid: current.uid };
@@ -1426,7 +1461,8 @@ export class FlowSurfacesService {
   }
 
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = await this.locator.resolve(values.target, options);
+    const writeTarget = this.normalizeWriteTarget('setEventFlows', values?.target, values);
+    const target = await this.locator.resolve(writeTarget, options);
     const current = await this.loadResolvedNode(target, options.transaction);
     const contract = getNodeContract(current?.use);
     if (!contract.editableDomains.includes('flowRegistry')) {
@@ -1465,7 +1501,8 @@ export class FlowSurfacesService {
   }
 
   async setLayout(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const resolved = await this.locator.resolve(values.target, options);
+    const target = this.normalizeWriteTarget('setLayout', values?.target, values);
+    const resolved = await this.locator.resolve(target, options);
     const grid = await this.surfaceContext.resolveGridNode(resolved.uid, options.transaction);
     const contract = getNodeContract(grid?.use);
     if (!contract.layoutCapabilities?.supported) {
@@ -1536,18 +1573,23 @@ export class FlowSurfacesService {
   }
 
   async removeNode(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = await this.locator.resolve(values.target || { uid: values.uid }, options);
+    const target = this.normalizeRemoveNodeTarget(values);
+    const resolved = await this.locator.resolve(target, options);
     const node =
-      target.node ||
-      (await this.repository.findModelById(target.uid, { transaction: options.transaction, includeAsyncNode: true }));
+      resolved.node ||
+      (await this.repository.findModelById(resolved.uid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      }));
+    this.assertRemoveNodeResolvedTarget(resolved, node);
     if (node?.use === 'FilterFormItemModel') {
-      await this.removeFilterFormConnectConfig(target.uid, options.transaction);
+      await this.removeFilterFormConnectConfig(resolved.uid, options.transaction);
     }
     if (FILTER_TARGET_BLOCK_USES.has(node?.use || '')) {
-      await this.removeFilterFormTargetBindings(target.uid, options.transaction);
+      await this.removeFilterFormTargetBindings(resolved.uid, options.transaction);
     }
-    await this.repository.remove(target.uid, { transaction: options.transaction });
-    return { uid: target.uid };
+    await this.repository.remove(resolved.uid, { transaction: options.transaction });
+    return { uid: resolved.uid };
   }
 
   async mutate(values: FlowSurfaceMutateValues, options: { transaction?: any } = {}) {
@@ -1569,20 +1611,11 @@ export class FlowSurfacesService {
 
   async apply(values: FlowSurfaceApplyValues, options: { transaction?: any } = {}) {
     this.assertApplyMode(values.mode);
-    const target = values.target as FlowSurfaceTarget;
+    const target = this.normalizeWriteTarget('apply', values?.target, values);
     const spec = values.spec as FlowSurfaceApplySpec;
     const readback = await this.get(target, options);
-    const compileTarget = {
-      ...target,
-      ...(resolveRouteSchemaUid(readback?.target?.pageRoute)
-        ? { pageSchemaUid: resolveRouteSchemaUid(readback?.target?.pageRoute) }
-        : {}),
-      ...(resolveRouteSchemaUid(readback?.target?.tabRoute)
-        ? { tabSchemaUid: resolveRouteSchemaUid(readback?.target?.tabRoute) }
-        : {}),
-    };
-    const compiled = compileApplySpec(compileTarget, readback.tree, spec);
-    const mutateRes = await this.mutate({ target: compileTarget, ops: compiled.ops, atomic: true }, options);
+    const compiled = compileApplySpec(target, readback.tree, spec);
+    const mutateRes = await this.mutate({ ops: compiled.ops, atomic: true }, options);
     return {
       ...mutateRes,
       clientKeyToUid: {
@@ -1674,7 +1707,7 @@ export class FlowSurfacesService {
 
   private assertApplyMode(mode?: FlowSurfaceApplyMode) {
     if (!_.isUndefined(mode) && mode !== 'replace') {
-      throw new Error(`flowSurfaces apply only supports mode='replace' in v1`);
+      throwBadRequest(`flowSurfaces apply only supports mode='replace' in v1`);
     }
   }
 
@@ -1683,18 +1716,128 @@ export class FlowSurfacesService {
       return 'append' as const;
     }
     if (mode !== 'append' && mode !== 'replace') {
-      throw new Error(`flowSurfaces compose only supports mode='append' or mode='replace'`);
+      throwBadRequest(`flowSurfaces compose only supports mode='append' or mode='replace'`);
     }
     return mode;
   }
 
   private assertMutateAtomicFlag(atomic: FlowSurfaceAtomicFlag | undefined) {
     if (!_.isUndefined(atomic) && atomic !== true) {
-      throw new Error(`flowSurfaces mutate only supports atomic=true in v1`);
+      throwBadRequest(`flowSurfaces mutate only supports atomic=true in v1`);
     }
   }
 
-  private normalizeGetTarget(input: Record<string, any>): FlowSurfaceTarget {
+  private normalizeWriteTarget(actionName: string, target: any, values?: Record<string, any>): FlowSurfaceWriteTarget {
+    if (hasLegacyLocatorFields(values || {}, { allowRootUid: true })) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts target.uid; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    if (!_.isPlainObject(target)) {
+      throwBadRequest(`flowSurfaces ${actionName} requires target.uid`);
+    }
+    const targetKeys = Object.keys(target);
+    if (!targetKeys.length || targetKeys.some((key) => key !== 'uid') || hasLegacyLocatorFields(target)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts target.uid; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    const uid = String(target.uid || '').trim();
+    if (!uid) {
+      throwBadRequest(`flowSurfaces ${actionName} requires target.uid`);
+    }
+    return { uid };
+  }
+
+  private normalizeRootUidValue(actionName: string, values: Record<string, any>): string {
+    if (_.isPlainObject(values?.target)) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts root uid; do not wrap it in target. If you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    if (hasLegacyLocatorFields(values || {})) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts root uid; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    const uid = String(values?.uid || '').trim();
+    if (!uid) {
+      throwBadRequest(`flowSurfaces ${actionName} requires uid`);
+    }
+    return uid;
+  }
+
+  private async assertPageRootUidTarget(
+    actionName: 'addTab' | 'destroyPage',
+    resolved: FlowSurfaceResolvedTarget,
+    transaction?: any,
+  ) {
+    const pageSchemaUid = resolved.pageRoute?.get?.('schemaUid') || resolved.pageRoute?.schemaUid;
+    const node =
+      resolved.node ||
+      (await this.repository.findModelById(resolved.uid, {
+        transaction,
+        includeAsyncNode: true,
+      }));
+    if (resolved.kind !== 'page' || !pageSchemaUid || !['RootPageModel', 'ChildPageModel'].includes(node?.use || '')) {
+      throwBadRequest(
+        `flowSurfaces ${actionName} requires a page uid; if you only have pageSchemaUid or routeId, call flowSurfaces:get first`,
+      );
+    }
+    return {
+      pageSchemaUid,
+      node,
+    };
+  }
+
+  private normalizeRemoveNodeTarget(values: Record<string, any>): FlowSurfaceWriteTarget {
+    if (!_.isPlainObject(values?.target)) {
+      throwBadRequest(
+        `flowSurfaces removeNode only accepts target.uid for regular nodes; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first. Page use destroyPage and tab use removeTab`,
+      );
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(values, 'uid') ||
+      Object.prototype.hasOwnProperty.call(values, 'pageSchemaUid') ||
+      Object.prototype.hasOwnProperty.call(values, 'tabSchemaUid') ||
+      Object.prototype.hasOwnProperty.call(values, 'routeId')
+    ) {
+      throwBadRequest(
+        `flowSurfaces removeNode only accepts target.uid for regular nodes; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first. Page use destroyPage and tab use removeTab`,
+      );
+    }
+    const target = values.target || {};
+    if (
+      Object.prototype.hasOwnProperty.call(target, 'pageSchemaUid') ||
+      Object.prototype.hasOwnProperty.call(target, 'tabSchemaUid') ||
+      Object.prototype.hasOwnProperty.call(target, 'routeId')
+    ) {
+      throwBadRequest(
+        `flowSurfaces removeNode only accepts target.uid for regular nodes; if you only have pageSchemaUid, tabSchemaUid or routeId, call flowSurfaces:get first. Page use destroyPage and tab use removeTab`,
+      );
+    }
+    const uid = String(target.uid || '').trim();
+    if (!uid) {
+      throwBadRequest(`flowSurfaces removeNode requires target.uid`);
+    }
+    return { uid };
+  }
+
+  private assertRemoveNodeResolvedTarget(resolved: FlowSurfaceResolvedTarget, node?: any) {
+    if (resolved.kind === 'page' || ['RootPageModel', 'ChildPageModel'].includes(node?.use || '')) {
+      throwBadRequest(`flowSurfaces removeNode does not support page surfaces; use destroyPage`);
+    }
+    if (resolved.kind === 'tab' || ['RootPageTabModel', 'ChildPageTabModel'].includes(node?.use || '')) {
+      throwBadRequest(`flowSurfaces removeNode does not support tab surfaces; use removeTab`);
+    }
+    if (node?.use === 'RouteModel' || (resolved.route && !resolved.node)) {
+      throwBadRequest(
+        `flowSurfaces removeNode only supports block / field / action / popup subtree nodes; page use destroyPage and tab use removeTab`,
+      );
+    }
+  }
+
+  private normalizeGetTarget(input: Record<string, any>): FlowSurfaceReadLocator {
     if (!_.isPlainObject(input)) {
       throw new FlowSurfaceBadRequestError(`flowSurfaces:get requires root locator fields`);
     }
@@ -1723,7 +1866,7 @@ export class FlowSurfacesService {
   }
 
   private buildReadTargetSummary(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceReadLocator,
     resolved: { uid: string; kind: string },
   ): FlowSurfaceReadTarget {
     return {
@@ -1761,7 +1904,7 @@ export class FlowSurfacesService {
     });
     if (item) {
       if (item.scope === 'record') {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces addAction does not support record action '${item.key}' under '${input.containerUse}', use addRecordAction`,
         );
       }
@@ -1781,7 +1924,7 @@ export class FlowSurfacesService {
         )
       : null;
     if (recordItem?.scope === 'record') {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces addAction does not support record action '${recordItem.key}' under '${input.containerUse}', use addRecordAction`,
       );
     }
@@ -1809,7 +1952,7 @@ export class FlowSurfacesService {
     );
     if (item) {
       if (item.scope !== 'record') {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces addRecordAction only supports record actions; '${item.key}' should use addAction`,
         );
       }
@@ -1827,7 +1970,7 @@ export class FlowSurfacesService {
       },
     );
     if (ownerItem && ownerItem.scope !== 'record') {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces addRecordAction only supports record actions; '${ownerItem.key}' should use addAction`,
       );
     }
@@ -1856,7 +1999,7 @@ export class FlowSurfacesService {
     );
     if (item) {
       if (item.scope === 'record') {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces compose action '${actionType}' on '${blockUse}' must be placed under recordActions`,
         );
       }
@@ -1876,7 +2019,7 @@ export class FlowSurfacesService {
         )
       : null;
     if (recordItem?.scope === 'record') {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces compose action '${actionType}' on '${blockUse}' must be placed under recordActions`,
       );
     }
@@ -1895,7 +2038,7 @@ export class FlowSurfacesService {
   private resolveComposeRecordActionCatalogItem(blockUse: string, actionType: string) {
     const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
     if (!recordContainerUse) {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
       );
     }
@@ -1911,7 +2054,7 @@ export class FlowSurfacesService {
     );
     if (item) {
       if (item.scope !== 'record') {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces compose record action '${actionType}' on '${blockUse}' must be placed under actions`,
         );
       }
@@ -1928,7 +2071,7 @@ export class FlowSurfacesService {
       },
     );
     if (blockItem && blockItem.scope !== 'record') {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces compose record action '${actionType}' on '${blockUse}' must be placed under actions`,
       );
     }
@@ -1944,7 +2087,7 @@ export class FlowSurfacesService {
     );
   }
 
-  private async resolveRecordActionContainer(target: FlowSurfaceTarget, transaction?: any) {
+  private async resolveRecordActionContainer(target: FlowSurfaceWriteTarget, transaction?: any) {
     const resolved = await this.locator.resolve(target, { transaction });
     const node =
       resolved.node || (await this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true }));
@@ -2007,7 +2150,7 @@ export class FlowSurfacesService {
       };
     }
 
-    throw new Error(
+    throwBadRequest(
       `flowSurfaces addRecordAction target '${use || resolved.uid}' is not a supported record action surface`,
     );
   }
@@ -2019,13 +2162,10 @@ export class FlowSurfacesService {
     resultField: string;
     invoke: (itemValues: Record<string, any>, options: { transaction?: any }) => Promise<any>;
   }) {
-    const target = options.values?.target;
-    if (!target || !_.isPlainObject(target)) {
-      throw new Error(`flowSurfaces ${options.actionName} requires target`);
-    }
+    const target = this.normalizeWriteTarget(options.actionName, options.values?.target, options.values);
     const items = options.values?.[options.itemField];
     if (!Array.isArray(items)) {
-      throw new Error(`flowSurfaces ${options.actionName} requires ${options.itemField}[]`);
+      throwBadRequest(`flowSurfaces ${options.actionName} requires ${options.itemField}[]`);
     }
 
     const results: Array<Record<string, any>> = [];
@@ -2073,15 +2213,15 @@ export class FlowSurfacesService {
 
   private normalizeComposeBlock(input: any, index: number) {
     if (!_.isPlainObject(input)) {
-      throw new Error(`flowSurfaces compose block #${index + 1} must be an object`);
+      throwBadRequest(`flowSurfaces compose block #${index + 1} must be an object`);
     }
     if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
-      throw new Error('flowSurfaces compose only accepts public semantic block fields');
+      throwBadRequest('flowSurfaces compose only accepts public semantic block fields');
     }
     const key = String(input.key || '').trim();
     const type = String(input.type || '').trim();
     if (!key || !type) {
-      throw new Error(`flowSurfaces compose block #${index + 1} requires key and type`);
+      throwBadRequest(`flowSurfaces compose block #${index + 1} requires key and type`);
     }
     const blockCatalogItem = resolveSupportedBlockCatalogItem({ type }, { requireCreateSupported: true });
     const actions = _.castArray(input.actions || []).map((action, actionIndex) =>
@@ -2105,10 +2245,10 @@ export class FlowSurfacesService {
   private resolveComposeTargetRef(targetRef: string, keyRefs: Record<string, any>, kind: 'field' | 'layout') {
     const ref = String(targetRef || '').trim();
     if (!ref) {
-      throw new Error(`flowSurfaces compose ${kind} target reference cannot be empty`);
+      throwBadRequest(`flowSurfaces compose ${kind} target reference cannot be empty`);
     }
     if (!keyRefs[ref]?.uid) {
-      throw new Error(`flowSurfaces compose ${kind} target '${ref}' was not created in the current compose call`);
+      throwBadRequest(`flowSurfaces compose ${kind} target '${ref}' was not created in the current compose call`);
     }
     return keyRefs[ref].uid;
   }
@@ -2132,7 +2272,7 @@ export class FlowSurfacesService {
       return blockResult.uid;
     }
     if (!LIST_LIKE_COMPOSE_BLOCK_TYPES.has(blockSpec.type)) {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
       );
     }
@@ -2146,7 +2286,7 @@ export class FlowSurfacesService {
     const recordContainerUse = getCatalogRecordActionContainerUse(blockUse);
 
     if (recordActions.length && !recordContainerUse) {
-      throw new Error(
+      throwBadRequest(
         `flowSurfaces compose recordActions only support 'table', 'details', 'list' or 'gridCard' blocks`,
       );
     }
@@ -2189,17 +2329,17 @@ export class FlowSurfacesService {
 
     declaredRows.forEach((row: any, index: number) => {
       if (!Array.isArray(row) || !row.length) {
-        throw new Error(`flowSurfaces compose layout row #${index + 1} must be a non-empty array`);
+        throwBadRequest(`flowSurfaces compose layout row #${index + 1} must be a non-empty array`);
       }
       const cells = row.map((cell: any) => {
         if (_.isPlainObject(cell)) {
           const refKey = String(cell.key || '').trim();
           if (!refKey) {
-            throw new Error(`flowSurfaces compose layout row #${index + 1} contains an empty key`);
+            throwBadRequest(`flowSurfaces compose layout row #${index + 1} contains an empty key`);
           }
           const uid = input.createdByKey[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
           if (!uid) {
-            throw new Error(
+            throwBadRequest(
               `flowSurfaces compose layout key '${refKey}' does not match a created block key or existing uid`,
             );
           }
@@ -2211,7 +2351,7 @@ export class FlowSurfacesService {
         const refKey = String(cell || '').trim();
         const uid = input.createdByKey[refKey]?.uid || (finalUids.includes(refKey) ? refKey : null);
         if (!uid) {
-          throw new Error(
+          throwBadRequest(
             `flowSurfaces compose layout key '${refKey}' does not match a created block key or existing uid`,
           );
         }
@@ -2284,7 +2424,11 @@ export class FlowSurfacesService {
     }
   }
 
-  private async configurePage(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
+  private async configurePage(
+    target: FlowSurfaceWriteTarget,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
     const allowedKeys = getConfigureOptionKeysForResolvedNode({
       kind: 'page',
     });
@@ -2325,7 +2469,11 @@ export class FlowSurfacesService {
     );
   }
 
-  private async configureTab(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
+  private async configureTab(
+    target: FlowSurfaceWriteTarget,
+    changes: Record<string, any>,
+    options: { transaction?: any },
+  ) {
     const allowedKeys = getConfigureOptionKeysForResolvedNode({
       kind: 'tab',
     });
@@ -2354,7 +2502,7 @@ export class FlowSurfacesService {
   }
 
   private async configureTableBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2417,7 +2565,7 @@ export class FlowSurfacesService {
   }
 
   private async configureFormBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
     options: { transaction?: any },
@@ -2479,7 +2627,7 @@ export class FlowSurfacesService {
   }
 
   private async configureDetailsBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2547,7 +2695,7 @@ export class FlowSurfacesService {
   }
 
   private async configureFilterFormBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2604,7 +2752,7 @@ export class FlowSurfacesService {
   }
 
   private async configureListBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2647,7 +2795,7 @@ export class FlowSurfacesService {
   }
 
   private async configureGridCardBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2692,7 +2840,7 @@ export class FlowSurfacesService {
   }
 
   private async configureMarkdownBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2722,7 +2870,7 @@ export class FlowSurfacesService {
   }
 
   private async configureIframeBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2764,7 +2912,7 @@ export class FlowSurfacesService {
   }
 
   private async configureChartBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2792,7 +2940,7 @@ export class FlowSurfacesService {
   }
 
   private async configureActionPanelBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2822,7 +2970,7 @@ export class FlowSurfacesService {
   }
 
   private async configureJSBlock(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2852,7 +3000,7 @@ export class FlowSurfacesService {
   }
 
   private async configureActionColumn(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2882,7 +3030,7 @@ export class FlowSurfacesService {
   }
 
   private async configureJSColumn(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2924,7 +3072,7 @@ export class FlowSurfacesService {
   }
 
   private async configureJSItem(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -2959,7 +3107,7 @@ export class FlowSurfacesService {
   }
 
   private async configureFieldWrapper(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     current: any,
     changes: Record<string, any>,
     options: { transaction?: any },
@@ -3132,7 +3280,7 @@ export class FlowSurfacesService {
   }
 
   private async configureFieldNode(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
@@ -3152,7 +3300,7 @@ export class FlowSurfacesService {
       : null;
     const isJsFieldNode = ['JSFieldModel', 'JSEditableFieldModel'].includes(current?.use || '');
     if (hasDefinedValue(changes, ['code', 'version']) && !isJsFieldNode) {
-      throw new Error(`flowSurfaces configure field '${current?.use}' does not support code/version`);
+      throwBadRequest(`flowSurfaces configure field '${current?.use}' does not support code/version`);
     }
     const currentFieldInit =
       current?.stepParams?.fieldSettings?.init || parentWrapper?.stepParams?.fieldSettings?.init || {};
@@ -3293,7 +3441,7 @@ export class FlowSurfacesService {
   }
 
   private async configureActionNode(
-    target: FlowSurfaceTarget,
+    target: FlowSurfaceWriteTarget,
     use: string,
     changes: Record<string, any>,
     options: { transaction?: any },
@@ -3324,7 +3472,7 @@ export class FlowSurfacesService {
           openView: changes.openView,
         };
       } else if (!POPUP_ACTION_USES.has(use)) {
-        throw new Error(`flowSurfaces configure action '${use}' does not support openView`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support openView`);
       } else {
         stepParams.popupSettings = {
           openView: changes.openView,
@@ -3345,12 +3493,12 @@ export class FlowSurfacesService {
           confirm: normalizeSimpleConfirm(changes.confirm),
         };
       } else {
-        throw new Error(`flowSurfaces configure action '${use}' does not support confirm`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support confirm`);
       }
     }
     if (hasOwnDefined(changes, 'assignValues')) {
       if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
-        throw new Error(`flowSurfaces configure action '${use}' does not support assignValues`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support assignValues`);
       }
       stepParams.assignSettings = {
         ...(stepParams.assignSettings || {}),
@@ -3366,7 +3514,7 @@ export class FlowSurfacesService {
     }
     if (hasOwnDefined(changes, 'editMode')) {
       if (use !== 'BulkEditActionModel') {
-        throw new Error(`flowSurfaces configure action '${use}' does not support editMode`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support editMode`);
       }
       stepParams.bulkEditSettings = {
         editMode: {
@@ -3376,7 +3524,7 @@ export class FlowSurfacesService {
     }
     if (hasOwnDefined(changes, 'updateMode')) {
       if (!['UpdateRecordActionModel', 'BulkUpdateActionModel'].includes(use)) {
-        throw new Error(`flowSurfaces configure action '${use}' does not support updateMode`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support updateMode`);
       }
       stepParams.assignSettings = {
         ...(stepParams.assignSettings || {}),
@@ -3387,7 +3535,7 @@ export class FlowSurfacesService {
     }
     if (hasOwnDefined(changes, 'duplicateMode')) {
       if (use !== 'DuplicateActionModel') {
-        throw new Error(`flowSurfaces configure action '${use}' does not support duplicateMode`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support duplicateMode`);
       }
       stepParams.duplicateModeSettings = {
         duplicateMode: {
@@ -3397,7 +3545,7 @@ export class FlowSurfacesService {
     }
     if (hasOwnDefined(changes, 'collapsedRows') || hasOwnDefined(changes, 'defaultCollapsed')) {
       if (use !== 'FilterFormCollapseActionModel') {
-        throw new Error(`flowSurfaces configure action '${use}' does not support collapsedRows/defaultCollapsed`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support collapsedRows/defaultCollapsed`);
       }
       stepParams.collapseSettings = buildDefinedPayload({
         ...(hasOwnDefined(changes, 'collapsedRows')
@@ -3418,7 +3566,7 @@ export class FlowSurfacesService {
     }
     if (hasOwnDefined(changes, 'emailFieldNames') || hasOwnDefined(changes, 'defaultSelectAllRecords')) {
       if (use !== 'MailSendActionModel') {
-        throw new Error(
+        throwBadRequest(
           `flowSurfaces configure action '${use}' does not support emailFieldNames/defaultSelectAllRecords`,
         );
       }
@@ -3441,7 +3589,7 @@ export class FlowSurfacesService {
     }
     if (hasDefinedValue(changes, ['code', 'version'])) {
       if (!JS_ACTION_USES.has(use)) {
-        throw new Error(`flowSurfaces configure action '${use}' does not support code/version`);
+        throwBadRequest(`flowSurfaces configure action '${use}' does not support code/version`);
       }
       stepParams.clickSettings = {
         runJs: buildDefinedPayload({
@@ -3470,7 +3618,7 @@ export class FlowSurfacesService {
     );
   }
 
-  private async buildFieldCatalog(target: FlowSurfaceTarget, transaction?: any) {
+  private async buildFieldCatalog(target: FlowSurfaceWriteTarget, transaction?: any) {
     const resolved = await this.locator.resolve(target, { transaction });
     const container = await this.surfaceContext.resolveFieldContainer(resolved.uid, transaction).catch(() => null);
     if (!container) {
@@ -4227,10 +4375,6 @@ function flattenModel(node: any, carry: Record<string, any> = {}) {
   return carry;
 }
 
-function resolveRouteSchemaUid(route: any) {
-  return route?.get?.('schemaUid') || route?.schemaUid;
-}
-
 function buildDefaultFieldState(containerUse: string, fieldUse: string, field: any) {
   const bindingDefaults = getFieldBindingDefaultProps(containerUse, fieldUse, field);
   return {
@@ -4251,7 +4395,7 @@ function ensureNoRawSimpleChangeKeys(changes: Record<string, any>) {
   const rawKeys = ['props', 'decoratorProps', 'stepParams', 'flowRegistry', 'use', 'fieldUse'];
   const forbidden = Object.keys(changes).filter((key) => rawKeys.includes(key));
   if (forbidden.length) {
-    throw new Error(
+    throwBadRequest(
       `flowSurfaces configure does not accept raw keys: ${forbidden.join(
         ', ',
       )}; use catalog.configureOptions and configure.changes instead`,
@@ -4263,7 +4407,7 @@ function normalizeComposeFieldSpec(input: any, index: number) {
   if (typeof input === 'string') {
     const fieldPath = String(input || '').trim();
     if (!fieldPath) {
-      throw new Error(`flowSurfaces compose field #${index + 1} cannot be empty`);
+      throwBadRequest(`flowSurfaces compose field #${index + 1} cannot be empty`);
     }
     return {
       key: fieldPath,
@@ -4272,19 +4416,19 @@ function normalizeComposeFieldSpec(input: any, index: number) {
     };
   }
   if (!_.isPlainObject(input)) {
-    throw new Error(`flowSurfaces compose field #${index + 1} must be a string or object`);
+    throwBadRequest(`flowSurfaces compose field #${index + 1} must be a string or object`);
   }
   if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps) {
-    throw new Error('flowSurfaces compose field only accepts public semantic field fields');
+    throwBadRequest('flowSurfaces compose field only accepts public semantic field fields');
   }
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
   if (!fieldPath && !semanticType) {
-    throw new Error(`flowSurfaces compose field #${index + 1} requires fieldPath`);
+    throwBadRequest(`flowSurfaces compose field #${index + 1} requires fieldPath`);
   }
   if (semanticType && fieldPath) {
-    throw new Error(
+    throwBadRequest(
       `flowSurfaces compose field #${index + 1} cannot mix fieldPath with synthetic field type '${semanticType}'`,
     );
   }
@@ -4303,7 +4447,7 @@ function normalizeComposeActionSpec(input: any, index: number) {
   if (typeof input === 'string') {
     const type = String(input || '').trim();
     if (!type) {
-      throw new Error(`flowSurfaces compose action #${index + 1} cannot be empty`);
+      throwBadRequest(`flowSurfaces compose action #${index + 1} cannot be empty`);
     }
     return {
       key: type,
@@ -4313,17 +4457,17 @@ function normalizeComposeActionSpec(input: any, index: number) {
     };
   }
   if (!_.isPlainObject(input)) {
-    throw new Error(`flowSurfaces compose action #${index + 1} must be a string or object`);
+    throwBadRequest(`flowSurfaces compose action #${index + 1} must be a string or object`);
   }
   if (input.use || input.fieldUse || input.stepParams || input.props || input.decoratorProps || input.flowRegistry) {
-    throw new Error('flowSurfaces compose action only accepts public semantic action fields');
+    throwBadRequest('flowSurfaces compose action only accepts public semantic action fields');
   }
   const type = String(input.type || '').trim();
   if (!type) {
-    throw new Error(`flowSurfaces compose action #${index + 1} requires type`);
+    throwBadRequest(`flowSurfaces compose action #${index + 1} requires type`);
   }
   if (!_.isUndefined(input.scope)) {
-    throw new Error(`flowSurfaces compose action #${index + 1} does not support scope, use actions or recordActions`);
+    throwBadRequest(`flowSurfaces compose action #${index + 1} does not support scope, use actions or recordActions`);
   }
   return {
     key: String(input.key || type).trim(),
@@ -4436,12 +4580,27 @@ function hasNonEmptyGetWrapperValue(value: any) {
   return true;
 }
 
+function hasLegacyLocatorFields(input: any, options: { allowRootUid?: boolean } = {}) {
+  if (!_.isPlainObject(input)) {
+    return false;
+  }
+  const keys = ['pageSchemaUid', 'tabSchemaUid', 'routeId', 'schemaUid'];
+  if (options.allowRootUid) {
+    keys.push('uid');
+  }
+  return keys.some((key) => Object.prototype.hasOwnProperty.call(input, key));
+}
+
 function rethrowInlineConfigurationError(error: any, prefix: string): never {
   const message = `${prefix}: ${error?.message || String(error)}`;
   if (error instanceof FlowSurfaceBadRequestError) {
     throw new FlowSurfaceBadRequestError(message);
   }
   throw new Error(message);
+}
+
+function throwBadRequest(message: string): never {
+  throw new FlowSurfaceBadRequestError(message);
 }
 
 function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {
