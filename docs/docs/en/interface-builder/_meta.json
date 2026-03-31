@@ -438,6 +438,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Custom Request",
+            "link": "/interface-builder/actions/types/custom-request"
+          },
+          {
+            "type": "custom-link",
             "label": "Pop-up",
             "link": "/interface-builder/actions/types/link"
           },
@@ -485,6 +490,11 @@
             "type": "custom-link",
             "label": "JS Action",
             "link": "/interface-builder/actions/types/js-action"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/actions/types/js-item"
           }
         ]
       },

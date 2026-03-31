@@ -1383,5 +1383,81 @@ describe('workflow > triggers > collection', () => {
       });
       expect(status).toBe(400);
     });
+
+    it('validate mode in update', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const res1 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 2,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res1.status).toBe(200);
+
+      const res2 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 3,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res2.status).toBe(200);
+
+      const res3 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 4,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res3.status).toBe(200);
+
+      const res4 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: 0,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res4.status).toBe(400);
+
+      const res5 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            mode: null,
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res5.status).toBe(400);
+
+      const res6 = await agent.resource('workflows').update({
+        filterByTk: workflow.id,
+        values: {
+          config: {
+            collection: 'posts',
+          },
+        },
+      });
+      expect(res6.status).toBe(200);
+    });
   });
 });

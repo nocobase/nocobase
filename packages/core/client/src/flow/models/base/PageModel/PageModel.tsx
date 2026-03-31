@@ -44,6 +44,16 @@ const TABS_DESIGN_MODE_ROOT_CLASS_NAME = css`
   > .ant-tabs-nav .ant-tabs-tab {
     min-width: 54px;
   }
+
+  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn {
+    display: block;
+    width: 100%;
+  }
+
+  > .ant-tabs-nav .ant-tabs-tab .ant-tabs-tab-btn > [data-has-float-menu='true'] {
+    display: block;
+    width: 100%;
+  }
 `;
 
 export class PageModel extends FlowModel<PageModelStructure> {

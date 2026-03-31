@@ -49,7 +49,7 @@ pkg: '@nocobase/plugin-mcp-server'
 
 ```bash
 export NOCOBASE_API_TOKEN=<your_api_key>
-codex mcp add nocobase --url http://<host>:<port>/api/mcp --bearer-token-env-var NOCOBASE_API_TOKEN
+codex mcp add nocobase --url https://<host>:<port>/api/mcp --bearer-token-env-var NOCOBASE_API_TOKEN
 ```
 
 #### 使用 OAuth 认证
@@ -57,7 +57,7 @@ codex mcp add nocobase --url http://<host>:<port>/api/mcp --bearer-token-env-var
 先启用 IdP: OAuth 插件。
 
 ```bash
-codex mcp add nocobase --url http://<host>:<port>/api/mcp
+codex mcp add nocobase --url https://<host>:<port>/api/mcp
 codex mcp login nocobase --scopes mcp,offline_access
 ```
 
@@ -68,7 +68,7 @@ codex mcp login nocobase --scopes mcp,offline_access
 先启用 API Keys 插件，并创建一个 API Key。
 
 ```bash
-claude mcp add --transport http nocobase http://<host>:<port>/api/mcp --header "Authorization: Bearer <your_api_key>"
+claude mcp add --transport http nocobase https://<host>:<port>/api/mcp --header "Authorization: Bearer <your_api_key>"
 ```
 
 #### 使用 OAuth 认证
@@ -76,7 +76,7 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp --header "
 先启用 IdP: OAuth 插件。
 
 ```bash
-claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
+claude mcp add --transport http nocobase https://<host>:<port>/api/mcp
 ```
 
 执行完成后，打开 Claude，选择对应的 MCP 服务进行登录：
@@ -84,6 +84,57 @@ claude mcp add --transport http nocobase http://<host>:<port>/api/mcp
 ```bash
 claude
 /mcp
+```
+
+### OpenCode
+
+#### 使用 API Key 认证
+
+先启用 API Keys 插件，并创建一个 API Key。配置 `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer <your_api_key>"
+      }
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+#### 使用 OAuth 认证
+
+先启用 IdP: OAuth 插件。配置 `opencode.json`:
+
+```json
+{
+  "mcp": {
+    "nocobase": {
+      "type": "remote",
+      "url": "https://<host>:<port>/api/mcp",
+      "enabled": true
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
+```
+
+登录认证
+
+```bash
+opencode mcp auth nocobase
+```
+
+Debug
+
+```bash
+opencode mcp debug nocobase
 ```
 
 ## 配合 Skills 使用

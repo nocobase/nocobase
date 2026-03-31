@@ -15,6 +15,7 @@ import { CustomRequestInitializer } from './initializer';
 import { customRequestFlowAction } from './models/customRequestFlowAction';
 import { customizeCustomRequestActionSettings } from './schemaSettings';
 import { CustomRequestConfigurationFieldsSchema } from './schemas';
+import { CustomRequestActionModel } from './models/CustomRequestActionModel';
 
 const CustomRequestProvider: React.FC = (props) => {
   return (
@@ -33,6 +34,9 @@ export class PluginActionCustomRequestClient extends Plugin {
   async load() {
     this.app.use(CustomRequestProvider);
     this.app.flowEngine.registerActions({ customRequestFlowAction });
+    this.app.flowEngine.registerModels({
+      CustomRequestActionModel,
+    });
     this.app.schemaSettingsManager.add(customizeCustomRequestActionSettings);
 
     // @deprecated

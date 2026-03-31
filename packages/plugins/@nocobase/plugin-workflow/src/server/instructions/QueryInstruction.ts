@@ -20,6 +20,15 @@ import { Instruction } from '.';
 export class QueryInstruction extends Instruction {
   configSchema = Joi.object({
     collection: Joi.string().required().messages({ 'any.required': 'Collection is not configured' }),
+    multiple: Joi.boolean(),
+    params: Joi.object({
+      filter: Joi.object(),
+      appends: Joi.array().items(Joi.string()),
+      page: Joi.alternatives(Joi.number(), Joi.string()),
+      pageSize: Joi.alternatives(Joi.number(), Joi.string()),
+      sort: Joi.array().items(Joi.object({ field: Joi.string(), direction: Joi.string().allow('asc', 'desc') })),
+    }),
+    failOnEmpty: Joi.boolean(),
   });
 
   validateConfig(config: Record<string, any>) {

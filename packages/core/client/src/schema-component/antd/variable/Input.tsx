@@ -39,7 +39,7 @@ function parseValue(value: any, options: ParseOptions = {}): string | string[] {
   if (type === 'string') {
     const matched = value.match(JT_VALUE_RE);
     if (matched) {
-      return matched[1].split('.');
+      return matched[1].trim().split('.');
     }
     if (options.stringToDate) {
       if (!Number.isNaN(Date.parse(value))) {

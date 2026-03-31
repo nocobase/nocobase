@@ -1,16 +1,16 @@
 {
   "name": "@nocobase/auth",
-  "version": "2.1.0-alpha.12",
+  "version": "2.1.0-alpha.13",
   "description": "",
   "license": "Apache-2.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/actions": "2.1.0-alpha.12",
-    "@nocobase/cache": "2.1.0-alpha.12",
-    "@nocobase/database": "2.1.0-alpha.12",
-    "@nocobase/resourcer": "2.1.0-alpha.12",
-    "@nocobase/utils": "2.1.0-alpha.12",
+    "@nocobase/actions": "2.1.0-alpha.13",
+    "@nocobase/cache": "2.1.0-alpha.13",
+    "@nocobase/database": "2.1.0-alpha.13",
+    "@nocobase/resourcer": "2.1.0-alpha.13",
+    "@nocobase/utils": "2.1.0-alpha.13",
     "@types/jsonwebtoken": "^9.0.9",
     "jsonwebtoken": "^9.0.2"
   },

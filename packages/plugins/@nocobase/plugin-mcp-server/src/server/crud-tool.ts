@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { McpTool, McpToolCallContext } from '@nocobase/ai';
+import type { McpTool, McpToolCallContext, McpToolsManager } from '@nocobase/ai';
 import inject from 'light-my-request';
 
 type CrudAction = 'list' | 'get' | 'create' | 'update' | 'destroy';
@@ -120,24 +120,31 @@ function buildRequestPayload(args: BusinessTableCrudArgs) {
 }
 
 function buildHeaders(args: BusinessTableCrudArgs, context?: McpToolCallContext) {
-  const headers: Record<string, any> = {
-    ...(context?.headers || {}),
-  };
+  const incomingHeaders = context?.headers || {};
+  const headers: Record<string, any> = {};
 
-  // These transport-level headers belong to the incoming MCP request and must not
-  // be forwarded to the internal injected request.
-  delete headers['content-length'];
-  delete headers['Content-Length'];
-  delete headers['transfer-encoding'];
-  delete headers['Transfer-Encoding'];
-  delete headers.connection;
-  delete headers.Connection;
-  delete headers.host;
-  delete headers.Host;
+  // The generic CRUD tool targets internal business APIs. Reusing arbitrary MCP
+  // transport headers here can pollute the injected request and cause auth
+  // mismatches that do not affect swagger-generated tools.
+  const forwardedRole = normalizeHeaderValue(incomingHeaders['x-role'] || incomingHeaders['X-Role']);
+  if (forwardedRole) {
+    headers['x-role'] = forwardedRole;
+  }
 
-  const authorization = normalizeHeaderValue(headers.authorization || headers.Authorization);
-  if (!authorization && context?.token) {
+  const forwardedAuthenticator = normalizeHeaderValue(
+    incomingHeaders['x-authenticator'] || incomingHeaders['X-Authenticator'],
+  );
+  if (forwardedAuthenticator) {
+    headers['x-authenticator'] = forwardedAuthenticator;
+  }
+
+  if (context?.token) {
     headers.authorization = `Bearer ${context.token}`;
+  } else {
+    const authorization = normalizeHeaderValue(incomingHeaders.authorization || incomingHeaders.Authorization);
+    if (authorization) {
+      headers.authorization = authorization;
+    }
   }
 
   headers['content-type'] = 'application/json';
@@ -149,11 +156,22 @@ function buildHeaders(args: BusinessTableCrudArgs, context?: McpToolCallContext)
   return headers;
 }
 
+function createCrudActionToolMeta(args: BusinessTableCrudArgs): McpTool {
+  return {
+    name: 'crud',
+    description: 'Generic CRUD fallback tool',
+    resourceName: args.resource,
+    actionName: args.action,
+    call: async () => null,
+  };
+}
+
 export function createCrudTool(options: {
   app: {
     callback: () => any;
     resourcer: { options?: { prefix?: string } };
   };
+  mcpToolsManager: McpToolsManager;
 }): McpTool {
   const prefix = options.app.resourcer.options?.prefix || '/api';
 
@@ -297,7 +315,15 @@ export function createCrudTool(options: {
         );
       }
 
-      return body;
+      return options.mcpToolsManager.postProcessToolResult(createCrudActionToolMeta(typedArgs), body, {
+        args: typedArgs,
+        callContext: context,
+        response: {
+          statusCode: response.statusCode,
+          headers: response.headers,
+          body,
+        },
+      });
     },
   };
 }

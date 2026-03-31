@@ -236,7 +236,7 @@ function useVariablesFromValue(value: string, delimiters: [string, string] = ['{
     }
     const variableRegExp = new RegExp(`${delimiters[0]}\\s*([^{}]+)\\s*${delimiters[1]}`, 'g');
     const matches = value.match(variableRegExp);
-    return matches?.map((m) => m.replace(variableRegExp, '$1')) ?? [];
+    return matches?.map((m) => m.replace(variableRegExp, '$1').trim()) ?? [];
   }, [value, delimitersString]);
 }
 

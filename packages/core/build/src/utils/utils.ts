@@ -8,6 +8,7 @@
  */
 
 import chalk from 'chalk';
+import execa from 'execa';
 import path from 'path';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
@@ -45,6 +46,34 @@ function randomColor() {
 }
 
 export type PkgLog = (msg: string, ...args: any[]) => void;
+export type StageProfile = {
+  name: string;
+  durationMs: number;
+};
+
+export type LayerProfile = {
+  stageName: string;
+  layerIndex: number;
+  layerCount: number;
+  packageCount: number;
+  durationMs: number;
+};
+
+export type PackageProfile = {
+  name: string;
+  targetDir: string;
+  kind: 'source' | 'declaration';
+  durationMs: number;
+  status: 'success' | 'failed';
+  phases: Record<string, number>;
+};
+
+export type BuildProfileCollector = {
+  stages: StageProfile[];
+  layers: LayerProfile[];
+  packages: PackageProfile[];
+};
+
 export const getPkgLog = (pkgName: string) => {
   const pkgColor = randomColor();
   const pkgStr = chalk.bold(pkgColor(pkgName));
@@ -113,4 +142,142 @@ export function getEnvDefine() {
     'process.env.__E2E__': process.env.__E2E__ ? true : false,
     'process.env.APP_ENV': process.env.APP_ENV,
   }
+}
+
+export function createBuildProfileCollector(): BuildProfileCollector {
+  return {
+    stages: [],
+    layers: [],
+    packages: [],
+  };
+}
+
+export async function runProfiledStage(
+  profile: BuildProfileCollector | null,
+  stageName: string,
+  task: () => Promise<void>,
+) {
+  const startedAt = nowMs();
+  await task();
+  if (profile) {
+    profile.stages.push({
+      name: stageName,
+      durationMs: nowMs() - startedAt,
+    });
+  }
+}
+
+export async function runWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  worker: (item: T) => Promise<void>,
+) {
+  const queue = [...items];
+  const workers = Array.from({ length: Math.min(concurrency, queue.length) }, async () => {
+    while (queue.length > 0) {
+      const item = queue.shift();
+      if (!item) {
+        return;
+      }
+      await worker(item);
+    }
+  });
+
+  await Promise.all(workers);
+}
+
+export function printBuildProfile(profile: BuildProfileCollector, totalDurationMs: number) {
+  const phaseTotals = new Map<string, number>();
+  for (const pkg of profile.packages) {
+    for (const [phaseName, duration] of Object.entries(pkg.phases)) {
+      phaseTotals.set(phaseName, (phaseTotals.get(phaseName) || 0) + duration);
+    }
+  }
+
+  console.log(chalk.cyan(`[@nocobase/build:profile] total build time ${formatDuration(totalDurationMs)}`));
+
+  if (profile.stages.length > 0) {
+    console.log(chalk.cyan('[@nocobase/build:profile] stage totals'));
+    for (const stage of [...profile.stages].sort((a, b) => b.durationMs - a.durationMs)) {
+      console.log(chalk.gray(`  ${stage.name}: ${formatDuration(stage.durationMs)}`));
+    }
+  }
+
+  if (profile.layers.length > 0) {
+    console.log(chalk.cyan('[@nocobase/build:profile] slowest layers'));
+    for (const layer of [...profile.layers].sort((a, b) => b.durationMs - a.durationMs).slice(0, 12)) {
+      console.log(
+        chalk.gray(
+          `  ${layer.stageName} layer ${layer.layerIndex}/${layer.layerCount} (${layer.packageCount} packages): ${formatDuration(layer.durationMs)}`,
+        ),
+      );
+    }
+  }
+
+  if (phaseTotals.size > 0) {
+    console.log(chalk.cyan('[@nocobase/build:profile] aggregated package phases'));
+    for (const [phaseName, duration] of [...phaseTotals.entries()].sort((a, b) => b[1] - a[1])) {
+      console.log(chalk.gray(`  ${phaseName}: ${formatDuration(duration)}`));
+    }
+  }
+
+  if (profile.packages.length > 0) {
+    const sourcePackages = profile.packages.filter((pkg) => pkg.kind === 'source');
+    const declarationPackages = profile.packages.filter((pkg) => pkg.kind === 'declaration');
+
+    console.log(chalk.cyan('[@nocobase/build:profile] slowest source packages'));
+    for (const pkg of [...sourcePackages].sort((a, b) => b.durationMs - a.durationMs).slice(0, 20)) {
+      const summary = Object.entries(pkg.phases)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([name, duration]) => `${name}=${formatDuration(duration)}`)
+        .join(', ');
+      console.log(
+        chalk.gray(
+          `  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`,
+        ),
+      );
+    }
+
+    console.log(chalk.cyan('[@nocobase/build:profile] slowest declaration packages'));
+    for (const pkg of [...declarationPackages].sort((a, b) => b.durationMs - a.durationMs).slice(0, 20)) {
+      const summary = Object.entries(pkg.phases)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4)
+        .map(([name, duration]) => `${name}=${formatDuration(duration)}`)
+        .join(', ');
+      console.log(
+        chalk.gray(
+          `  ${pkg.name} [${pkg.status}] ${formatDuration(pkg.durationMs)}${summary ? ` (${summary})` : ''}`,
+        ),
+      );
+    }
+  }
+}
+
+export function nowMs() {
+  return Date.now();
+}
+
+export function formatDuration(durationMs: number) {
+  if (durationMs >= 60_000) {
+    return `${(durationMs / 60_000).toFixed(2)}m`;
+  }
+  if (durationMs >= 1_000) {
+    return `${(durationMs / 1_000).toFixed(2)}s`;
+  }
+  return `${Math.round(durationMs)}ms`;
+}
+
+export function runScript(args: string[], cwd: string, envs: Record<string, string> = {}) {
+  return execa('yarn', args, {
+    cwd,
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      ...envs,
+      sourcemap: process.argv.includes('--sourcemap') ? 'sourcemap' : undefined,
+      NODE_ENV: process.env.NODE_ENV || 'production',
+    },
+  });
 }
