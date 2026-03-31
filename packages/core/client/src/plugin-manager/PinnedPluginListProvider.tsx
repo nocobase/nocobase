@@ -11,12 +11,12 @@ import { css } from '@emotion/css';
 import { ConfigProvider, Divider } from 'antd';
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useACLRoleContext } from '../acl/ACLProvider';
-import { HEADER_ACTIONS_MANAGER_CHANGED, HeaderActionItem } from '../application/HeaderActionsManager';
 import { type ComponentTypeAndString } from '../application/RouterManager';
 import { useApp } from '../application/hooks';
 import { UserCenter } from '../route-switch/antd/admin-layout/UserCenterButton';
 import { Help } from '../user/Help';
 import { HeaderActionRenderer } from './headerActions';
+import { HEADER_ACTIONS_MANAGER_CHANGED, HeaderActionItem } from '@nocobase/client-v2';
 
 type LegacyPinnedPluginItem = {
   component: ComponentTypeAndString;

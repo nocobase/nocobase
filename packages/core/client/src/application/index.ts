@@ -9,7 +9,6 @@
 
 export * from './Application';
 export * from './CustomRouterContextProvider';
-export * from './HeaderActionsManager';
 export * from './Plugin';
 export * from './PluginSettingsManager';
 export * from './RouterManager';

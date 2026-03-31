@@ -9,17 +9,17 @@
 
 import React, { FC, useEffect } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { ACLRolesCheckProvider } from '../acl/ACLProvider';
-import { CurrentAppInfoProvider } from '../appInfo/CurrentAppInfoProvider';
+import { ACLRolesCheckProvider } from '../../../acl/ACLProvider';
+import { CurrentAppInfoProvider } from '../../../appInfo/CurrentAppInfoProvider';
 import {
   CurrentPageUidProvider,
   CurrentTabUidProvider,
   IsSubPageClosedByPageMenuProvider,
   useCurrentPageUid,
   useLocationNoUpdate,
-} from '../application/CustomRouterContextProvider';
-import { RemoteCollectionManagerProvider } from '../collection-manager/CollectionManagerProvider';
-import { RemoteSchemaTemplateManagerProvider } from '../schema-templates/SchemaTemplateManagerProvider';
+} from '../../../application/CustomRouterContextProvider';
+import { RemoteCollectionManagerProvider } from '../../../collection-manager/CollectionManagerProvider';
+import { RemoteSchemaTemplateManagerProvider } from '../../../schema-templates/SchemaTemplateManagerProvider';
 import { RoutesRequestProvider, useAllAccessDesktopRoutes } from './route-runtime';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findFirstPageRoute } from './route-utils';

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { APIClient } from '@nocobase/sdk';
 import type { NocoBaseDesktopRoute } from './flow-compat';
 
 type RouteSubscriber = () => void;
@@ -27,21 +28,11 @@ type MoveRouteOptions = {
   refreshAfterMove?: boolean;
 };
 
-type APIClientLike = {
-  request: (options: any) => Promise<any>;
-  resource: (collectionName: string) => {
-    create: (options: any) => Promise<any>;
-    update: (options: any) => Promise<any>;
-    destroy: (options: any) => Promise<any>;
-    move: (options: any) => Promise<any>;
-  };
-};
-
 export class RouteRepository {
   routes: NocoBaseDesktopRoute[] = [];
   protected subscribers = new Set<RouteSubscriber>();
 
-  constructor(protected ctx: { api?: APIClientLike }) {}
+  constructor(protected ctx: { api?: APIClient }) {}
 
   /**
    * 同步当前可访问桌面路由，并通知订阅方刷新。
@@ -189,7 +180,7 @@ export class RouteRepository {
     return this.findRoute(this.routes, schemaUid);
   }
 
-  protected getAPIClient(): APIClientLike {
+  protected getAPIClient(): APIClient {
     if (!this.ctx?.api) {
       throw new Error('[NocoBase] RouteRepository requires context.api.');
     }

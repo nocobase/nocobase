@@ -11,9 +11,9 @@ import { SchemaOptionsContext } from '@formily/react';
 import get from 'lodash/get';
 import React, { useContext, useEffect, useState } from 'react';
 import { isValidElementType } from 'react-is';
-import type { HeaderActionItem } from '../application/HeaderActionsManager';
 import type { ComponentLoaderResult, ComponentTypeAndString } from '../application/RouterManager';
 import { useApp } from '../application/hooks';
+import { HeaderActionItem } from '@nocobase/client-v2';
 
 /**
  * 将 `componentLoader` 的返回值归一化为可渲染组件。

@@ -8,9 +8,9 @@
  */
 
 import React from 'react';
-import { CurrentPageUidContext, useCurrentPageUid } from '../application/CustomRouterContextProvider';
-import { AppNotFound } from '../common/AppNotFound';
-import { RemoteSchemaComponent } from '../schema-component';
+import { CurrentPageUidContext, useCurrentPageUid } from '../../../application/CustomRouterContextProvider';
+import { AppNotFound } from '../../../common/AppNotFound';
+import { RemoteSchemaComponent } from '../../../schema-component';
 import { KeepAlive } from './KeepAlive';
 import { CurrentRouteProvider, useAllAccessDesktopRoutes } from './route-runtime';
 import { NocoBaseDesktopRoute } from './route-types';

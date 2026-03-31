@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from '../../../admin-shell/route-types';
+export * from './route-types';

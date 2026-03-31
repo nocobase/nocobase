@@ -56,7 +56,7 @@ describe('RoutesRequestProvider', () => {
             ],
           },
         }),
-    };
+    } as any;
     const routeRepository = new RouteRepository({ api });
 
     mockedUseFlowEngineContext.mockReturnValue({
@@ -98,7 +98,7 @@ describe('RoutesRequestProvider', () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const api = {
       request: vi.fn().mockRejectedValueOnce(new Error('network error')),
-    };
+    } as any;
     const routeRepository = new RouteRepository({ api });
 
     mockedUseFlowEngineContext.mockReturnValue({

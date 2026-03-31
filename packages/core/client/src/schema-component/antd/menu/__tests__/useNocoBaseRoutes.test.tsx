@@ -12,7 +12,7 @@ import { act, renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { APIClientContext } from '../../../../api-client/context';
-import { RoutesRequestProvider } from '../../../../admin-shell/route-runtime';
+import { RoutesRequestProvider } from '../../../../route-switch/antd/admin-layout/route-runtime';
 import { useNocoBaseRoutes } from '../Menu';
 
 describe('useNocoBaseRoutes', () => {

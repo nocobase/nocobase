@@ -103,5 +103,3 @@ export { transformFilter } from '@nocobase/utils/client';
 export * from './modules/menu';
 
 export * from './ai';
-
-export { AdminShellProvider, LegacyRouteCompat, NavigateToDefaultPage, RoutesRequestProvider } from './admin-shell';

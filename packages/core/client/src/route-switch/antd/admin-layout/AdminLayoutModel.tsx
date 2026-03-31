@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AdminShellProvider } from '../../../admin-shell';
 import React from 'react';
 import { AdminLayoutComponent, AdminLayoutModel } from '../../../flow/admin-shell/admin-layout';
+import { AdminShellProvider } from './AdminShellProvider';
 
 /**
  * 兼容旧 route-switch 入口的 Admin Layout 渲染包装类。

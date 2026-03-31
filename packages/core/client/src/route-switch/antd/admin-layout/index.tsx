@@ -9,7 +9,7 @@
 
 import { FlowModelRenderer, useFlowEngine } from '@nocobase/flow-engine';
 import React from 'react';
-import { AdminDynamicPage } from '../../../admin-shell';
+import { AdminDynamicPage } from './AdminDynamicPage';
 import { RemoteSchemaTemplateManagerPlugin } from '../../../';
 import { Plugin } from '../../../application/Plugin';
 import { AdminLayoutMenuItemModel, getAdminLayoutModel } from '../../../flow/admin-shell/admin-layout';
@@ -17,20 +17,18 @@ import { AdminLayoutModelV1 } from './AdminLayoutModel';
 import { userCenterSettings } from './userCenterSettings';
 
 export * from './useDeleteRouteSchema';
+export { AdminDynamicPage } from './AdminDynamicPage';
+export { KeepAlive, useKeepAlive } from './KeepAlive';
+export { LayoutContent } from '../../../flow/admin-shell/admin-layout/AdminLayoutSlotModels';
+export { NocoBaseDesktopRouteType } from './route-types';
 export {
-  AdminDynamicPage,
-  KeepAlive,
-  LayoutContent,
-  NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
-  findFirstPageRoute,
-  findRouteBySchemaUid,
-  useAllAccessDesktopRoutes,
-  useCurrentRoute,
-  useKeepAlive,
-  AdminShellProvider as AdminProvider,
   CurrentRouteProvider,
-} from '../../../admin-shell';
+  useCurrentRoute,
+  useAllAccessDesktopRoutes,
+} from './route-runtime';
+export { findFirstPageRoute, findRouteBySchemaUid } from './route-utils';
+export { AdminShellProvider as AdminProvider } from './AdminShellProvider';
 export { shouldRenderIconInTitle, useMobileLayout } from '../../../flow/admin-shell/admin-layout';
 
 export const AdminLayout = (props) => {
