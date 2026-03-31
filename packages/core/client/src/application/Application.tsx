@@ -13,7 +13,6 @@ import {
   type BaseApplicationOptions,
   type ComponentAndProps,
   type DevDynamicImport,
-  WebSocketClient,
   type WebSocketClientOptions,
 } from '@nocobase/client-v2';
 import { type FlowEngineContext } from '@nocobase/flow-engine';
@@ -36,7 +35,7 @@ import { SystemSettingsSource } from '../flow/system-settings';
 import { i18n } from '../i18n';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
-import { BlankComponent, defaultAppComponents } from './components';
+import { defaultAppComponents } from './components';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { PluginManager, type PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
@@ -45,7 +44,6 @@ import { RouterManager, type RouterOptions } from './RouterManager';
 import { SchemaInitializer, SchemaInitializerManager } from './schema-initializer';
 import * as schemaInitializerComponents from './schema-initializer/components';
 import { SchemaSettings, SchemaSettingsItemType, SchemaSettingsManager } from './schema-settings';
-import { compose } from './utils';
 
 import { AIManager } from '../flow/ai';
 import { getOperators } from './globalOperators';
@@ -149,10 +147,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return new PluginSettingsManager(options.pluginSettings, this);
   }
 
-  protected createWebSocketClient(options: ApplicationOptions) {
-    return new WebSocketClient(options.ws);
-  }
-
   protected getDefaultComponents() {
     return {
       DataBlockProvider,
@@ -216,12 +210,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   getCollectionManager(dataSource?: string) {
     return this.dataSourceManager.getDataSource(dataSource)?.collectionManager;
-  }
-
-  getComposeProviders() {
-    const Providers = compose(...this.providers)(BlankComponent);
-    Providers.displayName = 'Providers';
-    return Providers;
   }
 
   async load() {

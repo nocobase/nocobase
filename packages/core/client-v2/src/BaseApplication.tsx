@@ -30,7 +30,7 @@ import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import type { ComponentTypeAndString, RouterOptions } from './RouterManager';
-import type { WebSocketClientOptions } from './WebSocketClient';
+import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { BlankComponent } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -448,7 +448,9 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected abstract createRouterManager(options: TOptions): any;
   protected abstract createPluginManager(options: TOptions): any;
   protected abstract createPluginSettingsManager(options: TOptions): PluginSettingsManager<any>;
-  protected abstract createWebSocketClient(options: TOptions): any;
+  protected createWebSocketClient(options: TOptions) {
+    return new WebSocketClient(options.ws);
+  }
   protected abstract getDefaultComponents(): Record<string, ComponentType<any> | any>;
   abstract load(): Promise<void>;
   abstract loadWebSocket(): Promise<void>;

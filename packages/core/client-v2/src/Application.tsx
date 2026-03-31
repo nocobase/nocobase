@@ -18,7 +18,7 @@ import type { PluginSettingOptions } from './PluginSettingsManager';
 import { PluginSettingsManager } from './PluginSettingsManager';
 import type { RouterOptions } from './RouterManager';
 import { RouterManager } from './RouterManager';
-import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
+import type { WebSocketClientOptions } from './WebSocketClient';
 
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
@@ -60,10 +60,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected createPluginSettingsManager(options: ApplicationOptions) {
     return new PluginSettingsManager(options.pluginSettings, this);
-  }
-
-  protected createWebSocketClient(options: ApplicationOptions) {
-    return new WebSocketClient(options.ws);
   }
 
   protected getDefaultComponents() {
