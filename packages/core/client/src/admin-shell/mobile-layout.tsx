@@ -8,29 +8,7 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import React, { FC, useMemo, useState } from 'react';
 import { ADMIN_LAYOUT_MODEL_UID } from '../flow/admin-shell/admin-layout';
-
-/**
- * @deprecated
- */
-const IsMobileLayoutContext = React.createContext<{
-  isMobileLayout: boolean;
-  setIsMobileLayout: React.Dispatch<React.SetStateAction<boolean>>;
-}>({
-  isMobileLayout: false,
-  setIsMobileLayout: () => {},
-});
-
-/**
- * @deprecated
- */
-export const MobileLayoutProvider: FC = (props) => {
-  const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const value = useMemo(() => ({ isMobileLayout, setIsMobileLayout }), [isMobileLayout]);
-
-  return <IsMobileLayoutContext.Provider value={value}>{props.children}</IsMobileLayoutContext.Provider>;
-};
 
 export const useMobileLayout = () => {
   const flowEngine = useFlowEngine();
