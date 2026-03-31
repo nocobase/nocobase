@@ -113,7 +113,7 @@ export const Messages: React.FC = () => {
           icon={collapsed ? <RightOutlined /> : <DownOutlined />}
           iconPosition="end"
         >
-          {`Done in ${durationText}`}
+          {t('Done in {{ durationText }}', { durationText })}
         </Button>
       </Divider>
     );

@@ -10,10 +10,16 @@
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
 import { getAccessibleAIEmployee, getAIPlugin, getSkillSettingsFromMain, updateMessageMetadata } from './shared';
+// @ts-ignore
+import pkg from '../../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
+  introduction: {
+    title: `{{t("AI employee task dispatching", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Awaken and assign specific tasks to ai employees", { ns: "${pkg.name}" })}}`,
+  },
   definition: {
     name: 'dispatch-sub-agent-task',
     description: 'Dispatch a question to a target AI employee and return the sub-session result.',

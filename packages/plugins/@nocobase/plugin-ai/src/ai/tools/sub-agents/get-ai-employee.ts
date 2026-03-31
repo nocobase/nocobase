@@ -10,10 +10,16 @@
 import { defineTools } from '@nocobase/ai';
 import { z } from 'zod';
 import { getAccessibleAIEmployee, serializeEmployeeDetail } from './shared';
+// @ts-ignore
+import pkg from '../../../../package.json';
 
 export default defineTools({
   scope: 'SPECIFIED',
   defaultPermission: 'ALLOW',
+  introduction: {
+    title: `{{t("Get AI employee", { ns: "${pkg.name}" })}}`,
+    about: `{{t("Get the detailed definition of AI employee", { ns: "${pkg.name}" })}}`,
+  },
   definition: {
     name: 'get-ai-employee',
     description: 'Get the detailed profile of one accessible AI employee by username.',
