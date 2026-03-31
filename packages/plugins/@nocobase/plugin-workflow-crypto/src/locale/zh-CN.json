@@ -1,0 +1,12 @@
+{
+  "Crypto": "加密解密",
+  "Encrypt or decrypt data using AES algorithms.": "使用 AES 算法对数据进行加密或解密。",
+  "Operation": "操作",
+  "Encrypt": "加密",
+  "Decrypt": "解密",
+  "Algorithm": "算法",
+  "Key": "密钥",
+  "Input": "输入",
+  "Encoding": "编码",
+  "Auto-parse JSON": "自动解析 JSON"
+}

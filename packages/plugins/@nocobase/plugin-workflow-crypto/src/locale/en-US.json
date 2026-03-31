@@ -1,0 +1,12 @@
+{
+  "Crypto": "Crypto",
+  "Encrypt or decrypt data using AES algorithms.": "Encrypt or decrypt data using AES algorithms.",
+  "Operation": "Operation",
+  "Encrypt": "Encrypt",
+  "Decrypt": "Decrypt",
+  "Algorithm": "Algorithm",
+  "Key": "Key",
+  "Input": "Input",
+  "Encoding": "Encoding",
+  "Auto-parse JSON": "Auto-parse JSON"
+}

@@ -1,0 +1,9 @@
+{
+  "Sign Token": "签发令牌",
+  "Generate a NocoBase auth token for a user, with configurable role and expiry.": "为用户生成 NocoBase 认证令牌，可配置角色和有效期。",
+  "User ID": "用户 ID",
+  "The user to sign a token for. Supports workflow variables.": "要签发令牌的用户，支持工作流变量。",
+  "Role": "角色",
+  "Optional. The role the token operates as. User must have this role.": "可选。令牌以该角色身份运行，用户必须拥有此角色。",
+  "Expires in": "有效期"
+}
