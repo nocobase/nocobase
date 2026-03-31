@@ -59,19 +59,11 @@ import dayjs from 'dayjs';
 import { externalReactRender, setupRunJSLibs } from './runjsLibs';
 import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/runjsModuleLoader';
 
-export interface FlowEngineAppLike {
-  getApiUrl?: (pathname?: string) => string;
-  load?: () => Promise<any>;
-  dataSourceManager?: any;
-  requirejs?: any;
-  [key: string]: any;
-}
-
 function normalizePathname(pathname: string) {
   return pathname.endsWith('/') ? pathname : `${pathname}/`;
 }
 
-function shouldBypassApiClient(url: string, app?: FlowEngineAppLike) {
+function shouldBypassApiClient(url: string, app?: { getApiUrl?: (pathname?: string) => string }) {
   try {
     const requestUrl = new URL(url);
     if (!['http:', 'https:'].includes(requestUrl.protocol)) {
@@ -3040,7 +3032,6 @@ class BaseFlowEngineContext extends FlowContext {
     EventDefinition<TModel, TCtx>
   >;
   declare runAction: (actionName: string, params?: Record<string, any>) => Promise<any> | any;
-  declare app?: FlowEngineAppLike;
   declare engine: FlowEngine;
   declare api: APIClient;
   declare viewer: FlowViewer;
@@ -3059,7 +3050,8 @@ class BaseFlowEngineContext extends FlowContext {
       return this.engine.getModel(modelName, searchInPreviousEngines);
     });
     this.defineMethod('request', (options: RequestOptions) => {
-      if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, this.app)) {
+      const app = this.app as { getApiUrl?: (pathname?: string) => string } | undefined;
+      if (typeof options?.url === 'string' && shouldBypassApiClient(options.url, app)) {
         return axios.request(options);
       }
       return this.api.request(options);
