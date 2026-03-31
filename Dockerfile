@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y jq expect
 SHELL ["/bin/bash", "-c"]
 
 RUN expect <<EOD
-spawn npm adduser --registry $VERDACCIO_URL
+spawn npm login --auth-type=legacy --registry $VERDACCIO_URL
 expect {
   "Username:" {send "test\r"; exp_continue}
   "Password:" {send "test\r"; exp_continue}
