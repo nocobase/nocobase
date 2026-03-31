@@ -39,11 +39,10 @@ export const checkPermission = async (ctx: Context, next: Next) => {
     });
     ctx.action.params.values = result.query;
   } catch (err) {
-    if (err instanceof NoPermissionError) {
-      ctx.throw(403, 'No permissions');
-      return;
+    if (!(err instanceof NoPermissionError)) {
+      throw err;
     }
-    throw err;
+    ctx.throw(403, 'No permissions');
   }
 
   await next();

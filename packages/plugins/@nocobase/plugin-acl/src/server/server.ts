@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context, utils as actionUtils } from '@nocobase/actions';
+import { Context } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Collection, Model, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
@@ -30,6 +30,7 @@ import {
   sanitizeAssociationValues,
 } from './middlewares/check-change-with-association';
 import type { ACL } from '@nocobase/acl';
+import { checkQueryPermission } from './middlewares/check-query-permission';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -656,6 +657,7 @@ export class PluginACLServer extends Plugin {
         before: 'core',
       });
       if (dataSource.options.acl !== false && dataSource.options.useACL !== false) {
+        dataSource.resourceManager.registerPreActionHandler('query', checkQueryPermission);
         dataSource.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
         dataSource.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
         dataSource.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
