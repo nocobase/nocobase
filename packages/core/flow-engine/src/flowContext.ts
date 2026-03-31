@@ -61,6 +61,7 @@ import { runjsImportAsync, runjsImportModule, runjsRequireAsync } from './utils/
 
 export interface FlowEngineAppLike {
   getApiUrl?: (pathname?: string) => string;
+  load?: () => Promise<any>;
   dataSourceManager?: {
     collectionFieldInterfaceManager?: {
       getFieldInterface?: (name?: string) => any;
@@ -69,6 +70,7 @@ export interface FlowEngineAppLike {
   requirejs?: {
     requirejs?: any;
   };
+  [key: string]: any;
 }
 
 function normalizePathname(pathname: string) {
