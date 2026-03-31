@@ -90,7 +90,6 @@ export interface ApplicationOptions extends BaseApplicationOptions {
 export class Application extends BaseApplication<ApplicationOptions> {
   public declare apiClient: APIClient;
   public declare router: RouterManager;
-  public declare ws: WebSocketClient;
   public declare pluginManager: PluginManager;
   public declare pluginSettingsManager: PluginSettingsManager;
   public declare aiManager: AIManager;

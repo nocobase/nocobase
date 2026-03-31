@@ -77,7 +77,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public router: any;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
-  public ws: any;
+  public ws: WebSocketClient;
   public apiClient: APIClient;
   public components: Record<string, ComponentType<any> | any> = {};
   public pluginManager: any;
