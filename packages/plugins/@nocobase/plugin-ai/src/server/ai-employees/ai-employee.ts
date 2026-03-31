@@ -1258,6 +1258,11 @@ If information is missing, clearly state it in the summary.</Important>`;
 
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
     const { skillsManager } = this.plugin.ai;
+    const aIEmployeeTools = await this.getAIEmployeeTools();
+    const getSkills = aIEmployeeTools.find((it) => it.definition.name === 'getSkills');
+    if (!getSkills) {
+      return [];
+    }
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
     const specifiedSkillNames = this.employee.skillSettings?.skills ?? [];
     const specifiedSkills = specifiedSkillNames.length ? await skillsManager.getSkills(specifiedSkillNames) : [];

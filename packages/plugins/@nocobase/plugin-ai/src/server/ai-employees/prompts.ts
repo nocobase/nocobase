@@ -129,7 +129,9 @@ ${task.context ? `<context>\n${task.context}\n</context>` : ''}
 ${
   availableSkills?.length
     ? `<skills>
-You have access to the following skills (tools groups). When a user's request matches a skill's description, use the getSkill tool to load that skill's detailed content and available tools:
+You have access to the following skills (tools groups). When a user's request matches a skill's description, use the **getSkill** tool to load that skill's detailed content and available tools
+
+But if there is no tool named **getSkill** don't try to use **getSkill** tool to load skills
 
 ${availableSkills.map((skill) => `- **${skill.name}**: ${skill.description || 'No description'}`).join('\n')}
 </skills>
