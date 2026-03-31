@@ -12,8 +12,11 @@
 
 html:root {
   --rp-radius: 0px;
-  --rp-c-text-2: #3c3c3ca8;
   --adm-color-primary: initial !important;
+  --colorSettings: #f18b62;
+  --colorBgSettingsHover: rgba(241, 139, 98, 0.06);
+  --colorTemplateBgSettingsHover: rgba(98, 200, 241, 0.06);
+  --colorBorderSettingsHover: rgba(241, 139, 98, 0.3);
 }
 
 html:not(.rp-dark) {
@@ -25,6 +28,7 @@ html:not(.rp-dark) {
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
   --rp-home-feature-bg: var(--rp-c-bg-soft);
+  --rp-c-text-2: #3c3c3ca8;
 }
 
 html.rp-dark {
@@ -36,6 +40,7 @@ html.rp-dark {
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
   --rp-home-feature-bg: var(--rp-c-bg-soft);
+  --rp-c-text-2: #ebebeb8f;
 }
 
 @media (min-width: 1280px) {

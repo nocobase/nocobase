@@ -1,5 +1,6 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space } from 'antd';
 
 class DemoContainerModel extends FlowModel {
@@ -39,8 +40,8 @@ class DemoContainerModel extends FlowModel {
   }
 }
 
-class BlockAModel extends FlowModel {
-  render() {
+class BlockAModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h3>Block 1</h3>
@@ -49,8 +50,8 @@ class BlockAModel extends FlowModel {
   }
 }
 
-class BlockBModel extends FlowModel {
-  render() {
+class BlockBModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h3>Block 2</h3>
@@ -68,6 +69,9 @@ class DemoPlugin extends Plugin {
   }
 }
 
-const app = new Application({ router: { type: 'memory', initialEntries: ['/'] }, plugins: [DemoPlugin] });
+const app = new Application({
+  router: { type: 'memory', initialEntries: ['/'] },
+  plugins: [DemoPlugin],
+});
 
 export default app.getRootComponent();

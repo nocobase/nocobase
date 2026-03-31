@@ -1,5 +1,6 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space } from 'antd';
 
 class HelloBlockModel extends FlowModel {
@@ -62,8 +63,8 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class Sub1BlockModel extends FlowModel {
-  render() {
+class Sub1BlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h2>Sub1 Block</h2>

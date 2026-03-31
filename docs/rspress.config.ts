@@ -161,6 +161,15 @@ export default defineConfig({
     cleanUrls: true,
   },
   builderConfig: {
+    html: {
+      tags: [
+        {
+          tag: 'script',
+          // 通过 window.RSPRESS_THEME 变量来指定默认的主题模式
+          children: "window.RSPRESS_THEME = 'light';",
+        },
+      ],
+    },
     source: {
       tsconfigPath: path.join(__dirname, 'tsconfig.json'),
     },
@@ -184,6 +193,7 @@ export default defineConfig({
   ],
   lang,
   themeConfig: {
+    darkMode: false,
     socialLinks: [
       {
         icon: 'github',

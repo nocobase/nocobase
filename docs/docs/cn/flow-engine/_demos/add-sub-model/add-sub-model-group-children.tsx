@@ -1,5 +1,6 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelContext, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Form, Input, Space } from 'antd';
 
 class HelloBlockModel extends FlowModel {
@@ -15,7 +16,7 @@ class HelloBlockModel extends FlowModel {
             />
           );
         })}
-        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={[BaseFieldModel]}>
+        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={['BaseFieldModel']}>
           <Button>Configure fields</Button>
         </AddSubModelButton>
       </Space>
@@ -23,7 +24,7 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class BaseFieldModel extends FlowModel {
+class BaseFieldModel extends BlockModel {
   static defineChildren(ctx: FlowModelContext) {
     const collection = ctx.dataSourceManager.getCollection('main', 'tests');
     return collection.getFields().map((field) => {

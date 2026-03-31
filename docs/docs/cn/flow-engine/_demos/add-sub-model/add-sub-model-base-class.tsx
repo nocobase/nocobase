@@ -1,15 +1,20 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space } from 'antd';
 
 class HelloBlockModel extends FlowModel {
+  get title() {
+    return 'HelloBlockModel';
+  }
+
   render() {
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
         {this.mapSubModels('items', (item) => {
           return <FlowModelRenderer key={item.uid} model={item} showFlowSettings={{ showBorder: true }} />;
         })}
-        <AddSubModelButton model={this} subModelKey="items" subModelBaseClass={BaseBlockModel}>
+        <AddSubModelButton model={this} subModelKey="items" subModelBaseClass="BlockModel">
           <Button>Add block</Button>
         </AddSubModelButton>
       </Space>
@@ -17,10 +22,8 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class BaseBlockModel extends FlowModel {}
-
-class Sub1BlockModel extends BaseBlockModel {
-  render() {
+class Sub1BlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h2>Sub1 Block</h2>
@@ -30,8 +33,8 @@ class Sub1BlockModel extends BaseBlockModel {
   }
 }
 
-class Sub2BlockModel extends BaseBlockModel {
-  render() {
+class Sub2BlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h2>Sub2 Block</h2>
@@ -41,8 +44,8 @@ class Sub2BlockModel extends BaseBlockModel {
   }
 }
 
-class Sub3BlockModel extends BaseBlockModel {
-  render() {
+class Sub3BlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h2>Sub3 Block</h2>
@@ -52,11 +55,28 @@ class Sub3BlockModel extends BaseBlockModel {
   }
 }
 
+class Sub4BlockModel extends BlockModel {
+  renderComponent() {
+    return (
+      <div>
+        <h2>Sub4 Block</h2>
+        <p>This is a sub block rendered by Sub4BlockModel.</p>
+      </div>
+    );
+  }
+}
+
 Sub2BlockModel.define({
   label: 'Sub2 Block',
+  hide: (ctx) => ctx.model.title !== 'HelloBlockModel',
 });
 
 Sub3BlockModel.define({
+  hide: (ctx) => ctx.model.title === 'HelloBlockModel',
+});
+
+Sub4BlockModel.define({
+  label: 'Sub4 Block',
   hide: true,
 });
 
@@ -64,8 +84,8 @@ class PluginHelloModel extends Plugin {
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({
+      BlockModel,
       HelloBlockModel,
-      BaseBlockModel,
       Sub1BlockModel,
       Sub2BlockModel,
       Sub3BlockModel,

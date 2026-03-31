@@ -1,5 +1,6 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelContext, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space } from 'antd';
 
 class HelloBlockModel extends FlowModel {
@@ -9,7 +10,7 @@ class HelloBlockModel extends FlowModel {
         {this.mapSubModels('items', (item) => {
           return <FlowModelRenderer key={item.uid} model={item} showFlowSettings={{ showBorder: true }} />;
         })}
-        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={[OtherBlocksModel]}>
+        <AddSubModelButton model={this} subModelKey="items" subModelBaseClasses={['BlockModel']}>
           <Button>Add block</Button>
         </AddSubModelButton>
       </Space>
@@ -17,14 +18,7 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class OtherBlocksModel extends FlowModel {}
-
-OtherBlocksModel.define({
-  hide: true,
-  label: 'Other blocks',
-});
-
-class BaseCollectionModel extends OtherBlocksModel {
+class BaseCollectionModel extends BlockModel {
   static defineChildren(ctx: FlowModelContext) {
     const ds = ctx.dataSourceManager.getDataSource('main');
     return ds.getCollections().map((collection) => {
@@ -47,7 +41,7 @@ BaseCollectionModel.define({
 });
 
 class Hello1CollectionModel extends BaseCollectionModel {
-  render() {
+  renderComponent() {
     return (
       <div>
         <h2>Hello1CollectionModel - {this.props.collectionName}</h2>
@@ -58,7 +52,7 @@ class Hello1CollectionModel extends BaseCollectionModel {
 }
 
 class Hello2CollectionModel extends BaseCollectionModel {
-  render() {
+  renderComponent() {
     return (
       <div>
         <h2>Hello2CollectionModel - {this.props.collectionName}</h2>
@@ -76,8 +70,8 @@ class PluginHelloModel extends Plugin {
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({
+      BlockModel,
       HelloBlockModel,
-      OtherBlocksModel,
       BaseCollectionModel,
       Hello1CollectionModel,
       Hello2CollectionModel,

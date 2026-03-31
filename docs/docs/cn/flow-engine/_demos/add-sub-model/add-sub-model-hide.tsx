@@ -1,5 +1,6 @@
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Space, Switch, Typography } from 'antd';
 import { useState } from 'react';
 
@@ -64,8 +65,8 @@ function View({ model }: { readonly model: FlowModel }) {
   );
 }
 
-class BasicBlockModel extends FlowModel {
-  render() {
+class BasicBlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h3>Basic Block</h3>
@@ -75,8 +76,8 @@ class BasicBlockModel extends FlowModel {
   }
 }
 
-class AdvancedBlockModel extends FlowModel {
-  render() {
+class AdvancedBlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h3>Advanced Block</h3>

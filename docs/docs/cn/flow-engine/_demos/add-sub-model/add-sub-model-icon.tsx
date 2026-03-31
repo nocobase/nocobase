@@ -1,9 +1,11 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Application, Plugin } from '@nocobase/client-v2';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { BlockModel } from '@docs/cn/flow-engine/_demos/add-sub-model/clientCompat';
 import { Button, Card, Space } from 'antd';
+import type { ReactNode } from 'react';
 
-function AddBlock(props: { model: FlowModel; children?: React.ReactNode }) {
+function AddBlock(props: { model: FlowModel; children?: ReactNode }) {
   const { model, children } = props;
 
   return (
@@ -49,8 +51,8 @@ class HelloBlockModel extends FlowModel {
   }
 }
 
-class Sub1BlockModel extends FlowModel {
-  render() {
+class Sub1BlockModel extends BlockModel {
+  renderComponent() {
     return (
       <div>
         <h2>Sub1 Block</h2>
