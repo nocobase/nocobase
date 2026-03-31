@@ -679,6 +679,17 @@ describe('flowSurfaces resource', () => {
     );
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
     expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
+    expect(tabCatalog.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      icon: {
+        type: 'string',
+      },
+      documentTitle: {
+        type: 'string',
+      },
+    });
     expect(tabCatalog.settingsContract?.stepParams?.groups?.pageTabSettings?.allowedPaths).toEqual(
       expect.arrayContaining(['tab.title', 'tab.icon', 'tab.documentTitle']),
     );
@@ -762,6 +773,21 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(tableCatalog.blocks).toEqual([]);
+    expect(tableCatalog.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      pageSize: {
+        type: 'number',
+      },
+      density: {
+        type: 'string',
+        enum: expect.arrayContaining(['large', 'middle', 'small']),
+      },
+      quickEdit: {
+        type: 'boolean',
+      },
+    });
     expect(tableCatalog.actions.map((item: any) => item.key)).toEqual(
       expect.arrayContaining([
         'filter',
@@ -880,10 +906,26 @@ describe('flowSurfaces resource', () => {
       fieldUse: 'JSFieldModel',
       renderer: 'js',
     });
+    expect(tableCatalog.fields.find((item: any) => item.key === 'nickname')?.configureOptions).toMatchObject({
+      label: {
+        type: 'string',
+      },
+      clickToOpen: {
+        type: 'boolean',
+      },
+    });
     expect(tableCatalog.fields.find((item: any) => item.key === 'jsColumn')).toMatchObject({
       use: 'JSColumnModel',
       fieldUse: 'JSColumnModel',
       type: 'jsColumn',
+    });
+    expect(tableCatalog.actions.find((item: any) => item.key === 'addNew')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      openView: {
+        type: 'object',
+      },
     });
 
     const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
@@ -929,6 +971,16 @@ describe('flowSurfaces resource', () => {
         'linkageRules',
       ]),
     );
+    expect(
+      rowActionCatalog.recordActions.find((item: any) => item.use === 'ViewActionModel')?.configureOptions,
+    ).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      openView: {
+        type: 'object',
+      },
+    });
     expect(rowActionCatalog.settingsContract?.props?.allowedKeys).toEqual(
       expect.arrayContaining(['title', 'tooltip', 'width', 'fixed']),
     );
@@ -5797,27 +5849,46 @@ describe('flowSurfaces resource', () => {
       pageSchemaUid: page.pageSchemaUid,
     });
     expect(pageReadbackRes.status).toBe(200);
-    expect(getData(pageReadbackRes).target.pageRoute.id).toBe(page.routeId);
+    expect(getData(pageReadbackRes).target).toEqual({
+      locator: {
+        pageSchemaUid: page.pageSchemaUid,
+      },
+      uid: page.pageUid,
+      kind: 'page',
+    });
+    expect(getData(pageReadbackRes).pageRoute.id).toBe(page.routeId);
 
     const routeReadbackRes = await rootAgent.resource('flowSurfaces').get({
       routeId: page.routeId,
     });
     expect(routeReadbackRes.status).toBe(200);
-    expect(getData(routeReadbackRes).target.pageRoute.schemaUid).toBe(page.pageSchemaUid);
+    expect(getData(routeReadbackRes).target).toEqual({
+      locator: {
+        routeId: String(page.routeId),
+      },
+      uid: page.pageUid,
+      kind: 'page',
+    });
+    expect(getData(routeReadbackRes).pageRoute.schemaUid).toBe(page.pageSchemaUid);
 
     const postGetRes = await rootAgent.post('/api/flowSurfaces:get').send({
       pageSchemaUid: page.pageSchemaUid,
     });
-    expect(postGetRes.status).toBe(400);
-    expect(readErrorMessage(postGetRes)).toContain('only supports GET');
+    expect(postGetRes.status).toBe(404);
 
-    const wrappedTargetRes = await rootAgent.get(`/api/flowSurfaces:get?target[uid]=${page.tabSchemaUid}`);
-    expect(wrappedTargetRes.status).toBe(400);
-    expect(readErrorMessage(wrappedTargetRes)).toContain(`do not wrap them in 'target'`);
+    const wrappedTargetRes = await rootAgent.get('/api/flowSurfaces:get').query({
+      target: {
+        uid: page.tabSchemaUid,
+      },
+    });
+    expect(wrappedTargetRes.status).toBe(404);
 
-    const wrappedValuesRes = await rootAgent.get(`/api/flowSurfaces:get?values[uid]=${page.tabSchemaUid}`);
-    expect(wrappedValuesRes.status).toBe(400);
-    expect(readErrorMessage(wrappedValuesRes)).toContain(`do not wrap them in 'values'`);
+    const wrappedValuesRes = await rootAgent.get('/api/flowSurfaces:get').query({
+      values: {
+        uid: page.tabSchemaUid,
+      },
+    });
+    expect(wrappedValuesRes.status).toBe(404);
   });
 
   it('should normalize and validate filter-group payloads across flowSurfaces write entrances', async () => {

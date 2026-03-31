@@ -5,17 +5,20 @@
 ## 推荐调用顺序
 
 1. 先用 `flowSurfaces:get` 读取已有 surface。
-2. 再用 `flowSurfaces:createPage` 创建页面。
-3. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
-4. 再用 `flowSurfaces:configure` 修改高频配置。
-5. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
-6. 删除与排序继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`。
-7. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+2. 再用 `flowSurfaces:catalog` 看当前 target 的 `configureOptions`，它是主要的高频配置发现入口。
+3. 再用 `flowSurfaces:createPage` 创建页面。
+4. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
+5. 再用 `flowSurfaces:configure` 修改高频配置。
+6. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
+7. 删除与排序继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`。
+8. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
 
 ## 读取接口约定
 
 - `flowSurfaces:get` 只接受根级定位字段：`uid`、`pageSchemaUid`、`tabSchemaUid`、`routeId`
 - 不要写成 `{ "target": { "uid": "..." } }`
+- 响应里的 `target` 只保留轻量定位信息：`locator`、`uid`、`kind`
+- 真实节点树看 `tree`；页面 route / tabs 信息看顶层 `pageRoute`、`route`、`tabs`、`tabTrees`
 - 最常用的是：
 
 ```text
@@ -28,6 +31,33 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - `addAction` 只用于非 record action：block / form / filter-form / action-panel
 - `addRecordAction` 只用于 record action：table / details / list / gridCard
 - `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
+- `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
+- `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
+
+例如 `catalog(target=table)` 里可能会看到：
+
+```json
+{
+  "configureOptions": {
+    "title": {
+      "type": "string",
+      "example": "用户表"
+    },
+    "pageSize": {
+      "type": "number",
+      "example": 20
+    },
+    "density": {
+      "type": "string",
+      "enum": ["large", "middle", "small"]
+    },
+    "dataScope": {
+      "type": "object",
+      "description": "FilterGroup 结构；空筛选可传 null 或 {}"
+    }
+  }
+}
+```
 
 ## 能力矩阵
 

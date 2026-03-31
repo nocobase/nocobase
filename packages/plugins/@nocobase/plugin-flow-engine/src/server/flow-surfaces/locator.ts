@@ -28,40 +28,7 @@ export class SurfaceLocator {
     }
 
     if (target.pageSchemaUid) {
-      const pageModel = await this.repository.findModelByParentId(target.pageSchemaUid, {
-        transaction,
-        subKey: 'page',
-        includeAsyncNode: true,
-      });
-      const route = await this.db.getRepository('desktopRoutes').findOne({
-        filter: {
-          schemaUid: target.pageSchemaUid,
-        },
-        transaction,
-      });
-
-      if (pageModel?.uid) {
-        return {
-          target,
-          uid: pageModel.uid,
-          kind: 'page',
-          node: pageModel,
-          route,
-          pageRoute: route,
-          pageModel,
-        };
-      }
-
-      if (route?.get?.('schemaUid')) {
-        return {
-          target,
-          uid: pageModel?.uid || route.get('schemaUid'),
-          kind: 'page',
-          route,
-          pageRoute: route,
-          pageModel,
-        };
-      }
+      return this.resolvePageSchemaUid(target.pageSchemaUid, target, transaction);
     }
 
     if (target.routeId) {
@@ -69,6 +36,9 @@ export class SurfaceLocator {
         filterByTk: String(target.routeId),
         transaction,
       });
+      if (isPageRoute(route)) {
+        return this.resolvePageSchemaUid(route.get('schemaUid'), target, transaction);
+      }
       if (route?.get?.('schemaUid')) {
         return this.resolveByUid(route.get('schemaUid'), target, transaction);
       }
@@ -172,6 +142,49 @@ export class SurfaceLocator {
       pageRoute,
       tabRoute,
     };
+  }
+
+  private async resolvePageSchemaUid(
+    pageSchemaUid: string,
+    target: FlowSurfaceTarget,
+    transaction?: any,
+  ): Promise<FlowSurfaceResolvedTarget> {
+    const pageModel = await this.repository.findModelByParentId(pageSchemaUid, {
+      transaction,
+      subKey: 'page',
+      includeAsyncNode: true,
+    });
+    const route = await this.db.getRepository('desktopRoutes').findOne({
+      filter: {
+        schemaUid: pageSchemaUid,
+      },
+      transaction,
+    });
+
+    if (pageModel?.uid) {
+      return {
+        target,
+        uid: pageModel.uid,
+        kind: 'page',
+        node: pageModel,
+        route,
+        pageRoute: route,
+        pageModel,
+      };
+    }
+
+    if (route?.get?.('schemaUid')) {
+      return {
+        target,
+        uid: route.get('schemaUid'),
+        kind: 'page',
+        route,
+        pageRoute: route,
+        pageModel,
+      };
+    }
+
+    throw new Error('flowSurfaces target not found');
   }
 
   private async findPageRouteFromModel(uid: string, transaction?: any) {

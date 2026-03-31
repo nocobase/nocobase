@@ -1020,7 +1020,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'List capabilities available in the current surface context',
     description: valuesCompatibilityNote(
-      '返回当前 target 上下文下可创建的 block / field / action 能力，以及当前节点可编辑的 settings contract、事件能力和布局能力。',
+      '返回当前 target 上下文下可创建的 block / field / action 能力，以及当前节点推荐使用的 `configureOptions`、底层 settings contract、事件能力和布局能力。',
     ),
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
@@ -1033,6 +1033,8 @@ const actionDocs: Record<string, any> = {
       '',
       '只接受根级定位字段；以下 4 个字段共同组成定位器。',
       '不要使用 `{ target: { ... } }` 包裹。',
+      '不要使用 `{ values: { ... } }` 包裹。',
+      '响应里的 `target` 只保留轻量定位信息；完整节点树请看 `tree`。',
       '',
       `示例：GET /api/flowSurfaces:get?uid=${examples.getPopupQuery.uid}`,
       `示例：GET /api/flowSurfaces:get?pageSchemaUid=${examples.getPageQuery.pageSchemaUid}`,
@@ -1087,7 +1089,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Apply simple semantic changes to a page, tab, block, field or action',
     description: valuesCompatibilityNote(
-      '用简单 `changes` 修改高频配置，例如 page/tab 标题、table pageSize、字段 clickToOpen、action openView/confirm，而不要求调用方知道内部 path。',
+      '用简单 `changes` 修改高频配置，例如 page/tab 标题、table pageSize、字段 clickToOpen、action openView/confirm，而不要求调用方知道内部 path。推荐先看 `catalog(target).configureOptions` 再调用本接口。',
     ),
     requestBody: {
       required: true,
@@ -1132,7 +1134,7 @@ const actionDocs: Record<string, any> = {
               value: examples.configureJsItem,
             },
             pageHeaderSettings: {
-              summary: 'Configure page icon and enableHeader using simple changes',
+              summary: 'Configure page icon and enableHeader using configureOptions',
               value: examples.configurePage,
             },
             tableAdvancedSettings: {
@@ -1214,7 +1216,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。创建后可直接用 `settings` 复用 `configure.changes` 的 simple changes 语义完成基础改配。',
+      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。创建后可直接用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义完成基础改配。',
     ),
     requestBody: {
       required: true,
@@ -1240,7 +1242,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。创建后可直接用 `settings` 复用 `configure.changes` 的 simple changes 语义。',
+      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。创建后可直接用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义。',
     ),
     requestBody: {
       required: true,
@@ -1274,7 +1276,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a non-record action under an allowed block/form/filter-form/action-panel container',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。创建后可直接用 `settings` 复用 `configure.changes`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
+      '只允许创建 catalog 中公开且当前容器可见的非 record action。典型场景包括 table block action、form submit、filter-form reset、action-panel action。record action 请改用 `addRecordAction`。创建后可直接用 `settings` 复用 `configure.changes` / `catalog.configureOptions`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
     ),
     requestBody: {
       required: true,
@@ -1304,7 +1306,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a record action under a record-capable owner target',
     description: valuesCompatibilityNote(
-      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；服务端会自动解析 canonical record action container。创建后可直接用 `settings` 复用 `configure.changes`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
+      '只允许创建 catalog 中公开且当前容器可见的 record action。公开 target 统一使用 record-capable owner target，例如 table/details/list/gridCard；服务端会自动解析 canonical record action container。创建后可直接用 `settings` 复用 `configure.changes` / `catalog.configureOptions`，popup-capable action 还可直接传 `popup` 追加 popup subtree。',
     ),
     requestBody: {
       required: true,
@@ -1506,6 +1508,25 @@ const schemas = {
     },
     additionalProperties: false,
   },
+  FlowSurfaceReadLocator: {
+    type: 'object',
+    minProperties: 1,
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      pageSchemaUid: {
+        type: 'string',
+      },
+      tabSchemaUid: {
+        type: 'string',
+      },
+      routeId: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
   FlowSurfaceMutateTarget: {
     type: 'object',
     minProperties: 1,
@@ -1539,6 +1560,45 @@ const schemas = {
       tabRoute: ref('FlowSurfaceRouteMeta'),
     },
     additionalProperties: true,
+  },
+  FlowSurfaceReadTarget: {
+    type: 'object',
+    properties: {
+      locator: ref('FlowSurfaceReadLocator'),
+      uid: {
+        type: 'string',
+      },
+      kind: {
+        type: 'string',
+        enum: ['page', 'tab', 'grid', 'block', 'field-container', 'action-container', 'node'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceConfigureOption: {
+    type: 'object',
+    properties: {
+      type: {
+        type: 'string',
+        enum: ['string', 'number', 'boolean', 'object', 'array'],
+      },
+      description: {
+        type: 'string',
+      },
+      enum: {
+        type: 'array',
+        items: {
+          oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'boolean' }],
+        },
+      },
+      example: {},
+    },
+    required: ['type'],
+    additionalProperties: false,
+  },
+  FlowSurfaceConfigureOptions: {
+    type: 'object',
+    additionalProperties: ref('FlowSurfaceConfigureOption'),
   },
   FlowSurfaceNodeDomain: {
     type: 'string',
@@ -1734,6 +1794,7 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfaceNodeDomain'),
       },
+      configureOptions: ref('FlowSurfaceConfigureOptions'),
       settingsSchema: ANY_OBJECT_SCHEMA,
       settingsContract: {
         type: 'object',
@@ -1974,6 +2035,7 @@ const schemas = {
         type: 'array',
         items: ref('FlowSurfaceNodeDomain'),
       },
+      configureOptions: ref('FlowSurfaceConfigureOptions'),
       settingsSchema: ANY_OBJECT_SCHEMA,
       settingsContract: {
         type: 'object',
@@ -1993,7 +2055,7 @@ const schemas = {
   FlowSurfaceGetResponse: {
     type: 'object',
     properties: {
-      target: ref('FlowSurfaceResolvedTarget'),
+      target: ref('FlowSurfaceReadTarget'),
       tree: ref('FlowSurfaceGetTreeNode'),
       nodeMap: ref('FlowSurfaceNodeMap'),
       pageRoute: ref('FlowSurfaceRouteMeta'),

@@ -18,6 +18,23 @@ export type FlowSurfaceTarget = {
   routeId?: string | number;
 };
 
+export type FlowSurfaceConfigureOptionValueType = 'string' | 'number' | 'boolean' | 'object' | 'array';
+
+export type FlowSurfaceConfigureOption = {
+  type: FlowSurfaceConfigureOptionValueType;
+  description?: string;
+  enum?: Array<string | number | boolean>;
+  example?: any;
+};
+
+export type FlowSurfaceConfigureOptions = Record<string, FlowSurfaceConfigureOption>;
+
+export type FlowSurfaceReadTarget = {
+  locator: FlowSurfaceTarget;
+  uid: string;
+  kind: FlowSurfaceContainerKind;
+};
+
 export type FlowSurfaceContainerKind =
   | 'page'
   | 'tab'
@@ -77,6 +94,7 @@ export type FlowSurfaceCatalogItem = {
   editableDomains: FlowSurfaceNodeDomain[];
   settingsSchema: Record<string, any>;
   settingsContract?: Partial<Record<FlowSurfaceNodeDomain, FlowSurfaceDomainContract>>;
+  configureOptions?: FlowSurfaceConfigureOptions;
   eventCapabilities?: FlowSurfaceEventCapabilities;
   layoutCapabilities?: FlowSurfaceLayoutCapabilities;
   createSupported?: boolean;

@@ -21,6 +21,7 @@ describe('flowSurfaces ai docs', () => {
 
     const content = fs.readFileSync(SKILL_PATH, 'utf-8');
     expect(content).toContain('flowSurfaces:get');
+    expect(content).toContain('configureOptions');
     expect(content).toContain('createPage');
     expect(content).toContain('compose');
     expect(content).toContain('configure');
@@ -34,6 +35,7 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('GET /api/flowSurfaces:get?uid=view-action-uid');
     expect(content).toContain('GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema');
     expect(content).toContain('不要写成 `{ "target": { "uid": "..." } }`');
+    expect(content).toContain('`locator`、`uid`、`kind`');
     expect(content).toContain('"type": "filterForm"');
     expect(content).toContain('"type": "table"');
     expect(content).toContain('"recordActions"');

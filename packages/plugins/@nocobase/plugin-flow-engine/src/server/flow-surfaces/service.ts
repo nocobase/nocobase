@@ -37,6 +37,13 @@ import { executeMutateOps } from './executor';
 import { SurfaceLocator } from './locator';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
+import {
+  getConfigureOptionKeysForResolvedNode,
+  getConfigureOptionKeysForUse,
+  getConfigureOptionsForCatalogItem,
+  getConfigureOptionsForResolvedNode,
+  getConfigureOptionsForUse,
+} from './configure-options';
 import type {
   FlowSurfaceApplyMode,
   FlowSurfaceApplySpec,
@@ -51,6 +58,7 @@ import type {
   FlowSurfaceNodeDomain,
   FlowSurfaceNodeSpec,
   FlowSurfaceNodeSubModel,
+  FlowSurfaceReadTarget,
   FlowSurfaceTarget,
 } from './types';
 
@@ -206,11 +214,27 @@ export class FlowSurfacesService {
 
     return {
       target: resolved || null,
-      blocks: availableBlocks,
-      fields: fieldCatalog,
-      actions: availableActions,
-      recordActions: availableRecordActions,
+      blocks: availableBlocks.map((item) => ({
+        ...item,
+        configureOptions: getConfigureOptionsForCatalogItem(item),
+      })),
+      fields: fieldCatalog.map((item) => ({
+        ...item,
+        configureOptions: getConfigureOptionsForCatalogItem(item),
+      })),
+      actions: availableActions.map((item) => ({
+        ...item,
+        configureOptions: getConfigureOptionsForCatalogItem(item),
+      })),
+      recordActions: availableRecordActions.map((item) => ({
+        ...item,
+        configureOptions: getConfigureOptionsForCatalogItem(item),
+      })),
       editableDomains: this.getEditableDomains(node?.use),
+      configureOptions: getConfigureOptionsForResolvedNode({
+        kind: resolved?.kind,
+        use: node?.use,
+      }),
       settingsSchema: getSettingsSchemaForUse(node?.use),
       settingsContract: getNodeContract(node?.use).domains,
       eventCapabilities: getNodeContract(node?.use).eventCapabilities,
@@ -224,7 +248,7 @@ export class FlowSurfacesService {
     const node = await this.loadResolvedNode(resolved, options.transaction);
     const nodeMap = flattenModel(node);
     const result: Record<string, any> = {
-      target: resolved,
+      target: this.buildReadTargetSummary(target, resolved),
       tree: node,
       nodeMap,
     };
@@ -516,7 +540,7 @@ export class FlowSurfacesService {
       return this.configureActionNode(values.target, current.use, values.changes, options);
     }
 
-    throw new Error(`flowSurfaces configure does not support simple changes on '${current?.use || resolved.uid}'`);
+    throw new Error(`flowSurfaces configure does not support configureOptions on '${current?.use || resolved.uid}'`);
   }
 
   async createPage(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -1688,7 +1712,7 @@ export class FlowSurfacesService {
       uid: input.uid,
       pageSchemaUid: input.pageSchemaUid,
       tabSchemaUid: input.tabSchemaUid,
-      routeId: input.routeId,
+      routeId: _.isNil(input.routeId) ? undefined : String(input.routeId),
     });
     if (!Object.keys(target).length) {
       throw new FlowSurfaceBadRequestError(
@@ -1696,6 +1720,22 @@ export class FlowSurfacesService {
       );
     }
     return target;
+  }
+
+  private buildReadTargetSummary(
+    target: FlowSurfaceTarget,
+    resolved: { uid: string; kind: string },
+  ): FlowSurfaceReadTarget {
+    return {
+      locator: buildDefinedPayload({
+        uid: target.uid,
+        pageSchemaUid: target.pageSchemaUid,
+        tabSchemaUid: target.tabSchemaUid,
+        routeId: target.routeId,
+      }),
+      uid: resolved.uid,
+      kind: resolved.kind as FlowSurfaceReadTarget['kind'],
+    };
   }
 
   private tryResolveActionCatalogItem(
@@ -2245,7 +2285,9 @@ export class FlowSurfacesService {
   }
 
   private async configurePage(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
-    const allowedKeys = ['title', 'documentTitle', 'displayTitle', 'enableTabs', 'icon', 'enableHeader'];
+    const allowedKeys = getConfigureOptionKeysForResolvedNode({
+      kind: 'page',
+    });
     assertSupportedSimpleChanges('page', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2284,7 +2326,9 @@ export class FlowSurfacesService {
   }
 
   private async configureTab(target: FlowSurfaceTarget, changes: Record<string, any>, options: { transaction?: any }) {
-    const allowedKeys = ['title', 'icon', 'documentTitle'];
+    const allowedKeys = getConfigureOptionKeysForResolvedNode({
+      kind: 'tab',
+    });
     assertSupportedSimpleChanges('tab', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2314,23 +2358,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'height',
-      'heightMode',
-      'resource',
-      'pageSize',
-      'density',
-      'showRowNumbers',
-      'sorting',
-      'dataScope',
-      'quickEdit',
-      'treeTable',
-      'defaultExpandAllRows',
-      'dragSort',
-      'dragSortBy',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('TableBlockModel');
     assertSupportedSimpleChanges('table', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2394,18 +2422,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'resource',
-      'layout',
-      'labelAlign',
-      'labelWidth',
-      'labelWrap',
-      'assignRules',
-      'colon',
-      ...(use === 'EditFormModel' ? ['dataScope'] : []),
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('form', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const nextStepParams: Record<string, any> = {};
@@ -2466,19 +2483,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'resource',
-      'layout',
-      'labelAlign',
-      'labelWidth',
-      'labelWrap',
-      'colon',
-      'sorting',
-      'dataScope',
-      'linkageRules',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('DetailsBlockModel');
     assertSupportedSimpleChanges('details', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
@@ -2546,16 +2551,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'resource',
-      'layout',
-      'labelAlign',
-      'labelWidth',
-      'labelWrap',
-      'defaultValues',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('FilterFormBlockModel');
     assertSupportedSimpleChanges('filterForm', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
@@ -2612,17 +2608,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'height',
-      'heightMode',
-      'resource',
-      'pageSize',
-      'dataScope',
-      'sorting',
-      'layout',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('ListBlockModel');
     assertSupportedSimpleChanges('list', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
@@ -2665,18 +2651,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'height',
-      'heightMode',
-      'resource',
-      'columns',
-      'rowCount',
-      'dataScope',
-      'sorting',
-      'layout',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('GridCardBlockModel');
     assertSupportedSimpleChanges('gridCard', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     const columns = normalizeGridCardColumns(changes.columns);
@@ -2721,7 +2696,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'displayTitle', 'content'];
+    const allowedKeys = getConfigureOptionKeysForUse('MarkdownBlockModel');
     assertSupportedSimpleChanges('markdown', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2751,18 +2726,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'displayTitle',
-      'height',
-      'heightMode',
-      'mode',
-      'url',
-      'html',
-      'params',
-      'allow',
-      'htmlId',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse('IframeBlockModel');
     assertSupportedSimpleChanges('iframe', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2804,7 +2768,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'displayTitle', 'height', 'heightMode', 'configure'];
+    const allowedKeys = getConfigureOptionKeysForUse('ChartBlockModel');
     assertSupportedSimpleChanges('chart', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2832,7 +2796,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'displayTitle', 'layout', 'ellipsis'];
+    const allowedKeys = getConfigureOptionKeysForUse('ActionPanelBlockModel');
     assertSupportedSimpleChanges('actionPanel', changes, allowedKeys);
     const layoutValue = normalizeSimpleLayoutValue(changes.layout);
     return this.updateSettings(
@@ -2862,7 +2826,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'description', 'className', 'code', 'version'];
+    const allowedKeys = getConfigureOptionKeysForUse('JSBlockModel');
     assertSupportedSimpleChanges('jsBlock', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2892,7 +2856,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'tooltip', 'width', 'fixed'];
+    const allowedKeys = getConfigureOptionKeysForUse('TableActionsColumnModel');
     assertSupportedSimpleChanges('action column', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2922,7 +2886,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['title', 'tooltip', 'width', 'fixed', 'code', 'version'];
+    const allowedKeys = getConfigureOptionKeysForUse('JSColumnModel');
     assertSupportedSimpleChanges('jsColumn', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -2964,7 +2928,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = ['label', 'tooltip', 'extra', 'showLabel', 'labelWidth', 'labelWrap', 'code', 'version'];
+    const allowedKeys = getConfigureOptionKeysForUse('JSItemModel');
     assertSupportedSimpleChanges('jsItem', changes, allowedKeys);
     return this.updateSettings(
       {
@@ -3000,77 +2964,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const wrapperAllowed =
-      current?.use === 'TableColumnModel'
-        ? [
-            'label',
-            'title',
-            'tooltip',
-            'width',
-            'fixed',
-            'sorter',
-            'fieldPath',
-            'associationPathName',
-            'editable',
-            'dataIndex',
-            'titleField',
-          ]
-        : current?.use === 'DetailsItemModel'
-          ? [
-              'label',
-              'tooltip',
-              'extra',
-              'showLabel',
-              'fieldPath',
-              'associationPathName',
-              'disabled',
-              'pattern',
-              'titleField',
-              'labelWidth',
-              'labelWrap',
-            ]
-          : current?.use === 'FilterFormItemModel'
-            ? [
-                'label',
-                'tooltip',
-                'extra',
-                'showLabel',
-                'fieldPath',
-                'associationPathName',
-                'initialValue',
-                'multiple',
-                'allowMultiple',
-                'maxCount',
-                'name',
-                'labelWidth',
-                'labelWrap',
-              ]
-            : [
-                'label',
-                'tooltip',
-                'extra',
-                'showLabel',
-                'fieldPath',
-                'associationPathName',
-                'initialValue',
-                'required',
-                'disabled',
-                'multiple',
-                'allowMultiple',
-                'maxCount',
-                'pattern',
-                'titleField',
-                'name',
-                'labelWidth',
-                'labelWrap',
-              ];
-    assertSupportedSimpleChanges('field wrapper', changes, [
-      ...wrapperAllowed,
-      'clickToOpen',
-      'openView',
-      'code',
-      'version',
-    ]);
+    assertSupportedSimpleChanges('field wrapper', changes, getConfigureOptionKeysForUse(current?.use));
 
     const rawWrapperChanges = _.omit(changes, ['clickToOpen', 'openView', 'code', 'version']);
     const wrapperChanges =
@@ -3242,27 +3136,13 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'fieldPath',
-      'associationPathName',
-      'titleField',
-      'clickToOpen',
-      'openView',
-      'title',
-      'icon',
-      'autoSize',
-      'allowClear',
-      'multiple',
-      'allowMultiple',
-      'quickCreate',
-      'mode',
-      'options',
-      'code',
-      'version',
-    ];
-    assertSupportedSimpleChanges('field', changes, allowedKeys);
     const resolved = await this.locator.resolve(target, options);
     const current = await this.loadResolvedNode(resolved, options.transaction);
+    assertSupportedSimpleChanges(
+      'field',
+      changes,
+      getConfigureOptionKeysForUse(current?.use || 'DisplayTextFieldModel'),
+    );
     const parentUid = current?.uid ? await this.locator.findParentUid(current.uid, options.transaction) : null;
     const parentWrapper = parentUid
       ? await this.repository.findModelById(parentUid, {
@@ -3418,29 +3298,7 @@ export class FlowSurfacesService {
     changes: Record<string, any>,
     options: { transaction?: any },
   ) {
-    const allowedKeys = [
-      'title',
-      'tooltip',
-      'icon',
-      'type',
-      'color',
-      'htmlType',
-      'position',
-      'danger',
-      'openView',
-      'confirm',
-      'assignValues',
-      'linkageRules',
-      'editMode',
-      'updateMode',
-      'duplicateMode',
-      'collapsedRows',
-      'defaultCollapsed',
-      'emailFieldNames',
-      'defaultSelectAllRecords',
-      'code',
-      'version',
-    ];
+    const allowedKeys = getConfigureOptionKeysForUse(use);
     assertSupportedSimpleChanges('action', changes, allowedKeys);
     const stepParams: Record<string, any> = {};
     if (hasDefinedValue(changes, ['title', 'tooltip', 'icon', 'type', 'danger', 'color', 'linkageRules'])) {
@@ -3743,6 +3601,7 @@ export class FlowSurfacesService {
                 ? ['fieldPath', 'defaultTargetUid']
                 : ['fieldPath'],
             editableDomains: this.getEditableDomains(use),
+            configureOptions: getConfigureOptionsForUse(use),
             settingsSchema: getSettingsSchemaForUse(use),
             settingsContract: getNodeContract(use).domains,
           });
@@ -3765,6 +3624,7 @@ export class FlowSurfacesService {
         type: 'jsColumn',
         requiredInitParams: [],
         editableDomains: this.getEditableDomains('JSColumnModel'),
+        configureOptions: getConfigureOptionsForUse('JSColumnModel'),
         settingsSchema: getSettingsSchemaForUse('JSColumnModel'),
         settingsContract: getNodeContract('JSColumnModel').domains,
       });
@@ -3780,6 +3640,7 @@ export class FlowSurfacesService {
         type: 'jsItem',
         requiredInitParams: [],
         editableDomains: this.getEditableDomains('JSItemModel'),
+        configureOptions: getConfigureOptionsForUse('JSItemModel'),
         settingsSchema: getSettingsSchemaForUse('JSItemModel'),
         settingsContract: getNodeContract('JSItemModel').domains,
       });
@@ -4390,7 +4251,11 @@ function ensureNoRawSimpleChangeKeys(changes: Record<string, any>) {
   const rawKeys = ['props', 'decoratorProps', 'stepParams', 'flowRegistry', 'use', 'fieldUse'];
   const forbidden = Object.keys(changes).filter((key) => rawKeys.includes(key));
   if (forbidden.length) {
-    throw new Error(`flowSurfaces configure does not accept raw keys: ${forbidden.join(', ')}`);
+    throw new Error(
+      `flowSurfaces configure does not accept raw keys: ${forbidden.join(
+        ', ',
+      )}; use catalog.configureOptions and configure.changes instead`,
+    );
   }
 }
 
@@ -4552,9 +4417,9 @@ function assertSupportedSimpleChanges(context: string, changes: Record<string, a
     return;
   }
   throw new FlowSurfaceBadRequestError(
-    `flowSurfaces configure ${context} does not support: ${unknownKeys.join(', ')}; supported keys: ${allowedKeys.join(
+    `flowSurfaces configure ${context} does not support: ${unknownKeys.join(
       ', ',
-    )}`,
+    )}; supported configureOptions: ${allowedKeys.join(', ')}`,
   );
 }
 
@@ -4581,41 +4446,7 @@ function rethrowInlineConfigurationError(error: any, prefix: string): never {
 
 function splitComposeFieldChanges(changes: Record<string, any>, wrapperUse?: string) {
   ensureNoRawSimpleChangeKeys(changes);
-  const supportedKeys = [
-    'label',
-    'tooltip',
-    'extra',
-    'showLabel',
-    'width',
-    'fixed',
-    'sorter',
-    'fieldPath',
-    'associationPathName',
-    'initialValue',
-    'required',
-    'disabled',
-    'maxCount',
-    'pattern',
-    'titleField',
-    'dataIndex',
-    'editable',
-    'labelWidth',
-    'labelWrap',
-    'name',
-    'clickToOpen',
-    'openView',
-    'title',
-    'icon',
-    'autoSize',
-    'allowClear',
-    'multiple',
-    'allowMultiple',
-    'quickCreate',
-    'mode',
-    'options',
-    'code',
-    'version',
-  ];
+  const supportedKeys = getConfigureOptionKeysForUse(wrapperUse || 'FormItemModel');
   assertSupportedSimpleChanges('field', changes, supportedKeys);
   const wrapperChanges = _.pick(changes, [
     'label',

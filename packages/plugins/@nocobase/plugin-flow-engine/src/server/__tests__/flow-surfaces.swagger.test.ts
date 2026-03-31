@@ -51,6 +51,9 @@ describe('flowSurfaces swagger', () => {
 
     expect(schemas.FlowSurfaceTarget).toBeTruthy();
     expect(schemas.FlowSurfaceResolvedTarget).toBeTruthy();
+    expect(schemas.FlowSurfaceReadTarget).toBeTruthy();
+    expect(schemas.FlowSurfaceConfigureOption).toBeTruthy();
+    expect(schemas.FlowSurfaceConfigureOptions).toBeTruthy();
     expect(schemas.FlowSurfaceCatalogItem).toBeTruthy();
     expect(schemas.FlowSurfaceNodeContract).toBeTruthy();
     expect(schemas.FlowSurfaceDomainContract).toBeTruthy();
@@ -129,9 +132,16 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogItem',
     );
+    expect(schemas.FlowSurfaceCatalogResponse.properties.configureOptions.$ref).toBe(
+      '#/components/schemas/FlowSurfaceConfigureOptions',
+    );
     expect(schemas.FlowSurfaceCatalogResponse.properties.recordActions.description).toContain(
       'table/details/list/gridCard',
     );
+    expect(schemas.FlowSurfaceCatalogItem.properties.configureOptions.$ref).toBe(
+      '#/components/schemas/FlowSurfaceConfigureOptions',
+    );
+    expect(schemas.FlowSurfaceGetResponse.properties.target.$ref).toBe('#/components/schemas/FlowSurfaceReadTarget');
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);

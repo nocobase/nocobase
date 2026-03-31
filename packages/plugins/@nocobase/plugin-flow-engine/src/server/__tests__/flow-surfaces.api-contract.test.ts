@@ -493,6 +493,7 @@ describe('flowSurfaces API contract', () => {
       }),
     );
     expect(mysteryCatalog.editableDomains).toEqual([]);
+    expect(mysteryCatalog.configureOptions).toEqual({});
     expect(mysteryCatalog.settingsSchema).toEqual({});
     expect(mysteryCatalog.settingsContract).toEqual({});
     expect(mysteryCatalog.actions).toEqual([]);
@@ -678,6 +679,21 @@ describe('flowSurfaces API contract', () => {
         'triggerWorkflow',
       ]),
     );
+    expect(tableCatalog.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      pageSize: {
+        type: 'number',
+      },
+      density: {
+        type: 'string',
+        enum: expect.arrayContaining(['large', 'middle', 'small']),
+      },
+      dataScope: {
+        type: 'object',
+      },
+    });
     expect(tableCatalog.rowActions).toBeUndefined();
     expect(tableCatalog.actions.map((item: any) => item.key)).not.toEqual(expect.arrayContaining(['view', 'edit']));
     expect(tableCatalog.recordActions.map((item: any) => item.key)).toEqual(
@@ -696,6 +712,22 @@ describe('flowSurfaces API contract', () => {
       ]),
     );
     expect(tableCatalog.recordActions.length).toBeGreaterThan(0);
+    expect(tableCatalog.actions.find((item: any) => item.key === 'addNew')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      openView: {
+        type: 'object',
+      },
+    });
+    expect(tableCatalog.recordActions.find((item: any) => item.key === 'view')?.configureOptions).toMatchObject({
+      title: {
+        type: 'string',
+      },
+      openView: {
+        type: 'object',
+      },
+    });
 
     const createFormCatalog = getData(
       await rootAgent.resource('flowSurfaces').catalog({
@@ -1486,6 +1518,7 @@ describe('flowSurfaces API contract', () => {
     });
     expect(rawPathConfigure.status).toBe(500);
     expect(readErrorMessage(rawPathConfigure)).toContain('does not accept raw keys');
+    expect(readErrorMessage(rawPathConfigure)).toContain('configureOptions');
 
     const rawUseCompose = await rootAgent.resource('flowSurfaces').compose({
       values: {
@@ -1514,7 +1547,7 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(unknownSimpleField.status).toBe(500);
+    expect(unknownSimpleField.status).toBe(400);
     expect(readErrorMessage(unknownSimpleField)).toContain('does not support');
   });
 
@@ -1590,7 +1623,7 @@ describe('flowSurfaces API contract', () => {
     expect(addFieldsData.fields[0].ok).toBe(true);
     expect(addFieldsData.fields[1].ok).toBe(false);
     expect(addFieldsData.fields[1].error.message).toContain('settings invalid');
-    expect(addFieldsData.fields[1].error.message).toContain('supported keys');
+    expect(addFieldsData.fields[1].error.message).toContain('supported configureOptions');
 
     const fieldReadback = await getSurface(rootAgent, {
       uid: addFieldsData.fields[0].result.wrapperUid,
@@ -1713,9 +1746,9 @@ describe('flowSurfaces API contract', () => {
         },
       },
     });
-    expect(addFieldRawUnknownRes.status).toBe(500);
+    expect(addFieldRawUnknownRes.status).toBe(400);
     expect(readErrorMessage(addFieldRawUnknownRes)).toContain('settings invalid');
-    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported keys');
+    expect(readErrorMessage(addFieldRawUnknownRes)).toContain('supported configureOptions');
   });
 
   it('should keep batch addBlocks partial-success semantics when filter payload is invalid', async () => {
