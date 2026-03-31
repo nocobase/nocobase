@@ -575,6 +575,91 @@ function createDestroyToolSchema() {
 }
 
 function createQueryToolSchema() {
+  const queryFieldSchema = {
+    anyOf: [
+      { type: 'string' },
+      {
+        type: 'array',
+        items: { type: 'string' },
+        minItems: 1,
+      },
+    ],
+  };
+
+  const queryMeasureSchema = {
+    type: 'object',
+    additionalProperties: true,
+    required: ['field'],
+    properties: {
+      field: queryFieldSchema,
+      type: {
+        type: 'string',
+        description: 'Optional field type hint.',
+      },
+      aggregation: {
+        type: 'string',
+        description: 'Aggregation function, such as count, sum, avg, max, or min.',
+      },
+      alias: {
+        type: 'string',
+        description: 'Output field alias.',
+      },
+      distinct: {
+        type: 'boolean',
+        description: 'Whether to apply distinct before aggregation.',
+      },
+    },
+  };
+
+  const queryDimensionSchema = {
+    type: 'object',
+    additionalProperties: true,
+    required: ['field'],
+    properties: {
+      field: queryFieldSchema,
+      type: {
+        type: 'string',
+        description: 'Optional field type hint.',
+      },
+      alias: {
+        type: 'string',
+        description: 'Output field alias.',
+      },
+      format: {
+        type: 'string',
+        description: 'Optional output format, usually for date and time dimensions.',
+      },
+      options: {
+        type: 'object',
+        description: 'Additional formatter options.',
+        additionalProperties: true,
+      },
+    },
+  };
+
+  const queryOrderSchema = {
+    type: 'object',
+    additionalProperties: true,
+    required: ['field'],
+    properties: {
+      field: queryFieldSchema,
+      alias: {
+        type: 'string',
+        description: 'Alias to sort by when the selected field is projected with an alias.',
+      },
+      order: {
+        type: 'string',
+        enum: ['asc', 'desc'],
+        description: 'Sort direction.',
+      },
+      nulls: {
+        type: 'string',
+        enum: ['default', 'first', 'last'],
+        description: 'Null value ordering.',
+      },
+    },
+  };
+
   return {
     type: 'object',
     additionalProperties: false,
@@ -591,26 +676,17 @@ function createQueryToolSchema() {
       measures: {
         type: 'array',
         description: 'Measure definitions for query aggregation.',
-        items: {
-          type: 'object',
-          additionalProperties: true,
-        },
+        items: queryMeasureSchema,
       },
       dimensions: {
         type: 'array',
         description: 'Dimension definitions for query aggregation.',
-        items: {
-          type: 'object',
-          additionalProperties: true,
-        },
+        items: queryDimensionSchema,
       },
       orders: {
         type: 'array',
         description: 'Order definitions for query aggregation.',
-        items: {
-          type: 'object',
-          additionalProperties: true,
-        },
+        items: queryOrderSchema,
       },
       filter: {
         type: 'object',

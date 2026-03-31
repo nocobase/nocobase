@@ -146,4 +146,28 @@ describe('createCrudTools', () => {
     expect(result.body.dataSource).toBeUndefined();
     expect(result.body.timezone).toBeUndefined();
   });
+
+  it('should expose detailed query item schemas', () => {
+    const tools = createCrudTools({
+      app: createTestApp(),
+      mcpToolsManager: new McpToolsManager(),
+    });
+
+    const queryTool = tools.find((tool) => tool.name === 'resource_query')!;
+    const measureItemSchema = queryTool.inputSchema.properties.measures.items;
+    const dimensionItemSchema = queryTool.inputSchema.properties.dimensions.items;
+    const orderItemSchema = queryTool.inputSchema.properties.orders.items;
+
+    expect(measureItemSchema.required).toEqual(['field']);
+    expect(measureItemSchema.properties.aggregation).toBeDefined();
+    expect(measureItemSchema.properties.distinct).toBeDefined();
+
+    expect(dimensionItemSchema.required).toEqual(['field']);
+    expect(dimensionItemSchema.properties.format).toBeDefined();
+    expect(dimensionItemSchema.properties.options).toBeDefined();
+
+    expect(orderItemSchema.required).toEqual(['field']);
+    expect(orderItemSchema.properties.order.enum).toEqual(['asc', 'desc']);
+    expect(orderItemSchema.properties.nulls.enum).toEqual(['default', 'first', 'last']);
+  });
 });

@@ -25,12 +25,15 @@ const getTimezone = (ctx: Context) =>
   ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
 
 export const checkPermission = async (ctx: Context, next: Next) => {
+  const values = ctx.action.params.values || {};
+  const acl = ctx.app.dataSourceManager.get(values.dataSource)?.acl || ctx.app.acl;
+
   try {
     const result = await applyQueryPermission({
-      acl: ctx.app.dataSourceManager.get(ctx.action.params.values.dataSource)?.acl || ctx.app.acl,
-      db: getDB(ctx, ctx.action.params.values.dataSource) || ctx.db,
-      resourceName: ctx.action.params.values.collection,
-      query: ctx.action.params.values,
+      acl,
+      db: getDB(ctx, values.dataSource) || ctx.db,
+      resourceName: values.collection,
+      query: values,
       currentUser: ctx.state?.currentUser,
       currentRole: ctx.state?.currentRole,
       currentRoles: ctx.state?.currentRoles,
@@ -95,7 +98,7 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-export const query = async (ctx: Context, next: Next) => {
+export const queryDataAction = async (ctx: Context, next: Next) => {
   try {
     await compose([checkPermission, cacheMiddleware, parseVariables, queryData])(ctx, next);
   } catch (err) {
