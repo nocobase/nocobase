@@ -41,7 +41,12 @@
       {
         "type": "custom-link",
         "label": "使用技能",
-        "link": "/ai-employees/features/tool"
+        "link": "/ai-employees/features/skills"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用工具",
+        "link": "/ai-employees/features/tools"
       },
       {
         "type": "custom-link",
