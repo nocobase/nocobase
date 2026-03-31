@@ -739,9 +739,11 @@ describe('flowSurfaces API contract', () => {
     const popupVariants = globalCatalog.actions
       .filter((item: any) => item.key === 'popup')
       .map((item: any) => `${item.scope}:${item.use}`);
-    expect(popupVariants).toEqual(
-      expect.arrayContaining(['block:PopupCollectionActionModel', 'record:PopupCollectionActionModel']),
-    );
+    expect(popupVariants).toEqual(expect.arrayContaining(['block:PopupCollectionActionModel']));
+    const recordPopupVariants = globalCatalog.recordActions
+      .filter((item: any) => item.key === 'popup')
+      .map((item: any) => `${item.scope}:${item.use}`);
+    expect(recordPopupVariants).toEqual(expect.arrayContaining(['record:PopupCollectionActionModel']));
 
     const submitVariants = globalCatalog.actions
       .filter((item: any) => item.key === 'submit')
@@ -751,7 +753,11 @@ describe('flowSurfaces API contract', () => {
     );
 
     const jsVariants = globalCatalog.actions.filter((item: any) => item.key === 'js').map((item: any) => item.scope);
-    expect(jsVariants).toEqual(expect.arrayContaining(['block', 'record', 'form', 'filterForm', 'actionPanel']));
+    expect(jsVariants).toEqual(expect.arrayContaining(['block', 'form', 'filterForm', 'actionPanel']));
+    const recordJsVariants = globalCatalog.recordActions
+      .filter((item: any) => item.key === 'js')
+      .map((item: any) => item.scope);
+    expect(recordJsVariants).toEqual(expect.arrayContaining(['record']));
   });
 
   it('should expose public catalog action keys for representative block targets', async () => {
@@ -983,6 +989,17 @@ describe('flowSurfaces API contract', () => {
     });
     expect(blockActionOnRowContainer.status).toBe(400);
     expect(readErrorMessage(blockActionOnRowContainer)).toContain(`record action surface`);
+
+    const directRecordActionOnInternalContainer = await rootAgent.resource('flowSurfaces').addRecordAction({
+      values: {
+        target: {
+          uid: actionsColumnUid,
+        },
+        type: 'view',
+      },
+    });
+    expect(directRecordActionOnInternalContainer.status).toBe(400);
+    expect(readErrorMessage(directRecordActionOnInternalContainer)).toContain(`internal record action container`);
 
     const hiddenDeleteOnForm = await rootAgent.resource('flowSurfaces').addAction({
       values: {
@@ -1954,6 +1971,108 @@ describe('flowSurfaces API contract', () => {
       uid: addBlocksData.blocks[0].result.uid,
     });
     expect(validTableReadback.tree.props?.title).toBe('Valid employees table');
+  });
+
+  it('should reject raw direct-add payload keys and require settings/configureOptions instead', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Raw direct add contract page',
+      tabTitle: 'Raw direct add contract tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const rawBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'markdown',
+        stepParams: {
+          markdownBlockSettings: {
+            editMarkdown: {
+              content: 'legacy markdown',
+            },
+          },
+        },
+      },
+    });
+    expect(rawBlockRes.status).toBe(400);
+    expect(readErrorMessage(rawBlockRes)).toContain('does not accept raw keys');
+
+    const rawFieldRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'jsColumn',
+        props: {
+          title: 'Legacy JS column',
+        },
+      },
+    });
+    expect(rawFieldRes.status).toBe(400);
+    expect(readErrorMessage(rawFieldRes)).toContain('does not accept raw keys');
+
+    const rawActionRes = await rootAgent.resource('flowSurfaces').addAction({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        type: 'addNew',
+        stepParams: {
+          buttonSettings: {
+            general: {
+              title: 'Legacy action',
+            },
+          },
+        },
+      },
+    });
+    expect(rawActionRes.status).toBe(400);
+    expect(readErrorMessage(rawActionRes)).toContain('does not accept raw keys');
+
+    const batchActionRes = await rootAgent.resource('flowSurfaces').addActions({
+      values: {
+        target: {
+          uid: table.uid,
+        },
+        actions: [
+          {
+            key: 'valid',
+            type: 'addNew',
+            settings: {
+              title: 'Create employee',
+            },
+          },
+          {
+            key: 'invalid-raw',
+            type: 'refresh',
+            stepParams: {
+              buttonSettings: {
+                general: {
+                  title: 'Legacy refresh',
+                },
+              },
+            },
+          },
+        ],
+      },
+    });
+    expect(batchActionRes.status).toBe(200);
+    const batchActionData = getData(batchActionRes);
+    expect(batchActionData.successCount).toBe(1);
+    expect(batchActionData.errorCount).toBe(1);
+    expect(batchActionData.actions[0].ok).toBe(true);
+    expect(batchActionData.actions[1].ok).toBe(false);
+    expect(batchActionData.actions[1].error.message).toContain('does not accept raw keys');
   });
 
   it('should compose and configure list grid-card and static blocks with simple semantic settings', async () => {

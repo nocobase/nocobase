@@ -221,10 +221,12 @@ export class FlowSurfacesService {
     const recordActionContainerUse = getCatalogRecordActionContainerUse(node?.use);
     const availableActions = node
       ? getAvailableActionCatalogItems(node?.use).filter((item) => item.scope !== 'record')
-      : getAvailableActionCatalogItems();
-    const availableRecordActions = recordActionContainerUse
-      ? getAvailableActionCatalogItems(recordActionContainerUse, 'record')
-      : [];
+      : getAvailableActionCatalogItems().filter((item) => item.scope !== 'record');
+    const availableRecordActions = node
+      ? recordActionContainerUse
+        ? getAvailableActionCatalogItems(recordActionContainerUse, 'record')
+        : []
+      : getAvailableActionCatalogItems(undefined, 'record');
 
     return {
       target: resolved || null,
@@ -857,6 +859,7 @@ export class FlowSurfacesService {
 
   async addBlock(values: Record<string, any>, options: { transaction?: any } = {}) {
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
+    ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
@@ -923,6 +926,14 @@ export class FlowSurfacesService {
 
   async addField(values: Record<string, any>, options: { transaction?: any } = {}): Promise<FlowSurfaceAddFieldResult> {
     const target = this.normalizeWriteTarget('addField', values?.target, values);
+    ensureNoRawDirectAddKeys('addField', values, [
+      'wrapperProps',
+      'fieldProps',
+      'props',
+      'decoratorProps',
+      'stepParams',
+      'flowRegistry',
+    ]);
     const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
@@ -1103,6 +1114,8 @@ export class FlowSurfacesService {
 
   async addAction(values: Record<string, any>, options: { transaction?: any } = {}) {
     const target = this.normalizeWriteTarget('addAction', values?.target, values);
+    ensureNoDirectActionScopeKey('addAction', values);
+    ensureNoRawDirectAddKeys('addAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addAction', values.popup);
     const container = await this.surfaceContext.resolveActionContainer(target, options.transaction);
@@ -1111,7 +1124,6 @@ export class FlowSurfacesService {
         `flowSurfaces addAction target '${container.ownerUse}' is a record action surface, use addRecordAction`,
       );
     }
-    const requestedScope = normalizeActionScope(values.scope);
     const actionCatalogItem = this.resolveAddActionCatalogItem({
       type: values.type,
       use: values.use,
@@ -1125,7 +1137,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces addAction type '${actionCatalogItem.key}' does not support popup`);
     }
     assertRequestedActionScope({
-      requestedScope,
+      requestedScope: undefined,
       resolvedScope,
       containerUse: container.ownerUse,
       context: 'addAction',
@@ -1165,10 +1177,11 @@ export class FlowSurfacesService {
 
   async addRecordAction(values: Record<string, any>, options: { transaction?: any } = {}) {
     const target = this.normalizeWriteTarget('addRecordAction', values?.target, values);
+    ensureNoDirectActionScopeKey('addRecordAction', values);
+    ensureNoRawDirectAddKeys('addRecordAction', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addRecordAction', values.settings);
     const inlinePopup = this.normalizeInlinePopup('addRecordAction', values.popup);
     const container = await this.resolveRecordActionContainer(target, options.transaction);
-    const requestedScope = normalizeActionScope(values.scope);
     const actionCatalogItem = this.resolveAddRecordActionCatalogItem({
       type: values.type,
       use: values.use,
@@ -1180,7 +1193,7 @@ export class FlowSurfacesService {
       throwBadRequest(`flowSurfaces addRecordAction type '${actionCatalogItem.key}' does not support popup`);
     }
     assertRequestedActionScope({
-      requestedScope,
+      requestedScope: undefined,
       resolvedScope,
       containerUse: container.containerUse,
       context: 'addRecordAction',
@@ -2103,17 +2116,6 @@ export class FlowSurfacesService {
         subType: 'array',
       };
     }
-    if (use === 'TableActionsColumnModel') {
-      const ownerUid = await this.locator.findParentUid(node.uid, transaction);
-      return {
-        ownerUid: ownerUid || node.uid,
-        ownerUse: 'TableBlockModel',
-        containerUse: use,
-        parentUid: node.uid,
-        subKey: 'actions',
-        subType: 'array',
-      };
-    }
     if (use === 'DetailsBlockModel') {
       return {
         ownerUid: node.uid,
@@ -2138,16 +2140,17 @@ export class FlowSurfacesService {
         subType: 'array',
       };
     }
+    if (use === 'TableActionsColumnModel') {
+      throwBadRequest(
+        `flowSurfaces addRecordAction target '${use}' is an internal record action container; pass the owning table block uid instead`,
+      );
+    }
     if (use === 'ListItemModel' || use === 'GridCardItemModel') {
-      const ownerUid = await this.locator.findParentUid(node.uid, transaction);
-      return {
-        ownerUid: ownerUid || node.uid,
-        ownerUse: use === 'ListItemModel' ? 'ListBlockModel' : 'GridCardBlockModel',
-        containerUse: use,
-        parentUid: node.uid,
-        subKey: 'actions',
-        subType: 'array',
-      };
+      throwBadRequest(
+        `flowSurfaces addRecordAction target '${use}' is an internal record action container; pass the owning ${
+          use === 'ListItemModel' ? 'list' : 'gridCard'
+        } block uid instead`,
+      );
     }
 
     throwBadRequest(
@@ -4401,6 +4404,27 @@ function ensureNoRawSimpleChangeKeys(changes: Record<string, any>) {
       )}; use catalog.configureOptions and configure.changes instead`,
     );
   }
+}
+
+function ensureNoRawDirectAddKeys(actionName: string, values: Record<string, any>, rawKeys: string[]) {
+  const forbidden = rawKeys.filter((key) => hasOwnDefined(values || {}, key));
+  if (!forbidden.length) {
+    return;
+  }
+  throwBadRequest(
+    `flowSurfaces ${actionName} does not accept raw keys: ${forbidden.join(
+      ', ',
+    )}; use settings with catalog.configureOptions or fall back to updateSettings/apply for low-level control`,
+  );
+}
+
+function ensureNoDirectActionScopeKey(actionName: 'addAction' | 'addRecordAction', values: Record<string, any>) {
+  if (_.isUndefined(values?.scope)) {
+    return;
+  }
+  throwBadRequest(
+    `flowSurfaces ${actionName} does not support scope; use addAction for non-record actions and addRecordAction for record actions`,
+  );
 }
 
 function normalizeComposeFieldSpec(input: any, index: number) {

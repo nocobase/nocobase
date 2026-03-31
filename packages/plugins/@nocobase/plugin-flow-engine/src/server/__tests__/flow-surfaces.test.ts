@@ -2184,11 +2184,7 @@ describe('flowSurfaces resource', () => {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
-    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
-      (column: any) => column.use === 'TableActionsColumnModel',
-    )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
 
     const invalidLegacyButtonStep = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2348,23 +2344,19 @@ describe('flowSurfaces resource', () => {
         },
       },
     });
-    expect(invalidBlockCreate.status).toBe(500);
+    expect(invalidBlockCreate.status).toBe(400);
+    expect(readErrorMessage(invalidBlockCreate)).toContain('does not accept raw keys');
 
     const tableBlockUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
-    const table = await flowRepo.findModelById(tableBlockUid, { includeAsyncNode: true });
-    const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
-      (column: any) => column.use === 'TableActionsColumnModel',
-    )?.uid;
-
     const invalidActionCreate = await rootAgent.resource('flowSurfaces').addAction({
       values: {
         target: {
-          uid: actionsColumnUid,
+          uid: tableBlockUid,
         },
-        type: 'view',
+        type: 'addNew',
         stepParams: {
           buttonSettings: {
             general: {
@@ -2375,6 +2367,21 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidActionCreate.status).toBe(400);
+    expect(readErrorMessage(invalidActionCreate)).toContain('does not accept raw keys');
+
+    const invalidFieldCreate = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableBlockUid,
+        },
+        type: 'jsColumn',
+        props: {
+          title: 'Legacy runtime column',
+        },
+      },
+    });
+    expect(invalidFieldCreate.status).toBe(400);
+    expect(readErrorMessage(invalidFieldCreate)).toContain('does not accept raw keys');
   });
 
   it('should support inline settings and popup on singular add APIs', async () => {
@@ -2655,16 +2662,16 @@ describe('flowSurfaces resource', () => {
     expect(actionsColumn?.uid).toBeTruthy();
 
     const addNewAction = await addAction(rootAgent, tableBlockUid, 'addNew', {
-      props: {
+      settings: {
         title: 'Create New',
       },
     });
     expect(addNewAction.uid).toBeTruthy();
 
-    await addAction(rootAgent, actionsColumn.uid, 'view');
-    await addAction(rootAgent, actionsColumn.uid, 'edit');
-    await addAction(rootAgent, actionsColumn.uid, 'popup');
-    await addAction(rootAgent, actionsColumn.uid, 'delete');
+    await addRecordAction(rootAgent, tableBlockUid, 'view');
+    await addRecordAction(rootAgent, tableBlockUid, 'edit');
+    await addRecordAction(rootAgent, tableBlockUid, 'popup');
+    await addRecordAction(rootAgent, tableBlockUid, 'delete');
 
     const nicknameField = await addField(rootAgent, tableBlockUid, 'nickname');
     const statusField = await addField(rootAgent, tableBlockUid, 'status');
@@ -2739,7 +2746,7 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
 
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
@@ -2773,11 +2780,7 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    const firstPopupTable = await flowRepo.findModelById(firstPopupBlock.uid, { includeAsyncNode: true });
-    const firstPopupActionsColumnUid = _.castArray(firstPopupTable?.subModels?.columns || []).find(
-      (column: any) => column.use === 'TableActionsColumnModel',
-    )?.uid;
-    const secondPopupAction = await addAction(rootAgent, firstPopupActionsColumnUid, 'popup');
+    const secondPopupAction = await addAction(rootAgent, firstPopupBlock.uid, 'popup');
 
     const secondPopupBlock = await getData(
       await rootAgent.resource('flowSurfaces').addBlock({
@@ -2793,11 +2796,7 @@ describe('flowSurfaces resource', () => {
         },
       }),
     );
-    const secondPopupTable = await flowRepo.findModelById(secondPopupBlock.uid, { includeAsyncNode: true });
-    const secondPopupActionsColumnUid = _.castArray(secondPopupTable?.subModels?.columns || []).find(
-      (column: any) => column.use === 'TableActionsColumnModel',
-    )?.uid;
-    const thirdPopupAction = await addAction(rootAgent, secondPopupActionsColumnUid, 'popup');
+    const thirdPopupAction = await addAction(rootAgent, secondPopupBlock.uid, 'popup');
 
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -3644,9 +3643,9 @@ describe('flowSurfaces resource', () => {
     const tableExpandCollapse = await addAction(rootAgent, tableUid, 'expandCollapse');
     const tableBulkUpdate = await addAction(rootAgent, tableUid, 'bulkUpdate');
     const tableComposeEmail = await addAction(rootAgent, tableUid, 'composeEmail');
-    const rowAddChild = await addRecordAction(rootAgent, actionsColumnUid, 'addChild');
-    const rowDuplicate = await addRecordAction(rootAgent, actionsColumnUid, 'duplicate');
-    const rowComposeEmail = await addRecordAction(rootAgent, actionsColumnUid, 'composeEmail');
+    const rowAddChild = await addRecordAction(rootAgent, tableUid, 'addChild');
+    const rowDuplicate = await addRecordAction(rootAgent, tableUid, 'duplicate');
+    const rowComposeEmail = await addRecordAction(rootAgent, tableUid, 'composeEmail');
     const formSubmit = await addAction(rootAgent, createFormUid, 'submit');
     const detailsView = await addRecordAction(rootAgent, detailsUid, 'view');
     const filterSubmit = await addAction(rootAgent, filterFormUid, 'submit');
@@ -3855,7 +3854,7 @@ describe('flowSurfaces resource', () => {
     expect(actionsColumnUid).toBeTruthy();
 
     const tableJsAction = await addAction(rootAgent, tableUid, 'js');
-    const rowJsAction = await addAction(rootAgent, actionsColumnUid, 'js');
+    const rowJsAction = await addAction(rootAgent, tableUid, 'js');
     const detailsJsAction = await addAction(rootAgent, detailsUid, 'js');
     const formJsAction = await addAction(rootAgent, createFormUid, 'js');
     const filterJsAction = await addAction(rootAgent, filterFormUid, 'js');
@@ -3884,7 +3883,7 @@ describe('flowSurfaces resource', () => {
             uid: tableUid,
           },
           type: 'jsColumn',
-          props: {
+          settings: {
             title: 'JS runtime column',
           },
         },
@@ -3897,7 +3896,7 @@ describe('flowSurfaces resource', () => {
             uid: createFormUid,
           },
           type: 'jsItem',
-          props: {
+          settings: {
             label: 'JS runtime item',
           },
         },
@@ -4716,7 +4715,7 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
 
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -4875,7 +4874,7 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
 
     const popupApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -5026,7 +5025,7 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
 
     const popupApply = await rootAgent.resource('flowSurfaces').apply({
       values: {
@@ -5174,13 +5173,13 @@ describe('flowSurfaces resource', () => {
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
 
-    const firstPopup = await addAction(rootAgent, actionsColumnUid, 'popup', {
-      props: {
+    const firstPopup = await addAction(rootAgent, tableBlockUid, 'popup', {
+      settings: {
         title: 'Popup A',
       },
     });
-    const secondPopup = await addAction(rootAgent, actionsColumnUid, 'popup', {
-      props: {
+    const secondPopup = await addAction(rootAgent, tableBlockUid, 'popup', {
+      settings: {
         title: 'Popup B',
       },
     });
@@ -5238,13 +5237,13 @@ describe('flowSurfaces resource', () => {
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
 
-    await addAction(rootAgent, actionsColumnUid, 'popup', {
-      props: {
+    await addAction(rootAgent, tableBlockUid, 'popup', {
+      settings: {
         title: 'Popup A',
       },
     });
-    await addAction(rootAgent, actionsColumnUid, 'popup', {
-      props: {
+    await addAction(rootAgent, tableBlockUid, 'popup', {
+      settings: {
         title: 'Popup B',
       },
     });
@@ -5470,14 +5469,14 @@ describe('flowSurfaces resource', () => {
     const actionsColumnUid = _.castArray(table?.subModels?.columns || []).find(
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
-    const viewAction = await addAction(rootAgent, actionsColumnUid, 'view');
+    const viewAction = await addAction(rootAgent, tableBlockUid, 'view');
     await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
           uid: viewAction.uid,
         },
         type: 'markdown',
-        props: {
+        settings: {
           content: 'Bootstrap popup',
         },
       },

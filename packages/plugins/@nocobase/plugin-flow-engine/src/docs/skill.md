@@ -34,6 +34,8 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
 - `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
 - `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
+- direct `addBlock` / `addField` / `addAction` / `addRecordAction` 以及对应批量 API 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
+- 需要高频改配时统一使用 `settings`；需要底层精确控制时再降级到 `updateSettings` / `apply`
 - 除 `get` 外，其它写接口的定位一律收口为 uid-only：
   - 有 `target` 的一律传 `{ "target": { "uid": "..." } }`
   - `destroyPage`、`removeTab` 一律传根级 `{ "uid": "..." }`
@@ -83,7 +85,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 其中：
 
 - table block 额外支持 `expandCollapse`、`bulkDelete`、`bulkEdit`、`bulkUpdate`、`export`、`exportAttachments`、`import`、`link`、`upload`、`composeEmail`、`templatePrint`
-- tree table 的 `recordActions` 额外支持 `duplicate`、`addChild`、`composeEmail`
+- table 的 `recordActions` 还支持 `duplicate`、`addChild`、`composeEmail`
 - filter-form 额外支持 `collapse`
 
 ### 常用 field 公开语义
@@ -388,6 +390,7 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 - record action 走 `addRecordAction`
 - table / details / list / gridCard 的 record action 不要再混进 `addAction`
 - direct `add*` 现在也支持 inline `settings`
+- direct `add*` 不接受 raw `wrapperProps / fieldProps / props / decoratorProps / stepParams / flowRegistry`
 - 这里的 `settings` 写法就是 `configure.changes` 的写法
 - popup-capable action 还可以直接带 `popup`
 

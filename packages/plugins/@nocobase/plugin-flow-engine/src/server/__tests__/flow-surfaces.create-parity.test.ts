@@ -188,21 +188,21 @@ async function buildNestedPopupCreateParityReadback(
 
       await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-      const view = await addAction(rootAgent, actionsColumn.uid, 'view');
+      const view = await addAction(rootAgent, nestedTable.uid, 'view');
       await configurePopupAction(rootAgent, view.uid, '查看', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
-      const edit = await addAction(rootAgent, actionsColumn.uid, 'edit');
+      const edit = await addAction(rootAgent, nestedTable.uid, 'edit');
       await configurePopupAction(rootAgent, edit.uid, '编辑', {
         pageModelClass: 'ChildPageModel',
         dataSourceKey: 'main',
         collectionName: 'pets',
       });
 
-      const remove = await addAction(rootAgent, actionsColumn.uid, 'delete');
+      const remove = await addAction(rootAgent, nestedTable.uid, 'delete');
       await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
       await configureSimpleAction(rootAgent, remove.uid, '删除');
 
@@ -373,21 +373,21 @@ async function createTableParityReadback(rootAgent: any) {
 
   await moveNode(rootAgent, actionsColumn.uid, lastFieldColumnUid, 'after');
 
-  const view = await addAction(rootAgent, actionsColumn.uid, 'view');
+  const view = await addAction(rootAgent, table.uid, 'view');
   await configurePopupAction(rootAgent, view.uid, '查看', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
-  const edit = await addAction(rootAgent, actionsColumn.uid, 'edit');
+  const edit = await addAction(rootAgent, table.uid, 'edit');
   await configurePopupAction(rootAgent, edit.uid, '编辑', {
     pageModelClass: 'ChildPageModel',
     dataSourceKey: 'main',
     collectionName: 'pets',
   });
 
-  const remove = await addAction(rootAgent, actionsColumn.uid, 'delete');
+  const remove = await addAction(rootAgent, table.uid, 'delete');
   await clearActionGroup(rootAgent, remove.uid, 'deleteSettings');
   await configureSimpleAction(rootAgent, remove.uid, '删除');
 

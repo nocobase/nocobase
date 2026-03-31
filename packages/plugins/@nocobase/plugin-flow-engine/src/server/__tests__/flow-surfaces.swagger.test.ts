@@ -308,6 +308,16 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddFieldRequest.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.wrapperProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.fieldProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
 
@@ -319,6 +329,14 @@ describe('flowSurfaces swagger', () => {
       expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock']),
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.flowRegistry).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.flowRegistry).toBeUndefined();
 
     const addActionRequest =
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];
@@ -333,6 +351,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddActionRequest.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionPopup',
     );
+    expect(schemas.FlowSurfaceAddActionRequest.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionRequest.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionRequest.properties.flowRegistry).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.flowRegistry).toBeUndefined();
     expect(schemas.FlowSurfaceAddActionRequest.properties.type.enum).toEqual(
       expect.arrayContaining([
         'filter',
@@ -363,10 +389,21 @@ describe('flowSurfaces swagger', () => {
     expect(addRecordActionRequest.examples.view.value.popup.blocks[0].type).toBe('details');
     expect(addRecordActionRequest.examples.js.value.type).toBe('js');
     expect(addRecordActionRequest.examples.js.value.settings.code).toContain('currentRecord');
+    expect(swaggerDocument.paths['/flowSurfaces:addRecordAction'].post.description).toContain(
+      '不要传 table 内部 actions column',
+    );
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionPopup',
     );
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionRequest.properties.flowRegistry).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.flowRegistry).toBeUndefined();
     expect(schemas.FlowSurfaceAddRecordActionRequest.properties.type.enum).toEqual(
       expect.arrayContaining(['view', 'edit', 'delete', 'updateRecord', 'duplicate', 'addChild', 'popup', 'js']),
     );
@@ -383,6 +420,9 @@ describe('flowSurfaces swagger', () => {
     expect(addBlocksRequest.example.blocks[1].settings.content).toContain('Team notes');
     expect(schemas.FlowSurfaceAddBlocksRequest.required).toEqual(['target', 'blocks']);
     expect(schemas.FlowSurfaceAddBlockItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlocksResult.properties.blocks.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceAddBlocksItemResult',
     );
@@ -397,6 +437,11 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldsRequest.example.fields[1].settings.version).toBe('1.0.0');
     expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target', 'fields']);
     expect(schemas.FlowSurfaceAddFieldItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldsResult.properties.fields.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceAddFieldsItemResult',
     );
@@ -412,6 +457,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddActionItem.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionPopup',
     );
+    expect(schemas.FlowSurfaceAddActionItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddActionItem.properties.flowRegistry).toBeUndefined();
     expect(schemas.FlowSurfaceAddActionsResult.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceAddActionsItemResult',
     );
@@ -431,6 +480,10 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddRecordActionItem.properties.popup.$ref).toBe(
       '#/components/schemas/FlowSurfaceComposeActionPopup',
     );
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.props).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.decoratorProps).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddRecordActionItem.properties.flowRegistry).toBeUndefined();
     expect(schemas.FlowSurfaceAddRecordActionsResult.properties.recordActions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceAddRecordActionsItemResult',
     );
