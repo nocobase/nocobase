@@ -120,7 +120,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     this.initRequireJs();
     this.defineObservableState();
     this.devDynamicImport = options.devDynamicImport;
-    this.scopes = this.mergeScopes(options.scopes);
+    this.scopes = merge(this.scopes, options.scopes);
     this.components = merge(this.getDefaultComponents(), options.components);
     this.name = this.options.name || getSubAppName(options.publicPath) || 'main';
     this.apiClient = this.createApiClient(options);
@@ -167,10 +167,6 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
       maintaining: observable.ref,
       error: observable.ref,
     });
-  }
-
-  protected mergeScopes(scopes: Record<string, any>) {
-    return merge(this.scopes, scopes);
   }
 
   protected initializeExtendedState() {}
