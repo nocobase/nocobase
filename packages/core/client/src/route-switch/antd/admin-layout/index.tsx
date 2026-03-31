@@ -28,11 +28,10 @@ export {
   useAllAccessDesktopRoutes,
   useCurrentRoute,
   useKeepAlive,
-  useMobileLayout,
   AdminShellProvider as AdminProvider,
   CurrentRouteProvider,
 } from '../../../admin-shell';
-export { shouldRenderIconInTitle } from '../../../flow/admin-shell/admin-layout';
+export { shouldRenderIconInTitle, useMobileLayout } from '../../../flow/admin-shell/admin-layout';
 
 export const AdminLayout = (props) => {
   const flowEngine = useFlowEngine();

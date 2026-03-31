@@ -16,3 +16,4 @@ export * from './constants';
 export * from './ResetThemeTokenAndKeepAlgorithm';
 export * from './useApplications';
 export * from './PinnedPluginListLite';
+export * from './mobile-layout';

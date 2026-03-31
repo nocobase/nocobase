@@ -8,7 +8,7 @@
  */
 
 import { useFlowEngine } from '@nocobase/flow-engine';
-import { ADMIN_LAYOUT_MODEL_UID } from '../flow/admin-shell/admin-layout';
+import { ADMIN_LAYOUT_MODEL_UID } from '.';
 
 export const useMobileLayout = () => {
   const flowEngine = useFlowEngine();

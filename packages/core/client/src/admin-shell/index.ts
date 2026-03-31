@@ -10,7 +10,6 @@
 export * from './AdminDynamicPage';
 export * from './AdminShellProvider';
 export * from './KeepAlive';
-export * from './mobile-layout';
 export * from './route-runtime';
 export * from './route-types';
 export * from './route-utils';
