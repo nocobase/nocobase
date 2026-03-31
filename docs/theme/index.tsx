@@ -90,6 +90,10 @@ function isPluginDetailPage(frontmatter?: ThemeFrontmatter, routePath?: string):
   );
 }
 
+function isSidebarCenteredLayout(routePath?: string): boolean {
+  return routePath === '/api' || routePath === '/api/';
+}
+
 export function HomeLayout(props: HomeLayoutProps) {
   const {
     beforeHero,
@@ -167,9 +171,15 @@ export const Layout = () => {
     frontmatter?.packageName &&
     routePath?.startsWith('/plugins/@'),
   );
+  const pageClassName = [
+    isPluginDetailPage ? 'plugin-detail-page' : '',
+    isSidebarCenteredLayout(routePath) ? 'doc-layout-sidebar-centered' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <div className={isPluginDetailPage ? 'plugin-detail-page' : undefined}>
+    <div className={pageClassName || undefined}>
       <BasicLayout
       // beforeNav={
       //   <NoSSR>

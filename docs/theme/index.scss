@@ -323,6 +323,27 @@ h6,
   }
 }
 
+@media (min-width: 1280px) {
+  .doc-layout-sidebar-centered .rp-doc-layout__container {
+    justify-content: flex-start;
+  }
+
+  .doc-layout-sidebar-centered .rp-doc-layout__outline,
+  .doc-layout-sidebar-centered .rp-doc-layout__outline-placeholder {
+    display: none !important;
+  }
+
+  .doc-layout-sidebar-centered .rp-doc-layout__overview {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .doc-layout-sidebar-centered .rp-doc-layout__overview > .rp-doc {
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
 @media (max-width: 868px) {
   .rp-nav-menu {
     display: none !important;
