@@ -8,9 +8,9 @@
  */
 
 import { act, render, screen, userEvent, waitFor } from '@nocobase/test/client';
+import { RouteRepository } from '@nocobase/client-v2';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { RouteRepository } from '../../application/RouteRepository';
 import { RoutesRequestProvider, useAllAccessDesktopRoutes } from '../route-runtime';
 
 vi.mock('@nocobase/flow-engine', async (importOriginal) => {

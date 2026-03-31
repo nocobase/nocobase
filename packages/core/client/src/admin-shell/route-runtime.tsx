@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RouteRepository } from '@nocobase/client-v2';
 import { useFlowEngineContext } from '@nocobase/flow-engine';
 import React, { createContext, FC, memo, useContext, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { NocoBaseDesktopRoute } from './route-types';
 import { findRouteBySchemaUid } from './route-utils';
-import { RouteRepository } from '../application/RouteRepository';
 
 const emptyArray: NocoBaseDesktopRoute[] = [];
 
