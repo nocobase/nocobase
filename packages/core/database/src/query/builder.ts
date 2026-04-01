@@ -53,13 +53,12 @@ function parseSelectedField(database: Database, collection: Collection, selected
   const fields = collection.fields;
   let target: string | undefined;
   let name: string;
+  const fieldPath = Array.isArray(selected.field) ? selected.field : selected.field.split('.').filter(Boolean);
 
-  if (!Array.isArray(selected.field)) {
-    name = selected.field;
-  } else if (selected.field.length === 1) {
-    name = selected.field[0];
+  if (fieldPath.length === 1) {
+    name = fieldPath[0];
   } else {
-    [target, name] = selected.field;
+    [target, name] = fieldPath;
   }
 
   const rawAttributes = collection.model.getAttributes();
@@ -222,7 +221,7 @@ export function buildQuery(database: Database, collection: Collection, options: 
 export function normalizeQueryResult(data: any[], fieldMap: Record<string, any>) {
   return data.map((record: any) => {
     Object.entries(record).forEach(([key, value]) => {
-      if (!value) {
+      if (value === null || value === undefined) {
         return;
       }
       const type = fieldMap[key]?.type;

@@ -147,6 +147,28 @@ describe('createCrudTools', () => {
     expect(result.body.timezone).toBeUndefined();
   });
 
+  it('should support association resource list with sourceId', async () => {
+    const tools = createCrudTools({
+      app: createTestApp(),
+      mcpToolsManager: new McpToolsManager(),
+    });
+
+    const listTool = tools.find((tool) => tool.name === 'resource_list')!;
+    const result = await listTool.call({
+      resource: 'posts.comments',
+      sourceId: 1,
+      fields: ['id', 'content'],
+    });
+
+    expect(result).toMatchObject({
+      method: 'POST',
+      path: '/api/posts/1/comments:list',
+      query: {
+        fields: ['id', 'content'],
+      },
+    });
+  });
+
   it('should expose detailed query item schemas', () => {
     const tools = createCrudTools({
       app: createTestApp(),

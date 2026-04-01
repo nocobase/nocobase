@@ -18,4 +18,14 @@ describe('query result', () => {
       }),
     ).toEqual([{ total: 123, name: 'u1' }]);
   });
+
+  it('should normalize zero numeric result', () => {
+    expect(
+      normalizeQueryResult([{ total: 0, count: '0', name: 'u1' }], {
+        total: { type: 'bigInt' },
+        count: { type: 'integer' },
+        name: { type: 'string' },
+      }),
+    ).toEqual([{ total: 0, count: 0, name: 'u1' }]);
+  });
 });

@@ -48,6 +48,27 @@ describe('query builder', () => {
     expect(queryOptions.group).toHaveLength(2);
   });
 
+  it('should support dotted string field paths', () => {
+    const { queryOptions } = buildQuery(db, db.getCollection('users'), {
+      dimensions: [
+        {
+          field: 'createdBy.name',
+          alias: 'createdBy.name',
+        },
+      ],
+      orders: [
+        {
+          field: 'createdBy.name',
+          alias: 'createdBy.name',
+          order: 'asc',
+        },
+      ],
+    });
+
+    expect(queryOptions.include).toMatchObject([{ association: 'createdBy' }]);
+    expect(queryOptions.attributes).toMatchObject([[expect.anything(), 'createdBy.name']]);
+  });
+
   it('should reject invalid aggregation function', () => {
     expect(() =>
       buildQuery(db, db.getCollection('users'), {

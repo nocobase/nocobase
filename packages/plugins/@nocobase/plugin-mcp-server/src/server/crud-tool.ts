@@ -34,6 +34,7 @@ type CollectionFieldSelectionArgs = {
 };
 
 type CollectionListArgs = CollectionBaseArgs &
+  CollectionAssociationArgs &
   CollectionFieldSelectionArgs & {
     filter?: Record<string, any>;
     sort?: string[];
@@ -372,6 +373,10 @@ function createListToolSchema() {
     ...base,
     properties: {
       ...base.properties,
+      sourceId: {
+        anyOf: [{ type: 'string' }, { type: 'number' }],
+        description: 'Source record ID for association resources like posts.comments.',
+      },
       filter: {
         type: 'object',
         description: 'Filter object for list.',

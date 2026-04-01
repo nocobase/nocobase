@@ -98,7 +98,10 @@ function buildHavingNode(
 
   for (const [key, value] of Object.entries(node)) {
     if ((key === '$and' || key === '$or') && Array.isArray(value)) {
-      const operator = database.operators.get(key) as symbol;
+      const operator = database.operators.get(key);
+      if (typeof operator !== 'symbol') {
+        throw new Error(`Unsupported having operator: ${key}`);
+      }
       conditions.push({
         [operator]: value.map((item) => buildHavingNode(database, formatter, fieldMap, item, timezone)),
       });
