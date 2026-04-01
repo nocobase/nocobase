@@ -91,6 +91,22 @@ export class IdpOauthService {
     return `${origin}${this.getIssuerPath(appName)}`;
   }
 
+  getFrontendInteractionPath(appName: string, uid: string) {
+    if (appName === 'main') {
+      return `/idp-oauth/interaction/${uid}`;
+    }
+
+    return `/apps/${appName}/idp-oauth/interaction/${uid}`;
+  }
+
+  getFrontendErrorPath(appName: string) {
+    if (appName === 'main') {
+      return '/idp-oauth/error';
+    }
+
+    return `/apps/${appName}/idp-oauth/error`;
+  }
+
   getProviderContext(ctx: any): ProviderContext {
     const appName = ctx.app?.name || this.app.name;
     const origin = this.getOrigin(ctx);
@@ -459,11 +475,12 @@ export class IdpOauthService {
       query.set(key, String(value));
     }
 
-    return `/idp-oauth/error/${appName}${query.size ? `?${query.toString()}` : ''}`;
+    return `${this.getFrontendErrorPath(appName)}${query.size ? `?${query.toString()}` : ''}`;
   }
 
   private async createConfiguration({ appName, issuer, issuerPath, origin }: ProviderContext) {
     const app = this.app;
+    const service = this;
     const cookieKey = this.app.authManager.jwt.getSecret();
     if (!cookieKey) {
       throw new Error('JWT secret is required for plugin-idp-oauth');
@@ -485,7 +502,7 @@ export class IdpOauthService {
       },
       interactions: {
         url(_ctx: unknown, interaction: { uid: string }) {
-          return `/idp-oauth/interaction/${appName}/${interaction.uid}`;
+          return service.getFrontendInteractionPath(appName, interaction.uid);
         },
       },
       routes: {
