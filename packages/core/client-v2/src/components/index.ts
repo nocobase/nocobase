@@ -8,4 +8,5 @@
  */
 
 export * from './BlankComponent';
+export * from './Icon';
 export * from './RouterContextCleaner';

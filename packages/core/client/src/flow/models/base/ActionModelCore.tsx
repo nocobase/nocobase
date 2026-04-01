@@ -8,12 +8,12 @@
  */
 
 import { DefaultStructure, FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
+import { Icon } from '@nocobase/client-v2';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Icon } from '../../../icon/Icon';
 
 export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
