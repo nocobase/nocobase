@@ -19,6 +19,7 @@ import { PluginSettingsManager } from './PluginSettingsManager';
 import type { RouterOptions } from './RouterManager';
 import { RouterManager } from './RouterManager';
 import type { WebSocketClientOptions } from './WebSocketClient';
+import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin } from './components';
 
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
@@ -64,11 +65,11 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected getDefaultComponents() {
     return {
-      AppNotFound: () => <div>Not Found</div>,
-      AppError: () => <div>{this.error?.message}</div>,
-      AppSpin: () => <div>Loading</div>,
-      AppMaintaining: () => <div>Maintaining</div>,
-      AppMaintainingDialog: () => <div>Maintaining Dialog</div>,
+      AppNotFound,
+      AppError,
+      AppSpin,
+      AppMaintaining,
+      AppMaintainingDialog,
     };
   }
 

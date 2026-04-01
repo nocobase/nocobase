@@ -96,6 +96,7 @@ export {
   openViewFlow,
   titleField,
   CodeEditorExtension,
+  FormAssociationFieldGroupModel,
 } from '@nocobase/client-v2';
 export * from './acl';
 export * from './antd-config-provider';
