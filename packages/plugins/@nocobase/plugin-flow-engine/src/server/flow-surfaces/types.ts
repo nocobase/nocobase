@@ -31,6 +31,7 @@ export type FlowSurfaceConfigureOption = {
   description?: string;
   enum?: Array<string | number | boolean>;
   example?: any;
+  supportsFlowContext?: boolean;
 };
 
 export type FlowSurfaceConfigureOptions = Record<string, FlowSurfaceConfigureOption>;
@@ -158,6 +159,26 @@ export type FlowSurfaceComposeValues = {
 export type FlowSurfaceConfigureValues = {
   target: FlowSurfaceWriteTarget;
   changes: Record<string, any>;
+};
+
+export type FlowSurfaceContextVarInfo = {
+  title?: string;
+  type?: string;
+  interface?: string;
+  description?: string;
+  disabled?: boolean;
+  disabledReason?: string;
+  properties?: Record<string, FlowSurfaceContextVarInfo>;
+};
+
+export type FlowSurfaceContextValues = {
+  target: FlowSurfaceWriteTarget;
+  path?: string;
+  maxDepth?: number;
+};
+
+export type FlowSurfaceContextResponse = {
+  vars: Record<string, FlowSurfaceContextVarInfo>;
 };
 
 export type FlowSurfaceMutateOp = {

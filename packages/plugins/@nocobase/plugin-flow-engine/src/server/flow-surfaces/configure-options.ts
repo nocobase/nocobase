@@ -435,12 +435,43 @@ const ACTION_EMAIL_OPTIONS: FlowSurfaceConfigureOptions = {
   defaultSelectAllRecords: booleanOption('是否默认全选记录', { example: false }),
 };
 
+const GLOBAL_FLOW_CONTEXT_OPTION_KEYS = new Set([
+  'assignRules',
+  'confirm',
+  'dataScope',
+  'defaultValues',
+  'initialValue',
+  'linkageRules',
+  'assignValues',
+]);
+
+const FLOW_CONTEXT_OPTION_KEYS_BY_USE: Record<string, string[]> = {
+  RootPageModel: ['documentTitle'],
+  RootPageTabModel: ['documentTitle'],
+};
+
 function cloneOptions(options: FlowSurfaceConfigureOptions): FlowSurfaceConfigureOptions {
   return Object.fromEntries(Object.entries(options).map(([key, value]) => [key, { ...value }]));
 }
 
 function mergeOptions(...groups: FlowSurfaceConfigureOptions[]): FlowSurfaceConfigureOptions {
   return Object.assign({}, ...groups.map((group) => cloneOptions(group)));
+}
+
+function annotateFlowContextSupport(use: string | undefined, options: FlowSurfaceConfigureOptions) {
+  const keys = new Set<string>([
+    ...GLOBAL_FLOW_CONTEXT_OPTION_KEYS,
+    ...(FLOW_CONTEXT_OPTION_KEYS_BY_USE[String(use || '').trim()] || []),
+  ]);
+  for (const key of keys) {
+    if (options[key]) {
+      options[key] = {
+        ...options[key],
+        supportsFlowContext: true,
+      };
+    }
+  }
+  return options;
 }
 
 function isGenericFieldNodeUse(use?: string) {
@@ -511,59 +542,85 @@ function getActionConfigureOptionsByUse(use?: string): FlowSurfaceConfigureOptio
 
 export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOptions {
   const normalized = String(use || '').trim();
+  let options: FlowSurfaceConfigureOptions;
   switch (normalized) {
     case 'RootPageModel':
-      return cloneOptions(PAGE_OPTIONS);
+      options = cloneOptions(PAGE_OPTIONS);
+      break;
     case 'RootPageTabModel':
-      return cloneOptions(TAB_OPTIONS);
+      options = cloneOptions(TAB_OPTIONS);
+      break;
     case 'TableBlockModel':
-      return cloneOptions(TABLE_OPTIONS);
+      options = cloneOptions(TABLE_OPTIONS);
+      break;
     case 'FormBlockModel':
     case 'CreateFormModel':
-      return cloneOptions(FORM_COMMON_OPTIONS);
+      options = cloneOptions(FORM_COMMON_OPTIONS);
+      break;
     case 'EditFormModel':
-      return cloneOptions(EDIT_FORM_OPTIONS);
+      options = cloneOptions(EDIT_FORM_OPTIONS);
+      break;
     case 'DetailsBlockModel':
-      return cloneOptions(DETAILS_OPTIONS);
+      options = cloneOptions(DETAILS_OPTIONS);
+      break;
     case 'FilterFormBlockModel':
-      return cloneOptions(FILTER_FORM_OPTIONS);
+      options = cloneOptions(FILTER_FORM_OPTIONS);
+      break;
     case 'ListBlockModel':
-      return cloneOptions(LIST_OPTIONS);
+      options = cloneOptions(LIST_OPTIONS);
+      break;
     case 'GridCardBlockModel':
-      return cloneOptions(GRID_CARD_OPTIONS);
+      options = cloneOptions(GRID_CARD_OPTIONS);
+      break;
     case 'MarkdownBlockModel':
-      return cloneOptions(MARKDOWN_OPTIONS);
+      options = cloneOptions(MARKDOWN_OPTIONS);
+      break;
     case 'IframeBlockModel':
-      return cloneOptions(IFRAME_OPTIONS);
+      options = cloneOptions(IFRAME_OPTIONS);
+      break;
     case 'ChartBlockModel':
-      return cloneOptions(CHART_OPTIONS);
+      options = cloneOptions(CHART_OPTIONS);
+      break;
     case 'ActionPanelBlockModel':
-      return cloneOptions(ACTION_PANEL_OPTIONS);
+      options = cloneOptions(ACTION_PANEL_OPTIONS);
+      break;
     case 'JSBlockModel':
-      return cloneOptions(JS_BLOCK_OPTIONS);
+      options = cloneOptions(JS_BLOCK_OPTIONS);
+      break;
     case 'TableActionsColumnModel':
-      return cloneOptions(ACTION_COLUMN_OPTIONS);
+      options = cloneOptions(ACTION_COLUMN_OPTIONS);
+      break;
     case 'TableColumnModel':
-      return cloneOptions(TABLE_FIELD_WRAPPER_OPTIONS);
+      options = cloneOptions(TABLE_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'DetailsItemModel':
-      return cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'FilterFormItemModel':
-      return cloneOptions(FILTER_FIELD_WRAPPER_OPTIONS);
+      options = cloneOptions(FILTER_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'FormItemModel':
-      return cloneOptions(FORM_FIELD_WRAPPER_OPTIONS);
+      options = cloneOptions(FORM_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'JSFieldModel':
     case 'JSEditableFieldModel':
-      return cloneOptions(JS_FIELD_NODE_OPTIONS);
+      options = cloneOptions(JS_FIELD_NODE_OPTIONS);
+      break;
     case 'JSColumnModel':
-      return cloneOptions(JS_COLUMN_OPTIONS);
+      options = cloneOptions(JS_COLUMN_OPTIONS);
+      break;
     case 'JSItemModel':
-      return cloneOptions(JS_ITEM_OPTIONS);
+      options = cloneOptions(JS_ITEM_OPTIONS);
+      break;
     default:
       if (isGenericFieldNodeUse(normalized)) {
-        return cloneOptions(FIELD_NODE_OPTIONS);
+        options = cloneOptions(FIELD_NODE_OPTIONS);
+        break;
       }
-      return getActionConfigureOptionsByUse(normalized);
+      options = getActionConfigureOptionsByUse(normalized);
+      break;
   }
+  return annotateFlowContextSupport(normalized, options);
 }
 
 export function getConfigureOptionsForResolvedNode(input: {
@@ -571,16 +628,16 @@ export function getConfigureOptionsForResolvedNode(input: {
   use?: string;
 }): FlowSurfaceConfigureOptions {
   if (input.kind === 'page') {
-    return cloneOptions(PAGE_OPTIONS);
+    return annotateFlowContextSupport('RootPageModel', cloneOptions(PAGE_OPTIONS));
   }
   if (input.kind === 'tab') {
-    return cloneOptions(TAB_OPTIONS);
+    return annotateFlowContextSupport('RootPageTabModel', cloneOptions(TAB_OPTIONS));
   }
   return getConfigureOptionsForUse(input.use);
 }
 
 export function getConfigureOptionsForCatalogItem(
-  item?: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'> | null,
+  item?: Pick<FlowSurfaceCatalogItem, 'kind' | 'use'> | { kind?: FlowSurfaceCatalogItem['kind']; use?: string } | null,
 ): FlowSurfaceConfigureOptions {
   if (!item) {
     return {};

@@ -57,6 +57,9 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
     catalog: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.catalog(getValues(ctx)));
     },
+    context: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () => service.context(getValues(ctx)));
+    },
     get: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () => service.get(getReadValues(ctx)));
     },

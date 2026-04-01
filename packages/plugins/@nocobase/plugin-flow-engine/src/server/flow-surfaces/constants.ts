@@ -9,6 +9,7 @@
 
 export const FLOW_SURFACES_ACTION_NAMES = [
   'catalog',
+  'context',
   'get',
   'compose',
   'configure',
@@ -43,6 +44,7 @@ export type FlowSurfacesActionName = (typeof FLOW_SURFACES_ACTION_NAMES)[number]
 
 export const FLOW_SURFACES_ACTION_METHODS: Record<FlowSurfacesActionName, 'get' | 'post'> = {
   catalog: 'post',
+  context: 'post',
   get: 'get',
   compose: 'post',
   configure: 'post',

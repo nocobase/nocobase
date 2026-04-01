@@ -168,6 +168,13 @@ const examples = {
       uid: 'table-block-uid',
     },
   },
+  context: {
+    target: {
+      uid: 'details-block-uid',
+    },
+    path: 'record',
+    maxDepth: 3,
+  },
   compose: {
     target: {
       uid: 'page-grid-uid',
@@ -1062,6 +1069,15 @@ const actionDocs: Record<string, any> = {
     requestBody: requestBody('FlowSurfaceCatalogRequest', examples.catalog),
     responses: responses('FlowSurfaceCatalogResponse'),
   },
+  context: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Read ctx variable tree available under the current target',
+    description: valuesCompatibilityNote(
+      '返回当前 target 下可用的 `ctx` 变量树。`path` 只接受裸路径，如 `record`、`popup.record`、`item.parentItem.value`；不接受 `ctx.record` 或 `{{ ctx.record }}`。',
+    ),
+    requestBody: requestBody('FlowSurfaceContextRequest', examples.context),
+    responses: responses('FlowSurfaceContextResponse'),
+  },
   get: {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Read normalized surface tree and route metadata',
@@ -1665,6 +1681,9 @@ const schemas = {
         },
       },
       example: {},
+      supportsFlowContext: {
+        type: 'boolean',
+      },
     },
     required: ['type'],
     additionalProperties: false,
@@ -2122,6 +2141,60 @@ const schemas = {
       },
       eventCapabilities: ref('FlowSurfaceEventCapabilities'),
       layoutCapabilities: ref('FlowSurfaceLayoutCapabilities'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceContextVarInfo: {
+    type: 'object',
+    properties: {
+      title: {
+        type: 'string',
+      },
+      type: {
+        type: 'string',
+      },
+      interface: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+      disabled: {
+        type: 'boolean',
+      },
+      disabledReason: {
+        type: 'string',
+      },
+      properties: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceContextVarInfo'),
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceContextRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      path: {
+        type: 'string',
+        description: "Bare path only, for example 'record', 'popup.record' or 'item.parentItem.value'.",
+      },
+      maxDepth: {
+        type: 'integer',
+        minimum: 1,
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceContextResponse: {
+    type: 'object',
+    properties: {
+      vars: {
+        type: 'object',
+        additionalProperties: ref('FlowSurfaceContextVarInfo'),
+      },
     },
     additionalProperties: false,
   },

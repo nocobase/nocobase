@@ -42,6 +42,7 @@ import {
 import { SurfaceLocator } from './locator';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
+import { buildFlowSurfaceContextResponse, isBareFlowContextPath, type FlowSurfaceContextSemantic } from './context';
 import {
   getConfigureOptionKeysForResolvedNode,
   getConfigureOptionKeysForUse,
@@ -57,6 +58,7 @@ import type {
   FlowSurfaceComposeMode,
   FlowSurfaceComposeValues,
   FlowSurfaceConfigureValues,
+  FlowSurfaceContextValues,
   FlowSurfaceExecutorContext,
   FlowSurfaceMutateOp,
   FlowSurfaceMutateValues,
@@ -152,7 +154,20 @@ const POPUP_ACTION_USES = new Set([
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
-
+const ITEM_CONTEXT_OWNER_USES = new Set([
+  'SubFormFieldModel',
+  'SubFormListFieldModel',
+  'SubTableFieldModel',
+  'PopupSubTableFieldModel',
+  'RecordPickerFieldModel',
+]);
+const RECORD_CONTEXT_OWNER_USES = new Set(['DetailsBlockModel', 'QuickEditFormModel', 'AssignFormModel']);
+const POPUP_HOST_STEP_PARAM_PATHS = [
+  ['popupSettings', 'openView'],
+  ['selectExitRecordSettings', 'openView'],
+  ['openSelectRecordView', 'openView'],
+  ['openAddRecordView', 'openView'],
+] as const;
 type FlowSurfaceAddFieldResult = {
   uid?: string;
   parentUid?: string;
@@ -260,6 +275,19 @@ export class FlowSurfacesService {
       eventCapabilities: getNodeContract(node?.use).eventCapabilities,
       layoutCapabilities: getNodeContract(node?.use).layoutCapabilities,
     };
+  }
+
+  async context(values: FlowSurfaceContextValues, options: { transaction?: any } = {}) {
+    const target = this.normalizeWriteTarget('context', values?.target, values);
+    const path = this.normalizeContextPath(values?.path);
+    const maxDepth = this.normalizeContextMaxDepth(values?.maxDepth);
+    const resolved = await this.locator.resolve(target, options);
+    const semantic = await this.resolveContextSemantic(target.uid, resolved, options.transaction);
+    return buildFlowSurfaceContextResponse({
+      semantic,
+      path,
+      maxDepth,
+    });
   }
 
   async get(input: Record<string, any>, options: { transaction?: any } = {}) {
@@ -2163,6 +2191,39 @@ export class FlowSurfacesService {
       );
     }
     return target;
+  }
+
+  private normalizeContextPath(path?: string) {
+    if (_.isUndefined(path) || _.isNull(path)) {
+      return undefined;
+    }
+    if (typeof path !== 'string') {
+      throwBadRequest(`flowSurfaces context path must be a bare string path like 'record' or 'popup.record'`);
+    }
+    const normalized = String(path).trim();
+    if (!normalized) {
+      return undefined;
+    }
+    if (
+      normalized === 'ctx' ||
+      normalized.startsWith('ctx.') ||
+      normalized.includes('{{') ||
+      normalized.includes('}}')
+    ) {
+      throwBadRequest(`flowSurfaces context path only accepts bare paths like 'record' or 'popup.record'`);
+    }
+    if (!isBareFlowContextPath(normalized)) {
+      throwBadRequest(`flowSurfaces context path only accepts bare dot paths like 'item.parentItem.value'`);
+    }
+    return normalized;
+  }
+
+  private normalizeContextMaxDepth(maxDepth?: number) {
+    const normalized = Number(maxDepth);
+    if (!Number.isFinite(normalized)) {
+      return 3;
+    }
+    return Math.max(1, Math.floor(normalized));
   }
 
   private buildReadTargetSummary(
@@ -4385,6 +4446,173 @@ export class FlowSurfacesService {
     return getEditableDomainsForUse(use);
   }
 
+  private async resolveContextSemantic(
+    uid: string,
+    resolved: FlowSurfaceResolvedTarget,
+    transaction?: any,
+  ): Promise<FlowSurfaceContextSemantic> {
+    const ancestors = await this.loadContextAncestorChain(uid, resolved, transaction);
+    const recordContextOwner = ancestors.find((node) => RECORD_CONTEXT_OWNER_USES.has(node?.use));
+    const recordCollection = recordContextOwner
+      ? await this.resolveContextOwnerCollection(recordContextOwner.uid, transaction)
+      : null;
+
+    const formNode = ancestors.find((node) => FORM_BLOCK_USES.has(node?.use));
+    const formValuesCollection = this.resolveCollectionFromInit(
+      _.get(formNode, ['stepParams', 'resourceSettings', 'init']),
+    );
+
+    const itemCollections = ancestors
+      .filter((node) => ITEM_CONTEXT_OWNER_USES.has(node?.use))
+      .map((node) => this.resolveItemContextCollection(node))
+      .filter(Boolean) as NonNullable<FlowSurfaceContextSemantic['itemCollections']>;
+
+    const rawPopupLevels = ancestors.reduce<NonNullable<FlowSurfaceContextSemantic['popupLevels']>>(
+      (levels, node, index) => {
+        if (node?.use !== 'ChildPageModel') {
+          return levels;
+        }
+        const hostNode = ancestors[index + 1];
+        levels.push(
+          this.resolvePopupContextLevel(node?.uid, hostNode, {
+            allowSourceIdAsRecordId: levels.length > 0,
+          }),
+        );
+        return levels;
+      },
+      [],
+    );
+
+    const popupLevels = rawPopupLevels.slice(0, 1);
+    const parentPopupLevel = rawPopupLevels[1];
+    if (parentPopupLevel?.recordCollection) {
+      popupLevels.push(parentPopupLevel);
+    }
+
+    return {
+      recordCollection,
+      formValuesCollection,
+      itemCollections,
+      itemRootCollection: itemCollections.length ? formValuesCollection || recordCollection || undefined : undefined,
+      popupLevels,
+    };
+  }
+
+  private async loadContextAncestorChain(uid: string, resolved: FlowSurfaceResolvedTarget, transaction?: any) {
+    const chain: any[] = [];
+    const visited = new Set<string>();
+    let cursor = uid;
+
+    const ensureCursor = async () => {
+      if (!cursor) {
+        return;
+      }
+      const existing = await this.repository.findModelById(cursor, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      if (existing?.uid) {
+        return;
+      }
+      cursor = resolved?.node?.uid || resolved?.pageModel?.uid || '';
+    };
+
+    await ensureCursor();
+
+    while (cursor && !visited.has(cursor)) {
+      visited.add(cursor);
+      const node = await this.repository.findModelById(cursor, {
+        transaction,
+        includeAsyncNode: true,
+      });
+      if (!node?.uid) {
+        break;
+      }
+      chain.push(node);
+      cursor = (await this.locator.findParentUid(cursor, transaction)) || '';
+    }
+
+    return chain;
+  }
+
+  private resolveCollectionFromInit(resourceInit?: { dataSourceKey?: string; collectionName?: string }) {
+    if (!resourceInit?.collectionName) {
+      return null;
+    }
+    return this.getCollection(resourceInit.dataSourceKey || 'main', resourceInit.collectionName);
+  }
+
+  private async resolveContextOwnerCollection(uid: string, transaction?: any) {
+    const collectionContext = await this.locator.resolveCollectionContext(uid, transaction).catch(() => null);
+    return this.resolveCollectionFromInit(collectionContext?.resourceInit);
+  }
+
+  private resolveItemContextCollection(node: any) {
+    const fieldInit = _.get(node, ['stepParams', 'fieldSettings', 'init']);
+    if (!fieldInit?.collectionName || !fieldInit?.fieldPath) {
+      return null;
+    }
+    const collection = this.getCollection(fieldInit.dataSourceKey || 'main', fieldInit.collectionName);
+    if (!collection) {
+      return null;
+    }
+    const parsed = this.parseFieldPath(
+      collection,
+      fieldInit.fieldPath,
+      fieldInit.associationPathName,
+      fieldInit.dataSourceKey,
+      fieldInit.collectionName,
+    );
+    const field = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    return (
+      resolveFieldTargetCollection(field, parsed.dataSourceKey, (dataSourceKey, collectionName) =>
+        this.getCollection(dataSourceKey, collectionName),
+      ) ||
+      field?.targetCollection ||
+      null
+    );
+  }
+
+  private resolvePopupHostOpenView(node: any) {
+    for (const [flowKey, stepKey] of POPUP_HOST_STEP_PARAM_PATHS) {
+      const openView = _.get(node, ['stepParams', flowKey, stepKey]);
+      if (_.isPlainObject(openView)) {
+        return openView;
+      }
+    }
+    return null;
+  }
+
+  private resolvePopupContextLevel(
+    uid: string | undefined,
+    hostNode: any,
+    options: {
+      allowSourceIdAsRecordId?: boolean;
+    } = {},
+  ) {
+    const popupConfig = this.resolvePopupHostOpenView(hostNode);
+    const popupDataSourceKey = popupConfig?.dataSourceKey || 'main';
+    const popupAssociationName = String(popupConfig?.associationName || '').trim();
+    const sourceRecordCollectionName = popupAssociationName.includes('.')
+      ? popupAssociationName.split('.')[0]
+      : undefined;
+    const recordIdentifier = options.allowSourceIdAsRecordId
+      ? popupConfig?.filterByTk ?? popupConfig?.sourceId
+      : popupConfig?.filterByTk;
+
+    return {
+      uid,
+      recordCollection:
+        popupConfig?.collectionName && hasConfiguredFlowContextValue(recordIdentifier)
+          ? this.getCollection(popupDataSourceKey, popupConfig.collectionName)
+          : null,
+      sourceRecordCollection:
+        sourceRecordCollectionName && hasConfiguredFlowContextValue(popupConfig?.sourceId)
+          ? this.getCollection(popupDataSourceKey, sourceRecordCollectionName)
+          : null,
+    };
+  }
+
   private getCollection(dataSourceKey: string, collectionName: string) {
     const normalizedDataSourceKey = dataSourceKey || 'main';
     const dataSourceManager = this.plugin.app.dataSourceManager;
@@ -5321,6 +5549,10 @@ function normalizeFieldPath(fieldPath: string, associationPathName?: string) {
     return normalizedFieldPath;
   }
   return `${normalizedAssociationPath}.${normalizedFieldPath}`;
+}
+
+function hasConfiguredFlowContextValue(value: any) {
+  return !_.isNil(value) && value !== '';
 }
 
 function buildFilterFieldMeta(field: any) {

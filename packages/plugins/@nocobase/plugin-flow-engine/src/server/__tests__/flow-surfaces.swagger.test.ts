@@ -72,6 +72,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceReadTarget).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureOption).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureOptions).toBeTruthy();
+    expect(schemas.FlowSurfaceContextVarInfo).toBeTruthy();
+    expect(schemas.FlowSurfaceContextRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceContextResponse).toBeTruthy();
     expect(schemas.FlowSurfaceCatalogItem).toBeTruthy();
     expect(schemas.FlowSurfaceNodeContract).toBeTruthy();
     expect(schemas.FlowSurfaceDomainContract).toBeTruthy();
@@ -157,6 +160,17 @@ describe('flowSurfaces swagger', () => {
 
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
+    const contextRequest = swaggerDocument.paths['/flowSurfaces:context'].post.requestBody.content['application/json'];
+    expect(contextRequest.example?.target?.uid).toBe('details-block-uid');
+    expect(contextRequest.example?.path).toBe('record');
+    expect(contextRequest.example?.maxDepth).toBe(3);
+    expect(schemas.FlowSurfaceContextRequest.required).toEqual(['target']);
+    expect(schemas.FlowSurfaceContextRequest.properties.path.type).toBe('string');
+    expect(schemas.FlowSurfaceContextRequest.properties.maxDepth.minimum).toBe(1);
+    expect(schemas.FlowSurfaceContextResponse.properties.vars.additionalProperties.$ref).toBe(
+      '#/components/schemas/FlowSurfaceContextVarInfo',
+    );
+    expect(schemas.FlowSurfaceConfigureOption.properties.supportsFlowContext.type).toBe('boolean');
     expect(schemas.FlowSurfaceCatalogResponse.properties.actions.items.$ref).toBe(
       '#/components/schemas/FlowSurfaceCatalogItem',
     );
@@ -571,6 +585,7 @@ describe('flowSurfaces swagger', () => {
 
     for (const actionName of [
       'catalog',
+      'context',
       'compose',
       'configure',
       'createPage',
