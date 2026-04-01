@@ -8,6 +8,7 @@
  */
 
 import { ExclamationCircleOutlined, MenuOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal, Tooltip, theme } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
@@ -188,8 +189,33 @@ interface DefaultSettingsIconProps {
   showCopyUidButton?: boolean;
   menuLevels?: number; // Menu levels: 1=current model only (default), 2=include sub-models
   flattenSubMenus?: boolean; // Whether to flatten sub-menus: false=group by model (default), true=flatten all
+  onDropdownVisibleChange?: (open: boolean) => void;
+  getPopupContainer?: DropdownProps['getPopupContainer'];
   [key: string]: any; // Allow additional props
 }
+
+const TOOLBAR_ICONS_SELECTOR = '.nb-toolbar-container-icons';
+const TOOLBAR_CONTAINER_SELECTOR = '.nb-toolbar-container';
+const TOOLBAR_DROPDOWN_OVERLAY_CLASS = css`
+  width: max-content;
+  min-width: max-content;
+
+  .ant-dropdown-menu {
+    width: max-content;
+    min-width: max-content;
+  }
+`;
+
+const getToolbarPopupContainer = (triggerNode?: HTMLElement | null) => {
+  if (!triggerNode) {
+    return null;
+  }
+
+  return (
+    (triggerNode.closest(TOOLBAR_ICONS_SELECTOR) as HTMLElement | null) ||
+    (triggerNode.closest(TOOLBAR_CONTAINER_SELECTOR) as HTMLElement | null)
+  );
+};
 
 export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   model,
@@ -197,6 +223,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   showCopyUidButton = true,
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
+  onDropdownVisibleChange,
+  getPopupContainer,
 }) => {
   const { message } = App.useApp();
   const t = useMemo(() => getT(model), [model]);
@@ -210,15 +238,38 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const closeDropdown = useCallback(() => {
     setVisible(false);
-  }, []);
-  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
-    if (info.source === 'trigger' || nextOpen) {
-      // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
-      startTransition(() => {
-        setVisible(nextOpen);
-      });
-    }
-  }, []);
+    onDropdownVisibleChange?.(false);
+  }, [onDropdownVisibleChange]);
+  const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
+    (triggerNode) => {
+      // 工具栏自身容器必须优先，保证鼠标从 icon 移到菜单时仍处于同一 hover 树。
+      // 弹窗场景的裁剪问题由 useFloatToolbarPortal 负责把 toolbar 挂到正确的 popup host。
+      return (
+        getToolbarPopupContainer(triggerNode) ||
+        getPopupContainer?.(triggerNode) ||
+        triggerNode?.parentElement ||
+        document.body
+      );
+    },
+    [getPopupContainer],
+  );
+  const handleOpenChange: DropdownProps['onOpenChange'] = useCallback(
+    (nextOpen: boolean, info) => {
+      if (info.source === 'trigger' || nextOpen) {
+        // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
+        startTransition(() => {
+          setVisible(nextOpen);
+        });
+        onDropdownVisibleChange?.(nextOpen);
+      }
+    },
+    [onDropdownVisibleChange],
+  );
+  useEffect(() => {
+    return () => {
+      onDropdownVisibleChange?.(false);
+    };
+  }, [onDropdownVisibleChange]);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
   useEffect(() => {
     let mounted = true;
@@ -833,6 +884,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   return (
     <Dropdown
+      getPopupContainer={resolvePopupContainer}
+      overlayClassName={TOOLBAR_DROPDOWN_OVERLAY_CLASS}
+      overlayStyle={{ width: 'max-content', minWidth: 'max-content' }}
       onOpenChange={handleOpenChange}
       open={visible}
       menu={{

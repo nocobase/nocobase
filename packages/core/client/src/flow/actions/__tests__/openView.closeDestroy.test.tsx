@@ -73,9 +73,19 @@ describe('openView action - close/destroy logic', () => {
     expect(callArgs.inputArgs).toHaveProperty('otherArg', 'value');
   });
 
-  it('wraps scalar filterByTk for single-key array collections', async () => {
+  it('keeps scalar filterByTk for non-sql single-key array collections', async () => {
     const ctx = createMockCtx();
     ctx.collection = { filterTargetKey: ['id'] };
+
+    await openView.handler(ctx, { filterByTk: 1 });
+
+    const callArgs = (ctx.viewer.open as any).mock.calls[0][0];
+    expect(callArgs.inputArgs.filterByTk).toBe(1);
+  });
+
+  it('wraps scalar filterByTk for sql single-key array collections', async () => {
+    const ctx = createMockCtx();
+    ctx.collection = { filterTargetKey: ['id'], template: 'sql' };
 
     await openView.handler(ctx, { filterByTk: 1 });
 

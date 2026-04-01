@@ -116,6 +116,14 @@ export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
     </div>
   );
 };
+
+function getSavedAssociationTitleField(model: {
+  props?: { titleField?: string };
+  getStepParams?: (flowKey: string, stepKey: string) => { label?: string } | undefined;
+}) {
+  return model.getStepParams?.('tableColumnSettings', 'fieldNames')?.label || model.props?.titleField;
+}
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -332,12 +340,20 @@ TableColumnModel.registerFlow({
         if (!collectionField) {
           return;
         }
+        const titleField = getSavedAssociationTitleField(ctx.model);
+        const componentProps =
+          collectionField.isAssociationField() && titleField
+            ? {
+                ...collectionField.getComponentProps(),
+                ...collectionField.targetCollection?.getField?.(titleField)?.getComponentProps?.(),
+              }
+            : collectionField.getComponentProps();
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit
         await ctx.model.applySubModelsBeforeRenderFlows('field');
         ctx.model.setProps({
-          ...collectionField.getComponentProps(),
+          ...componentProps,
         });
       },
     },
@@ -519,7 +535,7 @@ TableColumnModel.registerFlow({
       defaultParams: (ctx: any) => {
         const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
         return {
-          label: ctx.model.props.titleField || titleField,
+          label: getSavedAssociationTitleField(ctx.model) || titleField,
         };
       },
       handler(ctx, params) {
