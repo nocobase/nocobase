@@ -150,9 +150,19 @@ function getAvailableHavingKeys(resourceName: string, query: QueryPermissionQuer
   const keys = new Set<string>();
 
   for (const item of [...(query.measures || []), ...(query.dimensions || [])]) {
-    const key = item.alias || resolveQueryFieldKey(resourceName, item.field);
-    if (key) {
-      keys.add(key);
+    if (item.alias) {
+      keys.add(item.alias);
+      continue;
+    }
+
+    const fieldPathKey = stringifyFieldPath(item.field);
+    if (fieldPathKey) {
+      keys.add(fieldPathKey);
+    }
+
+    const qualifiedFieldKey = resolveQueryFieldKey(resourceName, item.field);
+    if (qualifiedFieldKey) {
+      keys.add(qualifiedFieldKey);
     }
   }
 

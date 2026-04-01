@@ -222,6 +222,7 @@ describe('query permission', () => {
         measures: [{ field: 'id', aggregation: 'count' }],
         dimensions: [{ field: 'id' }, { field: 'price' }],
         having: {
+          id: { $gt: 0 },
           'orders.id': { $gt: 0 },
           price: { $gt: 100 },
         },
@@ -231,6 +232,7 @@ describe('query permission', () => {
     expect(result.query.measures).toEqual([{ field: 'id', aggregation: 'count' }]);
     expect(result.query.dimensions).toEqual([{ field: 'id' }]);
     expect(result.query.having).toEqual({
+      id: { $gt: 0 },
       'orders.id': { $gt: 0 },
     });
   });

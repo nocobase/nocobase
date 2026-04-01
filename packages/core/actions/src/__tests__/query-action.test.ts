@@ -112,4 +112,11 @@ describe('query action', () => {
 
     expect(response.status).toBe(400);
   });
+
+  it('should reject query without measures or dimensions', async () => {
+    const response = await app.agent().post('/api/posts:query').send({});
+
+    expect(response.status).toBe(400);
+    expect(response.text).toBe('Query action requires at least one measure or dimension');
+  });
 });
