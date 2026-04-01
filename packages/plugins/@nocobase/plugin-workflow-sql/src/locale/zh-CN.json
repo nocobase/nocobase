@@ -3,7 +3,15 @@
   "Execute a SQL statement in database.": "在数据库中执行一个 SQL 语句",
   "Include meta information of this query in result": "在结果中包含此查询的元信息",
   "SQL action": "SQL 操作",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL 执行的结果可在 <1>JSON 解析节点</1> 中使用（商业插件）。",
+  "Parameters": "参数",
+  "SQL parameters. Use $1, $2, etc. as placeholders in SQL and provide values here in order.": "SQL 参数。在 SQL 中使用 $1, $2 等作为占位符，并按顺序在此提供对应的值。",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "当前节点使用了不安全注入模式（遗留），存在 SQL 注入风险。",
+  "Migrate to safe mode": "迁移至安全模式",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "SQL 参数。在 SQL 中使用 :name 作为占位符，并在此提供对应的值。",
+  "Name": "名称",
+  "Value": "值",
+  "Add parameter": "添加参数",
+  "SQL query result could be used through <1>JSON query node</1>.": "SQL 执行的结果可在 <1>JSON 解析节点</1> 中使用。",
   "Select a data source to execute SQL.": "选择一个数据源来执行 SQL",
   "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
 }

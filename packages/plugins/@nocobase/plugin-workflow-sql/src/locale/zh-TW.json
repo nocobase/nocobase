@@ -3,7 +3,14 @@
   "Execute a SQL statement in database.": "Execute a SQL statement in database.",
   "Include meta information of this query in result": "Include meta information of this query in result",
   "SQL action": "SQL action",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).",
+  "SQL query result could be used through <1>JSON query node</1>.": "SQL query result could be used through <1>JSON query node</1>.",
   "Select a data source to execute SQL.": "Select a data source to execute SQL.",
-  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet."
+  "Usage of SQL query result is not supported yet.": "Usage of SQL query result is not supported yet.",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "當前節點使用了不安全注入模式（遺留），存在 SQL 注入風險。",
+  "Migrate to safe mode": "遷移至安全模式",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "SQL 參數。在 SQL 中使用 :name 作為佔位符，並在此提供對應的值。",
+  "Parameters": "參數",
+  "Name": "名稱",
+  "Value": "值",
+  "Add parameter": "添加參數"
 }
