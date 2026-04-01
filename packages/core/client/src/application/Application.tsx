@@ -144,6 +144,7 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected getDefaultComponents() {
     return {
+      ...super.getDefaultComponents(),
       DataBlockProvider,
       ...defaultAppComponents,
       ...schemaInitializerComponents,

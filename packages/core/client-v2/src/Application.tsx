@@ -9,7 +9,7 @@
 
 import { APIClient, type APIClientOptions } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
-import React, { type ComponentType } from 'react';
+import { type ComponentType } from 'react';
 
 import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
 import type { PluginType } from './PluginManager';
@@ -19,7 +19,6 @@ import { PluginSettingsManager } from './PluginSettingsManager';
 import type { RouterOptions } from './RouterManager';
 import { RouterManager } from './RouterManager';
 import type { WebSocketClientOptions } from './WebSocketClient';
-import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin } from './components';
 
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
@@ -61,16 +60,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
 
   protected createPluginSettingsManager(options: ApplicationOptions) {
     return new PluginSettingsManager(options.pluginSettings, this);
-  }
-
-  protected getDefaultComponents() {
-    return {
-      AppNotFound,
-      AppError,
-      AppSpin,
-      AppMaintaining,
-      AppMaintainingDialog,
-    };
   }
 
   async load() {

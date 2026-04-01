@@ -28,12 +28,12 @@ import AntdAppProvider from './theme/AntdAppProvider';
 import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
+import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
 import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import type { ComponentTypeAndString, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
-import { BlankComponent } from './components';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -459,7 +459,15 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   protected createWebSocketClient(options: TOptions) {
     return new WebSocketClient(options.ws);
   }
-  protected abstract getDefaultComponents(): Record<string, ComponentType<any> | any>;
+  protected getDefaultComponents(): Record<string, ComponentType<any> | any> {
+    return {
+      AppNotFound,
+      AppError,
+      AppSpin,
+      AppMaintaining,
+      AppMaintainingDialog,
+    };
+  }
   abstract load(): Promise<void>;
   abstract loadWebSocket(): Promise<void>;
 }

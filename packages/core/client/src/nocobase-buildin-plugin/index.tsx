@@ -16,14 +16,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { useAPIClient } from '../api-client';
-import {
-  AppError,
-  AppMaintaining,
-  AppMaintainingDialog,
-  AppNotFound,
-  AppSpin,
-  PluginFlowEngine,
-} from '@nocobase/client-v2';
+import { AppNotFound, PluginFlowEngine } from '@nocobase/client-v2';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
@@ -39,13 +32,6 @@ import { LocalePlugin } from './plugins/LocalePlugin';
 
 export class NocoBaseBuildInPlugin extends Plugin {
   async afterAdd() {
-    this.app.addComponents({
-      AppSpin,
-      AppError,
-      AppMaintaining,
-      AppMaintainingDialog,
-      AppNotFound,
-    });
     await this.addPlugins();
   }
 
