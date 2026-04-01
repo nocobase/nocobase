@@ -1,8 +1,8 @@
 {
   "Sign Token": "Sign Token",
   "Generate a NocoBase auth token for a user, with configurable role and expiry.": "Generate a NocoBase auth token for a user, with configurable role and expiry.",
-  "User ID": "User ID",
-  "The user to sign a token for. Supports workflow variables.": "The user to sign a token for. Supports workflow variables.",
+  "User": "User",
+  "Select a user or use a workflow variable.": "Select a user or use a workflow variable.",
   "Role": "Role",
   "Optional. The role the token operates as. User must have this role.": "Optional. The role the token operates as. User must have this role.",
   "Expires in": "Expires in"

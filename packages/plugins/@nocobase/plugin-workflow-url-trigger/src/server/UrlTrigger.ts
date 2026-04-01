@@ -53,41 +53,19 @@ export default class UrlTrigger extends Trigger {
             return;
           }
 
-          const { execution, lastSavedJob } = processor;
-
-          if (execution.status === EXECUTION_STATUS.RESOLVED) {
-            // If a response instruction (url-response) already set the response, stop here
-            if (ctx.headerSent || ctx.status !== 404) {
-              return;
-            }
-            // Fallback: check execution.output / lastSavedJob.result for backward compat with Output node
-            const output = execution.output ?? lastSavedJob?.result;
-            if (output) {
-              if (typeof output === 'string') {
-                ctx.redirect(output);
-                return;
-              }
-              if (typeof output === 'object' && output.url) {
-                ctx.redirect(output.url);
-                return;
-              }
-              if (typeof output === 'object' && output.status) {
-                ctx.status = output.status;
-                ctx.body = output.body ?? '';
-                return;
-              }
-            }
+          const response = self.getSyncResponse(processor);
+          if (response.passthrough) {
             continue;
           }
-
-          if (execution.status < EXECUTION_STATUS.STARTED) {
-            ctx.status = 403;
-            ctx.body = { error: 'Access denied by workflow' };
+          if (response.headers) {
+            ctx.set(response.headers);
+          }
+          if (response.type === 'redirect' && response.url) {
+            ctx.redirect(response.url);
             return;
           }
-
-          ctx.status = 500;
-          ctx.body = { error: 'Workflow execution did not complete' };
+          ctx.status = response.status;
+          ctx.body = response.body ?? '';
           return;
         }
 
@@ -132,6 +110,59 @@ export default class UrlTrigger extends Trigger {
       }
     }
     return configs;
+  }
+
+  /**
+   * Extract HTTP response from a sync workflow execution result.
+   * Checks if the last job is a url-response node (same pattern as webhook plugin).
+   */
+  private getSyncResponse(processor: any): {
+    type?: string;
+    status: number;
+    body?: any;
+    url?: string;
+    headers?: Record<string, string>;
+    passthrough?: boolean;
+  } {
+    if (!processor.lastSavedJob) {
+      return { status: 200, passthrough: true };
+    }
+
+    const lastJobResult = processor.lastSavedJob.result;
+    const node = processor.nodes.find((v) => processor.lastSavedJob.nodeId === v.id);
+
+    // url-response node — read structured result
+    if (node?.type === 'url-response') {
+      return {
+        type: lastJobResult.type,
+        status: lastJobResult.statusCode ?? 200,
+        body: lastJobResult.body ?? '',
+        url: lastJobResult.url,
+        headers: lastJobResult.headers ?? {},
+      };
+    }
+
+    // Workflow failed
+    if (processor.execution.status !== EXECUTION_STATUS.RESOLVED) {
+      return { status: 403, body: { error: 'Access denied by workflow' } };
+    }
+
+    // Fallback: check execution.output / lastSavedJob.result for backward compat
+    const output = processor.execution.output ?? lastJobResult;
+    if (output) {
+      if (typeof output === 'string') {
+        return { type: 'redirect', status: 302, url: output };
+      }
+      if (typeof output === 'object' && output.url) {
+        return { type: 'redirect', status: 302, url: output.url };
+      }
+      if (typeof output === 'object' && output.status) {
+        return { status: output.status, body: output.body ?? '' };
+      }
+    }
+
+    // No response instruction, no output — passthrough
+    return { status: 200, passthrough: true };
   }
 
   private getMatchingWorkflows(path: string, method: string): WorkflowModel[] {
@@ -209,29 +240,14 @@ export default class UrlTrigger extends Trigger {
         return { action: 'block', status: 500, body: 'Workflow trigger failed' };
       }
 
-      const { execution, lastSavedJob } = processor;
-
-      if (execution.status === EXECUTION_STATUS.RESOLVED) {
-        const output = execution.output ?? lastSavedJob?.result;
-        if (output) {
-          if (typeof output === 'string') {
-            return { action: 'redirect', url: output };
-          }
-          if (typeof output === 'object' && output.url) {
-            return { action: 'redirect', url: output.url };
-          }
-          if (typeof output === 'object' && output.status) {
-            return { action: 'block', status: output.status, body: output.body };
-          }
-        }
+      const response = this.getSyncResponse(processor);
+      if (response.passthrough) {
         continue;
       }
-
-      if (execution.status < EXECUTION_STATUS.STARTED) {
-        return { action: 'block', status: 403, body: 'Access denied by workflow' };
+      if (response.type === 'redirect' && response.url) {
+        return { action: 'redirect', url: response.url };
       }
-
-      return { action: 'block', status: 500, body: 'Workflow execution did not complete' };
+      return { action: 'block', status: response.status, body: response.body };
     }
 
     for (const wf of asyncWorkflows) {

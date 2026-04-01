@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { KeyOutlined } from '@ant-design/icons';
-import { Instruction, WorkflowVariableInput } from '@nocobase/plugin-workflow/client';
+import { RemoteSelect } from '@nocobase/client';
+import { Instruction, WorkflowVariableInput, WorkflowVariableWrapper } from '@nocobase/plugin-workflow/client';
 
 const NAMESPACE = 'workflow-auth-token';
 
@@ -22,27 +23,68 @@ export default class extends Instruction {
   fieldset = {
     userId: {
       type: 'number',
-      title: `{{t("User ID", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("The user to sign a token for. Supports workflow variables.", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("User", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Select a user or use a workflow variable.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'WorkflowVariableInput',
+      'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
-        useTypedConstant: [['number', { min: 1 }]],
-        changeOnSelect: true,
         nullable: false,
+        changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey) {
+                return field.target === 'users';
+              }
+              return field.collectionName === 'users' && field.name === 'id';
+            },
+          ],
+        },
+        render(props) {
+          return (
+            <RemoteSelect
+              fieldNames={{ label: 'nickname', value: 'id' }}
+              service={{ resource: 'users' }}
+              manual={false}
+              {...props}
+            />
+          );
+        },
       },
       required: true,
+      default: null,
     },
     roleName: {
       type: 'string',
       title: `{{t("Role", { ns: "${NAMESPACE}" })}}`,
       description: `{{t("Optional. The role the token operates as. User must have this role.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
-      'x-component': 'WorkflowVariableInput',
+      'x-component': 'WorkflowVariableWrapper',
       'x-component-props': {
-        useTypedConstant: ['string'],
+        nullable: false,
         changeOnSelect: true,
+        variableOptions: {
+          types: [
+            (field) => {
+              if (field.isForeignKey) {
+                return field.target === 'roles';
+              }
+              return field.collectionName === 'roles' && field.name === 'name';
+            },
+          ],
+        },
+        render(props) {
+          return (
+            <RemoteSelect
+              fieldNames={{ label: 'title', value: 'name' }}
+              service={{ resource: 'roles' }}
+              manual={false}
+              {...props}
+            />
+          );
+        },
       },
+      default: null,
     },
     expiresIn: {
       type: 'string',
@@ -62,5 +104,7 @@ export default class extends Instruction {
 
   components = {
     WorkflowVariableInput,
+    WorkflowVariableWrapper,
+    RemoteSelect,
   };
 }

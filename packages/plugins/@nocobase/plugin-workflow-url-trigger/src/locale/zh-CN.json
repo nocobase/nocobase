@@ -24,5 +24,8 @@
   "Redirect URL": "重定向 URL",
   "Status code": "状态码",
   "Response body": "响应内容",
-  "Response data": "响应数据"
+  "Response data": "响应数据",
+  "Response headers": "响应头",
+  "Add item": "添加",
+  "Input response data": "输入响应数据"
 }

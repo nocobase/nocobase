@@ -24,5 +24,8 @@
   "Redirect URL": "Redirect URL",
   "Status code": "Status code",
   "Response body": "Response body",
-  "Response data": "Response data"
+  "Response data": "Response data",
+  "Response headers": "Response headers",
+  "Add item": "Add item",
+  "Input response data": "Input response data"
 }
