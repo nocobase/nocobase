@@ -420,16 +420,13 @@ describe('Application', () => {
 
     it('replace Component', async () => {
       const AppSpin = () => <div>AppSpin</div>;
-      const AppMain = () => <div>AppMain</div>;
       const app = new Application({
         router,
-        components: { AppSpin, AppMain },
+        components: { AppSpin },
       });
       const Root = app.getRootComponent();
       render(<Root />);
       expect(screen.getByText('AppSpin')).toBeInTheDocument();
-      await sleep(10);
-      expect(screen.getByText('AppMain')).toBeInTheDocument();
     });
 
     it('render component error', async () => {

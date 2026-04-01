@@ -32,7 +32,7 @@ import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, B
 import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
-import type { ComponentTypeAndString, RouterOptions } from './RouterManager';
+import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
@@ -76,7 +76,7 @@ export interface BaseApplicationOptions {
 export abstract class BaseApplication<TOptions extends BaseApplicationOptions = BaseApplicationOptions> {
   public eventBus = new EventTarget();
   public providers: ComponentAndProps[] = [];
-  public router: any;
+  public router: RouterManager;
   public scopes: Record<string, any> = {};
   public i18n: i18next;
   public ws: WebSocketClient;
@@ -518,14 +518,9 @@ export class ApplicationModel extends FlowModel {
 
   renderContent() {
     const AppError = this.app.getComponent('AppError', false);
-    const AppMain = this.app.getComponent('AppMain', false);
-    const content = AppMain
-      ? this.app.renderComponent('AppMain', { app: this.app }, this.props.children)
-      : (() => {
-          const Router = this.getRouter();
-          const Providers = this.getProviders();
-          return <Router BaseLayout={Providers} />;
-        })();
+    const Router = this.getRouter();
+    const Providers = this.getProviders();
+    const content = <Router BaseLayout={Providers} />;
 
     if (!AppError) {
       return content;
