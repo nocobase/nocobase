@@ -37,13 +37,14 @@ import { useEvaluatedExpression } from '../../../hooks/useParsedValue';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { Icon } from '../../../icon';
 import {
+  KeepAlive,
   NocoBaseDesktopRouteType,
   NocoBaseRouteContext,
   useCurrentRoute,
+  useKeepAlive,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
 import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
-import { KeepAlive, useKeepAlive } from '../../../route-switch/antd/admin-layout/KeepAlive';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
