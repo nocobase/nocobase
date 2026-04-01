@@ -41,8 +41,8 @@ import {
   SchemaSettingsSubMenu,
   SchemaSettingsSwitchItem,
 } from '../../../schema-settings/SchemaSettings';
-import { NocoBaseDesktopRoute } from './convertRoutesToSchema';
 import { useDeleteRouteSchema } from './useDeleteRouteSchema';
+import { NocoBaseDesktopRoute } from './route-types';
 
 const components = { TreeSelect };
 

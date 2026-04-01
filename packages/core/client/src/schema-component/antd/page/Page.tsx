@@ -44,7 +44,6 @@ import {
   useKeepAlive,
   useMobileLayout,
 } from '../../../route-switch/antd/admin-layout';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { useGetAriaLabelOfSchemaInitializer } from '../../../schema-initializer/hooks/useGetAriaLabelOfSchemaInitializer';
 import { VariableScope } from '../../../variables/VariableScope';
 import { DndContext } from '../../common';
@@ -59,6 +58,7 @@ import { AllDataBlocksProvider } from './AllDataBlocksProvider';
 import { useStyles } from './Page.style';
 import { PageDesigner, PageTabDesigner } from './PageTabDesigner';
 import { PopupRouteContextResetter } from './PopupRouteContextResetter';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 
 interface PageProps {
   currentTabUid: string;

@@ -40,8 +40,8 @@ import { findKeysByUid, findMenuItem } from './util';
 import { useUpdate } from 'ahooks';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useRefreshComponent, useRefreshFieldSchema } from '../../../formily/NocoBaseRecursionField';
-import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { withTooltipComponent } from '../../../hoc/withTooltipComponent';
+import { NocoBaseDesktopRoute } from '../../../route-switch/antd/admin-layout/route-types';
 
 const subMenuDesignerCss = css`
   position: relative;

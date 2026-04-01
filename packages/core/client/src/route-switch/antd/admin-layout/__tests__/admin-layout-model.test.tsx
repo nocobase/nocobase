@@ -36,10 +36,7 @@ vi.mock('@nocobase/flow-engine', async (importOriginal) => {
 
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { AdminLayout, AdminLayoutPlugin } from '..';
-import {
-  AdminLayoutMenuItemModel,
-  AdminLayoutModel as FlowAdminLayoutModel,
-} from '../../../../flow/admin-shell/admin-layout';
+import { AdminLayoutMenuItemModel, AdminLayoutModel as FlowAdminLayoutModel } from '@nocobase/client-v2';
 import { AdminLayoutModelV1 } from '../AdminLayoutModel';
 
 describe('AdminLayout legacy wrapper', () => {

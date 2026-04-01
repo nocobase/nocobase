@@ -23,7 +23,7 @@ import { CollectionPlugin } from '../collection-manager';
 import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
 import { useAPIClient } from '../api-client';
-import { PluginFlowEngine } from '../flow';
+import { PluginFlowEngine } from '@nocobase/client-v2';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';

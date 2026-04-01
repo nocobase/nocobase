@@ -15,7 +15,6 @@ import { useTranslation } from 'react-i18next';
 import { useAPIClient } from '../../api-client/hooks/useAPIClient';
 import { SchemaInitializerItem } from '../../application';
 import { useGlobalTheme } from '@nocobase/client-v2';
-import { NocoBaseDesktopRouteType } from '../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import {
   FormDialog,
   ICON_POPUP_Z_INDEX,
@@ -26,6 +25,7 @@ import {
   zIndexContext,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
+import { NocoBaseDesktopRouteType } from '../../route-switch';
 
 export const useInsertPageSchema = () => {
   const api = useAPIClient();

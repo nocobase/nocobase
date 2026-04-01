@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { AdminLayoutComponent, AdminLayoutModel } from '../../../flow/admin-shell/admin-layout';
+import { AdminLayoutComponent, AdminLayoutModel } from '@nocobase/client-v2';
 import { AdminShellProvider } from './AdminShellProvider';
 
 /**
