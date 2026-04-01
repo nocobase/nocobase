@@ -94,34 +94,3 @@ export const setDepartments = async (ctx: Context, next: Next) => {
   });
   await next();
 };
-
-export const setMainDepartment = async (ctx: Context, next: Next) => {
-  const { userId, departmentId } = ctx.action.params.values || {};
-  const repo = ctx.db.getRepository('users');
-  const throughRepo = ctx.db.getRepository('departmentsUsers');
-
-  await ctx.db.sequelize.transaction(async (t) => {
-    await repo.update({
-      filterByTk: userId,
-      values: { mainDepartmentId: departmentId },
-      transaction: t,
-    });
-
-    const existingAssoc = await throughRepo.findOne({
-      filter: { userId, departmentId },
-      transaction: t,
-    });
-    if (!existingAssoc) {
-      await throughRepo.create({
-        values: {
-          userId,
-          departmentId,
-          isOwner: false,
-        },
-        transaction: t,
-      });
-    }
-  });
-
-  await next();
-};

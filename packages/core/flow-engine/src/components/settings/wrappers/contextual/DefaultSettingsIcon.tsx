@@ -242,7 +242,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   }, [onDropdownVisibleChange]);
   const resolvePopupContainer = useCallback<NonNullable<DropdownProps['getPopupContainer']>>(
     (triggerNode) => {
-      // 优先挂到工具栏自身容器，避免 modal / drawer 中鼠标从图标移动到菜单时先离开工具栏树。
+      // 工具栏自身容器必须优先，保证鼠标从 icon 移到菜单时仍处于同一 hover 树。
+      // 弹窗场景的裁剪问题由 useFloatToolbarPortal 负责把 toolbar 挂到正确的 popup host。
       return (
         getToolbarPopupContainer(triggerNode) ||
         getPopupContainer?.(triggerNode) ||
