@@ -1915,6 +1915,8 @@ function getFieldWrapperUseForContainer(containerUse?: string) {
   }
 }
 
+const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
+
 function inferEditableFieldUse(fieldInterface: string) {
   if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(fieldInterface)) {
     return 'RecordSelectFieldModel';
@@ -2051,7 +2053,11 @@ function inferFieldUseByContainer(containerUse: string, field: any) {
     case 'form':
       return inferEditableFieldUse(fieldInterface);
     case 'details':
+      return inferDisplayFieldUse(fieldInterface);
     case 'table':
+      if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+        return 'DisplayTextFieldModel';
+      }
       return inferDisplayFieldUse(fieldInterface);
     default:
       throw new FlowSurfaceBadRequestError(`flowSurfaces field container '${containerUse}' is not supported`);

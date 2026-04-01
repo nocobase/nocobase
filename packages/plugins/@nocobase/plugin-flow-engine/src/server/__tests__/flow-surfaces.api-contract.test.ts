@@ -2950,7 +2950,7 @@ describe('flowSurfaces API contract', () => {
     expect(removedSchemaRes.body.data || {}).toEqual({});
   });
 
-  it('should normalize users.roles title display fields into association-value binding and keep popup context on the clicked role record', async () => {
+  it('should normalize users.roles table relation fields into text bindings and keep popup context on the clicked role record', async () => {
     const page = await createPage(rootAgent, {
       title: 'Users roles page',
       tabTitle: 'Users roles tab',
@@ -2989,7 +2989,7 @@ describe('flowSurfaces API contract', () => {
                 dataSourceKey: 'main',
                 collectionName: 'users',
               },
-              fields: ['username', 'nickname', 'roles.title'],
+              fields: ['username', 'nickname', 'roles', 'roles.title'],
               actions: ['filter', 'addNew'],
               recordActions: ['view', 'edit', 'delete'],
             },
@@ -3007,15 +3007,42 @@ describe('flowSurfaces API contract', () => {
     );
 
     expect(composeRes.layout.sizes.row1).toEqual([7, 17]);
-    const rolesField = composeRes.blocks
-      .find((item: any) => item.key === 'table')
-      ?.fields?.find((item: any) => item.fieldPath === 'roles.title');
-    expect(rolesField?.wrapperUid).toBeTruthy();
-    expect(rolesField?.fieldUid).toBeTruthy();
+    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const directRolesField = tableFields.find((item: any) => item.fieldPath === 'roles');
+    const rolesTitleField = tableFields.find((item: any) => item.fieldPath === 'roles.title');
+    expect(directRolesField?.wrapperUid).toBeTruthy();
+    expect(directRolesField?.fieldUid).toBeTruthy();
+    expect(rolesTitleField?.wrapperUid).toBeTruthy();
+    expect(rolesTitleField?.fieldUid).toBeTruthy();
 
-    const rolesWrapperReadback = await getSurface(rootAgent, { uid: rolesField.wrapperUid });
-    const rolesInnerReadback = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    const directRolesWrapperReadback = await getSurface(rootAgent, { uid: directRolesField.wrapperUid });
+    const directRolesInnerReadback = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
 
+    expect(directRolesWrapperReadback.tree.use).toBe('TableColumnModel');
+    expect(directRolesInnerReadback.tree.use).toBe('DisplayTextFieldModel');
+    expect(directRolesWrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(directRolesWrapperReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directRolesInnerReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      fieldPath: 'roles',
+    });
+    expect(directRolesInnerReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directRolesWrapperReadback.tree.props?.titleField).toBe('title');
+    expect(directRolesInnerReadback.tree.props?.titleField).toBe('title');
+
+    expect(rolesTitleField?.wrapperUid).toBeTruthy();
+    expect(rolesTitleField?.fieldUid).toBeTruthy();
+
+    const rolesWrapperReadback = await getSurface(rootAgent, { uid: rolesTitleField.wrapperUid });
+    const rolesInnerReadback = await getSurface(rootAgent, { uid: rolesTitleField.fieldUid });
+
+    expect(rolesWrapperReadback.tree.use).toBe('TableColumnModel');
+    expect(rolesInnerReadback.tree.use).toBe('DisplayTextFieldModel');
     expect(rolesWrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'users',
@@ -3036,7 +3063,7 @@ describe('flowSurfaces API contract', () => {
         await rootAgent.resource('flowSurfaces').configure({
           values: {
             target: {
-              uid: rolesField.wrapperUid,
+              uid: directRolesField.wrapperUid,
             },
             changes: {
               clickToOpen: true,
@@ -3055,7 +3082,7 @@ describe('flowSurfaces API contract', () => {
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
           target: {
-            uid: rolesField.fieldUid,
+            uid: directRolesField.fieldUid,
           },
           type: 'details',
           resourceInit: {
@@ -3077,7 +3104,7 @@ describe('flowSurfaces API contract', () => {
       }),
     );
 
-    const rolesInnerWithPopup = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    const rolesInnerWithPopup = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
     expect(rolesInnerWithPopup.tree.props?.clickToOpen).toBe(true);
     expect(rolesInnerWithPopup.tree.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
     expect(rolesInnerWithPopup.tree.stepParams?.popupSettings?.openView).toMatchObject({
@@ -3108,7 +3135,7 @@ describe('flowSurfaces API contract', () => {
         await rootAgent.resource('flowSurfaces').configure({
           values: {
             target: {
-              uid: rolesField.wrapperUid,
+              uid: directRolesField.wrapperUid,
             },
             changes: {
               titleField: 'name',
@@ -3118,8 +3145,8 @@ describe('flowSurfaces API contract', () => {
       ).status,
     ).toBe(200);
 
-    let syncedWrapper = await getSurface(rootAgent, { uid: rolesField.wrapperUid });
-    let syncedInner = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    let syncedWrapper = await getSurface(rootAgent, { uid: directRolesField.wrapperUid });
+    let syncedInner = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
     expect(syncedWrapper.tree.props?.titleField).toBe('name');
     expect(syncedInner.tree.props?.titleField).toBe('name');
 
@@ -3128,7 +3155,7 @@ describe('flowSurfaces API contract', () => {
         await rootAgent.resource('flowSurfaces').configure({
           values: {
             target: {
-              uid: rolesField.fieldUid,
+              uid: directRolesField.fieldUid,
             },
             changes: {
               titleField: 'title',
@@ -3138,8 +3165,8 @@ describe('flowSurfaces API contract', () => {
       ).status,
     ).toBe(200);
 
-    syncedWrapper = await getSurface(rootAgent, { uid: rolesField.wrapperUid });
-    syncedInner = await getSurface(rootAgent, { uid: rolesField.fieldUid });
+    syncedWrapper = await getSurface(rootAgent, { uid: directRolesField.wrapperUid });
+    syncedInner = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
     expect(syncedWrapper.tree.props?.titleField).toBe('title');
     expect(syncedInner.tree.props?.titleField).toBe('title');
   });
@@ -3174,6 +3201,19 @@ describe('flowSurfaces API contract', () => {
     expect(skillsField.fieldPath).toBe('skills');
     expect(skillsField.associationPathName).toBeUndefined();
 
+    const directSkillsField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+          fieldPath: 'skills',
+        },
+      }),
+    );
+    expect(directSkillsField.fieldPath).toBe('skills');
+    expect(directSkillsField.associationPathName).toBeUndefined();
+
     const profileField = getData(
       await rootAgent.resource('flowSurfaces').addField({
         values: {
@@ -3203,6 +3243,24 @@ describe('flowSurfaces API contract', () => {
     expect(skillsInnerReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
     expect(skillsWrapperReadback.tree.props?.titleField).toBe('label');
     expect(skillsInnerReadback.tree.props?.titleField).toBe('label');
+
+    const directSkillsWrapperReadback = await getSurface(rootAgent, { uid: directSkillsField.wrapperUid });
+    const directSkillsInnerReadback = await getSurface(rootAgent, { uid: directSkillsField.fieldUid });
+    expect(directSkillsWrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'skills',
+    });
+    expect(directSkillsWrapperReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directSkillsInnerReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'skills',
+    });
+    expect(directSkillsInnerReadback.tree.stepParams?.fieldSettings?.init).not.toHaveProperty('associationPathName');
+    expect(directSkillsInnerReadback.tree.use).toBe('DisplaySubTableFieldModel');
+    expect(directSkillsWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
+    expect(directSkillsInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
 
     const profileWrapperReadback = await getSurface(rootAgent, { uid: profileField.wrapperUid });
     const profileInnerReadback = await getSurface(rootAgent, { uid: profileField.fieldUid });

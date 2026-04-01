@@ -1126,6 +1126,19 @@ export class FlowSurfacesService {
       associationPathName: values.associationPathName,
       fieldPath: values.fieldPath,
     });
+    const normalizedFieldBinding = this.normalizeDisplayFieldBinding({
+      wrapperUse: container.wrapperUse,
+      dataSourceKey: resolvedField.dataSourceKey,
+      collectionName: resolvedField.collectionName,
+      fieldPath: resolvedField.fieldPath,
+      associationPathName: resolvedField.associationPathName,
+    });
+    const preferredCapabilityField = this.resolvePreferredFieldForCapability({
+      containerUse: container.ownerUse,
+      dataSourceKey: resolvedField.dataSourceKey,
+      associationPathName: resolvedField.associationPathName,
+      field: resolvedField.field,
+    });
 
     const filterFormInit = isFilterFormItem
       ? {
@@ -1133,25 +1146,39 @@ export class FlowSurfacesService {
           ...(selectedFilterTarget?.ownerUid ? { defaultTargetUid: selectedFilterTarget.ownerUid } : {}),
         }
       : undefined;
-    const boundFieldCapability = resolveSupportedFieldCapability({
-      containerUse: container.ownerUse,
-      field: resolvedField.field,
-      requestedFieldUse: values.fieldUse,
-      requestedWrapperUse: container.wrapperUse,
-      requestedRenderer: values.renderer,
-    });
+    let capabilityField = preferredCapabilityField;
+    let boundFieldCapability;
+    try {
+      boundFieldCapability = resolveSupportedFieldCapability({
+        containerUse: container.ownerUse,
+        field: capabilityField,
+        requestedFieldUse: values.fieldUse,
+        requestedWrapperUse: container.wrapperUse,
+        requestedRenderer: values.renderer,
+      });
+    } catch (error) {
+      if (
+        hasOwnDefined(values, 'fieldUse') &&
+        capabilityField !== resolvedField.field &&
+        error instanceof FlowSurfaceBadRequestError
+      ) {
+        capabilityField = resolvedField.field;
+        boundFieldCapability = resolveSupportedFieldCapability({
+          containerUse: container.ownerUse,
+          field: capabilityField,
+          requestedFieldUse: values.fieldUse,
+          requestedWrapperUse: container.wrapperUse,
+          requestedRenderer: values.renderer,
+        });
+      } else {
+        throw error;
+      }
+    }
     const defaultFieldState = buildDefaultFieldState(
       container.ownerUse,
       boundFieldCapability.fieldUse,
-      resolvedField.field,
+      capabilityField,
     );
-    const normalizedFieldBinding = this.normalizeDisplayFieldBinding({
-      wrapperUse: boundFieldCapability.wrapperUse,
-      dataSourceKey: resolvedField.dataSourceKey,
-      collectionName: resolvedField.collectionName,
-      fieldPath: resolvedField.fieldPath,
-      associationPathName: resolvedField.associationPathName,
-    });
 
     const tree = buildFieldTree({
       wrapperUse: boundFieldCapability.wrapperUse,
@@ -3368,7 +3395,7 @@ export class FlowSurfacesService {
       (canSyncTitleField && hasOwnDefined(wrapperChanges, 'titleField')) ||
       (AUTO_TITLE_FIELD_BINDING_WRAPPER_USES.has(current?.use || '') &&
         bindingChange &&
-        (!!normalizedBinding?.usesAssociationValueBinding || hasExistingTitleField));
+        (!_.isUndefined(normalizedBinding?.defaultTitleField) || hasExistingTitleField));
     const syncedTitleField = shouldSyncTitleField
       ? hasOwnDefined(wrapperChanges, 'titleField')
         ? wrapperChanges.titleField
@@ -3538,7 +3565,7 @@ export class FlowSurfacesService {
       hasOwnDefined(changes, 'titleField') ||
       (AUTO_TITLE_FIELD_BINDING_WRAPPER_USES.has(parentWrapper?.use || '') &&
         bindingChange &&
-        (!!normalizedBinding?.usesAssociationValueBinding || hasExistingTitleField));
+        (!_.isUndefined(normalizedBinding?.defaultTitleField) || hasExistingTitleField));
     const syncedTitleField = shouldSyncTitleField
       ? hasOwnDefined(changes, 'titleField')
         ? changes.titleField
@@ -3935,9 +3962,15 @@ export class FlowSurfacesService {
         const label = `${targetPrefix}${item.label}`;
         const entries: Array<Record<string, any>> = [];
         const pushEntry = (semantic: { renderer?: 'js'; type?: 'jsColumn' | 'jsItem' } = {}) => {
+          const capabilityField = this.resolvePreferredFieldForCapability({
+            containerUse: input.ownerUse,
+            dataSourceKey: input.resourceInit.dataSourceKey,
+            associationPathName: item.associationPathName,
+            field: item.field,
+          });
           const fieldCapability = resolveSupportedFieldCapability({
             containerUse: input.ownerUse,
-            field: item.field,
+            field: capabilityField,
             requestedRenderer: semantic.renderer,
             requestedType: semantic.type,
           });
@@ -4251,6 +4284,40 @@ export class FlowSurfacesService {
     };
   }
 
+  private getAssociationDefaultTitleFieldName(field: any, dataSourceKey: string) {
+    const targetCollection = resolveFieldTargetCollection(field, dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+      this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+    return getCollectionTitleFieldName(targetCollection);
+  }
+
+  private resolvePreferredFieldForCapability(input: {
+    containerUse: string;
+    dataSourceKey: string;
+    associationPathName?: string;
+    field: any;
+  }) {
+    if (
+      normalizeFieldContainerKind(input.containerUse) !== 'table' ||
+      input.associationPathName ||
+      !MULTI_VALUE_ASSOCIATION_INTERFACES.has(getFieldInterface(input.field) || '')
+    ) {
+      return input.field;
+    }
+
+    const titleFieldName = this.getAssociationDefaultTitleFieldName(input.field, input.dataSourceKey);
+    if (!titleFieldName) {
+      return input.field;
+    }
+
+    const targetCollection = resolveFieldTargetCollection(
+      input.field,
+      input.dataSourceKey,
+      (resolvedDsKey, targetCollectionName) => this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+    return resolveFieldFromCollection(targetCollection, titleFieldName) || input.field;
+  }
+
   private async ensureGridChild(parentUid: string, use: string, transaction?: any) {
     const existing = await this.repository.findModelByParentId(parentUid, {
       transaction,
@@ -4428,6 +4495,7 @@ export class FlowSurfacesService {
       input.collectionName,
     );
     const associationInterface = getFieldInterface(parsed.associationField);
+    const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
     const shouldBindAssociationValue =
       DISPLAY_FIELD_WRAPPER_USES.has(input.wrapperUse || '') &&
       !!parsed.associationPathName &&
@@ -4446,6 +4514,21 @@ export class FlowSurfacesService {
         associationPathName: undefined,
         defaultTitleField: parsed.leafFieldPath,
         usesAssociationValueBinding: true,
+      };
+    }
+
+    const shouldDefaultToAssociationTitleField =
+      input.wrapperUse === 'TableColumnModel' &&
+      !parsed.associationPathName &&
+      MULTI_VALUE_ASSOCIATION_INTERFACES.has(getFieldInterface(leafField) || '');
+    if (shouldDefaultToAssociationTitleField) {
+      return {
+        dataSourceKey: parsed.dataSourceKey,
+        collectionName: parsed.collectionName,
+        fieldPath: parsed.fieldPath,
+        associationPathName: parsed.associationPathName,
+        defaultTitleField: this.getAssociationDefaultTitleFieldName(leafField, parsed.dataSourceKey),
+        usesAssociationValueBinding: false,
       };
     }
 
@@ -5154,6 +5237,17 @@ function getCollectionFields(collection: any) {
 
 function getCollectionTitle(collection: any) {
   return collection?.title || collection?.options?.title || collection?.name || collection?.options?.name;
+}
+
+function getCollectionTitleFieldName(collection: any) {
+  const filterTargetKey = collection?.filterTargetKey || collection?.options?.filterTargetKey;
+  return (
+    collection?.options?.titleField ||
+    collection?.titleCollectionField?.name ||
+    collection?.titleCollectionField?.options?.name ||
+    (Array.isArray(filterTargetKey) ? filterTargetKey[0] : filterTargetKey) ||
+    collection?.titleField
+  );
 }
 
 function getFieldName(field: any) {

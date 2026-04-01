@@ -1065,6 +1065,10 @@ describe('flowSurfaces resource', () => {
     expect(tableCatalog.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
     expect(tableCatalog.fields.some((item: any) => item.key === 'nickname')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
+    expect(tableCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'TableColumnModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
     expect(tableCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
       use: 'TableColumnModel',
       fieldUse: 'JSFieldModel',
