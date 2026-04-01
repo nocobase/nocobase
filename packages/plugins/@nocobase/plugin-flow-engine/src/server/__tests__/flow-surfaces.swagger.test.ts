@@ -57,6 +57,11 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceMoveTabRequest.required).toEqual(['sourceUid', 'targetUid']);
     expect(schemas.FlowSurfaceAddPopupTabRequest).toBeTruthy();
     expect(schemas.FlowSurfaceAddPopupTabResult).toBeTruthy();
+    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupPageUid.type).toBe('string');
+    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupTabUid.type).toBe('string');
+    expect(schemas.FlowSurfaceAddPopupTabResult.properties.popupGridUid.type).toBe('string');
+    expect(schemas.FlowSurfaceAddPopupTabResult.properties.tabUid).toBeUndefined();
+    expect(schemas.FlowSurfaceAddPopupTabResult.properties.gridUid).toBeUndefined();
     expect(schemas.FlowSurfaceUpdatePopupTabRequest).toBeTruthy();
     expect(schemas.FlowSurfaceUpdatePopupTabResult).toBeTruthy();
     expect(schemas.FlowSurfaceMovePopupTabRequest).toBeTruthy();

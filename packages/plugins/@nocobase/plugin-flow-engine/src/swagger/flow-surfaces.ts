@@ -2766,12 +2766,6 @@ const schemas = {
       popupGridUid: {
         type: 'string',
       },
-      tabUid: {
-        type: 'string',
-      },
-      gridUid: {
-        type: 'string',
-      },
     },
     additionalProperties: false,
   },

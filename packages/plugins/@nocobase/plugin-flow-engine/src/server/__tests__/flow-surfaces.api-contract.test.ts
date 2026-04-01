@@ -653,15 +653,15 @@ describe('flowSurfaces API contract', () => {
     );
     expect(addedPopupTab).toMatchObject({
       popupPageUid: popupAction.popupPageUid,
-      tabUid: expect.any(String),
-      gridUid: expect.any(String),
+      popupTabUid: expect.any(String),
+      popupGridUid: expect.any(String),
     });
 
     const updatedPopupTab = getData(
       await rootAgent.resource('flowSurfaces').updatePopupTab({
         values: {
           target: {
-            uid: addedPopupTab.tabUid,
+            uid: addedPopupTab.popupTabUid,
           },
           title: 'Secondary popup tab updated',
           icon: 'AppstoreOutlined',
@@ -677,7 +677,7 @@ describe('flowSurfaces API contract', () => {
       }),
     );
     expect(updatedPopupTab).toMatchObject({
-      uid: addedPopupTab.tabUid,
+      uid: addedPopupTab.popupTabUid,
       title: 'Secondary popup tab updated',
       icon: 'AppstoreOutlined',
     });
@@ -685,14 +685,14 @@ describe('flowSurfaces API contract', () => {
     const movedPopupTab = getData(
       await rootAgent.resource('flowSurfaces').movePopupTab({
         values: {
-          sourceUid: addedPopupTab.tabUid,
+          sourceUid: addedPopupTab.popupTabUid,
           targetUid: popupAction.popupTabUid,
           position: 'before',
         },
       }),
     );
     expect(movedPopupTab).toEqual({
-      sourceUid: addedPopupTab.tabUid,
+      sourceUid: addedPopupTab.popupTabUid,
       targetUid: popupAction.popupTabUid,
       position: 'before',
     });
@@ -701,13 +701,13 @@ describe('flowSurfaces API contract', () => {
       await rootAgent.resource('flowSurfaces').removePopupTab({
         values: {
           target: {
-            uid: addedPopupTab.tabUid,
+            uid: addedPopupTab.popupTabUid,
           },
         },
       }),
     );
     expect(removedPopupTab).toEqual({
-      uid: addedPopupTab.tabUid,
+      uid: addedPopupTab.popupTabUid,
     });
   });
 

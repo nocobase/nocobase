@@ -397,8 +397,8 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(addedPopupTab.popupPageUid).toBe(popupPageUid);
-    expect(addedPopupTab.tabUid).toBeTruthy();
-    expect(addedPopupTab.gridUid).toBeTruthy();
+    expect(addedPopupTab.popupTabUid).toBeTruthy();
+    expect(addedPopupTab.popupGridUid).toBeTruthy();
 
     const popupPageAfterAdd = await getSurface(rootAgent, {
       uid: popupPageUid,
@@ -410,7 +410,7 @@ describe('flowSurfaces resource', () => {
       await rootAgent.resource('flowSurfaces').updatePopupTab({
         values: {
           target: {
-            uid: addedPopupTab.tabUid,
+            uid: addedPopupTab.popupTabUid,
           },
           title: 'Secondary popup tab updated',
           icon: 'AppstoreOutlined',
@@ -426,13 +426,13 @@ describe('flowSurfaces resource', () => {
       }),
     );
     expect(updatedPopupTab).toMatchObject({
-      uid: addedPopupTab.tabUid,
+      uid: addedPopupTab.popupTabUid,
       title: 'Secondary popup tab updated',
       icon: 'AppstoreOutlined',
     });
 
     const popupTabReadback = await getSurface(rootAgent, {
-      uid: addedPopupTab.tabUid,
+      uid: addedPopupTab.popupTabUid,
     });
     expect(popupTabReadback.tree.use).toBe('ChildPageTabModel');
     expect(popupTabReadback.tree.props).toMatchObject({
@@ -452,7 +452,7 @@ describe('flowSurfaces resource', () => {
 
     const movePopupTabRes = await rootAgent.resource('flowSurfaces').movePopupTab({
       values: {
-        sourceUid: addedPopupTab.tabUid,
+        sourceUid: addedPopupTab.popupTabUid,
         targetUid: primaryPopupTabUid,
         position: 'before',
       },
@@ -463,14 +463,14 @@ describe('flowSurfaces resource', () => {
       uid: popupPageUid,
     });
     expect(_.castArray(popupPageAfterMove.tree.subModels?.tabs || []).map((item: any) => item.uid)).toEqual([
-      addedPopupTab.tabUid,
+      addedPopupTab.popupTabUid,
       primaryPopupTabUid,
     ]);
 
     const removeMovedTabRes = await rootAgent.resource('flowSurfaces').removePopupTab({
       values: {
         target: {
-          uid: addedPopupTab.tabUid,
+          uid: addedPopupTab.popupTabUid,
         },
       },
     });

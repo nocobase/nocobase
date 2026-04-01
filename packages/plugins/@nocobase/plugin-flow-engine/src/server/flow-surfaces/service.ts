@@ -873,8 +873,6 @@ export class FlowSurfacesService {
       popupPageUid: popupPage.uid,
       popupTabUid: tree.uid,
       popupGridUid: tree.subModels?.grid?.uid,
-      tabUid: tree.uid,
-      gridUid: tree.subModels?.grid?.uid,
     };
   }
 
