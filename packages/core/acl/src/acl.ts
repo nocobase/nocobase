@@ -517,7 +517,10 @@ export class ACL extends EventEmitter {
                 if (!y) {
                   return x;
                 }
-                return (x as any[]).filter((i) => y.includes(i.split('.').shift()));
+                return (x as any[]).filter((item) => {
+                  const topLevel = item.split('.').shift();
+                  return (y as any[]).some((requested) => requested === item || requested === topLevel);
+                });
               },
             });
 

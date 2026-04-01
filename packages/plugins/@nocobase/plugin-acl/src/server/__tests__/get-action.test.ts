@@ -84,6 +84,7 @@ describe('get action with acl', () => {
     app.resourceManager.use(
       (ctx, next) => {
         ctx.state.currentRole = 'test';
+        ctx.state.currentRoles = ['test'];
         return next();
       },
       {
@@ -141,11 +142,11 @@ describe('get action with acl', () => {
     await app.db.sync();
 
     testRole.grantAction('docs_test:view', {
-      fields: ['name', 'files'],
+      fields: ['files'],
     });
 
     testRole.grantAction('files_test:view', {
-      fields: ['title', 'file'],
+      fields: ['file'],
     });
 
     const record = await Docs.repository.create({
@@ -165,6 +166,7 @@ describe('get action with acl', () => {
     app.resourceManager.use(
       (ctx, next) => {
         ctx.state.currentRole = 'test';
+        ctx.state.currentRoles = ['test'];
         return next();
       },
       {
