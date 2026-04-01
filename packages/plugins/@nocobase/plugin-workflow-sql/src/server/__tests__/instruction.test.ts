@@ -111,6 +111,7 @@ describe('workflow > instructions > sql', () => {
         type: 'sql',
         config: {
           sql: `select '{{$system.now}}' as a`,
+          unsafeInjection: true,
         },
       });
 
@@ -123,7 +124,7 @@ describe('workflow > instructions > sql', () => {
       expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
     });
 
-    it('update', async () => {
+    it('update with unsafeInjection: true', async () => {
       const queryInterface = db.sequelize.getQueryInterface();
       const n1 = await workflow.createNode({
         type: 'sql',
@@ -131,6 +132,49 @@ describe('workflow > instructions > sql', () => {
           sql: `update ${PostCollection.quotedTableName()} set ${queryInterface.quoteIdentifier(
             'read',
           )}={{$context.data.id}} where ${queryInterface.quoteIdentifier('id')}={{$context.data.id}}`,
+          unsafeInjection: true,
+        },
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{ $context.data.id }}',
+            },
+          },
+        },
+        upstreamId: n1.id,
+      });
+
+      await n1.setDownstream(n2);
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [sqlJob, queryJob] = await execution.getJobs({ order: [['id', 'ASC']] });
+      expect(sqlJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(queryJob.status).toBe(JOB_STATUS.RESOLVED);
+      expect(queryJob.result.read).toBe(post.id);
+    });
+
+    it('update with replacements (unsafeInjection: false)', async () => {
+      const queryInterface = db.sequelize.getQueryInterface();
+      const n1 = await workflow.createNode({
+        type: 'sql',
+        config: {
+          sql: `update ${PostCollection.quotedTableName()} set ${queryInterface.quoteIdentifier(
+            'read',
+          )}=:val1 where ${queryInterface.quoteIdentifier('id')}=:val2`,
+          unsafeInjection: false,
+          variables: [
+            { name: 'val1', value: '{{$context.data.id}}' },
+            { name: 'val2', value: '{{$context.data.id}}' },
+          ],
         },
       });
 
@@ -168,6 +212,7 @@ describe('workflow > instructions > sql', () => {
           sql: `delete from ${PostCollection.quotedTableName()} where ${queryInterface.quoteIdentifier(
             'id',
           )}={{$context.data.id}};`,
+          unsafeInjection: true,
         },
       });
 
