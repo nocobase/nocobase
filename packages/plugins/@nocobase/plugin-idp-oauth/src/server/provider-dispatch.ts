@@ -143,7 +143,10 @@ function rewriteProviderSetCookieHeader(ctx: DispatchContext, service: IdpOauthS
   if (frontendInteractionPath) {
     // The browser renders the frontend interaction page, but the provider session must be sent to the backend API route.
     const interactionAppName = frontendInteractionPath.appName || providerContext.appName;
-    rewrittenPath = `${service.getIssuerPath(interactionAppName)}/idpOAuth/interaction/${frontendInteractionPath.uid}`;
+    const interactionIssuerPath = frontendInteractionPath.appName
+      ? service.getIssuerPath(interactionAppName)
+      : providerContext.issuerPath;
+    rewrittenPath = `${interactionIssuerPath}/idpOAuth/interaction/${frontendInteractionPath.uid}`;
   }
 
   if (rewrittenPath === originalPath) {

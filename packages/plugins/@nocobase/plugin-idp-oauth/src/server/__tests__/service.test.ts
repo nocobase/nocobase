@@ -36,6 +36,27 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/idp-oauth/interaction/uid-2');
   });
 
+  test('should use root api issuer path for custom-domain sub app requests', () => {
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    const providerContext = service.getProviderContext({
+      app: { name: 'subapp' },
+      path: '/api/mcp',
+      protocol: 'https',
+      host: 'subapp.example.com',
+      headers: {},
+    });
+
+    expect(providerContext.issuerPath).toBe('/api');
+    expect(providerContext.issuer).toBe('https://subapp.example.com/api');
+    expect(service.getFrontendInteractionPath('subapp', 'uid-3', providerContext.issuerPath)).toBe(
+      '/idp-oauth/interaction/uid-3',
+    );
+  });
+
   test('getSupportedScopes should include resource server scopes without duplicates', () => {
     const service = new IdpOauthService({} as any, {} as any);
 
