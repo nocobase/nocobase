@@ -171,8 +171,6 @@ export class PluginUISchemaStorageServer extends Plugin {
   }
 
   async load() {
-    await this.importCollections(resolve(__dirname, 'collections'));
-
     const getSourceAndTargetForRemoveAction = async (ctx: any) => {
       const { filterByTk } = ctx.action.params;
       return {
