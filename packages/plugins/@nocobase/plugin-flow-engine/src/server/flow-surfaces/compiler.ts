@@ -39,6 +39,7 @@ type CompiledNodeRef = {
   uidRef: any;
   use: string;
   sourceOpId?: string;
+  ownerUidRef?: any;
 };
 
 type SyncChildrenResult = {
@@ -70,6 +71,11 @@ const STANDALONE_FIELD_USES = new Set(['JSColumnModel', 'JSItemModel']);
 const FORM_BLOCK_USES = FLOW_SURFACE_FORM_BLOCK_USES;
 const DETAILS_BLOCK_USES = FLOW_SURFACE_DETAILS_BLOCK_USES;
 const FILTER_FORM_BLOCK_USES = FLOW_SURFACE_FILTER_FORM_BLOCK_USES;
+const RECORD_ACTION_INTERNAL_CONTAINER_USES = new Set([
+  'TableActionsColumnModel',
+  'ListItemModel',
+  'GridCardItemModel',
+]);
 
 export function compileApplySpec(
   target: FlowSurfaceWriteTarget,
@@ -98,7 +104,25 @@ export function compileApplySpec(
   }
 
   if (currentTree.use === 'ChildPageModel') {
-    syncPageNode(ops, state, { uid: currentTree.uid }, currentTree, spec);
+    syncExistingNode(
+      ops,
+      state,
+      {
+        uidRef: currentTree.uid,
+        use: currentTree.use,
+      },
+      currentTree,
+      {
+        uid: currentTree.uid,
+        use: currentTree.use,
+        props: spec.props,
+        decoratorProps: spec.decoratorProps,
+        stepParams: spec.stepParams,
+        flowRegistry: spec.flowRegistry,
+        subModels: spec.subModels,
+      },
+      { uid: currentTree.uid },
+    );
     return {
       ops,
       clientKeyToUid: state.clientKeyToUid,
@@ -366,6 +390,17 @@ function syncChildren(
     const currentChildren = normalizeChildren(currentRaw);
     const isArraySubModel = Array.isArray(desiredRaw) || Array.isArray(currentRaw);
 
+    if (parentRef.use === 'ChildPageModel' && subKey === 'tabs') {
+      const tabSync = syncPopupTabs(ops, state, parentRef, currentChildren, desiredChildren);
+      if (tabSync.itemsSpecified) {
+        result.finalItemRefs = tabSync.finalItemRefs;
+        result.itemsChanged = tabSync.itemsChanged;
+        result.itemsSpecified = true;
+      }
+      Object.assign(result.childClientKeyRefs, tabSync.childClientKeyRefs);
+      continue;
+    }
+
     if (!isArraySubModel) {
       const desiredChild = desiredChildren[0];
       const currentChild = currentChildren[0];
@@ -412,7 +447,7 @@ function syncChildren(
         }
         syncCreatedNode(ops, state, defaultRef, desiredChild);
       } else {
-        const createdRef = createDesiredChild(ops, state, parentRef, subKey, desiredChild);
+        const createdRef = createDesiredChild(ops, state, parentRef, subKey, desiredChild, currentParent);
         if (desiredChild.clientKey) {
           result.childClientKeyRefs[desiredChild.clientKey] = createdRef.uidRef;
         }
@@ -450,7 +485,7 @@ function syncChildren(
         continue;
       }
 
-      const createdRef = createDesiredChild(ops, state, parentRef, subKey, desiredChild);
+      const createdRef = createDesiredChild(ops, state, parentRef, subKey, desiredChild, currentParent);
       if (desiredChild.clientKey) {
         result.childClientKeyRefs[desiredChild.clientKey] = createdRef.uidRef;
       }
@@ -484,6 +519,7 @@ function createDesiredChild(
   parentRef: CompiledNodeRef,
   subKey: string,
   desiredChild: FlowSurfaceNodeSpec,
+  currentParent?: any,
 ): CompiledNodeRef {
   if (desiredChild.use === 'ChildPageModel' && isPopupHostUse(parentRef.use)) {
     compilePopupPageSpec(ops, state, parentRef, desiredChild);
@@ -507,7 +543,7 @@ function createDesiredChild(
         `flowSurfaces apply action '${desiredChild.use}' is not a public capability`,
       );
     }
-    return createActionNode(ops, state, parentRef, desiredChild);
+    return createActionNode(ops, state, parentRef, desiredChild, currentParent);
   }
 
   if (isBlockContainer(parentRef.use, subKey)) {
@@ -557,9 +593,6 @@ function createBlockNode(
       ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
       type: blockCatalogItem.key,
       resourceInit: extractResourceInit(desiredNode),
-      props: desiredNode.props,
-      decoratorProps: desiredNode.decoratorProps,
-      stepParams: desiredNode.stepParams,
     },
   });
 
@@ -577,6 +610,7 @@ function createActionNode(
   state: CompilerState,
   parentRef: CompiledNodeRef,
   desiredNode: FlowSurfaceNodeSpec,
+  currentParent?: any,
 ) {
   const actionCatalogItem = resolveSupportedActionCatalogItem(
     {
@@ -588,22 +622,21 @@ function createActionNode(
     },
   );
   const opType = actionCatalogItem.scope === 'record' ? 'addRecordAction' : 'addAction';
+  const targetUidRef =
+    actionCatalogItem.scope === 'record'
+      ? resolveRecordActionCreateTargetUidRef(parentRef, currentParent)
+      : parentRef.uidRef;
   const opId = nextOpId(state, opType);
   ops.push({
     opId,
     type: opType,
     values: {
       target: {
-        uid: parentRef.uidRef,
+        uid: targetUidRef,
       },
       ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
       type: actionCatalogItem.key,
-      scope: actionCatalogItem.scope,
       resourceInit: extractResourceInit(desiredNode),
-      props: desiredNode.props,
-      decoratorProps: desiredNode.decoratorProps,
-      stepParams: desiredNode.stepParams,
-      flowRegistry: desiredNode.flowRegistry,
     },
   });
 
@@ -635,9 +668,6 @@ function createFieldNode(
         },
         ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
         type: standaloneType,
-        props: desiredNode.props,
-        decoratorProps: desiredNode.decoratorProps,
-        stepParams: desiredNode.stepParams,
       },
     });
 
@@ -686,8 +716,6 @@ function createFieldNode(
       ...(requestedRenderer ? { renderer: requestedRenderer } : {}),
       ...(fieldCapability.fieldUse ? { fieldUse: fieldCapability.fieldUse } : {}),
       ...(defaultTargetUid ? { defaultTargetUid } : {}),
-      wrapperProps: desiredNode.props,
-      fieldProps: innerField?.props,
     },
   });
 
@@ -779,6 +807,7 @@ function bootstrapPopupShellCreation(
     result.popupTabRef = {
       uidRef: { $ref: `${created.sourceOpId}.popupTabUid` },
       use: tabSpec.use,
+      sourceOpId: created.sourceOpId,
     };
     result.popupGridUidRef = { $ref: `${created.sourceOpId}.popupGridUid` };
   };
@@ -921,10 +950,19 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
     };
   }
 
+  if (parentRef.use === 'ChildPageTabModel' && subKey === 'grid' && childUse === 'BlockGridModel') {
+    return {
+      uidRef: { $ref: `${parentRef.sourceOpId}.popupGridUid` },
+      use: childUse,
+    };
+  }
+
   if (parentRef.use === 'TableBlockModel' && subKey === 'columns' && childUse === 'TableActionsColumnModel') {
     return {
       uidRef: { $ref: `${parentRef.sourceOpId}.actionsColumnUid` },
       use: childUse,
+      sourceOpId: parentRef.sourceOpId,
+      ownerUidRef: parentRef.uidRef,
     };
   }
 
@@ -933,6 +971,7 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
       uidRef: { $ref: `${parentRef.sourceOpId}.itemUid` },
       use: childUse,
       sourceOpId: parentRef.sourceOpId,
+      ownerUidRef: parentRef.uidRef,
     };
   }
 
@@ -941,6 +980,7 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
       uidRef: { $ref: `${parentRef.sourceOpId}.itemUid` },
       use: childUse,
       sourceOpId: parentRef.sourceOpId,
+      ownerUidRef: parentRef.uidRef,
     };
   }
 
@@ -973,6 +1013,21 @@ function getDefaultChildRef(parentRef: CompiledNodeRef, subKey: string, childUse
   }
 
   return null;
+}
+
+function resolveRecordActionCreateTargetUidRef(parentRef: CompiledNodeRef, currentParent?: any) {
+  if (!RECORD_ACTION_INTERNAL_CONTAINER_USES.has(parentRef.use)) {
+    return parentRef.uidRef;
+  }
+
+  const ownerUidRef = parentRef.ownerUidRef ?? currentParent?.parentId;
+  if (ownerUidRef) {
+    return ownerUidRef;
+  }
+
+  throw new FlowSurfaceBadRequestError(
+    `flowSurfaces apply cannot resolve owning surface for record action container '${parentRef.use}'`,
+  );
 }
 
 function normalizeChildren(input: any): FlowSurfaceNodeSpec[] {
@@ -1257,9 +1312,17 @@ function nextOpId(state: CompilerState, prefix: string) {
 }
 
 function emitMoveTabOps(ops: FlowSurfaceMutateOp[], desiredRefs: CompiledNodeRef[]) {
+  emitOrderedTabMoves(ops, desiredRefs, 'moveTab');
+}
+
+function emitOrderedTabMoves(
+  ops: FlowSurfaceMutateOp[],
+  desiredRefs: CompiledNodeRef[],
+  type: 'moveTab' | 'movePopupTab',
+) {
   for (let index = desiredRefs.length - 2; index >= 0; index -= 1) {
     ops.push({
-      type: 'moveTab',
+      type,
       values: {
         sourceUid: desiredRefs[index].uidRef,
         targetUid: desiredRefs[index + 1].uidRef,
@@ -1274,4 +1337,94 @@ function bindClientKey(state: CompilerState, clientKey: string | undefined, uid:
     return;
   }
   state.clientKeyToUid[clientKey] = uid;
+}
+
+function syncPopupTabs(
+  ops: FlowSurfaceMutateOp[],
+  state: CompilerState,
+  popupPageRef: CompiledNodeRef,
+  currentTabs: FlowSurfaceNodeSpec[],
+  desiredTabs: FlowSurfaceNodeSpec[],
+): SyncChildrenResult {
+  const result: SyncChildrenResult = {
+    childClientKeyRefs: {},
+    finalItemRefs: [],
+    itemsChanged: false,
+    itemsSpecified: false,
+  };
+  const tabMatchPlan = planArrayChildMatches(currentTabs, desiredTabs, popupPageRef.use, 'tabs');
+  const desiredRefs: CompiledNodeRef[] = [];
+
+  for (const [desiredIndex, desiredTab] of desiredTabs.entries()) {
+    const currentMatch = tabMatchPlan.matchesByDesiredIndex.get(desiredIndex);
+    if (currentMatch) {
+      const currentRef = {
+        uidRef: currentMatch.uid,
+        use: currentMatch.use,
+      };
+      bindClientKey(state, desiredTab.clientKey, currentMatch.uid);
+      if (desiredTab.clientKey) {
+        result.childClientKeyRefs[desiredTab.clientKey] = currentRef.uidRef;
+      }
+      desiredRefs.push(currentRef);
+      syncTabNode(ops, state, { uid: currentMatch.uid }, currentMatch, desiredTab);
+      continue;
+    }
+
+    const createdRef = createPopupTabNode(ops, state, popupPageRef, desiredTab);
+    if (desiredTab.clientKey) {
+      result.childClientKeyRefs[desiredTab.clientKey] = createdRef.uidRef;
+    }
+    desiredRefs.push(createdRef);
+  }
+
+  for (const currentTab of currentTabs) {
+    if (!tabMatchPlan.matchedCurrentUids.has(currentTab.uid)) {
+      ops.push({
+        type: 'removePopupTab',
+        values: {
+          target: {
+            uid: currentTab.uid,
+          },
+        },
+      });
+    }
+  }
+
+  emitOrderedTabMoves(ops, desiredRefs, 'movePopupTab');
+  return result;
+}
+
+function createPopupTabNode(
+  ops: FlowSurfaceMutateOp[],
+  state: CompilerState,
+  popupPageRef: CompiledNodeRef,
+  desiredNode: FlowSurfaceNodeSpec,
+) {
+  const opId = nextOpId(state, 'addPopupTab');
+  ops.push({
+    opId,
+    type: 'addPopupTab',
+    values: {
+      target: {
+        uid: popupPageRef.uidRef,
+      },
+      ...(desiredNode.clientKey ? { clientKey: desiredNode.clientKey } : {}),
+      title:
+        desiredNode?.stepParams?.pageTabSettings?.tab?.title ||
+        desiredNode?.props?.title ||
+        desiredNode?.props?.route?.title ||
+        'Untitled',
+      icon: desiredNode?.stepParams?.pageTabSettings?.tab?.icon || desiredNode?.props?.icon,
+      documentTitle: desiredNode?.stepParams?.pageTabSettings?.tab?.documentTitle,
+      flowRegistry: desiredNode?.flowRegistry,
+    },
+  });
+  const ref: CompiledNodeRef = {
+    uidRef: { $ref: `${opId}.popupTabUid` },
+    use: 'ChildPageTabModel',
+    sourceOpId: opId,
+  };
+  syncCreatedNode(ops, state, ref, desiredNode);
+  return ref;
 }

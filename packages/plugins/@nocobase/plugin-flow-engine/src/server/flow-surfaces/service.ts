@@ -871,6 +871,8 @@ export class FlowSurfacesService {
     );
     return {
       popupPageUid: popupPage.uid,
+      popupTabUid: tree.uid,
+      popupGridUid: tree.subModels?.grid?.uid,
       tabUid: tree.uid,
       gridUid: tree.subModels?.grid?.uid,
     };
@@ -1787,6 +1789,18 @@ export class FlowSurfacesService {
       case 'removeTab':
         result = await this.removeTab(resolvedValues, options);
         break;
+      case 'addPopupTab':
+        result = await this.addPopupTab(resolvedValues, options);
+        break;
+      case 'updatePopupTab':
+        result = await this.updatePopupTab(resolvedValues, options);
+        break;
+      case 'movePopupTab':
+        result = await this.movePopupTab(resolvedValues, options);
+        break;
+      case 'removePopupTab':
+        result = await this.removePopupTab(resolvedValues, options);
+        break;
       case 'addBlock':
         result = await this.addBlock(resolvedValues, options);
         break;
@@ -1821,6 +1835,9 @@ export class FlowSurfacesService {
       ctx.clientKeyToUid[resolvedValues.clientKey] =
         result?.wrapperUid ||
         result?.uid ||
+        result?.popupTabUid ||
+        result?.popupGridUid ||
+        result?.popupPageUid ||
         result?.tabSchemaUid ||
         result?.fieldUid ||
         result?.gridUid ||

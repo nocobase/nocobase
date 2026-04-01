@@ -4034,8 +4034,8 @@ describe('flowSurfaces resource', () => {
     expect(actionsColumnUid).toBeTruthy();
 
     const tableJsAction = await addAction(rootAgent, tableUid, 'js');
-    const rowJsAction = await addAction(rootAgent, tableUid, 'js');
-    const detailsJsAction = await addAction(rootAgent, detailsUid, 'js');
+    const rowJsAction = await addRecordAction(rootAgent, tableUid, 'js');
+    const detailsJsAction = await addRecordAction(rootAgent, detailsUid, 'js');
     const formJsAction = await addAction(rootAgent, createFormUid, 'js');
     const filterJsAction = await addAction(rootAgent, filterFormUid, 'js');
     const panelJsAction = await addAction(rootAgent, actionPanelUid, 'js');
@@ -5275,7 +5275,7 @@ describe('flowSurfaces resource', () => {
             uid: page.gridUid,
           },
           type: 'markdown',
-          props: {
+          settings: {
             content: 'Alpha',
           },
         },
@@ -5289,7 +5289,7 @@ describe('flowSurfaces resource', () => {
             uid: page.gridUid,
           },
           type: 'markdown',
-          props: {
+          settings: {
             content: 'Beta',
           },
         },
@@ -5353,12 +5353,12 @@ describe('flowSurfaces resource', () => {
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
 
-    const firstPopup = await addAction(rootAgent, tableBlockUid, 'popup', {
+    const firstPopup = await addRecordAction(rootAgent, tableBlockUid, 'popup', {
       settings: {
         title: 'Popup A',
       },
     });
-    const secondPopup = await addAction(rootAgent, tableBlockUid, 'popup', {
+    const secondPopup = await addRecordAction(rootAgent, tableBlockUid, 'popup', {
       settings: {
         title: 'Popup B',
       },
@@ -5417,12 +5417,12 @@ describe('flowSurfaces resource', () => {
       (column: any) => column.use === 'TableActionsColumnModel',
     )?.uid;
 
-    await addAction(rootAgent, tableBlockUid, 'popup', {
+    await addRecordAction(rootAgent, tableBlockUid, 'popup', {
       settings: {
         title: 'Popup A',
       },
     });
-    await addAction(rootAgent, tableBlockUid, 'popup', {
+    await addRecordAction(rootAgent, tableBlockUid, 'popup', {
       settings: {
         title: 'Popup B',
       },
@@ -6063,12 +6063,8 @@ describe('flowSurfaces resource', () => {
             dataSourceKey: 'main',
             collectionName: 'employees',
           },
-          stepParams: {
-            tableSettings: {
-              dataScope: {
-                filter: {},
-              },
-            },
+          settings: {
+            dataScope: {},
           },
         },
       }),
