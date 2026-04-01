@@ -84,6 +84,10 @@ export class IdpOauthService {
   }
 
   private getRequestPath(ctx: any) {
+    if (typeof ctx?.req?.originalUrl === 'string') {
+      return ctx.req.originalUrl.split('?')[0];
+    }
+
     if (typeof ctx?.path === 'string') {
       return ctx.path;
     }

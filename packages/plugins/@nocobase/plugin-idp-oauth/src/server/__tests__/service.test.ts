@@ -57,6 +57,28 @@ describe('plugin-idp-oauth > IdpOauthService', () => {
     );
   });
 
+  test('should preserve sub app issuer path when original url uses __app prefix', () => {
+    const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
+
+    const providerContext = service.getProviderContext({
+      app: { name: 'subapp' },
+      path: '/api/mcp',
+      req: {
+        originalUrl: '/api/__app/subapp/mcp',
+        url: '/api/mcp',
+      },
+      protocol: 'https',
+      host: 'example.com',
+      headers: {},
+    });
+
+    expect(providerContext.issuerPath).toBe('/api/__app/subapp');
+    expect(providerContext.issuer).toBe('https://example.com/api/__app/subapp');
+  });
+
   test('getSupportedScopes should include resource server scopes without duplicates', () => {
     const service = new IdpOauthService({} as any, {} as any);
 
