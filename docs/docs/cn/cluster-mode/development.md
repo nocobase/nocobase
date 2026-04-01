@@ -1,4 +1,5 @@
 ---
+pkg: "@nocobase/preset-cluster"
 title: "集群模式插件开发"
 description: "集群模式下插件开发：Cache 缓存、SyncMessageManager 同步信号、PubSubManager 消息广播、Queue 队列、分布式锁，解决状态一致性、任务调度与竞争条件。"
 keywords: "集群插件开发,Cache 缓存,SyncMessageManager,PubSubManager,消息队列,分布式锁,状态同步,WORKER_MODE,NocoBase"

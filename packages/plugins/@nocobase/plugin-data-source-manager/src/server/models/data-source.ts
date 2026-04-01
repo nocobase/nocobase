@@ -38,7 +38,7 @@ const availableActions: {
   view: {
     displayName: '{{t("View")}}',
     type: 'old-data',
-    aliases: ['get', 'list'],
+    aliases: ['get', 'list', 'query'],
     allowConfigureFields: true,
   },
   update: {

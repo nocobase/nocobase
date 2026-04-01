@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-ai"
 title: "内置 AI 员工"
-description: "NocoBase 预置 AI 员工：Cole、Ellis、Dex、Viz、Lexi、Vera、Dara、Orin、Nathan 的角色定位与使用场景，含 Viz 洞察分析、Dex 数据整理、Orin 数据建模、Nathan 前端开发。"
-keywords: "内置 AI 员工,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
+description: "NocoBase 预置 AI 员工：Atlas、Cole、Ellis、Dex、Viz、Lexi、Vera、Dara、Orin、Nathan 的角色定位与使用场景，含  Atlas 团队领导、Viz 洞察分析、Dex 数据整理、Orin 数据建模、Nathan 前端开发。"
+keywords: "内置 AI 员工,Atlas,Cole,Dex,Viz,Ellis,Lexi,Vera,Dara,Orin,Nathan,NocoBase"
 ---
 
 # 内置 AI 员工
@@ -14,23 +14,41 @@ NocoBase 预置了多个针对特定场景的 AI 员工。
 
 ## 介绍
 
-![clipboard-image-1766653060](https://static-docs.nocobase.com/clipboard-image-1766653060.png)
+![20260331165935](https://static-docs.nocobase.com/20260331165935.png)
 
-| 员工名称 | 角色定位 | 核心能力 |
-| :--- | :--- | :--- |
-| **Cole** | NocoBase 助手 | 产品使用问答、文档检索 |
-| **Ellis** | 电子邮件专家 | 邮件撰写、摘要生成、回复建议 |
-| **Dex** | 数据整理专家 | 字段翻译、格式化、信息提取 |
-| **Viz** | 洞察分析师 | 数据洞察、趋势分析、关键指标解读 |
-| **Lexi** | 翻译助理 | 多语言翻译、沟通辅助 |
-| **Vera** | 研究分析师 | 联网搜索、信息汇总、深度研究 |
-| **Dara** | 数据可视化专家 | 图表配置、可视化报表生成 |
-| **Orin** | 数据建模专家 | 辅助设计数据表结构、字段建议 |
-| **Nathan** | 前端工程师 | 辅助编写前端代码片段、样式调整 |
+| 员工名称   | 角色定位       | 核心能力                                                       |
+| :--------- | :------------- | :------------------------------------------------------------- |
+| **Atlas**  | 团队领导       | 默认通用型 AI 员工，识别用户意图，自动分派合适 AI 员工处理问题 |
+| **Cole**   | NocoBase 助手  | 产品使用问答、文档检索                                         |
+| **Ellis**  | 电子邮件专家   | 邮件撰写、摘要生成、回复建议                                   |
+| **Dex**    | 数据整理专家   | 字段翻译、格式化、信息提取                                     |
+| **Viz**    | 洞察分析师     | 数据洞察、趋势分析、关键指标解读                               |
+| **Lexi**   | 翻译助理       | 多语言翻译、沟通辅助                                           |
+| **Vera**   | 研究分析师     | 联网搜索、信息汇总、深度研究                                   |
+| **Dara**   | 数据可视化专家 | 图表配置、可视化报表生成                                       |
+| **Orin**   | 数据建模专家   | 辅助设计数据表结构、字段建议                                   |
+| **Nathan** | 前端工程师     | 辅助编写前端代码片段、样式调整                                 |
 
 
-你可以在应用界面，点击右下角的 **AI 悬浮球**，选择你要的员工，即可开启协作。
+在应用界面点击右下角的 **AI 悬浮球**，即可进入 AI 会话并开始协作。
 
+如需切换其他 AI 员工，可在会话中通过 AI 员工下拉列表进行选择。
+
+## 默认 AI 员工 Atlas
+
+### 介绍
+
+> AI 员工默认入口，理解用户意图并统一分派合适的 AI 员工协助处理
+
+Atlas 是 NocoBase 内置的默认总入口 AI 员工。大多数情况下，直接与 Atlas 对话即可；他会结合上下文理解用户意图，并统一分派合适的 AI 员工协助处理当前问题。
+
+### 使用方式
+
+点击应用界面右下角的 **AI 悬浮球**，即可进入与 Atlas 的会话。
+
+在大多数场景下，直接描述你的需求即可，Atlas 会继续响应或协调合适的 AI 员工参与处理。
+
+![20260331172734](https://static-docs.nocobase.com/20260331172734.png)
 
 ## 专属场景 AI 员工
 

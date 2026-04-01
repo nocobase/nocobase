@@ -6,10 +6,11 @@ You only need to configure the LLM service and enable the corresponding employee
 
 ## Introduction
 
-![clipboard-image-1766653060](https://static-docs.nocobase.com/clipboard-image-1766653060.png)
+![20260331165935](https://static-docs.nocobase.com/20260331165935.png)
 
 | Employee Name | Role Positioning | Core Capabilities |
 | :--- | :--- | :--- |
+| **Atlas** | Team Leader | The default general-purpose AI employee that understands user intent and automatically routes the task to the appropriate AI employee |
 | **Cole** | NocoBase Assistant | Product Q&A, document retrieval |
 | **Ellis** | Email Expert | Email drafting, summary generation, reply suggestions |
 | **Dex** | Data Organizer | Field translation, formatting, information extraction |
@@ -20,7 +21,25 @@ You only need to configure the LLM service and enable the corresponding employee
 | **Orin** | Data Modeling Expert | Assist in designing collection structures, field suggestions |
 | **Nathan** | Frontend Engineer | Assist in writing frontend code snippets, style adjustments |
 
-You can click the **AI floating ball** in the bottom right corner of the application interface and select the employee you need to start collaborating.
+Click the **AI floating ball** in the bottom-right corner of the application interface to open an AI conversation and start collaborating.
+
+To switch to a different AI employee, use the AI employee dropdown in the conversation.
+
+## Default AI Employee Atlas
+
+### Introduction
+
+> The default entry point for AI employees, understanding user intent and coordinating the appropriate AI employee to help.
+
+Atlas is NocoBase's built-in default AI employee and the central entry point. In most cases, you can simply talk to Atlas directly. He understands your intent from the context and coordinates the most suitable AI employee to help with the current task.
+
+### Usage
+
+Click the **AI floating ball** in the bottom-right corner of the application interface to enter a conversation with Atlas.
+
+In most scenarios, you can simply describe what you need. Atlas will either continue responding directly or coordinate the appropriate AI employee to assist.
+
+![20260331172734](https://static-docs.nocobase.com/20260331172734.png)
 
 ## Dedicated Scenario AI Employees
 

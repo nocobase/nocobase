@@ -1,3 +1,9 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Despliegue en Kubernetes"
+description: "Despliegue de un clúster NocoBase en K8s o K3s: ConfigMap, Deployment, PVC compartido, middleware Redis o PostgreSQL, balanceo de carga y comprobaciones de estado."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,despliegue clúster,NocoBase"
+---
 
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.

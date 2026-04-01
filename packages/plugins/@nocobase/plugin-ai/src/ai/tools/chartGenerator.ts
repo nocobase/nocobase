@@ -14,6 +14,7 @@ import pkg from '../../../package.json';
 
 export default defineTools({
   scope: 'GENERAL',
+  defaultPermission: 'ALLOW',
   introduction: {
     title: `{{t("Chart generator", { ns: "${pkg.name}" })}}`,
     about: `{{t("Generates ECharts options (JSON) based on user input or data context.", { ns: "${pkg.name}" })}}`,

@@ -34,7 +34,12 @@ export type ToolsOptions = {
     description: string;
     schema?: any;
   };
-  invoke: (ctx: Context, args: any, id: string) => Promise<any>;
+  invoke: (ctx: Context, args: any, runtime: ToolsRuntime) => Promise<any>;
+};
+
+export type ToolsRuntime = {
+  toolCallId: string;
+  writer: (chunk: any) => void;
 };
 
 export type ToolsEntry = ToolsOptions;

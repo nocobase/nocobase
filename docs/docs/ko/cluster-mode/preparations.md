@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "클러스터 배포 사전 준비"
+description: "클러스터 배포 준비: 상용 플러그인 라이선스(PubSub·Queue·Lock·Worker ID 어댑터), 데이터베이스, Redis 또는 RabbitMQ 미들웨어, 공유 스토리지, 로드 밸런싱."
+keywords: "클러스터 준비,상용 라이선스,Redis,RabbitMQ,공유 스토리지,로드 밸런싱,Nginx,NocoBase"
+---
+
 :::tip
 이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
 :::

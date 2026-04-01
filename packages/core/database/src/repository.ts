@@ -42,6 +42,8 @@ import FilterParser from './filter-parser';
 import { Model } from './model';
 import operators from './operators';
 import { OptionsParser } from './options-parser';
+import { buildQuery, normalizeQueryResult } from './query/builder';
+import type { QueryOptions } from './query/types';
 import { BelongsToManyRepository } from './relation-repository/belongs-to-many-repository';
 import { BelongsToRepository } from './relation-repository/belongs-to-repository';
 import { HasManyRepository } from './relation-repository/hasmany-repository';
@@ -239,6 +241,7 @@ export interface AggregateOptions {
   filter?: Filter;
   distinct?: boolean;
 }
+export interface QueryOptionsWithTransaction extends QueryOptions, Transactionable {}
 
 export interface FirstOrCreateOptions extends Transactionable {
   filterKeys: string[];
@@ -386,6 +389,24 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       type: QueryTypes.SELECT,
     });
     return result?.['USER'] ?? '';
+  }
+
+  async query(options: QueryOptionsWithTransaction = {}): Promise<any[]> {
+    const transaction = await this.getTransaction(options);
+    const { queryOptions, fieldMap } = buildQuery(this.database, this.collection, options);
+    const finalQueryOptions: SequelizeFindOptions = {
+      ...queryOptions,
+      transaction,
+    };
+
+    if (Array.isArray(finalQueryOptions.include) && finalQueryOptions.include.length > 0) {
+      finalQueryOptions.include = processIncludes(finalQueryOptions.include, this.collection.model);
+    } else {
+      delete finalQueryOptions.include;
+    }
+
+    const data = await this.model.findAll(finalQueryOptions);
+    return normalizeQueryResult(data, fieldMap);
   }
 
   async aggregate(options: AggregateOptions & { optionsTransformer?: (options: any) => any }): Promise<any> {

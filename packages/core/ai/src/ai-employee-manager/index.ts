@@ -96,6 +96,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
             knowledgeBasePrompt: DEFAULT_KNOWLEDGE_BASE_PROMPT,
             enabled: true,
             builtIn: true,
+            sort: employee.sort,
           },
           { transaction },
         );
@@ -117,6 +118,7 @@ export class DefaultAIEmployeeManager implements AIEmployeeManager {
           skills: [...employee.skills],
           tools: [...mergedTools],
         },
+        sort: employee.sort,
       };
       await existed.update(values, { transaction });
     });

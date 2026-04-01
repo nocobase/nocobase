@@ -1,17 +1,17 @@
-FROM node:20-bookworm as builder
+FROM node:20-bookworm as app-builder
 ARG VERDACCIO_URL=http://host.docker.internal:10104/
-ARG COMMIT_HASH
 ARG APPEND_PRESET_LOCAL_PLUGINS
 ARG BEFORE_PACK_NOCOBASE="ls -l"
 ARG PLUGINS_DIRS
 
 ENV PLUGINS_DIRS=${PLUGINS_DIRS}
 
-RUN corepack enable pnpm && \
-  apt-get update && apt-get install -y jq expect
+RUN apt-get update && apt-get install -y jq expect
+
+SHELL ["/bin/bash", "-c"]
 
 RUN expect <<EOD
-spawn npm adduser --registry $VERDACCIO_URL
+spawn npm login --auth-type=legacy --registry $VERDACCIO_URL
 expect {
   "Username:" {send "test\r"; exp_continue}
   "Password:" {send "test\r"; exp_continue}
@@ -19,40 +19,24 @@ expect {
 }
 EOD
 
-WORKDIR /tmp
-COPY . /tmp
-
-SHELL ["/bin/bash", "-c"]
-
-RUN pnpm install && pnpm build --no-dts && \
-  CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
-  IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
-  if [ -z "$label" ]; then CURRENTVERSION="$CURRENTVERSION-rc"; fi && \
-  cd /tmp && \
-  NEWVERSION="$(echo $CURRENTVERSION).$(date +'%Y%m%d%H%M%S')" && \
-  git checkout -b release-$(date +'%Y%m%d%H%M%S') && \
-  pnpm lerna version ${NEWVERSION} -y --no-git-tag-version && \
-  git config user.email "test@mail.com"  && \
-  git config user.name "test" && git add .  && \
-  git commit -m "chore(versions): test publish packages" && \
-  pnpm nocobase client:extract && \
-  pnpm nocobase client:upload && \
-  pnpm release:force --registry $VERDACCIO_URL && \
-  npm config set registry $VERDACCIO_URL && \
+RUN yarn config set registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
-  pnpm dlx create-nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
+  yarn config set network-timeout 600000 -g && \
+  yarn create nocobase-app my-nocobase-app -a -e APP_ENV=production -e APPEND_PRESET_LOCAL_PLUGINS=$APPEND_PRESET_LOCAL_PLUGINS && \
   cd /app/my-nocobase-app && \
-  pnpm install --prod && \
-  pnpm add newrelic -w && \
-  cd /app/my-nocobase-app && \
+  yarn install --production && \
+  yarn add newrelic --production -W && \
   $BEFORE_PACK_NOCOBASE && \
-  cd /app && \
-  rm -rf my-nocobase-app/packages/app/client/src/.umi && \
-  rm -rf nocobase.tar.gz && \
-  tar -zcf ./nocobase.tar.gz -C /app/my-nocobase-app .
+  rm -rf /app/my-nocobase-app/packages/app/client/src/.umi && \
+  tar -zcf /nocobase.tar.gz -C /app/my-nocobase-app . && \
+  rm -rf /app/my-nocobase-app
 
-FROM node:20-bookworm-slim
+FROM scratch as app-artifact
+COPY --from=app-builder /nocobase.tar.gz /nocobase.tar.gz
+
+FROM node:20-bookworm-slim as runtime
+ARG COMMIT_HASH
 
 RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
   && rm -rf /var/lib/apt/lists/*
@@ -74,13 +58,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN rm -rf /etc/nginx/sites-enabled/default
 COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
-COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
-COPY --from=builder /tmp/docs/dist.tar.gz /app/nocobase-docs.tar.gz
+COPY nocobase.tar.gz /app/nocobase.tar.gz
+COPY dist.tar.gz /app/nocobase-docs.tar.gz
 
 WORKDIR /app/nocobase
 
-RUN mkdir -p /app/nocobase/storage/uploads/ && echo "$COMMIT_HASH" >> /app/nocobase/storage/uploads/COMMIT_HASH
+RUN mkdir -p /app/nocobase/storage/uploads/ && \
+  echo "$COMMIT_HASH" > /app/nocobase/storage/uploads/COMMIT_HASH && \
+  echo "$COMMIT_HASH" > /app/commit_hash.txt
 
 COPY ./docker/nocobase/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
 
 CMD ["/app/docker-entrypoint.sh"]

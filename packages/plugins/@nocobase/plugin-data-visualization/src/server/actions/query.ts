@@ -8,14 +8,12 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
-import { BelongsToArrayAssociation, Field, FilterParser } from '@nocobase/database';
 import compose from 'koa-compose';
 import { Cache } from '@nocobase/cache';
+import { NoPermissionError } from '@nocobase/acl';
+import { applyQueryPermission } from '@nocobase/plugin-acl';
 import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
-import { createQueryParser } from '../query-parser';
-import { assign } from '@nocobase/utils';
-import { checkFilterParams, NoPermissionError } from '@nocobase/acl';
 import { resolveVariablesTemplate } from '@nocobase/plugin-flow-engine';
 
 const getDB = (ctx: Context, dataSource: string) => {
@@ -23,194 +21,44 @@ const getDB = (ctx: Context, dataSource: string) => {
   return ds?.collectionManager.db;
 };
 
-const getChartQueryPermission = async (ctx: Context, collection: string, acl: any) => {
-  const actionCtx: any = {
-    app: ctx.app,
-    db: ctx.db,
-    database: ctx.database ?? ctx.db,
-    getCurrentRepository: ctx.getCurrentRepository,
-    request: ctx.request,
-    req: ctx.req,
-    action: {
-      actionName: 'list',
-      name: 'list',
-      params: {},
-      resourceName: collection,
-      mergeParams() {},
-    },
-    state: {
-      ...ctx.state,
-      currentRole: ctx.state.currentRole,
-      currentRoles: ctx.state.currentRoles,
-      currentUser: ctx.state.currentUser?.toJSON ? ctx.state.currentUser.toJSON() : ctx.state.currentUser,
-    },
-    permission: {},
-    throw(...args) {
-      ctx.throw(...args);
-    },
-  };
+const getTimezone = (ctx: Context) =>
+  ctx?.request?.get?.('x-timezone') ?? ctx?.request?.header?.['x-timezone'] ?? ctx?.req?.headers?.['x-timezone'];
 
-  await acl.getActionParams(actionCtx);
+export const checkPermission = async (ctx: Context, next: Next) => {
+  const values = ctx.action.params.values || {};
+  const acl = ctx.app.dataSourceManager.get(values.dataSource)?.acl || ctx.app.acl;
 
-  return actionCtx.permission;
-};
-
-export const postProcess = async (ctx: Context, next: Next) => {
-  const { data, fieldMap } = ctx.action.params.values as {
-    data: any[];
-    fieldMap: { [source: string]: { type?: string } };
-  };
-  ctx.body = data.map((record) => {
-    Object.entries(record).forEach(([key, value]) => {
-      if (!value) {
-        return;
-      }
-      const { type } = fieldMap[key] || {};
-      switch (type) {
-        case 'bigInt':
-        case 'integer':
-        case 'float':
-        case 'double':
-        case 'decimal':
-          record[key] = Number(value);
-          break;
-      }
+  try {
+    const result = await applyQueryPermission({
+      acl,
+      db: getDB(ctx, values.dataSource) || ctx.db,
+      resourceName: values.collection,
+      query: values,
+      currentUser: ctx.state?.currentUser,
+      currentRole: ctx.state?.currentRole,
+      currentRoles: ctx.state?.currentRoles,
+      timezone: getTimezone(ctx) as string,
+      state: ctx.state,
     });
-    return record;
-  });
+    ctx.action.params.values = result.query;
+  } catch (err) {
+    if (!(err instanceof NoPermissionError)) {
+      throw err;
+    }
+    ctx.throw(403, 'No permissions');
+  }
+
   await next();
 };
 
 export const queryData = async (ctx: Context, next: Next) => {
-  const { dataSource, collection, queryParams, fieldMap } = ctx.action.params.values;
+  const { dataSource, collection, ...queryOptions } = ctx.action.params.values;
   const db = getDB(ctx, dataSource) || ctx.db;
-  const model = db.getModel(collection);
-  const data = await model.findAll(queryParams);
-  ctx.action.params.values = {
-    data,
-    fieldMap,
-  };
-  await next();
-  // if (!sql) {
-  //   return await repository.find(parseBuilder(ctx, { collection, measures, dimensions, orders, filter, limit }));
-  // }
-
-  // const statement = `SELECT ${sql.fields} FROM ${collection} ${sql.clauses}`;
-  // const [data] = await ctx.db.sequelize.query(statement);
-  // return data;
-};
-
-export const parseFieldAndAssociations = async (ctx: Context, next: Next) => {
-  const {
-    dataSource,
-    collection: collectionName,
-    measures,
-    dimensions,
-    orders,
-    filter,
-  } = ctx.action.params.values as QueryParams;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const collection = db.getCollection(collectionName);
-  const fields = collection.fields;
-  const associations = collection.model.associations;
-  const models: {
-    [target: string]: {
-      type: string;
-    };
-  } = {};
-  const parseField = (selected: { field: string | string[]; alias?: string }) => {
-    let target: string;
-    let name: string;
-    if (!Array.isArray(selected.field)) {
-      name = selected.field;
-    } else if (selected.field.length === 1) {
-      name = selected.field[0];
-    } else if (selected.field.length > 1) {
-      [target, name] = selected.field;
-    }
-    const rawAttributes = collection.model.getAttributes();
-    let field = rawAttributes[name]?.field || name;
-    let fieldType = fields.get(name)?.type;
-    let fieldOptions = fields.get(name)?.options;
-    if (target) {
-      const targetField = fields.get(target) as Field;
-      const targetCollection = db.getCollection(targetField.target);
-      const targetFields = targetCollection.fields;
-      fieldType = targetFields.get(name)?.type;
-      fieldOptions = targetFields.get(name)?.options;
-      field = `${target}.${field}`;
-      name = `${target}.${name}`;
-      const targetType = fields.get(target)?.type;
-      if (!models[target]) {
-        models[target] = { type: targetType };
-      }
-    } else {
-      field = `${collectionName}.${field}`;
-    }
-    return {
-      ...selected,
-      field,
-      name,
-      type: fieldType,
-      options: fieldOptions,
-      alias: selected.alias || name,
-    };
-  };
-
-  const parsedMeasures = measures?.map(parseField) || [];
-  const parsedDimensions = dimensions?.map(parseField) || [];
-  const parsedOrders = orders?.map(parseField) || [];
-  const include = Object.entries(models).map(([target, { type }]) => {
-    let options = {
-      association: target,
-      attributes: [],
-    };
-    if (type === 'belongsToMany') {
-      options['through'] = { attributes: [] };
-    }
-    if (type === 'belongsToArray') {
-      const association = associations[target] as BelongsToArrayAssociation;
-      if (association) {
-        options = {
-          ...options,
-          ...association.generateInclude(),
-        };
-      }
-    }
-    return options;
+  const repository = db.getRepository(collection);
+  ctx.body = await repository.query({
+    ...queryOptions,
+    timezone: ctx.get?.('x-timezone'),
   });
-
-  const filterParser = new FilterParser(filter, {
-    collection,
-  });
-  const { where, include: filterInclude } = filterParser.toSequelizeParams();
-  if (filterInclude) {
-    // Remove attributes from through table
-    const stack = [...filterInclude];
-    while (stack.length) {
-      const item = stack.pop();
-
-      const parentCollection = db.getCollection(item.parentCollection || collectionName);
-      const field = parentCollection.fields.get(item.association);
-      if (field?.type === 'belongsToMany') {
-        item.through = { attributes: [] };
-      }
-      if (field?.target && item.include?.length) {
-        for (const child of item.include) {
-          child.parentCollection = field.target;
-          stack.push(child);
-        }
-      }
-    }
-  }
-  ctx.action.params.values = {
-    ...ctx.action.params.values,
-    where,
-    measures: parsedMeasures,
-    dimensions: parsedDimensions,
-    orders: parsedOrders,
-    include: [...include, ...(filterInclude || [])],
-  };
   await next();
 };
 
@@ -250,45 +98,9 @@ export const cacheMiddleware = async (ctx: Context, next: Next) => {
   }
 };
 
-export const checkPermission = async (ctx: Context, next: Next) => {
-  const { collection, dataSource } = ctx.action.params.values as QueryParams;
-  const acl = ctx.app.dataSourceManager.get(dataSource)?.acl || ctx.app.acl;
-  const permission = await getChartQueryPermission(ctx, collection, acl);
-  const filterParams = permission?.parsedParams?.filter;
-
-  if (filterParams) {
-    try {
-      checkFilterParams(ctx.database.getCollection(collection), filterParams);
-    } catch (e) {
-      if (e instanceof NoPermissionError) {
-        ctx.throw(403, 'No permissions');
-      }
-    }
-    const filter = ctx.action.params.values.filter || {};
-    ctx.action.params.values = {
-      ...ctx.action.params.values,
-      filter: assign(filter, filterParams, {
-        filter: 'andMerge',
-      }),
-    };
-  }
-  return next();
-};
-
-export const query = async (ctx: Context, next: Next) => {
-  const { dataSource } = ctx.action.params.values as QueryParams;
-  const db = getDB(ctx, dataSource) || ctx.db;
-  const queryParser = createQueryParser(db);
+export const queryDataAction = async (ctx: Context, next: Next) => {
   try {
-    await compose([
-      checkPermission,
-      cacheMiddleware,
-      parseVariables,
-      parseFieldAndAssociations,
-      queryParser.parse(),
-      queryData,
-      postProcess,
-    ])(ctx, next);
+    await compose([checkPermission, cacheMiddleware, parseVariables, queryData])(ctx, next);
   } catch (err) {
     ctx.throw(500, err);
   }

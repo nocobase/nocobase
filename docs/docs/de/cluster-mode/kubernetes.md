@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Kubernetes-Bereitstellung"
+description: "Bereitstellung eines NocoBase-Clusters auf K8s oder K3s: ConfigMap, Deployment, gemeinsames PVC, Redis- oder PostgreSQL-Middleware, Lastverteilung und Health Checks."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,Cluster-Bereitstellung,NocoBase"
+---
+
 # Kubernetes-Bereitstellung
 
 Dieser Artikel führt Sie durch die schnelle Bereitstellung von NocoBase im Cluster-Modus in einer Kubernetes-Umgebung. Wir gehen davon aus, dass Sie mit der Kubernetes-Umgebung vertraut sind und die Schritte in den [Vorbereitungen](./preparations.md) bereits abgeschlossen haben.
