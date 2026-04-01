@@ -122,13 +122,13 @@ describe('sanitizeJsonSchemaForOpenAITools', () => {
         name: 'PostCollectionsFields_destroy',
         pathTemplate: '/collections/{filterByTk}/fields:destroy',
       }),
-    ).toBe('CollectionsFieldsDestroy');
+    ).toBe('collections_fields_destroy');
 
     expect(
       normalizeMcpToolName({
         name: 'GetCollections_listMeta',
         pathTemplate: '/collections:listMeta',
       }),
-    ).toBe('CollectionsListMeta');
+    ).toBe('collections_list_meta');
   });
 });
