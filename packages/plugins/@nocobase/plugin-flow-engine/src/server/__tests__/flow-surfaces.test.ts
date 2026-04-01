@@ -1364,6 +1364,46 @@ describe('flowSurfaces resource', () => {
     expect(detailsCatalog.settingsContract?.stepParams?.groups?.detailsSettings?.allowedPaths).not.toContain(
       'linkageRules.*',
     );
+    expect(detailsCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplaySubTableFieldModel',
+    });
+
+    const listUid = await addBlock(rootAgent, page.tabSchemaUid, 'list', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const listCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: listUid,
+          },
+        },
+      }),
+    );
+    expect(listCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplaySubTableFieldModel',
+    });
+
+    const gridCardUid = await addBlock(rootAgent, page.tabSchemaUid, 'gridCard', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const gridCardCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: gridCardUid,
+          },
+        },
+      }),
+    );
+    expect(gridCardCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
+      use: 'DetailsItemModel',
+      fieldUse: 'DisplaySubTableFieldModel',
+    });
 
     const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
       dataSourceKey: 'main',

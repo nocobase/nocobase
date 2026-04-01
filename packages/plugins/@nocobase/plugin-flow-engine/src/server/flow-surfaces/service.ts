@@ -34,6 +34,11 @@ import { compileApplySpec } from './compiler';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import { FlowSurfaceBadRequestError } from './errors';
 import { executeMutateOps } from './executor';
+import {
+  MULTI_VALUE_ASSOCIATION_INTERFACES,
+  normalizeFieldContainerKind,
+  shouldUseAssociationTitleTextDisplay,
+} from './field-semantics';
 import { SurfaceLocator } from './locator';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
@@ -147,7 +152,6 @@ const POPUP_ACTION_USES = new Set([
 ]);
 const DELETE_ACTION_USES = new Set(['DeleteActionModel', 'BulkDeleteActionModel']);
 const CONFIRMABLE_SUBMIT_ACTION_USES = new Set(['FormSubmitActionModel']);
-const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
 
 type FlowSurfaceAddFieldResult = {
   uid?: string;
@@ -4298,9 +4302,11 @@ export class FlowSurfacesService {
     field: any;
   }) {
     if (
-      normalizeFieldContainerKind(input.containerUse) !== 'table' ||
-      input.associationPathName ||
-      !MULTI_VALUE_ASSOCIATION_INTERFACES.has(getFieldInterface(input.field) || '')
+      !shouldUseAssociationTitleTextDisplay({
+        containerUse: input.containerUse,
+        associationPathName: input.associationPathName,
+        fieldInterface: getFieldInterface(input.field) || '',
+      })
     ) {
       return input.field;
     }
@@ -4517,10 +4523,11 @@ export class FlowSurfacesService {
       };
     }
 
-    const shouldDefaultToAssociationTitleField =
-      input.wrapperUse === 'TableColumnModel' &&
-      !parsed.associationPathName &&
-      MULTI_VALUE_ASSOCIATION_INTERFACES.has(getFieldInterface(leafField) || '');
+    const shouldDefaultToAssociationTitleField = shouldUseAssociationTitleTextDisplay({
+      containerUse: input.wrapperUse,
+      associationPathName: parsed.associationPathName,
+      fieldInterface: getFieldInterface(leafField) || '',
+    });
     if (shouldDefaultToAssociationTitleField) {
       return {
         dataSourceKey: parsed.dataSourceKey,
@@ -5171,43 +5178,6 @@ function getFieldBindingDefaultProps(containerUse: string, fieldUse: string, fie
   }
 
   return defaults;
-}
-
-function normalizeFieldContainerKind(containerUse?: string) {
-  const normalized = String(containerUse || '').trim();
-  if (
-    [
-      'FormBlockModel',
-      'CreateFormModel',
-      'EditFormModel',
-      'FormGridModel',
-      'FormItemModel',
-      'AssignFormModel',
-      'AssignFormGridModel',
-    ].includes(normalized)
-  ) {
-    return 'form';
-  }
-  if (
-    [
-      'DetailsBlockModel',
-      'DetailsGridModel',
-      'DetailsItemModel',
-      'ListBlockModel',
-      'GridCardBlockModel',
-      'ListItemModel',
-      'GridCardItemModel',
-    ].includes(normalized)
-  ) {
-    return 'details';
-  }
-  if (['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel'].includes(normalized)) {
-    return 'filter-form';
-  }
-  if (['TableBlockModel', 'TableColumnModel'].includes(normalized)) {
-    return 'table';
-  }
-  return null;
 }
 
 function normalizeFieldPath(fieldPath: string, associationPathName?: string) {

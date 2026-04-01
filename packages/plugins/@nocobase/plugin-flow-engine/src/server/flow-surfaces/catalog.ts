@@ -32,6 +32,7 @@ import {
   TABLE_ROW_ACTION_CONTAINER_USES,
 } from './action-scope';
 import { FlowSurfaceBadRequestError } from './errors';
+import { normalizeFieldContainerKind, shouldUseAssociationTitleTextDisplay } from './field-semantics';
 import { FLOW_SURFACE_BLOCK_SUPPORT_MATRIX } from './support-matrix';
 
 const ANY_VALUE_SCHEMA = {};
@@ -260,26 +261,6 @@ const TABLE_SETTINGS_GROUP = {
     'dragSortBy.dragSortBy': STRING_SCHEMA,
   },
 };
-const FORM_FIELD_CONTAINER_USES = new Set([
-  'FormBlockModel',
-  'CreateFormModel',
-  'EditFormModel',
-  'FormGridModel',
-  'FormItemModel',
-  'AssignFormModel',
-  'AssignFormGridModel',
-]);
-const DETAILS_FIELD_CONTAINER_USES = new Set([
-  'DetailsBlockModel',
-  'DetailsGridModel',
-  'DetailsItemModel',
-  'ListBlockModel',
-  'GridCardBlockModel',
-  'ListItemModel',
-  'GridCardItemModel',
-]);
-const FILTER_FIELD_CONTAINER_USES = new Set(['FilterFormBlockModel', 'FilterFormGridModel', 'FilterFormItemModel']);
-const TABLE_FIELD_CONTAINER_USES = new Set(['TableBlockModel', 'TableColumnModel']);
 type FlowSurfaceActionRegistryItem = {
   publicKey: string;
   label: string;
@@ -1884,20 +1865,7 @@ function makeCatalogItem(
 }
 
 function normalizeFieldContainerUse(containerUse?: string) {
-  const normalized = String(containerUse || '').trim();
-  if (FORM_FIELD_CONTAINER_USES.has(normalized)) {
-    return 'form';
-  }
-  if (DETAILS_FIELD_CONTAINER_USES.has(normalized)) {
-    return 'details';
-  }
-  if (FILTER_FIELD_CONTAINER_USES.has(normalized)) {
-    return 'filter-form';
-  }
-  if (TABLE_FIELD_CONTAINER_USES.has(normalized)) {
-    return 'table';
-  }
-  return null;
+  return normalizeFieldContainerKind(containerUse);
 }
 
 function getFieldWrapperUseForContainer(containerUse?: string) {
@@ -1914,8 +1882,6 @@ function getFieldWrapperUseForContainer(containerUse?: string) {
       return null;
   }
 }
-
-const MULTI_VALUE_ASSOCIATION_INTERFACES = new Set(['m2m', 'o2m', 'mbm']);
 
 function inferEditableFieldUse(fieldInterface: string) {
   if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(fieldInterface)) {
@@ -2055,7 +2021,12 @@ function inferFieldUseByContainer(containerUse: string, field: any) {
     case 'details':
       return inferDisplayFieldUse(fieldInterface);
     case 'table':
-      if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+      if (
+        shouldUseAssociationTitleTextDisplay({
+          containerUse,
+          fieldInterface,
+        })
+      ) {
         return 'DisplayTextFieldModel';
       }
       return inferDisplayFieldUse(fieldInterface);
