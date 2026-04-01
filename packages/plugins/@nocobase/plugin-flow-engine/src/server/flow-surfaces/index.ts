@@ -100,6 +100,26 @@ export function registerFlowSurfacesResource(plugin: Plugin) {
         service.transaction((transaction) => service.removeTab(getValues(ctx), { transaction })),
       );
     },
+    addPopupTab: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.addPopupTab(getValues(ctx), { transaction })),
+      );
+    },
+    updatePopupTab: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.updatePopupTab(getValues(ctx), { transaction })),
+      );
+    },
+    movePopupTab: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.movePopupTab(getValues(ctx), { transaction })),
+      );
+    },
+    removePopupTab: async (ctx, next) => {
+      await runFlowSurfaceAction(ctx, next, () =>
+        service.transaction((transaction) => service.removePopupTab(getValues(ctx), { transaction })),
+      );
+    },
     addBlock: async (ctx, next) => {
       await runFlowSurfaceAction(ctx, next, () =>
         service.transaction((transaction) => service.addBlock(getValues(ctx), { transaction })),

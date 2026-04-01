@@ -346,6 +346,186 @@ describe('flowSurfaces resource', () => {
     ).toBeNull();
   });
 
+  it('should manage popup child tabs through popup tab APIs and recover from empty popup tabs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup tabs page',
+      tabTitle: 'Popup tabs tab',
+    });
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const popupAction = await addRecordAction(rootAgent, tableUid, 'view', {
+      popup: {
+        mode: 'replace',
+        blocks: [
+          {
+            key: 'details',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: ['nickname'],
+          },
+        ],
+      },
+    });
+
+    expect(popupAction.popupPageUid).toBeTruthy();
+    expect(popupAction.popupTabUid).toBeTruthy();
+    expect(popupAction.popupGridUid).toBeTruthy();
+
+    const popupHostBefore = await getSurface(rootAgent, {
+      uid: popupAction.uid,
+    });
+    const popupPageUid = popupHostBefore.tree.subModels?.page?.uid;
+    const primaryPopupTabUid = _.castArray(popupHostBefore.tree.subModels?.page?.subModels?.tabs || [])[0]?.uid;
+    expect(popupPageUid).toBe(popupAction.popupPageUid);
+    expect(primaryPopupTabUid).toBe(popupAction.popupTabUid);
+
+    const addedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').addPopupTab({
+        values: {
+          target: {
+            uid: popupPageUid,
+          },
+          title: 'Secondary popup tab',
+          icon: 'TableOutlined',
+          documentTitle: 'Secondary popup browser title',
+        },
+      }),
+    );
+    expect(addedPopupTab.popupPageUid).toBe(popupPageUid);
+    expect(addedPopupTab.tabUid).toBeTruthy();
+    expect(addedPopupTab.gridUid).toBeTruthy();
+
+    const popupPageAfterAdd = await getSurface(rootAgent, {
+      uid: popupPageUid,
+    });
+    expect(popupPageAfterAdd.tree.use).toBe('ChildPageModel');
+    expect(_.castArray(popupPageAfterAdd.tree.subModels?.tabs || [])).toHaveLength(2);
+
+    const updatedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').updatePopupTab({
+        values: {
+          target: {
+            uid: addedPopupTab.tabUid,
+          },
+          title: 'Secondary popup tab updated',
+          icon: 'AppstoreOutlined',
+          documentTitle: 'Updated popup browser title',
+          flowRegistry: {
+            popupTabBeforeRender: {
+              key: 'popupTabBeforeRender',
+              on: 'beforeRender',
+              steps: {},
+            },
+          },
+        },
+      }),
+    );
+    expect(updatedPopupTab).toMatchObject({
+      uid: addedPopupTab.tabUid,
+      title: 'Secondary popup tab updated',
+      icon: 'AppstoreOutlined',
+    });
+
+    const popupTabReadback = await getSurface(rootAgent, {
+      uid: addedPopupTab.tabUid,
+    });
+    expect(popupTabReadback.tree.use).toBe('ChildPageTabModel');
+    expect(popupTabReadback.tree.props).toMatchObject({
+      title: 'Secondary popup tab updated',
+      icon: 'AppstoreOutlined',
+    });
+    expect(popupTabReadback.tree.stepParams?.pageTabSettings?.tab).toMatchObject({
+      title: 'Secondary popup tab updated',
+      icon: 'AppstoreOutlined',
+      documentTitle: 'Updated popup browser title',
+    });
+    expect(popupTabReadback.tree.flowRegistry).toMatchObject({
+      popupTabBeforeRender: {
+        key: 'popupTabBeforeRender',
+      },
+    });
+
+    const movePopupTabRes = await rootAgent.resource('flowSurfaces').movePopupTab({
+      values: {
+        sourceUid: addedPopupTab.tabUid,
+        targetUid: primaryPopupTabUid,
+        position: 'before',
+      },
+    });
+    expect(movePopupTabRes.status).toBe(200);
+
+    const popupPageAfterMove = await getSurface(rootAgent, {
+      uid: popupPageUid,
+    });
+    expect(_.castArray(popupPageAfterMove.tree.subModels?.tabs || []).map((item: any) => item.uid)).toEqual([
+      addedPopupTab.tabUid,
+      primaryPopupTabUid,
+    ]);
+
+    const removeMovedTabRes = await rootAgent.resource('flowSurfaces').removePopupTab({
+      values: {
+        target: {
+          uid: addedPopupTab.tabUid,
+        },
+      },
+    });
+    expect(removeMovedTabRes.status).toBe(200);
+
+    const removeLastTabRes = await rootAgent.resource('flowSurfaces').removePopupTab({
+      values: {
+        target: {
+          uid: primaryPopupTabUid,
+        },
+      },
+    });
+    expect(removeLastTabRes.status).toBe(200);
+
+    const popupPageAfterRemoveAll = await getSurface(rootAgent, {
+      uid: popupPageUid,
+    });
+    expect(popupPageAfterRemoveAll.tree.use).toBe('ChildPageModel');
+    expect(_.castArray(popupPageAfterRemoveAll.tree.subModels?.tabs || [])).toHaveLength(0);
+
+    const recoveredPopupBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: popupAction.uid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Recovered popup body',
+          },
+        },
+      }),
+    );
+    expect(recoveredPopupBlock.popupPageUid).toBe(popupPageUid);
+    expect(recoveredPopupBlock.popupTabUid).toBeTruthy();
+    expect(recoveredPopupBlock.popupGridUid).toBeTruthy();
+
+    const popupHostAfterRecovery = await getSurface(rootAgent, {
+      uid: popupAction.uid,
+    });
+    const recoveredPopupPage = popupHostAfterRecovery.tree.subModels?.page;
+    const recoveredTabs = _.castArray(recoveredPopupPage?.subModels?.tabs || []);
+    const recoveredGridItems = _.castArray(recoveredTabs[0]?.subModels?.grid?.subModels?.items || []);
+    expect(recoveredPopupPage?.uid).toBe(popupPageUid);
+    expect(recoveredTabs).toHaveLength(1);
+    expect(recoveredTabs[0]?.uid).toBe(recoveredPopupBlock.popupTabUid);
+    expect(recoveredGridItems).toHaveLength(1);
+    expect(recoveredGridItems[0]).toMatchObject({
+      use: 'MarkdownBlockModel',
+      props: {
+        content: 'Recovered popup body',
+      },
+    });
+  });
+
   it('should sync page settings updates back to desktop route state', async () => {
     const created = await createPage(rootAgent, {
       title: 'Settings page',

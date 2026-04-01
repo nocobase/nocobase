@@ -615,6 +615,39 @@ const examples = {
       },
     },
   },
+  addPopupTab: {
+    target: {
+      uid: 'view-action-popup-page-uid',
+    },
+    title: 'Popup details',
+    icon: 'TableOutlined',
+    documentTitle: 'Popup details tab',
+  },
+  updatePopupTab: {
+    target: {
+      uid: 'popup-secondary-tab-uid',
+    },
+    title: 'Popup details updated',
+    icon: 'AppstoreOutlined',
+    documentTitle: 'Popup details updated tab',
+    flowRegistry: {
+      beforeRenderApply: {
+        key: 'beforeRenderApply',
+        on: 'beforeRender',
+        steps: {},
+      },
+    },
+  },
+  movePopupTab: {
+    sourceUid: 'popup-secondary-tab-uid',
+    targetUid: 'popup-primary-tab-uid',
+    position: 'before',
+  },
+  removePopupTab: {
+    target: {
+      uid: 'popup-secondary-tab-uid',
+    },
+  },
   addBlock: {
     target: {
       uid: 'roles-field-uid',
@@ -1223,6 +1256,42 @@ const actionDocs: Record<string, any> = {
       uid: 'details-tab',
     }),
     responses: responses('FlowSurfaceRemoveTabResult'),
+  },
+  addPopupTab: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Add a popup child tab under an existing popup page',
+    description: valuesCompatibilityNote(
+      '在已有 popup page(`ChildPageModel`) 下新增一个持久化 child tab subtree，只操作 `ChildPageModel / ChildPageTabModel`，不读写 `desktopRoutes`，也不会自动补建 popup page。',
+    ),
+    requestBody: requestBody('FlowSurfaceAddPopupTabRequest', examples.addPopupTab),
+    responses: responses('FlowSurfaceAddPopupTabResult'),
+  },
+  updatePopupTab: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Update popup child tab title, icon, document title and flow registry',
+    description: valuesCompatibilityNote(
+      '修改 popup child tab(`ChildPageTabModel`) 自身的 props / stepParams / flowRegistry，不涉及 route-backed tab 语义。',
+    ),
+    requestBody: requestBody('FlowSurfaceUpdatePopupTabRequest', examples.updatePopupTab),
+    responses: responses('FlowSurfaceUpdatePopupTabResult'),
+  },
+  movePopupTab: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Reorder sibling popup child tabs under the same popup page',
+    description: valuesCompatibilityNote(
+      '调整同一个 popup page 下 `subModels.tabs` 的顺序。只接受根级 `sourceUid` / `targetUid`，且两者都必须是 sibling popup tab uid。',
+    ),
+    requestBody: requestBody('FlowSurfaceMovePopupTabRequest', examples.movePopupTab),
+    responses: responses('FlowSurfaceMovePopupTabResult'),
+  },
+  removePopupTab: {
+    tags: [FLOW_SURFACES_TAG],
+    summary: 'Remove a popup child tab subtree',
+    description: valuesCompatibilityNote(
+      '删除指定 popup child tab subtree。允许删到 0 个 tab；这轮不提供 `removePopup`，也不要求 popup page 至少保留一个 tab。',
+    ),
+    requestBody: requestBody('FlowSurfaceRemovePopupTabRequest', examples.removePopupTab),
+    responses: responses('FlowSurfaceRemovePopupTabResult'),
   },
   addBlock: {
     tags: [FLOW_SURFACES_TAG],
@@ -2659,6 +2728,122 @@ const schemas = {
     additionalProperties: false,
   },
   FlowSurfaceRemoveTabResult: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddPopupTabRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      title: {
+        type: 'string',
+      },
+      icon: {
+        type: 'string',
+      },
+      documentTitle: {
+        type: 'string',
+      },
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceAddPopupTabResult: {
+    type: 'object',
+    properties: {
+      popupPageUid: {
+        type: 'string',
+      },
+      tabUid: {
+        type: 'string',
+      },
+      gridUid: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceUpdatePopupTabRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+      title: {
+        type: 'string',
+      },
+      icon: {
+        type: 'string',
+      },
+      documentTitle: {
+        type: 'string',
+      },
+      flowRegistry: ANY_OBJECT_SCHEMA,
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceUpdatePopupTabResult: {
+    type: 'object',
+    properties: {
+      uid: {
+        type: 'string',
+      },
+      title: {
+        type: 'string',
+      },
+      icon: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMovePopupTabRequest: {
+    type: 'object',
+    required: ['sourceUid', 'targetUid'],
+    properties: {
+      sourceUid: {
+        type: 'string',
+      },
+      targetUid: {
+        type: 'string',
+      },
+      position: {
+        type: 'string',
+        enum: ['before', 'after'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceMovePopupTabResult: {
+    type: 'object',
+    properties: {
+      sourceUid: {
+        type: 'string',
+      },
+      targetUid: {
+        type: 'string',
+      },
+      position: {
+        type: 'string',
+        enum: ['before', 'after'],
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRemovePopupTabRequest: {
+    type: 'object',
+    required: ['target'],
+    properties: {
+      target: ref('FlowSurfaceWriteTarget'),
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceRemovePopupTabResult: {
     type: 'object',
     properties: {
       uid: {

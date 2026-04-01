@@ -261,7 +261,7 @@ export class FlowSurfacesService {
   async get(input: Record<string, any>, options: { transaction?: any } = {}) {
     const target = this.normalizeGetTarget(input);
     const resolved = await this.locator.resolve(target, options);
-    const node = await this.loadResolvedNode(resolved, options.transaction);
+    const node = this.normalizePopupTreeShape(await this.loadResolvedNode(resolved, options.transaction));
     const nodeMap = flattenModel(node);
     const result: Record<string, any> = {
       target: this.buildReadTargetSummary(target, resolved),
@@ -646,7 +646,7 @@ export class FlowSurfacesService {
   async destroyPage(values: Record<string, any>, options: { transaction?: any } = {}) {
     const uid = this.normalizeRootUidValue('destroyPage', values);
     const resolved = await this.locator.resolve({ uid }, options);
-    const { pageSchemaUid } = await this.assertPageRootUidTarget('destroyPage', resolved, options.transaction);
+    const { pageSchemaUid } = await this.assertRouteBackedPageUidTarget('destroyPage', resolved, options.transaction);
     const pageRoute = await this.db.getRepository('desktopRoutes').findOne({
       filter: {
         schemaUid: pageSchemaUid,
@@ -681,7 +681,7 @@ export class FlowSurfacesService {
 
   async addTab(values: Record<string, any>, options: { transaction?: any } = {}) {
     const pageTarget = await this.locator.resolve(this.normalizeWriteTarget('addTab', values?.target, values), options);
-    await this.assertPageRootUidTarget('addTab', pageTarget, options.transaction);
+    await this.assertRouteBackedPageUidTarget('addTab', pageTarget, options.transaction);
     const pageRoute = pageTarget.pageRoute;
     if (!pageRoute) {
       throw new Error('flowSurfaces addTab page route not found');
@@ -722,12 +722,11 @@ export class FlowSurfacesService {
   }
 
   async updateTab(values: Record<string, any>, options: { transaction?: any } = {}) {
-    const target = await this.locator.resolve(this.normalizeWriteTarget('updateTab', values?.target, values), options);
-    if (target.kind !== 'tab') {
-      throwBadRequest(
-        `flowSurfaces updateTab only accepts target.uid for a tab; if you only have tabSchemaUid, call flowSurfaces:get first`,
-      );
-    }
+    const target = await this.assertRouteBackedTabUidTarget(
+      'updateTab',
+      this.normalizeWriteTarget('updateTab', values?.target, values).uid,
+      options.transaction,
+    );
     const tabUid = target.uid;
     const route = target.tabRoute || (await this.locator.findRouteBySchemaUid(tabUid, options.transaction));
     if (!route) {
@@ -784,11 +783,8 @@ export class FlowSurfacesService {
     if (!sourceUid || !targetUid) {
       throwBadRequest('flowSurfaces moveTab requires sourceUid and targetUid');
     }
-    const sourceTarget = await this.locator.resolve({ uid: sourceUid }, options);
-    const targetTarget = await this.locator.resolve({ uid: targetUid }, options);
-    if (sourceTarget.kind !== 'tab' || targetTarget.kind !== 'tab') {
-      throwBadRequest('flowSurfaces moveTab only supports tab uid values');
-    }
+    const sourceTarget = await this.assertRouteBackedTabUidTarget('moveTab', sourceUid, options.transaction);
+    const targetTarget = await this.assertRouteBackedTabUidTarget('moveTab', targetUid, options.transaction);
     const sourceRoute = await this.locator.findRouteBySchemaUid(sourceUid, options.transaction);
     const targetRoute = await this.locator.findRouteBySchemaUid(targetUid, options.transaction);
     if (!sourceRoute || !targetRoute) {
@@ -841,12 +837,7 @@ export class FlowSurfacesService {
 
   async removeTab(values: Record<string, any>, options: { transaction?: any } = {}) {
     const uid = this.normalizeRootUidValue('removeTab', values);
-    const resolved = await this.locator.resolve({ uid }, options);
-    if (resolved.kind !== 'tab') {
-      throwBadRequest(
-        `flowSurfaces removeTab requires a tab uid; if you only have tabSchemaUid, call flowSurfaces:get first`,
-      );
-    }
+    const resolved = await this.assertRouteBackedTabUidTarget('removeTab', uid, options.transaction);
     await this.routeSync.removeTabAnchorTree(resolved.uid, options.transaction);
     await this.db.getRepository('desktopRoutes').destroy({
       filter: {
@@ -855,6 +846,126 @@ export class FlowSurfacesService {
       transaction: options.transaction,
     });
     return { uid: resolved.uid };
+  }
+
+  async addPopupTab(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const popupPage = await this.assertPopupPageUidTarget(
+      'addPopupTab',
+      this.normalizeWriteTarget('addPopupTab', values?.target, values).uid,
+      options.transaction,
+    );
+    const tree = buildPopupTabTree({
+      title: values.title,
+      icon: values.icon,
+      documentTitle: values.documentTitle,
+      flowRegistry: values.flowRegistry,
+    });
+    await this.repository.upsertModel(
+      {
+        parentId: popupPage.uid,
+        subKey: 'tabs',
+        subType: 'array',
+        ...tree,
+      },
+      { transaction: options.transaction },
+    );
+    return {
+      popupPageUid: popupPage.uid,
+      tabUid: tree.uid,
+      gridUid: tree.subModels?.grid?.uid,
+    };
+  }
+
+  async updatePopupTab(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const { popupTab } = await this.assertPopupTabUidTarget(
+      'updatePopupTab',
+      this.normalizeWriteTarget('updatePopupTab', values?.target, values).uid,
+      options.transaction,
+    );
+    const nextPayload = buildDefinedPayload({
+      uid: popupTab.uid,
+      props:
+        !_.isUndefined(values.title) || !_.isUndefined(values.icon)
+          ? {
+              ...(popupTab.props || {}),
+              ..._.pickBy(
+                {
+                  title: values.title,
+                  icon: values.icon,
+                },
+                (value) => !_.isUndefined(value),
+              ),
+            }
+          : undefined,
+      stepParams:
+        !_.isUndefined(values.title) || !_.isUndefined(values.icon) || !_.isUndefined(values.documentTitle)
+          ? {
+              ...(popupTab.stepParams || {}),
+              pageTabSettings: {
+                ...(popupTab.stepParams?.pageTabSettings || {}),
+                tab: {
+                  ...(popupTab.stepParams?.pageTabSettings?.tab || {}),
+                  ..._.pickBy(
+                    {
+                      title: values.title,
+                      icon: values.icon,
+                      documentTitle: values.documentTitle,
+                    },
+                    (value) => !_.isUndefined(value),
+                  ),
+                },
+              },
+            }
+          : undefined,
+      flowRegistry: !_.isUndefined(values.flowRegistry) ? values.flowRegistry : undefined,
+    });
+    if (Object.keys(nextPayload).length === 1) {
+      return { uid: popupTab.uid };
+    }
+    await this.repository.patch(nextPayload, { transaction: options.transaction });
+    return buildDefinedPayload({
+      uid: popupTab.uid,
+      title: values.title,
+      icon: values.icon,
+    });
+  }
+
+  async movePopupTab(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const sourceUid = String(values.sourceUid || '').trim();
+    const targetUid = String(values.targetUid || '').trim();
+    const position = values.position === 'before' ? 'before' : 'after';
+    if (!sourceUid || !targetUid) {
+      throwBadRequest('flowSurfaces movePopupTab requires sourceUid and targetUid');
+    }
+    if (sourceUid === targetUid) {
+      throwBadRequest('flowSurfaces movePopupTab requires different sourceUid and targetUid');
+    }
+    const source = await this.assertPopupTabUidTarget('movePopupTab', sourceUid, options.transaction);
+    const target = await this.assertPopupTabUidTarget('movePopupTab', targetUid, options.transaction);
+    if (source.popupPage.uid !== target.popupPage.uid) {
+      throwBadRequest('flowSurfaces movePopupTab only supports sibling popup tabs under the same popup page');
+    }
+    await this.repository.attach(
+      source.popupTab.uid,
+      {
+        parentId: source.popupPage.uid,
+        subKey: 'tabs',
+        subType: 'array',
+        position: { type: position, target: target.popupTab.uid },
+      },
+      { transaction: options.transaction },
+    );
+    return { sourceUid, targetUid, position };
+  }
+
+  async removePopupTab(values: Record<string, any>, options: { transaction?: any } = {}) {
+    const { popupTab } = await this.assertPopupTabUidTarget(
+      'removePopupTab',
+      this.normalizeWriteTarget('removePopupTab', values?.target, values).uid,
+      options.transaction,
+    );
+    await this.repository.remove(popupTab.uid, { transaction: options.transaction });
+    return { uid: popupTab.uid };
   }
 
   async addBlock(values: Record<string, any>, options: { transaction?: any } = {}) {
@@ -1780,26 +1891,112 @@ export class FlowSurfacesService {
     return uid;
   }
 
-  private async assertPageRootUidTarget(
+  private async assertRouteBackedPageUidTarget(
     actionName: 'addTab' | 'destroyPage',
     resolved: FlowSurfaceResolvedTarget,
     transaction?: any,
   ) {
     const pageSchemaUid = resolved.pageRoute?.get?.('schemaUid') || resolved.pageRoute?.schemaUid;
-    const node =
-      resolved.node ||
-      (await this.repository.findModelById(resolved.uid, {
-        transaction,
-        includeAsyncNode: true,
-      }));
-    if (resolved.kind !== 'page' || !pageSchemaUid || !['RootPageModel', 'ChildPageModel'].includes(node?.use || '')) {
+    const pageModel =
+      resolved.pageModel ||
+      (pageSchemaUid
+        ? await this.repository.findModelByParentId(pageSchemaUid, {
+            transaction,
+            subKey: 'page',
+            includeAsyncNode: true,
+          })
+        : null);
+    if (
+      resolved.kind !== 'page' ||
+      !pageSchemaUid ||
+      pageModel?.use !== 'RootPageModel' ||
+      resolved.uid !== pageModel.uid
+    ) {
+      if (actionName === 'addTab') {
+        throwBadRequest(
+          `flowSurfaces addTab only accepts a route-backed page uid; popup child pages use addPopupTab on popupPageUid. If you only have pageSchemaUid or routeId, call flowSurfaces:get first`,
+        );
+      }
       throwBadRequest(
-        `flowSurfaces ${actionName} requires a page uid; if you only have pageSchemaUid or routeId, call flowSurfaces:get first`,
+        `flowSurfaces destroyPage only accepts a route-backed page uid; popup child pages are internal popup subtrees and cannot be destroyed via destroyPage. If you only have pageSchemaUid or routeId, call flowSurfaces:get first`,
       );
     }
     return {
       pageSchemaUid,
-      node,
+      node: pageModel,
+    };
+  }
+
+  private async assertRouteBackedTabUidTarget(
+    actionName: 'updateTab' | 'moveTab' | 'removeTab',
+    uid: string,
+    transaction?: any,
+  ) {
+    const resolved = await this.locator.resolve({ uid }, { transaction });
+    const route = resolved.tabRoute || (await this.locator.findRouteBySchemaUid(uid, transaction));
+    const exactNode =
+      resolved.node ||
+      (await this.repository.findModelById(uid, {
+        transaction,
+        includeAsyncNode: true,
+      }));
+    const routeSchemaUid = route?.get?.('schemaUid') || route?.schemaUid;
+    const routeType = route?.get?.('type') || route?.type;
+    if (
+      routeType !== 'tabs' ||
+      !routeSchemaUid ||
+      String(routeSchemaUid) !== uid ||
+      exactNode?.use === 'ChildPageTabModel'
+    ) {
+      const recommendedAction =
+        actionName === 'updateTab' ? 'updatePopupTab' : actionName === 'moveTab' ? 'movePopupTab' : 'removePopupTab';
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts a route-backed tab uid; popup child tabs use ${recommendedAction}`,
+      );
+    }
+    return {
+      ...resolved,
+      tabRoute: route,
+    };
+  }
+
+  private async assertPopupPageUidTarget(actionName: 'addPopupTab', uid: string, transaction?: any) {
+    const popupPage = await this.repository.findModelById(uid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    if (popupPage?.use !== 'ChildPageModel') {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts target.uid for popupPageUid; use get(hostUid) and read tree.subModels.page.uid first`,
+      );
+    }
+    return popupPage;
+  }
+
+  private async assertPopupTabUidTarget(
+    actionName: 'updatePopupTab' | 'movePopupTab' | 'removePopupTab',
+    uid: string,
+    transaction?: any,
+  ) {
+    const popupTab = await this.repository.findModelById(uid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const popupPageUid = popupTab?.uid ? await this.locator.findParentUid(popupTab.uid, transaction) : null;
+    const popupPage = popupPageUid
+      ? await this.repository.findModelById(popupPageUid, {
+          transaction,
+          includeAsyncNode: true,
+        })
+      : null;
+    if (popupTab?.use !== 'ChildPageTabModel' || popupPage?.use !== 'ChildPageModel') {
+      throwBadRequest(
+        `flowSurfaces ${actionName} only accepts popup tab uid; use get(hostUid) and read tree.subModels.page.subModels.tabs[].uid first`,
+      );
+    }
+    return {
+      popupTab,
+      popupPage,
     };
   }
 
@@ -4103,22 +4300,43 @@ export class FlowSurfacesService {
 
     if (existingPage?.uid) {
       const tab = _.castArray(existingPage?.subModels?.tabs || [])[0];
-      const grid =
-        tab?.subModels?.grid ||
-        (tab?.uid
-          ? await this.repository.findModelByParentId(tab.uid, {
-              transaction,
-              subKey: 'grid',
-              includeAsyncNode: true,
-            })
-          : null);
-      if (tab?.uid && grid?.uid) {
+      if (!tab?.uid) {
+        const nextTab = buildPopupTabTree({});
+        await this.repository.upsertModel(
+          {
+            parentId: existingPage.uid,
+            subKey: 'tabs',
+            subType: 'array',
+            ...nextTab,
+          },
+          { transaction },
+        );
+        return {
+          pageUid: existingPage.uid,
+          tabUid: nextTab.uid,
+          gridUid: nextTab.subModels?.grid?.uid,
+        };
+      }
+      const grid = tab.subModels?.grid?.uid
+        ? tab.subModels.grid
+        : await this.repository.findModelByParentId(tab.uid, {
+            transaction,
+            subKey: 'grid',
+            includeAsyncNode: true,
+          });
+      if (grid?.uid) {
         return {
           pageUid: existingPage.uid,
           tabUid: tab.uid,
           gridUid: grid.uid,
         };
       }
+      const gridUid = await this.ensureGridChild(tab.uid, 'BlockGridModel', transaction);
+      return {
+        pageUid: existingPage.uid,
+        tabUid: tab.uid,
+        gridUid,
+      };
     }
 
     const tree = buildPopupPageTree({});
@@ -4340,10 +4558,85 @@ export class FlowSurfacesService {
     }
     return this.repository.findModelById(resolved.uid, { transaction, includeAsyncNode: true });
   }
+
+  private normalizePopupTreeShape<T = any>(node: T): T {
+    if (!node || typeof node !== 'object') {
+      return node;
+    }
+
+    const visit = (current: any) => {
+      if (!current || typeof current !== 'object') {
+        return;
+      }
+
+      if (current.use === 'ChildPageModel') {
+        current.subModels = {
+          ...(current.subModels || {}),
+          tabs: _.castArray(current.subModels?.tabs || []),
+        };
+      }
+
+      const subModels = current.subModels;
+      if (!subModels || typeof subModels !== 'object') {
+        return;
+      }
+
+      for (const value of Object.values(subModels)) {
+        if (Array.isArray(value)) {
+          for (const item of value) {
+            visit(item);
+          }
+          continue;
+        }
+        visit(value);
+      }
+    };
+
+    visit(node);
+    return node;
+  }
 }
 
 function buildDefinedPayload(payload: Record<string, any>) {
   return _.pickBy(payload, (value) => !_.isUndefined(value));
+}
+
+function buildPopupTabTree(options: {
+  tabUid?: string;
+  gridUid?: string;
+  title?: string;
+  icon?: string;
+  documentTitle?: string;
+  flowRegistry?: Record<string, any>;
+}) {
+  const tabUid = options.tabUid || uid();
+  const gridUid = options.gridUid || uid();
+  const title = options.title || 'Untitled';
+
+  return {
+    uid: tabUid,
+    use: 'ChildPageTabModel',
+    props: buildDefinedPayload({
+      title,
+      icon: options.icon,
+    }),
+    stepParams: {
+      pageTabSettings: {
+        tab: buildDefinedPayload({
+          title,
+          icon: options.icon,
+          documentTitle: options.documentTitle,
+        }),
+      },
+    },
+    ...(typeof options.flowRegistry !== 'undefined' ? { flowRegistry: _.cloneDeep(options.flowRegistry) } : {}),
+    subModels: {
+      grid: {
+        uid: gridUid,
+        use: 'BlockGridModel',
+      },
+    },
+  };
 }
 
 function getSingleNodeSubModel(subModel?: FlowSurfaceNodeSubModel | null): FlowSurfaceNodeSpec | undefined {

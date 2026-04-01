@@ -26,6 +26,10 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('compose');
     expect(content).toContain('configure');
     expect(content).toContain('addRecordAction');
+    expect(content).toContain('addPopupTab');
+    expect(content).toContain('updatePopupTab');
+    expect(content).toContain('movePopupTab');
+    expect(content).toContain('removePopupTab');
     expect(content).toContain('addBlocks');
     expect(content).toContain('addFields');
     expect(content).toContain('addActions');
@@ -75,6 +79,7 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('`catalog(target=table/details/list/gridCard)`');
     expect(content).toContain('wrapperUid/fieldUid');
     expect(content).toContain('popupPageUid/popupTabUid/popupGridUid');
+    expect(content).toContain('popup child tab API');
     expect(content).toContain('`addAction` 只用于非 record action');
     expect(content).toContain('`addRecordAction` 只用于 record action');
     expect(content).toContain('`addBlocks`：');

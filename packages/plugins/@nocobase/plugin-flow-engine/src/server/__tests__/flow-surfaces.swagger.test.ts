@@ -55,6 +55,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddTabRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceUpdateTabRequest.required).toEqual(['target']);
     expect(schemas.FlowSurfaceMoveTabRequest.required).toEqual(['sourceUid', 'targetUid']);
+    expect(schemas.FlowSurfaceAddPopupTabRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceAddPopupTabResult).toBeTruthy();
+    expect(schemas.FlowSurfaceUpdatePopupTabRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceUpdatePopupTabResult).toBeTruthy();
+    expect(schemas.FlowSurfaceMovePopupTabRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceMovePopupTabResult).toBeTruthy();
+    expect(schemas.FlowSurfaceRemovePopupTabRequest).toBeTruthy();
+    expect(schemas.FlowSurfaceRemovePopupTabResult).toBeTruthy();
     expect(schemas.FlowSurfaceResolvedTarget).toBeTruthy();
     expect(schemas.FlowSurfaceReadTarget).toBeTruthy();
     expect(schemas.FlowSurfaceConfigureOption).toBeTruthy();
@@ -292,6 +300,28 @@ describe('flowSurfaces swagger', () => {
       'backupEmail',
     ]);
     expect(configureRequest.examples.actionBehaviorSettings.value.changes.defaultSelectAllRecords).toBe(true);
+
+    const addPopupTabRequest =
+      swaggerDocument.paths['/flowSurfaces:addPopupTab'].post.requestBody.content['application/json'];
+    expect(addPopupTabRequest.example?.target?.uid).toBe('view-action-popup-page-uid');
+    expect(addPopupTabRequest.example?.title).toBe('Popup details');
+
+    const updatePopupTabRequest =
+      swaggerDocument.paths['/flowSurfaces:updatePopupTab'].post.requestBody.content['application/json'];
+    expect(updatePopupTabRequest.example?.target?.uid).toBe('popup-secondary-tab-uid');
+    expect(updatePopupTabRequest.example?.documentTitle).toBe('Popup details updated tab');
+
+    const movePopupTabRequest =
+      swaggerDocument.paths['/flowSurfaces:movePopupTab'].post.requestBody.content['application/json'];
+    expect(movePopupTabRequest.example).toMatchObject({
+      sourceUid: 'popup-secondary-tab-uid',
+      targetUid: 'popup-primary-tab-uid',
+      position: 'before',
+    });
+
+    const removePopupTabRequest =
+      swaggerDocument.paths['/flowSurfaces:removePopupTab'].post.requestBody.content['application/json'];
+    expect(removePopupTabRequest.example?.target?.uid).toBe('popup-secondary-tab-uid');
 
     const addFieldRequest =
       swaggerDocument.paths['/flowSurfaces:addField'].post.requestBody.content['application/json'];

@@ -502,7 +502,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(disguisedAddTabRes.status).toBe(400);
-    expect(readErrorMessage(disguisedAddTabRes)).toContain('requires a page uid');
+    expect(readErrorMessage(disguisedAddTabRes)).toContain('route-backed page uid');
     expect(readErrorMessage(disguisedAddTabRes)).toContain('flowSurfaces:get first');
 
     const legacyConfigureRes = await rootAgent.resource('flowSurfaces').configure({
@@ -534,7 +534,7 @@ describe('flowSurfaces API contract', () => {
       },
     });
     expect(disguisedDestroyRes.status).toBe(400);
-    expect(readErrorMessage(disguisedDestroyRes)).toContain('requires a page uid');
+    expect(readErrorMessage(disguisedDestroyRes)).toContain('route-backed page uid');
     expect(readErrorMessage(disguisedDestroyRes)).toContain('flowSurfaces:get first');
 
     const legacyRemoveTabRes = await rootAgent.resource('flowSurfaces').removeTab({
@@ -545,6 +545,170 @@ describe('flowSurfaces API contract', () => {
     expect(legacyRemoveTabRes.status).toBe(400);
     expect(readErrorMessage(legacyRemoveTabRes)).toContain('only accepts root uid');
     expect(readErrorMessage(legacyRemoveTabRes)).toContain('flowSurfaces:get first');
+  });
+
+  it('should guard outer page/tab APIs from popup child surfaces and expose popup tab APIs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup tab contract page',
+      tabTitle: 'Popup tab contract tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const popupAction = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'view',
+          popup: {
+            mode: 'replace',
+            blocks: [
+              {
+                key: 'details',
+                type: 'details',
+                resource: {
+                  dataSourceKey: 'main',
+                  collectionName: 'employees',
+                },
+                fields: ['nickname'],
+              },
+            ],
+          },
+        },
+      }),
+    );
+    expect(popupAction.popupPageUid).toBeTruthy();
+    expect(popupAction.popupTabUid).toBeTruthy();
+    expect(popupAction.popupGridUid).toBeTruthy();
+
+    const destroyPopupPageRes = await rootAgent.resource('flowSurfaces').destroyPage({
+      values: {
+        uid: popupAction.popupPageUid,
+      },
+    });
+    expect(destroyPopupPageRes.status).toBe(400);
+    expect(readErrorMessage(destroyPopupPageRes)).toContain('popup child pages');
+
+    const addTabOnPopupPageRes = await rootAgent.resource('flowSurfaces').addTab({
+      values: {
+        target: {
+          uid: popupAction.popupPageUid,
+        },
+        title: 'Wrong API popup tab',
+      },
+    });
+    expect(addTabOnPopupPageRes.status).toBe(400);
+    expect(readErrorMessage(addTabOnPopupPageRes)).toContain('addPopupTab');
+
+    const updateOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').updateTab({
+      values: {
+        target: {
+          uid: popupAction.popupTabUid,
+        },
+        title: 'Wrong update popup tab',
+      },
+    });
+    expect(updateOuterTabOnPopupRes.status).toBe(400);
+    expect(readErrorMessage(updateOuterTabOnPopupRes)).toContain('updatePopupTab');
+
+    const moveOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').moveTab({
+      values: {
+        sourceUid: popupAction.popupTabUid,
+        targetUid: page.tabSchemaUid,
+        position: 'before',
+      },
+    });
+    expect(moveOuterTabOnPopupRes.status).toBe(400);
+    expect(readErrorMessage(moveOuterTabOnPopupRes)).toContain('movePopupTab');
+
+    const removeOuterTabOnPopupRes = await rootAgent.resource('flowSurfaces').removeTab({
+      values: {
+        uid: popupAction.popupTabUid,
+      },
+    });
+    expect(removeOuterTabOnPopupRes.status).toBe(400);
+    expect(readErrorMessage(removeOuterTabOnPopupRes)).toContain('removePopupTab');
+
+    const addedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').addPopupTab({
+        values: {
+          target: {
+            uid: popupAction.popupPageUid,
+          },
+          title: 'Secondary popup tab',
+          icon: 'TableOutlined',
+          documentTitle: 'Secondary popup browser title',
+        },
+      }),
+    );
+    expect(addedPopupTab).toMatchObject({
+      popupPageUid: popupAction.popupPageUid,
+      tabUid: expect.any(String),
+      gridUid: expect.any(String),
+    });
+
+    const updatedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').updatePopupTab({
+        values: {
+          target: {
+            uid: addedPopupTab.tabUid,
+          },
+          title: 'Secondary popup tab updated',
+          icon: 'AppstoreOutlined',
+          documentTitle: 'Updated popup browser title',
+          flowRegistry: {
+            popupTabBeforeRender: {
+              key: 'popupTabBeforeRender',
+              on: 'beforeRender',
+              steps: {},
+            },
+          },
+        },
+      }),
+    );
+    expect(updatedPopupTab).toMatchObject({
+      uid: addedPopupTab.tabUid,
+      title: 'Secondary popup tab updated',
+      icon: 'AppstoreOutlined',
+    });
+
+    const movedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').movePopupTab({
+        values: {
+          sourceUid: addedPopupTab.tabUid,
+          targetUid: popupAction.popupTabUid,
+          position: 'before',
+        },
+      }),
+    );
+    expect(movedPopupTab).toEqual({
+      sourceUid: addedPopupTab.tabUid,
+      targetUid: popupAction.popupTabUid,
+      position: 'before',
+    });
+
+    const removedPopupTab = getData(
+      await rootAgent.resource('flowSurfaces').removePopupTab({
+        values: {
+          target: {
+            uid: addedPopupTab.tabUid,
+          },
+        },
+      }),
+    );
+    expect(removedPopupTab).toEqual({
+      uid: addedPopupTab.tabUid,
+    });
   });
 
   it('should only allow removeNode on regular node uid targets', async () => {

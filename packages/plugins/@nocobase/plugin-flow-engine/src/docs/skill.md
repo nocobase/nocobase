@@ -10,8 +10,9 @@
 4. 再用 `flowSurfaces:compose` 组织 block、field、action 和简单布局。
 5. 再用 `flowSurfaces:configure` 修改高频配置。
 6. 如果需要精确追加，优先用 `addBlock`、`addField`、`addAction`、`addRecordAction` 或它们的批量版本 `addBlocks`、`addFields`、`addActions`、`addRecordActions`。
-7. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，tab 请用 `removeTab`。
-8. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
+7. 外层 route-backed page/tab 继续用 `createPage`、`destroyPage`、`addTab`、`updateTab`、`moveTab`、`removeTab`；popup child tab 用 `addPopupTab`、`updatePopupTab`、`movePopupTab`、`removePopupTab`。
+8. 删除与排序时，普通节点继续用 `flowSurfaces:removeNode`、`flowSurfaces:moveNode`；page 请用 `destroyPage`，外层 tab 请用 `removeTab`，popup child tab 请用 `removePopupTab`。
+9. 只有当上述公开语义不够时，才降级到底层 `updateSettings`、`setLayout`、`setEventFlows`、`apply`、`mutate`。
 
 ## 读取接口约定
 
@@ -31,6 +32,14 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 - `addAction` 只用于非 record action：block / form / filter-form / action-panel
 - `addRecordAction` 只用于 record action：table / details / list / gridCard
+- 外层 route-backed page/tab API 只接受外层 canonical uid：
+  - page：`destroyPage`、`addTab`
+  - tab：`updateTab`、`moveTab`、`removeTab`
+- popup child tab 不要混用外层 page/tab API；统一改用：
+  - `addPopupTab`
+  - `updatePopupTab`
+  - `movePopupTab`
+  - `removePopupTab`
 - `addBlocks`、`addFields`、`addActions`、`addRecordActions` 都是“同一 target 下顺序批量 + 部分成功”语义
 - `catalog(target)` 顶层的 `configureOptions` 是主要配置入口；`blocks[] / fields[] / actions[] / recordActions[]` 里的每个 item 也会带自己的 `configureOptions`
 - `configure` 与 inline `settings` 都只建议使用这些 `configureOptions` 里的 key
@@ -106,8 +115,64 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 创建成功后：
 - page 级写操作使用返回的 `pageUid`
-- tab 级写操作继续可直接使用返回的 `tabSchemaUid`
+- 外层 tab 当前的 canonical uid 就是返回的 `tabSchemaUid`
 - `pageSchemaUid / routeId` 主要保留给 `flowSurfaces:get`
+
+## 示例 1.1：popup child tab API
+
+如果某个 field / action 已经有 popup 子树：
+
+- `popupPageUid` 可通过 `get(hostUid).tree.subModels.page.uid` 获取
+- `popupTabUid` 可通过 `get(hostUid).tree.subModels.page.subModels.tabs[].uid` 获取
+- 这组 uid 只用于 popup tab API，不要再传给外层 `addTab / updateTab / moveTab / removeTab`
+
+`addPopupTab`：
+
+```json
+{
+  "target": {
+    "uid": "popup-page-uid"
+  },
+  "title": "Popup details",
+  "icon": "TableOutlined",
+  "documentTitle": "Popup details tab"
+}
+```
+
+`updatePopupTab`：
+
+```json
+{
+  "target": {
+    "uid": "popup-tab-uid"
+  },
+  "title": "Popup details updated",
+  "icon": "AppstoreOutlined",
+  "documentTitle": "Popup details updated"
+}
+```
+
+`movePopupTab`：
+
+```json
+{
+  "sourceUid": "popup-secondary-tab-uid",
+  "targetUid": "popup-primary-tab-uid",
+  "position": "before"
+}
+```
+
+`removePopupTab`：
+
+```json
+{
+  "target": {
+    "uid": "popup-tab-uid"
+  }
+}
+```
+
+这轮不提供 `removePopup`；`removePopupTab` 允许删到 0 个 tab。
 
 ## 示例 2：同一行创建 `filterForm + table`，布局 `3:7`
 
