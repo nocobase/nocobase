@@ -31,6 +31,117 @@ import {
 } from './middlewares/check-change-with-association';
 import type { ACL } from '@nocobase/acl';
 
+const normalizeFieldNames = (value: any): string[] => {
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === 'string' && item.length > 0);
+  }
+
+  if (typeof value === 'string' && value.length > 0) {
+    return [value];
+  }
+
+  if (lodash.isPlainObject(value)) {
+    return Object.values(value).filter((item): item is string => typeof item === 'string' && item.length > 0);
+  }
+
+  return [];
+};
+
+const hasFieldRestrictions = (params: any) => {
+  return normalizeFieldNames(params?.fields).length > 0 || normalizeFieldNames(params?.appends).length > 0;
+};
+
+const isFieldAllowedInParams = (collection: Collection, fieldName: string, params: any) => {
+  const field = collection.getField(fieldName);
+
+  if (!field) {
+    return false;
+  }
+
+  if (!hasFieldRestrictions(params)) {
+    return true;
+  }
+
+  const fields = normalizeFieldNames(params?.fields);
+  const appends = normalizeFieldNames(params?.appends);
+  const fieldPaths = [...fields, ...appends];
+
+  if (field instanceof RelationField) {
+    return fieldPaths.some((item) => item === fieldName || item.startsWith(`${fieldName}.`));
+  }
+
+  return fields.includes(fieldName);
+};
+
+const canAccessNestedFieldPath = (
+  ctx: Context,
+  collection: Collection,
+  path: string,
+  params: any,
+  visited = new Set<string>(),
+): boolean => {
+  const [fieldName, ...rest] = String(path).split('.').filter(Boolean);
+
+  if (!fieldName || !isFieldAllowedInParams(collection, fieldName, params)) {
+    return false;
+  }
+
+  if (!rest.length) {
+    return true;
+  }
+
+  const field = collection.getField(fieldName);
+  if (!(field instanceof RelationField) || !field.target) {
+    return false;
+  }
+
+  const db = ctx.database ?? ctx.db;
+  const targetCollection = db?.getCollection?.(field.target);
+
+  if (!targetCollection) {
+    return false;
+  }
+
+  const visitedKey = `${targetCollection.name}:${rest.join('.')}`;
+  if (visited.has(visitedKey)) {
+    return false;
+  }
+
+  visited.add(visitedKey);
+
+  const canResult = ctx.can({
+    roles: ctx.state.currentRoles,
+    resource: targetCollection.name,
+    action: ctx.action.actionName,
+  });
+
+  if (!canResult) {
+    return false;
+  }
+
+  return canAccessNestedFieldPath(ctx, targetCollection, rest.join('.'), canResult.params || {}, visited);
+};
+
+const getActionCollection = (ctx: Context): Collection | undefined => {
+  const resourceName = ctx.action?.resourceName;
+  const db = ctx.database ?? ctx.db;
+
+  if (!resourceName || !db) {
+    return;
+  }
+
+  if (resourceName.includes('.')) {
+    const [collectionName, associationName] = resourceName.split('.');
+    const field = db.getCollection(collectionName)?.getField?.(associationName) as RelationField | undefined;
+    if (field?.target) {
+      return db.getCollection(field.target);
+    }
+    return;
+  }
+
+  return db.getCollection(resourceName);
+};
+
 export class PluginACLServer extends Plugin {
   get acl() {
     return this.app.acl;
@@ -562,6 +673,51 @@ export class PluginACLServer extends Plugin {
       }
       return next();
     });
+
+    this.app.acl.use(
+      async (ctx: Context, next) => {
+        const { actionName } = ctx.action;
+
+        if (!['get', 'list'].includes(actionName)) {
+          return next();
+        }
+
+        if (!ctx.permission?.can || typeof ctx.permission.can !== 'object' || ctx.permission.skip) {
+          return next();
+        }
+
+        const collection = getActionCollection(ctx);
+
+        if (!collection) {
+          return next();
+        }
+
+        const requestedNestedPaths = lodash
+          .uniq([...normalizeFieldNames(ctx.action.params?.fields), ...normalizeFieldNames(ctx.action.params?.appends)])
+          .filter((path) => path.includes('.'));
+
+        if (!requestedNestedPaths.length) {
+          return next();
+        }
+
+        const permissionParams = ctx.permission.can.params || {};
+        const allowedNestedAppends = requestedNestedPaths.filter((path) =>
+          canAccessNestedFieldPath(ctx, collection, path, permissionParams),
+        );
+
+        if (allowedNestedAppends.length) {
+          permissionParams.appends = lodash.uniq([
+            ...normalizeFieldNames(permissionParams.appends),
+            ...allowedNestedAppends,
+          ]);
+        }
+
+        return next();
+      },
+      {
+        before: 'core',
+      },
+    );
 
     this.app.acl.beforeGrantAction(async (ctx) => {
       const actionName = this.app.acl.resolveActionAlias(ctx.actionName);

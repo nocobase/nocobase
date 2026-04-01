@@ -55,6 +55,10 @@ describe('get action with acl', () => {
     await app.db.sync();
   });
 
+  afterEach(async () => {
+    await app.destroy();
+  });
+
   it('should get with fields', async () => {
     const testRole = app.acl.define({
       role: 'test',
@@ -98,5 +102,86 @@ describe('get action with acl', () => {
     // expect only has comments
     expect(response.body.data.title).toBeUndefined();
     expect(response.body.data.comments).toBeDefined();
+  });
+
+  it('should get nested relation field by target collection acl', async () => {
+    const testRole = app.acl.define({
+      role: 'test',
+    });
+
+    app.db.collection({
+      name: 'attachments_test',
+      fields: [{ type: 'string', name: 'filename' }],
+    });
+
+    app.db.collection({
+      name: 'files_test',
+      fields: [
+        { type: 'string', name: 'title' },
+        {
+          type: 'belongsTo',
+          name: 'file',
+          target: 'attachments_test',
+        },
+      ],
+    });
+
+    const Docs = app.db.collection({
+      name: 'docs_test',
+      fields: [
+        { type: 'string', name: 'name' },
+        {
+          type: 'hasMany',
+          name: 'files',
+          target: 'files_test',
+        },
+      ],
+    });
+
+    await app.db.sync();
+
+    testRole.grantAction('docs_test:view', {
+      fields: ['name', 'files'],
+    });
+
+    testRole.grantAction('files_test:view', {
+      fields: ['title', 'file'],
+    });
+
+    const record = await Docs.repository.create({
+      values: {
+        name: 'doc-1',
+        files: [
+          {
+            title: 'entry-1',
+            file: {
+              filename: 'demo.png',
+            },
+          },
+        ],
+      },
+    });
+
+    app.resourceManager.use(
+      (ctx, next) => {
+        ctx.state.currentRole = 'test';
+        return next();
+      },
+      {
+        before: 'acl',
+      },
+    );
+
+    const response = await userAgent.resource('docs_test').get({
+      filterByTk: record.get('id'),
+      fields: ['files', 'files.file'],
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.name).toBeUndefined();
+    expect(response.body.data.files).toBeDefined();
+    expect(response.body.data.files[0].title).toBeUndefined();
+    expect(response.body.data.files[0].file).toBeDefined();
+    expect(response.body.data.files[0].file.filename).toBe('demo.png');
   });
 });
