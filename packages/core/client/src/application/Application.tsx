@@ -34,7 +34,6 @@ import { SystemSettingsSource } from '@nocobase/client-v2';
 import { i18n } from '../i18n';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
-import { defaultAppComponents } from './components';
 import { PluginManager, type PluginType } from './PluginManager';
 import { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouterManager, type RouterOptions } from './RouterManager';
@@ -139,7 +138,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
     return {
       ...super.getDefaultComponents(),
       DataBlockProvider,
-      ...defaultAppComponents,
       ...schemaInitializerComponents,
       CollectionField,
     };
