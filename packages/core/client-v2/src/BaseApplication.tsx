@@ -32,8 +32,10 @@ import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, B
 import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
+import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
+import type { SystemSettingsSource } from './flow';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -92,9 +94,14 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
   public favicon: string;
   public flowEngine: FlowEngine;
   public context: FlowEngineContext & {
+    routeRepository: RouteRepository;
+    appInfo: Promise<Record<string, any>>;
+    pageInfo: { version?: 'v1' | 'v2' };
+    systemSettings: SystemSettingsSource;
     pluginSettingsRouter: PluginSettingsManager<any>;
     pluginManager: any;
   };
+  public systemSettings: SystemSettingsSource;
   maintained = false;
   maintaining = false;
   error = null;
@@ -257,6 +264,23 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     this.flowEngine.context.defineProperty('location', {
       get: () => location,
       observable: true,
+    });
+    this.flowEngine.context.defineProperty('routeRepository', {
+      value: new RouteRepository(this.flowEngine.context),
+    });
+    this.flowEngine.context.defineProperty('appInfo', {
+      get: async () => {
+        const rest = await this.apiClient.request({
+          url: 'app:getInfo',
+        });
+        return rest.data?.data || {};
+      },
+    });
+    this.flowEngine.context.defineProperty('pageInfo', {
+      value: observable({ version: undefined as 'v2' | 'v1' | undefined }),
+    });
+    this.flowEngine.context.defineProperty('systemSettings', {
+      get: () => this.systemSettings,
     });
   }
 

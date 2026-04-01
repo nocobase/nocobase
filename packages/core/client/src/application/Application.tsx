@@ -13,10 +13,8 @@ import {
   type BaseApplicationOptions,
   type ComponentAndProps,
   type DevDynamicImport,
-  RouteRepository,
   type WebSocketClientOptions,
 } from '@nocobase/client-v2';
-import { type FlowEngineContext } from '@nocobase/flow-engine';
 import { APIClientOptions, getSubAppName } from '@nocobase/sdk';
 import { i18n as i18next } from 'i18next';
 import get from 'lodash/get';
@@ -96,11 +94,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public declare jsonLogic: JsonLogic;
-  public declare systemSettings: SystemSettingsSource;
-  public declare context: FlowEngineContext & {
-    pluginSettingsRouter: PluginSettingsManager;
-    pluginManager: PluginManager;
-  };
   loading = true;
   hasLoadError = false;
   locales = null;
@@ -166,25 +159,6 @@ export class Application extends BaseApplication<ApplicationOptions> {
   protected afterManagersInitialized() {
     super.afterManagersInitialized();
     this.jsonLogic = getOperators();
-  }
-
-  protected configureContext() {
-    this.flowEngine.context.defineProperty('routeRepository', {
-      value: new RouteRepository(this.flowEngine.context),
-    });
-    this.flowEngine.context.defineProperty('appInfo', {
-      get: async () => {
-        const rest = await this.apiClient.request({
-          url: 'app:getInfo',
-        });
-        return rest.data?.data || {};
-      },
-    });
-    const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
-    this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
-    this.flowEngine.context.defineProperty('systemSettings', {
-      value: this.systemSettings,
-    });
   }
 
   protected addCustomProviders() {
