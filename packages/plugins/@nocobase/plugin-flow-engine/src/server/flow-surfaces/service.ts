@@ -30,7 +30,7 @@ import {
   buildPersistedRootPageModel,
   buildPopupPageTree,
 } from './builder';
-import { compileApplySpec } from './compiler';
+import { buildAutoLayout, compileApplySpec } from './compiler';
 import { FlowSurfaceContractGuard } from './contract-guard';
 import { FlowSurfaceBadRequestError } from './errors';
 import { executeMutateOps } from './executor';
@@ -325,7 +325,10 @@ export class FlowSurfacesService {
           type: blockSpec.type,
           resourceInit: blockSpec.resource,
         },
-        options,
+        {
+          ...options,
+          deferAutoLayout: true,
+        },
       );
 
       createdBlocks.push({
@@ -458,6 +461,21 @@ export class FlowSurfacesService {
         layout: values.layout,
         createdByKey: keyRefs,
         finalItems,
+      });
+      layoutResult = await this.setLayout(
+        {
+          target: {
+            uid: gridUid,
+          },
+          ...layoutPayload,
+        },
+        options,
+      );
+    } else if (mode === 'append' && createdBlocks.length) {
+      const layoutPayload = this.buildAppendGridLayoutPayload({
+        initialGrid,
+        finalGrid,
+        appendedItemUids: createdBlocks.map((block) => block.result.uid),
       });
       layoutResult = await this.setLayout(
         {
@@ -972,7 +990,7 @@ export class FlowSurfacesService {
     return { uid: popupTab.uid };
   }
 
-  async addBlock(values: Record<string, any>, options: { transaction?: any } = {}) {
+  async addBlock(values: Record<string, any>, options: { transaction?: any; deferAutoLayout?: boolean } = {}) {
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
@@ -989,6 +1007,12 @@ export class FlowSurfacesService {
       target,
       options.transaction,
     );
+    const initialGrid = options.deferAutoLayout
+      ? null
+      : await this.repository.findModelById(parentUid, {
+          transaction: options.transaction,
+          includeAsyncNode: true,
+        });
     const tree = buildBlockTree({
       use: catalogItem.use,
       resourceInit: values.resourceInit,
@@ -1036,6 +1060,26 @@ export class FlowSurfacesService {
         : {}),
     };
     await this.applyInlineNodeSettings('addBlock', created, inlineSettings, options);
+    if (!options.deferAutoLayout && initialGrid?.uid) {
+      const finalGrid = await this.repository.findModelById(parentUid, {
+        transaction: options.transaction,
+        includeAsyncNode: true,
+      });
+      const layoutPayload = this.buildAppendGridLayoutPayload({
+        initialGrid,
+        finalGrid,
+        appendedItemUids: [created],
+      });
+      await this.setLayout(
+        {
+          target: {
+            uid: parentUid,
+          },
+          ...layoutPayload,
+        },
+        options,
+      );
+    }
     return result;
   }
 
@@ -2611,6 +2655,96 @@ export class FlowSurfacesService {
       .forEach((uid) => {
         pushRow([{ uid, span: 24 }]);
       });
+
+    return {
+      rows,
+      sizes,
+      rowOrder,
+    };
+  }
+
+  private buildAppendGridLayoutPayload(input: { initialGrid: any; finalGrid: any; appendedItemUids: string[] }) {
+    const finalItemUids = _.castArray(input.finalGrid?.subModels?.items || [])
+      .map((item: any) => item?.uid)
+      .filter(Boolean);
+    if (!finalItemUids.length) {
+      return buildAutoLayout([]);
+    }
+
+    const appendedItemUids = Array.from(
+      new Set(input.appendedItemUids.filter((itemUid) => finalItemUids.includes(itemUid))),
+    );
+    const initialLayout = this.readGridLayout(input.initialGrid);
+
+    if (this.hasMaterialGridLayout(initialLayout) && this.isGridLayoutValid(input.initialGrid, initialLayout)) {
+      return this.appendRowsToLayout(initialLayout, appendedItemUids);
+    }
+
+    return buildAutoLayout(finalItemUids);
+  }
+
+  private readGridLayout(grid: any) {
+    const rows = _.cloneDeep(grid?.props?.rows || {});
+    return {
+      rows,
+      sizes: _.cloneDeep(grid?.props?.sizes || {}),
+      rowOrder: _.cloneDeep(grid?.props?.rowOrder || Object.keys(rows)),
+    };
+  }
+
+  private isGridLayoutValid(
+    grid: any,
+    layout: { rows: Record<string, string[][]>; sizes: Record<string, number[]>; rowOrder: string[] },
+  ) {
+    try {
+      this.contractGuard.validateLayout(grid, {
+        rows: layout.rows || {},
+        sizes: layout.sizes || {},
+        rowOrder: layout.rowOrder || Object.keys(layout.rows || {}),
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private hasMaterialGridLayout(layout: {
+    rows: Record<string, string[][]>;
+    sizes: Record<string, number[]>;
+    rowOrder: string[];
+  }) {
+    return !!(
+      layout.rowOrder?.length ||
+      Object.keys(layout.rows || {}).length ||
+      Object.keys(layout.sizes || {}).length
+    );
+  }
+
+  private appendRowsToLayout(
+    layout: {
+      rows: Record<string, string[][]>;
+      sizes: Record<string, number[]>;
+      rowOrder: string[];
+    },
+    appendedItemUids: string[],
+  ) {
+    const rows = _.cloneDeep(layout.rows || {});
+    const sizes = _.cloneDeep(layout.sizes || {});
+    const rowOrder = [...(layout.rowOrder || Object.keys(rows))];
+    const usedRowKeys = new Set([...Object.keys(rows), ...rowOrder]);
+    let nextRowIndex = 0;
+
+    for (const itemUid of appendedItemUids) {
+      let rowKey = '';
+      do {
+        nextRowIndex += 1;
+        rowKey = `appendRow${nextRowIndex}`;
+      } while (usedRowKeys.has(rowKey));
+      rows[rowKey] = [[itemUid]];
+      sizes[rowKey] = [24];
+      rowOrder.push(rowKey);
+      usedRowKeys.add(rowKey);
+    }
 
     return {
       rows,

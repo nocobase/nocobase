@@ -5759,6 +5759,302 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should auto-layout addBlock and addBlocks while preserving existing grid rows', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Add block auto layout page',
+      tabTitle: 'Add block auto layout tab',
+    });
+
+    const firstBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Alpha',
+          },
+        },
+      }),
+    );
+
+    let readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(readback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1'],
+      rows: {
+        autoRow1: [[firstBlock.uid]],
+      },
+      sizes: {
+        autoRow1: [24],
+      },
+    });
+
+    const customLayout = await rootAgent.resource('flowSurfaces').setLayout({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        rows: {
+          legacyRow: [[firstBlock.uid]],
+        },
+        sizes: {
+          legacyRow: [24],
+        },
+        rowOrder: ['legacyRow'],
+      },
+    });
+    expect(customLayout.status).toBe(200);
+
+    const secondBlock = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Beta',
+          },
+        },
+      }),
+    );
+
+    const batchAdd = getData(
+      await rootAgent.resource('flowSurfaces').addBlocks({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'gamma',
+              type: 'markdown',
+              settings: {
+                content: 'Gamma',
+              },
+            },
+            {
+              key: 'delta',
+              type: 'markdown',
+              settings: {
+                content: 'Delta',
+              },
+            },
+          ],
+        },
+      }),
+    );
+    expect(batchAdd.successCount).toBe(2);
+    expect(batchAdd.errorCount).toBe(0);
+
+    const thirdBlockUid = batchAdd.blocks[0].result.uid;
+    const fourthBlockUid = batchAdd.blocks[1].result.uid;
+    readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(readback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['legacyRow', 'appendRow1', 'appendRow2', 'appendRow3'],
+      rows: {
+        legacyRow: [[firstBlock.uid]],
+        appendRow1: [[secondBlock.uid]],
+        appendRow2: [[thirdBlockUid]],
+        appendRow3: [[fourthBlockUid]],
+      },
+      sizes: {
+        legacyRow: [24],
+        appendRow1: [24],
+        appendRow2: [24],
+        appendRow3: [24],
+      },
+    });
+  });
+
+  it('should preserve existing layout when compose append omits layout', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose append preserve layout page',
+      tabTitle: 'Compose append preserve layout tab',
+    });
+
+    const firstBlockUid = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Alpha',
+          },
+        },
+      }),
+    ).uid;
+    const secondBlockUid = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Beta',
+          },
+        },
+      }),
+    ).uid;
+
+    const customLayout = await rootAgent.resource('flowSurfaces').setLayout({
+      values: {
+        target: {
+          uid: page.gridUid,
+        },
+        rows: {
+          legacyRow: [[firstBlockUid], [secondBlockUid]],
+        },
+        sizes: {
+          legacyRow: [8, 16],
+        },
+        rowOrder: ['legacyRow'],
+      },
+    });
+    expect(customLayout.status).toBe(200);
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'gamma',
+            type: 'markdown',
+            settings: {
+              content: 'Gamma',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+
+    const composed = getData(composeRes);
+    expect(composed.layout).toMatchObject({
+      rowOrder: ['legacyRow', 'appendRow1'],
+      rows: {
+        legacyRow: [[firstBlockUid], [secondBlockUid]],
+        appendRow1: [[composed.keyToUid.gamma]],
+      },
+      sizes: {
+        legacyRow: [8, 16],
+        appendRow1: [24],
+      },
+    });
+
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(readback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['legacyRow', 'appendRow1'],
+      rows: {
+        legacyRow: [[firstBlockUid], [secondBlockUid]],
+        appendRow1: [[composed.keyToUid.gamma]],
+      },
+      sizes: {
+        legacyRow: [8, 16],
+        appendRow1: [24],
+      },
+    });
+  });
+
+  it('should rebuild auto layout when compose append sees an invalid existing layout', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Compose append fallback page',
+      tabTitle: 'Compose append fallback tab',
+    });
+
+    const firstBlockUid = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Alpha',
+          },
+        },
+      }),
+    ).uid;
+    const secondBlockUid = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          type: 'markdown',
+          settings: {
+            content: 'Beta',
+          },
+        },
+      }),
+    ).uid;
+
+    const currentGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    await flowRepo.patch({
+      uid: page.gridUid,
+      props: {
+        ...(currentGrid?.props || {}),
+        rows: {
+          legacyRow: [[firstBlockUid]],
+        },
+        sizes: {
+          legacyRow: [24],
+        },
+        rowOrder: ['legacyRow'],
+      },
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'append',
+        blocks: [
+          {
+            key: 'gamma',
+            type: 'markdown',
+            settings: {
+              content: 'Gamma',
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+
+    const composed = getData(composeRes);
+    const readback = await getSurface(rootAgent, {
+      uid: page.tabSchemaUid,
+    });
+    expect(readback.tree.subModels?.grid?.props).toMatchObject({
+      rowOrder: ['autoRow1', 'autoRow2', 'autoRow3'],
+      rows: {
+        autoRow1: [[firstBlockUid]],
+        autoRow2: [[secondBlockUid]],
+        autoRow3: [[composed.keyToUid.gamma]],
+      },
+      sizes: {
+        autoRow1: [24],
+        autoRow2: [24],
+        autoRow3: [24],
+      },
+    });
+  });
+
   it('should reject invalid settings paths events and layouts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Validation page',

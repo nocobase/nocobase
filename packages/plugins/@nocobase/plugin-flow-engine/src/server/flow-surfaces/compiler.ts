@@ -1282,7 +1282,7 @@ function hasRefValue(value: any): boolean {
   return false;
 }
 
-function buildAutoLayout(itemRefs: any[]) {
+export function buildAutoLayout(itemRefs: any[]) {
   if (!itemRefs.length) {
     return {
       rows: {},
