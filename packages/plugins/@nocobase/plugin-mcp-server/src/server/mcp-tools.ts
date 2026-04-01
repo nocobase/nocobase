@@ -9,13 +9,12 @@
 
 import type { McpTool } from '@nocobase/ai';
 import type { McpToolCallContext } from '@nocobase/ai';
-import type { McpToolsManager } from '@nocobase/ai';
 import type { OpenAPIV3 } from 'openapi-types';
+import { Application } from '@nocobase/server';
 import { requireModule } from '@nocobase/utils';
 import { merge as deepmerge } from '@nocobase/utils';
 import inject from 'light-my-request';
 import { sanitizeJsonSchemaForOpenAITools } from './schema-utils';
-import { Application } from '@nocobase/server';
 
 type OpenAPIDocument = OpenAPIV3.Document;
 type McpToolDefinitionWithBaseUrl = import('openapi-mcp-generator').McpToolDefinition & { baseUrl?: string };
@@ -197,24 +196,6 @@ export function parseResourceActionFromPath(pathTemplate: string) {
   };
 }
 
-function toPascalCase(value: string) {
-  return value
-    .split(/[^a-zA-Z0-9]+/)
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join('');
-}
-
-export function normalizeMcpToolName(tool: Pick<McpToolDefinitionWithBaseUrl, 'name' | 'pathTemplate'>) {
-  const actionMeta = parseResourceActionFromPath(tool.pathTemplate);
-
-  if (actionMeta.resourceName && actionMeta.actionName) {
-    return toPascalCase(`${actionMeta.resourceName}_${actionMeta.actionName}`);
-  }
-
-  return toPascalCase(tool.name);
-}
-
 function buildQueryValue(value: any) {
   if (typeof value === 'undefined') {
     return undefined;
@@ -233,6 +214,26 @@ function buildQueryValue(value: any) {
   }
 
   return value;
+}
+
+function formatToolName(name: string) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[.:\-/\s]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase()
+    .replace(/^(get|post|put|delete|patch|options|head|trace)_/, '');
+}
+
+export function normalizeMcpToolName(tool: Pick<McpToolDefinitionWithBaseUrl, 'name' | 'pathTemplate'>) {
+  const actionMeta = parseResourceActionFromPath(tool.pathTemplate);
+
+  if (actionMeta.resourceName && actionMeta.actionName) {
+    return formatToolName(`${actionMeta.resourceName}_${actionMeta.actionName}`);
+  }
+
+  return formatToolName(tool.name);
 }
 
 function buildRequest(

@@ -339,7 +339,7 @@ export const workflowSchema: ISchema = {
                   type: 'void',
                   'x-decorator': 'Table.Column.Decorator',
                   'x-component': 'Table.Column',
-                  title: `{{ t("Status", { ns: "${NAMESPACE}" }) }}`,
+                  title: `{{ t("Enabled", { ns: "${NAMESPACE}" }) }}`,
                   properties: {
                     enabled: {
                       type: 'boolean',
