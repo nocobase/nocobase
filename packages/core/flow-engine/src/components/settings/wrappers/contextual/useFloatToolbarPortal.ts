@@ -14,7 +14,6 @@ const APP_CONTAINER_SELECTOR = '#nocobase-app-container';
 const DRAWER_CONTENT_WRAPPER_SELECTOR = '.ant-drawer-content-wrapper';
 const DRAWER_CONTENT_SELECTOR = '.ant-drawer-content';
 const DRAWER_ROOT_SELECTOR = '.ant-drawer-root';
-const MODAL_CONTENT_SELECTOR = '.ant-modal-content';
 const MODAL_SELECTOR = '.ant-modal';
 const MODAL_WRAP_SELECTOR = '.ant-modal-wrap';
 const MODAL_ROOT_SELECTOR = '.ant-modal-root';
@@ -79,9 +78,8 @@ const createAbsolutePortalHostConfig = (element: HTMLElement): ToolbarPortalHost
 
 const popupPortalHostResolvers: Array<(hostEl: HTMLElement | null) => HTMLElement | null> = [
   (hostEl) => getClosestElement(hostEl, DRAWER_CONTENT_WRAPPER_SELECTOR),
-  (hostEl) => getClosestElement(hostEl, MODAL_CONTENT_SELECTOR),
-  (hostEl) => getClosestElement(hostEl, MODAL_SELECTOR),
   (hostEl) => getClosestElement(hostEl, MODAL_WRAP_SELECTOR),
+  (hostEl) => getClosestElement(hostEl, MODAL_SELECTOR),
   (hostEl) => {
     const drawerContent = getClosestElement(hostEl, DRAWER_CONTENT_SELECTOR);
     return drawerContent ? getClosestElement(drawerContent, DRAWER_CONTENT_WRAPPER_SELECTOR) || drawerContent : null;

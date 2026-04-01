@@ -14,15 +14,149 @@ import { JOB_STATUS } from '@nocobase/plugin-workflow';
 import { CacheTransport } from '../cache-logger';
 import ScriptInstruction from '../ScriptInstruction';
 
-describe('workflow-javascript > security > vm context protections', () => {
+describe('workflow-javascript > security > isolated-vm (default engine)', () => {
   let transport: CacheTransport;
   let logger;
+  let originalModules;
 
   beforeEach(() => {
+    originalModules = process.env.WORKFLOW_SCRIPT_MODULES;
+    delete process.env.WORKFLOW_SCRIPT_MODULES;
     transport = new CacheTransport();
     logger = winston.createLogger({
       transports: [transport],
     });
+  });
+
+  afterEach(() => {
+    if (originalModules !== undefined) {
+      process.env.WORKFLOW_SCRIPT_MODULES = originalModules;
+    }
+  });
+
+  it('should not have require available', async () => {
+    const script = `
+      try {
+        const fs = require('fs');
+        return { hasRequire: true };
+      } catch (e) {
+        return { hasRequire: false, error: e.message };
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.hasRequire).toBe(false);
+  });
+
+  it('should not have access to process', async () => {
+    const script = `
+      try {
+        return { hasProcess: typeof process !== 'undefined', pid: process?.pid };
+      } catch (e) {
+        return { hasProcess: false, error: e.message };
+      }
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.hasProcess).toBe(false);
+  });
+
+  it('should not have access to Node.js globals', async () => {
+    const script = `
+      return {
+        hasBuffer: typeof Buffer !== 'undefined',
+        hasSetImmediate: typeof setImmediate !== 'undefined',
+        hasClearImmediate: typeof clearImmediate !== 'undefined',
+        hasGlobal: typeof global !== 'undefined',
+      };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.hasBuffer).toBe(false);
+    expect(result.result.hasSetImmediate).toBe(false);
+    expect(result.result.hasClearImmediate).toBe(false);
+    expect(result.result.hasGlobal).toBe(false);
+  });
+
+  it('should not expose host-realm objects via console._stdout', async () => {
+    const script = `
+      const hasStdout = typeof console._stdout !== 'undefined';
+      const hasStderr = typeof console._stderr !== 'undefined';
+      return { hasStdout, hasStderr };
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result.hasStdout).toBe(false);
+    expect(result.result.hasStderr).toBe(false);
+  });
+
+  it('should support console.log', async () => {
+    const script = `
+      console.log('isolated-vm-check');
+      return 'ok';
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result).toBe('ok');
+    expect(transport.getLogs()).toContain('isolated-vm-check\n');
+  });
+
+  it('should handle arguments correctly', async () => {
+    const script = `
+      return { a: a, b: b };
+    `;
+
+    const result = await ScriptInstruction.run(script, { a: 1, b: 'hello' }, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result).toEqual({ a: 1, b: 'hello' });
+  });
+
+  it('should support async/await', async () => {
+    const script = `
+      const a = await Promise.resolve(10);
+      const b = await Promise.resolve(20);
+      return a + b;
+    `;
+
+    const result = await ScriptInstruction.run(script, {}, { logger });
+
+    expect(result.status).toBe(JOB_STATUS.RESOLVED);
+    expect(result.result).toBe(30);
+  });
+});
+
+describe('workflow-javascript > security > node vm engine (WORKFLOW_SCRIPT_MODULES set)', () => {
+  let transport: CacheTransport;
+  let logger;
+  let originalModules;
+
+  beforeEach(() => {
+    originalModules = process.env.WORKFLOW_SCRIPT_MODULES;
+    // Setting WORKFLOW_SCRIPT_MODULES triggers the node vm engine
+    process.env.WORKFLOW_SCRIPT_MODULES = 'path,crypto';
+    transport = new CacheTransport();
+    logger = winston.createLogger({
+      transports: [transport],
+    });
+  });
+
+  afterEach(() => {
+    if (originalModules !== undefined) {
+      process.env.WORKFLOW_SCRIPT_MODULES = originalModules;
+    } else {
+      delete process.env.WORKFLOW_SCRIPT_MODULES;
+    }
   });
 
   it('should mask constructors exposed to workflow scripts', async () => {

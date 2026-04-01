@@ -19,7 +19,7 @@
 import { Cache } from '@nocobase/cache';
 import { InstallOptions, Plugin } from '@nocobase/server';
 import { aggregateSearch, removeOwner, setOwner } from './actions/departments';
-import { listExcludeDept, setMainDepartment } from './actions/users';
+import { listExcludeDept } from './actions/users';
 import { departmentsField, mainDepartmentField } from './collections/users';
 import {
   destroyDepartmentCheck,
@@ -55,13 +55,12 @@ export class PluginDepartmentsServer extends Plugin {
 
     this.app.resourceManager.registerActionHandlers({
       'users:listExcludeDept': listExcludeDept,
-      'users:setMainDepartment': setMainDepartment,
       'departments:aggregateSearch': aggregateSearch,
       'departments:setOwner': setOwner,
       'departments:removeOwner': removeOwner,
     });
 
-    this.app.acl.allow('users', ['setMainDepartment', 'listExcludeDept'], 'loggedIn');
+    this.app.acl.allow('users', ['listExcludeDept'], 'loggedIn');
     this.app.acl.registerSnippet({
       name: `pm.${this.name}`,
       actions: [
@@ -69,7 +68,6 @@ export class PluginDepartmentsServer extends Plugin {
         'roles:list',
         'users:list',
         'users:listExcludeDept',
-        'users:setMainDepartment',
         'users.departments:*',
         'roles.departments:*',
         'departments.members:*',

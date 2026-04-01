@@ -3,7 +3,14 @@
   "Execute a SQL statement in database.": "데이터베이스에서 SQL 문을 실행합니다.",
   "Include meta information of this query in result": "결과에 쿼리 메타 정보 포함",
   "SQL action": "SQL 작업",
-  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL 쿼리 결과는 <1>JSON 쿼리 노드</1>(상용 플러그인)로 사용할 수 있습니다.",
+  "SQL query result could be used through <1>JSON query node</1>.": "SQL 쿼리 결과는 <1>JSON 쿼리 노드</1>를 통해 사용할 수 있습니다.",
   "Select a data source to execute SQL.": "SQL을 실행할 데이터 소스 선택",
-  "Usage of SQL query result is not supported yet.": "SQL 쿼리 결과 사용은 아직 지원되지 않습니다."
+  "Usage of SQL query result is not supported yet.": "SQL 쿼리 결과 사용은 아직 지원되지 않습니다.",
+  "Current node is using unsafe injection mode (legacy), which has SQL injection risks.": "현재 노드는 안전하지 않은 주입 모드(레거시)를 사용하고 있으며 SQL 주입 위험이 있습니다.",
+  "Migrate to safe mode": "안전 모드로 마이그레이션",
+  "Parameters": "매개변수",
+  "SQL parameters. Use :name as placeholders in SQL and provide values here.": "SQL 매개변수. SQL에서 :name을 자리 표시자로 사용하고 여기에 값을 제공하세요.",
+  "Name": "이름",
+  "Value": "값",
+  "Add parameter": "매개변수 추가"
 }
