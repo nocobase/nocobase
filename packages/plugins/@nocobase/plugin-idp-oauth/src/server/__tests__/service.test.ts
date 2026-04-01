@@ -7,21 +7,33 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { AppSupervisor } from '@nocobase/server';
 import { IdpOauthService } from '../service';
 
 describe('plugin-idp-oauth > IdpOauthService', () => {
-  test('should build frontend interaction paths for main app and sub app', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  test('should build frontend interaction paths for main app and sub app in multi-app mode', () => {
     const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'multiple',
+    } as any);
 
     expect(service.getFrontendInteractionPath('main', 'uid-1')).toBe('/idp-oauth/interaction/uid-1');
     expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/apps/demo/idp-oauth/interaction/uid-2');
   });
 
-  test('should build frontend error paths for main app and sub app', () => {
+  test('should build frontend paths without apps prefix in single mode', () => {
     const service = new IdpOauthService({} as any, {} as any);
+    vi.spyOn(AppSupervisor, 'getInstance').mockReturnValue({
+      runningMode: 'single',
+    } as any);
 
     expect(service.getFrontendErrorPath('main')).toBe('/idp-oauth/error');
-    expect(service.getFrontendErrorPath('demo')).toBe('/apps/demo/idp-oauth/error');
+    expect(service.getFrontendErrorPath('demo')).toBe('/idp-oauth/error');
+    expect(service.getFrontendInteractionPath('demo', 'uid-2')).toBe('/idp-oauth/interaction/uid-2');
   });
 
   test('getSupportedScopes should include resource server scopes without duplicates', () => {

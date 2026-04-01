@@ -8,7 +8,7 @@
  */
 
 import type { Cache } from '@nocobase/cache';
-import type Application from '@nocobase/server';
+import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
@@ -91,8 +91,17 @@ export class IdpOauthService {
     return `${origin}${this.getIssuerPath(appName)}`;
   }
 
+  private shouldUseSubAppPublicPrefix(appName: string) {
+    if (!appName || appName === 'main') {
+      return false;
+    }
+
+    const appSupervisor = AppSupervisor.getInstance();
+    return appSupervisor?.runningMode !== 'single';
+  }
+
   getFrontendInteractionPath(appName: string, uid: string) {
-    if (appName === 'main') {
+    if (!this.shouldUseSubAppPublicPrefix(appName)) {
       return `/idp-oauth/interaction/${uid}`;
     }
 
@@ -100,7 +109,7 @@ export class IdpOauthService {
   }
 
   getFrontendErrorPath(appName: string) {
-    if (appName === 'main') {
+    if (!this.shouldUseSubAppPublicPrefix(appName)) {
       return '/idp-oauth/error';
     }
 
