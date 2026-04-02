@@ -53,7 +53,7 @@ function isRenderableHeaderActionComponent(component: unknown): component is Com
 /**
  * 渲染单个头部动作。
  */
-export function HeaderActionRendererLite(props: { item: HeaderActionItemLite }) {
+export function HeaderActionRenderer(props: { item: HeaderActionItemLite }) {
   const app = useApp();
   const schemaOptions = useContext(SchemaOptionsContext) || {};
   const components = schemaOptions.components;

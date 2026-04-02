@@ -11,7 +11,7 @@ import { css } from '@emotion/css';
 import { ConfigProvider, Divider } from 'antd';
 import React, { useEffect, useState } from 'react';
 import { useApp } from '../../../flow-compat';
-import { HeaderActionRendererLite, type HeaderActionItemLite } from './HeaderActionRendererLite';
+import { HeaderActionRenderer, type HeaderActionItemLite } from './HeaderActionRendererLite';
 import { HelpLite } from './HelpLite';
 
 const HEADER_ACTIONS_MANAGER_CHANGED = 'header-actions-manager:changed';
@@ -102,7 +102,7 @@ export const PinnedPluginListLite = React.memo((props: { onClick?: () => void })
     <div className={pinnedPluginListClassName}>
       <div onClick={props.onClick}>
         {items.map((item) => (
-          <HeaderActionRendererLite key={item.name} item={item} />
+          <HeaderActionRenderer key={item.name} item={item} />
         ))}
       </div>
       <ConfigProvider theme={dividerTheme}>
