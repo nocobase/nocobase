@@ -15,7 +15,7 @@ export type FlowSurfaceReadLocator = {
   uid?: string;
   pageSchemaUid?: string;
   tabSchemaUid?: string;
-  routeId?: string | number;
+  routeId?: string;
 };
 
 export type FlowSurfaceWriteTarget = {
@@ -72,14 +72,7 @@ export type FlowSurfaceReadTarget = {
   kind: FlowSurfaceContainerKind;
 };
 
-export type FlowSurfaceContainerKind =
-  | 'page'
-  | 'tab'
-  | 'grid'
-  | 'block'
-  | 'field-container'
-  | 'action-container'
-  | 'node';
+export type FlowSurfaceContainerKind = 'page' | 'tab' | 'grid' | 'block' | 'node';
 
 export type FlowSurfaceDomainContract = {
   allowedKeys: string[];

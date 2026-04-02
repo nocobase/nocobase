@@ -1638,8 +1638,10 @@ const parameters = {
     in: 'query',
     description: 'Desktop route id',
     required: false,
-    schema: STRING_OR_INTEGER_SCHEMA,
-    example: 101,
+    schema: {
+      type: 'string',
+    },
+    example: '101',
   },
 };
 
@@ -1706,7 +1708,7 @@ const schemas = {
       },
       kind: {
         type: 'string',
-        enum: ['page', 'tab', 'grid', 'block', 'field-container', 'action-container', 'node'],
+        enum: ['page', 'tab', 'grid', 'block', 'node'],
       },
       pageSchemaUid: {
         type: 'string',
@@ -1714,7 +1716,9 @@ const schemas = {
       tabSchemaUid: {
         type: 'string',
       },
-      routeId: STRING_OR_INTEGER_SCHEMA,
+      routeId: {
+        type: 'string',
+      },
       route: ref('FlowSurfaceRouteMeta'),
       pageRoute: ref('FlowSurfaceRouteMeta'),
       tabRoute: ref('FlowSurfaceRouteMeta'),
@@ -1730,7 +1734,7 @@ const schemas = {
       },
       kind: {
         type: 'string',
-        enum: ['page', 'tab', 'grid', 'block', 'field-container', 'action-container', 'node'],
+        enum: ['page', 'tab', 'grid', 'block', 'node'],
       },
     },
     additionalProperties: false,

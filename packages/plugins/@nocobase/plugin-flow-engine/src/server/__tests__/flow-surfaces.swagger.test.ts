@@ -156,7 +156,7 @@ describe('flowSurfaces swagger', () => {
     expect(parameters.flowSurfaceTargetUid.example).toBe('view-action-uid');
     expect(parameters.flowSurfaceTargetPageSchemaUid.example).toBe('employees-page-schema');
     expect(parameters.flowSurfaceTargetTabSchemaUid.example).toBe('details-tab-schema');
-    expect(parameters.flowSurfaceTargetRouteId.example).toBe(101);
+    expect(parameters.flowSurfaceTargetRouteId.example).toBe('101');
 
     const catalogRequest = swaggerDocument.paths['/flowSurfaces:catalog'].post.requestBody.content['application/json'];
     expect(catalogRequest.example?.target?.uid).toBe('table-block-uid');
@@ -295,10 +295,14 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
-    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
-      .popupCurrentRecord.value.blocks[0].resource.binding).toBe('currentRecord');
-    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
-      .popupAssociatedRecords.value.blocks[0].resource).toMatchObject({
+    expect(
+      swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
+        .popupCurrentRecord.value.blocks[0].resource.binding,
+    ).toBe('currentRecord');
+    expect(
+      swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
+        .popupAssociatedRecords.value.blocks[0].resource,
+    ).toMatchObject({
       binding: 'associatedRecords',
       associationField: 'employee',
     });
@@ -426,7 +430,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.flowRegistry).toBeUndefined();
-    expect(schemas.FlowSurfaceAddBlockItem.properties.resource.$ref).toBe('#/components/schemas/FlowSurfaceBlockResourceInput');
+    expect(schemas.FlowSurfaceAddBlockItem.properties.resource.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockResourceInput',
+    );
 
     const addActionRequest =
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];
