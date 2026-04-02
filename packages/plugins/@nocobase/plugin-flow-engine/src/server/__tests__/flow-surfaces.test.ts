@@ -1065,6 +1065,7 @@ describe('flowSurfaces resource', () => {
     expect(tableCatalog.settingsContract?.stepParams?.allowedKeys).not.toContain('paginationSettings');
     expect(tableCatalog.fields.some((item: any) => item.key === 'nickname')).toBe(true);
     expect(tableCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
+    expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
     expect(tableCatalog.fields.find((item: any) => item.key === 'skills')).toMatchObject({
       use: 'TableColumnModel',
       fieldUse: 'DisplayTextFieldModel',
@@ -1277,6 +1278,17 @@ describe('flowSurfaces resource', () => {
     expect(editFormCatalog.settingsContract?.stepParams?.groups?.formSettings?.eventBindingSteps).toEqual(
       expect.arrayContaining(['init', 'dataScope', 'refresh']),
     );
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'department.title')).toMatchObject({
+      use: 'FormAssociationItemModel',
+      wrapperUse: 'FormAssociationItemModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'js:department.title')).toBeUndefined();
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'js:nickname')).toMatchObject({
+      use: 'FormItemModel',
+      fieldUse: 'JSEditableFieldModel',
+      renderer: 'js',
+    });
 
     const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'form', {
       dataSourceKey: 'main',
@@ -1368,6 +1380,8 @@ describe('flowSurfaces resource', () => {
       use: 'DetailsItemModel',
       fieldUse: 'DisplaySubTableFieldModel',
     });
+    expect(detailsCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
+    expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
 
     const listUid = await addBlock(rootAgent, page.tabSchemaUid, 'list', {
       dataSourceKey: 'main',
@@ -1404,6 +1418,8 @@ describe('flowSurfaces resource', () => {
       use: 'DetailsItemModel',
       fieldUse: 'DisplaySubTableFieldModel',
     });
+    expect(gridCardCatalog.fields.some((item: any) => item.key === 'department.title')).toBe(true);
+    expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
 
     const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
       dataSourceKey: 'main',
@@ -1476,9 +1492,9 @@ describe('flowSurfaces resource', () => {
       ]),
     );
     expect(
-      plainPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')?.resourceBindings.map(
-        (item: any) => item.key,
-      ),
+      plainPopupCatalog.blocks
+        .find((item: any) => item.use === 'CreateFormModel')
+        ?.resourceBindings.map((item: any) => item.key),
     ).not.toEqual(expect.arrayContaining(['currentRecord', 'associatedRecords']));
     expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
     expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
@@ -1509,9 +1525,9 @@ describe('flowSurfaces resource', () => {
     expect(recordPopupTableBindings.map((item: any) => item.key)).not.toEqual(
       expect.arrayContaining(['currentCollection', 'currentRecord']),
     );
-    expect(
-      recordPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields,
-    ).toEqual(expect.arrayContaining([expect.objectContaining({ key: 'skills' })]));
+    expect(recordPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 'skills' })]),
+    );
 
     const recordScopedPopupAction = await addRecordAction(rootAgent, tableUid, 'popup');
     const recordScopedPopupCatalog = await getData(
@@ -1568,9 +1584,9 @@ describe('flowSurfaces resource', () => {
     expect(relationPopupTableBindings.map((item: any) => item.key)).not.toEqual(
       expect.arrayContaining(['currentCollection', 'currentRecord']),
     );
-    expect(
-      relationPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields,
-    ).toEqual(expect.arrayContaining([expect.objectContaining({ key: 'employee' })]));
+    expect(relationPopupTableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 'employee' })]),
+    );
   });
 
   it('should compose meaningful popup blocks and reject current-record blocks on plain popup surfaces', async () => {
@@ -3730,6 +3746,42 @@ describe('flowSurfaces resource', () => {
     });
     expect(fieldReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
 
+    const fieldPopupCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: clickableField.fieldUid,
+          },
+        },
+      }),
+    );
+    const fieldPopupDetailsBindings =
+      fieldPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(fieldPopupDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
+    );
+    expect(fieldPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
+    const popupGridCatalog = await getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: popupBlock.popupGridUid,
+          },
+        },
+      }),
+    );
+    const popupGridDetailsBindings =
+      popupGridCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(popupGridDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
+    );
+    expect(popupGridDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
     await rootAgent.resource('flowSurfaces').updateSettings({
       values: {
         target: {
@@ -4222,6 +4274,50 @@ describe('flowSurfaces resource', () => {
     });
     expect(applyFieldRes.status).toBe(200);
     expect(applyFieldRes.body.data.clientKeyToUid['catalog-form-field']).toBeTruthy();
+  });
+
+  it('should reject bound fields without interface in addField while keeping interface-backed fields working', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'No interface field page',
+      tabTitle: 'No interface field tab',
+    });
+
+    const rolesTableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+    });
+    const rolesDetailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+    });
+    const rolesEditFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+    });
+
+    for (const [targetUid, fieldPath] of [
+      [rolesTableUid, 'default'],
+      [rolesDetailsUid, 'hidden'],
+      [rolesEditFormUid, 'default'],
+    ] as Array<[string, string]>) {
+      const invalidRes = await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: targetUid,
+          },
+          fieldPath,
+        },
+      });
+      expect(invalidRes.status).toBe(400);
+      expect(readErrorMessage(invalidRes)).toContain(`roles.${fieldPath}`);
+      expect(readErrorMessage(invalidRes)).toContain('has no interface');
+    }
+
+    const validField = await addField(rootAgent, rolesTableUid, 'title');
+    const validFieldReadback = await getSurface(rootAgent, {
+      uid: validField.fieldUid,
+    });
+    expect(validFieldReadback.tree.use).toBe('DisplayTextFieldModel');
   });
 
   it('should keep action visibility aligned between catalog and direct addAction', async () => {
@@ -5997,6 +6093,16 @@ describe('flowSurfaces resource', () => {
         autoRow2: [24],
       },
     });
+    await flowRepo.patch({
+      uid: page.gridUid,
+      stepParams: {
+        legacyFlow: {
+          legacyStep: {
+            keep: true,
+          },
+        },
+      },
+    });
 
     const customLayout = await rootAgent.resource('flowSurfaces').setLayout({
       values: {
@@ -6013,6 +6119,25 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(customLayout.status).toBe(200);
+    const persistedGrid = await flowRepo.findModelById(page.gridUid, { includeAsyncNode: true });
+    expect(persistedGrid?.stepParams).toMatchObject({
+      legacyFlow: {
+        legacyStep: {
+          keep: true,
+        },
+      },
+      gridSettings: {
+        grid: {
+          rows: {
+            legacyRow: [[firstUid], [secondUid]],
+          },
+          sizes: {
+            legacyRow: [12, 12],
+          },
+          rowOrder: ['legacyRow'],
+        },
+      },
+    });
 
     const resetLegacyLayoutRes = await rootAgent.resource('flowSurfaces').apply({
       values: {

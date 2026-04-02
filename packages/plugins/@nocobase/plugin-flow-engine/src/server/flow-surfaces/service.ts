@@ -95,6 +95,8 @@ const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'Ed
 const LIST_BLOCK_USES = new Set(['ListBlockModel']);
 const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
+const GRID_SETTINGS_FLOW_KEY = 'gridSettings';
+const GRID_SETTINGS_LAYOUT_STEP_KEY = 'grid';
 const STATIC_CONTENT_BLOCK_USES = new Set([
   'MarkdownBlockModel',
   'IframeBlockModel',
@@ -111,11 +113,32 @@ const FILTER_TARGET_BLOCK_USES = new Set([
   'MapBlockModel',
   'CommentsBlockModel',
 ]);
-const FIELD_WRAPPER_USES = new Set(['FormItemModel', 'DetailsItemModel', 'FilterFormItemModel', 'TableColumnModel']);
+const FIELD_WRAPPER_USES = new Set([
+  'FormItemModel',
+  'FormAssociationItemModel',
+  'DetailsItemModel',
+  'FilterFormItemModel',
+  'TableColumnModel',
+]);
 const STANDALONE_FIELD_NODE_USES = new Set(['JSColumnModel', 'JSItemModel']);
 const DISPLAY_FIELD_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
-const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set(['FormItemModel', 'DetailsItemModel', 'TableColumnModel']);
+const TITLE_FIELD_SUPPORTED_WRAPPER_USES = new Set([
+  'FormItemModel',
+  'FormAssociationItemModel',
+  'DetailsItemModel',
+  'TableColumnModel',
+]);
 const AUTO_TITLE_FIELD_BINDING_WRAPPER_USES = new Set(['DetailsItemModel', 'TableColumnModel']);
+const UI_FIELD_MENU_TABLE_OWNER_USES = new Set(['TableBlockModel']);
+const UI_FIELD_MENU_DETAILS_OWNER_USES = new Set(['DetailsBlockModel', 'GridCardBlockModel', 'GridCardItemModel']);
+const UI_FIELD_MENU_FORM_OWNER_USES = new Set([
+  'FormBlockModel',
+  'CreateFormModel',
+  'EditFormModel',
+  'AssignFormModel',
+  'FormGridModel',
+  'AssignFormGridModel',
+]);
 const ACTION_BUTTON_USES = new Set([
   'AddNewActionModel',
   'ViewActionModel',
@@ -218,6 +241,17 @@ type FlowSurfaceAddFieldResult = {
   wrapperUid?: string;
   fieldUid?: string;
   innerFieldUid?: string;
+};
+
+type FlowSurfaceFieldMenuCandidate = {
+  field: any;
+  fieldPath: string;
+  associationPathName?: string;
+  label: string;
+  supportsJs: boolean;
+  explicitWrapperUse?: string;
+  explicitFieldUse?: string;
+  defaultTitleField?: string;
 };
 
 type FlowSurfacePopupScene = 'new' | 'one' | 'many' | 'select' | 'subForm' | 'bulkEditForm' | 'generic';
@@ -360,6 +394,10 @@ export class FlowSurfacesService {
 
   private isCollectionBlockUse(use?: string) {
     return COLLECTION_BLOCK_USES.has(use || '');
+  }
+
+  private isPopupFieldHostUse(use?: string) {
+    return isPopupHostUse(use) && !POPUP_ACTION_USES.has(use || '');
   }
 
   private formatPopupSupportedBindings(resourceBindings: FlowSurfaceResourceBindingOption[]) {
@@ -656,6 +694,10 @@ export class FlowSurfacesService {
       ['ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel'].includes(hostNode?.use) &&
       hostContext.recordActionContainerUse
     ) {
+      filterByTk = '{{ctx.view.inputArgs.filterByTk}}';
+      hasCurrentRecord = true;
+    }
+    if (!hasCurrentRecord && collectionName && this.isPopupFieldHostUse(hostNode?.use)) {
       filterByTk = '{{ctx.view.inputArgs.filterByTk}}';
       hasCurrentRecord = true;
     }
@@ -2182,8 +2224,33 @@ export class FlowSurfacesService {
       associationPathName: values.associationPathName,
       fieldPath: values.fieldPath,
     });
+    if (!getFieldInterface(resolvedField.field)) {
+      throwBadRequest(
+        `flowSurfaces field '${resolvedField.collectionName}.${normalizeFieldPath(
+          resolvedField.fieldPath,
+          resolvedField.associationPathName,
+        )}' has no interface and cannot be added via addField`,
+      );
+    }
+    const fieldMenuCandidate = isFilterFormItem
+      ? null
+      : this.findFieldMenuCandidate({
+          ownerUse: container.ownerUse,
+          resourceInit: resourceContext.resourceInit,
+          fieldPath: resolvedField.fieldPath,
+          associationPathName: resolvedField.associationPathName,
+        });
+    if (values.renderer === 'js' && fieldMenuCandidate && !fieldMenuCandidate.supportsJs) {
+      throwBadRequest(
+        `flowSurfaces addField renderer 'js' is not available for '${normalizeFieldPath(
+          resolvedField.fieldPath,
+          resolvedField.associationPathName,
+        )}' under '${container.ownerUse}'`,
+      );
+    }
+    const effectiveWrapperUse = fieldMenuCandidate?.explicitWrapperUse || container.wrapperUse;
     const normalizedFieldBinding = this.normalizeDisplayFieldBinding({
-      wrapperUse: container.wrapperUse,
+      wrapperUse: effectiveWrapperUse,
       dataSourceKey: resolvedField.dataSourceKey,
       collectionName: resolvedField.collectionName,
       fieldPath: resolvedField.fieldPath,
@@ -2204,21 +2271,22 @@ export class FlowSurfacesService {
       : undefined;
     let capabilityField = preferredCapabilityField;
     let boundFieldCapability;
-    try {
-      boundFieldCapability = resolveSupportedFieldCapability({
-        containerUse: container.ownerUse,
-        field: capabilityField,
-        requestedFieldUse: values.fieldUse,
-        requestedWrapperUse: container.wrapperUse,
-        requestedRenderer: values.renderer,
-      });
-    } catch (error) {
-      if (
-        hasOwnDefined(values, 'fieldUse') &&
-        capabilityField !== resolvedField.field &&
-        error instanceof FlowSurfaceBadRequestError
-      ) {
-        capabilityField = resolvedField.field;
+    if (fieldMenuCandidate?.explicitWrapperUse && fieldMenuCandidate?.explicitFieldUse && !values.renderer) {
+      if (hasOwnDefined(values, 'fieldUse') && values.fieldUse !== fieldMenuCandidate.explicitFieldUse) {
+        throwBadRequest(
+          `flowSurfaces fieldUse '${values.fieldUse}' does not match inferred fieldUse '${fieldMenuCandidate.explicitFieldUse}' under '${container.ownerUse}'`,
+        );
+      }
+      boundFieldCapability = {
+        wrapperUse: fieldMenuCandidate.explicitWrapperUse,
+        fieldUse: fieldMenuCandidate.explicitFieldUse,
+        inferredFieldUse: fieldMenuCandidate.explicitFieldUse,
+        standaloneUse: undefined,
+        renderer: undefined,
+      };
+      capabilityField = resolvedField.field;
+    } else {
+      try {
         boundFieldCapability = resolveSupportedFieldCapability({
           containerUse: container.ownerUse,
           field: capabilityField,
@@ -2226,8 +2294,23 @@ export class FlowSurfacesService {
           requestedWrapperUse: container.wrapperUse,
           requestedRenderer: values.renderer,
         });
-      } else {
-        throw error;
+      } catch (error) {
+        if (
+          hasOwnDefined(values, 'fieldUse') &&
+          capabilityField !== resolvedField.field &&
+          error instanceof FlowSurfaceBadRequestError
+        ) {
+          capabilityField = resolvedField.field;
+          boundFieldCapability = resolveSupportedFieldCapability({
+            containerUse: container.ownerUse,
+            field: capabilityField,
+            requestedFieldUse: values.fieldUse,
+            requestedWrapperUse: container.wrapperUse,
+            requestedRenderer: values.renderer,
+          });
+        } else {
+          throw error;
+        }
       }
     }
     const defaultFieldState = buildDefaultFieldState(
@@ -2247,16 +2330,16 @@ export class FlowSurfacesService {
       wrapperProps: _.merge(
         {},
         defaultFieldState.wrapperProps || {},
-        !_.isUndefined(normalizedFieldBinding.defaultTitleField)
-          ? { titleField: normalizedFieldBinding.defaultTitleField }
+        !_.isUndefined(normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField)
+          ? { titleField: normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField }
           : {},
         values.wrapperProps || {},
       ),
       fieldProps: _.merge(
         {},
         defaultFieldState.fieldProps || {},
-        !_.isUndefined(normalizedFieldBinding.defaultTitleField)
-          ? { titleField: normalizedFieldBinding.defaultTitleField }
+        !_.isUndefined(normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField)
+          ? { titleField: normalizedFieldBinding.defaultTitleField ?? fieldMenuCandidate?.defaultTitleField }
           : {},
         values.fieldProps || {},
       ),
@@ -2727,6 +2810,17 @@ export class FlowSurfacesService {
           rows,
           sizes,
           rowOrder,
+        },
+        stepParams: {
+          ...(grid.stepParams || {}),
+          [GRID_SETTINGS_FLOW_KEY]: {
+            ...(grid.stepParams?.[GRID_SETTINGS_FLOW_KEY] || {}),
+            [GRID_SETTINGS_LAYOUT_STEP_KEY]: {
+              rows,
+              sizes,
+              rowOrder,
+            },
+          },
         },
       },
       { transaction: options.transaction },
@@ -5081,7 +5175,341 @@ export class FlowSurfacesService {
     });
   }
 
+  private getFieldMenuCatalogMode(ownerUse: string) {
+    if (UI_FIELD_MENU_TABLE_OWNER_USES.has(ownerUse)) {
+      return 'table';
+    }
+    if (UI_FIELD_MENU_DETAILS_OWNER_USES.has(ownerUse)) {
+      return 'details';
+    }
+    if (UI_FIELD_MENU_FORM_OWNER_USES.has(ownerUse)) {
+      return 'form';
+    }
+    return null;
+  }
+
+  private resolveAssociationLeafDisplaySemantics(field: any, dataSourceKey: string) {
+    if (isAssociationField(field)) {
+      const defaultTitleField = this.getAssociationDefaultTitleFieldName(field, dataSourceKey);
+      if (!defaultTitleField) {
+        return null;
+      }
+      return {
+        fieldUse: 'DisplayTextFieldModel',
+        defaultTitleField,
+      };
+    }
+
+    const fieldUse = inferAssociationLeafDisplayFieldUse(getFieldInterface(field));
+    if (!fieldUse) {
+      return null;
+    }
+    return {
+      fieldUse,
+      defaultTitleField: undefined,
+    };
+  }
+
+  private buildFieldMenuDirectCandidates(input: {
+    mode: 'table' | 'details' | 'form';
+    ownerUse: string;
+    resourceInit: Record<string, any>;
+  }) {
+    const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    return getCollectionFields(collection)
+      .filter((field) => {
+        const fieldName = getFieldName(field);
+        const fieldInterface = getFieldInterface(field);
+        if (!fieldName || !fieldInterface) {
+          return false;
+        }
+        if (input.mode === 'table' && field?.options?.treeChildren) {
+          return false;
+        }
+        if (isAssociationField(field)) {
+          const targetCollection = resolveFieldTargetCollection(
+            field,
+            input.resourceInit.dataSourceKey,
+            (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+          );
+          if (input.mode === 'form' && targetCollection?.template === 'file') {
+            return false;
+          }
+          if (input.mode === 'table') {
+            return !!this.getAssociationDefaultTitleFieldName(field, input.resourceInit.dataSourceKey);
+          }
+          return true;
+        }
+        if (input.mode === 'form') {
+          return !!inferFieldMenuEditableFieldUse(fieldInterface);
+        }
+        return !!inferAssociationLeafDisplayFieldUse(fieldInterface);
+      })
+      .map((field) => ({
+        field,
+        fieldPath: getFieldName(field),
+        label: getFieldTitle(field),
+        supportsJs: true,
+      }));
+  }
+
+  private collectFieldMenuAssociationLeafCandidates(input: {
+    mode: 'table' | 'details' | 'form';
+    ownerUse: string;
+    collection: any;
+    dataSourceKey: string;
+    pathPrefix?: string;
+    titlePrefix?: string[];
+    visitedCollectionKeys?: string[];
+  }): FlowSurfaceFieldMenuCandidate[] {
+    const collection = input.collection;
+    if (!collection) {
+      return [];
+    }
+
+    const visitedCollectionKeys = _.castArray(input.visitedCollectionKeys || []);
+    const nextCandidates: FlowSurfaceFieldMenuCandidate[] = [];
+
+    for (const field of getCollectionFields(collection)) {
+      if (!getFieldInterface(field) || !isAssociationField(field)) {
+        continue;
+      }
+
+      const fieldInterface = String(getFieldInterface(field) || '').trim();
+      if (MULTI_VALUE_ASSOCIATION_INTERFACES.has(fieldInterface)) {
+        continue;
+      }
+
+      const relationName = getFieldName(field);
+      const relationTitle = getFieldTitle(field);
+      if (!relationName) {
+        continue;
+      }
+
+      const targetCollection = resolveFieldTargetCollection(
+        field,
+        input.dataSourceKey,
+        (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      );
+      if (!targetCollection) {
+        continue;
+      }
+
+      const associationPathName = input.pathPrefix ? `${input.pathPrefix}.${relationName}` : relationName;
+      const titlePrefix = [..._.castArray(input.titlePrefix || []), relationTitle];
+
+      for (const targetField of getCollectionFields(targetCollection)) {
+        if (!getFieldInterface(targetField)) {
+          continue;
+        }
+        const displaySemantics = this.resolveAssociationLeafDisplaySemantics(targetField, input.dataSourceKey);
+        if (!displaySemantics) {
+          continue;
+        }
+        const targetFieldName = getFieldName(targetField);
+        if (!targetFieldName) {
+          continue;
+        }
+        nextCandidates.push({
+          field: targetField,
+          fieldPath: `${associationPathName}.${targetFieldName}`,
+          associationPathName,
+          label: [...titlePrefix, getFieldTitle(targetField)].join(' / '),
+          supportsJs: input.mode !== 'form',
+          explicitWrapperUse: input.mode === 'form' ? 'FormAssociationItemModel' : undefined,
+          explicitFieldUse: displaySemantics.fieldUse,
+          defaultTitleField: displaySemantics.defaultTitleField,
+        });
+      }
+
+      const cycleKey = buildCatalogCollectionCycleKey(targetCollection, input.dataSourceKey);
+      if (cycleKey && visitedCollectionKeys.includes(cycleKey)) {
+        continue;
+      }
+      nextCandidates.push(
+        ...this.collectFieldMenuAssociationLeafCandidates({
+          ...input,
+          collection: targetCollection,
+          pathPrefix: associationPathName,
+          titlePrefix,
+          visitedCollectionKeys: cycleKey ? [...visitedCollectionKeys, cycleKey] : visitedCollectionKeys,
+        }),
+      );
+    }
+
+    return nextCandidates;
+  }
+
+  private buildFieldMenuCandidates(input: {
+    ownerUse: string;
+    resourceInit: Record<string, any>;
+  }): FlowSurfaceFieldMenuCandidate[] {
+    const mode = this.getFieldMenuCatalogMode(input.ownerUse);
+    if (!mode) {
+      return [];
+    }
+
+    const collection = this.getCollection(input.resourceInit.dataSourceKey, input.resourceInit.collectionName);
+    if (!collection) {
+      return [];
+    }
+
+    const rootCycleKey = buildCatalogCollectionCycleKey(collection, input.resourceInit.dataSourceKey);
+    return dedupeVisibleFieldCandidates([
+      ...this.buildFieldMenuDirectCandidates({
+        mode,
+        ownerUse: input.ownerUse,
+        resourceInit: input.resourceInit,
+      }),
+      ...this.collectFieldMenuAssociationLeafCandidates({
+        mode,
+        ownerUse: input.ownerUse,
+        collection,
+        dataSourceKey: input.resourceInit.dataSourceKey,
+        visitedCollectionKeys: rootCycleKey ? [rootCycleKey] : [],
+      }),
+    ]);
+  }
+
+  private findFieldMenuCandidate(input: {
+    ownerUse: string;
+    resourceInit: Record<string, any>;
+    fieldPath: string;
+    associationPathName?: string;
+  }) {
+    const candidates = this.buildFieldMenuCandidates({
+      ownerUse: input.ownerUse,
+      resourceInit: input.resourceInit,
+    });
+    const normalizedFieldPath = normalizeFieldPath(input.fieldPath, input.associationPathName);
+    return (
+      candidates.find(
+        (candidate) => normalizeFieldPath(candidate.fieldPath, candidate.associationPathName) === normalizedFieldPath,
+      ) || null
+    );
+  }
+
   private buildFieldCatalogEntriesForResource(input: {
+    ownerUse: string;
+    resourceInit: Record<string, any>;
+    targetBlockUid?: string;
+    targetLabel?: string;
+    multiTarget?: boolean;
+    requireDefaultTargetUid?: boolean;
+  }) {
+    const containerKind = normalizeFieldContainerKind(input.ownerUse);
+    const targetPrefix = input.multiTarget && input.targetLabel ? `${input.targetLabel} / ` : '';
+    const fieldMenuEntries = this.buildFieldMenuCandidates({
+      ownerUse: input.ownerUse,
+      resourceInit: input.resourceInit,
+    });
+    if (fieldMenuEntries.length) {
+      const semanticEntries = fieldMenuEntries.flatMap((item) => {
+        const label = `${targetPrefix}${item.label}`;
+        const entries: Array<Record<string, any>> = [];
+        const pushEntry = (semantic: { renderer?: 'js'; type?: 'jsColumn' | 'jsItem' } = {}) => {
+          if (semantic.renderer === 'js' && !item.supportsJs) {
+            return;
+          }
+
+          let wrapperUse = item.explicitWrapperUse;
+          let fieldUse = item.explicitFieldUse;
+          let standaloneUse: string | undefined;
+
+          if (semantic.renderer || semantic.type || !wrapperUse || !fieldUse) {
+            const capabilityField = this.resolvePreferredFieldForCapability({
+              containerUse: input.ownerUse,
+              dataSourceKey: input.resourceInit.dataSourceKey,
+              associationPathName: item.associationPathName,
+              field: item.field,
+            });
+            const fieldCapability = resolveSupportedFieldCapability({
+              containerUse: input.ownerUse,
+              field: capabilityField,
+              requestedRenderer: semantic.renderer,
+              requestedType: semantic.type,
+            });
+            wrapperUse = wrapperUse || fieldCapability.wrapperUse;
+            fieldUse = fieldUse || fieldCapability.fieldUse;
+            standaloneUse = fieldCapability.standaloneUse;
+          }
+
+          const use = standaloneUse || wrapperUse;
+          if (!use) {
+            return;
+          }
+
+          entries.push({
+            key: semantic.type ? semantic.type : semantic.renderer === 'js' ? `js:${item.fieldPath}` : item.fieldPath,
+            label: semantic.type ? `JS / ${semantic.type}` : semantic.renderer === 'js' ? `JS / ${label}` : label,
+            kind: 'field',
+            use,
+            fieldUse: standaloneUse || fieldUse,
+            wrapperUse,
+            associationPathName: item.associationPathName,
+            ...(semantic.renderer ? { renderer: semantic.renderer } : {}),
+            ...(semantic.type ? { type: semantic.type } : {}),
+            ...(input.targetBlockUid
+              ? { defaultTargetUid: input.targetBlockUid, targetBlockUid: input.targetBlockUid }
+              : {}),
+            requiredInitParams: semantic.type
+              ? []
+              : wrapperUse === 'FilterFormItemModel' && input.requireDefaultTargetUid
+                ? ['fieldPath', 'defaultTargetUid']
+                : ['fieldPath'],
+            editableDomains: this.getEditableDomains(use),
+            configureOptions: getConfigureOptionsForUse(use),
+            settingsSchema: getSettingsSchemaForUse(use),
+            settingsContract: getNodeContract(use).domains,
+          });
+        };
+
+        pushEntry();
+        if (containerKind === 'form' || containerKind === 'details' || containerKind === 'table') {
+          pushEntry({ renderer: 'js' });
+        }
+        return entries;
+      });
+
+      if (containerKind === 'table') {
+        semanticEntries.push({
+          key: 'jsColumn',
+          label: 'JS / jsColumn',
+          kind: 'field',
+          use: 'JSColumnModel',
+          fieldUse: 'JSColumnModel',
+          type: 'jsColumn',
+          requiredInitParams: [],
+          editableDomains: this.getEditableDomains('JSColumnModel'),
+          configureOptions: getConfigureOptionsForUse('JSColumnModel'),
+          settingsSchema: getSettingsSchemaForUse('JSColumnModel'),
+          settingsContract: getNodeContract('JSColumnModel').domains,
+        });
+      }
+
+      if (containerKind === 'form') {
+        semanticEntries.push({
+          key: 'jsItem',
+          label: 'JS / jsItem',
+          kind: 'field',
+          use: 'JSItemModel',
+          fieldUse: 'JSItemModel',
+          type: 'jsItem',
+          requiredInitParams: [],
+          editableDomains: this.getEditableDomains('JSItemModel'),
+          configureOptions: getConfigureOptionsForUse('JSItemModel'),
+          settingsSchema: getSettingsSchemaForUse('JSItemModel'),
+          settingsContract: getNodeContract('JSItemModel').domains,
+        });
+      }
+
+      return semanticEntries;
+    }
+
+    return this.buildLegacyFieldCatalogEntriesForResource(input);
+  }
+
+  private buildLegacyFieldCatalogEntriesForResource(input: {
     ownerUse: string;
     resourceInit: Record<string, any>;
     targetBlockUid?: string;
@@ -6624,6 +7052,87 @@ function getFieldFilterable(field: any) {
   return field?.options?.filterable;
 }
 
+function inferAssociationLeafDisplayFieldUse(fieldInterface?: string) {
+  const normalized = String(fieldInterface || '').trim();
+  const map: Record<string, string> = {
+    richText: 'DisplayHtmlFieldModel',
+    number: 'DisplayNumberFieldModel',
+    integer: 'DisplayNumberFieldModel',
+    id: 'DisplayNumberFieldModel',
+    snowflakeId: 'DisplayNumberFieldModel',
+    json: 'DisplayJSONFieldModel',
+    select: 'DisplayTextFieldModel',
+    multipleSelect: 'DisplayTextFieldModel',
+    radioGroup: 'DisplayTextFieldModel',
+    checkboxGroup: 'DisplayTextFieldModel',
+    collection: 'DisplayTextFieldModel',
+    tableoid: 'DisplayTextFieldModel',
+    icon: 'DisplayIconFieldModel',
+    checkbox: 'DisplayCheckboxFieldModel',
+    password: 'DisplayPasswordFieldModel',
+    percent: 'DisplayPercentFieldModel',
+    date: 'DisplayDateTimeFieldModel',
+    datetimeNoTz: 'DisplayDateTimeFieldModel',
+    createdAt: 'DisplayDateTimeFieldModel',
+    datetime: 'DisplayDateTimeFieldModel',
+    updatedAt: 'DisplayDateTimeFieldModel',
+    unixTimestamp: 'DisplayDateTimeFieldModel',
+    formula: 'DisplayDateTimeFieldModel',
+    input: 'DisplayTextFieldModel',
+    email: 'DisplayTextFieldModel',
+    phone: 'DisplayTextFieldModel',
+    uuid: 'DisplayTextFieldModel',
+    textarea: 'DisplayTextFieldModel',
+    nanoid: 'DisplayTextFieldModel',
+    url: 'DisplayURLFieldModel',
+    color: 'DisplayColorFieldModel',
+    time: 'DisplayTimeFieldModel',
+  };
+  return map[normalized];
+}
+
+function inferFieldMenuEditableFieldUse(fieldInterface?: string) {
+  const normalized = String(fieldInterface || '').trim();
+  if (['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'].includes(normalized)) {
+    return 'RecordSelectFieldModel';
+  }
+
+  const map: Record<string, string> = {
+    json: 'JsonFieldModel',
+    textarea: 'TextareaFieldModel',
+    icon: 'IconFieldModel',
+    radioGroup: 'SelectFieldModel',
+    color: 'ColorFieldModel',
+    select: 'SelectFieldModel',
+    multipleSelect: 'SelectFieldModel',
+    checkboxGroup: 'SelectFieldModel',
+    checkbox: 'CheckboxFieldModel',
+    password: 'PasswordFieldModel',
+    number: 'NumberFieldModel',
+    integer: 'NumberFieldModel',
+    id: 'NumberFieldModel',
+    snowflakeId: 'NumberFieldModel',
+    percent: 'PercentFieldModel',
+    datetimeNoTz: 'DateTimeNoTzFieldModel',
+    date: 'DateOnlyFieldModel',
+    datetime: 'DateTimeTzFieldModel',
+    createdAt: 'DateTimeTzFieldModel',
+    updatedAt: 'DateTimeTzFieldModel',
+    unixTimestamp: 'DateTimeTzFieldModel',
+    time: 'TimeFieldModel',
+    collection: 'CollectionSelectorFieldModel',
+    tableoid: 'CollectionSelectorFieldModel',
+    richText: 'RichTextFieldModel',
+    input: 'InputFieldModel',
+    email: 'InputFieldModel',
+    phone: 'InputFieldModel',
+    uuid: 'InputFieldModel',
+    url: 'InputFieldModel',
+    nanoid: 'InputFieldModel',
+  };
+  return map[normalized];
+}
+
 function isAssociationField(field: any) {
   if (typeof field?.isAssociationField === 'function') {
     return field.isAssociationField();
@@ -6665,6 +7174,31 @@ function resolveFieldTargetCollection(
     (typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection) ||
     (getFieldTarget(field) ? getCollection(dataSourceKey || 'main', getFieldTarget(field)) : null)
   );
+}
+
+function buildCatalogCollectionCycleKey(collection: any, dataSourceKey?: string) {
+  if (!collection) {
+    return undefined;
+  }
+  return `${dataSourceKey || collection?.dataSourceKey || 'main'}:${
+    collection?.name || collection?.options?.name || collection?.title || 'unknown'
+  }`;
+}
+
+function dedupeVisibleFieldCandidates(candidates: FlowSurfaceFieldMenuCandidate[]) {
+  const seen = new Set<string>();
+  return candidates.filter((candidate) => {
+    const dedupeKey = [
+      normalizeFieldPath(candidate.fieldPath, candidate.associationPathName),
+      candidate.explicitWrapperUse || '',
+      candidate.explicitFieldUse || '',
+    ].join('::');
+    if (seen.has(dedupeKey)) {
+      return false;
+    }
+    seen.add(dedupeKey);
+    return true;
+  });
 }
 
 function getAssociationFilterTargetKey(field: any, targetCollection?: any) {

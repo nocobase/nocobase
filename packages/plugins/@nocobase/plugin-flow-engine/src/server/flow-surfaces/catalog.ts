@@ -1794,6 +1794,7 @@ const NODE_CONTRACT_ENTRIES: Array<[string, FlowSurfaceNodeContract]> = [
   ['CommentsBlockModel', COMMENTS_BLOCK_CONTRACT],
   ['TableActionsColumnModel', ACTION_COLUMN_CONTRACT],
   ['FormItemModel', FORM_ITEM_CONTRACT],
+  ['FormAssociationItemModel', DETAILS_ITEM_CONTRACT],
   ['DetailsItemModel', DETAILS_ITEM_CONTRACT],
   ['FilterFormItemModel', FILTER_FORM_ITEM_CONTRACT],
   ['TableColumnModel', TABLE_COLUMN_CONTRACT],

@@ -596,6 +596,9 @@ export function getConfigureOptionsForUse(use?: string): FlowSurfaceConfigureOpt
     case 'DetailsItemModel':
       options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
       break;
+    case 'FormAssociationItemModel':
+      options = cloneOptions(DETAILS_FIELD_WRAPPER_OPTIONS);
+      break;
     case 'FilterFormItemModel':
       options = cloneOptions(FILTER_FIELD_WRAPPER_OPTIONS);
       break;

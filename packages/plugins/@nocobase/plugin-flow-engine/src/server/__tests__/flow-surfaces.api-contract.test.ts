@@ -3315,6 +3315,24 @@ describe('flowSurfaces API contract', () => {
       ).status,
     ).toBe(200);
 
+    const fieldPopupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: directRolesField.fieldUid,
+          },
+        },
+      }),
+    );
+    const fieldPopupDetailsBindings =
+      fieldPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(fieldPopupDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
+    );
+    expect(fieldPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
     const popupDetails = getData(
       await rootAgent.resource('flowSurfaces').addBlock({
         values: {
@@ -3357,11 +3375,51 @@ describe('flowSurfaces API contract', () => {
     expect(popupTab?.subModels?.grid?.use).toBe('BlockGridModel');
     expect(_.castArray(popupTab?.subModels?.grid?.subModels?.items || [])[0]?.uid).toBe(popupDetails.uid);
 
+    const popupGridCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: popupTab.subModels?.grid?.uid,
+          },
+        },
+      }),
+    );
+    const popupGridDetailsBindings =
+      popupGridCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(popupGridDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'otherRecords']),
+    );
+    expect(popupGridDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
+    const popupGridDetails = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: popupTab.subModels?.grid?.uid,
+          },
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+        },
+      }),
+    );
+
     const popupDetailsReadback = await getSurface(rootAgent, { uid: popupDetails.uid });
     expect(popupDetailsReadback.tree.use).toBe('DetailsBlockModel');
     expect(popupDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'roles',
+    });
+
+    const popupGridDetailsReadback = await getSurface(rootAgent, { uid: popupGridDetails.uid });
+    expect(popupGridDetailsReadback.tree.use).toBe('DetailsBlockModel');
+    expect(popupGridDetailsReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
     });
 
     const popupTitleReadback = await getSurface(rootAgent, { uid: popupTitleField.wrapperUid });
@@ -3406,6 +3464,147 @@ describe('flowSurfaces API contract', () => {
     syncedInner = await getSurface(rootAgent, { uid: directRolesField.fieldUid });
     expect(syncedWrapper.tree.props?.titleField).toBe('title');
     expect(syncedInner.tree.props?.titleField).toBe('title');
+  });
+
+  it('should align table/details/grid-card/edit-form field catalog semantics with frontend menus', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Field catalog alignment page',
+      tabTitle: 'Field catalog alignment tab',
+    });
+
+    const tableBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const detailsBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'details',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const gridCardBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'gridCard',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+    const editFormBlock = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'editForm',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const tableCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: tableBlock.uid,
+          },
+        },
+      }),
+    );
+    const detailsCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: detailsBlock.uid,
+          },
+        },
+      }),
+    );
+    const gridCardCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: gridCardBlock.uid,
+          },
+        },
+      }),
+    );
+    const editFormCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: editFormBlock.uid,
+          },
+        },
+      }),
+    );
+
+    expect(tableCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
+    expect(detailsCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
+    expect(gridCardCatalog.fields.some((item: any) => item.key === 'skills.label')).toBe(false);
+    expect(tableCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
+    expect(detailsCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
+    expect(gridCardCatalog.fields.some((item: any) => item.key === 'profile.bio')).toBe(true);
+
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'profile.bio')).toMatchObject({
+      use: 'FormAssociationItemModel',
+      wrapperUse: 'FormAssociationItemModel',
+      fieldUse: 'DisplayTextFieldModel',
+    });
+    expect(editFormCatalog.fields.find((item: any) => item.key === 'js:profile.bio')).toBeUndefined();
+
+    const directAddField = getData(
+      await rootAgent.resource('flowSurfaces').addField({
+        values: {
+          target: {
+            uid: editFormBlock.uid,
+          },
+          fieldPath: 'profile.bio',
+        },
+      }),
+    );
+    const directAddWrapper = await getSurface(rootAgent, { uid: directAddField.wrapperUid });
+    const directAddInner = await getSurface(rootAgent, { uid: directAddField.fieldUid });
+    expect(directAddWrapper.tree.use).toBe('FormAssociationItemModel');
+    expect(directAddInner.tree.use).toBe('DisplayTextFieldModel');
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'editFormViaCompose',
+              type: 'editForm',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'employees',
+              },
+              fields: ['profile.bio'],
+            },
+          ],
+        },
+      }),
+    );
+    const composedField = composeRes.blocks.find((item: any) => item.key === 'editFormViaCompose')?.fields?.[0];
+    expect(composedField?.wrapperUid).toBeTruthy();
+    const composeWrapper = await getSurface(rootAgent, { uid: composedField.wrapperUid });
+    const composeInner = await getSurface(rootAgent, { uid: composedField.fieldUid });
+    expect(composeWrapper.tree.use).toBe('FormAssociationItemModel');
+    expect(composeInner.tree.use).toBe('DisplayTextFieldModel');
   });
 
   it('should normalize generic to-many relation leaf paths but keep to-one leaf paths unchanged', async () => {
@@ -3515,6 +3714,78 @@ describe('flowSurfaces API contract', () => {
     });
     expect(profileWrapperReadback.tree.props || {}).not.toHaveProperty('titleField');
     expect(profileInnerReadback.tree.props || {}).not.toHaveProperty('titleField');
+  });
+
+  it('should reject no-interface bound fields across addField addFields and compose', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'No interface contract page',
+      tabTitle: 'No interface contract tab',
+    });
+
+    const rolesTable = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'roles',
+      },
+    });
+
+    const singleRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: rolesTable.uid,
+        },
+        fieldPath: 'default',
+      },
+    });
+    expect(singleRes.status).toBe(400);
+    expect(readErrorMessage(singleRes)).toContain('roles.default');
+    expect(readErrorMessage(singleRes)).toContain('has no interface');
+
+    const batchRes = await rootAgent.resource('flowSurfaces').addFields({
+      values: {
+        target: {
+          uid: rolesTable.uid,
+        },
+        fields: [
+          { key: 'title', fieldPath: 'title' },
+          { key: 'hidden', fieldPath: 'hidden' },
+        ],
+      },
+    });
+    expect(batchRes.status).toBe(200);
+    const batchData = getData(batchRes);
+    expect(batchData.successCount).toBe(1);
+    expect(batchData.errorCount).toBe(1);
+    expect(batchData.fields[0].ok).toBe(true);
+    expect(batchData.fields[1].ok).toBe(false);
+    expect(batchData.fields[1].error.message).toContain('roles.hidden');
+    expect(batchData.fields[1].error.message).toContain('has no interface');
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        blocks: [
+          {
+            key: 'rolesDetails',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'roles',
+            },
+            fields: ['title', 'hidden'],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(500);
+    expect(readErrorMessage(composeRes)).toContain('roles.hidden');
+    expect(readErrorMessage(composeRes)).toContain('has no interface');
   });
 });
 
