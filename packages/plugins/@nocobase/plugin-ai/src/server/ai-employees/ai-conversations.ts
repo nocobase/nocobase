@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Op } from '@nocobase/database';
+import { Model, Op, Transaction } from '@nocobase/database';
 import PluginAIServer from '../plugin';
 import { AIMessage, AIToolCall, AIToolMessage, SubAgentConversationMetadata, UserDecision } from '../types';
 import { parseResponseMessage } from '../utils';
@@ -26,11 +26,12 @@ export type AIConversationFilterParams = {
 };
 
 export type CreateAIConversationParams = {
-  userId: string;
+  userId?: string;
   aiEmployee: { username: string };
   title?: string;
   options?: AIConversationsOptions;
   from?: 'main-agent' | 'sub-agent';
+  transaction?: Transaction;
 };
 
 export type UpdateAIConversationParams = {
@@ -58,7 +59,14 @@ export type GetAIConversationMessagesResult = {
 export class AIConversationsManager {
   constructor(protected plugin: PluginAIServer) {}
 
-  async create({ userId, aiEmployee, title, options = {}, from = 'main-agent' }: CreateAIConversationParams) {
+  async create({
+    userId,
+    aiEmployee,
+    title,
+    options = {},
+    from = 'main-agent',
+    transaction,
+  }: CreateAIConversationParams) {
     return await this.aiConversationsRepo.create({
       values: {
         userId,
@@ -68,6 +76,7 @@ export class AIConversationsManager {
         thread: 1,
         from,
       },
+      transaction,
     });
   }
 

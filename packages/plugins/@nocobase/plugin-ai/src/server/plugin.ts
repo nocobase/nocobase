@@ -48,6 +48,8 @@ import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
 import { SubAgentsDispatcher } from './ai-employees/sub-agents';
+import { AIEmployeeInstruction } from './workflow/nodes/employee';
+import { getWorkflowTasks } from './tools/workflow-tasks';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -129,6 +131,7 @@ export class PluginAIServer extends Plugin {
     toolsManager.registerTools([createDocsSearchTool(), createReadDocEntryTool()]);
 
     toolsManager.registerDynamicTools(getWorkflowCallers(this, 'workflowCaller'));
+    toolsManager.registerDynamicTools(getWorkflowTasks(this));
 
     // Register MCP tools dynamically
     toolsManager.registerDynamicTools(this.ai.mcpManager.getMCPToolsProvider());
@@ -239,6 +242,7 @@ export class PluginAIServer extends Plugin {
     const workflow = this.app.pm.get('workflow') as PluginWorkflowServer;
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstruction('llm', LLMInstruction);
+    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 
   registerWorkContextResolveStrategy() {

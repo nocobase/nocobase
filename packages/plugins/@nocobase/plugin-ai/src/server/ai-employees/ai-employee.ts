@@ -54,6 +54,7 @@ export interface AIEmployeeOptions {
   model?: ModelRef;
   legacy?: boolean;
   from?: 'main-agent' | 'sub-agent';
+  tools?: { name: string }[];
 }
 
 export class AIEmployee {
@@ -71,6 +72,7 @@ export class AIEmployee {
   private webSearch?: boolean;
   private model?: ModelRef;
   private legacy?: boolean;
+  private tools: { name: string }[];
 
   constructor({
     ctx,
@@ -82,6 +84,7 @@ export class AIEmployee {
     model,
     legacy,
     from = 'main-agent',
+    tools = [],
   }: AIEmployeeOptions) {
     this.employee = employee;
     this.ctx = ctx;
@@ -94,6 +97,7 @@ export class AIEmployee {
     this.model = model;
     this.legacy = legacy;
     this.from = from;
+    this.tools = tools;
 
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(ctx, this.employee as unknown as AIEmployeeType);
@@ -690,7 +694,7 @@ export class AIEmployee {
   async getSystemPrompt(userMessages: AIMessageInput[]) {
     const userConfig = await this.db.getRepository('usersAiEmployees').findOne({
       filter: {
-        userId: this.ctx.auth?.user.id,
+        userId: this.ctx.auth?.user.id ?? 0,
         aiEmployee: this.employee.username,
       },
     });
@@ -742,14 +746,14 @@ export class AIEmployee {
       dataSources: dataSourceMessage,
       environment: {
         database: this.db.sequelize.getDialect(),
-        locale: this.ctx.getCurrentLocale() || 'en-US',
+        locale: this.ctx.getCurrentLocale?.() || 'en-US',
       },
       knowledgeBase,
       availableSkills,
       availableAIEmployees,
     });
 
-    const { important } = this.ctx.action.params.values || {};
+    const { important } = this.ctx.action?.params?.values || {};
     if (important === 'GraphRecursionError') {
       const importantPrompt = `<Important>You have already called tools multiple times and gathered sufficient information.
 First, provide a summary based on the existing information. Do not call additional tools.
@@ -1367,6 +1371,7 @@ If information is missing, clearly state it in the summary.</Important>`;
     const generalToolsNameSet = new Set(tools.map((x) => x.definition.name));
     const toolMap = await this.getToolsMap();
     const employeeTools = this.employee.skillSettings?.tools ?? [];
+    employeeTools.push(...this.tools);
     for (const toolSetting of employeeTools) {
       if (generalToolsNameSet.has(toolSetting.name)) {
         continue;
