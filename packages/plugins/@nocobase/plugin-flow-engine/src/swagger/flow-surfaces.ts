@@ -565,6 +565,41 @@ const examples = {
       ],
     },
   },
+  composePopupCurrentRecord: {
+    target: {
+      uid: 'view-action-uid',
+    },
+    mode: 'replace',
+    blocks: [
+      {
+        key: 'details',
+        type: 'details',
+        resource: {
+          binding: 'currentRecord',
+        },
+        fields: ['nickname', 'department.title'],
+      },
+    ],
+  },
+  composePopupAssociatedRecords: {
+    target: {
+      uid: 'relation-popup-action-uid',
+    },
+    mode: 'replace',
+    blocks: [
+      {
+        key: 'employees',
+        type: 'table',
+        resource: {
+          binding: 'associatedRecords',
+          associationField: 'employee',
+        },
+        fields: ['nickname', 'status'],
+        actions: ['refresh'],
+        recordActions: ['view', 'edit'],
+      },
+    ],
+  },
   configureActionModes: {
     target: {
       uid: 'compose-email-action-uid',
@@ -657,12 +692,32 @@ const examples = {
   },
   addBlock: {
     target: {
-      uid: 'roles-field-uid',
+      uid: 'view-action-uid',
     },
     type: 'details',
-    resourceInit: {
+    resource: {
+      binding: 'currentRecord',
+    },
+  },
+  addPopupAssociatedBlock: {
+    target: {
+      uid: 'relation-popup-action-uid',
+    },
+    type: 'table',
+    resource: {
+      binding: 'associatedRecords',
+      associationField: 'employee',
+    },
+  },
+  addPopupOtherRecordsBlock: {
+    target: {
+      uid: 'popup-action-uid',
+    },
+    type: 'table',
+    resource: {
+      binding: 'otherRecords',
       dataSourceKey: 'main',
-      collectionName: 'roles',
+      collectionName: 'departments',
     },
   },
   addJsBlock: {
@@ -1104,7 +1159,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Compose blocks, fields, actions and simple layout under an existing surface',
     description: valuesCompatibilityNote(
-      '在已有 page/tab/grid/popup 下按公开 block/action/field 语义组织内容。适合作为 AI 的首选创建入口，不需要调用方传 raw `use`、`fieldUse` 或 `stepParams`。',
+      '在已有 page/tab/grid/popup 下按公开 block/action/field 语义组织内容。适合作为 AI 的首选创建入口，不需要调用方传 raw `use`、`fieldUse` 或 `stepParams`。popup 下的 collection block 建议先看 `catalog.blocks[].resourceBindings`；`select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建。',
     ),
     requestBody: {
       required: true,
@@ -1115,6 +1170,14 @@ const actionDocs: Record<string, any> = {
             filterTable: {
               summary: 'Compose a filter-form and table with block actions, record actions and a simple 3:7 row layout',
               value: examples.compose,
+            },
+            popupCurrentRecord: {
+              summary: 'Compose a current-record details block under a record popup surface',
+              value: examples.composePopupCurrentRecord,
+            },
+            popupAssociatedRecords: {
+              summary: 'Compose an associated-records table under a relation popup surface',
+              value: examples.composePopupAssociatedRecords,
             },
             staticBlocks: {
               summary: 'Compose markdown, iframe and action-panel blocks with simple settings',
@@ -1313,7 +1376,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a block under a surface or grid container',
     description: valuesCompatibilityNote(
-      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。direct add 不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义完成基础改配。',
+      '按 catalog key 或显式支持的 block use 创建 block；对于 popup-capable 宿主节点会自动补齐 popup shell。popup 下的 collection block 建议先看 `catalog.blocks[].resourceBindings`，再传语义化 `resource.binding`；仍可兼容传底层 `resourceInit`，但服务端会按 popup 语义校验。`resource` 与 `resourceInit` 互斥。`select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建。direct add 不接受 raw `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义完成基础改配。',
     ),
     requestBody: {
       required: true,
@@ -1321,9 +1384,17 @@ const actionDocs: Record<string, any> = {
         'application/json': {
           schema: ref('FlowSurfaceAddBlockRequest'),
           examples: {
-            popupDetails: {
-              summary: 'Create a details block under a popup-capable host node',
+            popupCurrentRecord: {
+              summary: 'Create a current-record details block under a popup-capable host node',
               value: examples.addBlock,
+            },
+            popupAssociatedRecords: {
+              summary: 'Create an associated-records table block under a relation popup host node',
+              value: examples.addPopupAssociatedBlock,
+            },
+            popupOtherRecords: {
+              summary: 'Create a table bound to another collection explicitly under a popup host node',
+              value: examples.addPopupOtherRecordsBlock,
             },
             jsBlock: {
               summary: 'Create a JS block directly under a page/tab/grid container',
@@ -1887,6 +1958,10 @@ const schemas = {
         items: ref('FlowSurfaceNodeDomain'),
       },
       configureOptions: ref('FlowSurfaceConfigureOptions'),
+      resourceBindings: {
+        type: 'array',
+        items: ref('FlowSurfaceResourceBindingOption'),
+      },
       settingsSchema: ANY_OBJECT_SCHEMA,
       settingsContract: {
         type: 'object',
@@ -2077,6 +2152,81 @@ const schemas = {
       filterByTk: STRING_OR_INTEGER_SCHEMA,
     },
     additionalProperties: false,
+  },
+  FlowSurfaceResourceBindingAssociationField: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+      },
+      label: {
+        type: 'string',
+      },
+      collectionName: {
+        type: 'string',
+      },
+      associationName: {
+        type: 'string',
+      },
+    },
+    required: ['key', 'label', 'collectionName'],
+    additionalProperties: false,
+  },
+  FlowSurfaceResourceBindingOption: {
+    type: 'object',
+    properties: {
+      key: {
+        type: 'string',
+        enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
+      },
+      label: {
+        type: 'string',
+      },
+      description: {
+        type: 'string',
+      },
+      requires: {
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+      },
+      dataSourceKey: {
+        type: 'string',
+      },
+      collectionName: {
+        type: 'string',
+      },
+      associationFields: {
+        type: 'array',
+        items: ref('FlowSurfaceResourceBindingAssociationField'),
+      },
+    },
+    required: ['key', 'label'],
+    additionalProperties: false,
+  },
+  FlowSurfaceSemanticResourceInput: {
+    type: 'object',
+    required: ['binding'],
+    properties: {
+      binding: {
+        type: 'string',
+        enum: ['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'],
+      },
+      dataSourceKey: {
+        type: 'string',
+      },
+      collectionName: {
+        type: 'string',
+      },
+      associationField: {
+        type: 'string',
+      },
+    },
+    additionalProperties: false,
+  },
+  FlowSurfaceBlockResourceInput: {
+    oneOf: [ref('FlowSurfaceSemanticResourceInput'), ref('FlowSurfaceResourceInit')],
   },
   FlowSurfaceMutateResourceInit: {
     type: 'object',
@@ -2384,7 +2534,7 @@ const schemas = {
           'jsBlock',
         ],
       },
-      resource: ref('FlowSurfaceResourceInit'),
+      resource: ref('FlowSurfaceBlockResourceInput'),
       settings: ANY_OBJECT_SCHEMA,
       fields: {
         type: 'array',
@@ -2950,6 +3100,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
     },
@@ -3196,6 +3347,7 @@ const schemas = {
       use: {
         type: 'string',
       },
+      resource: ref('FlowSurfaceBlockResourceInput'),
       resourceInit: ref('FlowSurfaceResourceInit'),
       settings: ANY_OBJECT_SCHEMA,
     },

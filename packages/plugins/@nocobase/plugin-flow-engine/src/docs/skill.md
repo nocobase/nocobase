@@ -174,6 +174,103 @@ GET /api/flowSurfaces:get?pageSchemaUid=employees-page-schema
 
 这轮不提供 `removePopup`；`removePopupTab` 允许删到 0 个 tab。
 
+## 示例 1.2：popup 下的 block 资源语义
+
+popup 下添加 collection block 时，不要先猜 `resourceInit`。先看：
+
+- `catalog(target=popup-host-or-popup-grid).blocks[].resourceBindings`
+
+对外可以按三类 popup 理解：
+
+- 关系字段弹窗：有当前记录，也有 association context
+- 非关系字段弹窗：只有当前记录，没有 association context
+- 普通弹窗：没有当前记录，也没有 association context
+- `select / subForm / bulkEditForm` scene 目前只识别，但当前 scene 下不支持 popup collection block 创建；这类 popup 先不要用 `compose/addBlock` 去创建 collection block
+
+推荐直接传语义化 `resource`：
+
+- `currentCollection`
+- `currentRecord`
+- `associatedRecords`
+- `otherRecords`
+
+例如在非关系字段弹窗里创建当前记录详情：
+
+```json
+{
+  "target": {
+    "uid": "view-action-uid"
+  },
+  "mode": "replace",
+  "blocks": [
+    {
+      "key": "details",
+      "type": "details",
+      "resource": {
+        "binding": "currentRecord"
+      },
+      "fields": ["nickname", "department.title"]
+    }
+  ]
+}
+```
+
+例如在关系字段弹窗里创建关联记录表格：
+
+```json
+{
+  "target": {
+    "uid": "relation-popup-action-uid"
+  },
+  "mode": "replace",
+  "blocks": [
+    {
+      "key": "employees",
+      "type": "table",
+      "resource": {
+        "binding": "associatedRecords",
+        "associationField": "employee"
+      },
+      "fields": ["nickname", "status"],
+      "actions": ["refresh"],
+      "recordActions": ["view", "edit"]
+    }
+  ]
+}
+```
+
+例如在普通弹窗里只创建当前集合或其它集合区块：
+
+```json
+{
+  "target": {
+    "uid": "add-new-action-uid"
+  },
+  "type": "createForm",
+  "resource": {
+    "binding": "currentCollection"
+  }
+}
+```
+
+如果要明确绑定到其它数据源/数据表，可以显式传：
+
+```json
+{
+  "target": {
+    "uid": "popup-action-uid"
+  },
+  "type": "table",
+  "resource": {
+    "binding": "otherRecords",
+    "dataSourceKey": "main",
+    "collectionName": "departments"
+  }
+}
+```
+
+如果手写了 `resourceInit` 但和当前 popup 语义不匹配，服务端会直接返回 `400`，并提示回到 `catalog.blocks[].resourceBindings`。
+
 ## 示例 2：同一行创建 `filterForm + table`，布局 `3:7`
 
 ```json
