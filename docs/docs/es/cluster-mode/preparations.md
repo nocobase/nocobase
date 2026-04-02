@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Preparativos para el despliegue en clúster"
+description: "Preparación del despliegue en clúster: licencias de plugins comerciales (adaptadores PubSub, Queue, Lock, Worker ID), base de datos, middleware Redis o RabbitMQ, almacenamiento compartido y balanceo de carga."
+keywords: "preparación clúster,licencia comercial,Redis,RabbitMQ,almacenamiento compartido,balanceo de carga,Nginx,NocoBase"
+---
+
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::

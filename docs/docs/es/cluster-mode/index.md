@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Modo clúster"
+description: "Modo clúster de NocoBase: despliegue multiinstancia, balanceo de carga, almacenamiento compartido, caché Redis y cola de mensajes, bloqueos distribuidos y despliegue en Kubernetes para mayor concurrencia."
+keywords: "modo clúster,multiinstancia,balanceo de carga,almacenamiento compartido,Redis,Kubernetes,bloqueos distribuidos,cola de mensajes,NocoBase"
+---
+
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::

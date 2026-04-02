@@ -69,6 +69,7 @@ export type MessageType = 'text' | 'greeting';
 export type Message = Omit<BubbleProps, 'content'> & {
   key?: string | number;
   role?: string;
+  createdAt?: string | Date;
   content: {
     content: any;
     ref?: React.MutableRefObject<any>;
@@ -92,12 +93,31 @@ export type Message = Omit<BubbleProps, 'content'> & {
       url: string;
     }[];
     reasoning?: { status: string; content: string };
+    subAgentConversations?: {
+      sessionId: string;
+      toolCallId?: string;
+      status?: 'pending' | 'completed';
+      messages: Message[];
+    }[];
+    from?: 'main-agent' | 'sub-agent';
   };
 };
 export type Action = {
   icon?: React.ReactNode;
   content: string;
   onClick: (content: string) => void;
+};
+
+export type ClearOptions = {
+  sender?: boolean;
+  systemMessage?: boolean;
+  attachments?: boolean;
+  contextItems?: boolean;
+  taskVariables?: boolean;
+  toolModal?: boolean;
+  activeTool?: boolean;
+  activeMessageId?: boolean;
+  skillSettings?: boolean;
 };
 
 export type SendOptions = {

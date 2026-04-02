@@ -1,3 +1,9 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Развёртывание в Kubernetes"
+description: "Развёртывание кластера NocoBase на K8s или K3s: ConfigMap, Deployment, общий PVC, middleware Redis или PostgreSQL, балансировка нагрузки и проверки работоспособности."
+keywords: "Kubernetes,K8s,K3s,ConfigMap,Deployment,PVC,развёртывание кластера,NocoBase"
+---
 
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.

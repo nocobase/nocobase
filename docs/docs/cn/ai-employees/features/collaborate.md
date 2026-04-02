@@ -18,7 +18,7 @@ keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
 
 ### 右下角主入口
 
-![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
 ### 区块 Action 入口
 
@@ -30,10 +30,11 @@ keywords: "AI 员工协作,对话面板,员工切换,模型切换,NocoBase"
 
 ## 会话内切换
 
-在输入区域底部可直接切换：
+大部分情况下直接和  Atlas 对话即可，他会协调合适的 AI 员工协助处理问题。
 
-- `AI Employee Switcher`：切换当前员工。
-- `Model Switcher`：切换当前会话模型。
+如果要使用指定 AI 员工，可以点击发送框的 AI 员工下拉列表进行选择
+
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
 
 模型会按员工维度保存偏好，下一次进入时优先恢复。
 

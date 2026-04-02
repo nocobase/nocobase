@@ -9,7 +9,7 @@
 
 import { useAPIClient, useApp } from '@nocobase/client';
 import { Alert, Button, Card, Result, Space, Spin, Typography } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 type InteractionResponse = {
@@ -27,81 +27,84 @@ export const InteractionPage = () => {
   const api = useAPIClient();
   const app = useApp();
   const navigate = useNavigate();
-  const params = useParams<{ appName: string; uid: string }>();
+  const params = useParams<{ uid: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [interaction, setInteraction] = useState<InteractionResponse | null>(null);
 
   const interactionApiPath = useMemo(() => {
-    if (!params.appName || !params.uid) {
+    if (!params.uid) {
       return null;
     }
-    if (params.appName === 'main') {
+    if (app.name === 'main') {
       return `idpOAuth/interaction/${params.uid}`;
     }
-    return `__app/${params.appName}/idpOAuth/interaction/${params.uid}`;
-  }, [params.appName, params.uid]);
+    return `__app/${app.name}/idpOAuth/interaction/${params.uid}`;
+  }, [app.name, params.uid]);
 
   const currentPath = useMemo(() => {
-    if (!params.appName || !params.uid) {
+    if (!params.uid) {
       return '/signin';
     }
-    return `/idp-oauth/interaction/${params.appName}/${params.uid}`;
-  }, [params.appName, params.uid]);
+    return `/idp-oauth/interaction/${params.uid}`;
+  }, [params.uid]);
 
-  const runInteraction = async (method: 'get' | 'post', payload?: Record<string, any>) => {
-    if (!interactionApiPath) {
-      setError('Invalid interaction path');
-      setLoading(false);
-      return;
-    }
+  const runInteraction = useCallback(
+    async (method: 'get' | 'post', payload?: Record<string, any>) => {
+      if (!interactionApiPath) {
+        setError('Invalid interaction path');
+        setLoading(false);
+        return;
+      }
 
-    const token = api.auth.getToken();
-    const authenticator = api.auth.getAuthenticator() || 'basic';
-    const body = { ...(payload || {}) };
-    if (token) {
-      body.bridge_token = token;
-      body.bridge_authenticator = authenticator;
-    }
+      const token = api.auth.getToken();
+      const authenticator = api.auth.getAuthenticator() || 'basic';
+      const body = { ...(payload || {}) };
+      if (token) {
+        body.bridge_token = token;
+        body.bridge_authenticator = authenticator;
+      }
 
-    const response = await api.request({
-      url: interactionApiPath,
-      method,
-      skipNotify: true,
-      withCredentials: true,
-      data: method === 'post' ? body : undefined,
-      headers: token
-        ? {
-            Authorization: `Bearer ${token}`,
-            'X-Authenticator': authenticator,
-          }
-        : undefined,
-    });
+      const response = await api.request({
+        url: interactionApiPath,
+        method,
+        skipNotify: true,
+        withCredentials: true,
+        data: method === 'post' ? body : undefined,
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+              'X-Authenticator': authenticator,
+            }
+          : undefined,
+      });
 
-    const data = response?.data?.data || response?.data;
-    if (data?.redirectTo) {
-      window.location.replace(data.redirectTo);
-      return;
-    }
+      const data = response?.data?.data || response?.data;
+      if (data?.redirectTo) {
+        window.location.replace(data.redirectTo);
+        return;
+      }
 
-    if (data?.prompt === 'login') {
-      if (!token) {
+      if (data?.prompt === 'login') {
+        if (!token) {
+          navigate(`/signin?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
+          return;
+        }
+
+        if (method === 'get') {
+          await runInteraction('post');
+          return;
+        }
+
         navigate(`/signin?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
         return;
       }
 
-      if (method === 'get') {
-        await runInteraction('post');
-        return;
-      }
-
-      navigate(`/signin?redirect=${encodeURIComponent(currentPath)}`, { replace: true });
-      return;
-    }
-
-    setInteraction(data);
-    setLoading(false);
-  };
+      setInteraction(data);
+      setLoading(false);
+    },
+    [api, currentPath, interactionApiPath, navigate],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -121,7 +124,7 @@ export const InteractionPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [interactionApiPath]);
+  }, [runInteraction]);
 
   const onSubmit = async (cancel = false) => {
     setLoading(true);

@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "서비스 분리"
+description: "워크플로·비동기 작업 등을 전용 노드로 분리. WORKER_MODE로 요청 노드와 작업 노드, 수평 확장."
+keywords: "서비스 분리,WORKER_MODE,비동기 워크플로,async-task,수평 확장,요청 노드,작업 노드,NocoBase"
+---
+
 :::tip
 이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
 :::

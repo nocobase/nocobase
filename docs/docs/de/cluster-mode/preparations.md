@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Vorbereitungen für die Cluster-Bereitstellung"
+description: "Vorbereitung der Cluster-Bereitstellung: kommerzielle Plugin-Lizenzen (PubSub-, Queue-, Lock- und Worker-ID-Adapter), Datenbank, Redis- oder RabbitMQ-Middleware, gemeinsamer Speicher und Lastverteilung."
+keywords: "Cluster Vorbereitung,kommerzielle Lizenz,Redis,RabbitMQ,gemeinsamer Speicher,Lastverteilung,Nginx,NocoBase"
+---
+
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::

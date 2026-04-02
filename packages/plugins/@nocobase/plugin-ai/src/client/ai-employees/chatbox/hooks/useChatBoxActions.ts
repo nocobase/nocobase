@@ -8,7 +8,7 @@
  */
 
 import { useCallback } from 'react';
-import { AIEmployee, Message, SendOptions, TriggerTaskOptions } from '../../types';
+import { AIEmployee, ClearOptions, Message, SendOptions, TriggerTaskOptions } from '../../types';
 import { useChatBoxStore } from '../stores/chat-box';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useChatMessagesStore } from '../stores/chat-messages';
@@ -56,16 +56,45 @@ export const useChatBoxActions = () => {
   const { conversationsService } = useChatConversationActions();
   const { sendMessages } = useChatMessageActions();
 
-  const clear = () => {
-    setSenderValue('');
-    setSystemMessage('');
-    setAttachments([]);
-    setContextItems([]);
-    setTaskVariables({});
-    setOpenToolModal(false);
-    setActiveTool(null);
-    setActiveMessageId('');
-    setSkillSettings(undefined);
+  const clear = (options?: ClearOptions) => {
+    const {
+      sender,
+      systemMessage,
+      attachments,
+      contextItems,
+      taskVariables,
+      toolModal,
+      activeTool,
+      activeMessageId,
+      skillSettings,
+    } = options ?? {};
+    if (sender !== false) {
+      setSenderValue('');
+    }
+    if (systemMessage !== false) {
+      setSystemMessage('');
+    }
+    if (attachments !== false) {
+      setAttachments([]);
+    }
+    if (contextItems !== false) {
+      setContextItems([]);
+    }
+    if (taskVariables !== false) {
+      setTaskVariables({});
+    }
+    if (toolModal !== false) {
+      setOpenToolModal(false);
+    }
+    if (activeTool !== false) {
+      setActiveTool(null);
+    }
+    if (activeMessageId !== false) {
+      setActiveMessageId('');
+    }
+    if (skillSettings !== false) {
+      setSkillSettings(undefined);
+    }
   };
 
   const send = (options: SendOptions) => {
@@ -138,10 +167,10 @@ export const useChatBoxActions = () => {
   }, [currentEmployee]);
 
   const switchAIEmployee = useCallback(
-    (aiEmployee: AIEmployee) => {
+    (aiEmployee: AIEmployee, options?: { clear?: ClearOptions }) => {
       setCurrentEmployee(aiEmployee);
       setCurrentConversation(undefined);
-      clear();
+      clear(options?.clear);
       setModel(null);
       if (aiEmployee) {
         const greetingMsg = {

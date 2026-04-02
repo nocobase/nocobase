@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Separação de serviços"
+description: "Separar serviços demorados (fluxo de trabalho, tarefas assíncronas) em nós dedicados em modo cluster com WORKER_MODE; nós de requisição versus nós de tarefa e escalonamento horizontal."
+keywords: "separação de serviços,WORKER_MODE,fluxo assíncrono,async-task,escalonamento horizontal,nó de requisição,nó de tarefa,NocoBase"
+---
+
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::

@@ -116,7 +116,7 @@ export function rewriteProviderLocationHeader(ctx: DispatchContext, service: Idp
 }
 
 function getFrontendInteractionCookiePath(originalPath: string) {
-  const match = originalPath.match(/^\/idp-oauth\/interaction\/([^/]+)\/([^/]+)$/);
+  const match = originalPath.match(/^\/(?:apps\/([^/]+)\/)?idp-oauth\/interaction\/([^/]+)$/);
   if (!match) {
     return undefined;
   }
@@ -142,9 +142,11 @@ function rewriteProviderSetCookieHeader(ctx: DispatchContext, service: IdpOauthS
   const frontendInteractionPath = getFrontendInteractionCookiePath(originalPath);
   if (frontendInteractionPath) {
     // The browser renders the frontend interaction page, but the provider session must be sent to the backend API route.
-    rewrittenPath = `${service.getIssuerPath(frontendInteractionPath.appName)}/idpOAuth/interaction/${
-      frontendInteractionPath.uid
-    }`;
+    const interactionAppName = frontendInteractionPath.appName || providerContext.appName;
+    const interactionIssuerPath = frontendInteractionPath.appName
+      ? service.getIssuerPath(interactionAppName)
+      : providerContext.issuerPath;
+    rewrittenPath = `${interactionIssuerPath}/idpOAuth/interaction/${frontendInteractionPath.uid}`;
   }
 
   if (rewrittenPath === originalPath) {

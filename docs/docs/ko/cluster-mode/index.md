@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "클러스터 모드"
+description: "NocoBase 클러스터 모드: 다중 인스턴스 배포, 로드 밸런싱, 공유 스토리지, Redis 캐시·메시지 큐, 분산 락, Kubernetes 배포로 높은 동시 처리."
+keywords: "클러스터 모드,다중 인스턴스,로드 밸런싱,공유 스토리지,Redis,Kubernetes,분산 락,메시지 큐,NocoBase"
+---
+
 :::tip
 이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
 :::
