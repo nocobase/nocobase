@@ -845,6 +845,18 @@ describe('flowSurfaces API contract', () => {
       title: 'Mutation contract page',
       tabTitle: 'Mutation contract tab',
     });
+    const pageCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+        },
+      }),
+    );
+    expect(pageCatalog.blocks.find((item: any) => item.key === 'form')).toBeUndefined();
+    expect(pageCatalog.blocks.find((item: any) => item.use === 'FormBlockModel')).toBeUndefined();
+
     const unknownBlockRes = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
@@ -870,6 +882,36 @@ describe('flowSurfaces API contract', () => {
     });
     expect(unsupportedBlockRes.status).toBe(400);
     expect(readErrorMessage(unsupportedBlockRes)).toContain(`does not support creating 'map' yet`);
+
+    const hiddenCompatFormRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        type: 'form',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      },
+    });
+    expect(hiddenCompatFormRes.status).toBe(400);
+    expect(readErrorMessage(hiddenCompatFormRes)).toContain('registered block types/uses');
+
+    const hiddenCompatFormUseRes = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        use: 'FormBlockModel',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      },
+    });
+    expect(hiddenCompatFormUseRes.status).toBe(400);
+    expect(readErrorMessage(hiddenCompatFormUseRes)).toContain('registered block types/uses');
 
     const table = await addBlockData(rootAgent, {
       target: {

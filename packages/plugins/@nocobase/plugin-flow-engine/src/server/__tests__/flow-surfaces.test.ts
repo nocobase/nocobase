@@ -807,7 +807,7 @@ describe('flowSurfaces resource', () => {
     expect(tabReadback.tree.subModels?.grid?.use).toBe('BlockGridModel');
   });
 
-  it('should expose catalog by table form details and filter-form contexts', async () => {
+  it('should expose catalog by public collection block contexts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Catalog page',
       tabTitle: 'Catalog tab',
@@ -827,7 +827,6 @@ describe('flowSurfaces resource', () => {
         'TableBlockModel',
         'CreateFormModel',
         'EditFormModel',
-        'FormBlockModel',
         'DetailsBlockModel',
         'FilterFormBlockModel',
         'ListBlockModel',
@@ -841,6 +840,8 @@ describe('flowSurfaces resource', () => {
         'ActionPanelBlockModel',
       ]),
     );
+    expect(tabCatalog.blocks.find((item: any) => item.use === 'FormBlockModel')).toBeUndefined();
+    expect(tabCatalog.blocks.find((item: any) => item.key === 'form')).toBeUndefined();
     expect(tabCatalog.blocks.find((item: any) => item.use === 'MapBlockModel')?.createSupported).toBe(false);
     expect(tabCatalog.blocks.find((item: any) => item.use === 'CommentsBlockModel')?.createSupported).toBe(false);
     expect(tabCatalog.configureOptions).toMatchObject({
@@ -1289,40 +1290,6 @@ describe('flowSurfaces resource', () => {
       fieldUse: 'JSEditableFieldModel',
       renderer: 'js',
     });
-
-    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'form', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const formCatalog = await getData(
-      await rootAgent.resource('flowSurfaces').catalog({
-        values: {
-          target: {
-            uid: formUid,
-          },
-        },
-      }),
-    );
-    expect(formCatalog.blocks).toEqual([]);
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['layout.layout', 'assignRules.value']),
-    );
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain('layout');
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain('layout.*');
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules',
-    );
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formModelSettings?.allowedPaths).not.toContain(
-      'assignRules.*',
-    );
-    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).toEqual(
-      expect.arrayContaining(['linkageRules.value']),
-    );
-    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain('linkageRules');
-    expect(formCatalog.settingsContract?.stepParams?.groups?.eventSettings?.allowedPaths).not.toContain(
-      'linkageRules.*',
-    );
-    expect(formCatalog.settingsContract?.stepParams?.groups?.formSettings).toBeUndefined();
 
     const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
       dataSourceKey: 'main',
@@ -1917,7 +1884,7 @@ describe('flowSurfaces resource', () => {
     expect(readErrorMessage(unsupportedAdd)).toContain('does not support popup collection block creation');
   });
 
-  it('should enforce grouped path-level contracts for core collection blocks', async () => {
+  it('should enforce grouped path-level contracts for public core collection blocks', async () => {
     const page = await createPage(rootAgent, {
       title: 'Core block contract page',
       tabTitle: 'Core block contract tab',
@@ -1932,10 +1899,6 @@ describe('flowSurfaces resource', () => {
       collectionName: 'employees',
     });
     const editFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'editForm', {
-      dataSourceKey: 'main',
-      collectionName: 'employees',
-    });
-    const formUid = await addBlock(rootAgent, page.tabSchemaUid, 'form', {
       dataSourceKey: 'main',
       collectionName: 'employees',
     });
@@ -2112,43 +2075,6 @@ describe('flowSurfaces resource', () => {
       },
     });
     expect(invalidEditFormSettings.status).toBe(500);
-
-    const validFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        stepParams: {
-          formModelSettings: {
-            assignRules: {
-              value: [],
-            },
-          },
-          eventSettings: {
-            linkageRules: {
-              value: [],
-            },
-          },
-        },
-      },
-    });
-    expect(validFormSettings.status).toBe(200);
-
-    const invalidFormSettings = await rootAgent.resource('flowSurfaces').updateSettings({
-      values: {
-        target: {
-          uid: formUid,
-        },
-        stepParams: {
-          eventSettings: {
-            linkageRules: {
-              unsupported: [],
-            },
-          },
-        },
-      },
-    });
-    expect(invalidFormSettings.status).toBe(500);
 
     const validDetailsSettings = await rootAgent.resource('flowSurfaces').updateSettings({
       values: {

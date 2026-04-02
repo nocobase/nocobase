@@ -2249,7 +2249,9 @@ const COLLECTION_RESOURCE_REQUIRED = new Set([
   'CommentsBlockModel',
 ]);
 
-export const blockCatalog: FlowSurfaceCatalogItem[] = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((entry) =>
+const PUBLIC_BLOCK_SUPPORT_MATRIX = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter((entry) => entry.topLevelAddable);
+
+export const blockCatalog: FlowSurfaceCatalogItem[] = PUBLIC_BLOCK_SUPPORT_MATRIX.map((entry) =>
   makeCatalogItem({
     key: entry.key,
     label: entry.label,
@@ -2632,7 +2634,7 @@ function makeActionCatalogItem(item: FlowSurfaceActionRegistryItem): FlowSurface
 export const actionCatalog: FlowSurfaceCatalogItem[] = actionRegistry.map((item) => makeActionCatalogItem(item));
 export const ACTION_PUBLIC_KEYS = dedupeActionCatalogItems(actionCatalog, (item) => item.key).map((item) => item.key);
 
-export const SERVICE_SUPPORTED_FLOW_SURFACE_BLOCK_KEYS = FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.filter(
+export const SERVICE_SUPPORTED_FLOW_SURFACE_BLOCK_KEYS = PUBLIC_BLOCK_SUPPORT_MATRIX.filter(
   (entry) => entry.createSupported,
 ).map((entry) => entry.key);
 export const BLOCK_CATALOG_BY_KEY = new Map(blockCatalog.map((item) => [item.key, item]));
@@ -2649,7 +2651,7 @@ export const ACTION_CATALOG_BY_USE = actionCatalog.reduce((map, item) => {
   map.set(item.use, entries);
   return map;
 }, new Map<string, FlowSurfaceCatalogItem[]>());
-export const BLOCK_KEY_BY_USE = new Map(blockCatalog.map((item) => [item.use, item.key]));
+export const BLOCK_KEY_BY_USE = new Map(FLOW_SURFACE_BLOCK_SUPPORT_MATRIX.map((item) => [item.modelUse, item.key]));
 export const ACTION_KEY_BY_USE = new Map(actionCatalog.map((item) => [item.use, toPublicActionCatalogItem(item).key]));
 
 function normalizeActionCatalogKey(type?: string) {

@@ -90,11 +90,11 @@ export const FLOW_SURFACE_BLOCK_SUPPORT_MATRIX: FlowSurfaceBlockSupportEntry[] =
     label: 'Form',
     modelUse: 'FormBlockModel',
     ownerPlugin: '@nocobase/core/client',
-    topLevelAddable: true,
+    topLevelAddable: false,
     formalBuiltin: false,
     fixtureCaptured: false,
     readbackSupported: true,
-    createSupported: true,
+    createSupported: false,
   },
   {
     key: 'details',
