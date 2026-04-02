@@ -1384,8 +1384,8 @@ If information is missing, clearly state it in the summary.</Important>`;
   private async getAvailableSkills(): Promise<SkillsEntry[]> {
     const { skillsManager } = this.plugin.ai;
     const aIEmployeeTools = await this.getAIEmployeeTools();
-    const getSkills = aIEmployeeTools.find((it) => it.definition.name === 'getSkills');
-    if (!getSkills) {
+    const getSkill = aIEmployeeTools.find((it) => it.definition.name === 'getSkill');
+    if (!getSkill) {
       return [];
     }
     const generalSkills = await skillsManager.listSkills({ scope: 'GENERAL' });
