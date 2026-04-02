@@ -30,6 +30,24 @@ type CurrentUserState = {
   loading: boolean;
 };
 
+const AUTH_ROUTE_PREFIXES = ['/signin', '/signup', '/forgot-password', '/reset-password'];
+
+function removeBasename(pathname: string, basename?: string) {
+  if (!basename) {
+    return pathname;
+  }
+  const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`^${escapedBasename.replace(/\/?$/, '')}(\\/|$)`);
+  return pathname.replace(regex, '/') || pathname;
+}
+
+function isBuiltinAuthRoute(pathname: string, basename?: string) {
+  const normalizedPathname = removeBasename(pathname, basename);
+  return AUTH_ROUTE_PREFIXES.some((route) => {
+    return normalizedPathname === route || normalizedPathname.startsWith(`${route}/`);
+  });
+}
+
 const CurrentUserContext = createContext<CurrentUserState | null>(null);
 CurrentUserContext.displayName = 'CurrentUserContext';
 
@@ -41,6 +59,14 @@ const CurrentUserProvider: FC = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
+    const isSkippedAuthCheckRoute =
+      isBuiltinAuthRoute(location.pathname, app.router.getBasename()) ||
+      app.router.isSkippedAuthCheckRoute(location.pathname);
+
+    if (isSkippedAuthCheckRoute) {
+      setState({ loading: false });
+      return;
+    }
 
     const run = async () => {
       try {
@@ -78,7 +104,16 @@ const CurrentUserProvider: FC = ({ children }) => {
         if (mounted) {
           setState({ loading: false });
         }
-        navigate(`/signin?redirect=${location.pathname}${location.search}`, { replace: true });
+        const isAuthError = error?.response?.status === 401 || error?.status === 401;
+        if (
+          !isBuiltinAuthRoute(location.pathname, app.router.getBasename()) &&
+          !app.router.isSkippedAuthCheckRoute(location.pathname)
+        ) {
+          navigate(`/signin?redirect=${location.pathname}${location.search}`, { replace: true });
+          if (isAuthError) {
+            return;
+          }
+        }
         throw error;
       }
     };

@@ -1,0 +1,172 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import { Registry } from '@nocobase/utils/client';
+import type { ComponentType } from 'react';
+import { Plugin } from '@nocobase/client-v2';
+import debounce from 'lodash/debounce';
+import { presetAuthType } from '../preset';
+import type { Authenticator as AuthenticatorType } from './authenticator';
+import AuthProvider from './providers/AuthProvider';
+import { BasicSignInForm } from './forms/BasicSignInForm';
+import { BasicSignUpForm } from './forms/BasicSignUpForm';
+import { authLocaleResources, NAMESPACE } from './locale';
+
+export type AuthOptions = {
+  components: Partial<{
+    SignInForm: ComponentType<{ authenticator: AuthenticatorType }>;
+    SignInButton: ComponentType<{ authenticator: AuthenticatorType }>;
+    SignUpForm: ComponentType<{ authenticatorName: string }>;
+    AdminSettingsForm: ComponentType;
+  }>;
+};
+
+const AuthErrorCode = {
+  EMPTY_TOKEN: 'EMPTY_TOKEN' as const,
+  EXPIRED_TOKEN: 'EXPIRED_TOKEN' as const,
+  INVALID_TOKEN: 'INVALID_TOKEN' as const,
+  TOKEN_RENEW_FAILED: 'TOKEN_RENEW_FAILED' as const,
+  BLOCKED_TOKEN: 'BLOCKED_TOKEN' as const,
+  EXPIRED_SESSION: 'EXPIRED_SESSION' as const,
+  NOT_EXIST_USER: 'NOT_EXIST_USER' as const,
+  SKIP_TOKEN_RENEW: 'SKIP_TOKEN_RENEW' as const,
+  USER_HAS_NO_ROLES_ERR: 'USER_HAS_NO_ROLES_ERR' as const,
+};
+
+function removeBasename(pathname: string, basename?: string) {
+  if (!basename) {
+    return pathname;
+  }
+  const escapedBasename = basename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const regex = new RegExp(`^${escapedBasename.replace(/\/?$/, '')}(\\/|$)`);
+  return pathname.replace(regex, '/') || pathname;
+}
+
+const debouncedRedirect = debounce(
+  (handler: () => void) => {
+    handler();
+  },
+  3000,
+  { leading: true, trailing: false },
+);
+
+export class PluginAuthClientV2 extends Plugin {
+  authTypes = new Registry<AuthOptions>();
+
+  registerType(authType: string, options: AuthOptions) {
+    this.authTypes.register(authType, options);
+  }
+
+  async load() {
+    Object.entries(authLocaleResources).forEach(([lang, resource]) => {
+      this.app.i18n.addResources(lang, NAMESPACE, resource);
+    });
+
+    this.app.use(AuthProvider);
+
+    this.addRoutes();
+    this.registerPresetAuthType();
+    this.installInterceptors();
+  }
+
+  private addRoutes() {
+    this.router.add('auth', {
+      componentLoader: () => import('./pages/AuthLayout'),
+    });
+    this.router.add('auth.signin', {
+      path: '/signin',
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/SignInPage'),
+    });
+    this.router.add('auth.signup', {
+      path: '/signup',
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/SignUpPage'),
+    });
+    this.router.add('auth.forgotPassword', {
+      path: '/forgot-password',
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/ForgotPasswordPage'),
+    });
+    this.router.add('auth.resetPassword', {
+      path: '/reset-password',
+      skipAuthCheck: true,
+      componentLoader: () => import('./pages/ResetPasswordPage'),
+    });
+  }
+
+  private registerPresetAuthType() {
+    this.registerType(presetAuthType, {
+      components: {
+        SignInForm: BasicSignInForm,
+        SignUpForm: BasicSignUpForm,
+      },
+    });
+  }
+
+  private installInterceptors() {
+    const axios = this.app.apiClient.axios;
+    const resHandler = (res) => {
+      const newToken = res?.headers?.['x-new-token'];
+      if (newToken) {
+        this.app.apiClient.auth.setToken(newToken);
+      }
+      return res;
+    };
+    const errHandler = (error) => {
+      const newToken = error?.response?.headers?.['x-new-token'];
+      const errors = error?.response?.data?.errors;
+      const firstError = Array.isArray(errors) ? errors[0] : null;
+      const state = this.app.router.state;
+      const pathname = state?.location?.pathname || window.location.pathname;
+      const search = state?.location?.search || window.location.search;
+      const basename = this.app.router.basename;
+
+      if (newToken) {
+        this.app.apiClient.auth.setToken(newToken);
+      }
+
+      if (error.status === 401 && firstError?.code && AuthErrorCode[firstError.code]) {
+        this.app.apiClient.auth.setToken('');
+        this.app.apiClient.auth.setRole(null);
+        this.app.apiClient.auth.setAuthenticator(null);
+      }
+
+      if (error.status === 401 && !error.config?.skipAuth && firstError?.code && AuthErrorCode[firstError.code]) {
+        if (firstError?.code === AuthErrorCode.SKIP_TOKEN_RENEW) {
+          throw error;
+        }
+
+        const isSkippedAuthCheckRoute = this.app.router.isSkippedAuthCheckRoute(pathname);
+        if (isSkippedAuthCheckRoute) {
+          error.config.skipNotify = true;
+        }
+
+        if (pathname !== this.app.getHref('signin') && !isSkippedAuthCheckRoute) {
+          const redirectPath = removeBasename(pathname, basename);
+          debouncedRedirect(() => {
+            this.app.apiClient.auth.setToken(null);
+            this.app.router.navigate(`/signin?redirect=${redirectPath}${search}`, { replace: true });
+          });
+        }
+      }
+      throw error;
+    };
+
+    // @ts-ignore
+    axios.interceptors.response.handlers.unshift({
+      fulfilled: resHandler,
+      rejected: errHandler,
+      synchronous: false,
+      runWhen: null,
+    });
+  }
+}
+
+export default PluginAuthClientV2;

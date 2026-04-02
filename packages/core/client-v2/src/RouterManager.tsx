@@ -182,13 +182,13 @@ export class RouterManager<TApp extends BaseApplication<any> = BaseApplication<a
   }
 
   matchRoutes(pathname: string) {
-    const routes = Object.values(this.routes);
+    const routes = this.getRoutesTree();
     // @ts-ignore
     return matchRoutes<RouteType>(routes, pathname, this.basename);
   }
 
   isSkippedAuthCheckRoute(pathname: string) {
-    const matchedRoutes = this.matchRoutes(pathname);
+    const matchedRoutes = this.matchRoutes(pathname) || [];
     return matchedRoutes.some((match) => {
       return match?.route?.skipAuthCheck === true;
     });
