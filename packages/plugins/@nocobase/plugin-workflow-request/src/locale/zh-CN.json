@@ -15,6 +15,7 @@
   "Insert": "插入",
   "Milliseconds": "毫秒",
   "Only support standard JSON data": "仅支持标准 JSON 数据",
+  "Only return response data": "仅返回响应数据",
   "Parameters": "参数",
   "Response headers": "响应头",
   "Send HTTP request to a URL. You can use the variables in the upstream nodes as request headers, parameters and request body.": "向指定 URL 发送 HTTP 请求。可以使用上游节点里的变量作为请求头、参数和请求体。",
