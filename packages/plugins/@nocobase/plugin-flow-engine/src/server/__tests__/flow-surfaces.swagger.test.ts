@@ -186,9 +186,21 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceCatalogItem.properties.configureOptions.$ref).toBe(
       '#/components/schemas/FlowSurfaceConfigureOptions',
     );
+    expect(schemas.FlowSurfaceCatalogItem.properties.resourceBindings.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceResourceBindingOption',
+    );
+    expect(schemas.FlowSurfaceResourceBindingOption.properties.key.enum).toEqual(
+      expect.arrayContaining(['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords']),
+    );
+    expect(schemas.FlowSurfaceResourceBindingOption.properties.associationFields.items.$ref).toBe(
+      '#/components/schemas/FlowSurfaceResourceBindingAssociationField',
+    );
     expect(schemas.FlowSurfaceGetResponse.properties.target.$ref).toBe('#/components/schemas/FlowSurfaceReadTarget');
 
     const composeRequest = swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'];
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.description).toContain(
+      '`select / subForm / bulkEditForm` scene',
+    );
     expect(composeRequest.examples.filterTable.value.blocks).toHaveLength(2);
     expect(composeRequest.examples.filterTable.value.layout?.rows?.[0]?.[0]?.key).toBe('filter');
     const filterTableBlock = composeRequest.examples.filterTable.value.blocks[1];
@@ -239,6 +251,10 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[2].properties.type.enum).toEqual(['jsColumn', 'jsItem']);
+    expect(schemas.FlowSurfaceComposeBlockSpec.properties.resource.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockResourceInput',
+    );
+    expect(schemas.FlowSurfaceBlockResourceInput.oneOf).toHaveLength(2);
     expect(schemas.FlowSurfaceComposeActionSpec.oneOf[1].properties.type.enum).toEqual(
       expect.arrayContaining([
         'filter',
@@ -279,6 +295,14 @@ describe('flowSurfaces swagger', () => {
     );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
+      .popupCurrentRecord.value.blocks[0].resource.binding).toBe('currentRecord');
+    expect(swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
+      .popupAssociatedRecords.value.blocks[0].resource).toMatchObject({
+      binding: 'associatedRecords',
+      associationField: 'employee',
+    });
+    expect(schemas.FlowSurfaceSemanticResourceInput.properties.dataSourceKey.type).toBe('string');
 
     const configureRequest =
       swaggerDocument.paths['/flowSurfaces:configure'].post.requestBody.content['application/json'];
@@ -372,10 +396,26 @@ describe('flowSurfaces swagger', () => {
 
     const addBlockRequest =
       swaggerDocument.paths['/flowSurfaces:addBlock'].post.requestBody.content['application/json'];
+    expect(swaggerDocument.paths['/flowSurfaces:addBlock'].post.description).toContain(
+      '`select / subForm / bulkEditForm` scene',
+    );
     expect(addBlockRequest.examples.jsBlock.value.type).toBe('jsBlock');
     expect(addBlockRequest.examples.jsBlock.value.settings.code).toContain('Users banner');
+    expect(addBlockRequest.examples.popupCurrentRecord.value.resource.binding).toBe('currentRecord');
+    expect(addBlockRequest.examples.popupAssociatedRecords.value.resource).toMatchObject({
+      binding: 'associatedRecords',
+      associationField: 'employee',
+    });
+    expect(addBlockRequest.examples.popupOtherRecords.value.resource).toMatchObject({
+      binding: 'otherRecords',
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+    });
     expect(schemas.FlowSurfaceAddBlockRequest.properties.type.enum).toEqual(
       expect.arrayContaining(['markdown', 'actionPanel', 'jsBlock']),
+    );
+    expect(schemas.FlowSurfaceAddBlockRequest.properties.resource.$ref).toBe(
+      '#/components/schemas/FlowSurfaceBlockResourceInput',
     );
     expect(schemas.FlowSurfaceAddBlockRequest.properties.settings.type).toBe('object');
     expect(schemas.FlowSurfaceAddBlockRequest.properties.props).toBeUndefined();
@@ -386,6 +426,7 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddBlockItem.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddBlockItem.properties.flowRegistry).toBeUndefined();
+    expect(schemas.FlowSurfaceAddBlockItem.properties.resource.$ref).toBe('#/components/schemas/FlowSurfaceBlockResourceInput');
 
     const addActionRequest =
       swaggerDocument.paths['/flowSurfaces:addAction'].post.requestBody.content['application/json'];

@@ -80,6 +80,16 @@ describe('flowSurfaces ai docs', () => {
     expect(content).toContain('wrapperUid/fieldUid');
     expect(content).toContain('popupPageUid/popupTabUid/popupGridUid');
     expect(content).toContain('popup child tab API');
+    expect(content).toContain('catalog.blocks[].resourceBindings');
+    expect(content).toContain('关系字段弹窗');
+    expect(content).toContain('非关系字段弹窗');
+    expect(content).toContain('普通弹窗');
+    expect(content).toContain('`select / subForm / bulkEditForm` scene');
+    expect(content).toContain('"binding": "currentRecord"');
+    expect(content).toContain('"binding": "associatedRecords"');
+    expect(content).toContain('"associationField": "employee"');
+    expect(content).toContain('"binding": "otherRecords"');
+    expect(content).toContain('"collectionName": "departments"');
     expect(content).toContain('`addAction` 只用于非 record action');
     expect(content).toContain('`addRecordAction` 只用于 record action');
     expect(content).toContain('`addBlocks`：');

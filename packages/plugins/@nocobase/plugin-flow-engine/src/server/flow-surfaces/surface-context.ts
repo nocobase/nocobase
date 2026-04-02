@@ -114,6 +114,27 @@ export class FlowSurfaceContextResolver {
         subType: 'array',
       };
     }
+    if (node?.use === 'ChildPageTabModel') {
+      return {
+        parentUid:
+          node?.subModels?.grid?.uid || (await this.options.ensureGridChild(node.uid, 'BlockGridModel', transaction)),
+        subKey: 'items',
+        subType: 'array',
+      };
+    }
+    if (node?.use === 'ChildPageModel') {
+      const firstTab = _.castArray(node?.subModels?.tabs || [])[0];
+      if (!firstTab?.uid) {
+        throw new Error(`flowSurfaces addBlock target '${node.use}' is missing its popup tab subtree`);
+      }
+      return {
+        parentUid:
+          firstTab?.subModels?.grid?.uid ||
+          (await this.options.ensureGridChild(firstTab.uid, 'BlockGridModel', transaction)),
+        subKey: 'items',
+        subType: 'array',
+      };
+    }
     if (isPopupHostUse(node?.use) || node?.subModels?.page?.use === 'ChildPageModel') {
       const popupSurface = await this.options.ensurePopupSurface(node.uid, transaction);
       return {

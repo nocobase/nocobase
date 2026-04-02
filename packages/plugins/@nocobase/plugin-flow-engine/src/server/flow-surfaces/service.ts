@@ -12,6 +12,7 @@ import { uid } from '@nocobase/utils';
 import _ from 'lodash';
 import FlowModelRepository from '../repository';
 import {
+  BLOCK_KEY_BY_USE,
   getEditableDomainsForUse,
   getAvailableActionCatalogItems,
   getNodeContract,
@@ -40,6 +41,7 @@ import {
   shouldUseAssociationTitleTextDisplay,
 } from './field-semantics';
 import { SurfaceLocator } from './locator';
+import { isPopupHostUse } from './placement';
 import { FlowSurfaceRouteSync } from './route-sync';
 import { FlowSurfaceContextResolver } from './surface-context';
 import { buildFlowSurfaceContextResponse, isBareFlowContextPath, type FlowSurfaceContextSemantic } from './context';
@@ -65,12 +67,28 @@ import type {
   FlowSurfaceNodeDomain,
   FlowSurfaceNodeSpec,
   FlowSurfaceNodeSubModel,
+  FlowSurfaceResourceBindingAssociationField,
+  FlowSurfaceResourceBindingOption,
+  FlowSurfaceResourceBindingKey,
   FlowSurfaceReadLocator,
   FlowSurfaceReadTarget,
   FlowSurfaceResolvedTarget,
+  FlowSurfaceSemanticResourceInput,
   FlowSurfaceWriteTarget,
 } from './types';
 
+const COLLECTION_BLOCK_USES = new Set([
+  'TableBlockModel',
+  'CreateFormModel',
+  'EditFormModel',
+  'FormBlockModel',
+  'DetailsBlockModel',
+  'FilterFormBlockModel',
+  'ListBlockModel',
+  'GridCardBlockModel',
+  'MapBlockModel',
+  'CommentsBlockModel',
+]);
 const FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
 const DETAILS_BLOCK_USES = new Set(['DetailsBlockModel']);
 const SIMPLE_FORM_BLOCK_USES = new Set(['FormBlockModel', 'CreateFormModel', 'EditFormModel']);
@@ -168,6 +186,25 @@ const POPUP_HOST_STEP_PARAM_PATHS = [
   ['openSelectRecordView', 'openView'],
   ['openAddRecordView', 'openView'],
 ] as const;
+const POPUP_RECORD_ACTION_CONTAINER_USES = new Set([
+  'TableActionsColumnModel',
+  'DetailsBlockModel',
+  'ListItemModel',
+  'GridCardItemModel',
+]);
+const POPUP_UNSUPPORTED_COLLECTION_SCENES = new Set<FlowSurfacePopupScene>(['select', 'subForm', 'bulkEditForm']);
+const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectionBlockScene[]>> = {
+  CreateFormModel: ['new'],
+  EditFormModel: ['one', 'many'],
+  DetailsBlockModel: ['one', 'many'],
+  CommentsBlockModel: ['one', 'many'],
+  TableBlockModel: ['many'],
+  ListBlockModel: ['many'],
+  GridCardBlockModel: ['many'],
+  MapBlockModel: ['many'],
+  FilterFormBlockModel: ['filter'],
+  FormBlockModel: [],
+};
 type FlowSurfaceAddFieldResult = {
   uid?: string;
   parentUid?: string;
@@ -182,6 +219,36 @@ type FlowSurfaceAddFieldResult = {
   fieldUid?: string;
   innerFieldUid?: string;
 };
+
+type FlowSurfacePopupScene = 'new' | 'one' | 'many' | 'select' | 'subForm' | 'bulkEditForm' | 'generic';
+type FlowSurfaceCollectionBlockScene = 'new' | 'one' | 'many' | 'select' | 'filter' | 'subForm' | 'bulkEditForm';
+
+type FlowSurfacePopupBlockProfile = {
+  isPopupSurface: boolean;
+  popupKind?: 'relationPopup' | 'recordPopup' | 'plainPopup';
+  hostUid?: string;
+  popupHostUse?: string;
+  dataSourceKey?: string;
+  collectionName?: string;
+  currentCollection?: any;
+  filterByTk?: any;
+  associationName?: string;
+  sourceId?: any;
+  hasCurrentRecord: boolean;
+  hasAssociationContext: boolean;
+  scene: FlowSurfacePopupScene;
+};
+
+type FlowSurfaceNormalizedResourceInput =
+  | {
+      kind: 'semantic';
+      value: FlowSurfaceSemanticResourceInput;
+    }
+  | {
+      kind: 'raw';
+      value: Record<string, any>;
+    }
+  | undefined;
 
 export class FlowSurfacesService {
   constructor(private readonly plugin: Plugin) {}
@@ -235,6 +302,9 @@ export class FlowSurfacesService {
       : this.normalizeWriteTarget('catalog', input?.target, input);
     const resolved = target ? await this.locator.resolve(target, options) : null;
     const node = resolved ? await this.loadResolvedNode(resolved, options.transaction) : null;
+    const popupProfile = target
+      ? await this.resolvePopupBlockProfile(target.uid, resolved, node, options.transaction)
+      : null;
     const fieldCatalog = target ? await this.buildFieldCatalog(target, options.transaction) : [];
     const availableBlocks = this.surfaceContext.filterBlocksByTarget(node, resolved);
     const recordActionContainerUse = getCatalogRecordActionContainerUse(node?.use);
@@ -249,10 +319,9 @@ export class FlowSurfacesService {
 
     return {
       target: resolved || null,
-      blocks: availableBlocks.map((item) => ({
-        ...item,
-        configureOptions: getConfigureOptionsForCatalogItem(item),
-      })),
+      blocks: availableBlocks
+        .filter((item) => this.isCatalogBlockVisibleForPopupProfile(item.use, popupProfile))
+        .map((item) => this.buildCatalogBlockItem(item, popupProfile)),
       fields: fieldCatalog.map((item) => ({
         ...item,
         configureOptions: getConfigureOptionsForCatalogItem(item),
@@ -275,6 +344,863 @@ export class FlowSurfacesService {
       eventCapabilities: getNodeContract(node?.use).eventCapabilities,
       layoutCapabilities: getNodeContract(node?.use).layoutCapabilities,
     };
+  }
+
+  private buildCatalogBlockItem(item: any, popupProfile: FlowSurfacePopupBlockProfile | null) {
+    const resourceBindings =
+      this.isCollectionBlockUse(item.use) && popupProfile?.isPopupSurface
+        ? this.buildPopupBlockResourceBindings(item.use, popupProfile)
+        : undefined;
+    return {
+      ...item,
+      configureOptions: getConfigureOptionsForCatalogItem(item),
+      ...(resourceBindings?.length ? { resourceBindings } : {}),
+    };
+  }
+
+  private isCollectionBlockUse(use?: string) {
+    return COLLECTION_BLOCK_USES.has(use || '');
+  }
+
+  private formatPopupSupportedBindings(resourceBindings: FlowSurfaceResourceBindingOption[]) {
+    return resourceBindings.length ? resourceBindings.map((item) => item.key).join(', ') : '(none)';
+  }
+
+  private isCatalogBlockVisibleForPopupProfile(use: string, popupProfile: FlowSurfacePopupBlockProfile | null) {
+    if (!this.isCollectionBlockUse(use) || !popupProfile?.isPopupSurface) {
+      return true;
+    }
+    return this.buildPopupBlockResourceBindings(use, popupProfile).length > 0;
+  }
+
+  private getPopupCollectionBlockScenes(blockUse: string): FlowSurfaceCollectionBlockScene[] {
+    return POPUP_COLLECTION_BLOCK_SCENES[blockUse] || [];
+  }
+
+  private isPopupCollectionBlockSceneUnsupported(scene: FlowSurfacePopupScene) {
+    return POPUP_UNSUPPORTED_COLLECTION_SCENES.has(scene);
+  }
+
+  private isPopupCollectionBlockVisibleForScene(blockUse: string, popupProfile: FlowSurfacePopupBlockProfile) {
+    const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
+    if (this.isPopupCollectionBlockSceneUnsupported(popupProfile.scene)) {
+      return false;
+    }
+    if (popupProfile.scene === 'new') {
+      return blockScenes.includes('new');
+    }
+    return !blockScenes.some((scene) => this.isPopupCollectionBlockSceneUnsupported(scene as FlowSurfacePopupScene));
+  }
+
+  private async resolvePopupHostFieldRelationContext(hostNode: any, transaction?: any) {
+    const ancestors = await this.loadContextAncestorChain(
+      hostNode?.uid,
+      {
+        uid: hostNode?.uid,
+        target: { uid: hostNode?.uid },
+        kind: 'node',
+      },
+      transaction,
+    );
+    const fieldNode = ancestors.find((node) => _.get(node, ['stepParams', 'fieldSettings', 'init', 'fieldPath']));
+    if (!fieldNode?.uid) {
+      return null;
+    }
+
+    const fieldInit = _.get(fieldNode, ['stepParams', 'fieldSettings', 'init']) || {};
+    const resourceContext = await this.locator.resolveCollectionContext(fieldNode.uid, transaction).catch(() => null);
+    const dataSourceKey = fieldInit.dataSourceKey || resourceContext?.resourceInit?.dataSourceKey || 'main';
+    const collectionName = fieldInit.collectionName || resourceContext?.resourceInit?.collectionName;
+    if (!collectionName || !fieldInit.fieldPath) {
+      return null;
+    }
+
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    if (!collection) {
+      return null;
+    }
+
+    const parsed = this.parseFieldPath(
+      collection,
+      fieldInit.fieldPath,
+      fieldInit.associationPathName,
+      dataSourceKey,
+      collectionName,
+    );
+    const associationField = parsed.associationField || resolveFieldFromCollection(collection, parsed.fieldPath);
+    if (!isAssociationField(associationField)) {
+      return null;
+    }
+
+    const targetCollection = resolveFieldTargetCollection(associationField, dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+      this.getCollection(resolvedDsKey, targetCollectionName),
+    );
+    if (!targetCollection) {
+      return null;
+    }
+
+    return {
+      associationField,
+      targetCollection,
+      dataSourceKey: targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
+      collectionName: getFieldTarget(associationField) || targetCollection?.name || targetCollection?.options?.name,
+      associationName: associationField?.resourceName,
+    };
+  }
+
+  private normalizePopupScene(scene?: any): FlowSurfacePopupScene | undefined {
+    const normalized = String(scene || '').trim() as FlowSurfacePopupScene;
+    if (!normalized) {
+      return undefined;
+    }
+    if (['new', 'one', 'many', 'select', 'subForm', 'bulkEditForm', 'generic'].includes(normalized)) {
+      return normalized;
+    }
+    return undefined;
+  }
+
+  private resolvePopupScene(input: {
+    explicitScene?: FlowSurfacePopupScene;
+    collectionName?: string;
+    hasCurrentRecord: boolean;
+  }): FlowSurfacePopupScene {
+    if (input.explicitScene && ['select', 'subForm', 'bulkEditForm', 'new'].includes(input.explicitScene)) {
+      return input.explicitScene;
+    }
+    if (input.collectionName && !input.hasCurrentRecord) {
+      return 'new';
+    }
+    if (input.explicitScene === 'many') {
+      return 'many';
+    }
+    if (input.explicitScene === 'one') {
+      return 'one';
+    }
+    if (input.collectionName && input.hasCurrentRecord) {
+      return 'one';
+    }
+    return input.explicitScene || 'generic';
+  }
+
+  private async resolvePopupHostProfileContext(hostNode: any, transaction?: any) {
+    const parentUid = hostNode?.uid ? await this.locator.findParentUid(hostNode.uid, transaction) : null;
+    const parentNode = parentUid
+      ? await this.repository.findModelById(parentUid, { transaction, includeAsyncNode: true }).catch(() => null)
+      : null;
+    const resourceContext = hostNode?.uid
+      ? await this.locator.resolveCollectionContext(hostNode.uid, transaction).catch(() => null)
+      : null;
+    const relationContext = hostNode?.uid ? await this.resolvePopupHostFieldRelationContext(hostNode, transaction) : null;
+    return {
+      parentNode,
+      resourceContext,
+      relationContext,
+      recordActionContainerUse:
+        parentNode?.use && POPUP_RECORD_ACTION_CONTAINER_USES.has(parentNode.use) ? parentNode.use : null,
+    };
+  }
+
+  private buildPopupBlockResourceBindings(
+    blockUse: string,
+    popupProfile: FlowSurfacePopupBlockProfile,
+  ): FlowSurfaceResourceBindingOption[] {
+    if (!this.isCollectionBlockUse(blockUse) || !this.isPopupCollectionBlockVisibleForScene(blockUse, popupProfile)) {
+      return [];
+    }
+
+    const bindings: FlowSurfaceResourceBindingOption[] = [];
+    const currentCollectionName = popupProfile.currentCollection
+      ? popupProfile.collectionName || getCollectionTitle(popupProfile.currentCollection)
+      : undefined;
+    const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
+    const isNewSceneBlock = blockScenes.includes('new');
+    const supportsCurrentRecord = blockScenes.includes('one');
+    const associationFields = this.listPopupAssociatedRecordFields(popupProfile, blockUse);
+
+    if (!popupProfile.currentCollection) {
+      bindings.push({
+        key: 'otherRecords',
+        label: 'Other records',
+        description: 'Bind this block to another collection explicitly.',
+        requires: ['collectionName'],
+        dataSourceKey: popupProfile.dataSourceKey || 'main',
+      });
+      return bindings;
+    }
+
+    if (isNewSceneBlock) {
+      bindings.push({
+        key: 'currentCollection',
+        label: 'Current collection',
+        description:
+          popupProfile.popupKind === 'relationPopup'
+            ? 'Use the popup current collection and keep the current relation context.'
+            : 'Use the popup current collection.',
+        dataSourceKey: popupProfile.dataSourceKey,
+        collectionName: popupProfile.collectionName,
+      });
+      if (popupProfile.hasCurrentRecord && associationFields.length) {
+        bindings.push({
+          key: 'associatedRecords',
+          label: 'Associated records',
+          description: 'Bind this block to records associated with the popup current record.',
+          requires: ['associationField'],
+          associationFields,
+        });
+      }
+      bindings.push({
+        key: 'otherRecords',
+        label: 'Other records',
+        description: 'Bind this block to another collection explicitly.',
+        requires: ['collectionName'],
+        dataSourceKey: popupProfile.dataSourceKey || 'main',
+      });
+      return bindings;
+    }
+
+    if (supportsCurrentRecord && popupProfile.hasCurrentRecord) {
+      bindings.push({
+        key: 'currentRecord',
+        label: 'Current record',
+        description: `Bind this block to the popup current record in '${currentCollectionName || 'current collection'}'.`,
+        dataSourceKey: popupProfile.dataSourceKey,
+        collectionName: popupProfile.collectionName,
+      });
+    }
+
+    if (associationFields.length) {
+      bindings.push({
+        key: 'associatedRecords',
+        label: 'Associated records',
+        description: 'Bind this block to records associated with the popup current record.',
+        requires: ['associationField'],
+        associationFields,
+      });
+    }
+
+    bindings.push({
+      key: 'otherRecords',
+      label: 'Other records',
+      description: 'Bind this block to another collection explicitly.',
+      requires: ['collectionName'],
+      dataSourceKey: popupProfile.dataSourceKey || 'main',
+    });
+
+    return bindings;
+  }
+
+  private listPopupAssociatedRecordFields(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    blockUse: string,
+  ): FlowSurfaceResourceBindingAssociationField[] {
+    const associationFields = this.resolvePopupAssociationFields(popupProfile, blockUse);
+    if (!associationFields.length) {
+      return [];
+    }
+
+    return associationFields
+      .map((field) => {
+        const targetCollection = resolveFieldTargetCollection(
+          field,
+          popupProfile.dataSourceKey || 'main',
+          (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+        );
+        if (!targetCollection?.filterTargetKey) {
+          return null;
+        }
+        return {
+          key: getFieldName(field),
+          label: getFieldTitle(field),
+          collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
+          associationName: field?.resourceName,
+        };
+      })
+      .filter(Boolean) as FlowSurfaceResourceBindingAssociationField[];
+  }
+
+  private async resolvePopupBlockProfile(
+    uid: string,
+    resolved?: FlowSurfaceResolvedTarget | null,
+    resolvedNode?: any,
+    transaction?: any,
+  ): Promise<FlowSurfacePopupBlockProfile | null> {
+    const node = resolvedNode || (resolved ? await this.loadResolvedNode(resolved, transaction) : null);
+    const hostNode = await this.findPopupHostNode(uid, resolved, node, transaction);
+    if (!hostNode?.uid) {
+      return null;
+    }
+
+    const openView = this.resolvePopupHostOpenView(hostNode);
+    const hostContext = await this.resolvePopupHostProfileContext(hostNode, transaction);
+    const ownerResourceInit = hostContext.resourceContext?.resourceInit || {};
+    const dataSourceKey =
+      openView?.dataSourceKey ||
+      hostContext.relationContext?.dataSourceKey ||
+      ownerResourceInit.dataSourceKey ||
+      'main';
+    const collectionName =
+      String(openView?.collectionName || '').trim() ||
+      String(hostContext.relationContext?.collectionName || '').trim() ||
+      String(ownerResourceInit.collectionName || '').trim() ||
+      undefined;
+    let filterByTk = openView?.filterByTk;
+    let hasCurrentRecord = hasConfiguredFlowContextValue(filterByTk);
+    if (
+      !hasCurrentRecord &&
+      ['ViewActionModel', 'EditActionModel', 'PopupCollectionActionModel'].includes(hostNode?.use) &&
+      hostContext.recordActionContainerUse
+    ) {
+      filterByTk = '{{ctx.view.inputArgs.filterByTk}}';
+      hasCurrentRecord = true;
+    }
+    let associationName =
+      String(openView?.associationName || '').trim() ||
+      String(hostContext.relationContext?.associationName || '').trim() ||
+      String(ownerResourceInit.associationName || '').trim() ||
+      undefined;
+    let sourceId = openView?.sourceId;
+    if (!hasConfiguredFlowContextValue(sourceId) && hasConfiguredFlowContextValue(ownerResourceInit.sourceId)) {
+      sourceId = ownerResourceInit.sourceId;
+    }
+    if (
+      !hasConfiguredFlowContextValue(sourceId) &&
+      hostContext.relationContext &&
+      hasConfiguredFlowContextValue(ownerResourceInit.filterByTk)
+    ) {
+      sourceId = ownerResourceInit.filterByTk;
+    }
+    if (
+      !hasConfiguredFlowContextValue(sourceId) &&
+      associationName &&
+      hostContext.relationContext &&
+      hasCurrentRecord
+    ) {
+      sourceId = '{{ctx.view.inputArgs.sourceId}}';
+    }
+    const currentCollection = collectionName ? this.getCollection(dataSourceKey, collectionName) : null;
+    const hasAssociationContext = !!associationName && hasConfiguredFlowContextValue(sourceId);
+    const scene = this.resolvePopupScene({
+      explicitScene: this.normalizePopupScene(openView?.scene),
+      collectionName,
+      hasCurrentRecord,
+    });
+
+    return {
+      isPopupSurface: true,
+      popupKind: hasAssociationContext ? 'relationPopup' : hasCurrentRecord ? 'recordPopup' : 'plainPopup',
+      hostUid: hostNode.uid,
+      popupHostUse: hostNode.use,
+      dataSourceKey,
+      collectionName,
+      currentCollection,
+      filterByTk,
+      associationName,
+      sourceId,
+      hasCurrentRecord,
+      hasAssociationContext,
+      scene,
+    };
+  }
+
+  private resolvePopupAssociationFields(popupProfile: FlowSurfacePopupBlockProfile, blockUse: string) {
+    if (!popupProfile.currentCollection || !popupProfile.hasCurrentRecord) {
+      return [];
+    }
+    const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
+    const fields =
+      typeof popupProfile.currentCollection?.getAssociationFields === 'function'
+        ? popupProfile.currentCollection.getAssociationFields(blockScenes)
+        : getCollectionFields(popupProfile.currentCollection).filter((field) => isAssociationField(field));
+    return _.castArray(fields).filter((field) => {
+      if (!isAssociationField(field) || getFieldType(field) === 'belongsToArray') {
+        return false;
+      }
+      const targetCollection = resolveFieldTargetCollection(
+        field,
+        popupProfile.dataSourceKey || 'main',
+        (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      );
+      return !!targetCollection?.filterTargetKey;
+    });
+  }
+
+  private async findPopupHostNode(uid: string, resolved?: FlowSurfaceResolvedTarget | null, resolvedNode?: any, transaction?: any) {
+    const currentNode =
+      resolvedNode ||
+      resolved?.node ||
+      (resolved ? await this.loadResolvedNode(resolved, transaction) : null) ||
+      (await this.repository.findModelById(uid, {
+        transaction,
+        includeAsyncNode: true,
+      }));
+
+    if (isPopupHostUse(currentNode?.use)) {
+      return currentNode;
+    }
+
+    const ancestors = await this.loadContextAncestorChain(uid, resolved || { uid, target: { uid }, kind: 'node' }, transaction);
+    const childPageIndex = ancestors.findIndex((item) => item?.use === 'ChildPageModel');
+    if (childPageIndex >= 0) {
+      return ancestors[childPageIndex + 1] || null;
+    }
+
+    return null;
+  }
+
+  private getBlockKeyByUse(use?: string) {
+    return BLOCK_KEY_BY_USE.get(use || '') || use || 'block';
+  }
+
+  private describePopupKind(popupProfile: FlowSurfacePopupBlockProfile | null | undefined) {
+    if (!popupProfile?.isPopupSurface) {
+      return 'current surface';
+    }
+    if (popupProfile.popupKind === 'relationPopup') {
+      return '关系字段弹窗';
+    }
+    if (popupProfile.popupKind === 'recordPopup') {
+      return '非关系字段弹窗';
+    }
+    return '普通弹窗';
+  }
+
+  private normalizeResourceInput(input: any): FlowSurfaceNormalizedResourceInput {
+    if (_.isUndefined(input) || _.isNil(input)) {
+      return undefined;
+    }
+    if (!_.isPlainObject(input)) {
+      throwBadRequest('flowSurfaces resource must be an object');
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, 'binding')) {
+      const binding = String(input.binding || '').trim() as FlowSurfaceResourceBindingKey;
+      if (!['currentCollection', 'currentRecord', 'associatedRecords', 'otherRecords'].includes(binding)) {
+        throwBadRequest(`flowSurfaces resource binding '${binding}' is not supported`);
+      }
+      return {
+        kind: 'semantic',
+        value: buildDefinedPayload({
+          binding,
+          dataSourceKey: input.dataSourceKey,
+          collectionName: input.collectionName,
+          associationField: input.associationField,
+        }) as FlowSurfaceSemanticResourceInput,
+      };
+    }
+
+    return {
+      kind: 'raw',
+      value: normalizeSimpleResourceInit(input) || {},
+    };
+  }
+
+  private async resolvePopupCollectionBlockResourceInit(input: {
+    actionName: string;
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile | null;
+    semanticResource?: FlowSurfaceSemanticResourceInput;
+    resourceInit?: Record<string, any>;
+  }) {
+    if (!this.isCollectionBlockUse(input.blockUse)) {
+      if (input.semanticResource) {
+        throwBadRequest(
+          `flowSurfaces ${input.actionName} only supports semantic resource binding on collection blocks`,
+        );
+      }
+      return input.resourceInit;
+    }
+
+    if (!input.popupProfile?.isPopupSurface) {
+      if (input.semanticResource) {
+        throwBadRequest(
+          `flowSurfaces ${input.actionName} resource.binding only works on popup collection blocks; use resourceInit elsewhere`,
+        );
+      }
+      return input.resourceInit;
+    }
+
+    const blockKey = this.getBlockKeyByUse(input.blockUse);
+    if (this.isPopupCollectionBlockSceneUnsupported(input.popupProfile.scene)) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} popup scene '${input.popupProfile.scene}' does not support popup collection block creation`,
+      );
+    }
+    if (!this.isCatalogBlockVisibleForPopupProfile(input.blockUse, input.popupProfile)) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} block '${blockKey}' is not available in ${this.describePopupKind(
+          input.popupProfile,
+        )}; inspect catalog.blocks first`,
+      );
+    }
+
+    const resourceBindings = this.buildPopupBlockResourceBindings(input.blockUse, input.popupProfile);
+    if (!input.semanticResource && !input.resourceInit) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} popup collection block '${blockKey}' requires resource or resourceInit; inspect catalog.blocks[].resourceBindings first`,
+      );
+    }
+
+    if (input.semanticResource) {
+      return this.compilePopupSemanticResourceInit({
+        actionName: input.actionName,
+        blockUse: input.blockUse,
+        popupProfile: input.popupProfile,
+        resourceBindings,
+        resource: input.semanticResource,
+      });
+    }
+
+    return this.assertPopupRawResourceInit({
+      actionName: input.actionName,
+      blockUse: input.blockUse,
+      popupProfile: input.popupProfile,
+      resourceBindings,
+      resourceInit: input.resourceInit || {},
+    });
+  }
+
+  private compilePopupSemanticResourceInit(input: {
+    actionName: string;
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile;
+    resourceBindings: FlowSurfaceResourceBindingOption[];
+    resource: FlowSurfaceSemanticResourceInput;
+  }) {
+    const binding = input.resource.binding;
+    const supportedBinding = input.resourceBindings.find((item) => item.key === binding);
+    if (!supportedBinding) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} block '${this.getBlockKeyByUse(
+          input.blockUse,
+        )}' does not support resource.binding='${binding}' in ${this.describePopupKind(
+          input.popupProfile,
+        )}; supported bindings: ${this.formatPopupSupportedBindings(input.resourceBindings)}`,
+      );
+    }
+
+    if (binding === 'currentCollection') {
+      return buildDefinedPayload({
+        dataSourceKey: input.popupProfile.dataSourceKey || 'main',
+        collectionName: input.popupProfile.collectionName,
+        ...(input.popupProfile.hasAssociationContext
+          ? {
+              associationName: input.popupProfile.associationName,
+              sourceId: input.popupProfile.sourceId,
+            }
+          : {}),
+      });
+    }
+
+    if (binding === 'currentRecord') {
+      return buildDefinedPayload({
+        dataSourceKey: input.popupProfile.dataSourceKey || 'main',
+        collectionName: input.popupProfile.collectionName,
+        filterByTk: input.popupProfile.filterByTk,
+        ...(input.popupProfile.hasAssociationContext
+          ? {
+              associationName: input.popupProfile.associationName,
+              sourceId: input.popupProfile.sourceId,
+            }
+          : {}),
+      });
+    }
+
+    if (binding === 'associatedRecords') {
+      const associationFieldName = String(input.resource.associationField || '').trim();
+      if (!associationFieldName) {
+        throwBadRequest(
+          `flowSurfaces ${input.actionName} resource.binding='associatedRecords' requires associationField`,
+        );
+      }
+      const associationField = this.resolvePopupAssociationField(input.popupProfile, input.blockUse, associationFieldName);
+      if (!associationField) {
+        throwBadRequest(
+          `flowSurfaces ${input.actionName} associationField '${associationFieldName}' is not available in ${this.describePopupKind(
+            input.popupProfile,
+          )}`,
+        );
+      }
+      return this.buildAssociatedRecordsResourceInit(input.popupProfile, associationField);
+    }
+
+    if (binding === 'otherRecords') {
+      const dataSourceKey = String(input.resource.dataSourceKey || input.popupProfile.dataSourceKey || 'main').trim() || 'main';
+      const collectionName = String(input.resource.collectionName || '').trim();
+      if (!collectionName) {
+        throwBadRequest(`flowSurfaces ${input.actionName} resource.binding='otherRecords' requires collectionName`);
+      }
+      const collection = this.getCollection(dataSourceKey, collectionName);
+      if (!collection) {
+        throwBadRequest(`flowSurfaces ${input.actionName} collection '${collectionName}' not found`);
+      }
+      return {
+        dataSourceKey,
+        collectionName,
+      };
+    }
+
+    throwBadRequest(`flowSurfaces ${input.actionName} resource.binding='${binding}' is not supported`);
+  }
+
+  private assertPopupRawResourceInit(input: {
+    actionName: string;
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile;
+    resourceBindings: FlowSurfaceResourceBindingOption[];
+    resourceInit: Record<string, any>;
+  }) {
+    const binding = this.classifyPopupRawResourceInit(input.popupProfile, input.resourceInit);
+    if (!binding) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} resourceInit is not a valid popup binding for block '${this.getBlockKeyByUse(
+          input.blockUse,
+        )}'. Use catalog.blocks[].resourceBindings or semantic resource.binding instead`,
+      );
+    }
+
+    const supportedBinding = input.resourceBindings.find((item) => item.key === binding);
+    if (!supportedBinding) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} block '${this.getBlockKeyByUse(
+          input.blockUse,
+        )}' does not support resourceInit binding '${binding}' in ${this.describePopupKind(
+          input.popupProfile,
+        )}; supported bindings: ${this.formatPopupSupportedBindings(input.resourceBindings)}`,
+      );
+    }
+
+    if (
+      !this.validatePopupRawResourceInit({
+        binding,
+        blockUse: input.blockUse,
+        popupProfile: input.popupProfile,
+        resourceBinding: supportedBinding,
+        resourceInit: input.resourceInit,
+      })
+    ) {
+      throwBadRequest(
+        `flowSurfaces ${input.actionName} resourceInit does not match popup binding '${binding}' for ${this.describePopupKind(
+          input.popupProfile,
+        )}; inspect catalog.blocks[].resourceBindings and prefer semantic resource.binding`,
+      );
+    }
+
+    return input.resourceInit;
+  }
+
+  private validatePopupRawResourceInit(input: {
+    binding: FlowSurfaceResourceBindingKey;
+    blockUse: string;
+    popupProfile: FlowSurfacePopupBlockProfile;
+    resourceBinding: FlowSurfaceResourceBindingOption;
+    resourceInit: Record<string, any>;
+  }) {
+    const normalized = normalizeSimpleResourceInit(input.resourceInit) || {};
+    const popupDataSourceKey = input.popupProfile.dataSourceKey || 'main';
+    const resourceDataSourceKey = normalized.dataSourceKey || 'main';
+    const sameCurrentCollection =
+      !!input.popupProfile.collectionName &&
+      resourceDataSourceKey === popupDataSourceKey &&
+      normalized.collectionName === input.popupProfile.collectionName;
+
+    if (input.binding === 'currentCollection') {
+      if (!sameCurrentCollection || hasConfiguredFlowContextValue(normalized.filterByTk)) {
+        return false;
+      }
+      if (input.popupProfile.hasAssociationContext) {
+        return (
+          normalized.associationName === input.popupProfile.associationName &&
+          this.isSameConfiguredFlowContextValue(normalized.sourceId, input.popupProfile.sourceId)
+        );
+      }
+      return !hasConfiguredFlowContextValue(normalized.associationName) && !hasConfiguredFlowContextValue(normalized.sourceId);
+    }
+
+    if (input.binding === 'currentRecord') {
+      if (!sameCurrentCollection || !hasConfiguredFlowContextValue(normalized.filterByTk)) {
+        return false;
+      }
+      if (input.popupProfile.hasAssociationContext) {
+        return (
+          this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+          normalized.associationName === input.popupProfile.associationName &&
+          this.isSameConfiguredFlowContextValue(normalized.sourceId, input.popupProfile.sourceId)
+        );
+      }
+      return (
+        this.isSameConfiguredFlowContextValue(normalized.filterByTk, input.popupProfile.filterByTk) &&
+        !hasConfiguredFlowContextValue(normalized.associationName) &&
+        !hasConfiguredFlowContextValue(normalized.sourceId)
+      );
+    }
+
+    if (input.binding === 'associatedRecords') {
+      if (
+        !hasConfiguredFlowContextValue(normalized.collectionName) ||
+        !hasConfiguredFlowContextValue(normalized.associationName) ||
+        !hasConfiguredFlowContextValue(normalized.sourceId) ||
+        hasConfiguredFlowContextValue(normalized.filterByTk)
+      ) {
+        return false;
+      }
+      return _.castArray(input.resourceBinding.associationFields || []).some((field) => {
+        const associationField = this.resolvePopupAssociationField(input.popupProfile, input.blockUse, field.key);
+        if (!associationField) {
+          return false;
+        }
+        return (
+          field.collectionName === normalized.collectionName &&
+          field.associationName === normalized.associationName &&
+          resourceDataSourceKey === popupDataSourceKey &&
+          this.isPopupAssociatedRecordsSourceIdMatch(input.popupProfile, associationField, normalized.sourceId)
+        );
+      });
+    }
+
+    if (input.binding === 'otherRecords') {
+      if (
+        !hasConfiguredFlowContextValue(normalized.collectionName) ||
+        hasConfiguredFlowContextValue(normalized.associationName) ||
+        hasConfiguredFlowContextValue(normalized.sourceId) ||
+        hasConfiguredFlowContextValue(normalized.filterByTk)
+      ) {
+        return false;
+      }
+      return !!this.getCollection(resourceDataSourceKey, normalized.collectionName);
+    }
+
+    return false;
+  }
+
+  private getCollectionFilterTargetKey(collection: any) {
+    return (
+      (Array.isArray(collection?.filterTargetKey) ? collection?.filterTargetKey?.[0] : collection?.filterTargetKey) ||
+      (Array.isArray(collection?.options?.filterTargetKey)
+        ? collection?.options?.filterTargetKey?.[0]
+        : collection?.options?.filterTargetKey) ||
+      'id'
+    );
+  }
+
+  private normalizeFlowContextTemplateValue(value: any) {
+    if (!_.isString(value)) {
+      return value;
+    }
+    const trimmed = value.trim();
+    const match = trimmed.match(/^\{\{\s*(.+?)\s*\}\}$/);
+    if (!match) {
+      return trimmed;
+    }
+    return `{{${match[1].replace(/\s+/g, '')}}}`;
+  }
+
+  private isSameConfiguredFlowContextValue(left: any, right: any) {
+    if (!hasConfiguredFlowContextValue(left) || !hasConfiguredFlowContextValue(right)) {
+      return false;
+    }
+    return _.isEqual(this.normalizeFlowContextTemplateValue(left), this.normalizeFlowContextTemplateValue(right));
+  }
+
+  private isPopupAssociatedRecordsSourceIdMatch(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    associationField: any,
+    sourceId: any,
+  ) {
+    if (!hasConfiguredFlowContextValue(sourceId)) {
+      return false;
+    }
+    const normalizedSourceId = this.normalizeFlowContextTemplateValue(sourceId);
+    const sourceKey = associationField?.sourceKey || associationField?.options?.sourceKey;
+    const currentCollectionFilterTargetKey = this.getCollectionFilterTargetKey(popupProfile.currentCollection);
+    const allowedValues = new Set<string>();
+
+    if (sourceKey) {
+      allowedValues.add(`{{ctx.popup.record.${sourceKey}}}`);
+      if (sourceKey === currentCollectionFilterTargetKey) {
+        allowedValues.add('{{ctx.view.inputArgs.filterByTk}}');
+      }
+    } else {
+      allowedValues.add('{{ctx.view.inputArgs.filterByTk}}');
+    }
+
+    return allowedValues.has(normalizedSourceId);
+  }
+
+  private classifyPopupRawResourceInit(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    resourceInit?: Record<string, any>,
+  ): FlowSurfaceResourceBindingKey | null {
+    if (!resourceInit?.collectionName) {
+      return null;
+    }
+
+    const sameCurrentCollection =
+      !!popupProfile.collectionName &&
+      (resourceInit.dataSourceKey || 'main') === (popupProfile.dataSourceKey || 'main') &&
+      resourceInit.collectionName === popupProfile.collectionName;
+
+    if (sameCurrentCollection && hasConfiguredFlowContextValue(resourceInit.filterByTk)) {
+      return 'currentRecord';
+    }
+
+    if (sameCurrentCollection && !hasConfiguredFlowContextValue(resourceInit.filterByTk)) {
+      return 'currentCollection';
+    }
+
+    if (
+      hasConfiguredFlowContextValue(resourceInit.associationName) &&
+      hasConfiguredFlowContextValue(resourceInit.sourceId)
+    ) {
+      return 'associatedRecords';
+    }
+
+    if (
+      hasConfiguredFlowContextValue(resourceInit.collectionName) &&
+      !hasConfiguredFlowContextValue(resourceInit.associationName) &&
+      !hasConfiguredFlowContextValue(resourceInit.sourceId) &&
+      !hasConfiguredFlowContextValue(resourceInit.filterByTk)
+    ) {
+      return 'otherRecords';
+    }
+
+    return null;
+  }
+
+  private resolvePopupAssociationField(
+    popupProfile: FlowSurfacePopupBlockProfile,
+    blockUse: string,
+    associationFieldName: string,
+  ) {
+    return this.resolvePopupAssociationFields(popupProfile, blockUse)
+      .filter((field) => getFieldName(field) === associationFieldName)
+      .find(Boolean);
+  }
+
+  private buildAssociatedRecordsResourceInit(popupProfile: FlowSurfacePopupBlockProfile, associationField: any) {
+    const targetCollection = resolveFieldTargetCollection(
+      associationField,
+      popupProfile.dataSourceKey || 'main',
+      (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+    );
+    if (!targetCollection) {
+      throwBadRequest(
+        `flowSurfaces associatedRecords field '${getFieldName(associationField)}' target collection is not available`,
+      );
+    }
+
+    const sourceKey = associationField?.sourceKey || associationField?.options?.sourceKey;
+    const currentCollectionFilterTargetKey = this.getCollectionFilterTargetKey(popupProfile.currentCollection);
+    const sourceId =
+      sourceKey && sourceKey !== currentCollectionFilterTargetKey
+        ? `{{ctx.popup.record.${sourceKey}}}`
+        : '{{ctx.view.inputArgs.filterByTk}}';
+
+    return buildDefinedPayload({
+      dataSourceKey: popupProfile.dataSourceKey || 'main',
+      collectionName: getFieldTarget(associationField) || targetCollection?.name || targetCollection?.options?.name,
+      associationName: associationField?.resourceName,
+      sourceId,
+    });
   }
 
   async context(values: FlowSurfaceContextValues, options: { transaction?: any } = {}) {
@@ -351,7 +1277,8 @@ export class FlowSurfacesService {
             uid: gridUid,
           },
           type: blockSpec.type,
-          resourceInit: blockSpec.resource,
+          ...(blockSpec.resource?.kind === 'semantic' ? { resource: blockSpec.resource.value } : {}),
+          ...(blockSpec.resource?.kind === 'raw' ? { resourceInit: blockSpec.resource.value } : {}),
         },
         {
           ...options,
@@ -1022,6 +1949,11 @@ export class FlowSurfacesService {
     const target = this.normalizeWriteTarget('addBlock', values?.target, values);
     ensureNoRawDirectAddKeys('addBlock', values, ['props', 'decoratorProps', 'stepParams', 'flowRegistry']);
     const inlineSettings = this.normalizeInlineSettings('addBlock', values.settings);
+    const semanticResource = this.normalizeResourceInput(values.resource);
+    const rawResourceInit = _.isUndefined(values.resourceInit) ? undefined : normalizeSimpleResourceInit(values.resourceInit);
+    if (semanticResource && rawResourceInit) {
+      throwBadRequest('flowSurfaces addBlock does not allow resource and resourceInit at the same time');
+    }
     const catalogItem = resolveSupportedBlockCatalogItem(
       {
         type: values.type,
@@ -1031,6 +1963,16 @@ export class FlowSurfacesService {
         requireCreateSupported: true,
       },
     );
+    const resolvedTarget = await this.locator.resolve(target, options);
+    const targetNode = await this.loadResolvedNode(resolvedTarget, options.transaction);
+    const popupProfile = await this.resolvePopupBlockProfile(target.uid, resolvedTarget, targetNode, options.transaction);
+    const resolvedResourceInit = await this.resolvePopupCollectionBlockResourceInit({
+      actionName: 'addBlock',
+      blockUse: catalogItem.use,
+      popupProfile,
+      semanticResource: semanticResource?.kind === 'semantic' ? semanticResource.value : undefined,
+      resourceInit: rawResourceInit || (semanticResource?.kind === 'raw' ? semanticResource.value : undefined),
+    });
     const { parentUid, subKey, subType, popupSurface } = await this.surfaceContext.resolveBlockParent(
       target,
       options.transaction,
@@ -1043,7 +1985,7 @@ export class FlowSurfacesService {
         });
     const tree = buildBlockTree({
       use: catalogItem.use,
-      resourceInit: values.resourceInit,
+      resourceInit: resolvedResourceInit,
       props: values.props,
       decoratorProps: values.decoratorProps,
       stepParams: values.stepParams,
@@ -2204,12 +3146,7 @@ export class FlowSurfacesService {
     if (!normalized) {
       return undefined;
     }
-    if (
-      normalized === 'ctx' ||
-      normalized.startsWith('ctx.') ||
-      normalized.includes('{{') ||
-      normalized.includes('}}')
-    ) {
+    if (normalized === 'ctx' || normalized.startsWith('ctx.') || normalized.includes('{{') || normalized.includes('}}')) {
       throwBadRequest(`flowSurfaces context path only accepts bare paths like 'record' or 'popup.record'`);
     }
     if (!isBareFlowContextPath(normalized)) {
@@ -2585,7 +3522,7 @@ export class FlowSurfacesService {
     return {
       key,
       type,
-      resource: normalizeSimpleResourceInit(input.resource),
+      resource: this.normalizeResourceInput(input.resource),
       settings: _.isPlainObject(input.settings) ? input.settings : {},
       fields: _.castArray(input.fields || []).map((field, fieldIndex) => normalizeComposeFieldSpec(field, fieldIndex)),
       actions,
@@ -4458,30 +5395,25 @@ export class FlowSurfacesService {
       : null;
 
     const formNode = ancestors.find((node) => FORM_BLOCK_USES.has(node?.use));
-    const formValuesCollection = this.resolveCollectionFromInit(
-      _.get(formNode, ['stepParams', 'resourceSettings', 'init']),
-    );
+    const formValuesCollection = this.resolveCollectionFromInit(_.get(formNode, ['stepParams', 'resourceSettings', 'init']));
 
     const itemCollections = ancestors
       .filter((node) => ITEM_CONTEXT_OWNER_USES.has(node?.use))
       .map((node) => this.resolveItemContextCollection(node))
       .filter(Boolean) as NonNullable<FlowSurfaceContextSemantic['itemCollections']>;
 
-    const rawPopupLevels = ancestors.reduce<NonNullable<FlowSurfaceContextSemantic['popupLevels']>>(
-      (levels, node, index) => {
-        if (node?.use !== 'ChildPageModel') {
-          return levels;
-        }
-        const hostNode = ancestors[index + 1];
-        levels.push(
-          this.resolvePopupContextLevel(node?.uid, hostNode, {
-            allowSourceIdAsRecordId: levels.length > 0,
-          }),
-        );
+    const rawPopupLevels = ancestors.reduce<NonNullable<FlowSurfaceContextSemantic['popupLevels']>>((levels, node, index) => {
+      if (node?.use !== 'ChildPageModel') {
         return levels;
-      },
-      [],
-    );
+      }
+      const hostNode = ancestors[index + 1];
+      levels.push(
+        this.resolvePopupContextLevel(node?.uid, hostNode, {
+          allowSourceIdAsRecordId: levels.length > 0,
+        }),
+      );
+      return levels;
+    }, []);
 
     const popupLevels = rawPopupLevels.slice(0, 1);
     const parentPopupLevel = rawPopupLevels[1];
@@ -4535,7 +5467,10 @@ export class FlowSurfacesService {
     return chain;
   }
 
-  private resolveCollectionFromInit(resourceInit?: { dataSourceKey?: string; collectionName?: string }) {
+  private resolveCollectionFromInit(resourceInit?: {
+    dataSourceKey?: string;
+    collectionName?: string;
+  }) {
     if (!resourceInit?.collectionName) {
       return null;
     }
@@ -4593,9 +5528,7 @@ export class FlowSurfacesService {
     const popupConfig = this.resolvePopupHostOpenView(hostNode);
     const popupDataSourceKey = popupConfig?.dataSourceKey || 'main';
     const popupAssociationName = String(popupConfig?.associationName || '').trim();
-    const sourceRecordCollectionName = popupAssociationName.includes('.')
-      ? popupAssociationName.split('.')[0]
-      : undefined;
+    const sourceRecordCollectionName = popupAssociationName.includes('.') ? popupAssociationName.split('.')[0] : undefined;
     const recordIdentifier = options.allowSourceIdAsRecordId
       ? popupConfig?.filterByTk ?? popupConfig?.sourceId
       : popupConfig?.filterByTk;

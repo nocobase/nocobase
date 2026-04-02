@@ -36,6 +36,36 @@ export type FlowSurfaceConfigureOption = {
 
 export type FlowSurfaceConfigureOptions = Record<string, FlowSurfaceConfigureOption>;
 
+export type FlowSurfaceResourceBindingKey =
+  | 'currentCollection'
+  | 'currentRecord'
+  | 'associatedRecords'
+  | 'otherRecords';
+
+export type FlowSurfaceResourceBindingAssociationField = {
+  key: string;
+  label: string;
+  collectionName: string;
+  associationName?: string;
+};
+
+export type FlowSurfaceResourceBindingOption = {
+  key: FlowSurfaceResourceBindingKey;
+  label: string;
+  description?: string;
+  requires?: string[];
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationFields?: FlowSurfaceResourceBindingAssociationField[];
+};
+
+export type FlowSurfaceSemanticResourceInput = {
+  binding: FlowSurfaceResourceBindingKey;
+  dataSourceKey?: string;
+  collectionName?: string;
+  associationField?: string;
+};
+
 export type FlowSurfaceReadTarget = {
   locator: FlowSurfaceReadLocator;
   uid: string;
@@ -102,6 +132,7 @@ export type FlowSurfaceCatalogItem = {
   settingsSchema: Record<string, any>;
   settingsContract?: Partial<Record<FlowSurfaceNodeDomain, FlowSurfaceDomainContract>>;
   configureOptions?: FlowSurfaceConfigureOptions;
+  resourceBindings?: FlowSurfaceResourceBindingOption[];
   eventCapabilities?: FlowSurfaceEventCapabilities;
   layoutCapabilities?: FlowSurfaceLayoutCapabilities;
   createSupported?: boolean;

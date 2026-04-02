@@ -1100,6 +1100,243 @@ describe('flowSurfaces API contract', () => {
     );
   });
 
+  it('should expose popup block resourceBindings and reject invalid popup record block bindings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup catalog contract page',
+      tabTitle: 'Popup catalog contract tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const plainPopup = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'popup',
+        },
+      }),
+    );
+    const plainPopupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: plainPopup.uid,
+          },
+        },
+      }),
+    );
+    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')?.resourceBindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ key: 'currentCollection' }),
+        expect.objectContaining({ key: 'otherRecords' }),
+      ]),
+    );
+    expect(plainPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')).toBeUndefined();
+
+    const recordPopup = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'view',
+        },
+      }),
+    );
+    const recordPopupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: recordPopup.uid,
+          },
+        },
+      }),
+    );
+    const recordPopupDetailsBindings =
+      recordPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(recordPopupDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
+    );
+    expect(recordPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
+    const recordScopedPopup = getData(
+      await rootAgent.resource('flowSurfaces').addRecordAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'popup',
+        },
+      }),
+    );
+    const recordScopedPopupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: recordScopedPopup.uid,
+          },
+        },
+      }),
+    );
+    const recordScopedPopupDetailsBindings =
+      recordScopedPopupCatalog.blocks.find((item: any) => item.use === 'DetailsBlockModel')?.resourceBindings || [];
+    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).toEqual(
+      expect.arrayContaining(['currentRecord', 'associatedRecords', 'otherRecords']),
+    );
+    expect(recordScopedPopupDetailsBindings.map((item: any) => item.key)).not.toEqual(
+      expect.arrayContaining(['currentCollection']),
+    );
+
+    const invalidRaw = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: recordPopup.uid,
+        },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'employees',
+        },
+      },
+    });
+    expect(invalidRaw.status).toBe(400);
+    expect(readErrorMessage(invalidRaw)).toContain(`resourceInit binding 'currentCollection'`);
+    expect(readErrorMessage(invalidRaw)).toContain('supported bindings:');
+    expect(readErrorMessage(invalidRaw)).toContain('currentRecord');
+
+    const relationPopup = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'popup',
+        },
+      }),
+    );
+    const configureRelationPopup = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: relationPopup.uid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'tasks',
+            associationName: 'tasks',
+            sourceId: '{{ctx.record.id}}',
+            filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+          },
+        },
+      },
+    });
+    expect(configureRelationPopup.status).toBe(200);
+
+    const invalidRelationCurrentRecordRaw = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: relationPopup.uid,
+        },
+        type: 'details',
+        resourceInit: {
+          dataSourceKey: 'main',
+          collectionName: 'tasks',
+          filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+          associationName: 'tasks',
+          sourceId: '{{ctx.custom.badSourceId}}',
+        },
+      },
+    });
+    expect(invalidRelationCurrentRecordRaw.status).toBe(400);
+    expect(readErrorMessage(invalidRelationCurrentRecordRaw)).toContain(
+      `resourceInit does not match popup binding 'currentRecord'`,
+    );
+  });
+
+  it('should hide collection block popup bindings on unsupported popup scenes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Popup unsupported scene page',
+      tabTitle: 'Popup unsupported scene tab',
+    });
+    const table = await addBlockData(rootAgent, {
+      target: {
+        uid: page.tabSchemaUid,
+      },
+      type: 'table',
+      resourceInit: {
+        dataSourceKey: 'main',
+        collectionName: 'employees',
+      },
+    });
+
+    const popup = getData(
+      await rootAgent.resource('flowSurfaces').addAction({
+        values: {
+          target: {
+            uid: table.uid,
+          },
+          type: 'popup',
+        },
+      }),
+    );
+    const configurePopup = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: popup.uid,
+        },
+        changes: {
+          openView: {
+            scene: 'select',
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+          },
+        },
+      },
+    });
+    expect(configurePopup.status).toBe(200);
+
+    const popupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: popup.uid,
+          },
+        },
+      }),
+    );
+    expect(popupCatalog.blocks.find((item: any) => item.use === 'CreateFormModel')).toBeUndefined();
+    expect(popupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')).toBeUndefined();
+    expect(popupCatalog.blocks.find((item: any) => item.use === 'MarkdownBlockModel')).toBeTruthy();
+
+    const addCollectionBlock = await rootAgent.resource('flowSurfaces').addBlock({
+      values: {
+        target: {
+          uid: popup.uid,
+        },
+        type: 'table',
+        resource: {
+          binding: 'otherRecords',
+          dataSourceKey: 'main',
+          collectionName: 'departments',
+        },
+      },
+    });
+    expect(addCollectionBlock.status).toBe(400);
+    expect(readErrorMessage(addCollectionBlock)).toContain(`scene 'select'`);
+  });
+
   it('should reject direct addAction types that do not match the public action scope of the target container', async () => {
     const page = await createPage(rootAgent, {
       title: 'Action visibility page',

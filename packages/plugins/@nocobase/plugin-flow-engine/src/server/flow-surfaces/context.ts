@@ -97,8 +97,7 @@ function getFieldType(field: any) {
 }
 
 function getFieldTargetCollection(field: any) {
-  const targetCollection =
-    typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection;
+  const targetCollection = typeof field?.targetCollection === 'function' ? field.targetCollection() : field?.targetCollection;
   return targetCollection && typeof targetCollection === 'object' ? targetCollection : null;
 }
 
@@ -135,10 +134,7 @@ function buildCollectionProperties(collection?: CollectionLike | null) {
   return properties;
 }
 
-function createCollectionSpec(
-  collection: CollectionLike | null | undefined,
-  title: string,
-): FlowSurfaceContextSpecNode | null {
+function createCollectionSpec(collection: CollectionLike | null | undefined, title: string): FlowSurfaceContextSpecNode | null {
   if (!collection) {
     return null;
   }
