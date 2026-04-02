@@ -41,7 +41,12 @@
       {
         "type": "custom-link",
         "label": "Use Skills",
-        "link": "/ai-employees/features/tool"
+        "link": "/ai-employees/features/skills"
+      },
+      {
+        "type": "custom-link",
+        "label": "Use Tools",
+        "link": "/ai-employees/features/tools"
       },
       {
         "type": "custom-link",

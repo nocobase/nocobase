@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Dienstaufteilung"
+description: "Aufteilen zeitintensiver Dienste (Workflow, asynchrone Aufgaben) auf eigene Knoten im Cluster-Modus mit WORKER_MODE; Anfrage- vs. Aufgabenknoten und horizontale Skalierung."
+keywords: "Dienstaufteilung,WORKER_MODE,asynchroner Workflow,async-task,horizontale Skalierung,Anfrageknoten,Aufgabenknoten,NocoBase"
+---
+
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::

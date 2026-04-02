@@ -24,7 +24,7 @@ export const BRANCH_INDEX = {
 export class ConditionInstruction extends Instruction {
   configSchema = Joi.object({
     rejectOnFalse: Joi.boolean().required(),
-    engine: Joi.string().valid(...evaluators.getKeys()),
+    engine: Joi.string().valid('basic', 'math.js', 'formula.js'),
     calculation: Joi.object(),
     expression: Joi.string(),
   });

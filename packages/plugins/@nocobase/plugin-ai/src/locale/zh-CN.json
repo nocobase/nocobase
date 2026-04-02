@@ -89,6 +89,8 @@
   "Diagnose and fix the error": "诊断并修复错误",
   "Direction": "排序方向",
   "Disable search": "禁用搜索",
+  "Switching to {{ nickname }}": "切换为 {{ nickname }}",
+  "{{ nickname }} has completed the work": "{{ nickname }} 已完成工作",
   "Displays the AI employee’s assigned tasks on the profile when hovering over the button.": "当鼠标悬停在按钮上时，会在员工资料卡片上显示任务描述。",
   "Down": "下移",
   "Edit AI employee": "编辑 AI 员工",
@@ -345,5 +347,12 @@
   "Hello, I'm Cole. I have access to the NocoBase knowledge base. Ask me anything about setting up or using the platform.": "你好，我是Cole。我可以进入NocoBase的知识库。问我任何关于设置或使用平台的问题。",
   "Frontend code engineer": "前端工程师",
   "An frontend engineer specializing in JavaScript, HTML, and CSS.": "一个擅长 JavaScript、HTML 和 CSS 的前端工程师。",
-  "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?": "嗨，我是 Nathan，你的前端工程师。我将为您生成高质量 JavaScript / HTML / CSS 代码。今天您想创建什么？"
+  "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?": "嗨，我是 Nathan，你的前端工程师。我将为您生成高质量 JavaScript / HTML / CSS 代码。今天您想创建什么？",
+  "AI employee task dispatching": "AI员工任务分派",
+  "Awaken and assign specific tasks to ai employees": "唤醒 AI 员工并分派具体任务",
+  "List AI employee": "列出 AI 员工",
+  "Get the list of available AI employees": "获取可用的 AI 员工列表",
+  "Get AI employee": "获取 AI 员工",
+  "Get the detailed definition of AI employee": "获取 AI 员工的详细定义",
+  "Done in {{ durationText }}": "已完成 {{ durationText }}"
 }

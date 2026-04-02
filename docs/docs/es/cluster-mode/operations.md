@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Operaciones en clúster"
+description: "Operaciones en clúster: orden de arranque inicial, actualización de versión (parada, copia de seguridad, actualización, verificación) y mantenimiento en la aplicación (plugins, copias) reducido a un solo nodo."
+keywords: "operaciones clúster,actualización,mantenimiento en app,gestión de plugins,copia de seguridad,actualización continua,NocoBase"
+---
+
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::

@@ -16,12 +16,12 @@ export class PluginIdpOauthClient extends Plugin {
   async load() {
     this.flowEngine.registerModels(models);
     this.router.add('idp-oauth.interaction', {
-      path: '/idp-oauth/interaction/:appName/:uid',
+      path: '/idp-oauth/interaction/:uid',
       Component: InteractionPage,
       skipAuthCheck: true,
     });
     this.router.add('idp-oauth.error', {
-      path: '/idp-oauth/error/:appName',
+      path: '/idp-oauth/error',
       Component: ErrorPage,
       skipAuthCheck: true,
     });

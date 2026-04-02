@@ -20,6 +20,7 @@ import React from 'react';
 import { FieldModel } from '../../base';
 import { DetailsGridModel } from './DetailsGridModel';
 import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
+import { isToManyAssociationField } from '../../../internal/utils/modelUtils';
 
 /**
  * 从 record 中取值
@@ -56,6 +57,50 @@ export function getValueWithIndex(record: any, fieldPath: string, idx?: string[]
   }
 
   return get(record, path);
+}
+
+export function getDetailsItemValue(options: {
+  record: any;
+  currentObject?: any;
+  fieldPath: string;
+  prefixFieldPath?: string;
+  idx?: string[];
+}) {
+  const { record, currentObject, fieldPath, prefixFieldPath, idx } = options;
+  const valueFromRecord = getValueWithIndex(record, fieldPath, idx);
+  if (valueFromRecord !== undefined) {
+    return valueFromRecord;
+  }
+  if (currentObject == null) {
+    return valueFromRecord;
+  }
+  if (prefixFieldPath && fieldPath === prefixFieldPath) {
+    return currentObject;
+  }
+  const relativeFieldPath =
+    prefixFieldPath && fieldPath.startsWith(`${prefixFieldPath}.`)
+      ? fieldPath.slice(prefixFieldPath.length + 1)
+      : fieldPath;
+  if (!relativeFieldPath) {
+    return currentObject;
+  }
+  return get(currentObject, relativeFieldPath);
+}
+
+function normalizeDetailsAssociationValue(collectionField: any, value: any) {
+  if (!isToManyAssociationField(collectionField)) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value && typeof value === 'object' && Array.isArray((value as { rows?: unknown[] }).rows)) {
+    return (value as { rows: unknown[] }).rows;
+  }
+  if (value == null) {
+    return [];
+  }
+  return [value];
 }
 
 export class DetailsItemModel extends DisplayItemModel<{
@@ -122,6 +167,7 @@ export class DetailsItemModel extends DisplayItemModel<{
     const currentObject = this.context.currentObject;
     const item = this.context.item;
     const itemOptions = this.context.getPropertyOptions('item');
+    const prefixFieldPath = this.context.prefixFieldPath;
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
@@ -161,7 +207,16 @@ export class DetailsItemModel extends DisplayItemModel<{
           disabled: this.context.pattern === 'readPretty',
         }
       : { ...this.context.blockModel.props, ...this.props };
-    const value = getValueWithIndex(record, this.fieldPath, idx);
+    const value = normalizeDetailsAssociationValue(
+      this.collectionField,
+      getDetailsItemValue({
+        record,
+        currentObject,
+        fieldPath: this.fieldPath,
+        prefixFieldPath,
+        idx,
+      }),
+    );
     return (
       <FormItem {...mergedProps} value={value}>
         <FieldModelRenderer model={modelForRender} />

@@ -8,7 +8,7 @@
  */
 
 import type { Cache } from '@nocobase/cache';
-import type Application from '@nocobase/server';
+import Application, { AppSupervisor } from '@nocobase/server';
 import fs from 'node:fs';
 import inject from 'light-my-request';
 import { createHash } from 'node:crypto';
@@ -79,23 +79,91 @@ export class IdpOauthService {
     return process.env.APP_PUBLIC_ORIGIN || `${protocol}://${host}`;
   }
 
-  getIssuerPath(appName = this.app.name) {
-    const apiBasePath = normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  private getApiBasePath() {
+    return normalizeBasePath(process.env.API_BASE_PATH || '/api');
+  }
+
+  private getRequestPath(ctx: any) {
+    if (typeof ctx?.req?.originalUrl === 'string') {
+      return ctx.req.originalUrl.split('?')[0];
+    }
+
+    if (typeof ctx?.path === 'string') {
+      return ctx.path;
+    }
+
+    if (typeof ctx?.req?.url === 'string') {
+      return ctx.req.url.split('?')[0];
+    }
+
+    return '';
+  }
+
+  private getAppIssuerPath(appName = this.app.name) {
+    const apiBasePath = this.getApiBasePath();
     if (appName === 'main') {
       return apiBasePath;
     }
     return `${apiBasePath}/__app/${appName}`;
   }
 
-  getIssuer(origin: string, appName = this.app.name) {
-    return `${origin}${this.getIssuerPath(appName)}`;
+  getIssuerPath(appName = this.app.name, ctx?: any) {
+    const apiBasePath = this.getApiBasePath();
+    if (appName === 'main') {
+      return apiBasePath;
+    }
+
+    const appSupervisor = AppSupervisor.getInstance();
+    if (appSupervisor?.runningMode === 'single') {
+      return apiBasePath;
+    }
+
+    const appIssuerPath = this.getAppIssuerPath(appName);
+    if (!ctx) {
+      return appIssuerPath;
+    }
+
+    const requestPath = this.getRequestPath(ctx);
+    if (!requestPath.startsWith(appIssuerPath)) {
+      return apiBasePath;
+    }
+
+    return appIssuerPath;
+  }
+
+  getIssuer(origin: string, appName = this.app.name, ctx?: any) {
+    return `${origin}${this.getIssuerPath(appName, ctx)}`;
+  }
+
+  private shouldUseSubAppPublicPrefix(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!appName || appName === 'main') {
+      return false;
+    }
+
+    return issuerPath !== this.getApiBasePath();
+  }
+
+  getFrontendInteractionPath(appName: string, uid: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
+      return `/idp-oauth/interaction/${uid}`;
+    }
+
+    return `/apps/${appName}/idp-oauth/interaction/${uid}`;
+  }
+
+  getFrontendErrorPath(appName: string, issuerPath = this.getIssuerPath(appName)) {
+    if (!this.shouldUseSubAppPublicPrefix(appName, issuerPath)) {
+      return '/idp-oauth/error';
+    }
+
+    return `/apps/${appName}/idp-oauth/error`;
   }
 
   getProviderContext(ctx: any): ProviderContext {
     const appName = ctx.app?.name || this.app.name;
     const origin = this.getOrigin(ctx);
-    const issuerPath = this.getIssuerPath(appName);
-    const issuer = this.getIssuer(origin, appName);
+    const issuerPath = this.getIssuerPath(appName, ctx);
+    const issuer = this.getIssuer(origin, appName, ctx);
 
     return {
       appName,
@@ -450,7 +518,7 @@ export class IdpOauthService {
     return user;
   }
 
-  private getPublicErrorLocation(appName: string, out: Record<string, any>) {
+  private getPublicErrorLocation(appName: string, out: Record<string, any>, issuerPath = this.getIssuerPath(appName)) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(out || {})) {
       if (typeof value === 'undefined' || value === null) {
@@ -459,11 +527,12 @@ export class IdpOauthService {
       query.set(key, String(value));
     }
 
-    return `/idp-oauth/error/${appName}${query.size ? `?${query.toString()}` : ''}`;
+    return `${this.getFrontendErrorPath(appName, issuerPath)}${query.size ? `?${query.toString()}` : ''}`;
   }
 
   private async createConfiguration({ appName, issuer, issuerPath, origin }: ProviderContext) {
     const app = this.app;
+    const service = this;
     const cookieKey = this.app.authManager.jwt.getSecret();
     if (!cookieKey) {
       throw new Error('JWT secret is required for plugin-idp-oauth');
@@ -485,7 +554,7 @@ export class IdpOauthService {
       },
       interactions: {
         url(_ctx: unknown, interaction: { uid: string }) {
-          return `/idp-oauth/interaction/${appName}/${interaction.uid}`;
+          return service.getFrontendInteractionPath(appName, interaction.uid, issuerPath);
         },
       },
       routes: {
@@ -574,7 +643,7 @@ export class IdpOauthService {
       },
       renderError: async (ctx: any, out: Record<string, any>) => {
         ctx.status = 302;
-        ctx.redirect(this.getPublicErrorLocation(appName, out));
+        ctx.redirect(this.getPublicErrorLocation(appName, out, issuerPath));
       },
     };
   }

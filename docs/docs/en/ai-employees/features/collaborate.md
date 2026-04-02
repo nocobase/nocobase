@@ -11,7 +11,7 @@ There are two common entry points:
 
 ### Bottom-right main entry
 
-![ai-employees-entry-bottom-right.png](https://static-docs.nocobase.com/ai-employees/2026-02-14/ai-employees-entry-bottom-right.png)
+![20260331165456](https://static-docs.nocobase.com/20260331165456.png)
 
 ### Block Action entry
 
@@ -23,10 +23,11 @@ The chat panel supports common operations such as sending messages, uploading at
 
 ## In-Chat Switching
 
-At the bottom of the input area, you can switch directly:
+In most cases, you can simply talk to Atlas, and he will coordinate the appropriate AI employee to help handle the task.
 
-- `AI Employee Switcher`: Switch current employee.
-- `Model Switcher`: Switch current session model.
+If you want to use a specific AI employee, click the AI employee dropdown in the message composer to select one.
+
+![20260331174320](https://static-docs.nocobase.com/20260331174320.png)
 
 Model preferences are saved per employee and restored next time.
 

@@ -83,6 +83,7 @@ export const conversationMiddleware = (
     name: 'ConversationMiddleware',
     contextSchema: z.object({
       ctx: z.any(),
+      appendMessage: z.any(),
     }),
     stateSchema: z.object({
       messageId: z.coerce.string().optional(),
@@ -139,12 +140,27 @@ export const conversationMiddleware = (
             toolMessages.map((x) => x.metadata.toolCallId as string),
           );
         });
-        runtime.writer?.({ action: 'beforeSendToolMessage', body: { messageId, messages: toolMessages } });
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
+        runtime.writer?.({
+          action: 'beforeSendToolMessage',
+          body: { messageId, messages: toolMessages },
+          currentConversation,
+        });
       }
     },
     afterModel: async (state, runtime) => {
       try {
+        const currentConversation = {
+          sessionId: aiEmployee.sessionId,
+          username: aiEmployee.employee.username,
+          from: aiEmployee.from,
+        };
         const newState = {
+          messageId: state.messageId,
           lastMessageIndex: {
             lastHumanMessageIndex: state.messages.filter((x) => x.type === 'human').length,
             lastAIMessageIndex: state.messages.filter((x) => x.type === 'ai').length,
@@ -152,6 +168,7 @@ export const conversationMiddleware = (
             lastMessageIndex: state.messages.length,
           },
         };
+
         const lastMessage = state.messages.at(-1);
         if (lastMessage?.type !== 'ai') {
           return newState;
@@ -168,7 +185,7 @@ export const conversationMiddleware = (
         if (values) {
           await aiEmployee.aiChatConversation.withTransaction(async (conversation, transaction) => {
             const result: AIConversationMessage = await conversation.addMessages(values);
-            state.messageId = result.messageId;
+            newState.messageId = result.messageId;
             if (toolCalls?.length) {
               const toolsMap = await aiEmployee.getToolsMap();
               const initializedToolCalls = await aiEmployee.initToolCall(
@@ -179,15 +196,18 @@ export const conversationMiddleware = (
               fillToolCall(result, toolsMap, initializedToolCalls, toolCalls as any);
             }
           });
+
           runtime.writer?.({
             action: 'AfterAIMessageSaved',
-            body: { id: aiMessage.id, messageId: state.messageId },
+            body: { id: aiMessage.id, messageId: newState.messageId },
+            currentConversation,
           });
         }
         if (toolCalls?.length) {
           runtime.writer?.({
             action: 'initToolCalls',
             body: { toolCalls },
+            currentConversation,
           });
         }
 
@@ -195,6 +215,25 @@ export const conversationMiddleware = (
       } catch (e) {
         runtime.context?.ctx?.logger?.error(e);
       }
+    },
+    wrapModelCall: async (request, handler) => {
+      const runtimeContext = request.runtime.context;
+      const appendMessage = runtimeContext?.appendMessage;
+
+      if (Array.isArray(appendMessage) && appendMessage.length) {
+        await aiEmployee.aiChatConversation.withTransaction(async (conversation) => {
+          await conversation.addMessages(convertToolMessage(request.messages.at(-1) as ToolMessage));
+          await conversation.addMessages(appendMessage.map((x) => x as HumanMessage).map(convertHumanMessage));
+        });
+
+        request.messages.push(...appendMessage);
+
+        if (runtimeContext) {
+          delete runtimeContext.appendMessage;
+        }
+      }
+
+      return handler(request);
     },
   });
 };

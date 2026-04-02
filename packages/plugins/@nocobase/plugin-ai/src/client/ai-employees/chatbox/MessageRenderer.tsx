@@ -186,24 +186,26 @@ export const AIMessage: React.FC<{
   const messageActions =
     msg.type !== 'greeting' ? (
       <Space>
-        <Button
-          color="default"
-          variant="text"
-          size="small"
-          style={footerButtonStyle}
-          icon={
-            <ReloadOutlined
-              style={footerIconStyle}
-              onClick={() =>
-                resendMessages({
-                  sessionId: currentConversation,
-                  messageId: msg.messageId,
-                  aiEmployee: currentEmployee,
-                })
-              }
-            />
-          }
-        />
+        {msg.from === 'main-agent' && (
+          <Button
+            color="default"
+            variant="text"
+            size="small"
+            style={footerButtonStyle}
+            icon={
+              <ReloadOutlined
+                style={footerIconStyle}
+                onClick={() =>
+                  resendMessages({
+                    sessionId: currentConversation,
+                    messageId: msg.messageId,
+                    aiEmployee: currentEmployee,
+                  })
+                }
+              />
+            }
+          />
+        )}
         {typeof msg.content === 'string' && msg.content && (
           <Button
             color="default"
@@ -296,22 +298,24 @@ export const UserMessage: React.FC<{
       `)}
       footer={
         <Space>
-          <Button
-            color="default"
-            variant="text"
-            size="small"
-            style={footerButtonStyle}
-            icon={
-              <EditOutlined
-                style={footerIconStyle}
-                onClick={() => {
-                  startEditingMessage(msg);
-                  setSenderValue(msg.content);
-                  senderRef.current?.focus();
-                }}
-              />
-            }
-          />
+          {msg.from === 'main-agent' && (
+            <Button
+              color="default"
+              variant="text"
+              size="small"
+              style={footerButtonStyle}
+              icon={
+                <EditOutlined
+                  style={footerIconStyle}
+                  onClick={() => {
+                    startEditingMessage(msg);
+                    setSenderValue(msg.content);
+                    senderRef.current?.focus();
+                  }}
+                />
+              }
+            />
+          )}
           {typeof msg.content === 'string' && msg.content && (
             <Button
               color="default"
