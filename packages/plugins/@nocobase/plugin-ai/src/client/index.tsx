@@ -51,6 +51,7 @@ import { suggestionsTool } from './ai-employees/suggestions/tools';
 import { dispatchSubAgentTaskTool } from './ai-employees/sub-agents/tools';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { AIEmployeeInstruction } from './workflow/nodes/employee';
 const { AIEmployeesProvider } = lazy(() => import('./ai-employees/AIEmployeesProvider'), 'AIEmployeesProvider');
 const { Employees } = lazy(() => import('./ai-employees/admin/Employees'), 'Employees');
 const { LLMServices } = lazy(() => import('./llm-services/LLMServices'), 'LLMServices');
@@ -194,7 +195,7 @@ export class PluginAIClient extends Plugin {
     workflow.registerTrigger('ai-employee', AIEmployeeTrigger);
     workflow.registerInstructionGroup('ai', { label: tval('AI', { ns: namespace }) });
     workflow.registerInstruction('llm', LLMInstruction);
-    // workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
+    workflow.registerInstruction('ai-employee', AIEmployeeInstruction);
   }
 }
 
