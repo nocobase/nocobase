@@ -89,6 +89,8 @@
   "Diagnose and fix the error": "Diagnose and fix the error",
   "Direction": "Direction",
   "Disable search": "Disable search",
+  "Switching to {{ nickname }}": "Switching to {{ nickname }}",
+  "{{ nickname }} has completed the work": "{{ nickname }} has completed the work",
   "Displays the AI employee’s assigned tasks on the profile when hovering over the button.": "Displays the AI employee’s assigned tasks on the profile when hovering over the button.",
   "Down": "Down",
   "Edit AI employee": "Edit AI employee",
@@ -339,5 +341,12 @@
   "Hello, I'm Cole. I have access to the NocoBase knowledge base. Ask me anything about setting up or using the platform.": "Hello, I'm Cole. I have access to the NocoBase knowledge base. Ask me anything about setting up or using the platform.",
   "Frontend code engineer": "Frontend code engineer",
   "An frontend engineer specializing in JavaScript, HTML, and CSS.": "An frontend engineer specializing in JavaScript, HTML, and CSS.",
-  "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?": "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?"
+  "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?": "Hello, I'm Nathan, your frontend code engineer. I'll generate high-quality JavaScript / HTML / CSS code for you. What would you like me to build today?",
+  "AI employee task dispatching": "AI employee task dispatching",
+  "Awaken and assign specific tasks to ai employees": "Awaken and assign specific tasks to ai employees",
+  "List AI employee": "List AI employee",
+  "Get the list of available AI employees": "Get the list of available AI employees",
+  "Get AI employee": "Get AI employee",
+  "Get the detailed definition of AI employee": "Get the detailed definition of AI employee",
+  "Done in {{ durationText }}": "Done in {{ durationText }}"
 }

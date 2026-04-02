@@ -20,6 +20,7 @@ import aiConversations from './resource/aiConversations';
 import aiTools from './resource/aiTools';
 import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
+import { AIConversationsManager } from './ai-employees/ai-conversations';
 import Snowflake from './snowflake';
 import * as aiEmployeeActions from './resource/aiEmployees';
 import { googleGenAIProviderOptions } from './llm-providers/google-genai';
@@ -46,17 +47,20 @@ import { kimiProviderOptions } from './llm-providers/kimi';
 import { DocumentLoaders } from './document-loader';
 import type PluginFileManagerServer from '@nocobase/plugin-file-manager';
 import { CheckpointCleaner, SequelizeCollectionSaver } from './ai-employees/checkpoints';
+import { SubAgentsDispatcher } from './ai-employees/sub-agents';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
   features = new AIPluginFeatureManagerImpl();
   aiManager = new AIManager(this);
   aiEmployeesManager = new AIEmployeesManager(this);
+  aiConversationsManager = new AIConversationsManager(this);
   builtInManager = new BuiltInManager(this);
   aiContextDatasourceManager = new AIContextDatasourceManager(this);
   aiCodingManager = new AICodingManager(this);
   workContextHandler = createWorkContextHandler(this);
   documentLoaders = new DocumentLoaders(this);
+  subAgentsDispatcher = new SubAgentsDispatcher(this);
   snowflake: Snowflake;
 
   /**

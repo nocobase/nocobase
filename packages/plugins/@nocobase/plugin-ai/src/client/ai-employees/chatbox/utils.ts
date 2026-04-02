@@ -8,8 +8,12 @@
  */
 
 import { Application } from '@nocobase/client';
-import { ContextItem, SkillSettings, TaskMessage } from '../types';
+import dayjs from 'dayjs';
+import duration from 'dayjs/plugin/duration';
+import { ContextItem, SkillSettings, TaskMessage, Message } from '../types';
 import PluginAIClient from '../..';
+
+dayjs.extend(duration);
 
 async function replaceVariables(template, variables, localVariables = {}) {
   const regex = /\{\{\s*(.*?)\s*\}\}/g;
@@ -151,3 +155,90 @@ export function getFileIconByExt(fileName: string): string {
   }
   return UNKNOWN_FILE_ICON;
 }
+
+export const formatConversationDuration = (durationMs?: number) => {
+  if (durationMs === undefined) {
+    return '--';
+  }
+
+  const value = dayjs.duration(Math.max(0, durationMs));
+
+  if (value.asDays() >= 1) {
+    return `${Math.floor(value.asDays())}d`;
+  }
+  if (value.asHours() >= 1) {
+    return `${Math.floor(value.asHours())}h`;
+  }
+  if (value.asMinutes() >= 1) {
+    return `${Math.floor(value.asMinutes())}min`;
+  }
+  return `${Math.round(value.asSeconds())}s`;
+};
+
+export type RenderedItem =
+  | {
+      type: 'message';
+      message: Message;
+      isRoot: boolean;
+    }
+  | {
+      type: 'conversation-group';
+      key: string;
+      roleName?: string;
+      status?: 'pending' | 'completed';
+      durationMs?: number;
+      items: RenderedItem[];
+    };
+
+const toTimestamp = (value?: string | Date) => {
+  if (!value) {
+    return null;
+  }
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? null : timestamp;
+};
+
+const getConversationDurationMs = (messages: Message[] = []) => {
+  const firstTimestamp = toTimestamp(messages[0]?.createdAt);
+  const lastTimestamp = toTimestamp(messages[messages.length - 1]?.createdAt);
+
+  if (firstTimestamp === null || lastTimestamp === null) {
+    return undefined;
+  }
+
+  return Math.max(0, lastTimestamp - firstTimestamp);
+};
+
+export const flattenMessages = (messages: Message[] = [], isRoot = true): RenderedItem[] => {
+  return messages.flatMap((msg) => {
+    const subAgentItems =
+      msg.content?.subAgentConversations?.flatMap((conversation) => {
+        const [first, ...rest] = conversation.messages;
+        const conversationMessages = flattenMessages(first?.role === 'user' ? rest : conversation.messages, false);
+
+        if (!conversationMessages.length) {
+          return [];
+        }
+
+        return [
+          {
+            type: 'conversation-group' as const,
+            key: conversation.sessionId,
+            roleName: conversation.messages.find((subMessage) => subMessage.role !== 'user')?.role,
+            status: conversation.status,
+            durationMs: getConversationDurationMs(conversation.messages),
+            items: conversationMessages,
+          },
+        ];
+      }) ?? [];
+
+    return [
+      {
+        type: 'message' as const,
+        message: msg,
+        isRoot,
+      },
+      ...subAgentItems,
+    ];
+  });
+};

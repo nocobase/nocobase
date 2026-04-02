@@ -38,6 +38,7 @@ export type AIEmployeeOptions = {
   bio?: string;
   greeting?: string;
   systemPrompt?: string | null;
+  sort?: number;
 };
 
 export type AIEmployeeEntry = Omit<AIEmployeeOptions, 'skills' | 'tools' | 'systemPrompt'> & {

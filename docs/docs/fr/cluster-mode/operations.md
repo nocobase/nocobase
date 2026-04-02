@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "Exploitation du cluster"
+description: "Exploitation du cluster : ordre de premier démarrage, mise à niveau (arrêt, sauvegarde, mise à jour, vérification), maintenance dans l'application (plugins, sauvegarde) limitée à un seul nœud."
+keywords: "exploitation cluster,mise à niveau,maintenance in-app,gestion des plugins,sauvegarde,mise à niveau progressive,NocoBase"
+---
+
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::

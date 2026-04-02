@@ -33,7 +33,9 @@ export class DashscopeProvider extends LLMProvider {
     const { responseFormat, structuredOutput } = this.modelOptions || {};
     const { schema } = structuredOutput || {};
 
-    const modelKwargs: Record<string, any> = {};
+    const modelKwargs: Record<string, any> = {
+      thinking_budget: 40000,
+    };
 
     // Only set response_format when responseFormat is explicitly provided
     // Dashscope API rejects { type: undefined }
@@ -53,11 +55,12 @@ export class DashscopeProvider extends LLMProvider {
       // enable platform's web search ability
       // ref: https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867560
       modelKwargs['enable_search'] = true;
-      modelKwargs['search_options'] = { forced_search: true };
     }
 
     return new ReasoningChatOpenAI({
       apiKey,
+      topP: 0.8,
+      temperature: 0.7,
       ...this.modelOptions,
       modelKwargs,
       configuration: {
@@ -65,6 +68,18 @@ export class DashscopeProvider extends LLMProvider {
       },
       verbose: false,
     });
+  }
+
+  isToolConflict(): boolean {
+    return true;
+  }
+
+  resolveTools(toolDefinitions: any[]): any[] {
+    if (this.isToolConflict() && this.modelOptions?.builtIn?.webSearch === true) {
+      return [];
+    } else {
+      return toolDefinitions;
+    }
   }
 
   parseResponseMessage(message: Model) {

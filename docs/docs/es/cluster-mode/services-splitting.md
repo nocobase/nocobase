@@ -1,3 +1,10 @@
+---
+pkg: "@nocobase/preset-cluster"
+title: "División de servicios"
+description: "Separar servicios de larga duración (flujo de trabajo, tareas asíncronas) en nodos dedicados en modo clúster con WORKER_MODE; nodos de petición frente a nodos de tareas y escalado horizontal."
+keywords: "división de servicios,WORKER_MODE,flujo asíncrono,async-task,escalado horizontal,nodo de petición,nodo de tareas,NocoBase"
+---
+
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
