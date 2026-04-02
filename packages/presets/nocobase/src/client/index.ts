@@ -8,6 +8,7 @@
  */
 
 import { Application, NocoBaseBuildInPlugin, Plugin } from '@nocobase/client';
+import { NocoBaseBuildInPluginV2 } from '@nocobase/client-v2';
 
 function offsetToTimeZone(offset) {
   const hours = Math.floor(Math.abs(offset));
@@ -49,5 +50,32 @@ export class NocoBaseClientPresetPlugin extends Plugin {
       return config;
     });
     await this.app.pm.add(NocoBaseBuildInPlugin);
+  }
+}
+
+export class NocoBaseClientPresetPluginV2 extends Plugin {
+  getHostname() {
+    // 优先使用环境变量中的 API_BASE_URL
+    if (process.env.API_BASE_URL) {
+      try {
+        const url = new URL(process.env.API_BASE_URL);
+        return url.hostname;
+      } catch (error) {
+        // URL 解析失败时回退到 window.location.hostname
+      }
+    }
+    // 回退到当前页面的 hostname
+    return window?.location?.hostname;
+  }
+
+  async afterAdd() {
+    this.router.setType('browser');
+    this.router.setBasename(getBasename(this.app) || getBasenameOfNewMultiApp(this.app) || this.app.getPublicPath());
+    this.app.apiClient.axios.interceptors.request.use((config) => {
+      config.headers['X-Hostname'] = this.getHostname();
+      config.headers['X-Timezone'] = getCurrentTimezone();
+      return config;
+    });
+    await this.app.pm.add(NocoBaseBuildInPluginV2);
   }
 }

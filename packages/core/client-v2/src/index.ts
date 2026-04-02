@@ -21,5 +21,6 @@ export * from './WebSocketClient';
 export * from './RouterManager';
 export * from './PluginManager';
 export * from './PluginSettingsManager';
+export * from './nocobase-buildin-plugin';
 export * from './flow';
 export { default as AntdAppProvider } from './theme/AntdAppProvider';

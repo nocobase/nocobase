@@ -18,6 +18,8 @@ import {
   reconcileAdminLayoutMenuItems,
   type AdminLayoutMenuRouteOptions,
 } from './AdminLayoutMenuUtils';
+import { AdminLayoutComponent } from './AdminLayoutComponent';
+import React from 'react';
 
 export type AdminLayoutStructure = {
   subModels: {
@@ -263,6 +265,10 @@ export class AdminLayoutModel extends FlowModel<AdminLayoutStructure> {
       this.routeCoordinator = new AdminLayoutRouteCoordinator(this.flowEngine);
     }
     return this.routeCoordinator;
+  }
+
+  render() {
+    return <AdminLayoutComponent {...this.props} />;
   }
 }
 

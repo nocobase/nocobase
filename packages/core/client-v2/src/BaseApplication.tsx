@@ -29,13 +29,13 @@ import { GlobalThemeProvider } from './theme';
 import { AIManager } from './ai';
 import { HeaderActionsManager } from './HeaderActionsManager';
 import { AppError, AppMaintaining, AppMaintainingDialog, AppNotFound, AppSpin, BlankComponent } from './components';
+import { SystemSettingsSource } from './flow/system-settings';
 import type { Plugin } from './Plugin';
 import type { PluginType } from './PluginManager';
 import type { PluginSettingOptions, PluginSettingsManager } from './PluginSettingsManager';
 import { RouteRepository } from './RouteRepository';
 import type { ComponentTypeAndString, RouterManager, RouterOptions } from './RouterManager';
 import { WebSocketClient, type WebSocketClientOptions } from './WebSocketClient';
-import type { SystemSettingsSource } from './flow';
 import { compose, normalizeContainer } from './utils';
 import { defineGlobalDeps } from './utils/globalDeps';
 import { getRequireJs } from './utils/requirejs';
@@ -182,6 +182,7 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
 
   protected initializeExtendedState() {
     this.headerActionsManager = new HeaderActionsManager(this.eventBus);
+    this.systemSettings = new SystemSettingsSource(this.apiClient);
   }
 
   protected afterManagersInitialized() {
@@ -537,7 +538,7 @@ export class ApplicationModel extends FlowModel {
   }
 
   renderError() {
-    return this.app.renderComponent('AppError', { error: this.app.error });
+    return this.app.renderComponent('AppError', { app: this.app, error: this.app.error });
   }
 
   renderContent() {

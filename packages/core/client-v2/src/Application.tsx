@@ -9,6 +9,7 @@
 
 import { APIClient, type APIClientOptions } from '@nocobase/sdk';
 import { createInstance, type i18n as i18next } from 'i18next';
+import { initReactI18next } from 'react-i18next';
 import { type ComponentType } from 'react';
 
 import { BaseApplication, type BaseApplicationOptions } from './BaseApplication';
@@ -39,7 +40,21 @@ export class Application extends BaseApplication<ApplicationOptions> {
   }
 
   protected createI18n(options: ApplicationOptions) {
-    return options.i18n || createInstance();
+    if (options.i18n) {
+      return options.i18n;
+    }
+
+    const i18n = createInstance();
+
+    i18n.use(initReactI18next).init({
+      lng: 'en-US',
+      defaultNS: 'client',
+      resources: {},
+      keySeparator: false,
+      nsSeparator: false,
+    });
+
+    return i18n;
   }
 
   protected createRouterManager(options: ApplicationOptions) {
