@@ -97,6 +97,11 @@ const GRID_CARD_BLOCK_USES = new Set(['GridCardBlockModel']);
 const LIST_LIKE_COMPOSE_BLOCK_TYPES = new Set(['list', 'gridCard']);
 const GRID_SETTINGS_FLOW_KEY = 'gridSettings';
 const GRID_SETTINGS_LAYOUT_STEP_KEY = 'grid';
+const OPEN_VIEW_MODE_ALIASES = {
+  modal: 'dialog',
+  page: 'embed',
+} as const;
+const OPEN_VIEW_SUPPORTED_MODES = new Set(['drawer', 'dialog', 'embed']);
 const STATIC_CONTENT_BLOCK_USES = new Set([
   'MarkdownBlockModel',
   'IframeBlockModel',
@@ -241,6 +246,9 @@ type FlowSurfaceAddFieldResult = {
   wrapperUid?: string;
   fieldUid?: string;
   innerFieldUid?: string;
+  popupPageUid?: string;
+  popupTabUid?: string;
+  popupGridUid?: string;
 };
 
 type FlowSurfaceFieldMenuCandidate = {
@@ -1392,6 +1400,7 @@ export class FlowSurfacesService {
             ...(fieldSpec.target
               ? { defaultTargetUid: this.resolveComposeTargetRef(fieldSpec.target, keyRefs, 'field') }
               : {}),
+            ...(fieldSpec.popup ? { popup: fieldSpec.popup } : {}),
           },
           options,
         );
@@ -1408,6 +1417,9 @@ export class FlowSurfacesService {
           wrapperUid: createdField.wrapperUid,
           fieldUid: createdField.fieldUid,
           innerFieldUid: createdField.innerFieldUid,
+          popupPageUid: createdField.popupPageUid,
+          popupTabUid: createdField.popupTabUid,
+          popupGridUid: createdField.popupGridUid,
           ...(fieldSpec.target ? { target: fieldSpec.target } : {}),
         });
       }
@@ -2144,6 +2156,7 @@ export class FlowSurfacesService {
       'flowRegistry',
     ]);
     const inlineSettings = this.normalizeInlineSettings('addField', values.settings);
+    const inlinePopup = this.normalizeInlinePopup('addField', values.popup);
     const resolvedTarget = await this.locator.resolve(target, options);
     const container = await this.surfaceContext.resolveFieldContainer(resolvedTarget.uid, options.transaction);
     const isFilterFormItem = container.wrapperUse === 'FilterFormItemModel';
@@ -2158,6 +2171,9 @@ export class FlowSurfacesService {
     });
 
     if (fieldCapability.standaloneUse) {
+      if (inlinePopup) {
+        throwBadRequest(`flowSurfaces addField type '${values.type}' does not support popup`);
+      }
       if (isFilterFormItem) {
         throwBadRequest(`flowSurfaces addField type '${values.type}' is not allowed under filter-form`);
       }
@@ -2313,6 +2329,17 @@ export class FlowSurfacesService {
         }
       }
     }
+    if (inlinePopup && !this.isPopupFieldHostUse(boundFieldCapability.fieldUse)) {
+      throwBadRequest(`flowSurfaces addField field '${boundFieldCapability.fieldUse}' does not support popup`);
+    }
+    if (
+      inlinePopup &&
+      this.isExternalPopupOpenView(
+        this.peekInlineFieldSettingsOpenView(inlineSettings, boundFieldCapability.wrapperUse),
+      )
+    ) {
+      throwBadRequest(`flowSurfaces addField popup cannot be combined with external openView.uid`);
+    }
     const defaultFieldState = buildDefaultFieldState(
       container.ownerUse,
       boundFieldCapability.fieldUse,
@@ -2386,6 +2413,7 @@ export class FlowSurfacesService {
       fieldPath: normalizedFieldBinding.fieldPath,
     };
     await this.applyInlineFieldSettings('addField', result, inlineSettings, options);
+    await this.applyInlineFieldPopup('addField', result, inlinePopup, options);
     return result;
   }
 
@@ -2568,6 +2596,162 @@ export class FlowSurfacesService {
     return popup;
   }
 
+  private peekInlineFieldSettingsOpenView(settings: Record<string, any> | undefined, wrapperUse?: string) {
+    if (!settings || !Object.keys(settings).length) {
+      return undefined;
+    }
+    const { fieldChanges } = splitComposeFieldChanges(settings, wrapperUse);
+    return fieldChanges.openView;
+  }
+
+  private normalizeOpenView(actionName: string, openView: any) {
+    if (_.isUndefined(openView) || _.isNull(openView)) {
+      return openView;
+    }
+    if (!_.isPlainObject(openView)) {
+      throwBadRequest(`flowSurfaces ${actionName} openView must be an object`);
+    }
+    const normalizedOpenView = _.cloneDeep(openView);
+    if (!_.isUndefined(normalizedOpenView.mode)) {
+      const rawMode = String(normalizedOpenView.mode || '').trim();
+      if (!rawMode) {
+        throwBadRequest(`flowSurfaces ${actionName} openView.mode cannot be empty`);
+      }
+      const canonicalMode = OPEN_VIEW_MODE_ALIASES[rawMode as keyof typeof OPEN_VIEW_MODE_ALIASES] || rawMode;
+      if (!OPEN_VIEW_SUPPORTED_MODES.has(canonicalMode)) {
+        throwBadRequest(`flowSurfaces ${actionName} openView.mode only supports 'drawer', 'dialog' or 'embed'`);
+      }
+      normalizedOpenView.mode = canonicalMode;
+    }
+    return normalizedOpenView;
+  }
+
+  private isExternalPopupOpenView(openView: any, hostUid?: string) {
+    if (!_.isPlainObject(openView)) {
+      return false;
+    }
+    const openViewUid = String(openView.uid || '').trim();
+    return !!openViewUid && openViewUid !== hostUid;
+  }
+
+  private async loadFieldHostNodes(fieldHostUid: string, transaction?: any) {
+    const fieldNode = await this.repository.findModelById(fieldHostUid, {
+      transaction,
+      includeAsyncNode: true,
+    });
+    const wrapperUid = fieldNode?.uid ? await this.locator.findParentUid(fieldNode.uid, transaction) : null;
+    const wrapperNode = wrapperUid
+      ? await this.repository.findModelById(wrapperUid, {
+          transaction,
+          includeAsyncNode: true,
+        })
+      : null;
+    return {
+      fieldNode,
+      wrapperNode,
+    };
+  }
+
+  private buildDefaultFieldOpenView(fieldNode: any, wrapperNode: any) {
+    const fieldInit = fieldNode?.stepParams?.fieldSettings?.init || wrapperNode?.stepParams?.fieldSettings?.init || {};
+    const dataSourceKey = String(fieldInit.dataSourceKey || 'main').trim() || 'main';
+    const collectionName = String(fieldInit.collectionName || '').trim() || undefined;
+    const fieldPath = String(fieldInit.fieldPath || '').trim();
+    const associationPathName = String(fieldInit.associationPathName || '').trim() || undefined;
+    const openViewBase = {
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+    };
+
+    if (!collectionName) {
+      return openViewBase;
+    }
+    if (!fieldPath) {
+      return {
+        ...openViewBase,
+        dataSourceKey,
+        collectionName,
+      };
+    }
+
+    const collection = this.getCollection(dataSourceKey, collectionName);
+    const parsed = this.parseFieldPath(collection, fieldPath, associationPathName, dataSourceKey, collectionName);
+    const leafField = resolveFieldFromCollection(parsed.leafCollection, parsed.leafFieldPath);
+    const targetCollection =
+      resolveFieldTargetCollection(leafField, parsed.dataSourceKey, (resolvedDsKey, targetCollectionName) =>
+        this.getCollection(resolvedDsKey, targetCollectionName),
+      ) ||
+      leafField?.targetCollection ||
+      null;
+    const targetCollectionName =
+      targetCollection?.name || targetCollection?.options?.name || parsed.collectionName || collectionName;
+
+    return buildDefinedPayload({
+      ...openViewBase,
+      dataSourceKey: targetCollection?.dataSourceKey || parsed.dataSourceKey || dataSourceKey,
+      collectionName: targetCollection ? targetCollectionName : parsed.collectionName || collectionName,
+      associationName: parsed.associationPathName
+        ? `${parsed.collectionName}.${parsed.associationPathName}`
+        : undefined,
+    });
+  }
+
+  private async ensureLocalFieldPopupSurface(
+    actionName: string,
+    fieldHostUid: string | undefined,
+    options: { transaction?: any },
+    input: {
+      popup?: Record<string, any>;
+    } = {},
+  ) {
+    if (!fieldHostUid) {
+      return {};
+    }
+
+    let { fieldNode, wrapperNode } = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
+    if (!fieldNode?.uid) {
+      return {};
+    }
+    if (input.popup && !this.isPopupFieldHostUse(fieldNode.use)) {
+      throwBadRequest(`flowSurfaces ${actionName} field '${fieldNode.use}' does not support popup`);
+    }
+
+    let openView = this.resolvePopupHostOpenView(fieldNode);
+    if (input.popup && this.isExternalPopupOpenView(openView, fieldHostUid)) {
+      throwBadRequest(`flowSurfaces ${actionName} popup cannot be combined with external openView.uid`);
+    }
+
+    if (input.popup && !_.isPlainObject(openView)) {
+      await this.configure(
+        {
+          target: {
+            uid: fieldHostUid,
+          },
+          changes: {
+            clickToOpen: true,
+            openView: this.buildDefaultFieldOpenView(fieldNode, wrapperNode),
+          },
+        },
+        options,
+      );
+      const reloaded = await this.loadFieldHostNodes(fieldHostUid, options.transaction);
+      fieldNode = reloaded.fieldNode;
+      wrapperNode = reloaded.wrapperNode;
+      openView = this.resolvePopupHostOpenView(fieldNode);
+    }
+
+    if (!_.isPlainObject(openView) || this.isExternalPopupOpenView(openView, fieldHostUid)) {
+      return {};
+    }
+
+    return this.collectPopupSurfaceRefs(
+      fieldHostUid,
+      options.transaction,
+      await this.ensurePopupSurface(fieldHostUid, options.transaction),
+    );
+  }
+
   private async applyInlineNodeSettings(
     actionName: string,
     targetUid: string | undefined,
@@ -2589,6 +2773,35 @@ export class FlowSurfacesService {
       );
     } catch (error: any) {
       rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} settings invalid`);
+    }
+  }
+
+  private async applyInlineFieldPopup(
+    actionName: string,
+    result: FlowSurfaceAddFieldResult,
+    popup: Record<string, any> | undefined,
+    options: { transaction?: any },
+  ) {
+    const fieldHostUid = result.fieldUid || result.uid;
+    try {
+      Object.assign(result, await this.ensureLocalFieldPopupSurface(actionName, fieldHostUid, options, { popup }));
+      if (!popup || !fieldHostUid) {
+        return;
+      }
+      await this.compose(
+        {
+          target: {
+            uid: fieldHostUid,
+          },
+          mode: popup.mode || 'replace',
+          blocks: popup.blocks || [],
+          layout: popup.layout,
+        },
+        options,
+      );
+      Object.assign(result, await this.collectPopupSurfaceRefs(fieldHostUid, options.transaction));
+    } catch (error: any) {
+      rethrowInlineConfigurationError(error, `flowSurfaces ${actionName} popup invalid`);
     }
   }
 
@@ -3893,15 +4106,46 @@ export class FlowSurfacesService {
       transaction,
       includeAsyncNode: true,
     });
-    const popupPage = actionNode?.subModels?.page;
-    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
-    const popupGrid = popupTab?.subModels?.grid;
     const assignForm = actionNode?.subModels?.assignForm;
     const assignFormGrid = assignForm?.subModels?.grid;
     return _.pickBy(
       {
         assignFormUid: assignForm?.uid,
         assignFormGridUid: assignFormGrid?.uid,
+        ...(await this.collectPopupSurfaceRefs(actionUid, transaction, undefined, actionNode)),
+      },
+      (value) => !!value,
+    );
+  }
+
+  private async collectPopupSurfaceRefs(
+    hostUid: string,
+    transaction?: any,
+    ensuredPopupSurface?: {
+      pageUid?: string;
+      tabUid?: string;
+      gridUid?: string;
+    },
+    hostNode?: any,
+  ) {
+    if (ensuredPopupSurface?.pageUid && ensuredPopupSurface?.tabUid && ensuredPopupSurface?.gridUid) {
+      return {
+        popupPageUid: ensuredPopupSurface.pageUid,
+        popupTabUid: ensuredPopupSurface.tabUid,
+        popupGridUid: ensuredPopupSurface.gridUid,
+      };
+    }
+    const resolvedHost =
+      hostNode ||
+      (await this.repository.findModelById(hostUid, {
+        transaction,
+        includeAsyncNode: true,
+      }));
+    const popupPage = resolvedHost?.subModels?.page;
+    const popupTab = _.castArray(popupPage?.subModels?.tabs || [])[0];
+    const popupGrid = popupTab?.subModels?.grid;
+    return _.pickBy(
+      {
         popupPageUid: popupPage?.uid,
         popupTabUid: popupTab?.uid,
         popupGridUid: popupGrid?.uid,
@@ -3948,7 +4192,7 @@ export class FlowSurfacesService {
       kind: 'page',
     });
     assertSupportedSimpleChanges('page', changes, allowedKeys);
-    return this.updateSettings(
+    const result = await this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -3993,7 +4237,7 @@ export class FlowSurfacesService {
       kind: 'tab',
     });
     assertSupportedSimpleChanges('tab', changes, allowedKeys);
-    return this.updateSettings(
+    const result = await this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -4023,7 +4267,7 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('TableBlockModel');
     assertSupportedSimpleChanges('table', changes, allowedKeys);
-    return this.updateSettings(
+    const result = await this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -4890,6 +5134,9 @@ export class FlowSurfacesService {
       : !_.isUndefined(changes.openView)
         ? true
         : undefined;
+    const normalizedOpenView = hasOwnDefined(changes, 'openView')
+      ? this.normalizeOpenView('configure field', changes.openView)
+      : undefined;
     const exactBindingInit =
       bindingChange && normalizedBinding
         ? {
@@ -4903,7 +5150,7 @@ export class FlowSurfacesService {
             },
           }
         : undefined;
-    return this.updateSettings(
+    const result = await this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -4935,7 +5182,7 @@ export class FlowSurfacesService {
           ...(hasOwnDefined(changes, 'openView')
             ? {
                 popupSettings: {
-                  openView: changes.openView,
+                  openView: normalizedOpenView,
                 },
               }
             : {}),
@@ -4953,6 +5200,13 @@ export class FlowSurfacesService {
       },
       options,
     );
+    if (hasOwnDefined(changes, 'openView')) {
+      return {
+        ...result,
+        ...(await this.ensureLocalFieldPopupSurface('configure field', target.uid, options)),
+      };
+    }
+    return result;
   }
 
   private async configureActionNode(
@@ -4982,15 +5236,16 @@ export class FlowSurfacesService {
       };
     }
     if (!_.isUndefined(changes.openView)) {
+      const normalizedOpenView = this.normalizeOpenView('configure action', changes.openView);
       if (use === 'UploadActionModel') {
         stepParams.selectExitRecordSettings = {
-          openView: changes.openView,
+          openView: normalizedOpenView,
         };
       } else if (!POPUP_ACTION_USES.has(use)) {
         throwBadRequest(`flowSurfaces configure action '${use}' does not support openView`);
       } else {
         stepParams.popupSettings = {
-          openView: changes.openView,
+          openView: normalizedOpenView,
         };
       }
     }
@@ -6636,6 +6891,7 @@ function normalizeComposeFieldSpec(input: any, index: number) {
       key: fieldPath,
       fieldPath,
       settings: {},
+      popup: undefined,
     };
   }
   if (!_.isPlainObject(input)) {
@@ -6647,6 +6903,9 @@ function normalizeComposeFieldSpec(input: any, index: number) {
   const semanticType = String(input.type || '').trim() || undefined;
   const fieldPath = String(input.fieldPath || '').trim();
   const renderer = typeof input.renderer === 'undefined' ? undefined : String(input.renderer || '').trim();
+  if (!_.isUndefined(input.popup) && !_.isPlainObject(input.popup)) {
+    throwBadRequest(`flowSurfaces compose field #${index + 1} popup must be an object`);
+  }
   if (!fieldPath && !semanticType) {
     throwBadRequest(`flowSurfaces compose field #${index + 1} requires fieldPath`);
   }
@@ -6663,6 +6922,7 @@ function normalizeComposeFieldSpec(input: any, index: number) {
     ...(semanticType ? { type: semanticType } : {}),
     target: String(input.target || '').trim() || undefined,
     settings: _.isPlainObject(input.settings) ? input.settings : {},
+    popup: _.isPlainObject(input.popup) ? input.popup : undefined,
   };
 }
 

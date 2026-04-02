@@ -293,8 +293,14 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceComposeActionResult.properties.type.enum).toEqual(
       expect.arrayContaining(['link', 'popup', 'duplicate', 'updateRecord', 'templatePrint', 'triggerWorkflow']),
     );
+    expect(schemas.FlowSurfaceComposeFieldSpec.oneOf[1].properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeActionPopup',
+    );
     expect(schemas.FlowSurfaceComposeFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceComposeFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
+    expect(schemas.FlowSurfaceComposeFieldResult.properties.popupPageUid.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeFieldResult.properties.popupTabUid.type).toBe('string');
+    expect(schemas.FlowSurfaceComposeFieldResult.properties.popupGridUid.type).toBe('string');
     expect(
       swaggerDocument.paths['/flowSurfaces:compose'].post.requestBody.content['application/json'].examples
         .popupCurrentRecord.value.blocks[0].resource.binding,
@@ -313,6 +319,9 @@ describe('flowSurfaces swagger', () => {
     expect(configureRequest.examples.fieldOpenView.value.changes.clickToOpen).toBe(true);
     expect(configureRequest.examples.fieldOpenView.value.changes.openView.collectionName).toBe('departments');
     expect(configureRequest.examples.relationFieldPopup.value.changes.openView.collectionName).toBe('roles');
+    expect(schemas.FlowSurfaceConfigureResult.properties.popupPageUid.type).toBe('string');
+    expect(schemas.FlowSurfaceConfigureResult.properties.popupTabUid.type).toBe('string');
+    expect(schemas.FlowSurfaceConfigureResult.properties.popupGridUid.type).toBe('string');
     expect(configureRequest.examples.blockSettings.value.changes.pageSize).toBe(50);
     expect(configureRequest.examples.blockSettings.value.changes.dataScope.logic).toBe('$and');
     expect(configureRequest.examples.blockSettings.value.changes.dataScope.items[0]).toMatchObject({
@@ -377,6 +386,7 @@ describe('flowSurfaces swagger', () => {
     expect(addFieldRequest.examples.directField.value.settings.label).toBe('Nickname (JS)');
     expect(addFieldRequest.examples.relationField.value.associationPathName).toBe('department');
     expect(addFieldRequest.examples.relationField.value.settings.width).toBe(240);
+    expect(addFieldRequest.examples.relationField.value.popup.blocks[0].type).toBe('details');
     expect(addFieldRequest.examples.jsColumn.value.type).toBe('jsColumn');
     expect(addFieldRequest.examples.jsColumn.value.settings.code).toContain('record.nickname');
     expect(addFieldRequest.examples.jsItem.value.type).toBe('jsItem');
@@ -385,11 +395,17 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddFieldRequest.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
     expect(schemas.FlowSurfaceAddFieldRequest.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldRequest.properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeActionPopup',
+    );
     expect(schemas.FlowSurfaceAddFieldRequest.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.fieldProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.props).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.decoratorProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldRequest.properties.stepParams).toBeUndefined();
+    expect(schemas.FlowSurfaceAddFieldItem.properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeActionPopup',
+    );
     expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();
@@ -397,6 +413,9 @@ describe('flowSurfaces swagger', () => {
     expect(schemas.FlowSurfaceAddFieldItem.properties.stepParams).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldResult.properties.renderer.enum).toEqual(['js']);
     expect(schemas.FlowSurfaceAddFieldResult.properties.type.enum).toEqual(['jsColumn', 'jsItem']);
+    expect(schemas.FlowSurfaceAddFieldResult.properties.popupPageUid.type).toBe('string');
+    expect(schemas.FlowSurfaceAddFieldResult.properties.popupTabUid.type).toBe('string');
+    expect(schemas.FlowSurfaceAddFieldResult.properties.popupGridUid.type).toBe('string');
 
     const addBlockRequest =
       swaggerDocument.paths['/flowSurfaces:addBlock'].post.requestBody.content['application/json'];
@@ -528,11 +547,15 @@ describe('flowSurfaces swagger', () => {
     const addFieldsRequest =
       swaggerDocument.paths['/flowSurfaces:addFields'].post.requestBody.content['application/json'];
     expect(addFieldsRequest.example.fields).toHaveLength(2);
+    expect(addFieldsRequest.example.fields[0].popup.blocks[0].type).toBe('details');
     expect(addFieldsRequest.example.fields[1].renderer).toBe('js');
     expect(addFieldsRequest.example.fields[0].settings.title).toBe('User name');
     expect(addFieldsRequest.example.fields[1].settings.version).toBe('1.0.0');
     expect(schemas.FlowSurfaceAddFieldsRequest.required).toEqual(['target', 'fields']);
     expect(schemas.FlowSurfaceAddFieldItem.properties.settings.type).toBe('object');
+    expect(schemas.FlowSurfaceAddFieldItem.properties.popup.$ref).toBe(
+      '#/components/schemas/FlowSurfaceComposeActionPopup',
+    );
     expect(schemas.FlowSurfaceAddFieldItem.properties.wrapperProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.fieldProps).toBeUndefined();
     expect(schemas.FlowSurfaceAddFieldItem.properties.props).toBeUndefined();

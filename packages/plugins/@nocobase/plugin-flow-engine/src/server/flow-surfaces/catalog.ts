@@ -39,6 +39,7 @@ const ANY_VALUE_SCHEMA = {};
 const STRING_SCHEMA = { type: 'string' };
 const NULLABLE_STRING_SCHEMA = { type: 'string', nullable: true };
 const BOOLEAN_SCHEMA = { type: 'boolean' };
+const OPEN_VIEW_MODE_SCHEMA = { type: 'string', enum: ['drawer', 'dialog', 'embed'] };
 const OBJECT_SCHEMA = { type: 'object' };
 const NUMBER_SCHEMA = { type: 'number' };
 const ARRAY_SCHEMA = { type: 'array' };
@@ -1184,7 +1185,7 @@ JS_FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
     pathSchemas: {
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
       'openView.pageModelClass': STRING_SCHEMA,
       'openView.dataSourceKey': STRING_SCHEMA,
@@ -1234,7 +1235,7 @@ FIELD_NODE_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
     pathSchemas: {
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
       'openView.pageModelClass': STRING_SCHEMA,
       'openView.dataSourceKey': STRING_SCHEMA,
@@ -1275,7 +1276,7 @@ POPUP_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
     pathSchemas: {
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
       'openView.pageModelClass': STRING_SCHEMA,
       'openView.dataSourceKey': STRING_SCHEMA,
@@ -1635,7 +1636,7 @@ DUPLICATE_ACTION_CONTRACT.domains.stepParams = groupedDomain({
       'confirm.enable': BOOLEAN_SCHEMA,
       'confirm.title': STRING_SCHEMA,
       'confirm.content': STRING_SCHEMA,
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
       'openView.pageModelClass': STRING_SCHEMA,
       'openView.dataSourceKey': STRING_SCHEMA,
@@ -1676,7 +1677,7 @@ UPLOAD_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
     pathSchemas: {
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
     },
   },
@@ -1712,7 +1713,7 @@ MAIL_SEND_ACTION_CONTRACT.domains.stepParams = groupedDomain({
     mergeStrategy: 'deep',
     eventBindingSteps: ['openView'],
     pathSchemas: {
-      'openView.mode': STRING_SCHEMA,
+      'openView.mode': OPEN_VIEW_MODE_SCHEMA,
       'openView.size': STRING_SCHEMA,
       'openView.pageModelClass': STRING_SCHEMA,
       'openView.dataSourceKey': STRING_SCHEMA,

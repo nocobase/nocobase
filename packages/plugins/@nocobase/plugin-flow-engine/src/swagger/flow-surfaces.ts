@@ -754,6 +754,19 @@ const examples = {
       title: 'Department title',
       width: 240,
     },
+    popup: {
+      mode: 'replace',
+      blocks: [
+        {
+          key: 'departmentDetails',
+          type: 'details',
+          resource: {
+            binding: 'currentRecord',
+          },
+          fields: ['title', 'manager.nickname'],
+        },
+      ],
+    },
   },
   addJsColumn: {
     target: {
@@ -887,6 +900,19 @@ const examples = {
         settings: {
           title: 'User name',
           width: 220,
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'details',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['username', 'nickname'],
+            },
+          ],
         },
       },
       {
@@ -1410,7 +1436,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add a field wrapper and inner field under a field container',
     description: valuesCompatibilityNote(
-      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。direct add 不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义。',
+      '根据容器 use 和字段 interface 自动推导 wrapper/inner field 组合；`fieldUse` 仅作为兼容校验值，不再作为任意创建入口。direct add 不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`，请改用 `settings` 复用 `configure.changes` / `catalog.configureOptions` 的公开配置语义。popup-capable 字段还可直接传 `popup` 追加 popup subtree；若已开启本地 openView 但未提供 popup 内容，服务端会自动补齐 popup page/tab/grid shell。',
     ),
     requestBody: {
       required: true,
@@ -1509,7 +1535,7 @@ const actionDocs: Record<string, any> = {
     tags: [FLOW_SURFACES_TAG],
     summary: 'Add multiple fields sequentially under the same target',
     description: valuesCompatibilityNote(
-      '在同一 target 下顺序批量创建 field。每项都可带 `settings`，但不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
+      '在同一 target 下顺序批量创建 field。每项都可带 `settings`，popup-capable 字段还可带 `popup`，但不接受 raw `wrapperProps` / `fieldProps` / `props` / `decoratorProps` / `stepParams` / `flowRegistry`。采用部分成功语义：单项失败不会回滚其它项，返回值按输入顺序回显 `index/key/ok/result/error`。',
     ),
     requestBody: requestBody('FlowSurfaceAddFieldsRequest', examples.addFields),
     responses: responses('FlowSurfaceAddFieldsResult'),
@@ -2432,6 +2458,7 @@ const schemas = {
             description: 'Reference to another compose block key, typically used by filter-form fields.',
           },
           settings: ANY_OBJECT_SCHEMA,
+          popup: ref('FlowSurfaceComposeActionPopup'),
         },
         additionalProperties: false,
       },
@@ -2612,6 +2639,15 @@ const schemas = {
       innerFieldUid: {
         type: 'string',
       },
+      popupPageUid: {
+        type: 'string',
+      },
+      popupTabUid: {
+        type: 'string',
+      },
+      popupGridUid: {
+        type: 'string',
+      },
     },
     additionalProperties: false,
   },
@@ -2741,6 +2777,15 @@ const schemas = {
         items: {
           type: 'string',
         },
+      },
+      popupPageUid: {
+        type: 'string',
+      },
+      popupTabUid: {
+        type: 'string',
+      },
+      popupGridUid: {
+        type: 'string',
       },
     },
     additionalProperties: false,
@@ -3198,6 +3243,7 @@ const schemas = {
         description: 'Legacy alias used by filter-form target selection. This is not the same field as `target.uid`.',
       },
       settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
   },
@@ -3241,6 +3287,15 @@ const schemas = {
         nullable: true,
       },
       fieldPath: {
+        type: 'string',
+      },
+      popupPageUid: {
+        type: 'string',
+      },
+      popupTabUid: {
+        type: 'string',
+      },
+      popupGridUid: {
         type: 'string',
       },
     },
@@ -3396,6 +3451,7 @@ const schemas = {
         type: 'string',
       },
       settings: ANY_OBJECT_SCHEMA,
+      popup: ref('FlowSurfaceComposeActionPopup'),
     },
     additionalProperties: false,
   },

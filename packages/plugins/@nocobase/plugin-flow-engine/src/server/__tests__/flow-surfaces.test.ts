@@ -3213,6 +3213,336 @@ describe('flowSurfaces resource', () => {
     });
   });
 
+  it('should auto-complete field popup shells for addField and inline popup content', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Field popup add page',
+      tabTitle: 'Field popup add tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const localPopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fieldPath: 'department.title',
+        settings: {
+          title: 'Department',
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'departments',
+            associationName: 'employees.department',
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(localPopupRes.status).toBe(200);
+    const localPopupField = getData(localPopupRes);
+    expect(localPopupField.popupPageUid).toBeTruthy();
+    expect(localPopupField.popupTabUid).toBeTruthy();
+    expect(localPopupField.popupGridUid).toBeTruthy();
+    const localPopupReadback = await getSurface(rootAgent, {
+      uid: localPopupField.fieldUid,
+    });
+    expect(localPopupReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+      mode: 'dialog',
+    });
+    expect(localPopupReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+
+    const inlinePopupRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fieldPath: 'username',
+        settings: {
+          title: 'User name',
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'details',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['username', 'nickname'],
+            },
+          ],
+        },
+      },
+    });
+    expect(inlinePopupRes.status).toBe(200);
+    const inlinePopupField = getData(inlinePopupRes);
+    expect(inlinePopupField.popupPageUid).toBeTruthy();
+    expect(inlinePopupField.popupTabUid).toBeTruthy();
+    expect(inlinePopupField.popupGridUid).toBeTruthy();
+    const inlinePopupReadback = await getSurface(rootAgent, {
+      uid: inlinePopupField.fieldUid,
+    });
+    expect(inlinePopupReadback.tree.props?.clickToOpen).toBe(true);
+    expect(inlinePopupReadback.tree.stepParams?.displayFieldSettings?.clickToOpen?.clickToOpen).toBe(true);
+    expect(inlinePopupReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'drawer',
+      size: 'medium',
+      pageModelClass: 'ChildPageModel',
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const inlinePopupBlock = _.castArray(
+      inlinePopupReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(inlinePopupBlock?.use).toBe('DetailsBlockModel');
+    expect(inlinePopupBlock?.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      filterByTk: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+  });
+
+  it('should support field popup content in addFields and compose field specs', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Batch field popup page',
+      tabTitle: 'Batch field popup tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const addFieldsRes = await rootAgent.resource('flowSurfaces').addFields({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fields: [
+          {
+            key: 'username',
+            fieldPath: 'username',
+            popup: {
+              mode: 'replace',
+              blocks: [
+                {
+                  key: 'details',
+                  type: 'details',
+                  resource: {
+                    binding: 'currentRecord',
+                  },
+                  fields: ['username'],
+                },
+              ],
+            },
+          },
+          {
+            key: 'status',
+            fieldPath: 'status',
+          },
+        ],
+      },
+    });
+    expect(addFieldsRes.status).toBe(200);
+    const addFieldsResult = getData(addFieldsRes);
+    expect(addFieldsResult.fields[0].result.popupPageUid).toBeTruthy();
+    expect(addFieldsResult.fields[0].result.popupGridUid).toBeTruthy();
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: {
+          uid: page.tabSchemaUid,
+        },
+        mode: 'replace',
+        blocks: [
+          {
+            key: 'details',
+            type: 'details',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'employees',
+            },
+            fields: [
+              {
+                key: 'department',
+                fieldPath: 'department.title',
+                popup: {
+                  mode: 'replace',
+                  blocks: [
+                    {
+                      key: 'departmentDetails',
+                      type: 'details',
+                      resource: {
+                        binding: 'currentRecord',
+                      },
+                      fields: ['title'],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+    const composeResult = getData(composeRes);
+    const composedField = composeResult.blocks[0].fields[0];
+    expect(composedField.popupPageUid).toBeTruthy();
+    expect(composedField.popupTabUid).toBeTruthy();
+    expect(composedField.popupGridUid).toBeTruthy();
+    const composedFieldReadback = await getSurface(rootAgent, {
+      uid: composedField.fieldUid,
+    });
+    expect(composedFieldReadback.tree.subModels?.page?.use).toBe('ChildPageModel');
+    const composedPopupBlock = _.castArray(
+      composedFieldReadback.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
+    )[0];
+    expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
+  });
+
+  it('should auto-complete field popup shells on configure and normalize legacy openView modes', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Configure popup page',
+      tabTitle: 'Configure popup tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const field = await addField(rootAgent, detailsUid, 'department.title');
+
+    const configureFieldRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'departments',
+            associationName: 'employees.department',
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureFieldRes.status).toBe(200);
+    const configuredField = getData(configureFieldRes);
+    expect(configuredField.popupPageUid).toBeTruthy();
+    expect(configuredField.popupTabUid).toBeTruthy();
+    expect(configuredField.popupGridUid).toBeTruthy();
+
+    const configuredFieldReadback = await getSurface(rootAgent, {
+      uid: field.fieldUid,
+    });
+    expect(configuredFieldReadback.tree.props?.clickToOpen).toBe(true);
+    expect(configuredFieldReadback.tree.stepParams?.popupSettings?.openView).toMatchObject({
+      mode: 'dialog',
+      dataSourceKey: 'main',
+      collectionName: 'departments',
+      associationName: 'employees.department',
+    });
+    expect(configuredFieldReadback.tree.subModels?.page?.uid).toBe(configuredField.popupPageUid);
+
+    const configureFieldAgainRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: field.fieldUid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'departments',
+            associationName: 'employees.department',
+            mode: 'page',
+          },
+        },
+      },
+    });
+    expect(configureFieldAgainRes.status).toBe(200);
+    const configuredFieldAgain = getData(configureFieldAgainRes);
+    expect(configuredFieldAgain.popupPageUid).toBe(configuredField.popupPageUid);
+    const configuredFieldAgainReadback = await getSurface(rootAgent, {
+      uid: field.fieldUid,
+    });
+    expect(configuredFieldAgainReadback.tree.stepParams?.popupSettings?.openView.mode).toBe('embed');
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const viewAction = await addRecordAction(rootAgent, tableUid, 'view');
+    const configureActionRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: viewAction.uid,
+        },
+        changes: {
+          openView: {
+            dataSourceKey: 'main',
+            collectionName: 'employees',
+            mode: 'modal',
+          },
+        },
+      },
+    });
+    expect(configureActionRes.status).toBe(200);
+    const configuredActionReadback = await getSurface(rootAgent, {
+      uid: viewAction.uid,
+    });
+    expect(configuredActionReadback.tree.stepParams?.popupSettings?.openView.mode).toBe('dialog');
+  });
+
+  it('should reject field popup content when settings target an external popup uid', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'External popup conflict page',
+      tabTitle: 'External popup conflict tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const invalidRes = await rootAgent.resource('flowSurfaces').addField({
+      values: {
+        target: {
+          uid: tableUid,
+        },
+        fieldPath: 'department.title',
+        settings: {
+          openView: {
+            uid: 'external-popup-uid',
+          },
+        },
+        popup: {
+          mode: 'replace',
+          blocks: [
+            {
+              key: 'details',
+              type: 'details',
+              resource: {
+                binding: 'currentRecord',
+              },
+              fields: ['title'],
+            },
+          ],
+        },
+      },
+    });
+    expect(invalidRes.status).toBe(400);
+    expect(readErrorMessage(invalidRes)).toContain('external openView.uid');
+  });
+
   it('should enforce real wrapper and column props contracts', async () => {
     const page = await createPage(rootAgent, {
       title: 'Wrapper contract page',
