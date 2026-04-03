@@ -184,7 +184,7 @@ export class PluginAIServer extends Plugin {
       actions: ['aiSettings:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
-    this.app.acl.allow('aiWorkflowTasks', 'list', 'loggedIn');
+    this.app.acl.allow('aiWorkflowTasks', '*', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'get', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');

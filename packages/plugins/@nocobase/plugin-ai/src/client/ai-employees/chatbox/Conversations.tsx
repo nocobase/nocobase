@@ -314,7 +314,15 @@ export const Conversations: React.FC = memo(() => {
     openConversation(sessionId, conversation?.aiEmployee?.username);
   };
 
-  const selectWorkflowTask = (sessionId: string) => {
+  const selectWorkflowTask = async (sessionId: string) => {
+    await api
+      .resource('aiWorkflowTasks')
+      .accept({
+        values: {
+          sessionId,
+        },
+      })
+      .catch(() => undefined);
     openConversation(sessionId);
   };
 

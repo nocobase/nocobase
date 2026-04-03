@@ -60,6 +60,68 @@ export const aiWorkflowTasks: ResourceOptions = {
 
       await next();
     },
+    accept: async (ctx: Context, next: Next) => {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const sessionId = ctx.action.params.values?.sessionId;
+      if (!sessionId) {
+        return ctx.throw(400, 'sessionId is required');
+      }
+
+      const task = await ctx.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+
+      if (!task) {
+        return ctx.throw(404, 'workflow task not found');
+      }
+
+      const aiWorkflowTasksModel = ctx.db.getModel('aiWorkflowTasks');
+      const [acceptedCount] = await aiWorkflowTasksModel.update(
+        {
+          acceptedUserId: userId,
+        },
+        {
+          where: {
+            id: task.id,
+            acceptedUserId: null,
+          },
+        },
+      );
+
+      const usersAiWorkflowTasksModel = ctx.db.getModel('usersAiWorkflowTasks');
+      const [readCount] = await usersAiWorkflowTasksModel.update(
+        {
+          read: true,
+        },
+        {
+          where: {
+            aiWorkflowTaskId: task.id,
+            userId,
+          },
+        },
+      );
+
+      const latestTask = await ctx.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          id: task.id,
+        },
+      });
+
+      ctx.body = {
+        accepted: acceptedCount > 0,
+        readUpdated: readCount > 0,
+        acceptedUserId: latestTask?.acceptedUserId ?? null,
+      };
+
+      await next();
+    },
   },
 };
 
