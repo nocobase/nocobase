@@ -9,11 +9,15 @@
 
 import { TinyColor } from '@ctrl/tinycolor';
 import { useEffect } from 'react';
-import { defaultTheme } from '@nocobase/client-v2';
-import { useToken } from '../style';
+import { CustomToken, defaultTheme } from '@nocobase/client-v2';
+import { theme } from 'antd';
+
+interface Result extends ReturnType<typeof theme.useToken> {
+  token: CustomToken;
+}
 
 export const CSSVariableProvider = ({ children }) => {
-  const { token } = useToken();
+  const { token } = theme.useToken() as Result;
 
   const colorBgScrollTrack = token.colorFillTertiary;
   const colorBgScrollBar = new TinyColor(token.colorFill).onBackground(token.colorFillSecondary).toHexShortString();
