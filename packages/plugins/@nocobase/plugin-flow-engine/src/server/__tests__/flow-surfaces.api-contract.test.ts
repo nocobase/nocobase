@@ -3750,6 +3750,106 @@ describe('flowSurfaces API contract', () => {
     expect(syncedInner.tree.props?.titleField).toBe('title');
   });
 
+  it('should keep users.roles associationName when adding associated records block inside username popup', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Users username popup page',
+      tabTitle: 'Users username popup tab',
+    });
+
+    const composeRes = getData(
+      await rootAgent.resource('flowSurfaces').compose({
+        values: {
+          target: {
+            uid: page.tabSchemaUid,
+          },
+          blocks: [
+            {
+              key: 'table',
+              type: 'table',
+              resource: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+              },
+              fields: ['username', 'nickname'],
+              actions: ['refresh'],
+            },
+          ],
+        },
+      }),
+    );
+
+    const tableFields = composeRes.blocks.find((item: any) => item.key === 'table')?.fields || [];
+    const usernameField = tableFields.find((item: any) => item.fieldPath === 'username');
+    expect(usernameField?.wrapperUid).toBeTruthy();
+    expect(usernameField?.fieldUid).toBeTruthy();
+
+    expect(
+      (
+        await rootAgent.resource('flowSurfaces').configure({
+          values: {
+            target: {
+              uid: usernameField.wrapperUid,
+            },
+            changes: {
+              clickToOpen: true,
+              openView: {
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                mode: 'drawer',
+              },
+            },
+          },
+        })
+      ).status,
+    ).toBe(200);
+
+    const popupCatalog = getData(
+      await rootAgent.resource('flowSurfaces').catalog({
+        values: {
+          target: {
+            uid: usernameField.fieldUid,
+          },
+        },
+      }),
+    );
+    const tableBindings =
+      popupCatalog.blocks.find((item: any) => item.use === 'TableBlockModel')?.resourceBindings || [];
+    expect(tableBindings.map((item: any) => item.key)).toEqual(expect.arrayContaining(['associatedRecords']));
+    expect(tableBindings.find((item: any) => item.key === 'associatedRecords')?.associationFields).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          key: 'roles',
+          collectionName: 'roles',
+          associationName: 'users.roles',
+        }),
+      ]),
+    );
+
+    const rolesTable = getData(
+      await rootAgent.resource('flowSurfaces').addBlock({
+        values: {
+          target: {
+            uid: usernameField.fieldUid,
+          },
+          type: 'table',
+          resource: {
+            binding: 'associatedRecords',
+            associationField: 'roles',
+          },
+        },
+      }),
+    );
+
+    const rolesTableReadback = await getSurface(rootAgent, { uid: rolesTable.uid });
+    expect(rolesTableReadback.tree.use).toBe('TableBlockModel');
+    expect(rolesTableReadback.tree.stepParams?.resourceSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      associationName: 'users.roles',
+      sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+    });
+  });
+
   it('should align table/details/grid-card/edit-form field catalog semantics with frontend menus', async () => {
     const page = await createPage(rootAgent, {
       title: 'Field catalog alignment page',

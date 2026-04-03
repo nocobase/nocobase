@@ -866,13 +866,17 @@ export class FlowSurfacesService {
     if (!targetCollection) {
       return null;
     }
+    const associationName = resolveAssociationNameFromField(associationField, collection);
+    if (!associationName) {
+      return null;
+    }
 
     return {
       associationField,
       targetCollection,
       dataSourceKey: targetCollection?.dataSourceKey || targetCollection?.options?.dataSourceKey || dataSourceKey,
       collectionName: getFieldTarget(associationField) || targetCollection?.name || targetCollection?.options?.name,
-      associationName: associationField?.resourceName,
+      associationName,
     };
   }
 
@@ -1043,11 +1047,15 @@ export class FlowSurfacesService {
           if (!targetCollection?.filterTargetKey) {
             return null;
           }
+          const associationName = resolveAssociationNameFromField(field, popupProfile.currentCollection);
+          if (!associationName) {
+            return null;
+          }
           return {
             key: getFieldName(field),
             label: getFieldTitle(field),
             collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
-            associationName: field?.resourceName,
+            associationName,
           };
         } catch (error) {
           return null;
@@ -1671,11 +1679,17 @@ export class FlowSurfacesService {
       sourceKey && sourceKey !== currentCollectionFilterTargetKey
         ? `{{ctx.popup.record.${sourceKey}}}`
         : '{{ctx.view.inputArgs.filterByTk}}';
+    const associationName = resolveAssociationNameFromField(associationField, popupProfile.currentCollection);
+    if (!associationName) {
+      throwBadRequest(
+        `flowSurfaces associatedRecords field '${getFieldName(associationField)}' associationName cannot be resolved`,
+      );
+    }
 
     return buildDefinedPayload({
       dataSourceKey: popupProfile.dataSourceKey || 'main',
       collectionName: getFieldTarget(associationField) || targetCollection?.name || targetCollection?.options?.name,
-      associationName: associationField?.resourceName,
+      associationName,
       sourceId,
     });
   }
@@ -7823,6 +7837,10 @@ function getCollectionTitle(collection: any) {
   return collection?.title || collection?.options?.title || collection?.name || collection?.options?.name;
 }
 
+function getCollectionName(collection: any) {
+  return collection?.name || collection?.options?.name;
+}
+
 function getCollectionTitleFieldName(collection: any) {
   const filterTargetKey = collection?.filterTargetKey || collection?.options?.filterTargetKey;
   return (
@@ -7840,6 +7858,19 @@ function getFieldName(field: any) {
 
 function getFieldTitle(field: any) {
   return field?.title || field?.options?.title || getFieldName(field);
+}
+
+function resolveAssociationNameFromField(field: any, fallbackCollection?: any) {
+  const resourceName = typeof field?.resourceName === 'string' ? field.resourceName.trim() : '';
+  if (resourceName) {
+    return resourceName;
+  }
+  const fieldName = getFieldName(field);
+  if (!fieldName) {
+    return undefined;
+  }
+  const sourceCollectionName = getCollectionName(field?.collection) || getCollectionName(fallbackCollection);
+  return sourceCollectionName ? `${sourceCollectionName}.${fieldName}` : undefined;
 }
 
 function getFieldInterface(field: any) {
