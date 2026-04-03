@@ -98,6 +98,12 @@ export abstract class BaseApplication<TOptions extends BaseApplicationOptions = 
     appInfo: Promise<Record<string, any>>;
     pageInfo: { version?: 'v1' | 'v2' };
     systemSettings: SystemSettingsSource;
+    acl?: {
+      data: Record<string, any>;
+      meta: Record<string, any>;
+      setData: (data: Record<string, any>) => void;
+      setMeta: (meta: Record<string, any>) => void;
+    };
     pluginSettingsRouter: PluginSettingsManager<any>;
     pluginManager: any;
   };

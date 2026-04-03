@@ -10,6 +10,7 @@
 import { css } from '@emotion/css';
 import { ConfigProvider, Divider } from 'antd';
 import React, { useEffect, useState } from 'react';
+import { useAclSnippets } from '../../../acl';
 import { useApp } from '../../../flow-compat';
 import { HeaderActionRenderer, type HeaderActionItemLite } from './HeaderActionRendererLite';
 import { HelpLite } from './HelpLite';
@@ -82,6 +83,7 @@ const dividerTheme = {
  */
 export const PinnedPluginListLite = React.memo((props: { onClick?: () => void }) => {
   const app = useApp();
+  const { allow } = useAclSnippets();
   const [, setVersion] = useState(0);
 
   useEffect(() => {
@@ -96,7 +98,7 @@ export const PinnedPluginListLite = React.memo((props: { onClick?: () => void })
     };
   }, [app]);
 
-  const items = app.headerActionsManager.getItems() as HeaderActionItemLite[];
+  const items = app.headerActionsManager.resolveVisibleItems(allow) as HeaderActionItemLite[];
 
   return (
     <div className={pinnedPluginListClassName}>
