@@ -31,6 +31,8 @@ type MoveRouteOptions = {
 export class RouteRepository {
   routes: NocoBaseDesktopRoute[] = [];
   protected subscribers = new Set<RouteSubscriber>();
+  protected accessibleLoaded = false;
+  protected accessibleLoadingPromise: Promise<NocoBaseDesktopRoute[]> | null = null;
 
   constructor(protected ctx: { api?: APIClient }) {}
 
@@ -41,6 +43,7 @@ export class RouteRepository {
    */
   setRoutes(routes: NocoBaseDesktopRoute[]) {
     this.routes = routes;
+    this.accessibleLoaded = true;
     this.emitChange();
   }
 
@@ -66,6 +69,27 @@ export class RouteRepository {
     const routes = response?.data?.data || [];
     this.setRoutes(routes);
     return routes;
+  }
+
+  /**
+   * 确保当前用户可访问的桌面路由至少完成一次初始化加载。
+   *
+   * @returns 当前可访问的路由数组
+   */
+  async ensureAccessibleLoaded() {
+    if (this.accessibleLoaded) {
+      return this.routes;
+    }
+
+    if (this.accessibleLoadingPromise) {
+      return this.accessibleLoadingPromise;
+    }
+
+    this.accessibleLoadingPromise = this.refreshAccessible().finally(() => {
+      this.accessibleLoadingPromise = null;
+    });
+
+    return this.accessibleLoadingPromise;
   }
 
   /**

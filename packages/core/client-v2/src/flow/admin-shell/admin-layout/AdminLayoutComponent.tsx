@@ -410,14 +410,19 @@ export const AdminLayoutComponent = observer((props) => {
   );
 
   useEffect(() => {
+    const routeRepository = flowEngine.context.routeRepository;
     const subscriber = () => {
-      const updatedRoutes = flowEngine.context.routeRepository?.listAccessible() || [];
+      const updatedRoutes = routeRepository?.listAccessible() || [];
       setAllAccessRoutes(updatedRoutes);
     };
 
-    flowEngine.context.routeRepository?.subscribe(subscriber);
+    routeRepository?.subscribe(subscriber);
+    routeRepository?.ensureAccessibleLoaded?.().catch((error) => {
+      console.error('[NocoBase] AdminLayoutComponent failed to initialize accessible routes.', error);
+    });
+
     return () => {
-      flowEngine.context.routeRepository?.unsubscribe(subscriber);
+      routeRepository?.unsubscribe(subscriber);
     };
   }, [flowEngine]);
 
