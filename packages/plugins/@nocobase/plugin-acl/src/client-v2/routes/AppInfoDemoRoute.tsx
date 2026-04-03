@@ -8,7 +8,15 @@
  */
 
 import React from 'react';
+import { Button } from 'antd';
+import { useFlowContext } from '@nocobase/flow-engine';
 
 export default function AppInfoDemoRoute() {
-  return <div>App Info Demo Route</div>;
+  const ctx = useFlowContext();
+  return (
+    <div>
+      <div>App Info Demo Route</div>
+      <Button onClick={() => ctx.router.navigate('/v2-demo/')}>Go to demo route</Button>
+    </div>
+  );
 }
