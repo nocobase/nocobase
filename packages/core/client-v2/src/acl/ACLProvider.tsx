@@ -8,7 +8,7 @@
  */
 
 import { observable } from '@formily/reactive';
-import React from 'react';
+import React, { useRef } from 'react';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type FC } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useApp } from '../hooks/useApp';
@@ -84,9 +84,12 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
   const location = useLocation();
   const aclStore = ensureACLStore(app);
   const [loading, setLoading] = useState(false);
+  const pathnameRef = useRef(location.pathname);
+  pathnameRef.current = location.pathname;
 
   const refresh = useCallback(async () => {
-    if (app.router.isSkippedAuthCheckRoute(location.pathname)) {
+    if (app.router.isSkippedAuthCheckRoute(pathnameRef.current)) {
+      // 认证页等免鉴权路由不需要执行 `roles:check`，避免未登录时产生多余的 401 与 loading 闪烁。
       setLoading(false);
       return;
     }
@@ -132,7 +135,7 @@ export const ACLRolesCheckProvider: FC = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [aclStore, app, location.pathname]);
+  }, [aclStore, app]);
 
   useEffect(() => {
     void refresh();

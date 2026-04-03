@@ -13,7 +13,7 @@ import {
   FlowModelRenderer,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import React, { createContext, type FC, useEffect, useState } from 'react';
+import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { BlankComponent, AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
@@ -56,14 +56,17 @@ const CurrentUserProvider: FC = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [state, setState] = useState<CurrentUserState>({ loading: true });
+  const pathnameRef = useRef(location.pathname);
+  pathnameRef.current = location.pathname;
 
   useEffect(() => {
     let mounted = true;
     const isSkippedAuthCheckRoute =
-      isBuiltinAuthRoute(location.pathname, app.router.getBasename()) ||
-      app.router.isSkippedAuthCheckRoute(location.pathname);
+      isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) ||
+      app.router.isSkippedAuthCheckRoute(pathnameRef.current);
 
     if (isSkippedAuthCheckRoute) {
+      // 认证页等免鉴权路由不应再执行 `/auth:check`，否则未登录时会重复鉴权并触发重定向抖动。
       setState({ loading: false });
       return;
     }
@@ -78,7 +81,7 @@ const CurrentUserProvider: FC = ({ children }) => {
 
         const user = res?.data?.data;
         if (user?.id == null) {
-          navigate(`/signin?redirect=${location.pathname}${location.search}`, { replace: true });
+          navigate(`/signin?redirect=${pathnameRef.current}${location.search}`, { replace: true });
           return;
         }
 
@@ -106,10 +109,10 @@ const CurrentUserProvider: FC = ({ children }) => {
         }
         const isAuthError = error?.response?.status === 401 || error?.status === 401;
         if (
-          !isBuiltinAuthRoute(location.pathname, app.router.getBasename()) &&
-          !app.router.isSkippedAuthCheckRoute(location.pathname)
+          !isBuiltinAuthRoute(pathnameRef.current, app.router.getBasename()) &&
+          !app.router.isSkippedAuthCheckRoute(pathnameRef.current)
         ) {
-          navigate(`/signin?redirect=${location.pathname}${location.search}`, { replace: true });
+          navigate(`/signin?redirect=${pathnameRef.current}${location.search}`, { replace: true });
           if (isAuthError) {
             return;
           }
@@ -123,7 +126,7 @@ const CurrentUserProvider: FC = ({ children }) => {
     return () => {
       mounted = false;
     };
-  }, [app, location.pathname, location.search, navigate]);
+  }, [app, location.search, navigate]);
 
   if (state.loading) {
     return app.renderComponent('AppSpin');
