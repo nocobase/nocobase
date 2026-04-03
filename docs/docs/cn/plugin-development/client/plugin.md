@@ -6,14 +6,14 @@ keywords: "Client Plugin,Plugin 类,registerBlock,registerField,registerComponen
 
 # Plugin 插件
 
-在 NocoBase 中，**客户端插件（Client Plugin）** 是扩展和定制前端功能的主要方式。通过继承 `@nocobase/client` 提供的 `Plugin` 基类，开发者可以在不同生命周期阶段注册逻辑、添加页面组件、扩展菜单或集成第三方功能。
+在 NocoBase 中，**客户端插件（Client Plugin）** 是扩展和定制前端功能的主要方式。通过继承 `@nocobase/client-v2` 提供的 `Plugin` 基类，开发者可以在不同生命周期阶段注册逻辑、添加页面组件、扩展菜单或集成第三方功能。
 
 ## 插件类结构
 
 一个最基本的客户端插件结构如下：
 
 ```ts
-import { Plugin } from '@nocobase/client';
+import { Plugin } from '@nocobase/client-v2';
 
 export class PluginHelloClient extends Plugin {
   async afterAdd() {

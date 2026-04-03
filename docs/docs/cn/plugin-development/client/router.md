@@ -31,7 +31,7 @@ export default function HomePage() {
 
 ```tsx
 import { Link, Outlet } from 'react-router-dom';
-import { Application, Plugin } from '@nocobase/client';
+import { Application, Plugin } from '@nocobase/client-v2';
 
 const Layout = () => (
   <div>
@@ -83,7 +83,7 @@ this.router.add('root.user', {
 通过 `pluginSettingsRouter.add()` 添加插件设置页。与普通页面路由类似，设置页也应使用 `componentLoader` 按需注册。
 
 ```tsx
-import { Plugin } from '@nocobase/client';
+import { Plugin } from '@nocobase/client-v2';
 
 export class HelloPlugin extends Plugin {
   async load() {

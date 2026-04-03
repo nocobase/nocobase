@@ -82,7 +82,7 @@ yarn pm create @my-project/plugin-hello
 packages/plugins/@my-project/plugin-hello/
 ├── dist/                    # 构建输出（按需生成）
 ├── src/                     # 源代码目录
-│   ├── client/              # 前端代码（区块、页面、模型等）
+│   ├── client-v2/           # 前端代码（区块、页面、模型等）
 │   │   ├── plugin.ts        # 客户端插件主类
 │   │   └── index.ts         # 客户端入口
 │   ├── locale/              # 多语言资源（前后端共享）
@@ -94,13 +94,13 @@ packages/plugins/@my-project/plugin-hello/
 │       ├── plugin.ts        # 服务端插件主类
 │       └── index.ts         # 服务端入口
 ├── index.ts                 # 前后端桥接导出
-├── client.d.ts              # 前端类型声明
-├── client.js                # 前端构建产物
+├── client-v2.d.ts           # 前端类型声明
+├── client-v2.js             # 前端构建产物
 ├── server.d.ts              # 服务端类型声明
 ├── server.js                # 服务端构建产物
 ├── .npmignore               # 发布忽略配置
 └── package.json
 ```
 
-> 构建完成后，`dist/` 及 `client.js`、`server.js` 文件会在插件启用时被加载。  
+> 构建完成后，`dist/` 及 `client-v2.js`、`server.js` 文件会在插件启用时被加载。  
 > 开发阶段只需修改 `src/` 目录，发布前执行 `yarn build <plugin>` 或 `yarn build <plugin> --tar` 即可。

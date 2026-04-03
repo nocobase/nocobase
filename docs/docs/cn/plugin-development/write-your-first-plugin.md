@@ -31,15 +31,15 @@ yarn pm create @my-project/plugin-hello
 ├─ /packages/plugins/@my-project/plugin-hello
   ├─ package.json
   ├─ README.md
-  ├─ client.d.ts
-  ├─ client.js
+  ├─ client-v2.d.ts
+  ├─ client-v2.js
   ├─ server.d.ts
   ├─ server.js
   └─ src
      ├─ index.ts                 # 默认导出服务端插件
-     ├─ client                   # 客户端代码存放位置
+     ├─ client-v2                 # 客户端代码存放位置
      │  ├─ index.tsx             # 默认导出的客户端插件类
-     │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client Plugin）
+     │  ├─ plugin.tsx            # 插件入口（继承 @nocobase/client-v2 Plugin）
      │  ├─ models                # 可选：前端模型（如流程节点）
      │  │  └─ index.ts
      │  └─ utils
@@ -66,10 +66,10 @@ yarn pm create @my-project/plugin-hello
 
 接下来我们为插件添加一个自定义区块模型，展示一段欢迎文本。
 
-1. **新增区块模型文件** `client/models/HelloBlockModel.tsx`：
+1. **新增区块模型文件** `client-v2/models/HelloBlockModel.tsx`：
 
 ```tsx pure
-import { BlockModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client-v2';
 import React from 'react';
 import { tExpr } from '../utils';
 
@@ -89,7 +89,7 @@ HelloBlockModel.define({
 });
 ```
 
-2. **注册区块模型**。编辑 `client/models/index.ts`，将新模型导出，供前端运行时加载：
+2. **注册区块模型**。编辑 `client-v2/models/index.ts`，将新模型导出，供前端运行时加载：
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';

@@ -15,7 +15,7 @@ import { defineConfig } from '@nocobase/build';
 
 export default defineConfig({
   modifyRsbuildConfig: (config) => {
-    // Rsbuild 是用来打包 `src/client` 端代码的
+    // Rsbuild 是用来打包 `src/client-v2` 端代码的
 
     // 修改 Rsbuild 配置，具体可参考：https://rsbuild.rs/guide/configuration/rsbuild
     return config

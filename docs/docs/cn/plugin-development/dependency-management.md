@@ -8,14 +8,14 @@ keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
 
 在 NocoBase 插件开发中，依赖分为 **自身依赖** 和 **全局依赖** 两类。
 
-- **全局依赖**：由 `@nocobase/server` 和 `@nocobase/client` 提供，插件中无需单独打包。
+- **全局依赖**：由 `@nocobase/server` 和 `@nocobase/client-v2` 提供，插件中无需单独打包。
 - **自身依赖**：插件独有的依赖（包括 server端依赖），会被打包到插件产物中。
 
 ## 开发原则
 
 由于自身依赖会被打包到插件产物中（包括 server 依赖会被打包到 `dist/node_modules`），因此在插件开发时，可以将所有依赖声明在 `devDependencies` 中，而不是 `dependencies`。这样可以避免在开发环境与生产环境中产生差异。
 
-当插件需要安装下列依赖时，请确保 **版本号** 与全局依赖中 `@nocobase/server` 和 `@nocobase/client`
+当插件需要安装下列依赖时，请确保 **版本号** 与全局依赖中 `@nocobase/server` 和 `@nocobase/client-v2`
 保持一致，否则可能导致运行时冲突。
 
 ## 全局依赖
@@ -28,7 +28,7 @@ keywords: "依赖管理,peerDependencies,package.json,插件依赖,NocoBase"
 '@nocobase/actions',
 '@nocobase/auth',
 '@nocobase/cache',
-'@nocobase/client',
+'@nocobase/client-v2',
 '@nocobase/database',
 '@nocobase/evaluators',
 '@nocobase/logger',

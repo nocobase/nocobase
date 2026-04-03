@@ -20,10 +20,10 @@ NocoBase 采用 **微内核架构**，核心仅负责插件的生命周期调度
 ```bash
 plugin-hello/
 ├─ package.json          # 插件名称、依赖与 NocoBase 插件元信息
-├─ client.js             # 前端编译产物，供运行时加载
+├─ client-v2.js          # 前端编译产物，供运行时加载
 ├─ server.js             # 服务端编译产物，供运行时加载
 ├─ src/
-│  ├─ client/            # 客户端源码，可注册区块、操作、字段等
+│  ├─ client-v2/         # 客户端源码，可注册区块、操作、字段等
 │  └─ server/            # 服务端源码，可注册资源、事件、命令行等
 ```
 
