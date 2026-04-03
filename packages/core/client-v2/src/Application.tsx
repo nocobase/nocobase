@@ -20,6 +20,7 @@ import { PluginSettingsManager } from './PluginSettingsManager';
 import type { RouterOptions } from './RouterManager';
 import { RouterManager } from './RouterManager';
 import type { WebSocketClientOptions } from './WebSocketClient';
+import CSSVariableProvider from './css-variable/CSSVariableProvider';
 
 export type { DevDynamicImport, ComponentAndProps } from './BaseApplication';
 export { ApplicationModel } from './BaseApplication';
@@ -147,5 +148,9 @@ export class Application extends BaseApplication<ApplicationOptions> {
     });
 
     this.ws.connect();
+  }
+
+  protected addCustomProviders() {
+    this.use(CSSVariableProvider);
   }
 }
