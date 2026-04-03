@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { buildSwaggerCommands } from '../src/lib/build-swagger-commands.ts';
+import { buildSwaggerCommands } from '../src/lib/build-swagger-commands';
 
 const projectRoot = path.resolve(__dirname, '..');
 const defaultSourceRoot = path.resolve(projectRoot, '../../..');
