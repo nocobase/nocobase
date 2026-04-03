@@ -825,8 +825,7 @@ describe('flowSurfaces API contract', () => {
                 key: 'details',
                 type: 'details',
                 resource: {
-                  dataSourceKey: 'main',
-                  collectionName: 'employees',
+                  binding: 'currentRecord',
                 },
                 fields: ['nickname'],
               },
@@ -1855,8 +1854,7 @@ describe('flowSurfaces API contract', () => {
                       key: 'details',
                       type: 'details',
                       resource: {
-                        dataSourceKey: 'main',
-                        collectionName: 'employees',
+                        binding: 'currentRecord',
                       },
                       fields: ['nickname'],
                     },
@@ -2507,8 +2505,7 @@ describe('flowSurfaces API contract', () => {
                   key: 'form',
                   type: 'createForm',
                   resource: {
-                    dataSourceKey: 'main',
-                    collectionName: 'employees',
+                    binding: 'currentCollection',
                   },
                   fields: ['nickname'],
                   actions: ['submit'],
@@ -2526,8 +2523,7 @@ describe('flowSurfaces API contract', () => {
                   key: 'details',
                   type: 'details',
                   resource: {
-                    dataSourceKey: 'main',
-                    collectionName: 'employees',
+                    binding: 'currentRecord',
                   },
                   fields: ['nickname'],
                 },
@@ -2568,8 +2564,7 @@ describe('flowSurfaces API contract', () => {
                   key: 'details',
                   type: 'details',
                   resource: {
-                    dataSourceKey: 'main',
-                    collectionName: 'employees',
+                    binding: 'currentRecord',
                   },
                   fields: ['nickname'],
                 },
@@ -3630,9 +3625,8 @@ describe('flowSurfaces API contract', () => {
             uid: directRolesField.fieldUid,
           },
           type: 'details',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'roles',
+          resource: {
+            binding: 'currentRecord',
           },
         },
       }),
@@ -4073,7 +4067,7 @@ describe('flowSurfaces API contract', () => {
         ],
       },
     });
-    expect(composeRes.status).toBe(500);
+    expect(composeRes.status).toBe(400);
     expect(readErrorMessage(composeRes)).toContain('roles.hidden');
     expect(readErrorMessage(composeRes)).toContain('has no interface');
   });

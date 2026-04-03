@@ -26,15 +26,15 @@ export class SurfaceLocator {
       return this.resolveByUid(target.uid, target, transaction);
     }
 
-    if (target.tabSchemaUid) {
+    if ('tabSchemaUid' in target && target.tabSchemaUid) {
       return this.resolveByUid(target.tabSchemaUid, target, transaction);
     }
 
-    if (target.pageSchemaUid) {
+    if ('pageSchemaUid' in target && target.pageSchemaUid) {
       return this.resolvePageSchemaUid(target.pageSchemaUid, target, transaction);
     }
 
-    if (target.routeId) {
+    if ('routeId' in target && target.routeId) {
       const route = await this.db.getRepository('desktopRoutes').findOne({
         filterByTk: String(target.routeId),
         transaction,

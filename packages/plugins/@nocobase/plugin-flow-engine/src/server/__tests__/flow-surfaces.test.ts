@@ -363,8 +363,7 @@ describe('flowSurfaces resource', () => {
             key: 'details',
             type: 'details',
             resource: {
-              dataSourceKey: 'main',
-              collectionName: 'employees',
+              binding: 'currentRecord',
             },
             fields: ['nickname'],
           },
@@ -1701,21 +1700,19 @@ describe('flowSurfaces resource', () => {
     });
     expect(semanticAdd.status).toBe(200);
 
-    const rawSemanticEquivalentAdd = await rootAgent.resource('flowSurfaces').addBlock({
+    const semanticListAdd = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
         target: {
           uid: relationPopupAction.uid,
         },
         type: 'list',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'employees',
-          associationName: 'employee',
-          sourceId: '{{ ctx.popup.record.employeeId }}',
+        resource: {
+          binding: 'associatedRecords',
+          associationField: 'employee',
         },
       },
     });
-    expect(rawSemanticEquivalentAdd.status).toBe(200);
+    expect(semanticListAdd.status).toBe(200);
 
     const invalidRelationCurrentCollectionRaw = await rootAgent.resource('flowSurfaces').addBlock({
       values: {
@@ -1763,7 +1760,7 @@ describe('flowSurfaces resource', () => {
       relationPopupSurface.tree.subModels?.page?.subModels?.tabs?.[0]?.subModels?.grid?.subModels?.items || [],
     );
     const relationPopupBlock = relationPopupBlocks[0];
-    const rawRelationPopupBlock = relationPopupBlocks[1];
+    const semanticRelationPopupBlock = relationPopupBlocks[1];
     expect(relationPopupBlock.use).toBe('TableBlockModel');
     expect(relationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
@@ -1771,12 +1768,12 @@ describe('flowSurfaces resource', () => {
       associationName: 'employee',
       sourceId: '{{ctx.popup.record.employeeId}}',
     });
-    expect(rawRelationPopupBlock.use).toBe('ListBlockModel');
-    expect(rawRelationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
+    expect(semanticRelationPopupBlock.use).toBe('ListBlockModel');
+    expect(semanticRelationPopupBlock.stepParams?.resourceSettings?.init).toMatchObject({
       dataSourceKey: 'main',
       collectionName: 'employees',
       associationName: 'employee',
-      sourceId: '{{ ctx.popup.record.employeeId }}',
+      sourceId: '{{ctx.popup.record.employeeId}}',
     });
 
     const recordPopupAction = await addRecordAction(rootAgent, tableUid, 'view');
@@ -3069,8 +3066,7 @@ describe('flowSurfaces resource', () => {
               key: 'form',
               type: 'createForm',
               resource: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
+                binding: 'currentCollection',
               },
               fields: ['nickname'],
               actions: ['submit'],
@@ -3114,8 +3110,7 @@ describe('flowSurfaces resource', () => {
               key: 'details',
               type: 'details',
               resource: {
-                dataSourceKey: 'main',
-                collectionName: 'employees',
+                binding: 'currentRecord',
               },
               fields: ['nickname'],
             },
@@ -3771,11 +3766,9 @@ describe('flowSurfaces resource', () => {
             uid: viewAction.uid,
           },
           type: 'table',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'tasks',
-            associationName: 'employees.tasks',
-            sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+          resource: {
+            binding: 'associatedRecords',
+            associationField: 'tasks',
           },
         },
       }),
@@ -3789,9 +3782,8 @@ describe('flowSurfaces resource', () => {
             uid: secondPopupAction.uid,
           },
           type: 'table',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'departments',
+          resource: {
+            binding: 'currentCollection',
           },
         },
       }),
@@ -3804,8 +3796,8 @@ describe('flowSurfaces resource', () => {
           uid: thirdPopupAction.uid,
         },
         type: 'details',
-        resourceInit: {
-          dataSourceKey: 'main',
+        resource: {
+          binding: 'otherRecords',
           collectionName: 'departments',
         },
       },
@@ -4015,9 +4007,8 @@ describe('flowSurfaces resource', () => {
             uid: clickableField.fieldUid,
           },
           type: 'details',
-          resourceInit: {
-            dataSourceKey: 'main',
-            collectionName: 'departments',
+          resource: {
+            binding: 'currentRecord',
           },
         },
       }),
@@ -6009,9 +6000,8 @@ describe('flowSurfaces resource', () => {
           uid: viewAction.uid,
         },
         type: 'details',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'employees',
+        resource: {
+          binding: 'currentRecord',
         },
       },
     });

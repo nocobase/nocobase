@@ -625,7 +625,16 @@ export class FlowSurfacesService {
   }
 
   private async loadRouteBackedPageStructure(route: any, transaction?: any) {
-    const pageSchemaUid = this.readRouteField(route, 'schemaUid');
+    const routeId = this.readRouteField(route, 'id');
+    const routeWithChildren =
+      _.isUndefined(this.readRouteField(route, 'children')) && !_.isNil(routeId)
+        ? (await this.db.getRepository('desktopRoutes').findOne({
+            filterByTk: String(routeId),
+            appends: ['children'],
+            transaction,
+          })) || route
+        : route;
+    const pageSchemaUid = this.readRouteField(routeWithChildren, 'schemaUid');
     const pageModel = pageSchemaUid
       ? await this.repository.findModelByParentId(pageSchemaUid, {
           transaction,
@@ -634,7 +643,7 @@ export class FlowSurfacesService {
         })
       : null;
     const tabRoutes = _.sortBy(
-      _.castArray(this.readRouteField(route, 'children') || []).filter(
+      _.castArray(this.readRouteField(routeWithChildren, 'children') || []).filter(
         (item: any) => this.readRouteField(item, 'type') === 'tabs',
       ),
       (item: any) => this.readRouteField(item, 'sort') ?? 0,
@@ -902,7 +911,9 @@ export class FlowSurfacesService {
   }
 
   private async resolvePopupHostProfileContext(hostNode: any, transaction?: any) {
-    const parentUid = hostNode?.uid ? await this.locator.findParentUid(hostNode.uid, transaction) : null;
+    const parentUid = hostNode?.uid
+      ? await this.locator.findParentUid(hostNode.uid, transaction).catch(() => null)
+      : null;
     const parentNode = parentUid
       ? await this.repository.findModelById(parentUid, { transaction, includeAsyncNode: true }).catch(() => null)
       : null;
@@ -910,7 +921,7 @@ export class FlowSurfacesService {
       ? await this.locator.resolveCollectionContext(hostNode.uid, transaction).catch(() => null)
       : null;
     const relationContext = hostNode?.uid
-      ? await this.resolvePopupHostFieldRelationContext(hostNode, transaction)
+      ? await this.resolvePopupHostFieldRelationContext(hostNode, transaction).catch(() => null)
       : null;
     return {
       parentNode,
@@ -1023,20 +1034,24 @@ export class FlowSurfacesService {
 
     return associationFields
       .map((field) => {
-        const targetCollection = resolveFieldTargetCollection(
-          field,
-          popupProfile.dataSourceKey || 'main',
-          (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
-        );
-        if (!targetCollection?.filterTargetKey) {
+        try {
+          const targetCollection = resolveFieldTargetCollection(
+            field,
+            popupProfile.dataSourceKey || 'main',
+            (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+          );
+          if (!targetCollection?.filterTargetKey) {
+            return null;
+          }
+          return {
+            key: getFieldName(field),
+            label: getFieldTitle(field),
+            collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
+            associationName: field?.resourceName,
+          };
+        } catch (error) {
           return null;
         }
-        return {
-          key: getFieldName(field),
-          label: getFieldTitle(field),
-          collectionName: getFieldTarget(field) || targetCollection?.name || targetCollection?.options?.name,
-          associationName: field?.resourceName,
-        };
       })
       .filter(Boolean) as FlowSurfaceResourceBindingAssociationField[];
   }
@@ -1134,20 +1149,29 @@ export class FlowSurfacesService {
       return [];
     }
     const blockScenes = this.getPopupCollectionBlockScenes(blockUse);
-    const fields =
-      typeof popupProfile.currentCollection?.getAssociationFields === 'function'
-        ? popupProfile.currentCollection.getAssociationFields(blockScenes)
-        : getCollectionFields(popupProfile.currentCollection).filter((field) => isAssociationField(field));
+    let fields;
+    try {
+      fields =
+        typeof popupProfile.currentCollection?.getAssociationFields === 'function'
+          ? popupProfile.currentCollection.getAssociationFields(blockScenes)
+          : getCollectionFields(popupProfile.currentCollection).filter((field) => isAssociationField(field));
+    } catch (error) {
+      fields = getCollectionFields(popupProfile.currentCollection).filter((field) => isAssociationField(field));
+    }
     return _.castArray(fields).filter((field) => {
-      if (!isAssociationField(field) || getFieldType(field) === 'belongsToArray') {
+      try {
+        if (!isAssociationField(field) || getFieldType(field) === 'belongsToArray') {
+          return false;
+        }
+        const targetCollection = resolveFieldTargetCollection(
+          field,
+          popupProfile.dataSourceKey || 'main',
+          (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+        );
+        return !!targetCollection?.filterTargetKey;
+      } catch (error) {
         return false;
       }
-      const targetCollection = resolveFieldTargetCollection(
-        field,
-        popupProfile.dataSourceKey || 'main',
-        (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
-      );
-      return !!targetCollection?.filterTargetKey;
     });
   }
 
@@ -1625,11 +1649,16 @@ export class FlowSurfacesService {
   }
 
   private buildAssociatedRecordsResourceInit(popupProfile: FlowSurfacePopupBlockProfile, associationField: any) {
-    const targetCollection = resolveFieldTargetCollection(
-      associationField,
-      popupProfile.dataSourceKey || 'main',
-      (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
-    );
+    let targetCollection = null;
+    try {
+      targetCollection = resolveFieldTargetCollection(
+        associationField,
+        popupProfile.dataSourceKey || 'main',
+        (dataSourceKey, collectionName) => this.getCollection(dataSourceKey, collectionName),
+      );
+    } catch (error) {
+      targetCollection = null;
+    }
     if (!targetCollection) {
       throwBadRequest(
         `flowSurfaces associatedRecords field '${getFieldName(associationField)}' target collection is not available`,
@@ -2049,11 +2078,7 @@ export class FlowSurfacesService {
     const routeId = this.readRouteField(route, 'id');
     const pageSchemaUid = this.readRouteField(route, 'schemaUid');
     const structure = await this.loadRouteBackedPageStructure(route, transaction);
-    const children = _.sortBy(
-      _.castArray(this.readRouteField(route, 'children') || []),
-      (item: any) => item?.get?.('sort') ?? item?.sort,
-    );
-    let tabRoute = children[0];
+    let tabRoute = structure.tabRoutes[0];
     const routeOptions = this.readRouteOptions(route);
     if (!routeOptions[FLOW_SURFACE_MENU_BINDABLE_OPTION_KEY]) {
       throwBadRequest(`flowSurfaces createPage only accepts a bindable menu route created by createMenu(type="item")`);
@@ -4716,7 +4741,7 @@ export class FlowSurfacesService {
       kind: 'page',
     });
     assertSupportedSimpleChanges('page', changes, allowedKeys);
-    const result = await this.updateSettings(
+    return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -4761,7 +4786,7 @@ export class FlowSurfacesService {
       kind: 'tab',
     });
     assertSupportedSimpleChanges('tab', changes, allowedKeys);
-    const result = await this.updateSettings(
+    return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({
@@ -4791,7 +4816,7 @@ export class FlowSurfacesService {
   ) {
     const allowedKeys = getConfigureOptionKeysForUse('TableBlockModel');
     assertSupportedSimpleChanges('table', changes, allowedKeys);
-    const result = await this.updateSettings(
+    return this.updateSettings(
       {
         target,
         props: buildDefinedPayload({

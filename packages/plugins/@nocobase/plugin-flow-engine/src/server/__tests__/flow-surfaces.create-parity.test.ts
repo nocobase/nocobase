@@ -150,9 +150,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: hostPopup.uid,
         },
         type: 'table',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'pets',
+        resource: {
+          binding: 'currentCollection',
         },
       });
       await configureTableBlock(rootAgent, nestedTable.uid);
@@ -211,9 +210,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: addNew.uid,
         },
         type: 'createForm',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'pets',
+        resource: {
+          binding: 'currentCollection',
         },
       });
       await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, '新增宠物');
@@ -224,9 +222,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: view.uid,
         },
         type: 'details',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'pets',
+        resource: {
+          binding: 'currentRecord',
         },
       });
       await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, '宠物详情');
@@ -237,9 +234,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: edit.uid,
         },
         type: 'editForm',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: 'pets',
+        resource: {
+          binding: 'currentRecord',
         },
       });
       await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, '编辑宠物');
@@ -255,8 +251,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: hostPopup.uid,
         },
         type: 'list',
-        resourceInit: {
-          dataSourceKey: 'main',
+        resource: {
+          binding: 'otherRecords',
           collectionName: 'departments',
         },
       });
@@ -270,8 +266,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: hostPopup.uid,
         },
         type: 'gridCard',
-        resourceInit: {
-          dataSourceKey: 'main',
+        resource: {
+          binding: 'otherRecords',
           collectionName: 'departments',
         },
       });
@@ -297,9 +293,8 @@ async function buildNestedPopupCreateParityReadback(
           uid: hostPopup.uid,
         },
         type: 'filterForm',
-        resourceInit: {
-          dataSourceKey: 'main',
-          collectionName: '',
+        resource: {
+          binding: 'currentCollection',
         },
       });
       await configureFilterFormBlock(rootAgent, nestedFilterForm.uid);
@@ -396,9 +391,8 @@ async function createTableParityReadback(rootAgent: any) {
       uid: addNew.uid,
     },
     type: 'createForm',
-    resourceInit: {
-      dataSourceKey: 'main',
-      collectionName: 'pets',
+    resource: {
+      binding: 'currentCollection',
     },
   });
   await configurePopupSurface(rootAgent, addNewPopup.popupPageUid, addNewPopup.popupTabUid, '新增宠物');
@@ -409,9 +403,8 @@ async function createTableParityReadback(rootAgent: any) {
       uid: view.uid,
     },
     type: 'details',
-    resourceInit: {
-      dataSourceKey: 'main',
-      collectionName: 'pets',
+    resource: {
+      binding: 'currentRecord',
     },
   });
   await configurePopupSurface(rootAgent, viewPopup.popupPageUid, viewPopup.popupTabUid, '宠物详情');
@@ -422,9 +415,8 @@ async function createTableParityReadback(rootAgent: any) {
       uid: edit.uid,
     },
     type: 'editForm',
-    resourceInit: {
-      dataSourceKey: 'main',
-      collectionName: 'pets',
+    resource: {
+      binding: 'currentRecord',
     },
   });
   await configurePopupSurface(rootAgent, editPopup.popupPageUid, editPopup.popupTabUid, '编辑宠物');
