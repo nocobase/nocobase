@@ -26,9 +26,11 @@ export type ToolsOptions = {
     modal?: {
       title?: string;
       okText?: string;
+      width?: string | number;
+      hideOkButton?: boolean;
       useOnOk?: (
         decisions: ToolsUIProperties['decisions'],
-        adjustArgs: Record<string, any>,
+        adjustArgs: Record<string, any> | unknown,
       ) => {
         onOk: () => void | Promise<void>;
       };

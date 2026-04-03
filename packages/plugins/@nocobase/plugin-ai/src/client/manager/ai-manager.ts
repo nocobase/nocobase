@@ -32,7 +32,12 @@ export type ToolOptions = {
     modal?: {
       title?: string;
       okText?: string;
-      useOnOk?: () => {
+      width?: string | number;
+      hideOkButton?: boolean;
+      useOnOk?: (
+        decisions?: any,
+        adjustArgs?: unknown,
+      ) => {
         onOk: () => void | Promise<void>;
       };
       Component?: ComponentType<{
