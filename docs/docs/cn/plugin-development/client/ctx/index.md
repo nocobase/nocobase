@@ -88,19 +88,20 @@ const ctx = useFlowContext();
 ctx.router.navigate('/hello'); // -> /v2/hello
 ```
 
-## 上下文提供的能力
+## 上下文提供的常用能力
 
-以下是上下文对象上的常用属性：
+这里列出常用的上下文能力，不过有些能力只在 Plugin 里可用，有些只在组件里可用，有些两边都有但写法不同。
 
-| 属性           | 说明                            |
-| -------------- | ------------------------------- |
-| `ctx.api`      | API 客户端，发请求              |
-| `ctx.t`        | 国际化翻译函数                  |
-| `ctx.i18n`     | i18next 实例                    |
-| `ctx.logger`   | 日志                            |
-| `ctx.router`   | React Router，页面导航          |
-| `ctx.route`    | 当前路由信息（params、name 等） |
-| `ctx.location` | 当前 URL 信息                   |
+| 能力       | Plugin（`this.xxx`）          | Component（`ctx.xxx`）       | 说明                              |
+| ---------- | ----------------------------- | ---------------------------- | --------------------------------- |
+| API 请求   | `this.context.api`            | `ctx.api`                    | 用法一致                          |
+| 国际化     | `this.t()` / `this.context.t` | `ctx.t`                      | `this.t()` 自动注入插件 namespace |
+| 日志       | `this.context.logger`         | `ctx.logger`                 | 用法一致                          |
+| 路由注册   | `this.router.add()`           | -                            | 仅 Plugin                         |
+| 页面导航   | -                             | `ctx.router.navigate()`      | 仅组件                            |
+| 路由信息   | `this.context.location`       | `ctx.route` / `ctx.location` | 建议在组件中使用                  |
+| 视图管理   | `this.context.viewer`         | `ctx.viewer`                 | 打开弹窗 / 抽屉等                 |
+| FlowEngine | `this.flowEngine`             | -                            | 仅 Plugin                         |
 
 每项能力的详细用法和代码示例见 [常用能力](./common-capabilities)。
 

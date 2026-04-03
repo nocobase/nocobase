@@ -13,6 +13,7 @@
 html:root {
   --rp-radius: 0px;
   --adm-color-primary: initial !important;
+  --adm-font-size-main: 16px !important;
   --colorSettings: #f18b62;
   --colorBgSettingsHover: rgba(241, 139, 98, 0.06);
   --colorTemplateBgSettingsHover: rgba(98, 200, 241, 0.06);
@@ -338,7 +339,7 @@ h6,
     margin-right: auto;
   }
 
-  .doc-layout-sidebar-centered .rp-doc-layout__overview > .rp-doc {
+  .doc-layout-sidebar-centered .rp-doc-layout__overview>.rp-doc {
     margin-left: auto;
     margin-right: auto;
   }
