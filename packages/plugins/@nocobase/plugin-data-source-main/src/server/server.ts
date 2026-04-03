@@ -440,7 +440,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.acl.registerSnippet({
       name: `pm.data-source-manager.data-source-main`,
-      actions: ['collections:*', 'collections.fields:*', 'collectionCategories:*', 'mainDataSource:*'],
+      actions: ['collections:*', 'collections.fields:*', 'fields:*', 'collectionCategories:*', 'mainDataSource:*'],
     });
 
     this.app.acl.registerSnippet({
