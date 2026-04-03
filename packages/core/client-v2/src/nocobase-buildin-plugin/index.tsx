@@ -7,17 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  createCollectionContextMeta,
-  FlowErrorFallback,
-  FlowModelRenderer,
-  useFlowEngine,
-} from '@nocobase/flow-engine';
+import { createCollectionContextMeta } from '@nocobase/flow-engine';
 import React, { createContext, type FC, useEffect, useRef, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { BlankComponent, AppNotFound } from '../components';
+import { AppNotFound } from '../components';
 import { PluginFlowEngine } from '../flow';
-import { AdminLayoutMenuItemModel, AdminLayoutModel, getAdminLayoutModel } from '../flow/admin-shell/admin-layout';
+import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
 import { FlowRoute } from '../flow/FlowPage';
@@ -135,21 +130,6 @@ const CurrentUserProvider: FC = ({ children }) => {
   return <CurrentUserContext.Provider value={state}>{children}</CurrentUserContext.Provider>;
 };
 
-const AdminLayout: FC = (props) => {
-  const flowEngine = useFlowEngine();
-  const model = getAdminLayoutModel(flowEngine, {
-    create: true,
-    props,
-    use: AdminLayoutModel,
-  });
-
-  if (!model) {
-    throw new Error('[NocoBase] Failed to create admin-layout-model.');
-  }
-
-  return <FlowModelRenderer model={model} />;
-};
-
 const RootRedirect: FC = () => {
   const app = useApp();
   const hasToken = !!app?.apiClient?.auth?.token;
@@ -198,15 +178,11 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
     this.router.add('admin', {
       path: '/admin',
-      Component: 'AdminLayout',
+      componentLoader: () => import('../flow/components/AdminLayout'),
     });
     this.router.add('admin.page', {
       path: '/admin/:name',
       Component: 'AdminDynamicPage',
-    });
-    this.router.add('admin.page.tabs', {
-      path: '/admin/:name/tabs/:tabUid',
-      Component: 'PageTabs',
     });
 
     this.router.add('admin.page.tab', {
@@ -225,14 +201,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
 
   addComponents() {
     this.app.addComponents({
-      AdminLayout,
       AdminDynamicPage: FlowRoute,
-      BlockTemplateDetails: AppNotFound,
-      BlockTemplatePage: AppNotFound,
-      ErrorFallback: FlowErrorFallback as any,
-      PageTabs: FlowRoute,
-      RouteSchemaComponent: FlowRoute,
-      BlankComponent,
     });
   }
 
