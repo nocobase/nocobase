@@ -374,23 +374,27 @@ export class AIEmployee {
     let isReasoning = false;
     let gathered: any;
     signal.addEventListener('abort', async () => {
-      if (gathered?.type === 'ai') {
-        const values = convertAIMessage({
-          aiEmployee: this,
-          providerName,
-          model,
-          aiMessage: gathered,
-        });
-        if (values) {
-          values.metadata.interrupted = true;
-        }
-
-        await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
-          const result: AIMessage = await conversation.addMessages(values);
-          if (toolCalls?.length) {
-            await this.initToolCall(transaction, result.messageId, toolCalls as any);
+      try {
+        if (gathered?.type === 'ai') {
+          const values = convertAIMessage({
+            aiEmployee: this,
+            providerName,
+            model,
+            aiMessage: gathered,
+          });
+          if (values) {
+            values.metadata.interrupted = true;
           }
-        });
+
+          await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
+            const result: AIMessage = await conversation.addMessages(values);
+            if (toolCalls?.length) {
+              await this.initToolCall(transaction, result.messageId, toolCalls as any);
+            }
+          });
+        }
+      } catch (e) {
+        this.logger.error('Fail to save message after conversation abort', gathered);
       }
     });
 
