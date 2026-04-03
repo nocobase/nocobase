@@ -131,7 +131,16 @@ export class AIConversationsManager {
     });
 
     if (!conversation) {
-      throw new Error('invalid sessionId');
+      const aiWorkflowTask = await this.plugin.db.getRepository('aiWorkflowTasks').findOne({
+        filter: {
+          sessionId,
+          'users.id': userId,
+        },
+      });
+
+      if (!aiWorkflowTask) {
+        throw new Error('invalid sessionId');
+      }
     }
 
     const pageSize = 10;
