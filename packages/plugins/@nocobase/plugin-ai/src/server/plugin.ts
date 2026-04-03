@@ -17,6 +17,7 @@ import aiResource from './resource/ai';
 import PluginWorkflowServer from '@nocobase/plugin-workflow';
 import { LLMInstruction } from './workflow/nodes/llm';
 import aiConversations from './resource/aiConversations';
+import aiWorkflowTasks from './resource/aiWorkflowTasks';
 import aiTools from './resource/aiTools';
 import aiSkills from './resource/aiSkills';
 import { AIEmployeesManager } from './ai-employees/ai-employees-manager';
@@ -140,6 +141,7 @@ export class PluginAIServer extends Plugin {
   defineResources() {
     this.app.resourceManager.define(aiResource);
     this.app.resourceManager.define(aiConversations);
+    this.app.resourceManager.define(aiWorkflowTasks);
     this.app.resourceManager.define(aiTools);
     this.app.resourceManager.define(aiSkills);
     this.app.resourceManager.define(aiSettings);
@@ -182,6 +184,7 @@ export class PluginAIServer extends Plugin {
       actions: ['aiSettings:*'],
     });
     this.app.acl.allow('aiConversations', '*', 'loggedIn');
+    this.app.acl.allow('aiWorkflowTasks', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'get', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'list', 'loggedIn');
     this.app.acl.allow('aiContextDatasources', 'preview', 'loggedIn');
