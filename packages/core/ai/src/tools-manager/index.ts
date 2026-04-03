@@ -50,6 +50,14 @@ export class DefaultToolsManager implements ToolsManager {
     });
   }
 
+  isToolsExisted(toolName: string): boolean {
+    const target = this.tools.get(toolName);
+    if (target) {
+      return true;
+    }
+    return false;
+  }
+
   registerTools(options: ToolsOptions | ToolsOptions[]): void {
     const list = _.isArray(options) ? options : [options];
     for (const item of list) {

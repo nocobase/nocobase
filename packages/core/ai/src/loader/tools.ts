@@ -106,7 +106,7 @@ export class ToolsLoader extends LoadAndRegister<ToolsLoaderOptions> {
         continue;
       }
       const { name, toolsOptions, description } = descriptor;
-      if (await toolsManager.getTools(name)) {
+      if (toolsManager.isToolsExisted(name)) {
         this.log?.warn(`tools [${descriptor.name}] register ignored: duplicate register for tools`);
         continue;
       }

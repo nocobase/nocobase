@@ -12,6 +12,7 @@ import type { Context } from '@nocobase/actions';
 export interface ToolsManager extends ToolsRegistration {
   getTools(toolName: string): Promise<ToolsEntry>;
   listTools(filter?: ToolsFilter): Promise<ToolsEntry[]>;
+  isToolsExisted(toolName: string): boolean;
 }
 
 export interface ToolsRegistration {
