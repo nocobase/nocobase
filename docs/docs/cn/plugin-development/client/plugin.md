@@ -99,13 +99,14 @@ async load() {
 | `this.router`               | 路由管理器，用于注册页面路由                             |
 | `this.pluginSettingsRouter` | 插件设置页路由管理器                                     |
 | `this.flowEngine`           | FlowEngine 实例，用于注册 FlowModel                      |
-| `this.app`                  | Application 实例, 可以通过 `this.app.context` 访问上下文 |
+| `this.context`              | 上下文对象，和组件里的 `useFlowContext()` 返回同一个对象  |
+| `this.app`                  | Application 实例                                         |
 
-如果需要访问更多 NocoBase 能力（比如 `api`、`t`(i18n)、`logger`），可以通过上下文获取：
+如果需要访问更多 NocoBase 能力（比如 `api`、`t`(i18n)、`logger`），可以通过 `this.context` 获取：
 
 ```ts
 async load() {
-  const { api, t, logger } = this.app.context;
+  const { api, t, logger } = this.context;
 }
 ```
 
