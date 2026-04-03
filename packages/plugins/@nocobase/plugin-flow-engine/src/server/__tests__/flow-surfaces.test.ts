@@ -3334,6 +3334,58 @@ describe('flowSurfaces resource', () => {
     expect(composedPopupBlock?.use).toBe('DetailsBlockModel');
   });
 
+  it('should preserve details item fieldSettings when addFields applies inline label settings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Details addFields page',
+      tabTitle: 'Details addFields tab',
+    });
+
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const addFieldsRes = await rootAgent.resource('flowSurfaces').addFields({
+      values: {
+        target: {
+          uid: detailsUid,
+        },
+        fields: [
+          {
+            key: 'nickname',
+            fieldPath: 'nickname',
+            settings: {
+              label: 'Employee nickname',
+            },
+          },
+        ],
+      },
+    });
+    expect(addFieldsRes.status).toBe(200);
+
+    const createdField = getData(addFieldsRes).fields[0].result;
+    const wrapperReadback = await getSurface(rootAgent, {
+      uid: createdField.wrapperUid,
+    });
+    const innerReadback = await getSurface(rootAgent, {
+      uid: createdField.fieldUid,
+    });
+
+    expect(wrapperReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'nickname',
+    });
+    expect(wrapperReadback.tree.stepParams?.detailItemSettings?.label).toMatchObject({
+      title: 'Employee nickname',
+    });
+    expect(innerReadback.tree.stepParams?.fieldSettings?.init).toMatchObject({
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+      fieldPath: 'nickname',
+    });
+  });
+
   it('should auto-complete field popup shells on configure and normalize legacy openView modes', async () => {
     const page = await createPage(rootAgent, {
       title: 'Configure popup page',

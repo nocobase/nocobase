@@ -3455,7 +3455,7 @@ export class FlowSurfacesService {
         continue;
       }
 
-      nextStepParams = nextStepParams ?? _.cloneDeep(nextPayload.stepParams || {});
+      nextStepParams = nextStepParams ?? _.cloneDeep(nextPayload.stepParams ?? current?.stepParams ?? {});
       if (_.has(nextStepParams, mirror.stepParamsPath)) {
         continue;
       }
