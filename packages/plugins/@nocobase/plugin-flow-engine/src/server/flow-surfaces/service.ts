@@ -233,6 +233,101 @@ const POPUP_COLLECTION_BLOCK_SCENES: Partial<Record<string, FlowSurfaceCollectio
   FilterFormBlockModel: ['filter'],
   FormBlockModel: [],
 };
+type FlowSurfaceStepParamMirror = {
+  domain: 'props' | 'decoratorProps';
+  key: string;
+  stepParamsPath: string[];
+};
+
+const TABLE_COLUMN_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'props', key: 'title', stepParamsPath: ['tableColumnSettings', 'title', 'title'] },
+  { domain: 'props', key: 'tooltip', stepParamsPath: ['tableColumnSettings', 'tooltip', 'tooltip'] },
+  { domain: 'props', key: 'width', stepParamsPath: ['tableColumnSettings', 'width', 'width'] },
+  { domain: 'props', key: 'fixed', stepParamsPath: ['tableColumnSettings', 'fixed', 'fixed'] },
+];
+
+const TABLE_FIELD_WRAPPER_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  ...TABLE_COLUMN_STEP_PARAM_MIRRORS,
+  { domain: 'props', key: 'sorter', stepParamsPath: ['tableColumnSettings', 'sorter', 'sorter'] },
+  { domain: 'props', key: 'editable', stepParamsPath: ['tableColumnSettings', 'quickEdit', 'editable'] },
+  { domain: 'props', key: 'titleField', stepParamsPath: ['tableColumnSettings', 'fieldNames', 'label'] },
+];
+
+const FORM_ITEM_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'props', key: 'showLabel', stepParamsPath: ['editItemSettings', 'showLabel', 'showLabel'] },
+  { domain: 'props', key: 'label', stepParamsPath: ['editItemSettings', 'label', 'label'] },
+  { domain: 'props', key: 'tooltip', stepParamsPath: ['editItemSettings', 'tooltip', 'tooltip'] },
+  { domain: 'props', key: 'extra', stepParamsPath: ['editItemSettings', 'description', 'description'] },
+  { domain: 'props', key: 'initialValue', stepParamsPath: ['editItemSettings', 'initialValue', 'defaultValue'] },
+  { domain: 'props', key: 'required', stepParamsPath: ['editItemSettings', 'required', 'required'] },
+  { domain: 'props', key: 'pattern', stepParamsPath: ['editItemSettings', 'pattern', 'pattern'] },
+  { domain: 'props', key: 'titleField', stepParamsPath: ['editItemSettings', 'titleField', 'label'] },
+];
+
+const DETAIL_ITEM_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'props', key: 'showLabel', stepParamsPath: ['detailItemSettings', 'showLabel', 'showLabel'] },
+  { domain: 'props', key: 'label', stepParamsPath: ['detailItemSettings', 'label', 'title'] },
+  { domain: 'props', key: 'tooltip', stepParamsPath: ['detailItemSettings', 'tooltip', 'tooltip'] },
+  { domain: 'props', key: 'extra', stepParamsPath: ['detailItemSettings', 'description', 'description'] },
+  { domain: 'props', key: 'titleField', stepParamsPath: ['detailItemSettings', 'fieldNames', 'label'] },
+];
+
+const FILTER_FORM_ITEM_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'props', key: 'label', stepParamsPath: ['filterFormItemSettings', 'label', 'label'] },
+  { domain: 'props', key: 'showLabel', stepParamsPath: ['filterFormItemSettings', 'showLabel', 'showLabel'] },
+  { domain: 'props', key: 'tooltip', stepParamsPath: ['filterFormItemSettings', 'tooltip', 'tooltip'] },
+  { domain: 'props', key: 'extra', stepParamsPath: ['filterFormItemSettings', 'description', 'description'] },
+  {
+    domain: 'props',
+    key: 'initialValue',
+    stepParamsPath: ['filterFormItemSettings', 'initialValue', 'defaultValue'],
+  },
+];
+
+const FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'decoratorProps', key: 'labelWidth', stepParamsPath: ['formModelSettings', 'layout', 'labelWidth'] },
+  { domain: 'decoratorProps', key: 'labelWrap', stepParamsPath: ['formModelSettings', 'layout', 'labelWrap'] },
+  { domain: 'props', key: 'labelWidth', stepParamsPath: ['formModelSettings', 'layout', 'labelWidth'] },
+  { domain: 'props', key: 'labelWrap', stepParamsPath: ['formModelSettings', 'layout', 'labelWrap'] },
+];
+
+const DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  { domain: 'decoratorProps', key: 'labelWidth', stepParamsPath: ['detailsSettings', 'layout', 'labelWidth'] },
+  { domain: 'decoratorProps', key: 'labelWrap', stepParamsPath: ['detailsSettings', 'layout', 'labelWrap'] },
+  { domain: 'props', key: 'labelWidth', stepParamsPath: ['detailsSettings', 'layout', 'labelWidth'] },
+  { domain: 'props', key: 'labelWrap', stepParamsPath: ['detailsSettings', 'layout', 'labelWrap'] },
+];
+
+const FILTER_FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS: FlowSurfaceStepParamMirror[] = [
+  {
+    domain: 'decoratorProps',
+    key: 'labelWidth',
+    stepParamsPath: ['formFilterBlockModelSettings', 'layout', 'labelWidth'],
+  },
+  {
+    domain: 'decoratorProps',
+    key: 'labelWrap',
+    stepParamsPath: ['formFilterBlockModelSettings', 'layout', 'labelWrap'],
+  },
+  { domain: 'props', key: 'labelWidth', stepParamsPath: ['formFilterBlockModelSettings', 'layout', 'labelWidth'] },
+  { domain: 'props', key: 'labelWrap', stepParamsPath: ['formFilterBlockModelSettings', 'layout', 'labelWrap'] },
+];
+
+const UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE: Partial<Record<string, FlowSurfaceStepParamMirror[]>> = {
+  TableActionsColumnModel: TABLE_COLUMN_STEP_PARAM_MIRRORS,
+  JSColumnModel: TABLE_COLUMN_STEP_PARAM_MIRRORS,
+  TableColumnModel: TABLE_FIELD_WRAPPER_STEP_PARAM_MIRRORS,
+  FormItemModel: FORM_ITEM_STEP_PARAM_MIRRORS,
+  DetailsItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
+  FormAssociationItemModel: DETAIL_ITEM_STEP_PARAM_MIRRORS,
+  FilterFormItemModel: FILTER_FORM_ITEM_STEP_PARAM_MIRRORS,
+  FormBlockModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  CreateFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  EditFormModel: FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  DetailsBlockModel: DETAILS_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+  FilterFormBlockModel: FILTER_FORM_BLOCK_LAYOUT_STEP_PARAM_MIRRORS,
+};
+
 type FlowSurfaceAddFieldResult = {
   uid?: string;
   parentUid?: string;
@@ -2913,6 +3008,8 @@ export class FlowSurfacesService {
       );
     });
 
+    this.syncMirroredStepParamsForUpdateSettings(current, nextPayload);
+
     const effectiveNode = {
       ...current,
       props: nextPayload.props ?? current.props,
@@ -2961,6 +3058,37 @@ export class FlowSurfacesService {
       uid: current.uid,
       updated: Object.keys(_.omit(nextPayload, ['uid'])),
     };
+  }
+
+  private syncMirroredStepParamsForUpdateSettings(current: any, nextPayload: Record<string, any>) {
+    const mirrors = UPDATE_SETTINGS_STEP_PARAM_MIRRORS_BY_USE[current?.use || ''];
+    if (!mirrors?.length) {
+      return;
+    }
+
+    let nextStepParams: Record<string, any> | undefined;
+
+    for (const mirror of mirrors) {
+      const domainPayload = nextPayload[mirror.domain];
+      if (!_.isPlainObject(domainPayload) || !Object.prototype.hasOwnProperty.call(domainPayload, mirror.key)) {
+        continue;
+      }
+
+      const value = domainPayload[mirror.key];
+      if (_.isUndefined(value)) {
+        continue;
+      }
+
+      nextStepParams = nextStepParams ?? _.cloneDeep(nextPayload.stepParams || {});
+      if (_.has(nextStepParams, mirror.stepParamsPath)) {
+        continue;
+      }
+      _.set(nextStepParams, mirror.stepParamsPath, value);
+    }
+
+    if (nextStepParams) {
+      nextPayload.stepParams = nextStepParams;
+    }
   }
 
   async setEventFlows(values: Record<string, any>, options: { transaction?: any } = {}) {

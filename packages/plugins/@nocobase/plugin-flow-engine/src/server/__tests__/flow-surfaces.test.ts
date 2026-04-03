@@ -5088,6 +5088,17 @@ describe('flowSurfaces resource', () => {
       width: 280,
       fixed: 'left',
     });
+    expect(jsColumnReadback.tree.stepParams?.tableColumnSettings).toMatchObject({
+      title: {
+        title: 'JS column',
+      },
+      width: {
+        width: 280,
+      },
+      fixed: {
+        fixed: 'left',
+      },
+    });
     expect(jsColumnReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
       code: 'return record.nickname;',
@@ -5102,6 +5113,201 @@ describe('flowSurfaces resource', () => {
     expect(jsItemReadback.tree.stepParams?.jsSettings?.runJs).toMatchObject({
       version: '1.0.1',
       code: 'return record.nickname;',
+    });
+  });
+
+  it('should mirror props-backed table and field settings into stepParams for configure and updateSettings', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Settings mirror page',
+      tabTitle: 'Settings mirror tab',
+    });
+
+    const tableUid = await addBlock(rootAgent, page.tabSchemaUid, 'table', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const createFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'createForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const detailsUid = await addBlock(rootAgent, page.tabSchemaUid, 'details', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+    const filterFormUid = await addBlock(rootAgent, page.tabSchemaUid, 'filterForm', {
+      dataSourceKey: 'main',
+      collectionName: 'employees',
+    });
+
+    const tableField = await addField(rootAgent, tableUid, 'nickname');
+    const formField = await addField(rootAgent, createFormUid, 'nickname');
+    const detailsField = await addField(rootAgent, detailsUid, 'department.title');
+    const filterField = await addField(rootAgent, filterFormUid, 'status', {
+      defaultTargetUid: tableUid,
+    });
+
+    const tableConfigureRes = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: {
+          uid: tableField.wrapperUid,
+        },
+        changes: {
+          title: 'Nickname column',
+          tooltip: 'Nickname tooltip',
+          width: 360,
+          fixed: 'right',
+          sorter: true,
+          editable: true,
+        },
+      },
+    });
+    expect(tableConfigureRes.status).toBe(200);
+
+    const formUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: formField.wrapperUid,
+        },
+        props: {
+          label: 'Nickname field',
+          showLabel: false,
+          tooltip: 'Nickname help',
+          extra: 'Nickname description',
+          initialValue: 'guest',
+          required: true,
+        },
+      },
+    });
+    expect(formUpdateRes.status).toBe(200);
+
+    const detailsUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: detailsField.wrapperUid,
+        },
+        props: {
+          label: 'Department label',
+          showLabel: false,
+          tooltip: 'Department help',
+          extra: 'Department description',
+        },
+      },
+    });
+    expect(detailsUpdateRes.status).toBe(200);
+
+    const filterUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: filterField.wrapperUid,
+        },
+        props: {
+          label: 'Status label',
+          showLabel: false,
+          tooltip: 'Status help',
+          extra: 'Status description',
+          initialValue: 'active',
+        },
+      },
+    });
+    expect(filterUpdateRes.status).toBe(200);
+
+    const formBlockUpdateRes = await rootAgent.resource('flowSurfaces').updateSettings({
+      values: {
+        target: {
+          uid: createFormUid,
+        },
+        decoratorProps: {
+          labelWidth: 180,
+          labelWrap: false,
+        },
+      },
+    });
+    expect(formBlockUpdateRes.status).toBe(200);
+
+    const tableReadback = await getSurface(rootAgent, { uid: tableField.wrapperUid });
+    const formReadback = await getSurface(rootAgent, { uid: formField.wrapperUid });
+    const detailsReadback = await getSurface(rootAgent, { uid: detailsField.wrapperUid });
+    const filterReadback = await getSurface(rootAgent, { uid: filterField.wrapperUid });
+    const formBlockReadback = await getSurface(rootAgent, { uid: createFormUid });
+
+    expect(tableReadback.tree.stepParams?.tableColumnSettings).toMatchObject({
+      title: {
+        title: 'Nickname column',
+      },
+      tooltip: {
+        tooltip: 'Nickname tooltip',
+      },
+      width: {
+        width: 360,
+      },
+      fixed: {
+        fixed: 'right',
+      },
+      sorter: {
+        sorter: true,
+      },
+      quickEdit: {
+        editable: true,
+      },
+    });
+
+    expect(formReadback.tree.stepParams?.editItemSettings).toMatchObject({
+      label: {
+        label: 'Nickname field',
+      },
+      showLabel: {
+        showLabel: false,
+      },
+      tooltip: {
+        tooltip: 'Nickname help',
+      },
+      description: {
+        description: 'Nickname description',
+      },
+      initialValue: {
+        defaultValue: 'guest',
+      },
+      required: {
+        required: true,
+      },
+    });
+
+    expect(detailsReadback.tree.stepParams?.detailItemSettings).toMatchObject({
+      label: {
+        title: 'Department label',
+      },
+      showLabel: {
+        showLabel: false,
+      },
+      tooltip: {
+        tooltip: 'Department help',
+      },
+      description: {
+        description: 'Department description',
+      },
+    });
+
+    expect(filterReadback.tree.stepParams?.filterFormItemSettings).toMatchObject({
+      label: {
+        label: 'Status label',
+      },
+      showLabel: {
+        showLabel: false,
+      },
+      tooltip: {
+        tooltip: 'Status help',
+      },
+      description: {
+        description: 'Status description',
+      },
+      initialValue: {
+        defaultValue: 'active',
+      },
+    });
+
+    expect(formBlockReadback.tree.stepParams?.formModelSettings?.layout).toMatchObject({
+      labelWidth: 180,
+      labelWrap: false,
     });
   });
 
