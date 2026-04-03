@@ -3027,8 +3027,11 @@ describe('flowSurfaces API contract', () => {
             changes: {
               columns: {
                 xs: 1,
+                sm: 1,
                 md: 2,
                 lg: 4,
+                xl: 4,
+                xxl: 5,
               },
               rowCount: 4,
               dataScope: {
@@ -3149,8 +3152,11 @@ describe('flowSurfaces API contract', () => {
       columnCount: {
         columnCount: {
           xs: 1,
+          sm: 1,
           md: 2,
           lg: 4,
+          xl: 4,
+          xxl: 5,
         },
       },
       rowCount: {
@@ -3206,6 +3212,53 @@ describe('flowSurfaces API contract', () => {
         ellipsis: true,
       },
     });
+  });
+
+  it('should reject partial responsive grid card columns in simple configure', async () => {
+    const page = await createPage(rootAgent, {
+      title: 'Configure grid card columns validation',
+      tabTitle: 'Configure grid card columns validation',
+    });
+
+    const composeRes = await rootAgent.resource('flowSurfaces').compose({
+      values: {
+        target: { uid: page.gridUid },
+        blocks: [
+          {
+            key: 'grid',
+            type: 'gridCard',
+            resource: {
+              dataSourceKey: 'main',
+              collectionName: 'users',
+            },
+            settings: {
+              columns: 3,
+            },
+          },
+        ],
+      },
+    });
+    expect(composeRes.status).toBe(200);
+
+    const gridUid = composeRes.body?.data?.results?.find?.((item: any) => item.key === 'grid')?.uid;
+    expect(gridUid).toBeTruthy();
+
+    const response = await rootAgent.resource('flowSurfaces').configure({
+      values: {
+        target: { uid: gridUid },
+        changes: {
+          columns: {
+            xs: 1,
+            md: 2,
+            lg: 3,
+          },
+        },
+      },
+    });
+
+    expect(response.status).toBe(400);
+    expect(readErrorMessage(response)).toContain('must include xs, sm, md, lg, xl, xxl');
+    expect(readErrorMessage(response)).toContain('missing: sm, xl, xxl');
   });
 
   it('should configure richer field and action semantics with simple changes', async () => {

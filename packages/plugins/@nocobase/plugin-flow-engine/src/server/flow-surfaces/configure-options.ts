@@ -200,10 +200,14 @@ const GRID_CARD_OPTIONS: FlowSurfaceConfigureOptions = {
   ...COMMON_BLOCK_TITLE_OPTIONS,
   ...COMMON_HEIGHT_OPTIONS,
   resource: COMMON_RESOURCE,
-  columns: objectOption('列数；可传数字或响应式对象', {
+  columns: objectOption('列数；可传数字或完整响应式对象（必须包含 xs/sm/md/lg/xl/xxl）', {
     example: {
-      md: 3,
-      lg: 4,
+      xs: 1,
+      sm: 1,
+      md: 2,
+      lg: 3,
+      xl: 3,
+      xxl: 4,
     },
   }),
   rowCount: numberOption('每行条目数', { example: 3 }),

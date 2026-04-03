@@ -7569,6 +7569,23 @@ function normalizeGridCardColumns(columns: any) {
     };
   }
   if (_.isPlainObject(columns)) {
+    const requiredBreakpoints = ['xs', 'sm', 'md', 'lg', 'xl', 'xxl'];
+    const missingBreakpoints = requiredBreakpoints.filter((key) => _.isUndefined(columns[key]));
+    if (missingBreakpoints.length) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces configure gridCard columns responsive object must include xs, sm, md, lg, xl, xxl; missing: ${missingBreakpoints.join(
+          ', ',
+        )}`,
+      );
+    }
+    const invalidBreakpoints = requiredBreakpoints.filter((key) => !_.isNumber(columns[key]) || columns[key] <= 0);
+    if (invalidBreakpoints.length) {
+      throw new FlowSurfaceBadRequestError(
+        `flowSurfaces configure gridCard columns responsive object values must be positive numbers; invalid: ${invalidBreakpoints.join(
+          ', ',
+        )}`,
+      );
+    }
     const normalized = buildDefinedPayload({
       xs: columns.xs,
       sm: columns.sm,
