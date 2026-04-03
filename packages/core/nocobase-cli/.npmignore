@@ -1,0 +1,8 @@
+/node_modules
+/src
+/.nocobase-cli
+/scripts
+/nocobase-cli.config.json
+/tsconfig.json
+/build.config.ts
+/.gitignore

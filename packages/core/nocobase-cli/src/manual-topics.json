@@ -1,0 +1,10 @@
+{
+  "auth": {
+    "description": "Manage local auth profiles and authentication helpers.",
+    "subtopics": {
+      "token": {
+        "description": "Manage token-based auth profiles."
+      }
+    }
+  }
+}
