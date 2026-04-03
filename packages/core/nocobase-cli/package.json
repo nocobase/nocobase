@@ -5,10 +5,8 @@
   "main": "lib/generated/command-registry.js",
   "scripts": {
     "clean": "rm -rf lib",
-    "build": "npm run generate:commands && npm run clean && tsc -p tsconfig.json",
     "dev": "./bin/dev.js",
     "generate:commands": "tsx ./scripts/generate-commands.ts",
-    "prepack": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

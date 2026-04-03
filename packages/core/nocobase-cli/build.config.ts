@@ -1,7 +1,7 @@
 import { defineConfig } from '@nocobase/build';
 import path from 'node:path';
 import fs from 'fs-extra';
-import { buildSwaggerCommands } from './src/lib/build-swagger-commands';
+import { buildSwaggerCommands } from './src/lib/build-swagger-commands.ts';
 
 export default defineConfig({
   beforeBuild: async (log) => {
