@@ -459,6 +459,7 @@ export default class extends Instruction {
     onlyData: {
       type: 'boolean',
       'x-content': `{{t("Only return response data", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("If enabled, only the response data will be saved into result, and the status code and headers will be ignored.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',
       default: true,

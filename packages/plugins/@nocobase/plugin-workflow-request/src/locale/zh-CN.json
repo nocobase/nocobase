@@ -10,6 +10,7 @@
   "HTTP method": "HTTP 方法",
   "HTTP request": "HTTP 请求",
   "Headers": "请求头",
+  "If enabled, only the response data will be saved into result, and the status code and headers will be ignored.": "启用后，只有响应数据会保存为结果，状态码和响应头将被忽略。",
   "Ignore failed request and continue workflow": "忽略失败的请求并继续工作流",
   "Input request data": "输入请求数据",
   "Insert": "插入",
