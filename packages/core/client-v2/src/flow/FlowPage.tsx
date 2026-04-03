@@ -10,10 +10,9 @@
 import { FlowModelRenderer, useFlowEngine, useFlowModelById, useFlowViewContext } from '@nocobase/flow-engine';
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import React, { useEffect, useRef } from 'react';
-import { useAdminLayoutRoutePage } from './admin-shell/useAdminLayoutRoutePage';
+import React from 'react';
+import FlowRoute from './components/FlowRoute';
 import { SkeletonFallback } from './components/SkeletonFallback';
-import { deviceType } from 'react-device-detect';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -31,60 +30,6 @@ function InternalFlowPage({ uid, ...props }) {
     />
   );
 }
-
-export const FlowRoute = () => {
-  const flowEngine = useFlowEngine();
-  const route = flowEngine.context.route || {};
-  const routeRepository = flowEngine.context.routeRepository;
-  const refreshDesktopRoutes = React.useMemo(
-    () => routeRepository?.refreshAccessible.bind(routeRepository),
-    [routeRepository],
-  );
-  const pageUidRef = useRef(route?.params?.name);
-  const layoutContentRef = useRef<HTMLDivElement>(null);
-  const pageUid = pageUidRef.current;
-
-  if (!pageUid) {
-    throw new Error('[NocoBase] FlowRoute requires route.params.name.');
-  }
-
-  useEffect(() => {
-    flowEngine.context.defineProperty('deviceType', {
-      get: () => (deviceType === 'browser' ? 'computer' : deviceType),
-      cache: false,
-      meta: {
-        type: 'string',
-        title: flowEngine.translate('Current device type'),
-        interface: 'select',
-        uiSchema: {
-          enum: [
-            { label: flowEngine.translate('Computer'), value: 'computer' },
-            { label: flowEngine.translate('Mobile'), value: 'mobile' },
-            { label: flowEngine.translate('Tablet'), value: 'tablet' },
-            { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
-            { label: flowEngine.translate('Console'), value: 'console' },
-            { label: flowEngine.translate('Wearable'), value: 'wearable' },
-            { label: flowEngine.translate('Embedded'), value: 'embedded' },
-          ],
-          'x-component': 'Select',
-        },
-      },
-      info: {
-        description: 'Current device type (computer/mobile/tablet/...).',
-        detail: 'string',
-      },
-    });
-  }, [flowEngine]);
-
-  useAdminLayoutRoutePage({
-    flowEngine,
-    pageUid,
-    refreshDesktopRoutes,
-    layoutContentRef,
-  });
-
-  return <div ref={layoutContentRef} />;
-};
 
 type FlowPageProps = {
   pageModelClass?: string;
@@ -169,3 +114,5 @@ export const RemoteFlowModelRenderer = (props) => {
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
 };
+
+export { FlowRoute };

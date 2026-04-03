@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider, type FlowModel } from '@nocobase/flow-engine';
-import { FlowRoute } from '../FlowPage';
+import FlowRoute from '../components/FlowRoute';
 
 type MockAdminLayoutModel = FlowModel & {
   registerRoutePage: ReturnType<typeof vi.fn>;

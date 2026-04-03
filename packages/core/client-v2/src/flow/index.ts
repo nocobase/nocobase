@@ -12,8 +12,8 @@ import { IconPicker } from '../flow-compat';
 import { Plugin } from '..';
 import * as actions from './actions';
 import { DefaultValue } from './components/DefaultValue';
+import FlowRoute from './components/FlowRoute';
 import { FlowModelRepository } from './FlowModelRepository';
-import { FlowRoute } from './FlowPage';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
@@ -86,6 +86,7 @@ export class PluginFlowEngine extends Plugin {
 // Export all models for external use
 export * from './components/filter';
 export * from './components/code-editor';
+export { default as FlowRoute } from './components/FlowRoute';
 export * from './components/TextAreaWithContextSelector';
 export * from './components/SkeletonFallback';
 export * from './FlowModelRepository';

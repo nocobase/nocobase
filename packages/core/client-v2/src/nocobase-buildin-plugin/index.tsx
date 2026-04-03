@@ -15,7 +15,6 @@ import { PluginFlowEngine } from '../flow';
 import { AdminLayoutMenuItemModel, AdminLayoutModel } from '../flow/admin-shell/admin-layout';
 import { useApp } from '../hooks/useApp';
 import { Plugin } from '../Plugin';
-import { FlowRoute } from '../flow/FlowPage';
 import { LocalePlugin } from './plugins/LocalePlugin';
 
 type CurrentUserState = {
@@ -182,28 +181,24 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
     this.router.add('admin.page', {
       path: '/admin/:name',
-      Component: 'AdminDynamicPage',
+      componentLoader: () => import('../flow/components/FlowRoute'),
     });
 
     this.router.add('admin.page.tab', {
       path: '/admin/:name/tab/:tabUid',
-      Component: 'AdminDynamicPage',
+      componentLoader: () => import('../flow/components/FlowRoute'),
     });
     this.router.add('admin.page.view', {
       path: '/admin/:name/view/*',
-      Component: 'AdminDynamicPage',
+      componentLoader: () => import('../flow/components/FlowRoute'),
     });
     this.router.add('admin.page.tab.view', {
       path: '/admin/:name/tab/:tabUid/view/*',
-      Component: 'AdminDynamicPage',
+      componentLoader: () => import('../flow/components/FlowRoute'),
     });
   }
 
-  addComponents() {
-    this.app.addComponents({
-      AdminDynamicPage: FlowRoute,
-    });
-  }
+  addComponents() {}
 
   async addPlugins() {
     await this.app.pm.add(PluginFlowEngine);
